@@ -15,7 +15,6 @@ import {
   type MailManagementMessageActionResult,
   type MailMessage,
   type MailMessageSummary,
-  type MailOffsetPage,
   type MailOperationContext,
   type MailPage,
   type MailSyncRunView,
@@ -23,6 +22,7 @@ import {
 import { type MailProviderAccountCount } from '../contracts/persistence.js';
 import {
   toManagedSubmissionView,
+  toManagedSyncRunView,
   toMailAccountView,
   toSyncRunView,
 } from '../views.js';
@@ -124,62 +124,51 @@ export class MailManagementService {
   }
 
   /**
-   * Every member's sync runs, newest first. `canManageOthers` is whether the caller holds `settings:mail.admin/manage`;
-   * without it only the caller's own runs are marked manageable.
+   * Every member's sync runs, newest first, continuing after `pageToken`. `canManage` is whether the caller holds
+   * `settings:mail.admin/manage`, the permission the settings retry and cancel routes require; a run of the caller's own
+   * is managed from their Mail accounts page instead. Failures carry only their code and category.
    */
   public async listManagedSyncRunsPage(
-    context: MailOperationContext,
-    offset: number,
+    _context: MailOperationContext,
+    pageToken: string | undefined,
     limit: number,
     filter: MailManagedLogFilter = {},
-    canManageOthers = false,
-  ): Promise<MailOffsetPage<MailSyncRunView>> {
+    canManage = false,
+  ): Promise<MailPage<MailSyncRunView>> {
     const page = await this.dependencies.store.listAllSyncRuns(
-      offset,
+      pageToken,
       limit,
       filter,
     );
-    const owners = await this.accountOwners(
-      page.items.map((run) => run.accountId),
-    );
     return {
-      items: page.items.map((run) => ({
-        ...toSyncRunView(run),
-        canManage:
-          canManageOthers || owners.get(run.accountId) === context.actorId,
-      })),
-      total: page.total,
+      ...page,
+      items: page.items.map((run) =>
+        toManagedSyncRunView(toSyncRunView(run), canManage),
+      ),
     };
   }
 
   /**
    * Every member's submissions, newest first, as the Mail settings page shows them: account, recipient count, result
-   * and failure, never the subject, body or addresses. `canManageOthers` as for sync runs.
+   * and failure, never the subject, body or addresses. `canManage` as for sync runs.
    */
   public async listManagedSubmissionsPage(
-    context: MailOperationContext,
-    offset: number,
+    _context: MailOperationContext,
+    pageToken: string | undefined,
     limit: number,
     filter: MailManagedLogFilter = {},
-    canManageOthers = false,
-  ): Promise<MailOffsetPage<MailManagedSubmissionView>> {
+    canManage = false,
+  ): Promise<MailPage<MailManagedSubmissionView>> {
     const page = await this.dependencies.store.listAllSubmissions(
-      offset,
+      pageToken,
       limit,
       filter,
     );
-    const owners = await this.accountOwners(
-      page.items.map((submission) => submission.accountId),
-    );
     return {
+      ...page,
       items: page.items.map((submission) =>
-        toManagedSubmissionView(
-          submission,
-          canManageOthers ||
-            owners.get(submission.accountId) === context.actorId,
-        ),
+        toManagedSubmissionView(submission, canManage),
       ),
-      total: page.total,
     };
   }
 
@@ -215,19 +204,6 @@ export class MailManagementService {
       }
     }
     return ownerNames;
-  }
-
-  private async accountOwners(
-    accountIds: readonly string[],
-  ): Promise<ReadonlyMap<string, string | undefined>> {
-    const owners = new Map<string, string | undefined>();
-    for (const accountId of new Set(accountIds)) {
-      owners.set(
-        accountId,
-        (await this.dependencies.store.getAccount(accountId))?.userId,
-      );
-    }
-    return owners;
   }
 
   public async listManagedFolders(

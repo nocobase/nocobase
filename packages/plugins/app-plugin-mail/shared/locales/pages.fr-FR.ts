@@ -78,6 +78,8 @@ const pagesFrFR: MailPagesResource = {
       recipientCount: 'Destinataires',
       bulk: 'Envoi groupé',
       bulkCount: '{{count}} (groupé)',
+      showRecipients: 'Afficher les destinataires',
+      hideRecipients: 'Masquer les destinataires',
       scheduled: 'Programmé',
       retry: 'Relancer',
       cancel: 'Annuler',
@@ -126,6 +128,7 @@ const pagesFrFR: MailPagesResource = {
         config: 'config.yml',
         default: 'Par défaut',
         code: 'Code',
+        unknown: 'Inconnu',
       },
       providers: {
         name: 'Nom',

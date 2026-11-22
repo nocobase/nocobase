@@ -109,24 +109,24 @@ export interface MailService {
     context: MailOperationContext,
   ): Promise<readonly import('./persistence.js').MailProviderAccountCount[]>;
   /**
-   * Every user's sync runs, newest first, one page at a time. `canManageOthers` marks every run manageable for a
-   * caller who may retry and cancel other members' runs.
+   * Every user's sync runs, newest first, continuing after `pageToken`. `canManage` marks every run manageable for a
+   * caller who may retry and cancel them on the Mail settings page.
    */
   listManagedSyncRunsPage(
     context: MailOperationContext,
-    offset: number,
+    pageToken: string | undefined,
     limit: number,
     filter?: MailManagedLogFilter,
-    canManageOthers?: boolean,
-  ): Promise<MailOffsetPage<MailSyncRunView>>;
+    canManage?: boolean,
+  ): Promise<MailPage<MailSyncRunView>>;
   /** Every user's submissions, newest first, one page at a time, without their content. */
   listManagedSubmissionsPage(
     context: MailOperationContext,
-    offset: number,
+    pageToken: string | undefined,
     limit: number,
     filter?: MailManagedLogFilter,
-    canManageOthers?: boolean,
-  ): Promise<MailOffsetPage<MailManagedSubmissionView>>;
+    canManage?: boolean,
+  ): Promise<MailPage<MailManagedSubmissionView>>;
   /** Retry any member's failed or cancelled sync run; the caller must hold `settings:mail.admin/manage`. */
   retryManagedSyncRun(
     context: MailOperationContext,

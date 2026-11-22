@@ -1,4 +1,4 @@
-import { toPublicError } from './services/errors.js';
+import { toPublicError, toSettingsError } from './services/errors.js';
 import {
   type MailAccount,
   type MailAccountView,
@@ -70,8 +70,8 @@ export function toSubmissionLogView(
 
 /**
  * A submission as the Mail settings page shows it, built field by field so nothing of the message itself (subject,
- * body, addresses, attachments) can reach it. `canManage` is whether the caller may retry or cancel it at all; the
- * status decides whether it can be now.
+ * body, addresses, attachments) can reach it, not even through a failure that names the recipients. `canManage` is
+ * whether the caller may retry or cancel it at all; the status decides whether it can be now.
  */
 export function toManagedSubmissionView(
   submission: import('./contracts/persistence.js').MailStoredSubmission,
@@ -92,7 +92,7 @@ export function toManagedSubmissionView(
     ...(submission.scheduledAt !== undefined
       ? { scheduledAt: submission.scheduledAt }
       : {}),
-    ...(submission.error ? { error: toPublicError(submission.error) } : {}),
+    ...(submission.error ? { error: toSettingsError(submission.error) } : {}),
     canRetry:
       canManage &&
       submission.status === 'failed' &&
@@ -103,6 +103,22 @@ export function toManagedSubmissionView(
       submission.hasComposeInput === true,
     createdAt: submission.createdAt,
     updatedAt: submission.updatedAt,
+  };
+}
+
+/**
+ * A sync run as the Mail settings page shows it: its failure reduced to code and category (`toSettingsError`), and
+ * `canManage` whether the caller may retry or cancel it there.
+ */
+export function toManagedSyncRunView(
+  run: MailSyncRunView,
+  canManage: boolean,
+): MailSyncRunView {
+  const { error, ...view } = run;
+  return {
+    ...view,
+    ...(error ? { error: toSettingsError(error) } : {}),
+    canManage,
   };
 }
 

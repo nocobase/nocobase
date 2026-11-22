@@ -1,8 +1,12 @@
 import { useTranslation } from '@nocobase/i18n/client';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { MAIL_PAGE_SIZE } from '../components/mail-pagination.js';
-import { mailErrorMessage, type MailOffsetPage } from '../mail-client.js';
+import {
+  mailErrorMessage,
+  type MailOffsetPage,
+  type MailPage,
+} from '../mail-client.js';
 import { MAIL_PLUGIN_NS } from '../namespace.js';
 
 export interface MailLogPage<T> {
@@ -12,6 +16,10 @@ export interface MailLogPage<T> {
   readonly pageSize: number;
   readonly loading: boolean;
   readonly error?: string;
+  /** For a list paged by token: whether another page follows the shown one. */
+  readonly hasNext?: boolean;
+  /** For a list paged by token: the furthest page reached so far, the last that `setPage` can open. */
+  readonly maxPage?: number;
   readonly setPage: (page: number) => void;
   readonly setPageSize: (pageSize: number) => void;
   readonly reload: () => void;
@@ -88,5 +96,77 @@ export function useMailLogPage<T>(
       [],
     ),
     reload: useCallback(() => setVersion((value) => value + 1), []),
+  };
+}
+
+/**
+ * `useMailLogPage` for a list paged by token (`pageToken` in, `nextCursor` out), such as the Mail settings logs. Each
+ * page's token is the one the page before it answered, so pages open one after another: `setPage` goes back to any
+ * page already reached, or on to the next one. A new `load` or page size starts over on the first page.
+ */
+export function useMailCursorLogPage<T>(
+  load: (
+    pageToken: string | undefined,
+    pageSize: number,
+  ) => Promise<MailPage<T>>,
+): MailLogPage<T> {
+  // The token that opens each page, by page size and page number, kept per `load`: new filters, new tokens. Loading
+  // reads and fills the map; rendering reads the copy in `known`.
+  const tokenMapsRef = useRef(new WeakMap<typeof load, Map<string, string>>());
+  const [known, setKnown] = useState<{
+    readonly load: typeof load;
+    readonly tokens: ReadonlyMap<string, string>;
+    readonly shown?: { readonly key: string; readonly hasNext: boolean };
+  }>(() => ({ load, tokens: new Map() }));
+  if (known.load !== load) setKnown({ load, tokens: new Map() });
+  const byPage = useCallback(
+    async (page: number, pageSize: number): Promise<MailOffsetPage<T>> => {
+      let tokens = tokenMapsRef.current.get(load);
+      if (!tokens) {
+        tokens = new Map();
+        tokenMapsRef.current.set(load, tokens);
+      }
+      const result = await load(
+        page > 1 ? tokens.get(`${pageSize}:${page}`) : undefined,
+        pageSize,
+      );
+      if (result.nextCursor)
+        tokens.set(`${pageSize}:${page + 1}`, result.nextCursor);
+      const copy = new Map(tokens);
+      setKnown((current) =>
+        current.load === load
+          ? {
+              load,
+              tokens: copy,
+              shown: {
+                key: `${pageSize}:${page}`,
+                hasNext: Boolean(result.nextCursor),
+              },
+            }
+          : current,
+      );
+      return {
+        items: result.items,
+        total: result.total ?? result.items.length,
+      };
+    },
+    [load],
+  );
+  const paged = useMailLogPage(byPage);
+  let maxPage = 1;
+  while (known.tokens.has(`${paged.pageSize}:${maxPage + 1}`)) maxPage += 1;
+  const { setPage } = paged;
+  const clampedSetPage = useCallback(
+    (page: number) => setPage(Math.max(1, Math.min(page, maxPage))),
+    [maxPage, setPage],
+  );
+  return {
+    ...paged,
+    hasNext:
+      known.shown?.key === `${paged.pageSize}:${paged.page}`
+        ? known.shown.hasNext
+        : false,
+    maxPage,
+    setPage: clampedSetPage,
   };
 }

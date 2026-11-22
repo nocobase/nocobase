@@ -82,6 +82,8 @@ const pagesEnUS = {
       recipientCount: 'Recipients',
       bulk: 'Bulk send',
       bulkCount: '{{count}} (bulk)',
+      showRecipients: 'Show recipients',
+      hideRecipients: 'Hide recipients',
       scheduled: 'Scheduled',
       retry: 'Retry',
       cancel: 'Cancel',
@@ -130,6 +132,7 @@ const pagesEnUS = {
         config: 'config.yml',
         default: 'Default',
         code: 'Code',
+        unknown: 'Unknown',
       },
       providers: {
         name: 'Name',

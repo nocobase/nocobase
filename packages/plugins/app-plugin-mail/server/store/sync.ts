@@ -7,7 +7,9 @@ import { lockWritableAccount } from './account-guard.js';
 import { validateLogPagination } from '../log-pagination.js';
 import {
   accountIdsOfMember,
+  applyLogCursor,
   applyManagedLogFilter,
+  encodeLogCursor,
   FINISHED_SYNC_RUN_STATUSES,
 } from './log-filter.js';
 import { type DatabaseManager, type QueryAdapter } from '@nocobase/db';
@@ -16,7 +18,7 @@ import {
   MAIL_LOCAL_DRAFT_FOLDER_ID,
   type MailFolderChoices,
   type MailManagedLogFilter,
-  type MailOffsetPage,
+  type MailPage,
   type MailProviderError,
   type MailSyncCursor,
   type MailSyncRun,
@@ -354,26 +356,29 @@ export class MailSyncStore {
   }
 
   public async listAllSyncRuns(
-    offset: number,
+    pageToken: string | undefined,
     limit: number,
     filter: MailManagedLogFilter = {},
-  ): Promise<MailOffsetPage<MailSyncRun>> {
-    validateLogPagination(offset, limit);
+  ): Promise<MailPage<MailSyncRun>> {
+    validateLogPagination(0, limit);
     const memberAccountIds = await accountIdsOfMember(this.accounts, filter);
     if (memberAccountIds?.length === 0) return { items: [], total: 0 };
     const [rows, count] = await Promise.all([
-      applyManagedLogFilter(
-        this.database
-          .query()
-          .selectFrom<SyncRunRow>('mailSyncRuns')
-          .selectAll(),
-        filter,
-        memberAccountIds,
+      applyLogCursor(
+        applyManagedLogFilter(
+          this.database
+            .query()
+            .selectFrom<SyncRunRow>('mailSyncRuns')
+            .selectAll(),
+          filter,
+          memberAccountIds,
+        ),
+        pageToken,
       )
         .orderBy('createdAt', 'desc')
         .orderBy('id', 'desc')
-        .offset(offset)
-        .limit(limit)
+        // One row past the page tells whether another page follows.
+        .limit(limit + 1)
         .execute<SyncRunRow>(),
       applyManagedLogFilter(
         this.database
@@ -384,9 +389,14 @@ export class MailSyncStore {
         memberAccountIds,
       ).executeTakeFirst<{ readonly count: number | string }>(),
     ]);
+    const items = rows.slice(0, limit).map(fromSyncRunRow);
+    const last = items.at(-1);
     return {
-      items: rows.map(fromSyncRunRow),
+      items,
       total: Number(count?.count ?? 0),
+      ...(rows.length > limit && last
+        ? { nextCursor: encodeLogCursor(last) }
+        : {}),
     };
   }
 

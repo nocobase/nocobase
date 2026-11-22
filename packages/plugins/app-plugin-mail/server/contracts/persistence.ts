@@ -12,7 +12,6 @@ import type {
   MailListMessagesInput,
   MailMessage,
   MailMessageSummary,
-  MailOffsetPage,
   MailManagedLogFilter,
   MailOutboundAttachment,
   MailPage,
@@ -417,11 +416,12 @@ export interface MailStore {
   ): Promise<readonly MailSyncRun[]>;
   recoverSyncRuns(now: string): Promise<number>;
   /** Every user's sync runs, newest first, one page at a time. */
+  /** Newest first, continuing after `pageToken`, the `nextCursor` of the previous page. */
   listAllSyncRuns(
-    offset: number,
+    pageToken: string | undefined,
     limit: number,
     filter?: MailManagedLogFilter,
-  ): Promise<MailOffsetPage<MailSyncRun>>;
+  ): Promise<MailPage<MailSyncRun>>;
   cancelSyncRun(syncRunId: string): Promise<MailSyncRun | undefined>;
   claimSyncRun(
     syncRunId: string,
@@ -458,11 +458,12 @@ export interface MailStore {
     action: 'retry' | 'cancel',
   ): Promise<MailStoredSubmission>;
   /** Every user's submissions, newest first, one page at a time. */
+  /** Newest first, continuing after `pageToken`, the `nextCursor` of the previous page. */
   listAllSubmissions(
-    offset: number,
+    pageToken: string | undefined,
     limit: number,
     filter?: MailManagedLogFilter,
-  ): Promise<MailOffsetPage<MailStoredSubmission>>;
+  ): Promise<MailPage<MailStoredSubmission>>;
   /** When each account last finished a synchronization, by account id, in one query. */
   listLastSyncedAt?(): Promise<ReadonlyMap<string, string>>;
   /** How many accounts each configured Provider has in each status, for the Mail settings overview. */

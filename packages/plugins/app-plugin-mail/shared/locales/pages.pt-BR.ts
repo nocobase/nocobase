@@ -78,6 +78,8 @@ const pagesPtBR: MailPagesResource = {
       recipientCount: 'Destinatários',
       bulk: 'Envio em massa',
       bulkCount: '{{count}} (em massa)',
+      showRecipients: 'Mostrar destinatários',
+      hideRecipients: 'Ocultar destinatários',
       scheduled: 'Programado',
       retry: 'Tentar novamente',
       cancel: 'Cancelar',
@@ -126,6 +128,7 @@ const pagesPtBR: MailPagesResource = {
         config: 'config.yml',
         default: 'Padrão',
         code: 'Código',
+        unknown: 'Desconhecido',
       },
       providers: {
         name: 'Nome',

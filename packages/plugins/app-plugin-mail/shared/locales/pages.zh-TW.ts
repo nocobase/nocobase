@@ -75,6 +75,8 @@ const pagesZhTW: MailPagesResource = {
       recipientCount: '收件者',
       bulk: '批次傳送',
       bulkCount: '{{count}}（批次）',
+      showRecipients: '查看收件人',
+      hideRecipients: '收起收件人',
       scheduled: '排程傳送',
       retry: '重試',
       cancel: '取消',
@@ -123,6 +125,7 @@ const pagesZhTW: MailPagesResource = {
         config: 'config.yml',
         default: '預設值',
         code: '程式碼',
+        unknown: '未知',
       },
       providers: {
         name: '名稱',

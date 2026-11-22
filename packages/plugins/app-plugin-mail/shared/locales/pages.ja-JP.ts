@@ -77,6 +77,8 @@ const pagesJaJP: MailPagesResource = {
       recipientCount: '宛先',
       bulk: '一括送信',
       bulkCount: '{{count}}（一括）',
+      showRecipients: '受信者を表示',
+      hideRecipients: '受信者を隠す',
       scheduled: '予約送信',
       retry: '再試行',
       cancel: 'キャンセル',
@@ -125,6 +127,7 @@ const pagesJaJP: MailPagesResource = {
         config: 'config.yml',
         default: 'デフォルト',
         code: 'コード',
+        unknown: '不明',
       },
       providers: {
         name: '名前',

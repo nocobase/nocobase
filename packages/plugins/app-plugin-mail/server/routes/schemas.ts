@@ -126,7 +126,7 @@ const PageQuery = z.object({
   pageSize,
 });
 
-/** Cursor paging, for message feeds. The token is the opaque value of `meta.nextPageToken`. */
+/** Cursor paging, for message feeds and the settings logs. The token is the opaque value of `meta.nextPageToken`. */
 const CursorQuery = z.object({
   pageSize,
   pageToken: z.string().min(1).optional(),
@@ -245,8 +245,8 @@ const statusList = z
 /** Every user's sync runs or submissions, for administrators. */
 export const ManagedLogsQuery: z.ZodObject<
   {
-    page: z.ZodDefault<z.ZodCoercedNumber<unknown>>;
     pageSize: z.ZodDefault<z.ZodCoercedNumber<unknown>>;
+    pageToken: z.ZodOptional<z.ZodString>;
     userId: z.ZodOptional<z.ZodString>;
     accountId: z.ZodOptional<z.ZodString>;
     status: z.ZodOptional<z.ZodString>;
@@ -254,7 +254,7 @@ export const ManagedLogsQuery: z.ZodObject<
     to: z.ZodOptional<z.ZodISODateTime>;
   },
   z.core.$strip
-> = PageQuery.extend({
+> = CursorQuery.extend({
   userId: id.optional().meta({ description: "Only this member's accounts." }),
   accountId: id.optional(),
   status: statusList,
@@ -1346,10 +1346,10 @@ export const MailManagedSubmissionSchema: z.ZodType<MailManagedSubmissionView> =
     });
 
 const settingSource = z
-  .enum(['environment', 'config', 'default', 'code'])
+  .enum(['environment', 'config', 'default', 'code', 'unknown'])
   .meta({
     description:
-      'Where the value comes from: an `MAIL_*` environment variable, the `mail` configuration, the built-in default, or code the application registered.',
+      'Where the value comes from: an `MAIL_*` environment variable, the `mail` configuration, the built-in default, code the application registered, or `unknown` when the configuration cannot tell.',
   });
 
 function settingValue<T extends z.ZodType>(value: T) {
@@ -1601,6 +1601,25 @@ export const MailCursorListMeta: z.ZodType<{
       .meta({ description: 'The number of matching messages.' }),
   })
   .meta({ ref: 'MailCursorListMeta' });
+
+/** `meta` of a settings log, paged by `pageToken` so rows written or deleted between two pages shift nothing. */
+export const MailLogCursorListMeta: z.ZodType<{
+  pageSize: number;
+  nextPageToken?: string;
+  total: number;
+}> = z
+  .object({
+    pageSize: z.number().int(),
+    nextPageToken: z.string().optional().meta({
+      description:
+        'Pass as `pageToken` for the next, older page; absent on the last page.',
+    }),
+    total: z
+      .number()
+      .int()
+      .meta({ description: 'The number of records matching the filters.' }),
+  })
+  .meta({ ref: 'MailLogCursorListMeta' });
 
 /** `meta` of a page-numbered log or table. */
 export const MailPageListMeta: z.ZodType<{

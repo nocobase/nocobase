@@ -1,4 +1,7 @@
 import { type SelectQuery } from '@nocobase/db';
+import { Buffer } from 'node:buffer';
+
+import { mailInvalidArgument } from '../services/errors.js';
 
 import { type MailManagedLogFilter } from '../../shared/mail.js';
 import { type MailStore } from '../contracts/persistence.js';
@@ -55,3 +58,60 @@ export const FINISHED_SUBMISSION_STATUSES: readonly string[] = [
   'unknown',
   'cancelled',
 ];
+
+/** Where a page of a settings log ends: the last row's creation time and id, in the list's newest-first order. */
+interface MailLogCursor {
+  readonly createdAt: string;
+  readonly id: string;
+}
+
+export function encodeLogCursor(row: MailLogCursor): string {
+  return Buffer.from(
+    JSON.stringify({ createdAt: row.createdAt, id: row.id }),
+  ).toString('base64url');
+}
+
+function parseLogCursor(token: string): MailLogCursor {
+  try {
+    const value = JSON.parse(
+      Buffer.from(token, 'base64url').toString('utf8'),
+    ) as Partial<MailLogCursor>;
+    if (
+      typeof value.createdAt === 'string' &&
+      !Number.isNaN(Date.parse(value.createdAt)) &&
+      typeof value.id === 'string' &&
+      value.id.length > 0 &&
+      value.id.length <= 255
+    )
+      return { createdAt: value.createdAt, id: value.id };
+  } catch (cause) {
+    throw mailInvalidArgument(
+      'Mail page token is invalid.',
+      'pageToken',
+      cause,
+    );
+  }
+  throw mailInvalidArgument('Mail page token is invalid.', 'pageToken');
+}
+
+/**
+ * Continues a newest-first log after `pageToken`. Paging by the last row's time and id, not by an offset, keeps a page
+ * from repeating rows when newer ones arrive, or skipping rows when the retention period deletes older ones, between
+ * two requests.
+ */
+export function applyLogCursor<TQuery extends SelectQuery>(
+  query: TQuery,
+  pageToken: string | undefined,
+): TQuery {
+  if (pageToken === undefined) return query;
+  const cursor = parseLogCursor(pageToken);
+  return (query as SelectQuery).where((builder) =>
+    builder.eb.or([
+      builder.eb('createdAt', '<', cursor.createdAt),
+      builder.eb.and([
+        builder.eb('createdAt', '=', cursor.createdAt),
+        builder.eb('id', '<', cursor.id),
+      ]),
+    ]),
+  ) as TQuery;
+}

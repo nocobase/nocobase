@@ -961,7 +961,9 @@ export interface NormalizedMailAttachment {
  * Where a Mail setting's value comes from: an `MAIL_*` environment variable, the `mail` section of the application's
  * configuration, the built-in default, or code the application registered.
  */
-export type MailSettingSource = 'environment' | 'config' | 'default' | 'code';
+/** Where a setting's value comes from; `unknown` when the configuration cannot tell. */
+export type MailSettingSource =
+  'environment' | 'config' | 'default' | 'code' | 'unknown';
 
 export interface MailSettingValue<T> {
   readonly value: T;

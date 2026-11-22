@@ -78,6 +78,8 @@ const pagesEsES: MailPagesResource = {
       recipientCount: 'Destinatarios',
       bulk: 'Envío masivo',
       bulkCount: '{{count}} (masivo)',
+      showRecipients: 'Mostrar destinatarios',
+      hideRecipients: 'Ocultar destinatarios',
       scheduled: 'Programado',
       retry: 'Reintentar',
       cancel: 'Cancelar',
@@ -126,6 +128,7 @@ const pagesEsES: MailPagesResource = {
         config: 'config.yml',
         default: 'Predeterminado',
         code: 'Código',
+        unknown: 'Desconocido',
       },
       providers: {
         name: 'Nombre',

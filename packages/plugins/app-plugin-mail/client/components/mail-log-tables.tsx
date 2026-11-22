@@ -1,5 +1,5 @@
 import { useTranslation } from '@nocobase/i18n/client';
-import type { ReactElement, ReactNode } from 'react';
+import { useState, type ReactElement, type ReactNode } from 'react';
 
 import type {
   MailManagedSubmissionView,
@@ -212,7 +212,40 @@ export function MailSyncRunsTable({
   );
 }
 
-/** The caller's own sends: subject, recipients and the result, with retry and cancel. */
+/** One entry of the caller's send history: a single send, or every recipient of one bulk send. */
+interface OwnSubmissionEntry {
+  readonly key: string;
+  readonly submissions: readonly MailSubmissionLogView[];
+}
+
+/** Groups the recipients of each bulk send, which the grouped history lists one after another, into one entry. */
+function ownSubmissionEntries(
+  submissions: readonly MailSubmissionLogView[],
+): readonly OwnSubmissionEntry[] {
+  const entries: { key: string; submissions: MailSubmissionLogView[] }[] = [];
+  for (const submission of submissions) {
+    const last = entries.at(-1);
+    if (
+      submission.batchId !== undefined &&
+      last?.key === `batch:${submission.batchId}`
+    )
+      last.submissions.push(submission);
+    else
+      entries.push({
+        key:
+          submission.batchId !== undefined
+            ? `batch:${submission.batchId}`
+            : submission.id,
+        submissions: [submission],
+      });
+  }
+  return entries;
+}
+
+/**
+ * The caller's own sends: subject, recipients and the result, with retry and cancel. A bulk send is one row, with its
+ * recipients' results counted, and opens to a row per recipient, each with its own retry and cancel.
+ */
 export function MailOwnSubmissionsTable({
   submissions,
   accountLabel,
@@ -225,6 +258,63 @@ export function MailOwnSubmissionsTable({
   readonly actions: MailLogActions<MailSubmissionLogView>;
 }): ReactElement {
   const { t } = useTranslation(MAIL_PLUGIN_NS);
+  const [expanded, setExpanded] = useState<ReadonlySet<string>>(
+    () => new Set(),
+  );
+  const toggle = (key: string) =>
+    setExpanded((current) => {
+      const next = new Set(current);
+      if (!next.delete(key)) next.add(key);
+      return next;
+    });
+  const row = (
+    submission: MailSubmissionLogView,
+    nested = false,
+  ): ReactElement => (
+    <tr
+      className={nested ? 'align-top bg-muted/20' : 'align-top'}
+      data-slot='mail-submission-row'
+      key={submission.id}
+    >
+      <td className='whitespace-nowrap px-4 py-3 text-muted-foreground'>
+        {nested
+          ? null
+          : formatMailDateTime(submission.scheduledAt ?? submission.createdAt)}
+      </td>
+      <td className='max-w-80 px-4 py-3'>
+        {nested ? null : (
+          <p className='truncate font-medium'>
+            {submission.subject ||
+              t('workspace.noSubject', { defaultValue: '(no subject)' })}
+          </p>
+        )}
+        <MailErrorReason error={submission.error} />
+      </td>
+      <td className='max-w-60 truncate px-4 py-3 text-muted-foreground'>
+        {(submission.recipients ?? [])
+          .map((recipient) => recipient.address)
+          .join(', ') || '—'}
+      </td>
+      <td className='px-4 py-3'>
+        <SubmissionStatus
+          status={submission.status}
+          scheduledAt={submission.scheduledAt}
+        />
+      </td>
+      <td className='px-4 py-3 text-muted-foreground'>
+        {nested ? null : accountLabel(submission.accountId)}
+      </td>
+      <td className='px-4 py-3'>
+        <LogActions
+          busy={actions.busyId === submission.id}
+          canCancel={submission.canCancel === true}
+          canRetry={submission.canRetry === true}
+          onCancel={() => actions.onCancel?.(submission)}
+          onRetry={() => actions.onRetry?.(submission)}
+        />
+      </td>
+    </tr>
+  );
   return (
     <LogTable
       empty={submissions.length === 0}
@@ -250,52 +340,85 @@ export function MailOwnSubmissionsTable({
       ]}
       loading={loading}
     >
-      {submissions.map((submission) => (
-        <tr
-          className='align-top'
-          data-slot='mail-submission-row'
-          key={submission.id}
-        >
-          <td className='whitespace-nowrap px-4 py-3 text-muted-foreground'>
-            {formatMailDateTime(submission.scheduledAt ?? submission.createdAt)}
-          </td>
-          <td className='max-w-80 px-4 py-3'>
-            <p className='truncate font-medium'>
-              {submission.subject ||
-                t('workspace.noSubject', { defaultValue: '(no subject)' })}
-            </p>
-            {submission.bulk ? (
+      {ownSubmissionEntries(submissions).flatMap((entry) => {
+        const [first] = entry.submissions;
+        if (first.batchId === undefined) return [row(first)];
+        const open = expanded.has(entry.key);
+        const statuses = new Map<string, MailSubmissionLogView>();
+        for (const submission of entry.submissions)
+          if (!statuses.has(submission.status))
+            statuses.set(submission.status, submission);
+        return [
+          <tr
+            className='align-top'
+            data-slot='mail-submission-batch'
+            key={entry.key}
+          >
+            <td className='whitespace-nowrap px-4 py-3 text-muted-foreground'>
+              {formatMailDateTime(first.scheduledAt ?? first.createdAt)}
+            </td>
+            <td className='max-w-80 px-4 py-3'>
+              <p className='truncate font-medium'>
+                {first.subject ||
+                  t('workspace.noSubject', { defaultValue: '(no subject)' })}
+              </p>
               <p className='text-xs text-muted-foreground'>
                 {t('pages.logs.bulk', { defaultValue: 'Bulk send' })}
               </p>
-            ) : null}
-            <MailErrorReason error={submission.error} />
-          </td>
-          <td className='max-w-60 truncate px-4 py-3 text-muted-foreground'>
-            {(submission.recipients ?? [])
-              .map((recipient) => recipient.address)
-              .join(', ') || '—'}
-          </td>
-          <td className='px-4 py-3'>
-            <SubmissionStatus
-              status={submission.status}
-              scheduledAt={submission.scheduledAt}
-            />
-          </td>
-          <td className='px-4 py-3 text-muted-foreground'>
-            {accountLabel(submission.accountId)}
-          </td>
-          <td className='px-4 py-3'>
-            <LogActions
-              busy={actions.busyId === submission.id}
-              canCancel={submission.canCancel === true}
-              canRetry={submission.canRetry === true}
-              onCancel={() => actions.onCancel?.(submission)}
-              onRetry={() => actions.onRetry?.(submission)}
-            />
-          </td>
-        </tr>
-      ))}
+            </td>
+            <td className='px-4 py-3 text-muted-foreground'>
+              {t('pages.logs.bulkCount', {
+                defaultValue: `${entry.submissions.length} (bulk)`,
+                count: entry.submissions.length,
+              })}
+            </td>
+            <td className='px-4 py-3'>
+              <div className='flex flex-wrap gap-1'>
+                {[...statuses].map(([status, submission]) => (
+                  <span className='flex items-center gap-1' key={status}>
+                    <SubmissionStatus
+                      status={submission.status}
+                      scheduledAt={submission.scheduledAt}
+                    />
+                    {statuses.size > 1 ? (
+                      <span className='text-xs tabular-nums text-muted-foreground'>
+                        {
+                          entry.submissions.filter(
+                            (item) => item.status === status,
+                          ).length
+                        }
+                      </span>
+                    ) : null}
+                  </span>
+                ))}
+              </div>
+            </td>
+            <td className='px-4 py-3 text-muted-foreground'>
+              {accountLabel(first.accountId)}
+            </td>
+            <td className='px-4 py-3'>
+              <div className='flex justify-end'>
+                <Button
+                  aria-expanded={open}
+                  onClick={() => toggle(entry.key)}
+                  variant='ghost'
+                >
+                  {open
+                    ? t('pages.logs.hideRecipients', {
+                        defaultValue: 'Hide recipients',
+                      })
+                    : t('pages.logs.showRecipients', {
+                        defaultValue: 'Show recipients',
+                      })}
+                </Button>
+              </div>
+            </td>
+          </tr>,
+          ...(open
+            ? entry.submissions.map((submission) => row(submission, true))
+            : []),
+        ];
+      })}
     </LogTable>
   );
 }
@@ -411,6 +534,8 @@ export function MailLogPagination({
   page,
   pageSize,
   total,
+  hasNext,
+  maxPage,
   loading,
   onPageChange,
   onPageSizeChange,
@@ -421,11 +546,15 @@ export function MailLogPagination({
   readonly loading: boolean;
   readonly onPageChange: (page: number) => void;
   readonly onPageSizeChange: (pageSize: number) => void;
+  /** For a list paged by token: whether another page follows, and the furthest page reached so far. */
+  readonly hasNext?: boolean;
+  readonly maxPage?: number;
 }): ReactElement {
   return (
     <MailPagination
       disabled={loading}
-      hasNext={page * pageSize < total}
+      hasNext={hasNext ?? page * pageSize < total}
+      maxPage={maxPage}
       onPageChange={onPageChange}
       onPageSizeChange={onPageSizeChange}
       page={page}

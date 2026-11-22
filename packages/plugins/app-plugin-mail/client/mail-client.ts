@@ -179,7 +179,10 @@ export interface MailMessagesQuery
 }
 
 /** Every member's sync runs or submissions on the Mail settings page; every condition given must match. */
-export interface MailManagedLogsRequest extends MailPageRequest {
+/** A settings log page: newest first, continuing after `pageToken`, the `nextCursor` of the page before. */
+export interface MailManagedLogsRequest {
+  readonly pageSize?: number;
+  readonly pageToken?: string;
   readonly userId?: string;
   readonly accountId?: string;
   /** Any of these statuses. */
@@ -316,28 +319,28 @@ export class MailClient {
       .then((response) => response.data);
   }
 
-  /** Every member's sync runs, for administrators, paged by page number. */
+  /** Every member's sync runs, for administrators, paged by `pageToken`. */
   public listManagedSyncRunsPage(
     request: MailManagedLogsRequest = {},
-  ): Promise<MailOffsetPage<MailSyncRunView>> {
+  ): Promise<MailPage<MailSyncRunView>> {
     return this.client
-      .request<ListResponse<MailSyncRunView, PageMeta>>({
+      .request<ListResponse<MailSyncRunView, CursorMeta>>({
         path: 'mail/settings/syncRuns',
         query: managedLogsQuery(request),
       })
-      .then(toOffsetPage);
+      .then(toCursorPage);
   }
 
   /** Every member's submissions, for administrators, without their content. */
   public listManagedSubmissionsPage(
     request: MailManagedLogsRequest = {},
-  ): Promise<MailOffsetPage<MailManagedSubmissionView>> {
+  ): Promise<MailPage<MailManagedSubmissionView>> {
     return this.client
-      .request<ListResponse<MailManagedSubmissionView, PageMeta>>({
+      .request<ListResponse<MailManagedSubmissionView, CursorMeta>>({
         path: 'mail/settings/submissions',
         query: managedLogsQuery(request),
       })
-      .then(toOffsetPage);
+      .then(toCursorPage);
   }
 
   /** Retry any member's run; needs `settings:mail.admin/manage`. */
@@ -866,8 +869,8 @@ function managedLogsQuery(
   request: MailManagedLogsRequest,
 ): Record<string, string | number | undefined> {
   return {
-    page: request.page,
     pageSize: request.pageSize,
+    pageToken: request.pageToken,
     userId: request.userId,
     accountId: request.accountId,
     status: request.statuses?.length ? request.statuses.join(',') : undefined,

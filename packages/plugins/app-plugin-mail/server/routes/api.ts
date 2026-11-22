@@ -112,6 +112,7 @@ import {
   MailMessageSchema,
   MailMessageSummarySchema,
   MailOutboundAttachmentSchema,
+  MailLogCursorListMeta,
   MailPageListMeta,
   MailProviderSchema,
   MailSignatureSchema,
@@ -175,7 +176,10 @@ function mailRoute(
     requireMailAccess(access),
     describeRoute({
       tags: ['Mail'],
-      ...(options.cli === false ? cliRoute(false) : {}),
+      // The command line offers the route only to a caller holding the same permission the route checks.
+      ...cliRoute(
+        options.cli === false ? false : { action: mailAccessKey(access) },
+      ),
       operationId,
       summary,
       description: options.description
@@ -1579,7 +1583,7 @@ export const mailApiRoutes: AppApiRouteContribution<AppPluginApplication> =
         { '200': listResponse(MailSubmissionLogSchema, MailPageListMeta) },
         {
           description:
-            'With `groupByBatch`, a bulk send counts as one row and `meta.total` counts batches.',
+            "With `groupByBatch`, `pageSize` and `meta.total` count entries: a single send, scheduled ones included, is one entry, and a bulk send is one entry answered with every recipient's submission. With `bulkOnly` as well, only bulk sends.",
         },
       ),
       apiValidator('query', SubmissionsQuery),
@@ -1684,6 +1688,7 @@ export const mailApiRoutes: AppApiRouteContribution<AppPluginApplication> =
               ? container.resolve(mailAssemblyInfoToken).credentialVault
               : 'builtin',
             env: process.env,
+            layers: configLayers(config),
           }),
         });
       },
@@ -1721,10 +1726,13 @@ export const mailApiRoutes: AppApiRouteContribution<AppPluginApplication> =
         MAIL_ACCESS.settingsRead,
         'mailListAdminSyncRuns',
         "List every member's synchronization runs",
-        { '200': listResponse(MailSyncRunSchema, MailPageListMeta) },
+        { '200': listResponse(MailSyncRunSchema, MailLogCursorListMeta) },
         {
           description:
-            'Newest first. `canManage` is true on every run for a caller who also holds `settings:mail.admin/manage`, and otherwise only on their own.',
+            'Newest first, paged by `pageToken`. `canManage` is true for a caller who also holds `settings:mail.admin/manage`. A failure carries its code and category only.',
+          errors: {
+            400: '`pageToken` is not a token this list answered (`INVALID_MAIL_REQUEST`).',
+          },
         },
       ),
       apiValidator('query', ManagedLogsQuery),
@@ -1732,19 +1740,12 @@ export const mailApiRoutes: AppApiRouteContribution<AppPluginApplication> =
         const query = context.req.valid('query');
         const result = await mail.listManagedSyncRunsPage(
           operationContext(context),
-          (query.page - 1) * query.pageSize,
+          query.pageToken,
           query.pageSize,
           managedLogFilter(query),
           await context.get('authz').can(MAIL_ACCESS.settingsManage),
         );
-        return context.json({
-          data: result.items,
-          meta: {
-            page: query.page,
-            pageSize: query.pageSize,
-            total: result.total,
-          },
-        });
+        return context.json(logPage(query.pageSize, result));
       },
     );
     routes.post(
@@ -1801,10 +1802,18 @@ export const mailApiRoutes: AppApiRouteContribution<AppPluginApplication> =
         MAIL_ACCESS.settingsRead,
         'mailListAdminSubmissions',
         "List every member's submissions",
-        { '200': listResponse(MailManagedSubmissionSchema, MailPageListMeta) },
+        {
+          '200': listResponse(
+            MailManagedSubmissionSchema,
+            MailLogCursorListMeta,
+          ),
+        },
         {
           description:
-            'Newest first: account, recipient count, result and failure, never the subject, body, addresses or attachments.',
+            'Newest first, paged by `pageToken`: account, recipient count, result and failure code, never the subject, body, addresses or attachments.',
+          errors: {
+            400: '`pageToken` is not a token this list answered (`INVALID_MAIL_REQUEST`).',
+          },
         },
       ),
       apiValidator('query', ManagedLogsQuery),
@@ -1812,19 +1821,12 @@ export const mailApiRoutes: AppApiRouteContribution<AppPluginApplication> =
         const query = context.req.valid('query');
         const result = await mail.listManagedSubmissionsPage(
           operationContext(context),
-          (query.page - 1) * query.pageSize,
+          query.pageToken,
           query.pageSize,
           managedLogFilter(query),
           await context.get('authz').can(MAIL_ACCESS.settingsManage),
         );
-        return context.json({
-          data: result.items,
-          meta: {
-            page: query.page,
-            pageSize: query.pageSize,
-            total: result.total,
-          },
-        });
+        return context.json(logPage(query.pageSize, result));
       },
     );
     routes.post(
@@ -2037,6 +2039,34 @@ export const mailApiRoutes: AppApiRouteContribution<AppPluginApplication> =
     router.route('/mail', routes);
     return router;
   });
+
+/** The configuration's layers, when the application's configuration keeps them apart (`AppConfig.layers()`). */
+function configLayers(
+  config: object,
+): import('../settings-overview.js').MailSettingsOverviewInput['layers'] {
+  const layers = (config as { layers?: unknown }).layers;
+  return typeof layers === 'function'
+    ? (layers.call(config) as ReturnType<typeof configLayers>)
+    : undefined;
+}
+
+/** The body of a settings log page. */
+function logPage<T>(
+  pageSize: number,
+  page: import('../../shared/mail.js').MailPage<T>,
+): {
+  data: readonly T[];
+  meta: { pageSize: number; nextPageToken?: string; total: number };
+} {
+  return {
+    data: page.items,
+    meta: {
+      pageSize,
+      ...(page.nextCursor ? { nextPageToken: page.nextCursor } : {}),
+      total: page.total ?? page.items.length,
+    },
+  };
+}
 
 /** The filter of a settings log list, from its query. */
 function managedLogFilter(query: {

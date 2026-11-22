@@ -1,4 +1,5 @@
 import { joinBasePath } from '@nocobase/app-server/support';
+import { isDeepStrictEqual } from 'node:util';
 
 import {
   DEFAULT_MAIL_CONFIG,
@@ -25,6 +26,15 @@ export interface MailSettingsOverviewInput {
   readonly credentialVault: 'builtin' | 'application';
   /** The process environment, to tell a value set by an `MAIL_*` variable apart. */
   readonly env?: Readonly<Record<string, string | undefined>>;
+  /**
+   * The configuration's layers as the application merged them (`AppConfig.layers()`): what its code declares and what
+   * its configuration files and environment supply. Absent when the configuration cannot tell them apart, and every
+   * value not set by an environment variable is then reported with an unknown source.
+   */
+  readonly layers?: {
+    readonly defaults: Readonly<Record<string, unknown>>;
+    readonly overrides: Readonly<Record<string, unknown>>;
+  };
 }
 
 const ATTENTION_STATUSES = new Set(['reauthorizationRequired', 'revoked']);
@@ -39,15 +49,23 @@ export function buildMailSettingsOverview(
 ): MailSettingsOverview {
   const { config, accountCounts } = input;
   const env = input.env ?? {};
+  const overrides = mailSection(input.layers?.overrides);
+  const declared = mailSection(input.layers?.defaults);
+  // Decided by where the key is written, never by comparing values: `logRetentionDays: 90` in config.yml is configured
+  // even though it equals the default.
   const source = (path: keyof MailConfig): MailSettingSource => {
     for (const [variable, mapping] of Object.entries(
       mailSectionEnvironmentMappings,
     ))
       if (mapping.path === path && env[variable]?.trim()) return 'environment';
-    return config[path] !== undefined &&
-      config[path] !== DEFAULT_MAIL_CONFIG[path]
-      ? 'config'
-      : 'default';
+    if (!input.layers) return 'unknown';
+    if (overrides?.[path] !== undefined) return 'config';
+    if (
+      declared?.[path] !== undefined &&
+      !isDeepStrictEqual(declared[path], DEFAULT_MAIL_CONFIG[path])
+    )
+      return 'code';
+    return 'default';
   };
   const setting = <T>(
     path: keyof MailConfig,
@@ -128,6 +146,18 @@ export function buildMailSettingsOverview(
       },
     },
   };
+}
+
+/** The `mail` section of one configuration layer, when it has one. */
+function mailSection(
+  layer: Readonly<Record<string, unknown>> | undefined,
+): Readonly<Record<string, unknown>> | undefined {
+  const section = layer?.mail;
+  return typeof section === 'object' &&
+    section !== null &&
+    !Array.isArray(section)
+    ? (section as Readonly<Record<string, unknown>>)
+    : undefined;
 }
 
 /** An app-local path below the public base path; an absolute URL as it is. */

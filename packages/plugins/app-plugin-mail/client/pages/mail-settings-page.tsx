@@ -15,7 +15,7 @@ import {
   MailManagedSubmissionsTable,
   MailSyncRunsTable,
 } from '../components/mail-log-tables.js';
-import { useMailLogPage } from '../hooks/use-mail-log-page.js';
+import { useMailCursorLogPage } from '../hooks/use-mail-log-page.js';
 import { MailPageTabs } from '../components/mail-page-tabs.js';
 import { useMailPageTab } from '../hooks/use-mail-page-tab.js';
 import { MailStatusBadge } from '../components/mail-status-badge.js';
@@ -653,9 +653,9 @@ function SyncRunsTab({
   const [busyId, setBusyId] = useState<string>();
   const [actionError, setActionError] = useState<string>();
   const load = useCallback(
-    (page: number, pageSize: number) =>
+    (pageToken: string | undefined, pageSize: number) =>
       mail.listManagedSyncRunsPage({
-        page,
+        pageToken,
         pageSize,
         ...(status
           ? {
@@ -669,7 +669,7 @@ function SyncRunsTab({
       }),
     [accountFilter, mail, status, timeWindow, userId],
   );
-  const runs = useMailLogPage(load);
+  const runs = useMailCursorLogPage(load);
   const act = (id: string, action: () => Promise<unknown>): void => {
     setBusyId(id);
     setActionError(undefined);
@@ -720,7 +720,9 @@ function SyncRunsTab({
         runs={runs.items}
       />
       <MailLogPagination
+        hasNext={runs.hasNext}
         loading={runs.loading}
+        maxPage={runs.maxPage}
         onPageChange={runs.setPage}
         onPageSizeChange={runs.setPageSize}
         page={runs.page}
@@ -746,9 +748,9 @@ function SubmissionsTab({
   const [busyId, setBusyId] = useState<string>();
   const [actionError, setActionError] = useState<string>();
   const load = useCallback(
-    (page: number, pageSize: number) =>
+    (pageToken: string | undefined, pageSize: number) =>
       mail.listManagedSubmissionsPage({
-        page,
+        pageToken,
         pageSize,
         ...(status ? { statuses: [status] } : {}),
         ...(userId ? { userId } : {}),
@@ -756,7 +758,7 @@ function SubmissionsTab({
       }),
     [mail, status, timeWindow, userId],
   );
-  const submissions = useMailLogPage(load);
+  const submissions = useMailCursorLogPage(load);
   const act = (id: string, action: () => Promise<unknown>): void => {
     setBusyId(id);
     setActionError(undefined);
@@ -809,7 +811,9 @@ function SubmissionsTab({
         submissions={submissions.items}
       />
       <MailLogPagination
+        hasNext={submissions.hasNext}
         loading={submissions.loading}
+        maxPage={submissions.maxPage}
         onPageChange={submissions.setPage}
         onPageSizeChange={submissions.setPageSize}
         page={submissions.page}

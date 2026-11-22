@@ -78,6 +78,8 @@ const pagesIdID: MailPagesResource = {
       recipientCount: 'Penerima',
       bulk: 'Pengiriman massal',
       bulkCount: '{{count}} (massal)',
+      showRecipients: 'Tampilkan penerima',
+      hideRecipients: 'Sembunyikan penerima',
       scheduled: 'Dijadwalkan',
       retry: 'Coba lagi',
       cancel: 'Batal',
@@ -126,6 +128,7 @@ const pagesIdID: MailPagesResource = {
         config: 'config.yml',
         default: 'Default',
         code: 'Kode',
+        unknown: 'Tidak diketahui',
       },
       providers: {
         name: 'Nama',

@@ -78,6 +78,8 @@ const pagesDeDE: MailPagesResource = {
       recipientCount: 'Empfänger',
       bulk: 'Massenversand',
       bulkCount: '{{count}} (Massenversand)',
+      showRecipients: 'Empfänger anzeigen',
+      hideRecipients: 'Empfänger ausblenden',
       scheduled: 'Geplant',
       retry: 'Wiederholen',
       cancel: 'Abbrechen',
@@ -126,6 +128,7 @@ const pagesDeDE: MailPagesResource = {
         config: 'config.yml',
         default: 'Standard',
         code: 'Code',
+        unknown: 'Unbekannt',
       },
       providers: {
         name: 'Name',

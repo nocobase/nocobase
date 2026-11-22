@@ -21,6 +21,10 @@ import { createMailRuntime } from '../../server/runtime.js';
 import { DefaultMailService } from '../../server/service.js';
 import { createDatabaseMailStore } from '../../server/store.js';
 import { mailServiceToken } from '../../server/tokens.js';
+import {
+  toManagedSubmissionView,
+  toManagedSyncRunView,
+} from '../../server/views.js';
 import type { MailStore } from '../../server/types.js';
 import {
   createMailTestDatabase,
@@ -33,6 +37,16 @@ const BODY = 'sentinel-private-body';
 const SECRET = 'sentinel-private-client-secret';
 const WEBHOOK_SECRET = 'sentinel-private-webhook-secret';
 const RECIPIENT = 'sentinel-recipient@example.com';
+const REJECTED = 'sentinel-rejected@example.com';
+
+/** A partial SMTP delivery: the failure names whom the server accepted and rejected. */
+const PARTIAL_DELIVERY = JSON.stringify({
+  code: 'SMTP_RECIPIENTS_REJECTED',
+  message: `Rejected ${REJECTED}`,
+  category: 'recipient',
+  retryable: false,
+  recipients: { accepted: [RECIPIENT], rejected: [REJECTED] },
+});
 
 describe('[SEC] Mail settings logs, retention and overview', () => {
   let database: DatabaseManager;
@@ -80,6 +94,7 @@ describe('[SEC] Mail settings logs, retention and overview', () => {
     status: string,
     createdAt: string,
     mode: 'initial' | 'incremental' = 'incremental',
+    error?: string,
   ): Promise<string> {
     const id = randomUUID();
     await database
@@ -96,6 +111,7 @@ describe('[SEC] Mail settings logs, retention and overview', () => {
         policy: JSON.stringify({ batchSize: 100 }),
         processedMessages: 0,
         processedPages: 0,
+        ...(error ? { error } : {}),
         createdAt,
         updatedAt: createdAt,
       })
@@ -107,6 +123,7 @@ describe('[SEC] Mail settings logs, retention and overview', () => {
     accountId: string,
     status: string,
     createdAt: string,
+    error?: string,
   ): Promise<string> {
     const id = randomUUID();
     await database
@@ -129,6 +146,7 @@ describe('[SEC] Mail settings logs, retention and overview', () => {
           html: `<p>${BODY}</p>`,
           idempotencyKey: id,
         }),
+        ...(error ? { error } : {}),
         createdAt,
         updatedAt: createdAt,
       })
@@ -154,22 +172,29 @@ describe('[SEC] Mail settings logs, retention and overview', () => {
     }
     const context = { actorId: 'admin' };
     const seen: string[] = [];
-    for (let page = 0; page < 3; page += 1) {
+    let pageToken: string | undefined;
+    do {
       const result = await service.listManagedSyncRunsPage(
         context,
-        page * 10,
+        pageToken,
         10,
       );
       expect(result.total).toBe(24);
       seen.push(...result.items.map((run) => run.id));
-    }
+      pageToken = result.nextCursor;
+    } while (pageToken);
     expect(seen).toHaveLength(24);
     expect(new Set(seen)).toEqual(new Set(ids));
 
-    const bobFailed = await service.listManagedSyncRunsPage(context, 0, 20, {
-      userId: 'bob',
-      statuses: ['failed'],
-    });
+    const bobFailed = await service.listManagedSyncRunsPage(
+      context,
+      undefined,
+      20,
+      {
+        userId: 'bob',
+        statuses: ['failed'],
+      },
+    );
     expect(bobFailed.total).toBe(4);
     expect(
       bobFailed.items.every(
@@ -177,11 +202,16 @@ describe('[SEC] Mail settings logs, retention and overview', () => {
       ),
     ).toBe(true);
 
-    const window = await service.listManagedSyncRunsPage(context, 0, 20, {
-      accountId: accounts.alice,
-      createdFrom: at(3),
-      createdBefore: at(6),
-    });
+    const window = await service.listManagedSyncRunsPage(
+      context,
+      undefined,
+      20,
+      {
+        accountId: accounts.alice,
+        createdFrom: at(3),
+        createdBefore: at(6),
+      },
+    );
     expect(window.items.map((run) => run.createdAt)).toEqual([
       at(5),
       at(4),
@@ -189,14 +219,14 @@ describe('[SEC] Mail settings logs, retention and overview', () => {
     ]);
     expect(
       (
-        await service.listManagedSyncRunsPage(context, 0, 20, {
+        await service.listManagedSyncRunsPage(context, undefined, 20, {
           userId: 'nobody',
         })
       ).total,
     ).toBe(0);
     expect(
       (
-        await service.listManagedSyncRunsPage(context, 0, 20, {
+        await service.listManagedSyncRunsPage(context, undefined, 20, {
           userId: 'alice',
           accountId: accounts.bob,
         })
@@ -204,12 +234,56 @@ describe('[SEC] Mail settings logs, retention and overview', () => {
     ).toBe(0);
   });
 
+  it('neither repeats nor skips a row when rows are added or cleaned up between two pages', async () => {
+    const old = Date.UTC(2026, 0, 1);
+    const ids: string[] = [];
+    for (let day = 0; day < 6; day += 1)
+      ids.push(
+        await insertSubmission(
+          accounts.alice,
+          'accepted',
+          new Date(old + day * 24 * 60 * 60_000).toISOString(),
+        ),
+      );
+    const context = { actorId: 'admin' };
+    const first = await service.listManagedSubmissionsPage(
+      context,
+      undefined,
+      3,
+    );
+    expect(first.items.map((item) => item.id)).toEqual(
+      [...ids].reverse().slice(0, 3),
+    );
+    // A new send arrives, and the retention period deletes the oldest finished one, before the next page is read.
+    await insertSubmission(
+      accounts.alice,
+      'accepted',
+      new Date().toISOString(),
+    );
+    expect(
+      await store.deleteFinishedSubmissionsBefore(
+        new Date(old + 1).toISOString(),
+        10,
+      ),
+    ).toBe(1);
+    const second = await service.listManagedSubmissionsPage(
+      context,
+      first.nextCursor,
+      3,
+    );
+    expect(second.items.map((item) => item.id)).toEqual([ids[2], ids[1]]);
+    expect(second.nextCursor).toBeUndefined();
+    await expect(
+      service.listManagedSyncRunsPage(context, 'not-a-token', 3),
+    ).rejects.toMatchObject({ field: 'pageToken' });
+  });
+
   it("marks other members' logs manageable only for a manager", async () => {
     await insertRun(accounts.bob, 'failed', at(1));
     await insertSubmission(accounts.bob, 'failed', at(1));
     const reader = await service.listManagedSubmissionsPage(
       { actorId: 'admin' },
-      0,
+      undefined,
       20,
       {},
       false,
@@ -221,7 +295,7 @@ describe('[SEC] Mail settings logs, retention and overview', () => {
     });
     const manager = await service.listManagedSubmissionsPage(
       { actorId: 'admin' },
-      0,
+      undefined,
       20,
       {},
       true,
@@ -231,7 +305,7 @@ describe('[SEC] Mail settings logs, retention and overview', () => {
       (
         await service.listManagedSyncRunsPage(
           { actorId: 'admin' },
-          0,
+          undefined,
           20,
           {},
           false,
@@ -344,16 +418,28 @@ describe('[SEC] Mail settings logs, retention and overview', () => {
       await runtime.close();
       await executor.shutdown();
     }
-    const runs = await store.listAllSyncRuns(0, 100);
-    const submissions = await store.listAllSubmissions(0, 100);
+    const runs = await store.listAllSyncRuns(undefined, 100);
+    const submissions = await store.listAllSubmissions(undefined, 100);
     expect(
       [...runs.items, ...submissions.items].map((row) => row.id).sort(),
     ).toEqual([...keep].sort());
   });
 
-  it('answers the settings lists and the overview without any subject, body, address or secret', async () => {
-    await insertRun(accounts.alice, 'failed', at(1));
-    await insertSubmission(accounts.alice, 'failed', at(1));
+  it('answers the settings lists, actions and the overview without any subject, body, address or secret', async () => {
+    // A running run keeps the failure of its last attempt until it ends.
+    const run = await insertRun(
+      accounts.alice,
+      'running',
+      at(1),
+      'incremental',
+      PARTIAL_DELIVERY,
+    );
+    const submission = await insertSubmission(
+      accounts.alice,
+      'failed',
+      at(1),
+      PARTIAL_DELIVERY,
+    );
     const container = new ServiceContainer();
     container.instance(mailServiceToken, service);
     container.instance(authenticationToken, {
@@ -384,6 +470,18 @@ describe('[SEC] Mail settings logs, retention and overview', () => {
           key === 'mail'
             ? mailConfig
             : { name: 'test', publicOrigin: 'https://mail.example.com' },
+        // config.yml sets the retention period to its default value: still configured, not the default.
+        layers: () => ({
+          defaults: { mail: DEFAULT_MAIL_CONFIG },
+          overrides: {
+            mail: {
+              pushWebhookUrl: mailConfig.pushWebhookUrl,
+              pushWebhookSecret: WEBHOOK_SECRET,
+              logRetentionDays: 90,
+              providers: mailConfig.providers,
+            },
+          },
+        }),
       },
       paths: createAppPaths({ rootDir: '/missing' }),
       router: new Hono(),
@@ -402,7 +500,54 @@ describe('[SEC] Mail settings logs, retention and overview', () => {
       expect({ path, status: response.status }).toEqual({ path, status: 200 });
       bodies.push(await response.text());
     }
-    for (const secret of [SUBJECT, BODY, RECIPIENT, SECRET, WEBHOOK_SECRET])
+    for (const path of [
+      `/api/mail/settings/submissions/${submission}/cancel`,
+      `/api/mail/settings/syncRuns/${run}/cancel`,
+    ]) {
+      const response = await router.request(path, { method: 'POST' });
+      expect({ path, status: response.status }).toEqual({ path, status: 200 });
+      bodies.push(await response.text());
+    }
+    expect(bodies[2]).toContain('SMTP_RECIPIENTS_REJECTED');
+    expect(bodies[3]).toContain('SMTP_RECIPIENTS_REJECTED');
+    // The actions answer through the same views; a run or submission that still has its failure keeps only the code.
+    expect(
+      toManagedSubmissionView(
+        {
+          id: submission,
+          accountId: accounts.alice,
+          status: 'failed',
+          error: JSON.parse(PARTIAL_DELIVERY),
+        } as unknown as Parameters<typeof toManagedSubmissionView>[0],
+        true,
+      ).error,
+    ).toEqual({
+      code: 'SMTP_RECIPIENTS_REJECTED',
+      category: 'recipient',
+      retryable: false,
+    });
+    expect(
+      toManagedSyncRunView(
+        {
+          id: run,
+          accountId: accounts.alice,
+          error: JSON.parse(PARTIAL_DELIVERY),
+        } as unknown as Parameters<typeof toManagedSyncRunView>[0],
+        true,
+      ).error,
+    ).toEqual({
+      code: 'SMTP_RECIPIENTS_REJECTED',
+      category: 'recipient',
+      retryable: false,
+    });
+    for (const secret of [
+      SUBJECT,
+      BODY,
+      RECIPIENT,
+      REJECTED,
+      SECRET,
+      WEBHOOK_SECRET,
+    ])
       for (const body of bodies) expect(body).not.toContain(secret);
     const overview = JSON.parse(bodies[0]!) as {
       data: Record<string, unknown>;
@@ -424,9 +569,13 @@ describe('[SEC] Mail settings logs, retention and overview', () => {
           source: 'default',
         },
         oauthReturnUrl: { value: '/main/me/mail', source: 'default' },
-        pushWebhookUrl: { value: 'https://example.test/hooks/mail' },
-        pushWebhookSecretConfigured: { value: true },
-        logRetentionDays: { value: 90, source: 'default' },
+        pushWebhookUrl: {
+          value: 'https://example.test/hooks/mail',
+          source: 'config',
+        },
+        pushWebhookSecretConfigured: { value: true, source: 'config' },
+        logRetentionDays: { value: 90, source: 'config' },
+        syncBatchSize: { value: 100, source: 'default' },
         credentialVault: { value: 'builtin', source: 'default' },
         jobs: { value: null, source: 'default' },
       },

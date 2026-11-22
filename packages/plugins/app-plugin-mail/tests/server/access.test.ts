@@ -268,7 +268,7 @@ describe('[SEC] Mail permissions registered with the authorization plugin', () =
       await router.request('/api/mail/settings/syncRuns');
       expect(listManagedSyncRunsPage).toHaveBeenLastCalledWith(
         expect.anything(),
-        0,
+        undefined,
         20,
         {},
         actions.includes('manage'),

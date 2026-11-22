@@ -15,6 +15,7 @@ import { MailPreferencesService } from './services/preferences.js';
 import { MailProvidersService } from './services/providers.js';
 import { MailSubmissionsService } from './services/submissions.js';
 import { MailSyncService } from './services/sync.js';
+import { toManagedSyncRunView } from './views.js';
 import {
   type MailAccountView,
   type MailAttachmentContent,
@@ -167,52 +168,58 @@ export class DefaultMailService implements MailService {
 
   public listManagedSyncRunsPage(
     context: MailOperationContext,
-    offset: number,
+    pageToken: string | undefined,
     limit: number,
     filter?: import('../shared/mail.js').MailManagedLogFilter,
-    canManageOthers?: boolean,
-  ): Promise<import('../shared/mail.js').MailOffsetPage<MailSyncRunView>> {
+    canManage?: boolean,
+  ): Promise<import('../shared/mail.js').MailPage<MailSyncRunView>> {
     return this.management.listManagedSyncRunsPage(
       context,
-      offset,
+      pageToken,
       limit,
       filter,
-      canManageOthers,
+      canManage,
     );
   }
 
   public listManagedSubmissionsPage(
     context: MailOperationContext,
-    offset: number,
+    pageToken: string | undefined,
     limit: number,
     filter?: import('../shared/mail.js').MailManagedLogFilter,
-    canManageOthers?: boolean,
+    canManage?: boolean,
   ): Promise<
-    import('../shared/mail.js').MailOffsetPage<
+    import('../shared/mail.js').MailPage<
       import('../shared/mail.js').MailManagedSubmissionView
     >
   > {
     return this.management.listManagedSubmissionsPage(
       context,
-      offset,
+      pageToken,
       limit,
       filter,
-      canManageOthers,
+      canManage,
     );
   }
 
-  public retryManagedSyncRun(
+  public async retryManagedSyncRun(
     context: MailOperationContext,
     syncRunId: string,
   ): Promise<MailSyncRunView> {
-    return this.sync.retryManagedSyncRun(context, syncRunId);
+    return toManagedSyncRunView(
+      await this.sync.retryManagedSyncRun(context, syncRunId),
+      true,
+    );
   }
 
-  public cancelManagedSyncRun(
+  public async cancelManagedSyncRun(
     context: MailOperationContext,
     syncRunId: string,
   ): Promise<MailSyncRunView> {
-    return this.sync.cancelManagedSyncRun(context, syncRunId);
+    return toManagedSyncRunView(
+      await this.sync.cancelManagedSyncRun(context, syncRunId),
+      true,
+    );
   }
 
   public retryManagedSubmission(

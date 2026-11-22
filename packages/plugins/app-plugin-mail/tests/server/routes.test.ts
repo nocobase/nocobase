@@ -866,7 +866,11 @@ describe('[API][SEC] mail API routes and permission boundaries', () => {
   it('pages and filters the operation logs of every user for an authorized Settings user', async () => {
     const listManagedSyncRunsPage = vi.fn<
       MailService['listManagedSyncRunsPage']
-    >(async () => ({ items: [syncRun('account-2', 'user-2')], total: 41 }));
+    >(async () => ({
+      items: [syncRun('account-2', 'user-2')],
+      total: 41,
+      nextCursor: 'token-4',
+    }));
     const listManagedSubmissionsPage = vi.fn<
       MailService['listManagedSubmissionsPage']
     >(async () => ({ items: [managedSubmission()], total: 1 }));
@@ -877,12 +881,12 @@ describe('[API][SEC] mail API routes and permission boundaries', () => {
     );
 
     const runs = await router.request(
-      '/api/mail/settings/syncRuns?page=3&pageSize=20&userId=user-2&accountId=account-2&status=failed,cancelled&from=2026-09-01T00:00:00Z&to=2026-10-01T00:00:00Z',
+      '/api/mail/settings/syncRuns?pageToken=token-3&pageSize=20&userId=user-2&accountId=account-2&status=failed,cancelled&from=2026-09-01T00:00:00Z&to=2026-10-01T00:00:00Z',
     );
     expect(runs.status).toBe(200);
     expect(listManagedSyncRunsPage).toHaveBeenCalledWith(
       { actorId: 'user-1', signal: expect.any(AbortSignal) },
-      40,
+      'token-3',
       20,
       {
         userId: 'user-2',
@@ -895,21 +899,21 @@ describe('[API][SEC] mail API routes and permission boundaries', () => {
     );
     expect(await runs.json()).toEqual({
       data: [expect.objectContaining({ accountId: 'account-2' })],
-      meta: { page: 3, pageSize: 20, total: 41 },
+      meta: { pageSize: 20, nextPageToken: 'token-4', total: 41 },
     });
 
     const submissions = await router.request('/api/mail/settings/submissions');
     expect(submissions.status).toBe(200);
     expect(listManagedSubmissionsPage).toHaveBeenCalledWith(
       expect.objectContaining({ actorId: 'user-1' }),
-      0,
+      undefined,
       20,
       {},
       false,
     );
     expect(await submissions.json()).toEqual({
       data: [expect.objectContaining({ accountId: 'account-2' })],
-      meta: { page: 1, pageSize: 20, total: 1 },
+      meta: { pageSize: 20, total: 1 },
     });
 
     for (const query of ['pageSize=101', 'from=yesterday', 'status=failed%20x'])
@@ -934,7 +938,7 @@ describe('[API][SEC] mail API routes and permission boundaries', () => {
     await router.request('/api/mail/settings/syncRuns');
     expect(listManagedSyncRunsPage).toHaveBeenCalledWith(
       expect.anything(),
-      0,
+      undefined,
       20,
       {},
       true,

@@ -656,11 +656,11 @@ export class DatabaseMailStore implements MailStore {
   }
 
   public async listAllSyncRuns(
-    offset: number,
+    pageToken: string | undefined,
     limit: number,
     filter?: import('../shared/mail.js').MailManagedLogFilter,
-  ): Promise<import('../shared/mail.js').MailOffsetPage<MailSyncRun>> {
-    return this.sync.listAllSyncRuns(offset, limit, filter);
+  ): Promise<import('../shared/mail.js').MailPage<MailSyncRun>> {
+    return this.sync.listAllSyncRuns(pageToken, limit, filter);
   }
 
   public deleteFinishedSyncRunsBefore(
@@ -753,11 +753,11 @@ export class DatabaseMailStore implements MailStore {
   }
 
   public async listAllSubmissions(
-    offset: number,
+    pageToken: string | undefined,
     limit: number,
     filter?: import('../shared/mail.js').MailManagedLogFilter,
-  ): Promise<import('../shared/mail.js').MailOffsetPage<MailStoredSubmission>> {
-    return this.submissions.listAllSubmissions(offset, limit, filter);
+  ): Promise<import('../shared/mail.js').MailPage<MailStoredSubmission>> {
+    return this.submissions.listAllSubmissions(pageToken, limit, filter);
   }
 
   public deleteFinishedSubmissionsBefore(

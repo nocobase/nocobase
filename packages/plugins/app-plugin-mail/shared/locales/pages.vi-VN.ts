@@ -77,6 +77,8 @@ const pagesViVN: MailPagesResource = {
       recipientCount: 'Người nhận',
       bulk: 'Gửi hàng loạt',
       bulkCount: '{{count}} (hàng loạt)',
+      showRecipients: 'Hiện người nhận',
+      hideRecipients: 'Ẩn người nhận',
       scheduled: 'Đã lên lịch',
       retry: 'Thử lại',
       cancel: 'Hủy',
@@ -125,6 +127,7 @@ const pagesViVN: MailPagesResource = {
         config: 'config.yml',
         default: 'Mặc định',
         code: 'Mã',
+        unknown: 'Không rõ',
       },
       providers: {
         name: 'Tên',

@@ -259,6 +259,12 @@ describe('Mail API document', () => {
           `Requires the \`${required}\` permission.`,
         ),
       });
+      const cli = (
+        operation(document, method, path) as unknown as Record<string, unknown>
+      )['x-cli'];
+      // A route kept off the command line has no action to declare.
+      if (cli !== false)
+        expect({ path, cli }).toEqual({ path, cli: { action: required } });
     }
   });
 
