@@ -31,6 +31,8 @@ import {
   type ConfigIssue,
 } from './validation.js';
 
+import { ConfigInspection, type AppConfigInspection } from './inspection.js';
+
 export class AppConfig {
   private readonly sources: AppConfigSource[] = [];
   private readonly listeners = new Map<
@@ -44,6 +46,14 @@ export class AppConfig {
   private reloadPromise: Promise<AppConfigReloadResult> | undefined;
   private logger?: Pick<Logger, 'debug'>;
   private loadDurationMs?: number;
+  private inspection = new ConfigInspection();
+  private loadedAt = new Date();
+  private reloads = 0;
+  private readonly filePaths = new WeakMap<
+    AppConfigSource['provider'],
+    string
+  >();
+  private sectionEnvironment?: AppConfigSource['provider'];
 
   /** Attach diagnostics after the logging configuration has been resolved. */
   public setLogger(logger: Pick<Logger, 'debug'>): void {
@@ -85,7 +95,9 @@ export class AppConfig {
         `Unsupported application config file extension "${extension || '(none)'}". Expected .toml, .yml, .yaml, or .json.`,
       );
     }
-    return this.load(fileProvider(resolvedPath, options), parser);
+    const provider = fileProvider(resolvedPath, options);
+    this.filePaths.set(provider, resolvedPath);
+    return this.load(provider, parser);
   }
 
   public async loadAll(): Promise<void> {
@@ -153,12 +165,11 @@ export class AppConfig {
       }
     }
     if (Object.keys(mappings).length === 0) return;
-    this.sources.push({
-      provider: environmentProvider(environment, {
-        name: 'section-environment',
-        mappings,
-      }),
+    this.sectionEnvironment = environmentProvider(environment, {
+      name: 'section-environment',
+      mappings,
     });
+    this.sources.push({ provider: this.sectionEnvironment });
     this.current = await this.loadConfig();
   }
 
@@ -216,6 +227,15 @@ export class AppConfig {
     return this.requireCurrent().raw();
   }
 
+  /**
+   * Where each value of the running configuration came from, what the files said and their text, unredacted. A path
+   * absent from `sources` comes from the code defaults. Callers that show it to anyone must redact it first.
+   */
+  public inspect(): AppConfigInspection {
+    this.requireCurrent();
+    return this.inspection.snapshot(this.loadedAt, this.reloads);
+  }
+
   /** The defaults and the values the application's own sources supply, kept apart. See {@link AppConfigLayers}. */
   public layers(): AppConfigLayers {
     this.requireCurrent();
@@ -258,6 +278,8 @@ export class AppConfig {
 
   private async performReload(): Promise<AppConfigReloadResult> {
     const previous = this.requireCurrent();
+    const previousInspection = this.inspection;
+    const previousLoadedAt = this.loadedAt;
     const previousOverrides = this.overrides;
     const next = await this.loadConfig();
     // A reload that breaks a declared rule is refused and the running configuration stays as it was.
@@ -267,9 +289,12 @@ export class AppConfig {
       this.sections,
     );
     if (issues.some((issue) => issue.level === 'error')) {
+      this.inspection = previousInspection;
+      this.loadedAt = previousLoadedAt;
       this.overrides = previousOverrides;
       throw new AppConfigInvalidError(issues);
     }
+    this.reloads += 1;
     const namespaces = new Set([...previous.mapKeys(''), ...next.mapKeys('')]);
     const changedNamespaces = [...namespaces]
       .filter(
@@ -299,12 +324,33 @@ export class AppConfig {
 
   private async loadConfig(): Promise<Config> {
     const overrides = new Config();
+    const inspection = new ConfigInspection();
     for (const source of this.sources) {
-      await overrides.load(source.provider, source.parser, source.options);
+      if (source.options?.merge) {
+        const before = structuredClone(overrides.raw());
+        await overrides.load(source.provider, source.parser, source.options);
+        inspection.recordChanges(before, overrides.raw());
+        continue;
+      }
+      const layer = new Config();
+      await layer.load(source.provider, source.parser, source.options);
+      overrides.merge(layer);
+      const filePath = this.filePaths.get(source.provider);
+      inspection.record(
+        layer,
+        filePath !== undefined
+          ? 'file'
+          : source.provider === this.sectionEnvironment
+            ? 'environment'
+            : 'unknown',
+      );
+      if (filePath !== undefined) await inspection.recordFile(filePath, layer);
     }
     const next = this.defaults.copy();
     next.merge(overrides);
     normalizeNotificationChannelAliases(next);
+    this.inspection = inspection;
+    this.loadedAt = new Date();
     this.overrides = overrides;
     return next;
   }

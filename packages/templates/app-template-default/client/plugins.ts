@@ -11,6 +11,7 @@ import {
 import apiKeys from '@nocobase/app-plugin-api-keys/client';
 import authentication from '@nocobase/app-plugin-authentication/client';
 import authorization from '@nocobase/app-plugin-authorization/client';
+import configInspector from '@nocobase/app-plugin-config-inspector/client';
 import databaseExplorer from '@nocobase/app-plugin-database-explorer/client';
 import users from '@nocobase/app-plugin-users/client';
 import notificationInApp from '@nocobase/app-plugin-notification-in-app/client';
@@ -28,6 +29,7 @@ const clientPlugins: AppClientPlugins = defineClientPlugins([
   defaultAccess(),
   sharingRules(),
   restrictionRules(),
+  configInspector(),
   databaseExplorer(),
   users(),
   apiKeys(),

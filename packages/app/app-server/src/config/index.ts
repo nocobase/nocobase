@@ -1,5 +1,12 @@
 export { AppConfig, resolveDefaultAppConfigFile } from './app-config.js';
 export {
+  leafPaths,
+  valueAtPath,
+  type AppConfigInspectedFile,
+  type AppConfigInspection,
+  type AppConfigValueSource,
+} from './inspection.js';
+export {
   envBoolean,
   envInteger,
   envString,

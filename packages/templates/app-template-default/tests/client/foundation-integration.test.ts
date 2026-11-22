@@ -34,6 +34,22 @@ describe('default Foundation integration', () => {
       ),
     ).toHaveLength(1);
   });
+  it('registers Application configuration as a protected System settings page', async () => {
+    const { routes } = await resolveAppRuntime(appRuntime);
+    const system = routes.find((route) => route.name === 'settingsSystem');
+    expect(
+      system?.children?.find((route) => route.name === 'configInspector'),
+    ).toMatchObject({
+      surface: 'systemSettings',
+      path: '/settings/config-inspector',
+      auth: 'required',
+      authz: {
+        resource: { type: 'page', id: 'config-inspector' },
+        action: 'access',
+      },
+    });
+  });
+
   it('provides Features and extensions in System settings with its existing route', async () => {
     const runtime = await resolveAppRuntime(appRuntime);
     const category = buildSettingsCatalog(runtime.routes, new Set()).find(
@@ -93,6 +109,10 @@ describe('default Foundation integration', () => {
     expect(modules('systemSettings.system')).toContainEqual([
       'capabilityGuide',
       '/settings/capabilities',
+    ]);
+    expect(modules('settingsSystem')).toContainEqual([
+      'configInspector',
+      '/settings/config-inspector',
     ]);
     const menu = buildRouteNavigation(routes, new Set());
     const menuNames = menu.map(({ route }) => route.name);
