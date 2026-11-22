@@ -757,6 +757,7 @@ export class LifecycleRuntime {
     this.management = new LifecycleManagement<Registered>({
       store: options.store,
       clock: this.clock,
+      scope: (store, now) => this.scope(store, now),
       managedRecord: (...args) => this.managedRecord(...args),
       reentryContext: (...args) => this.reentryContext(...args),
       owe: (...args) => this.owe(...args),
