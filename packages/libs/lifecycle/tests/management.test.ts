@@ -4,8 +4,12 @@ import {
   defineLifecycle,
   LifecycleRuntime,
   MemoryLifecycleStore,
+  type LifecycleTypes,
   type ManagementAuthorization,
+  type ManagementPolicy,
+  type ManagementResumeContext,
 } from '../src/index.js';
+import { InstanceLockConflict } from '../src/management.js';
 
 const actor = { id: 'operator' };
 const authorize: ManagementAuthorization = ({ actor, record }) =>
@@ -21,7 +25,7 @@ function deferred<T>() {
 }
 
 async function fixture(
-  hook = vi.fn(async () => {}),
+  hooks: Pick<ManagementPolicy<LifecycleTypes>, 'onResume' | 'onReenter'> = {},
   perform = vi.fn(async () => ({ delivered: true }) as object),
   beforeEffect?: () => Promise<void>,
   resetWhileActive = false,
@@ -59,7 +63,7 @@ async function fixture(
         restartAt: ['waiting'],
         canEnter: ({ previous, to }) =>
           to !== 'waiting' || previous.assignee === 'support',
-        onReenter: hook,
+        ...hooks,
         onEnter: { waiting: [notify] },
       },
       onEnterState: { waiting: oldEntry },
@@ -208,6 +212,177 @@ describe('management of a bound lifecycle instance', () => {
     expect(await runtime.runTriggers()).toBe(1);
   });
 
+  it('passes each suspension and its record snapshots to the resume hook only once', async () => {
+    const onResume =
+      vi.fn<(context: ManagementResumeContext<LifecycleTypes>) => void>();
+    const { store, runtime, id, options, wait, advance } = await fixture({
+      onResume,
+    });
+    await wait();
+    let pausedMs = 0;
+    for (const pausedForMs of [300, 700]) {
+      await runtime.suspend('desk', id, await options());
+      const previous = store.record('records', id)!;
+      advance(pausedForMs);
+      const command = await options();
+      const result = await runtime.resume('desk', id, command);
+      const record = store.record('records', id)!;
+      const entry = await store.findTransitionByRequest(
+        'oldDesk',
+        String(id),
+        command.requestId,
+      );
+      expect(onResume).toHaveBeenLastCalledWith(
+        expect.objectContaining({
+          previous,
+          record,
+          suspendedAt: expect.any(String),
+          now: new Date(entry!.at),
+          pausedForMs,
+          actor,
+          event: entry!.management,
+          entry,
+        }),
+      );
+      const [context] = onResume.mock.lastCall!;
+      expect(previous.management).toMatchObject({
+        suspendedAt: context.suspendedAt,
+        pausedMs,
+      });
+      pausedMs += pausedForMs;
+      expect(record.management).toMatchObject({ suspendedAt: null, pausedMs });
+      expect(
+        Date.parse(String(record.dueAt)) - Date.parse(String(previous.dueAt)),
+      ).toBe(pausedForMs);
+      expect(await runtime.resume('desk', id, command)).toEqual(result);
+    }
+
+    await runtime.suspend('desk', id, await options());
+    await runtime.reset('desk', id, await options());
+    await runtime.suspend('desk', id, await options());
+    await runtime.restartAt('desk', id, 'waiting', await options());
+    expect(onResume.mock.calls.map(([context]) => context.pausedForMs)).toEqual(
+      [300, 700],
+    );
+  });
+
+  it('runs the resume hook with zero pause and no due date or parameter resolution', async () => {
+    interface Types extends LifecycleTypes {
+      services: { readonly handle: unknown };
+    }
+    const onResume = vi.fn<(context: ManagementResumeContext<Types>) => void>();
+    const parameterProvider = vi.fn(async () => ({}));
+    const clock = () => new Date('2026-11-19T09:00:00.000Z');
+    const store = new MemoryLifecycleStore();
+    const runtime = new LifecycleRuntime({ store, clock });
+    runtime.register(
+      defineLifecycle<Types>({
+        name: 'desk',
+        key: 'desk',
+        version: 1,
+        collection: 'records',
+        initial: 'open',
+        states: [{ name: 'open', final: true }],
+        transitions: {},
+        management: { field: 'management', suspend: true, onResume },
+      }),
+      { parameterProvider, services: (handle) => ({ handle }) },
+    );
+    const {
+      record: { id },
+    } = await runtime.create('desk', { scope: 'desk' }, { actor });
+    const suspended = await runtime.suspend('desk', id, {
+      actor,
+      authorize,
+      reason: 'Review',
+      requestId: 'suspend',
+      expectedVersion: (await runtime.managementDetails(
+        'desk',
+        id,
+        actor,
+        authorize,
+      ))!.version,
+    });
+    parameterProvider.mockClear();
+    await runtime.resume('desk', id, {
+      actor,
+      authorize,
+      reason: 'Review',
+      requestId: 'resume',
+      expectedVersion: suspended.version,
+    });
+
+    expect(onResume).toHaveBeenCalledOnce();
+    const [context] = onResume.mock.lastCall!;
+    expect(context.pausedForMs).toBe(0);
+    expect(context).not.toHaveProperty('parameters');
+    expect(parameterProvider).not.toHaveBeenCalled();
+    expect(context.services.handle).toBeInstanceOf(MemoryLifecycleStore);
+    expect(context.services.handle).toBe(context.tx.handle);
+    expect(context.tx.now).toBe(context.now);
+  });
+
+  it('rolls back a failed resume and its business writes before dispatch, then accepts the same request', async () => {
+    const afterCommit = vi.fn();
+    const conflict = new InstanceLockConflict();
+    let refuse = true;
+    const onResume = vi.fn(
+      async ({
+        record,
+        entry,
+        tx,
+      }: ManagementResumeContext<LifecycleTypes>) => {
+        const scoped = tx.handle as MemoryLifecycleStore;
+        expect(await tx.read('oldDesk', record.id)).toEqual(record);
+        expect(
+          await scoped.findTransitionByRequest(
+            entry.lifecycle,
+            entry.recordId,
+            entry.requestId!,
+          ),
+        ).toEqual(entry);
+        scoped.insertRecord('notes', { id: 'resumed', recordId: record.id });
+        tx.afterCommit(afterCommit);
+        if (refuse) throw conflict;
+      },
+    );
+    const { store, runtime, id, options, wait, advance, dispatch, detail } =
+      await fixture({ onResume });
+    await wait();
+    await runtime.suspend('desk', id, await options());
+    const previous = store.record('records', id);
+    const before = await detail();
+    const queued = await runtime.listEffectRuns({ status: 'queued' });
+    advance(300);
+    const command = await options();
+    dispatch.mockClear();
+
+    await expect(runtime.resume('desk', id, command)).rejects.toBe(conflict);
+    expect(onResume).toHaveBeenCalledOnce();
+    expect(store.record('records', id)).toEqual(previous);
+    expect(await detail()).toEqual(before);
+    expect(
+      await store.findTransitionByRequest(
+        'oldDesk',
+        String(id),
+        command.requestId,
+      ),
+    ).toBeUndefined();
+    expect(store.record('notes', 'resumed')).toBeUndefined();
+    expect(await runtime.listEffectRuns({ status: 'queued' })).toEqual(queued);
+    expect(dispatch).not.toHaveBeenCalled();
+    expect(afterCommit).not.toHaveBeenCalled();
+
+    refuse = false;
+    await expect(runtime.resume('desk', id, command)).resolves.toMatchObject({
+      suspended: false,
+    });
+    expect(onResume).toHaveBeenCalledTimes(2);
+    expect(store.record('notes', 'resumed')).toMatchObject({ recordId: id });
+    expect(dispatch).toHaveBeenCalledOnce();
+    expect(afterCommit).toHaveBeenCalledOnce();
+  });
+
   it('blocks an already delivered queue job and preserves the result of a running effect until resume', async () => {
     const started = deferred<void>();
     const done = deferred<object>();
@@ -254,7 +429,7 @@ describe('management of a bound lifecycle instance', () => {
     });
     const hook = vi.fn(async () => {});
     const { runtime, id, options, wait, detail, oldEntry } = await fixture(
-      hook,
+      { onReenter: hook },
       perform,
     );
     const {
@@ -301,7 +476,9 @@ describe('management of a bound lifecycle instance', () => {
     const hook = vi
       .fn(async () => {})
       .mockRejectedValueOnce(new Error('Could not create tasks'));
-    const { runtime, id, wait, detail, options } = await fixture(hook);
+    const { runtime, id, wait, detail, options } = await fixture({
+      onReenter: hook,
+    });
     const {
       effectRuns: [run],
     } = await wait();
