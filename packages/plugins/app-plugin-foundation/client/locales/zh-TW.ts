@@ -55,6 +55,7 @@ const zhTW: LocaleResource<typeof enUS> = {
     disabled: '未啟用',
     preinstalled: '未啟用 · 開發時可見',
     disabledAttention: '未啟用 · 需要注意',
+    unknown: '無法確認 · 需重新建置',
   },
   reasons: {
     partial:
@@ -64,6 +65,8 @@ const zhTW: LocaleResource<typeof enUS> = {
     missingRequires: '「{{title}}」需要「{{names}}」，它還沒啟用',
     other: '在這個應用裡沒有裝配完整。再執行一次啟用命令即可修復',
     requiresFirst: '需要先啟用：{{names}}（啟用命令已帶上）',
+    unknown:
+      '這個應用建置時還沒有記錄命令列註冊了哪些外掛，這裡無法確認它是否已啟用。重新執行 pnpm build 並部署後即可看到。',
   },
   actions: {
     commands: '命令',

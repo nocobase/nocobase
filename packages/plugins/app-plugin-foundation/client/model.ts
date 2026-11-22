@@ -17,7 +17,9 @@ export type PluginStatus =
   | 'enabledAttention'
   | 'disabled'
   | 'preinstalled'
-  | 'disabledAttention';
+  | 'disabledAttention'
+  /** Only the CLI could register it, and this deployment was built before it recorded what the CLI registers. */
+  | 'unknown';
 
 export interface PluginRow {
   readonly plugin: FoundationPluginView;
@@ -78,6 +80,7 @@ function statusOf(
         ? 'skillsOnly'
         : 'enabled';
   if (attention.length > 0) return 'disabledAttention';
+  if (plugin.registrationUnknown) return 'unknown';
   return plugin.state === 'preinstalled' ? 'preinstalled' : 'disabled';
 }
 

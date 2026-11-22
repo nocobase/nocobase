@@ -43,7 +43,7 @@ Plugins needing attention are listed first, each with the reason in plain words:
 
 Running `pnpm nocobase plugin register` again fixes each of them. "How to enable" gives that command for a plugin that is not enabled, with the plugins it requires first, such as `pnpm nocobase plugin register agents knowledge`; "Commands" gives `plugin update` and `plugin unregister` for an enabled one and lists the enabled plugins that depend on it.
 
-A deployed application, whose `package.json` records `nocobase.builtAt`, installs only `dependencies`, so its list leaves out the plugins visible only during development, and the page says so.
+A deployed application, whose `package.json` records `nocobase.builtAt`, installs only `dependencies`, so its list leaves out the plugins visible only during development, and the page says so. It reads what the CLI registers from the `cli/plugins.json` `pnpm build` writes; a deployment built before that file existed shows a plugin only the CLI could register as "Can't tell · Rebuild", with no command, until it is rebuilt.
 
 ## Upgrading from the App Foundation overview
 

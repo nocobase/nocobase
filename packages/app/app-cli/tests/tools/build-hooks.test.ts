@@ -1,6 +1,7 @@
 // @vitest-environment node
 
 import { spawnSync } from 'node:child_process';
+import { createHash } from 'node:crypto';
 import {
   chmodSync,
   existsSync,
@@ -153,6 +154,9 @@ describe('build pipeline hook stages', () => {
     options: {
       withoutHooks?: boolean;
       withoutCliPluginRegistrations?: boolean;
+      /** A `cli/plugins.ts` the command read the list from, and the step that rewrites it mid-build. */
+      cliPluginsSource?: string;
+      rewriteCliPluginsOn?: string;
       failOn?: string;
       failStatus?: number;
       env?: NodeJS.ProcessEnv;
@@ -184,6 +188,13 @@ describe('build pipeline hook stages', () => {
       path.join(dependencyDir, 'package.json'),
       JSON.stringify({ name: 'fixture-dependency' }),
     );
+    if (options.cliPluginsSource !== undefined) {
+      mkdirSync(path.join(root, 'cli'), { recursive: true });
+      writeFileSync(
+        path.join(root, 'cli', 'plugins.ts'),
+        options.cliPluginsSource,
+      );
+    }
     mkdirSync(path.join(root, 'dist'), { recursive: true });
     const sentinel = path.join(root, 'dist', 'stale.txt');
     writeFileSync(sentinel, 'previous build');
@@ -195,6 +206,7 @@ describe('build pipeline hook stages', () => {
       'mkdir -p "$NOCOBASE_TOOL_ROOT/dist"',
       'printf "pnpm %s\\n" "$*" >> "$HOOK_LOG"',
       'if [ "$*" = "exec vite build" ]; then printf "%s" "$BUILD_INPUT" > "$NOCOBASE_TOOL_ROOT/vite-input.txt"; fi',
+      'if [ -n "$REWRITE_ON" ] && [ "$*" = "$REWRITE_ON" ]; then printf "\\n// rewritten\\n" >> "$NOCOBASE_TOOL_ROOT/cli/plugins.ts"; fi',
       'if [ -n "$FAIL_ON" ] && [ "$*" = "$FAIL_ON" ]; then exit "${FAIL_STATUS:-1}"; fi',
       'exit 0',
       '',
@@ -241,8 +253,15 @@ describe('build pipeline hook stages', () => {
           : {
               [CLI_PLUGIN_REGISTRATIONS_ENV]: JSON.stringify({
                 plugins: ['@acme/app-plugin-tools'],
+                sourceHash:
+                  options.cliPluginsSource === undefined
+                    ? null
+                    : createHash('sha256')
+                        .update(options.cliPluginsSource)
+                        .digest('hex'),
               }),
             }),
+        REWRITE_ON: options.rewriteCliPluginsOn ?? '',
         FAIL_ON: options.failOn ?? '',
         FAIL_STATUS: String(options.failStatus ?? 1),
         ...options.env,
@@ -409,6 +428,39 @@ describe('build pipeline hook stages', () => {
       );
       expect(commands).toEqual([]);
       expect(readFileSync(sentinel, 'utf8')).toBe('previous build');
+    },
+  );
+
+  it.skipIf(process.platform === 'win32')(
+    'writes the list when cli/plugins.ts is what the command read',
+    () => {
+      const { result, sentinel } = runBuild([], {
+        cliPluginsSource: 'export default defineCliPlugins([tools]);\n',
+      });
+
+      expect(result.status).toBe(0);
+      expect(
+        existsSync(path.join(path.dirname(sentinel), 'cli', 'plugins.json')),
+      ).toBe(true);
+    },
+  );
+
+  it.skipIf(process.platform === 'win32')(
+    'fails rather than writing a stale list when a hook rewrites cli/plugins.ts',
+    () => {
+      const { result, commands, sentinel } = runBuild([], {
+        cliPluginsSource: 'export default defineCliPlugins([tools]);\n',
+        rewriteCliPluginsOn: 'demo after-client',
+      });
+
+      expect(result.status).not.toBe(0);
+      expect(result.stderr).toContain(
+        'cli/plugins.ts changed during the build',
+      );
+      expect(commands).not.toContain('node after-server.mjs');
+      expect(
+        existsSync(path.join(path.dirname(sentinel), 'cli', 'plugins.json')),
+      ).toBe(false);
     },
   );
 

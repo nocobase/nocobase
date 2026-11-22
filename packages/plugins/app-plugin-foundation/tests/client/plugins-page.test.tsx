@@ -22,6 +22,7 @@ function view(
     enabled: true,
     state: 'registered',
     skillsOnly: false,
+    registrationUnknown: false,
     issues: [],
     requires: [],
     optionalRequires: [],
@@ -321,6 +322,31 @@ describe('plugins page', () => {
           `pnpm nocobase plugin register ${cliOnly}`,
         ),
       ).toBeInTheDocument();
+    } finally {
+      await app.cleanup();
+    }
+  });
+
+  it('gives no enable command for a CLI-only plugin whose registration a deployment cannot tell', async () => {
+    const cliOnly = '@acme/app-plugin-tools';
+    const app = await createApplicationFixture({
+      dependencies: [cliOnly],
+      installed: [
+        { name: cliOnly, entries: ['cli'], nocobase: { title: 'Tools' } },
+      ],
+      cli: { legacyBuild: true, plugins: [cliOnly] },
+    });
+    try {
+      const { data } = await new FoundationPluginCatalog({
+        rootDir: app.rootDir,
+        serverPlugins: () => [],
+      }).list([]);
+      await renderPage({ plugins: data, deployed: true });
+
+      const row = rowOf('Tools');
+      expect(row).toHaveTextContent("Can't tell · Rebuild");
+      expect(row).toHaveTextContent('Run pnpm build again and redeploy');
+      expect(within(row).queryByRole('button')).toBeNull();
     } finally {
       await app.cleanup();
     }

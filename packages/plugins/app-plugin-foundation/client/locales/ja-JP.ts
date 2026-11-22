@@ -57,6 +57,7 @@ const jaJP: LocaleResource<typeof enUS> = {
     disabled: '未有効',
     preinstalled: '未有効 · 開発時のみ',
     disabledAttention: '未有効 · 要注意',
+    unknown: '確認できません · 再ビルドが必要',
   },
   reasons: {
     partial:
@@ -69,6 +70,8 @@ const jaJP: LocaleResource<typeof enUS> = {
       'このアプリで完全には組み込まれていません。有効化コマンドをもう一度実行すると直ります。',
     requiresFirst:
       '先に有効化が必要：{{names}}（有効化コマンドに含まれています）',
+    unknown:
+      'このアプリはコマンドラインに登録されたプラグインを記録する前にビルドされたため、有効かどうかをここでは確認できません。pnpm build をもう一度実行してデプロイすると表示されます。',
   },
   actions: {
     commands: 'コマンド',

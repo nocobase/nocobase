@@ -48,8 +48,12 @@ Deployment metadata:
 const { generateDatabaseManifests } =
   await import('@nocobase/dev-config/build/database-manifests');
 const { default: spawn } = await import('cross-spawn');
-const { readCliHooks, readCliPluginRegistrations, runHookStage } =
-  await import('./utils/cli-hooks.mjs');
+const {
+  assertCliPluginRegistrationsCurrent,
+  readCliHooks,
+  readCliPluginRegistrations,
+  runHookStage,
+} = await import('./utils/cli-hooks.mjs');
 const { resolveBuildWorkspacePackages, buildNodeOptions } =
   await import('./utils/build-workspace.mjs');
 
@@ -97,7 +101,7 @@ function writeCliPluginRegistrations() {
   fs.mkdirSync(path.dirname(file), { recursive: true });
   fs.writeFileSync(
     file,
-    `${JSON.stringify(cliPluginRegistrations, null, 2)}\n`,
+    `${JSON.stringify({ plugins: cliPluginRegistrations.plugins }, null, 2)}\n`,
   );
 }
 
@@ -291,6 +295,8 @@ run('Rewrite server path aliases', 'pnpm', [
   'tsconfig.server.json',
 ]);
 writeCliEntry();
+// The beforeBuild and afterClientBuild hooks ran after the list was read; the CLI just compiled must match it.
+assertCliPluginRegistrationsCurrent(cliPluginRegistrations, rootDir);
 writeCliPluginRegistrations();
 // tsc emits only TypeScript. An external connection reads its hand-written supplemental metadata from
 // `database/<connection>/metadata/<name>.json` at runtime, so those files have to travel with the server or a

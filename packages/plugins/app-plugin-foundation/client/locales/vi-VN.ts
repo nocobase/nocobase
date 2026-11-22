@@ -55,6 +55,7 @@ const viVN: LocaleResource<typeof enUS> = {
     disabled: 'Chưa bật',
     preinstalled: 'Chưa bật · Chỉ khi phát triển',
     disabledAttention: 'Chưa bật · Cần chú ý',
+    unknown: 'Không xác định · Cần build lại',
   },
   reasons: {
     partial:
@@ -66,6 +67,8 @@ const viVN: LocaleResource<typeof enUS> = {
     other:
       'Chưa được thiết lập đầy đủ trong ứng dụng này. Chạy lại lệnh bật để khắc phục.',
     requiresFirst: 'Cần bật trước: {{names}} (lệnh bật đã bao gồm)',
+    unknown:
+      'Ứng dụng này được build trước khi quá trình build ghi lại các plugin dòng lệnh đã đăng ký, nên không thể biết plugin này đã bật hay chưa. Hãy chạy lại pnpm build và triển khai lại.',
   },
   actions: {
     commands: 'Lệnh',

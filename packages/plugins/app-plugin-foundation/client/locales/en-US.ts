@@ -47,6 +47,7 @@ const enUS = {
     disabled: 'Not enabled',
     preinstalled: 'Not enabled · Development only',
     disabledAttention: 'Not enabled · Needs attention',
+    unknown: "Can't tell · Rebuild",
   },
   reasons: {
     partial:
@@ -57,6 +58,8 @@ const enUS = {
     other:
       'Not set up completely in this application. Run the enable command again to fix it.',
     requiresFirst: 'Enable first: {{names}} (the enable command includes it)',
+    unknown:
+      "This application was built before the build recorded which command-line plugins it registers, so whether this one is enabled can't be told here. Run pnpm build again and redeploy to see it.",
   },
   actions: {
     commands: 'Commands',

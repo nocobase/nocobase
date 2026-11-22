@@ -58,6 +58,7 @@ const ptBR: LocaleResource<typeof enUS> = {
     disabled: 'Não ativado',
     preinstalled: 'Não ativado · Só no desenvolvimento',
     disabledAttention: 'Não ativado · Precisa de atenção',
+    unknown: 'Não é possível saber · Recompilar',
   },
   reasons: {
     partial:
@@ -68,6 +69,8 @@ const ptBR: LocaleResource<typeof enUS> = {
     other:
       'Não está configurado por completo neste aplicativo. Execute o comando de ativação novamente para corrigir.',
     requiresFirst: 'Ative antes: {{names}} (o comando de ativação já inclui)',
+    unknown:
+      'Este aplicativo foi compilado antes de a compilação registrar quais plugins de linha de comando ele usa, então não é possível saber aqui se este está habilitado. Execute pnpm build novamente e reimplante.',
   },
   actions: {
     commands: 'Comandos',

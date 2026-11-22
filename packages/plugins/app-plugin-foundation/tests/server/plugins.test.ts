@@ -250,6 +250,28 @@ describe('FoundationPluginCatalog', () => {
     },
   );
 
+  it('cannot tell whether a CLI-only plugin is enabled in a deployment built without cli/plugins.json', async () => {
+    const cliOnly = '@acme/app-plugin-tools';
+    const plugins = await catalog(
+      {
+        dependencies: [cliOnly, MAIL],
+        installed: [{ name: cliOnly, entries: ['cli'] }, { name: MAIL }],
+        cli: { legacyBuild: true, plugins: [cliOnly] },
+      },
+      [MAIL],
+    );
+
+    expect((await plugins.list([MAIL])).data).toMatchObject([
+      // A plugin the server registers is told apart as before.
+      { packageName: MAIL, state: 'registered', registrationUnknown: false },
+      {
+        packageName: cliOnly,
+        enabled: false,
+        registrationUnknown: true,
+      },
+    ]);
+  });
+
   describe('a CLI-only plugin and a cli/plugins.ts the compiler parses', () => {
     const cliOnly = '@acme/app-plugin-tools';
     const classify = async (body: string) => {

@@ -49,6 +49,7 @@ const zhCN: FoundationResource = {
     disabled: '未启用',
     preinstalled: '未启用 · 开发时可见',
     disabledAttention: '未启用 · 需要注意',
+    unknown: '无法确认 · 需重新构建',
   },
   reasons: {
     partial:
@@ -58,6 +59,8 @@ const zhCN: FoundationResource = {
     missingRequires: '「{{title}}」需要「{{names}}」，它还没启用',
     other: '在这个应用里没有装配完整。再执行一次启用命令即可修复',
     requiresFirst: '需要先启用：{{names}}（启用命令已带上）',
+    unknown:
+      '这个应用构建时还没有记录命令行注册了哪些插件，这里无法确认它是否已启用。重新执行 pnpm build 并部署后即可看到。',
   },
   actions: {
     commands: '命令',

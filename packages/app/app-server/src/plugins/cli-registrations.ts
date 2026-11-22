@@ -68,18 +68,21 @@ export async function listCliPluginRegistrations(
 
 /**
  * The packages the application at `appRoot` registers in its CLI: parsed from `cli/plugins.ts` in a source checkout,
- * read from the `cli/plugins.json` a build wrote in a deployment, and none when it has neither.
+ * read from the `cli/plugins.json` a build wrote in a deployment, and none when it has no CLI composition root at all.
+ * `undefined` means it cannot be told: a deployment whose build predates `cli/plugins.json` has a compiled
+ * `cli/plugins.js` but no list, and reading nothing there would report every CLI-only plugin as not enabled.
  */
 export async function readCliPluginRegistrations(
   appRoot: string,
-): Promise<string[]> {
+): Promise<string[] | undefined> {
   const source = path.join(appRoot, 'cli', 'plugins.ts');
   if (existsSync(source))
     return listCliPluginRegistrations(await readFile(source, 'utf8'), {
       appRoot,
     });
   const manifest = path.join(appRoot, CLI_PLUGIN_REGISTRATIONS_FILE);
-  if (!existsSync(manifest)) return [];
+  if (!existsSync(manifest))
+    return existsSync(path.join(appRoot, 'cli', 'plugins.js')) ? undefined : [];
   const parsed: unknown = JSON.parse(await readFile(manifest, 'utf8'));
   const plugins = (parsed as Partial<CliPluginRegistrationsManifest> | null)
     ?.plugins;
@@ -91,28 +94,92 @@ export async function readCliPluginRegistrations(
   return [...plugins];
 }
 
-/** The first `defineCliPlugins([...])` argument array, the one `plugin register` edits. */
+/**
+ * The array the module's default export is built from: `export default defineCliPlugins([...])`, or a top-level
+ * `const` initialized with that call and exported as the default, as both templates write it. A call anywhere else —
+ * inside a function, a branch or another variable — registers nothing, since it is not what the CLI loads.
+ */
 function registrationArray(
   typescript: typeof ts,
   sourceFile: ts.SourceFile,
 ): ts.ArrayLiteralExpression | undefined {
-  let found: ts.ArrayLiteralExpression | undefined;
-  const visit = (node: ts.Node): void => {
-    if (found) return;
+  const exported = defaultExport(typescript, sourceFile);
+  if (!exported) return undefined;
+  const expression = typescript.isIdentifier(exported)
+    ? topLevelInitializer(typescript, sourceFile, exported.text)
+    : exported;
+  const call = expression && unwrap(typescript, expression);
+  if (
+    !call ||
+    !typescript.isCallExpression(call) ||
+    !typescript.isIdentifier(call.expression) ||
+    call.expression.text !== REGISTER_CALL ||
+    call.arguments.length !== 1 ||
+    !typescript.isArrayLiteralExpression(call.arguments[0])
+  )
+    return undefined;
+  return call.arguments[0];
+}
+
+/** `export default <expression>`, or the name in `export { name as default }`. */
+function defaultExport(
+  typescript: typeof ts,
+  sourceFile: ts.SourceFile,
+): ts.Expression | undefined {
+  for (const statement of sourceFile.statements) {
+    if (typescript.isExportAssignment(statement) && !statement.isExportEquals)
+      return statement.expression;
     if (
-      typescript.isCallExpression(node) &&
-      typescript.isIdentifier(node.expression) &&
-      node.expression.text === REGISTER_CALL &&
-      node.arguments.length === 1 &&
-      typescript.isArrayLiteralExpression(node.arguments[0])
+      typescript.isExportDeclaration(statement) &&
+      !statement.moduleSpecifier &&
+      statement.exportClause &&
+      typescript.isNamedExports(statement.exportClause)
     ) {
-      found = node.arguments[0];
-      return;
+      const element = statement.exportClause.elements.find(
+        (item) => item.name.text === 'default',
+      );
+      if (element)
+        return typescript.factory.createIdentifier(
+          (element.propertyName ?? element.name).text,
+        );
     }
-    typescript.forEachChild(node, visit);
-  };
-  typescript.forEachChild(sourceFile, visit);
-  return found;
+  }
+  return undefined;
+}
+
+/** The initializer of the module-level `const name = …`. */
+function topLevelInitializer(
+  typescript: typeof ts,
+  sourceFile: ts.SourceFile,
+  name: string,
+): ts.Expression | undefined {
+  for (const statement of sourceFile.statements) {
+    if (!typescript.isVariableStatement(statement)) continue;
+    for (const declaration of statement.declarationList.declarations) {
+      if (
+        typescript.isIdentifier(declaration.name) &&
+        declaration.name.text === name
+      )
+        return declaration.initializer;
+    }
+  }
+  return undefined;
+}
+
+/** The expression inside parentheses and `as` / `satisfies` / `!` wrappers. */
+function unwrap(
+  typescript: typeof ts,
+  expression: ts.Expression,
+): ts.Expression {
+  let current = expression;
+  while (
+    typescript.isParenthesizedExpression(current) ||
+    typescript.isAsExpression(current) ||
+    typescript.isSatisfiesExpression(current) ||
+    typescript.isNonNullExpression(current)
+  )
+    current = current.expression;
+  return current;
 }
 
 const compilers = new Map<string, Promise<typeof ts>>();

@@ -29,6 +29,11 @@ export interface FoundationPluginView extends FoundationPluginMetadata {
   /** The same state `pnpm nocobase plugin inspect` reports. */
   readonly state: PluginRegistrationStateName;
   readonly skillsOnly: boolean;
+  /**
+   * Only the application's CLI could register it, and this deployment was built before `pnpm build` recorded what
+   * the CLI registers, so whether it is enabled cannot be told until the application is rebuilt.
+   */
+  readonly registrationUnknown: boolean;
   readonly issues: readonly PluginRegistrationIssueCode[];
   /** The application plugins this one builds on: the `app-plugin-*` and `app-portal-*` packages among its `peerDependencies`. */
   readonly requires: readonly string[];

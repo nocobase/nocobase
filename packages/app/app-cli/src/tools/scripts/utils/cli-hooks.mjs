@@ -4,6 +4,10 @@
 // entry. The `build` and `dev` commands run inside the assembled CLI, which already holds those plugins, so they
 // collect the hooks there and hand them to the script in `NOCOBASE_CLI_HOOKS`. Nothing is asked of a second process.
 
+import { createHash } from 'node:crypto';
+import fs from 'node:fs';
+import path from 'node:path';
+
 export const CLI_HOOKS_ENV = 'NOCOBASE_CLI_HOOKS';
 
 const EMPTY = {
@@ -83,5 +87,31 @@ export const readCliPluginRegistrations = (env = process.env) => {
       `${CLI_PLUGIN_REGISTRATIONS_ENV} must hold { "plugins": [package names] }.`,
     );
   }
-  return { plugins: parsed.plugins };
+  if (
+    parsed.sourceHash !== undefined &&
+    parsed.sourceHash !== null &&
+    typeof parsed.sourceHash !== 'string'
+  ) {
+    throw new Error(
+      `${CLI_PLUGIN_REGISTRATIONS_ENV} sourceHash must be a string or null.`,
+    );
+  }
+  return { plugins: parsed.plugins, sourceHash: parsed.sourceHash ?? null };
+};
+
+/**
+ * Fails when `cli/plugins.ts` no longer holds what the list was read from: a hook rewrote it during the build, so the
+ * compiled CLI and the list written beside it would disagree. The list cannot be read again here, since that needs
+ * the application's TypeScript compiler and the build script runs without loading it.
+ */
+export const assertCliPluginRegistrationsCurrent = (registrations, rootDir) => {
+  const source = path.join(rootDir, 'cli', 'plugins.ts');
+  const current = fs.existsSync(source)
+    ? createHash('sha256').update(fs.readFileSync(source)).digest('hex')
+    : null;
+  if (current !== (registrations.sourceHash ?? null)) {
+    throw new Error(
+      'cli/plugins.ts changed during the build, after `nocobase build` read the CLI plugins it registers. Generate or edit it before running the build, then build again.',
+    );
+  }
 };

@@ -59,6 +59,7 @@ const frFR: LocaleResource<typeof enUS> = {
     disabled: 'Non activé',
     preinstalled: 'Non activé · Développement uniquement',
     disabledAttention: 'Non activé · À vérifier',
+    unknown: 'Indéterminé · Reconstruire',
   },
   reasons: {
     partial:
@@ -70,6 +71,8 @@ const frFR: LocaleResource<typeof enUS> = {
       'Pas entièrement mis en place dans cette application. Exécutez de nouveau la commande d’activation pour corriger.',
     requiresFirst:
       'À activer d’abord : {{names}} (la commande d’activation l’inclut)',
+    unknown:
+      'Cette application a été construite avant que la construction n’enregistre les plugins de ligne de commande qu’elle utilise : impossible de savoir ici si celui-ci est activé. Relancez pnpm build puis redéployez.',
   },
   actions: {
     commands: 'Commandes',

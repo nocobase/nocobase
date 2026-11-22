@@ -56,6 +56,7 @@ const esES: LocaleResource<typeof enUS> = {
     disabled: 'No habilitado',
     preinstalled: 'No habilitado · Solo en desarrollo',
     disabledAttention: 'No habilitado · Requiere atención',
+    unknown: 'No se puede saber · Recompilar',
   },
   reasons: {
     partial:
@@ -67,6 +68,8 @@ const esES: LocaleResource<typeof enUS> = {
       'No está configurado por completo en esta aplicación. Ejecute de nuevo el comando de habilitación para corregirlo.',
     requiresFirst:
       'Habilite antes: {{names}} (el comando de habilitación lo incluye)',
+    unknown:
+      'Esta aplicación se compiló antes de que la compilación registrara qué plugins de línea de comandos usa, así que aquí no se puede saber si este está habilitado. Ejecuta pnpm build de nuevo y vuelve a desplegar.',
   },
   actions: {
     commands: 'Comandos',

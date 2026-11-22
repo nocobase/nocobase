@@ -63,6 +63,10 @@ export const PluginSchema: z.ZodType<FoundationPluginView> = z
       description:
         'The plugin ships only Agent Skills, so declaring it in dependencies enables it.',
     }),
+    registrationUnknown: z.boolean().meta({
+      description:
+        'Only the CLI could register it, and this deployment was built before the build recorded what the CLI registers; rebuild to tell.',
+    }),
     issues: z
       .array(
         z.enum([

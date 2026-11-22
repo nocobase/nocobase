@@ -111,6 +111,38 @@ const cliPlugins: AppCliPlugins = defineCliPlugins([]);`),
     },
   );
 
+  it('reads the call the default export is built from, not an earlier one', async () => {
+    const header = `import { defineCliPlugins } from '@nocobase/app-cli';
+import tools from '@acme/app-plugin-tools/cli';
+function unused() {
+  return defineCliPlugins([]);
+}
+`;
+    for (const source of [
+      `${header}export default defineCliPlugins([tools]);\n`,
+      // Both templates assign the call to a variable and export that.
+      `${header}const cliPlugins: AppCliPlugins = defineCliPlugins([tools]);\nexport default cliPlugins;\n`,
+      `${header}const cliPlugins = defineCliPlugins([tools]) satisfies AppCliPlugins;\nexport { cliPlugins as default };\n`,
+    ])
+      expect(await list(source)).toEqual(['@acme/app-plugin-tools']);
+  });
+
+  it('registers nothing from a call the default export is not built from', async () => {
+    expect(
+      await list(`import { defineCliPlugins } from '@nocobase/app-cli';
+import tools from '@acme/app-plugin-tools/cli';
+const draft = defineCliPlugins([tools]);
+export default defineCliPlugins([]);
+`),
+    ).toEqual([]);
+    expect(
+      await list(`import { defineCliPlugins } from '@nocobase/app-cli';
+import tools from '@acme/app-plugin-tools/cli';
+defineCliPlugins([tools]);
+`),
+    ).toEqual([]);
+  });
+
   it('explains that an application without TypeScript cannot be parsed', async () => {
     const root = await mkdtemp(path.join(os.tmpdir(), 'cli-registrations-'));
     try {
@@ -156,8 +188,24 @@ describe('readCliPluginRegistrations in a deployment', () => {
     ).toEqual(['@acme/app-plugin-tools']);
   });
 
-  it('registers nothing without a list', async () => {
-    expect(await readCliPluginRegistrations(await deployment())).toEqual([]);
+  it('reads an empty list as no registrations', async () => {
+    expect(
+      await readCliPluginRegistrations(
+        await deployment(JSON.stringify({ plugins: [] })),
+      ),
+    ).toEqual([]);
+  });
+
+  it('cannot tell without a list when a build left a compiled cli/plugins.js', async () => {
+    expect(
+      await readCliPluginRegistrations(await deployment()),
+    ).toBeUndefined();
+  });
+
+  it('registers nothing in an application without a CLI composition root', async () => {
+    const root = await mkdtemp(path.join(os.tmpdir(), 'cli-registrations-'));
+    roots.push(root);
+    expect(await readCliPluginRegistrations(root)).toEqual([]);
   });
 
   it('rejects a list of the wrong shape', async () => {

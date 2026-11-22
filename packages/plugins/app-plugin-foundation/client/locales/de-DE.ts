@@ -57,6 +57,7 @@ const deDE: LocaleResource<typeof enUS> = {
     disabled: 'Nicht aktiviert',
     preinstalled: 'Nicht aktiviert · Nur in der Entwicklung',
     disabledAttention: 'Nicht aktiviert · Braucht Aufmerksamkeit',
+    unknown: 'Unbekannt · Neu bauen',
   },
   reasons: {
     partial:
@@ -68,6 +69,8 @@ const deDE: LocaleResource<typeof enUS> = {
       'In dieser Anwendung nicht vollständig eingerichtet. Führen Sie den Aktivierungsbefehl erneut aus, um das zu beheben.',
     requiresFirst:
       'Zuerst aktivieren: {{names}} (im Aktivierungsbefehl enthalten)',
+    unknown:
+      'Diese Anwendung wurde gebaut, bevor der Build festhielt, welche Kommandozeilen-Plugins sie registriert. Ob dieses aktiviert ist, lässt sich hier nicht feststellen. Führen Sie pnpm build erneut aus und stellen Sie neu bereit.',
   },
   actions: {
     commands: 'Befehle',

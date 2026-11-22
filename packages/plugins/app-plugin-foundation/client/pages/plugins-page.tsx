@@ -240,6 +240,7 @@ const STATUS_STYLES: Record<PluginStatus, string> = {
     'bg-amber-500/15 text-amber-800 dark:text-amber-200 border-transparent',
   disabled: 'bg-muted text-muted-foreground border-transparent',
   preinstalled: 'bg-muted text-muted-foreground border-transparent',
+  unknown: 'bg-muted text-muted-foreground border-transparent',
 };
 
 function attentionText(
@@ -266,7 +267,9 @@ function PluginListItem({
   readonly onOpen: (kind: 'commands' | 'enable') => void;
 }): ReactElement {
   const { t } = useFoundationTranslation();
-  const missing = row.enabled ? [] : row.plugin.missingRequires;
+  // Whether it is enabled cannot be told, so there is no command to give: enabling it may already be done.
+  const unknown = row.status === 'unknown';
+  const missing = row.enabled || unknown ? [] : row.plugin.missingRequires;
   return (
     <li className={cn(GRID, 'px-4 py-3')} data-package={row.plugin.packageName}>
       <div className='min-w-0'>
@@ -287,20 +290,28 @@ function PluginListItem({
         <span className='font-mono text-xs text-muted-foreground tabular-nums sm:hidden'>
           {row.plugin.version}
         </span>
-        <Button
-          size='sm'
-          variant='outline'
-          aria-label={t(
-            row.enabled ? 'actions.commandsFor' : 'actions.enableFor',
-            {
-              title: row.title,
-            },
-          )}
-          onClick={() => onOpen(row.enabled ? 'commands' : 'enable')}
-        >
-          {t(row.enabled ? 'actions.commands' : 'actions.enable')}
-        </Button>
+        {unknown ? null : (
+          <Button
+            size='sm'
+            variant='outline'
+            aria-label={t(
+              row.enabled ? 'actions.commandsFor' : 'actions.enableFor',
+              {
+                title: row.title,
+              },
+            )}
+            onClick={() => onOpen(row.enabled ? 'commands' : 'enable')}
+          >
+            {t(row.enabled ? 'actions.commands' : 'actions.enable')}
+          </Button>
+        )}
       </span>
+      {unknown ? (
+        <p className='col-span-full flex items-start gap-1.5 rounded-md bg-muted px-2 py-1.5 text-xs text-muted-foreground'>
+          <Info className='mt-px size-3.5 shrink-0' />
+          <span>{t('reasons.unknown')}</span>
+        </p>
+      ) : null}
       {row.attention.map((attention) => (
         <p
           key={attention.kind}

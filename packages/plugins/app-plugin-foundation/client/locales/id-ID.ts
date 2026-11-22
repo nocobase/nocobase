@@ -57,6 +57,7 @@ const idID: LocaleResource<typeof enUS> = {
     disabled: 'Belum aktif',
     preinstalled: 'Belum aktif · Hanya saat pengembangan',
     disabledAttention: 'Belum aktif · Perlu perhatian',
+    unknown: 'Tidak dapat dipastikan · Build ulang',
   },
   reasons: {
     partial:
@@ -68,6 +69,8 @@ const idID: LocaleResource<typeof enUS> = {
       'Belum terpasang sepenuhnya di aplikasi ini. Jalankan lagi perintah aktivasi untuk memperbaikinya.',
     requiresFirst:
       'Aktifkan dulu: {{names}} (sudah termasuk dalam perintah aktivasi)',
+    unknown:
+      'Aplikasi ini dibangun sebelum proses build mencatat plugin baris perintah yang didaftarkan, jadi di sini tidak dapat dipastikan apakah plugin ini aktif. Jalankan pnpm build lagi lalu deploy ulang.',
   },
   actions: {
     commands: 'Perintah',

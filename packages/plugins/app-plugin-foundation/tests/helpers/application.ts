@@ -29,6 +29,8 @@ export async function createApplicationFixture(options: {
    */
   readonly cli?: {
     readonly deployed?: boolean;
+    /** A deployment from a build that predates `cli/plugins.json`: only the compiled `cli/plugins.js`. */
+    readonly legacyBuild?: boolean;
     /** The packages it registers, each imported and listed. */
     readonly plugins?: readonly string[];
     /** The `cli/plugins.ts` text as written, instead of `plugins`. */
@@ -54,7 +56,19 @@ export async function createApplicationFixture(options: {
     const plugins = options.cli.plugins ?? [];
     const locals = plugins.map((_, index) => `plugin${index}`);
     await mkdir(path.join(rootDir, 'cli'), { recursive: true });
-    if (options.cli.deployed) {
+    if (options.cli.legacyBuild) {
+      await writeFile(
+        path.join(rootDir, 'cli', 'plugins.js'),
+        [
+          "import { defineCliPlugins } from '@nocobase/app-cli';",
+          ...plugins.map(
+            (name, index) => `import ${locals[index]} from '${name}/cli';`,
+          ),
+          `export default defineCliPlugins([${locals.join(', ')}]);`,
+          '',
+        ].join('\n'),
+      );
+    } else if (options.cli.deployed) {
       await writeFile(
         path.join(rootDir, 'cli', 'plugins.json'),
         JSON.stringify({ plugins }),

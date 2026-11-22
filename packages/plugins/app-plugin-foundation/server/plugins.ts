@@ -19,8 +19,11 @@ interface ApplicationManifest {
   readonly dependencies: Readonly<Record<string, string>>;
   readonly devDependencies: Readonly<Record<string, string>>;
   readonly deployed: boolean;
-  /** The packages the application's `cli/plugins` registers. */
-  readonly cliPlugins: ReadonlySet<string>;
+  /**
+   * The packages the application's `cli/plugins` registers; `undefined` when a deployment was built before
+   * `pnpm build` recorded them, so they cannot be told.
+   */
+  readonly cliPlugins: ReadonlySet<string> | undefined;
 }
 
 interface InstalledPlugin extends FoundationPluginMetadata {
@@ -111,10 +114,22 @@ export class FoundationPluginCatalog {
             client: client
               ? client.has(packageName)
               : entries.client && entries.server && server.has(packageName),
-            cli: application.cliPlugins.has(packageName),
+            cli: application.cliPlugins?.has(packageName) ?? false,
           },
         });
-        return { packageName, installed, dependencyField, registration };
+        // Only the CLI could register it, and the CLI's registrations are unknown here: neither enabled nor not.
+        const registrationUnknown =
+          application.cliPlugins === undefined &&
+          entries.cli &&
+          !registration.enabled &&
+          !registration.skillsOnly;
+        return {
+          packageName,
+          installed,
+          dependencyField,
+          registration,
+          registrationUnknown,
+        };
       }),
     );
     const enabled = new Set(
@@ -127,7 +142,13 @@ export class FoundationPluginCatalog {
     );
 
     const data = classified.map(
-      ({ packageName, installed, dependencyField, registration }) => {
+      ({
+        packageName,
+        installed,
+        dependencyField,
+        registration,
+        registrationUnknown,
+      }) => {
         const requires = installed?.requires ?? [];
         const optionalRequires = installed?.optionalRequires ?? [];
         const optional = new Set(optionalRequires);
@@ -146,6 +167,7 @@ export class FoundationPluginCatalog {
           enabled: isEnabled,
           state: registration.state,
           skillsOnly: registration.skillsOnly,
+          registrationUnknown,
           issues: registration.issues.map(({ code }) => code),
           requires,
           optionalRequires,
@@ -238,12 +260,13 @@ function installedPlugin(manifest: Record<string, unknown>): InstalledPlugin {
 /**
  * The packages the application's CLI composition root registers, read the way `plugin inspect` reads them: parsed from
  * `cli/plugins.ts` in a source checkout, and from the `cli/plugins.json` `pnpm build` writes in a deployment. The
- * running server never loads the CLI.
+ * running server never loads the CLI. `undefined` for a deployment built before that file existed.
  */
-async function readCliPlugins(rootDir: string): Promise<ReadonlySet<string>> {
-  return new Set(
-    (await readCliPluginRegistrations(rootDir)).filter(isPluginPackageName),
-  );
+async function readCliPlugins(
+  rootDir: string,
+): Promise<ReadonlySet<string> | undefined> {
+  const registered = await readCliPluginRegistrations(rootDir);
+  return registered && new Set(registered.filter(isPluginPackageName));
 }
 
 function localizedText(value: unknown): FoundationLocalizedText | undefined {
