@@ -108,6 +108,13 @@ const viVN: LocaleResource<typeof enUS> = {
         environments: 'Triển khai môi trường',
       },
     },
+    humanOnly: {
+      deployProtected:
+        'Triển khai vào môi trường được bảo vệ cần một người phê duyệt; khóa chỉ có thể gửi yêu cầu.',
+      delete: 'Xóa ứng dụng sẽ xóa dữ liệu của nó; chỉ người mới được làm.',
+      configure:
+        'Cấu hình ứng dụng thay đổi thiết lập và bí mật của nó; chỉ người mới được làm.',
+    },
     keyScopes: {
       apps: {
         title: 'Ứng dụng và triển khai',

@@ -12,6 +12,8 @@ import type { AppPluginApplication } from '@nocobase/app-server/plugins';
 import { ResourceItems } from '@nocobase/authorization/core';
 import { ServiceProvider } from '@nocobase/service-provider';
 
+import { projectsKeyScopeObjects } from '../key-scope-objects.js';
+
 import {
   ACCESS_NAMESPACE,
   BUSINESS_ACTIONS,
@@ -89,6 +91,11 @@ export class ProjectsAuthorizationProvider extends ServiceProvider<AppPluginAppl
     const authz = this.app.container.resolve(authorizationToken);
     registerSettings(authz);
     registerBusinesses(authz);
+    // The projects an API key may be limited to: those its maker may see.
+    authz.credentials.objectSources.add(
+      'pm.projects',
+      projectsKeyScopeObjects(this.app.container),
+    );
     return Promise.resolve();
   }
 }

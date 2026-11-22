@@ -1,6 +1,5 @@
 import databaseExplorerRoutes from './pages/settings/database-explorer/routes.js';
 import personalSettingsRoutes from './pages/me/routes.js';
-import systemSettingsRoutes from './pages/settings/routes.js';
 import { knowledgeDefinition } from '@nocobase/app-plugin-knowledge/client/routes';
 import {
   agentsRoute,
@@ -535,14 +534,13 @@ const settingsRoutes: AppClientRouteContribution = defineSystemSettingsRoutes([
   },
 ]);
 
-// Users and Permission management join the Accounts and permissions category; `@nocobase/app-plugin-notification`
-// registers Messages › Notifications itself.
+// The Users and Authorization plugins register Users and Roles and permissions under Accounts and permissions, and
+// `@nocobase/app-plugin-notification` registers Messages › Notifications.
 // Their former URLs outside `/settings` redirect through `lib/settings-redirects.ts`.
 const routes: readonly AppClientRouteContribution[] = [
   appRoutes,
   settingsRoutes,
   personalSettingsRoutes,
-  systemSettingsRoutes,
   databaseExplorerRoutes,
 ];
 

@@ -18,6 +18,7 @@ import {
   BUSINESS_ACTIONS,
   BUSINESS_KEYS,
   BUSINESS_SECTION,
+  HUMAN_ONLY_SETTINGS,
   RESOURCE_TYPE,
   SETTINGS_ACTIONS,
   accessText,
@@ -37,10 +38,14 @@ export function registerSettings(authz: AppAuthorization): void {
     authz.settings.add({
       id,
       title: accessText(`settings.${id}`),
-      actions: actions.map((name: string) => ({
-        name,
-        title: accessText(`actions.${name}`),
-      })),
+      actions: actions.map((name: string) => {
+        const humanOnly = HUMAN_ONLY_SETTINGS[id]?.[name];
+        return {
+          name,
+          title: accessText(`actions.${name}`),
+          ...(humanOnly ? { humanOnly } : {}),
+        };
+      }),
     });
     authz.ui.place({ type: 'settings', id }, { section: ACCESS_SECTION });
   }

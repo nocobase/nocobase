@@ -301,6 +301,10 @@ const setting = (
 ): KeyScopeAccess => ({ kind: 'settings', id: item, action });
 
 /**
+ * @deprecated Format `1` of API key scopes. A key is now given this plugin's actions directly, and the plugin registers
+ * the projects a key may be limited to with the authorization plugin. Kept for applications that still register these
+ * groups.
+ *
  * What a scoped key may be given here. Levels include the ones below them. A key limited to some projects
  * (`objects('pm.projects')`) sees only those projects and their issues; issues follow the projects group's selection
  * and have none of their own. Members and roles are the application's group, not this plugin's.
@@ -356,5 +360,5 @@ export const KEY_SCOPE_GROUPS: readonly KeyScopeGroup[] = [
   },
 ];
 
-/** Presets this plugin suggests for a scoped key; none yet. */
+/** @deprecated Format `1`. Presets this plugin suggests for a scoped key; none yet. */
 export const KEY_SCOPE_PRESETS: readonly never[] = [];

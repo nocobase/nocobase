@@ -9,6 +9,7 @@ import { describe, expect, it } from 'vitest';
 import { lifecycleRoutes } from '@nocobase/app-plugin-lifecycle-example/client';
 import { createNotificationRoutes } from '@nocobase/app-plugin-notification/client';
 import { settingsRoutes as routesExampleSettings } from '@nocobase/app-plugin-routes-example/client/routes';
+import usersRoutes from '@nocobase/app-plugin-users/client/routes';
 import applicationRoutes from '../../client/routes.ts';
 import {
   buildRouteNavigation,
@@ -429,6 +430,12 @@ function resolveRoutes() {
       packageName: '@nocobase/app-template-examples',
       routes: applicationRoutes,
       source: 'application',
+    },
+    // User management joins Accounts and permissions from its plugin, as client/plugins.ts registers it.
+    {
+      packageName: '@nocobase/app-plugin-users',
+      routes: usersRoutes,
+      source: 'plugin',
     },
     {
       packageName: '@nocobase/app-plugin-lifecycle-example',

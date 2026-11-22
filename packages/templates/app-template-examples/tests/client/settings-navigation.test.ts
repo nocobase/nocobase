@@ -6,6 +6,7 @@ import {
 import { createNotificationRoutes } from '@nocobase/app-plugin-notification/client';
 import { describe, expect, it } from 'vitest';
 
+import usersRoutes from '@nocobase/app-plugin-users/client/routes';
 import applicationRoutes from '../../client/routes.js';
 import packageMetadata from '../../package.json' with { type: 'json' };
 import {
@@ -26,6 +27,12 @@ function resolve() {
       packageName: '@nocobase/app-plugin-notification',
       source: 'plugin',
       routes: createNotificationRoutes(),
+    },
+    // User management joins Accounts and permissions from its plugin, as client/plugins.ts registers it.
+    {
+      packageName: '@nocobase/app-plugin-users',
+      source: 'plugin',
+      routes: usersRoutes,
     },
     authorizationPages(),
   ]).routes;

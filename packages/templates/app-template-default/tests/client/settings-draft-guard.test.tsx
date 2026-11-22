@@ -1,3 +1,7 @@
+import {
+  authorizationPages,
+  registeredPluginRoutes,
+} from '../helpers/plugin-routes.js';
 import packageMetadata from '../../package.json' with { type: 'json' };
 import { createAuthenticatedClientRenderer } from '../helpers/authenticated-client.js';
 import { resolveAppClientContributions } from '@nocobase/app-client/plugins';
@@ -21,7 +25,6 @@ import {
   useNavigate,
 } from 'react-router';
 import { expect, it } from 'vitest';
-import settingsRoutes from '../../client/pages/settings/routes.js';
 import shellRoutes from '../../client/pages/settings/shell-routes.js';
 import { RouteTreeProvider } from '../../client/routing/route-context.js';
 import { useRouteNavigation } from '../../client/routing/route-navigation.js';
@@ -32,8 +35,10 @@ const { routes } = resolveAppClientContributions([
   {
     packageName: packageMetadata.name,
     source: 'application',
-    routes: [shellRoutes, settingsRoutes],
+    routes: [shellRoutes],
   },
+  registeredPluginRoutes('@nocobase/app-plugin-users'),
+  authorizationPages(),
 ]);
 
 /** The shell's route tree and permission check, as `AppLayout` provides them. */

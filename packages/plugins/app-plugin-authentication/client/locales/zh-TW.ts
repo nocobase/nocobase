@@ -1,6 +1,7 @@
 import type { LocaleResource } from '@nocobase/i18n';
 
-import type enUS from './en-US.js';
+import { withPluralForms } from '../plural-forms.js';
+import enUS from './en-US.js';
 
 const zhTW: LocaleResource<typeof enUS> = {
   errors: {
@@ -30,8 +31,15 @@ const zhTW: LocaleResource<typeof enUS> = {
       '此來源不受信任。將config.yml中的app.publicOrigin設定為{{origin}}，重新啟動應用程式，然後再試一次。',
     INVALID_ORIGIN:
       '此來源不受信任。檢查config.yml中的app.publicOrigin，重新啟動應用程式，然後再試一次。',
+    FAILED_TO_UNLINK_LAST_ACCOUNT: enUS.errors.FAILED_TO_UNLINK_LAST_ACCOUNT,
     INVALID_CSRF_ORIGIN: '此請求來自另一個站點，但被拒絕。重新載入頁面並重試。',
   },
+  // The settings pages are not translated into this language yet; English is shown.
+  settings: withPluralForms(enUS.settings, 'zh-TW'),
+  guide: enUS.guide,
+  prompt: enUS.prompt,
+  sso: enUS.sso,
+  account: withPluralForms(enUS.account, 'zh-TW'),
 };
 
 export default zhTW;

@@ -15,11 +15,6 @@ const settings = {
     invalid:
       'This prerequisite could not be verified. Ask the application maintainer to check its configuration.',
   },
-  roleFilterIncomplete:
-    'Choose both a role scope and a role, or clear the filters.',
-  backToSource: 'Return to previous page',
-  roleFilter: 'Filter by role',
-  allRoles: 'All roles',
 
   permissionManagement: 'Roles and permissions',
   defaultAccess: {
@@ -100,17 +95,10 @@ const settings = {
   resetUserPassword: 'Reset password',
   assignRole: 'Assign roles',
 
-  assignedRoles: 'Assigned roles',
   actionSaved: 'Updated access for "{{name}}"',
-  userActionSaved: {
-    disable: 'Disabled user "{{name}}"',
-    enable: 'Enabled user "{{name}}"',
-    revokeSessions: 'Revoked active sessions for "{{name}}"',
-  },
 
   identityConflict: 'This email or username is already in use.',
   signInAgain: 'Sign in again',
-  passwordPolicy: 'Password does not meet the current password policy.',
 
   reload: 'Reload role',
   title: 'System settings',
@@ -136,14 +124,11 @@ const settings = {
     'Set what each role can open and do, and the data it can see.',
   users: 'Users',
   roles: 'Roles',
-  usersDescription: 'Manage accounts, access and active sessions.',
   rolesDescription:
     'Set the menus each role sees and what it may do with each kind of business data.',
-  userSearch: 'Search names, usernames or emails',
   roleSearch: 'Search role names',
   newUser: 'New user',
   editUserFor: 'Edit {{name}}',
-  editUser: 'Edit user',
   newRole: 'New role',
   editRole: 'Edit role',
   name: 'Name',
@@ -163,15 +148,9 @@ const settings = {
   noResults: 'No matching results',
   clearHint: 'Try a different search or clear the filters.',
   noUsers: 'No users yet',
-  noRoleAccess:
-    'This user can still sign in and use account basics. No business access is granted by roles.',
-  noAssignedRoles: 'No assigned roles',
   noRoles: 'No roles yet',
   create: 'Create',
   edit: 'Edit',
-  selectRoles: 'Select roles',
-  searchRoles: 'Search roles',
-  noRolesFound: 'No roles found.',
   save: 'Save',
   cancel: 'Cancel',
   saving: 'Saving…',
@@ -179,20 +158,10 @@ const settings = {
   enable: 'Enable',
   disable: 'Disable',
   revokeSessions: 'Revoke sessions',
-  disableTitle: 'Disable user "{{name}}"?',
-  disableHint:
-    'This user will be unable to sign in and existing sessions will end.',
-  enableTitle: 'Enable user "{{name}}"?',
-  enableHint: 'This user will be able to sign in again.',
-  revokeTitle: 'Revoke sessions for "{{name}}"?',
-  revokeHint: 'This user will need to sign in again.',
-  revokeRoleTitle: 'Revoke roles from "{{name}}"?',
-  revokeRoleHint: 'Access granted by the listed roles will be removed.',
   created: 'Created user "{{name}}"',
   saved: 'Saved "{{name}}"',
   rolesSaved: 'Updated roles for "{{name}}"',
   required: 'Enter a value for this field',
-  invalidEmail: 'Enter a valid email address',
   protected: 'Protected',
   custom: 'Custom',
   protectedHint:

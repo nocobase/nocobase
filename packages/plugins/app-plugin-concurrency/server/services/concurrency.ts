@@ -10,6 +10,7 @@ import {
   type ConcurrencySnapshot,
 } from '../../config/resolve.js';
 import type {
+  ConcurrencyDescription,
   ConcurrencyService,
   ConcurrencyImplementation,
   ConcurrencyInstance,
@@ -46,6 +47,7 @@ export class ManagedConcurrencyService implements ConcurrencyService {
 
   public constructor(private readonly options: ConcurrencyServiceOptions) {
     this.registerImplementation('mutex', {
+      sharing: 'local',
       validate: () => {},
       create: (entry) =>
         new MutexConcurrencyInstance(entry, (event) =>
@@ -74,7 +76,16 @@ export class ManagedConcurrencyService implements ConcurrencyService {
       throw new ConcurrentConfigurationError(
         'Concurrency implementation registration is invalid, duplicate or closed.',
       );
+    if (
+      implementation.sharing !== undefined &&
+      implementation.sharing !== 'local' &&
+      implementation.sharing !== 'shared'
+    )
+      throw new ConcurrentConfigurationError(
+        `Concurrency implementation "${adapter}" declares an unknown sharing.`,
+      );
     this.implementations.set(adapter, {
+      ...(implementation.sharing ? { sharing: implementation.sharing } : {}),
       validate: implementation.validate.bind(implementation),
       create: implementation.create.bind(implementation),
     });
@@ -119,6 +130,33 @@ export class ManagedConcurrencyService implements ConcurrencyService {
     if (this.isStopping())
       throw new ConcurrentAbortError('Concurrency service is closed.');
     return manager;
+  }
+  public describe(): ConcurrencyDescription {
+    if (!this.snapshot)
+      throw new ConcurrentConfigurationError(
+        'Concurrency service is not booted.',
+      );
+    const { defaultKey, entries } = this.snapshot;
+    const backends = [...entries.values()].map(({ key, adapter }) => {
+      const implementation = this.implementations.get(adapter);
+      return {
+        name: key,
+        adapter,
+        sharing: implementation?.sharing ?? ('unknown' as const),
+        registered: implementation !== undefined,
+      };
+    });
+    const selected = backends.find(({ name }) => name === defaultKey)!;
+    return {
+      default: defaultKey,
+      adapter: selected.adapter,
+      sharing: selected.sharing,
+      registered: selected.registered,
+      backends,
+      selections: [...this.states.keys()]
+        .filter((key) => key !== defaultKey)
+        .map((backend) => ({ backend })),
+    };
   }
   public configurationChanged(): void {
     if (this.snapshot && !this.reloadReported) {

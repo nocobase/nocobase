@@ -15,6 +15,7 @@ const apiKeysPlugin: AppServerPlugin = defineServerPlugin({
   routes,
   database: {
     migrations: './database/migrations',
+    seeds: './database/seeds',
   },
 });
 

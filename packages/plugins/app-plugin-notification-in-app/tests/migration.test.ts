@@ -25,7 +25,7 @@ const MIGRATION_NAME = '202608190002_create_notification_in_app_items' as const;
 const TARGET_MIGRATION_NAME = '202609200002_notification_in_app_target';
 const INSTANT_MIGRATION_NAME =
   '202609180001_notification_in_app_instant_columns';
-const KIND_MIGRATION_NAME = '202611220003_notification_in_app_kind_source';
+const KIND_MIGRATION_NAME = '202611220006_notification_in_app_kind_source';
 
 const sources: readonly MigrationSource[] = [
   {

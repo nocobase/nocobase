@@ -22,6 +22,7 @@ export {
   type AuthorizationSnapshot,
   type AuthorizationSubject,
   type ConfiguredAccess,
+  type ConfiguredCredential,
   type ConfiguredPermissionSet,
   type LocalizedText,
   type PermissionAssignmentInput,

@@ -1,4 +1,7 @@
-import { authorizationPages } from '../helpers/plugin-routes.js';
+import {
+  authorizationPages,
+  registeredPluginRoutes,
+} from '../helpers/plugin-routes.js';
 import {
   resolveAppClientContributions,
   type AppClientRegisteredRoute,
@@ -141,6 +144,7 @@ function resolveRoutes() {
       routes: applicationRoutes,
       source: 'application',
     },
+    registeredPluginRoutes('@nocobase/app-plugin-users'),
     authorizationPages(),
   ]);
 }

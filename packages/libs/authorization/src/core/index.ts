@@ -54,6 +54,13 @@ export type {
   ResolveAllAuthorizationGrantsInput,
   ResolveAuthorizationGrantsInput,
 } from './grants.js';
+export {
+  CredentialCatalog,
+  type CredentialObject,
+  type CredentialObjectSource,
+  type CredentialTemplate,
+  type CredentialTemplateGrant,
+} from './credentials.js';
 export type {
   AuthorizationMiddleware,
   AuthorizationMiddlewareNext,
@@ -84,6 +91,8 @@ export {
   type ResourceAuthorize,
   type ResourceAuthorizeUnrestricted,
   type ResourceItem,
+  type ResourceActionMetadata,
+  type ResourceActionRisk,
   type ResourceItemAction,
   type ResourceItemDefinition,
   type ResourceTypeAction,
@@ -116,6 +125,7 @@ export {
   AuthorizationDeniedError,
   keyScopeAllows,
   type KeyScope,
+  type AuthorizationPolicyRef,
   type AuthorizationConditions,
   type AuthorizationDecision,
   type AuthorizationEffect,

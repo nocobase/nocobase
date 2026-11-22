@@ -469,6 +469,8 @@ export const routeComponentOverrides: readonly AppClientRouteComponentOverrideDe
 export default routeComponentOverrides;
 ```
 
+A plugin that expects its pages to be replaced exports their route ids, such as `USERS_ROUTE_ID` from `@nocobase/app-plugin-users/client`; use the constant rather than writing the id.
+
 Then explicitly import it in the existing `client/runtime.ts` and add it to the existing declaration, keeping all other runtime options:
 
 ```ts

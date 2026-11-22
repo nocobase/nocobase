@@ -48,6 +48,7 @@ const settingsOperationIds = [
   'authorizationGetConfiguredAccess',
   'authorizationGetPermissionSet',
   'authorizationListInspectorOptions',
+  'authorizationListGrantableOptions',
   'authorizationListInspectorSubjects',
   'authorizationListPermissionSetAssignments',
   'authorizationListPermissionSetOptions',
@@ -162,9 +163,11 @@ describe('the API document', () => {
       '/api/authorization/inspector/configuredAccess',
       '/api/authorization/inspector/decide',
       '/api/authorization/inspector/options',
+      '/api/authorization/inspector/records',
       '/api/authorization/inspector/subjects/{type}',
       '/api/authorization/inspector/subjects/{type}/resolve',
       '/api/authorization/permissionSets',
+      '/api/authorization/permissionSets/grantableOptions',
       '/api/authorization/permissionSets/options',
       '/api/authorization/permissionSets/subjects/{type}',
       '/api/authorization/permissionSets/subjects/{type}/resolve',
@@ -248,6 +251,7 @@ describe('the API document', () => {
     expect(operationIds(document)).toEqual(
       [
         'authorizationGetPermissions',
+        'authorizationInspectRecords',
         ...settingsOperationIds,
         ...ruleOperationIds,
       ].sort(),

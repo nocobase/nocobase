@@ -31,6 +31,7 @@ const viVN: LocaleResource<typeof enUS> = {
     },
     settings: {
       'permission-sets': 'Bộ quyền',
+      'authentication-settings': 'Đăng nhập và xác thực',
     },
     subjectTypes: {
       authenticated: 'Tất cả người dùng đã đăng nhập',

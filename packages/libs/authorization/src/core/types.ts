@@ -48,6 +48,28 @@ export interface KeyScope {
         readonly actions: readonly string[];
       }[]
     | null;
+  /**
+   * The data policy the scope grants `action` on `resource` with, such as the record scopes of a composite action
+   * (`{ type: 'composite', scopes: { quote: 'recordsIOwn' } }`); undefined when the scope does not narrow its records.
+   * The authorization core applies each data scope it sets as a restriction on top of the identity's own, so it only
+   * ever narrows.
+   */
+  policy?(
+    resource: ResourceRef,
+    action: string,
+  ): AuthorizationPolicyRef | undefined;
+  /**
+   * The credential acts as no person, such as a system key's service account: default access and sharing rules that
+   * add records counted from the principal (a record access declared `personal`) add none for it. Restrictions still
+   * apply.
+   */
+  readonly personless?: boolean;
+}
+
+/** A data policy as a grant stores it (`AuthorizationPolicy`), kept structural so this file imports nothing. */
+export interface AuthorizationPolicyRef {
+  readonly type: string;
+  readonly [key: string]: unknown;
 }
 
 /** Whether `identity` may reach `action` on `resource` as far as its credential's scope goes. */

@@ -39,9 +39,30 @@ export interface PasswordResetServices {
   readonly executions?: MailExecutions;
 }
 
+/**
+ * Why email password reset is or is not available, from the same values `PasswordResetPolicy.available` is computed
+ * from, so a settings page and the sign-in page cannot disagree.
+ */
+export interface PasswordResetDiagnosis {
+  readonly available: boolean;
+  /** Password sign-in is on (`auth.emailAndPassword.enabled` is not `false`). */
+  readonly passwordSignIn: boolean;
+  /** `auth.passwordReset.enabled` is `true`. */
+  readonly enabled: boolean;
+  /** `auth.passwordReset.enabled` is explicitly `false`. */
+  readonly disabled: boolean;
+  /** `auth.emailAndPassword.sendResetPassword` is the application's own callback, which takes precedence. */
+  readonly customSender: boolean;
+  /** A mail sender was selected for reset emails. */
+  readonly sender: boolean;
+  /** The application has a fixed public origin to build reset links from. */
+  readonly publicOrigin: boolean;
+}
+
 export class PasswordResetPolicy {
   public readonly available: boolean;
   public readonly automatic: boolean;
+  public readonly diagnosis: PasswordResetDiagnosis;
   private readonly sender: ResetSender | undefined;
   private readonly executions: MailExecutions;
   private readonly customSender: boolean;
@@ -76,6 +97,15 @@ export class PasswordResetPolicy {
       options.emailAndPassword?.enabled !== false &&
       config.enabled !== false &&
       (Boolean(custom) || this.automatic);
+    this.diagnosis = {
+      available: this.available,
+      passwordSignIn: options.emailAndPassword?.enabled !== false,
+      enabled: config.enabled === true,
+      disabled: config.enabled === false,
+      customSender: custom !== undefined,
+      sender: selected !== undefined,
+      publicOrigin: configuredResetOrigin(options.baseURL),
+    };
     if (this.available) {
       if (custom && config.mailer !== undefined)
         services.warning?.(

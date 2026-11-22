@@ -37,6 +37,14 @@ export interface AuthorizationSubjectType<
     ids: readonly string[],
     transaction?: TTransaction,
   ): Promise<readonly string[]>;
+  /**
+   * Narrows the ids of this type to the ones a sharing rule may name, such as people but never service accounts,
+   * which act as no person. Absent: every id may be named.
+   */
+  filterShareable?(
+    ids: readonly string[],
+    transaction?: TTransaction,
+  ): Promise<readonly string[]>;
 }
 
 /**
