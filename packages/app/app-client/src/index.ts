@@ -111,6 +111,15 @@ export {
 export { APP_CLIENT_NAMESPACE } from './namespace.js';
 export { default as appClientLocales } from './locales/index.js';
 export {
+  AppAsideOutlet,
+  AppLayoutProviders,
+  defineLayoutExtensions,
+  useLayoutExtensions,
+  type AppClientLayoutExtensionDefinition,
+  type AppClientLayoutExtensions,
+  type AppClientRegisteredLayoutExtension,
+} from './layout-extensions.js';
+export {
   applyClientRouteComponentOverrides,
   applyHeaderActionOverrides,
   badgeCount,
