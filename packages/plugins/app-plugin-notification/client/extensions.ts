@@ -33,7 +33,9 @@ export interface NotificationChannelTypeDisplay {
   readonly title: NotificationTemplateText;
   readonly icon?: ComponentType<{ readonly className?: string }>;
   /** Replaces the summary the server built from the channel's configuration. */
-  readonly Summary?: ComponentType<{ readonly channel: NotificationChannelView }>;
+  readonly Summary?: ComponentType<{
+    readonly channel: NotificationChannelView;
+  }>;
   /** What a test send does, shown in the test dialog, such as "Sends to your enabled browser devices". */
   readonly testHint?: NotificationTemplateText;
 }
@@ -118,7 +120,8 @@ export function createNotificationPreferenceSectionRegistry(): NotificationPrefe
         .map((section, index) => ({ section, index }))
         .sort(
           (a, b) =>
-            (a.section.order ?? 0) - (b.section.order ?? 0) || a.index - b.index,
+            (a.section.order ?? 0) - (b.section.order ?? 0) ||
+            a.index - b.index,
         )
         .map(({ section }) => section),
   };

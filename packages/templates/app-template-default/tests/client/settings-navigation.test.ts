@@ -250,7 +250,6 @@ describe('System settings navigation', () => {
     expect(page.navigation?.description).toBe('nav.foundationDescription');
     expect(buildRouteNavigation(routes, new Set([routeKey(page)]))).toEqual([]);
   });
-
 });
 
 it('places database browsing in Data and files and hides its card when access is denied', () => {

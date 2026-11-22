@@ -117,7 +117,8 @@ const zhCN: NotificationResource = {
   },
   settings: {
     title: '通知',
-    description: '通知使用的渠道、系统发送的通知类型以及每一次投递。渠道在 config.yml 中配置；本页除测试发送和重试外只读。',
+    description:
+      '通知使用的渠道、系统发送的通知类型以及每一次投递。渠道在 config.yml 中配置；本页除测试发送和重试外只读。',
     tabs: {
       channels: '渠道',
       kinds: '通知类型',
@@ -159,7 +160,8 @@ const zhCN: NotificationResource = {
       jobsHint: '投递以后台任务运行，使用此配置。',
     },
     howTo: '怎么加渠道',
-    howToHint: '在 config.yml 的 notification.channels 下添加渠道并重启应用。渠道类型由已安装的插件提供；密钥请放在环境变量中。',
+    howToHint:
+      '在 config.yml 的 notification.channels 下添加渠道并重启应用。渠道类型由已安装的插件提供；密钥请放在环境变量中。',
     testTitle: '测试 {{channel}}',
     testToYou: '只给你自己发一条测试通知（你的账号或设备），并写入发送记录。',
     testToGroup: '向该渠道配置的群或地址发一条测试消息，并写入发送记录。',

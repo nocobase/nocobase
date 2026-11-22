@@ -49,13 +49,15 @@ export function NotificationPreferencesPage(): ReactElement {
       ]
     : [];
   const groups = view
-    ? [...new Map(view.kinds.map((kind) => [textKey(kind.category), kind.category]))].map(
-        ([key, category]) => ({
-          key,
-          label: text(category),
-          kinds: view.kinds.filter((kind) => textKey(kind.category) === key),
-        }),
-      )
+    ? [
+        ...new Map(
+          view.kinds.map((kind) => [textKey(kind.category), kind.category]),
+        ),
+      ].map(([key, category]) => ({
+        key,
+        label: text(category),
+        kinds: view.kinds.filter((kind) => textKey(kind.category) === key),
+      }))
     : [];
   const columnName = (type: string) =>
     t(`channelTypes.${type}`, { defaultValue: type });
@@ -82,7 +84,10 @@ export function NotificationPreferencesPage(): ReactElement {
                     {t('preferences.notification')}
                   </th>
                   {columns.map((type) => (
-                    <th key={type} className='px-3 py-2 text-center font-medium'>
+                    <th
+                      key={type}
+                      className='px-3 py-2 text-center font-medium'
+                    >
                       {columnName(type)}
                     </th>
                   ))}
@@ -102,7 +107,10 @@ export function NotificationPreferencesPage(): ReactElement {
                     </tr>
                     {group.kinds.map((kind) => (
                       <tr key={kind.id} className='border-b last:border-b-0'>
-                        <th scope='row' className='px-3 py-2 text-left font-normal'>
+                        <th
+                          scope='row'
+                          className='px-3 py-2 text-left font-normal'
+                        >
                           {text(kind.name)}
                         </th>
                         {columns.map((type) => {
@@ -128,11 +136,7 @@ export function NotificationPreferencesPage(): ReactElement {
                                   className='inline-flex items-center gap-1 text-xs text-muted-foreground'
                                   title={t('preferences.required')}
                                 >
-                                  <Switch
-                                    aria-label={label}
-                                    checked
-                                    disabled
-                                  />
+                                  <Switch aria-label={label} checked disabled />
                                   <LockIcon aria-hidden className='size-3' />
                                   <span className='sr-only'>
                                     {t('preferences.required')}

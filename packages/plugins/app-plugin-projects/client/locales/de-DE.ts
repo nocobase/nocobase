@@ -515,16 +515,42 @@ const deDE: LocaleResource<typeof enUS> = {
   noticeKinds: {
     contributor: 'Projekte',
     category: 'Projekte',
-    recipients: 'Die Personen, um die es in der Benachrichtigung geht und die das Ticket sehen dürfen; nie die handelnde Person.',
-    businessRule: 'Einmal pro Benachrichtigung gesendet. Mitglieder wählen Push und E-Mail je Art in ihren Benachrichtigungseinstellungen.',
+    recipients:
+      'Die Personen, um die es in der Benachrichtigung geht und die das Ticket sehen dürfen; nie die handelnde Person.',
+    businessRule:
+      'Einmal pro Benachrichtigung gesendet. Mitglieder wählen Push und E-Mail je Art in ihren Benachrichtigungseinstellungen.',
     languagePolicy: 'Einmal in der Standardsprache der Anwendung formuliert.',
-    variables: { title: 'Was passiert ist', body: 'Der Tickettitel oder ein Auszug aus dem Kommentar' },
-    mentioned: { name: 'Erwähnt', trigger: 'Jemand erwähnt Sie in einem Ticket oder Kommentar.' },
-    assigned: { name: 'Ihnen zugewiesen', trigger: 'Jemand macht Sie zum Verantwortlichen oder Bearbeiter eines Tickets.' },
-    attention: { name: 'Braucht Sie', trigger: 'Jemand anderes verschiebt ein Ticket, für das Sie verantwortlich sind, in einen Status, der Sie braucht, etwa Blockiert oder In Prüfung.' },
-    commented: { name: 'Neuer Kommentar', trigger: 'Jemand kommentiert ein Ticket, dem Sie folgen.' },
-    statusChanged: { name: 'Status geändert', trigger: 'Ein Ticket, dem Sie folgen, wechselt den Status.' },
-    progress: { name: 'Fortschritt', trigger: 'Eine Abhängigkeit Ihres Tickets ist erledigt, alle Untertickets sind erledigt oder ein anderes Plugin meldet Fortschritt.' },
+    variables: {
+      title: 'Was passiert ist',
+      body: 'Der Tickettitel oder ein Auszug aus dem Kommentar',
+    },
+    mentioned: {
+      name: 'Erwähnt',
+      trigger: 'Jemand erwähnt Sie in einem Ticket oder Kommentar.',
+    },
+    assigned: {
+      name: 'Ihnen zugewiesen',
+      trigger:
+        'Jemand macht Sie zum Verantwortlichen oder Bearbeiter eines Tickets.',
+    },
+    attention: {
+      name: 'Braucht Sie',
+      trigger:
+        'Jemand anderes verschiebt ein Ticket, für das Sie verantwortlich sind, in einen Status, der Sie braucht, etwa Blockiert oder In Prüfung.',
+    },
+    commented: {
+      name: 'Neuer Kommentar',
+      trigger: 'Jemand kommentiert ein Ticket, dem Sie folgen.',
+    },
+    statusChanged: {
+      name: 'Status geändert',
+      trigger: 'Ein Ticket, dem Sie folgen, wechselt den Status.',
+    },
+    progress: {
+      name: 'Fortschritt',
+      trigger:
+        'Eine Abhängigkeit Ihres Tickets ist erledigt, alle Untertickets sind erledigt oder ein anderes Plugin meldet Fortschritt.',
+    },
   },
   nav: {
     general: 'Allgemein',

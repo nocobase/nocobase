@@ -48,7 +48,8 @@ export function NotificationSettingsPage(): ReactElement {
         next.delete(key);
       if (value === 'channels') next.delete('tab');
       else next.set('tab', value);
-      for (const [key, item] of Object.entries(extra ?? {})) next.set(key, item);
+      for (const [key, item] of Object.entries(extra ?? {}))
+        next.set(key, item);
     });
   const status = params.get('status');
   const filter: DeliveriesTabProps['filter'] = {

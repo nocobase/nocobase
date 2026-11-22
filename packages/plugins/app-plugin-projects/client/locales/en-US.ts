@@ -484,16 +484,41 @@ const pages = {
   noticeKinds: {
     contributor: 'Projects',
     category: 'Projects',
-    recipients: 'The people the notice is about who may see the issue; never the person who acted.',
-    businessRule: 'Sent once per notice. Members choose push and email for each kind in their notification settings.',
+    recipients:
+      'The people the notice is about who may see the issue; never the person who acted.',
+    businessRule:
+      'Sent once per notice. Members choose push and email for each kind in their notification settings.',
     languagePolicy: "Worded once in the application's default language.",
-    variables: { title: 'What happened', body: 'The issue title or the comment excerpt' },
-    mentioned: { name: 'Mentioned', trigger: 'Someone mentions you in an issue or a comment.' },
-    assigned: { name: 'Assigned to you', trigger: 'Someone makes you the owner or the executor of an issue.' },
-    attention: { name: 'Needs you', trigger: 'Someone else moves an issue you own to a status that asks for you, such as Blocked or In review.' },
-    commented: { name: 'New comment', trigger: 'Someone comments on an issue you follow.' },
-    statusChanged: { name: 'Status changed', trigger: 'An issue you follow moves to another status.' },
-    progress: { name: 'Progress', trigger: 'A dependency of your issue is finished, the sub-issues of an issue are finished, or another plugin reports on an issue.' },
+    variables: {
+      title: 'What happened',
+      body: 'The issue title or the comment excerpt',
+    },
+    mentioned: {
+      name: 'Mentioned',
+      trigger: 'Someone mentions you in an issue or a comment.',
+    },
+    assigned: {
+      name: 'Assigned to you',
+      trigger: 'Someone makes you the owner or the executor of an issue.',
+    },
+    attention: {
+      name: 'Needs you',
+      trigger:
+        'Someone else moves an issue you own to a status that asks for you, such as Blocked or In review.',
+    },
+    commented: {
+      name: 'New comment',
+      trigger: 'Someone comments on an issue you follow.',
+    },
+    statusChanged: {
+      name: 'Status changed',
+      trigger: 'An issue you follow moves to another status.',
+    },
+    progress: {
+      name: 'Progress',
+      trigger:
+        'A dependency of your issue is finished, the sub-issues of an issue are finished, or another plugin reports on an issue.',
+    },
   },
   nav: {
     general: 'General',

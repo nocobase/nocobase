@@ -46,9 +46,7 @@ function expectSettingsEntry(routes: readonly AppClientRegisteredRoute[]) {
         route.path === '/settings' || route.path.startsWith('/settings/'),
     ),
   ).toMatchObject([{ route: { name: 'settingsHome' }, children: [] }]);
-  expect(
-    selectedNavigationId(routes, '/settings/notifications'),
-  ).toBe(
+  expect(selectedNavigationId(routes, '/settings/notifications')).toBe(
     routeKey(menu.find(({ route }) => route.name === 'settingsHome')!.route),
   );
 }

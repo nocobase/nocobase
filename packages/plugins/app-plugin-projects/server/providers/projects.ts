@@ -100,7 +100,11 @@ export class ProjectsProvider extends ServiceProvider<AppPluginApplication> {
         .resolve(userManagementServiceToken)
         .onInvitationAccepted((context) => invitations.accepted(context)),
       ...(container.has(notificationTemplateRegistryToken)
-        ? [registerNoticeKinds(container.resolve(notificationTemplateRegistryToken))]
+        ? [
+            registerNoticeKinds(
+              container.resolve(notificationTemplateRegistryToken),
+            ),
+          ]
         : []),
       startNotifications(
         this.app,

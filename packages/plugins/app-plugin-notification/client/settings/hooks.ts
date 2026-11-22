@@ -11,7 +11,10 @@ import {
 
 import { NOTIFICATION_SETTINGS_RESOURCE } from '../../shared/access.js';
 import { requestFailure } from '../text.js';
-import { notificationSettingsApi, type NotificationSettingsApi } from './api.js';
+import {
+  notificationSettingsApi,
+  type NotificationSettingsApi,
+} from './api.js';
 
 export function useSettingsApi(): NotificationSettingsApi {
   const api = useApiClient();
@@ -26,7 +29,10 @@ export function useCanManageNotifications(): boolean {
 
 export type Loaded<T> =
   | { readonly state: 'loading' }
-  | { readonly state: 'error'; readonly error: 'forbidden' | 'notFound' | 'failed' }
+  | {
+      readonly state: 'error';
+      readonly error: 'forbidden' | 'notFound' | 'failed';
+    }
   | { readonly state: 'ready'; readonly data: T };
 
 /** Loads `load()` once per `key`, with a way to load it again. */
@@ -69,4 +75,3 @@ export function useLoaded<T>(
     reload,
   ] as const;
 }
-

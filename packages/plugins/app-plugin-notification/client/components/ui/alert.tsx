@@ -22,7 +22,9 @@ function Alert({
   className,
   variant,
   ...props
-}: React.ComponentProps<'div'> & { variant?: 'default' | 'destructive' | null }): React.ReactElement {
+}: React.ComponentProps<'div'> & {
+  variant?: 'default' | 'destructive' | null;
+}): React.ReactElement {
   return (
     <div
       data-slot='alert'
@@ -33,7 +35,10 @@ function Alert({
   );
 }
 
-function AlertTitle({ className, ...props }: React.ComponentProps<'div'>): React.ReactElement {
+function AlertTitle({
+  className,
+  ...props
+}: React.ComponentProps<'div'>): React.ReactElement {
   return (
     <div
       data-slot='alert-title'
@@ -62,7 +67,10 @@ function AlertDescription({
   );
 }
 
-function AlertAction({ className, ...props }: React.ComponentProps<'div'>): React.ReactElement {
+function AlertAction({
+  className,
+  ...props
+}: React.ComponentProps<'div'>): React.ReactElement {
   return (
     <div
       data-slot='alert-action'

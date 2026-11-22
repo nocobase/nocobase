@@ -173,4 +173,3 @@ function pageAuthorizations(
     ...pageAuthorizations(route.children ?? []),
   ]);
 }
-

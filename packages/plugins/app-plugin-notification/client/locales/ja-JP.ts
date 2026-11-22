@@ -122,7 +122,8 @@ const jaJP: LocaleResource<typeof enUS> = {
   },
   settings: {
     title: '通知',
-    description: '通知が使うチャネル、システムが送る通知の種類、すべての配信。チャネルは config.yml で設定します。テスト送信と再試行以外は読み取り専用です。',
+    description:
+      '通知が使うチャネル、システムが送る通知の種類、すべての配信。チャネルは config.yml で設定します。テスト送信と再試行以外は読み取り専用です。',
     tabs: {
       channels: 'チャネル',
       kinds: '通知の種類',
@@ -140,7 +141,8 @@ const jaJP: LocaleResource<typeof enUS> = {
     title: 'チャネル',
     failing: '{{channel}} は過去 24 時間に {{count}} 回失敗しました。',
     showFailures: '失敗を表示',
-    empty: 'チャネルが設定されていません。config.yml の notification.channels に追加してください。',
+    empty:
+      'チャネルが設定されていません。config.yml の notification.channels に追加してください。',
     columns: {
       name: 'チャネル',
       type: '種類と設定',
@@ -164,10 +166,13 @@ const jaJP: LocaleResource<typeof enUS> = {
       jobsHint: '配信はこの設定のバックグラウンドジョブで実行されます。',
     },
     howTo: 'チャネルの追加方法',
-    howToHint: 'config.yml の notification.channels にチャネルを追加し、アプリケーションを再起動します。チャネルの種類はインストール済みのプラグインが提供します。秘密情報は環境変数に置いてください。',
+    howToHint:
+      'config.yml の notification.channels にチャネルを追加し、アプリケーションを再起動します。チャネルの種類はインストール済みのプラグインが提供します。秘密情報は環境変数に置いてください。',
     testTitle: '{{channel}} をテスト',
-    testToYou: 'あなた自身のアカウントまたはデバイスにだけテスト通知を送ります。配信ログに記録されます。',
-    testToGroup: 'このチャネルに設定されたグループまたはアドレスにテストメッセージを 1 件送ります。配信ログに記録されます。',
+    testToYou:
+      'あなた自身のアカウントまたはデバイスにだけテスト通知を送ります。配信ログに記録されます。',
+    testToGroup:
+      'このチャネルに設定されたグループまたはアドレスにテストメッセージを 1 件送ります。配信ログに記録されます。',
     testSend: 'テストを送信',
     testSent: 'テストを送信しました。通知 {{id}}。',
     testFailed: 'テストを送信できませんでした。',
@@ -228,7 +233,8 @@ const jaJP: LocaleResource<typeof enUS> = {
     idempotencyKey: '冪等キー',
     nextRun: '次の試行',
     lastError: '直近のエラー',
-    unknownHint: 'プロバイダーが結果を確認していません。届いている可能性があり、再試行すると重複して送られることがあります。',
+    unknownHint:
+      'プロバイダーが結果を確認していません。届いている可能性があり、再試行すると重複して送られることがあります。',
     attempts: '試行',
     attempt: '試行 {{sequence}}',
     noAttempts: 'まだ試行はありません。',
@@ -236,13 +242,15 @@ const jaJP: LocaleResource<typeof enUS> = {
     retry: '再試行',
     retryHint: '失敗した配信だけ再試行できます。',
     retryTitle: '配信を再試行',
-    retryDescription: '{{channel}} でこの配信をもう一度送ります。理由は再試行の監査に記録されます。',
+    retryDescription:
+      '{{channel}} でこの配信をもう一度送ります。理由は再試行の監査に記録されます。',
     reason: '理由',
     retryFailed: '配信を再試行できませんでした。',
   },
   preferences: {
     title: '通知',
-    description: '通知の種類ごとに受け取る場所を選びます。アプリ内メッセージは常に届きます。',
+    description:
+      '通知の種類ごとに受け取る場所を選びます。アプリ内メッセージは常に届きます。',
     notification: '通知',
     required: '常に送信',
     requiredHint: 'グレーのチャネルは常に送信され、オフにできません。',

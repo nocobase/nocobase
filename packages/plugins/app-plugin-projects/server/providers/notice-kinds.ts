@@ -113,8 +113,17 @@ export function registerNoticeKinds(
         "Worded once in the application's default language.",
       ),
       variables: [
-        { name: 'title', description: text('variables.title', 'What happened') },
-        { name: 'body', description: text('variables.body', 'The issue title or the comment excerpt') },
+        {
+          name: 'title',
+          description: text('variables.title', 'What happened'),
+        },
+        {
+          name: 'body',
+          description: text(
+            'variables.body',
+            'The issue title or the comment excerpt',
+          ),
+        },
       ],
       channels: definition.channels,
       // Project notices arrive already worded: the kind carries them as they are.

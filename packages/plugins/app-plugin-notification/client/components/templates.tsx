@@ -540,7 +540,9 @@ function TemplateDetail({
             </dl>
             {detail.policies ? (
               <section className='space-y-2'>
-                <h3 className='text-sm font-medium'>{t('kinds.policyTitle')}</h3>
+                <h3 className='text-sm font-medium'>
+                  {t('kinds.policyTitle')}
+                </h3>
                 <ul className='space-y-1.5 text-sm'>
                   {detail.policies.map((policy) => (
                     <li
@@ -769,4 +771,5 @@ function PreviewContent({
 }
 
 /** @deprecated The directory lists notification kinds now; use `NotificationKinds`. */
-export const NotificationTemplates: typeof NotificationKinds = NotificationKinds;
+export const NotificationTemplates: typeof NotificationKinds =
+  NotificationKinds;

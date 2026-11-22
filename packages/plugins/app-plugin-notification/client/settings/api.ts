@@ -148,7 +148,10 @@ export function notificationSettingsApi(
   return {
     channels: () => api.request({ path: 'notifications/channels' }),
     testChannel: (name) =>
-      data({ path: `notifications/channels/${segment(name)}/test`, method: 'POST' }),
+      data({
+        path: `notifications/channels/${segment(name)}/test`,
+        method: 'POST',
+      }),
     kinds: () => data({ path: 'notifications/kinds' }),
     kind: (id) => data({ path: `notifications/kinds/${segment(id)}` }),
     previewKind: (id, locale) =>
@@ -173,6 +176,10 @@ export function notificationSettingsApi(
       }),
     preferences: () => data({ path: 'notifications/preferences' }),
     savePreferences: (items) =>
-      data({ path: 'notifications/preferences', method: 'PUT', json: { items } }),
+      data({
+        path: 'notifications/preferences',
+        method: 'PUT',
+        json: { items },
+      }),
   };
 }

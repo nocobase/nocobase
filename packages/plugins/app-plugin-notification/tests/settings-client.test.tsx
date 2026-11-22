@@ -54,8 +54,18 @@ const preferences = (emailEnabled: boolean): NotificationPreferencesView => ({
       category: 'Approvals',
       categoryKey: 'approvals',
       channels: [
-        { type: 'in-app', policy: 'required', adjustable: false, enabled: true },
-        { type: 'email', policy: 'on', adjustable: true, enabled: emailEnabled },
+        {
+          type: 'in-app',
+          policy: 'required',
+          adjustable: false,
+          enabled: true,
+        },
+        {
+          type: 'email',
+          policy: 'on',
+          adjustable: true,
+          enabled: emailEnabled,
+        },
       ],
     },
   ],
@@ -94,7 +104,11 @@ describe('personal notification preferences', () => {
         path: 'notifications/preferences',
         json: {
           items: [
-            { kind: 'approval.requested', channelType: 'email', enabled: false },
+            {
+              kind: 'approval.requested',
+              channelType: 'email',
+              enabled: false,
+            },
           ],
         },
       },
@@ -169,9 +183,9 @@ describe('delivery retry', () => {
     fireEvent.click(
       await within(drawer).findByRole('button', { name: 'Retry' }),
     );
-    const dialog = await screen.findByRole('alertdialog').catch(() =>
-      screen.findByRole('dialog', { name: 'Retry delivery' }),
-    );
+    const dialog = await screen
+      .findByRole('alertdialog')
+      .catch(() => screen.findByRole('dialog', { name: 'Retry delivery' }));
     const confirm = within(dialog).getByRole('button', { name: 'Retry' });
     expect(confirm).toBeDisabled();
     fireEvent.change(within(dialog).getByRole('textbox', { name: 'Reason' }), {
@@ -196,7 +210,9 @@ describe('delivery retry', () => {
     const calls: Call[] = [];
     await renderDeliveries(['read'], calls);
     const drawer = await screen.findByRole('dialog');
-    expect(await within(drawer).findByText('Mailbox unavailable')).toBeVisible();
+    expect(
+      await within(drawer).findByText('Mailbox unavailable'),
+    ).toBeVisible();
     await waitFor(() =>
       expect(
         calls.some((call) => call.path === 'authorization/permissions'),
@@ -226,7 +242,11 @@ describe('notification routes', () => {
     expect(personal).toMatchObject({
       parent: 'personalSettings',
       routes: [
-        { parent: 'messages', name: 'notificationPreferences', path: '/notifications' },
+        {
+          parent: 'messages',
+          name: 'notificationPreferences',
+          path: '/notifications',
+        },
       ],
     });
     expect(

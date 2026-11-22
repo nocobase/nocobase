@@ -165,7 +165,10 @@ function ChannelRow({
         ) : channel.summary.length ? (
           <dl className='flex flex-wrap gap-x-3 gap-y-0.5 text-xs text-muted-foreground'>
             {channel.summary.map((item) => (
-              <div key={`${text(item.label)}:${item.value}`} className='flex min-w-0 gap-1'>
+              <div
+                key={`${text(item.label)}:${item.value}`}
+                className='flex min-w-0 gap-1'
+              >
                 <dt>{text(item.label)}</dt>
                 <dd className='font-mono break-all text-foreground/80'>
                   {item.value}
@@ -212,7 +215,10 @@ function DeliverySettings({
   const source = (configured: boolean) =>
     t(configured ? 'channels.fromConfig' : 'channels.fromDefault');
   return (
-    <section aria-labelledby='notification-delivery-settings' className='space-y-2'>
+    <section
+      aria-labelledby='notification-delivery-settings'
+      className='space-y-2'
+    >
       <h2 id='notification-delivery-settings' className='text-sm font-medium'>
         {t('channels.delivery.title')}
       </h2>
@@ -239,7 +245,9 @@ function DeliverySettings({
           <dd className='space-y-0.5'>
             <p>
               <code>{settings.jobs ?? 'jobs.default'}</code>{' '}
-              <Badge variant='outline'>{source(settings.jobs !== undefined)}</Badge>
+              <Badge variant='outline'>
+                {source(settings.jobs !== undefined)}
+              </Badge>
             </p>
             <p className='text-xs text-muted-foreground'>
               {t('channels.delivery.jobsHint')}
@@ -275,7 +283,8 @@ function TestDialog({
     if (!channel) return;
     setState({ state: 'sending' });
     api.testChannel(channel.name).then(
-      (result) => setState({ state: 'sent', notificationId: result.notificationId }),
+      (result) =>
+        setState({ state: 'sent', notificationId: result.notificationId }),
       (cause: unknown) =>
         setState({
           state: 'failed',

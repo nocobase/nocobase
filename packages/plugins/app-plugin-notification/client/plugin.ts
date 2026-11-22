@@ -4,7 +4,10 @@ import {
 } from '@nocobase/app-client/plugins';
 
 import locales from './locales/index.js';
-import { createNotificationRoutes, type NotificationRouteOptions } from './routes.js';
+import {
+  createNotificationRoutes,
+  type NotificationRouteOptions,
+} from './routes.js';
 import serviceProviders from './service-provider.js';
 
 export type NotificationClientOptions = NotificationRouteOptions;

@@ -113,7 +113,8 @@ export function DeliveriesTab({
   }
   const set = (change: Partial<DeliveriesTabProps['filter']>) =>
     onFilterChange({ ...filter, ...change });
-  const last = pages.at(-1) ?? (first.state === 'ready' ? first.data : undefined);
+  const last =
+    pages.at(-1) ?? (first.state === 'ready' ? first.data : undefined);
   const loadMore = () => {
     const token = last?.meta.nextPageToken;
     if (!token) return;
@@ -137,7 +138,9 @@ export function DeliveriesTab({
   const kindName = (id: string | undefined) => {
     if (!id) return undefined;
     const found =
-      kinds.state === 'ready' ? kinds.data.find((kind) => kind.id === id) : undefined;
+      kinds.state === 'ready'
+        ? kinds.data.find((kind) => kind.id === id)
+        : undefined;
     return found ? text(found.name) : id;
   };
   const submitSearch = (event: FormEvent) => {
@@ -166,24 +169,25 @@ export function DeliveriesTab({
           >
             {t('deliveries.all')}
           </Button>
-          {[...CHIPS, ...DELIVERY_OUTCOMES.filter((item) => !CHIPS.includes(item))].map(
-            (outcome) => (
-              <Button
-                key={outcome}
-                size='sm'
-                variant={filter.status === outcome ? 'secondary' : 'outline'}
-                aria-pressed={filter.status === outcome}
-                onClick={() =>
-                  set({ status: filter.status === outcome ? undefined : outcome })
-                }
-              >
-                {t(`deliveries.outcomes.${outcome}`)}
-                <span className='text-muted-foreground tabular-nums'>
-                  {counts[outcome] ?? 0}
-                </span>
-              </Button>
-            ),
-          )}
+          {[
+            ...CHIPS,
+            ...DELIVERY_OUTCOMES.filter((item) => !CHIPS.includes(item)),
+          ].map((outcome) => (
+            <Button
+              key={outcome}
+              size='sm'
+              variant={filter.status === outcome ? 'secondary' : 'outline'}
+              aria-pressed={filter.status === outcome}
+              onClick={() =>
+                set({ status: filter.status === outcome ? undefined : outcome })
+              }
+            >
+              {t(`deliveries.outcomes.${outcome}`)}
+              <span className='text-muted-foreground tabular-nums'>
+                {counts[outcome] ?? 0}
+              </span>
+            </Button>
+          ))}
         </div>
         <Select
           value={channelValue}
@@ -192,7 +196,9 @@ export function DeliveriesTab({
           }
         >
           <SelectTrigger aria-label={t('deliveries.channel')} size='sm'>
-            <span className='text-muted-foreground'>{t('deliveries.channel')}</span>
+            <span className='text-muted-foreground'>
+              {t('deliveries.channel')}
+            </span>
             <SelectValue>
               {channelValue === 'all' ? t('deliveries.all') : channelValue}
             </SelectValue>
@@ -215,7 +221,9 @@ export function DeliveriesTab({
           }
         >
           <SelectTrigger aria-label={t('deliveries.kind')} size='sm'>
-            <span className='text-muted-foreground'>{t('deliveries.kind')}</span>
+            <span className='text-muted-foreground'>
+              {t('deliveries.kind')}
+            </span>
             <SelectValue>
               {kindValue === 'all' ? t('deliveries.all') : kindName(kindValue)}
             </SelectValue>
@@ -277,19 +285,33 @@ export function DeliveriesTab({
             <table className='w-full min-w-[44rem] text-sm'>
               <thead className='text-left text-xs text-muted-foreground'>
                 <tr className='border-b'>
-                  <th className='px-3 py-2 font-medium'>{t('deliveries.columns.time')}</th>
-                  <th className='px-3 py-2 font-medium'>{t('deliveries.columns.notification')}</th>
-                  <th className='px-3 py-2 font-medium'>{t('deliveries.columns.channel')}</th>
-                  <th className='px-3 py-2 font-medium'>{t('deliveries.columns.recipient')}</th>
-                  <th className='px-3 py-2 font-medium'>{t('deliveries.columns.result')}</th>
-                  <th className='px-3 py-2 text-right font-medium'>{t('deliveries.columns.attempts')}</th>
+                  <th className='px-3 py-2 font-medium'>
+                    {t('deliveries.columns.time')}
+                  </th>
+                  <th className='px-3 py-2 font-medium'>
+                    {t('deliveries.columns.notification')}
+                  </th>
+                  <th className='px-3 py-2 font-medium'>
+                    {t('deliveries.columns.channel')}
+                  </th>
+                  <th className='px-3 py-2 font-medium'>
+                    {t('deliveries.columns.recipient')}
+                  </th>
+                  <th className='px-3 py-2 font-medium'>
+                    {t('deliveries.columns.result')}
+                  </th>
+                  <th className='px-3 py-2 text-right font-medium'>
+                    {t('deliveries.columns.attempts')}
+                  </th>
                 </tr>
               </thead>
               <tbody className='divide-y'>
                 {rows.map((row) => (
                   <tr
                     key={row.delivery.id}
-                    aria-current={selectedId === row.delivery.id ? 'true' : undefined}
+                    aria-current={
+                      selectedId === row.delivery.id ? 'true' : undefined
+                    }
                     className='aria-[current=true]:bg-muted/60'
                   >
                     <td className='px-3 py-2 whitespace-nowrap'>
@@ -312,7 +334,9 @@ export function DeliveriesTab({
                           .join(' · ')}
                       </p>
                     </td>
-                    <td className='px-3 py-2 break-all'>{row.delivery.channelName}</td>
+                    <td className='px-3 py-2 break-all'>
+                      {row.delivery.channelName}
+                    </td>
                     <td className='px-3 py-2 font-mono text-xs break-all'>
                       {row.delivery.recipientKey ?? '—'}
                     </td>
@@ -423,22 +447,30 @@ function DeliveryDetail({
         ) : detail ? (
           <>
             <dl className='grid grid-cols-[8rem_1fr] gap-x-3 gap-y-2 text-sm'>
-              <dt className='text-muted-foreground'>{t('deliveries.columns.result')}</dt>
+              <dt className='text-muted-foreground'>
+                {t('deliveries.columns.result')}
+              </dt>
               <dd>
                 <StatusBadge status={detail.delivery.status} />
               </dd>
-              <dt className='text-muted-foreground'>{t('deliveries.columns.channel')}</dt>
+              <dt className='text-muted-foreground'>
+                {t('deliveries.columns.channel')}
+              </dt>
               <dd className='break-all'>
                 {detail.delivery.channelName}{' '}
                 <span className='text-muted-foreground'>
                   ({detail.delivery.providerType})
                 </span>
               </dd>
-              <dt className='text-muted-foreground'>{t('deliveries.columns.recipient')}</dt>
+              <dt className='text-muted-foreground'>
+                {t('deliveries.columns.recipient')}
+              </dt>
               <dd className='font-mono text-xs break-all'>
                 {detail.delivery.recipientKey ?? '—'}
               </dd>
-              <dt className='text-muted-foreground'>{t('deliveries.source')}</dt>
+              <dt className='text-muted-foreground'>
+                {t('deliveries.source')}
+              </dt>
               <dd className='break-all'>
                 {[detail.sourceType, detail.sourceReferenceId]
                   .filter(Boolean)
@@ -446,13 +478,19 @@ function DeliveryDetail({
               </dd>
               {detail.idempotencyKey ? (
                 <>
-                  <dt className='text-muted-foreground'>{t('deliveries.idempotencyKey')}</dt>
-                  <dd className='font-mono text-xs break-all'>{detail.idempotencyKey}</dd>
+                  <dt className='text-muted-foreground'>
+                    {t('deliveries.idempotencyKey')}
+                  </dt>
+                  <dd className='font-mono text-xs break-all'>
+                    {detail.idempotencyKey}
+                  </dd>
                 </>
               ) : null}
               {detail.delivery.lastError ? (
                 <>
-                  <dt className='text-muted-foreground'>{t('deliveries.lastError')}</dt>
+                  <dt className='text-muted-foreground'>
+                    {t('deliveries.lastError')}
+                  </dt>
                   <dd className='break-words text-destructive'>
                     {detail.delivery.lastError.code
                       ? `${detail.delivery.lastError.code}: `
@@ -463,7 +501,9 @@ function DeliveryDetail({
               ) : null}
               {detail.delivery.nextRunAt ? (
                 <>
-                  <dt className='text-muted-foreground'>{t('deliveries.nextRun')}</dt>
+                  <dt className='text-muted-foreground'>
+                    {t('deliveries.nextRun')}
+                  </dt>
                   <dd>{formatTime(detail.delivery.nextRunAt, language)}</dd>
                 </>
               ) : null}
@@ -471,7 +511,9 @@ function DeliveryDetail({
             {status === 'unknown' ? (
               <Alert>
                 <TriangleAlertIcon />
-                <AlertDescription>{t('deliveries.unknownHint')}</AlertDescription>
+                <AlertDescription>
+                  {t('deliveries.unknownHint')}
+                </AlertDescription>
               </Alert>
             ) : null}
             <section aria-labelledby='delivery-attempts' className='space-y-2'>
@@ -481,10 +523,15 @@ function DeliveryDetail({
               {detail.attempts.length ? (
                 <ol className='space-y-2'>
                   {detail.attempts.map((attempt) => (
-                    <li key={attempt.id} className='rounded-lg border p-3 text-sm'>
+                    <li
+                      key={attempt.id}
+                      className='rounded-lg border p-3 text-sm'
+                    >
                       <div className='flex flex-wrap items-center gap-2'>
                         <span className='font-medium'>
-                          {t('deliveries.attempt', { sequence: attempt.sequence })}
+                          {t('deliveries.attempt', {
+                            sequence: attempt.sequence,
+                          })}
                         </span>
                         <StatusBadge status={attempt.status} />
                         <span className='text-xs text-muted-foreground'>
@@ -501,7 +548,9 @@ function DeliveryDetail({
                   ))}
                 </ol>
               ) : (
-                <p className='text-sm text-muted-foreground'>{t('deliveries.noAttempts')}</p>
+                <p className='text-sm text-muted-foreground'>
+                  {t('deliveries.noAttempts')}
+                </p>
               )}
             </section>
             {detail.retryAudits.length ? (
@@ -511,7 +560,10 @@ function DeliveryDetail({
                 </h3>
                 <ul className='space-y-2'>
                   {detail.retryAudits.map((audit) => (
-                    <li key={audit.id} className='rounded-lg border p-3 text-sm'>
+                    <li
+                      key={audit.id}
+                      className='rounded-lg border p-3 text-sm'
+                    >
                       <p className='break-words'>{audit.resolution.reason}</p>
                       <p className='text-xs text-muted-foreground'>
                         {formatTime(audit.resolution.requestedAt, language)}
@@ -523,7 +575,9 @@ function DeliveryDetail({
             ) : null}
             {canManage && status === 'failed' ? (
               <div className='flex flex-wrap items-center gap-3'>
-                <Button onClick={() => setRetrying(true)}>{t('deliveries.retry')}</Button>
+                <Button onClick={() => setRetrying(true)}>
+                  {t('deliveries.retry')}
+                </Button>
                 <span className='text-xs text-muted-foreground'>
                   {t('deliveries.retryHint')}
                 </span>

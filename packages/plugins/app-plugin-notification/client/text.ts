@@ -6,7 +6,10 @@ import type { NotificationTemplateText } from '../shared/templates.js';
 export const NOTIFICATION_NAMESPACE = '@nocobase/app-plugin-notification';
 
 export type ResolveText = (text: NotificationTemplateText) => string;
-export type Translate = (key: string, options?: Record<string, unknown>) => string;
+export type Translate = (
+  key: string,
+  options?: Record<string, unknown>,
+) => string;
 
 /** The plugin's translations, and registrant text resolved in the interface language. */
 export function useNotificationText(): {
@@ -19,7 +22,10 @@ export function useNotificationText(): {
   const text: ResolveText = (value) =>
     typeof value === 'string'
       ? value
-      : translate(value.key, { ns: value.ns, defaultValue: value.defaultValue });
+      : translate(value.key, {
+          ns: value.ns,
+          defaultValue: value.defaultValue,
+        });
   return { t: translate, text, language: i18n.language };
 }
 

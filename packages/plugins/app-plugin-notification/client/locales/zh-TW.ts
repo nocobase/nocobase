@@ -118,7 +118,8 @@ const zhTW: LocaleResource<typeof enUS> = {
   },
   settings: {
     title: '通知',
-    description: '通知使用的管道、系統傳送的通知類型以及每一次投遞。管道在 config.yml 中設定；本頁除測試傳送和重試外唯讀。',
+    description:
+      '通知使用的管道、系統傳送的通知類型以及每一次投遞。管道在 config.yml 中設定；本頁除測試傳送和重試外唯讀。',
     tabs: {
       channels: '管道',
       kinds: '通知類型',
@@ -160,7 +161,8 @@ const zhTW: LocaleResource<typeof enUS> = {
       jobsHint: '投遞以背景工作執行，使用此設定。',
     },
     howTo: '如何新增管道',
-    howToHint: '在 config.yml 的 notification.channels 下新增管道並重新啟動應用。管道類型由已安裝的外掛提供；密鑰請放在環境變數中。',
+    howToHint:
+      '在 config.yml 的 notification.channels 下新增管道並重新啟動應用。管道類型由已安裝的外掛提供；密鑰請放在環境變數中。',
     testTitle: '測試 {{channel}}',
     testToYou: '只給你自己傳一則測試通知（你的帳號或裝置），並寫入傳送記錄。',
     testToGroup: '向此管道設定的群組或位址傳一則測試訊息，並寫入傳送記錄。',

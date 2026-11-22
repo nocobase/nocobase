@@ -499,15 +499,39 @@ const jaJP: LocaleResource<typeof enUS> = {
     contributor: 'プロジェクト',
     category: 'プロジェクト',
     recipients: '通知の対象で課題を閲覧できる人。操作した本人は含みません。',
-    businessRule: '通知ごとに 1 回送信します。メンバーは通知設定で種類ごとにプッシュとメールを選べます。',
+    businessRule:
+      '通知ごとに 1 回送信します。メンバーは通知設定で種類ごとにプッシュとメールを選べます。',
     languagePolicy: 'アプリの既定言語で 1 回作成します。',
-    variables: { title: '起きたこと', body: '課題のタイトルまたはコメントの抜粋' },
-    mentioned: { name: 'メンション', trigger: '課題やコメントであなたがメンションされたとき。' },
-    assigned: { name: 'あなたに割り当て', trigger: '課題の担当者または実行者にあなたが設定されたとき。' },
-    attention: { name: '対応が必要', trigger: 'あなたが担当する課題を他の人が「ブロック中」や「レビュー中」など、あなたが必要なステータスに移したとき。' },
-    commented: { name: '新しいコメント', trigger: 'フォロー中の課題にコメントがあったとき。' },
-    statusChanged: { name: 'ステータス変更', trigger: 'フォロー中の課題のステータスが変わったとき。' },
-    progress: { name: '進捗', trigger: '依存先の課題が完了したとき、子課題がすべて完了したとき、または別のプラグインが課題の進捗を報告したとき。' },
+    variables: {
+      title: '起きたこと',
+      body: '課題のタイトルまたはコメントの抜粋',
+    },
+    mentioned: {
+      name: 'メンション',
+      trigger: '課題やコメントであなたがメンションされたとき。',
+    },
+    assigned: {
+      name: 'あなたに割り当て',
+      trigger: '課題の担当者または実行者にあなたが設定されたとき。',
+    },
+    attention: {
+      name: '対応が必要',
+      trigger:
+        'あなたが担当する課題を他の人が「ブロック中」や「レビュー中」など、あなたが必要なステータスに移したとき。',
+    },
+    commented: {
+      name: '新しいコメント',
+      trigger: 'フォロー中の課題にコメントがあったとき。',
+    },
+    statusChanged: {
+      name: 'ステータス変更',
+      trigger: 'フォロー中の課題のステータスが変わったとき。',
+    },
+    progress: {
+      name: '進捗',
+      trigger:
+        '依存先の課題が完了したとき、子課題がすべて完了したとき、または別のプラグインが課題の進捗を報告したとき。',
+    },
   },
   nav: {
     general: '一般',

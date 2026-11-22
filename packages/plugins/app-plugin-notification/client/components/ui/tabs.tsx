@@ -40,7 +40,9 @@ function TabsList({
   className,
   variant = 'default',
   ...props
-}: TabsPrimitive.List.Props & { variant?: 'default' | 'line' | null }): React.ReactElement {
+}: TabsPrimitive.List.Props & {
+  variant?: 'default' | 'line' | null;
+}): React.ReactElement {
   return (
     <TabsPrimitive.List
       data-slot='tabs-list'
@@ -51,7 +53,10 @@ function TabsList({
   );
 }
 
-function TabsTrigger({ className, ...props }: TabsPrimitive.Tab.Props): React.ReactElement {
+function TabsTrigger({
+  className,
+  ...props
+}: TabsPrimitive.Tab.Props): React.ReactElement {
   return (
     <TabsPrimitive.Tab
       data-slot='tabs-trigger'
@@ -67,7 +72,10 @@ function TabsTrigger({ className, ...props }: TabsPrimitive.Tab.Props): React.Re
   );
 }
 
-function TabsContent({ className, ...props }: TabsPrimitive.Panel.Props): React.ReactElement {
+function TabsContent({
+  className,
+  ...props
+}: TabsPrimitive.Panel.Props): React.ReactElement {
   return (
     <TabsPrimitive.Panel
       data-slot='tabs-content'
