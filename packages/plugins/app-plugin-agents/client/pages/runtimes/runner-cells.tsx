@@ -116,10 +116,8 @@ const TOOL_STATE_TONE: Readonly<Record<ToolState, Tone>> = {
 
 export function ToolStateTag({
   state,
-  detail,
 }: {
   readonly state: ToolState;
-  readonly detail?: string | undefined;
 }): ReactElement {
   const { t } = useTranslation();
   return (
@@ -127,7 +125,7 @@ export function ToolStateTag({
       tone={TOOL_STATE_TONE[state]}
       dot
       className='max-w-full whitespace-normal'
-      title={state === 'off' ? t('runtimes.tool.offHint') : detail}
+      title={state === 'off' ? t('runtimes.tool.offHint') : undefined}
     >
       {t(`runtimes.tool.${state}`)}
     </AgTag>
