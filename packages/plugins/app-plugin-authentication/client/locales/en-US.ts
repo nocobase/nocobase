@@ -342,6 +342,7 @@ const enUS = {
       'When you are done, tell me which files you changed and what to watch for when deploying.',
   },
   sso: {
+    breadcrumb: 'Turn on single sign-on or social sign-in',
     title: 'Turn on single sign-on (OIDC)',
     socialTitle: 'Turn on social sign-in',
     description:

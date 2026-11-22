@@ -49,6 +49,10 @@ describe('the settings pages the authentication plugin registers', () => {
       },
     });
     expect(byId(AUTHENTICATION_SSO_GUIDE_ROUTE_ID)?.navigation).toBeUndefined();
+    // One route serves single sign-on and social sign-in, so its breadcrumb names both.
+    expect(byId(AUTHENTICATION_SSO_GUIDE_ROUTE_ID)?.breadcrumb).toEqual({
+      title: 'sso.breadcrumb',
+    });
   });
 
   it('puts the two-factor and passkey guides beside it, behind the same settings item and out of the menu', async () => {

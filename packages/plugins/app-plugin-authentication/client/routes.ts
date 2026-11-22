@@ -52,7 +52,7 @@ export const systemSettingsRoutes: AppClientRouteContribution =
       name: 'authenticationSsoGuide',
       path: '/authentication/sso',
       authz: readSettings,
-      breadcrumb: { title: 'sso.title' },
+      breadcrumb: { title: 'sso.breadcrumb' },
       componentLoader: () => import('./pages/sso-guide-page.js'),
     },
     {

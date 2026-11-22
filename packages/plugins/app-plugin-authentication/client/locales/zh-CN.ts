@@ -319,6 +319,7 @@ const zhCN: AuthenticationResource = {
     doneMethod: '完成后告诉我改了哪些文件，以及部署时要注意什么。',
   },
   sso: {
+    breadcrumb: '开启单点登录或社交账号登录',
     title: '开启单点登录（OIDC）',
     socialTitle: '开启社交账号登录',
     description:
