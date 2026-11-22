@@ -95,9 +95,9 @@ export function mailRoutes(
   ];
 }
 
-function parentOf(
-  option: false | MailNavigationOptions | undefined,
-): { readonly parent?: string } {
+function parentOf(option: false | MailNavigationOptions | undefined): {
+  readonly parent?: string;
+} {
   return option && option.parent ? { parent: option.parent } : {};
 }
 

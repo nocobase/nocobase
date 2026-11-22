@@ -14,10 +14,10 @@ export interface MailClientOptions {
 
 const mail: AppClientPluginFactory<MailClientOptions> =
   defineClientPlugin<MailClientOptions>({
-  packageName: '@nocobase/app-plugin-mail',
-  locales,
-  serviceProviders,
-  routes: (options) => mailRoutes(options?.routes),
-});
+    packageName: '@nocobase/app-plugin-mail',
+    locales,
+    serviceProviders,
+    routes: (options) => mailRoutes(options?.routes),
+  });
 
 export default mail;

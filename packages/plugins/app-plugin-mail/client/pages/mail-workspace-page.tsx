@@ -89,10 +89,7 @@ import { useMailClient } from '../runtime.js';
 import { mailSyncDateMonthsAgo } from '../../shared/mail-sync-date.js';
 import { MAIL_VIRTUAL_FOLDER_IDS } from '../../shared/mail.js';
 import { MAIL_PLUGIN_NS } from '../namespace.js';
-import {
-  useMailExtensions,
-  type MailExtensions,
-} from '../extensions.js';
+import { useMailExtensions, type MailExtensions } from '../extensions.js';
 import { notifyComposerCompletion } from '../lib/mail-composer-completion.js';
 import { MailSlotBoundary } from '../components/mail-slot-boundary.js';
 
@@ -852,7 +849,7 @@ export default function MailWorkspacePage({
         folders: t('workspace.folders', { defaultValue: 'Folders' }),
         accounts: t('workspace.accounts', { defaultValue: 'Accounts' }),
         labels: t('workspace.labels', { defaultValue: 'Labels' }),
-        needsReauthorization: t('workspace.needsReauthorization', {
+        needsReauthorization: t('pages.workspace.needsReauthorization', {
           defaultValue: 'needs reauthorization',
         }),
         folderNames,
@@ -993,7 +990,7 @@ export default function MailWorkspacePage({
           className='flex flex-wrap items-center justify-between gap-3 rounded-xl border border-destructive/30 bg-destructive/5 px-4 py-3 text-sm text-destructive'
         >
           <span>
-            {t('workspace.reauthorizationNotice', {
+            {t('pages.workspace.reauthorizationNotice', {
               addresses: reauthorizationAccounts
                 .map((account) => account.address)
                 .join(', '),
@@ -1006,7 +1003,7 @@ export default function MailWorkspacePage({
               className='font-medium underline underline-offset-4'
               href={resolveAppUrl(accountsHref)}
             >
-              {t('workspace.reauthorize', {
+              {t('pages.workspace.reauthorize', {
                 defaultValue: 'Reconnect in Mail accounts',
               })}
             </a>
@@ -1827,7 +1824,9 @@ function MessageAsides({
     return [
       ...new Set(
         [message.from, ...message.to, ...message.cc]
-          .flatMap((address) => (address ? [address.address.toLowerCase()] : []))
+          .flatMap((address) =>
+            address ? [address.address.toLowerCase()] : [],
+          )
           .filter((address) => !own.has(address)),
       ),
     ];
