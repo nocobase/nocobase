@@ -27,7 +27,7 @@ const clientPlugins: AppClientPlugins = defineClientPlugins([
   defaultAccess(),
   sharingRules(),
   restrictionRules(),
-  databaseExplorer(),
+  databaseExplorer({ parent: applicationManifest.name + ':settingsSystem' }),
   users(),
   apiKeys(),
   i18n(),

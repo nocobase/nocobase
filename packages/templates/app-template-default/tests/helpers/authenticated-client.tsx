@@ -1,3 +1,4 @@
+import databaseExplorer from '@nocobase/app-plugin-database-explorer/client';
 import type { ReactElement } from 'react';
 import { randomUUID } from 'node:crypto';
 import { CookieJar } from 'jsdom';
@@ -167,7 +168,7 @@ async function renderClient(
     return ui;
   }
   const view = await renderWithApp(<SessionObserver />, {
-    plugins: [authentication(), authorization()],
+    plugins: [authentication(), authorization(), databaseExplorer()],
     namespace: packageMetadata.name,
     namespaces: {
       ...options.namespaces,

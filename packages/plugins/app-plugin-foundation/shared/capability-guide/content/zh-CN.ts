@@ -320,7 +320,7 @@ const zhCN: GuideContent = {
       reference: [
         '先注册认证与授权，再注册本插件的 Client 和 Server 入口。',
         '向需要使用的管理员授予 page:database-explorer/access。',
-        '使用 DatabaseExplorerClient 接入应用页面；本插件不自带独立页面。',
+        '在 Default 和 Examples 的系统设置中打开插件提供的数据库浏览器。',
       ],
     },
     'app-plugin-file': {

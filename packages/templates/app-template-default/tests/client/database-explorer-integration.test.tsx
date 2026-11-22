@@ -2,7 +2,7 @@ import { DATABASE_EXPLORER_ACCESS } from '@nocobase/app-plugin-database-explorer
 import { screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { expect, it } from 'vitest';
-import DatabaseExplorerPage from '../../client/pages/settings/database-explorer/index.js';
+import DatabaseExplorerPage from '@nocobase/app-plugin-database-explorer/client/page';
 import { createAuthenticatedClientRenderer } from '../helpers/authenticated-client.js';
 
 const renderAuthenticated = createAuthenticatedClientRenderer();

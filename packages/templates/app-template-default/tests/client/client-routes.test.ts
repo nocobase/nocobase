@@ -1,3 +1,4 @@
+import databaseExplorer from '@nocobase/app-plugin-database-explorer/client';
 import {
   resolveAppClientContributions,
   type AppClientRegisteredRoute,
@@ -11,6 +12,10 @@ import applicationRoutes, {
 } from '../../client/routes.ts';
 import { includeNotificationTemplateRoutes } from '../../client/pages/settings/notification-routes.js';
 import { defineAppRoutes } from '@nocobase/app-client/plugins';
+
+const explorer = databaseExplorer({
+  parent: '@nocobase/app-template-default:settingsSystem',
+});
 
 describe('app client routes', () => {
   it('joins the settings system category across contributions without moving the log URL', () => {
@@ -207,6 +212,11 @@ describe('app client routes', () => {
           : [...applicationRoutes, systemSettingsRoutes],
         source: 'application',
       },
+      {
+        packageName: explorer.packageName,
+        source: 'plugin',
+        routes: explorer.routes,
+      },
     ]);
     expect(pagePaths(built.routes)).toEqual(
       expect.arrayContaining(['/settings', '/settings/database-explorer']),
@@ -257,6 +267,11 @@ describe('app client routes', () => {
 /** This application's own contribution, registered the way the client runtime registers it. */
 function resolveRoutes() {
   return resolveAppClientContributions([
+    {
+      packageName: explorer.packageName,
+      source: 'plugin',
+      routes: explorer.routes,
+    },
     {
       packageName: '@nocobase/app-template-default',
       routes: applicationRoutes,

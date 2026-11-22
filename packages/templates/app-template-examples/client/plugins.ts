@@ -43,7 +43,10 @@ const clientPlugins: AppClientPlugins = defineClientPlugins([
   authorizationExample(),
   templatePrintExample(),
   users(),
-  databaseExplorer(),
+  databaseExplorer({
+    parent: applicationManifest.name + ':settingsSystem',
+    path: '/settings/database-explorer',
+  }),
   apiKeys(),
   i18n(),
   notificationInApp(),
