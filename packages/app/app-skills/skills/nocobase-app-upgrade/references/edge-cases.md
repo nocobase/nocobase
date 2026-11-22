@@ -192,12 +192,12 @@ An application from before `@nocobase/app-cli` took over the whole command line 
 
 1. In `package.json`, remove `@nocobase/nb3-cli` and `@nocobase/app-tools`, keep `@nocobase/app-cli` in `dependencies` at the target template's range, and add the development tools it expects the application to provide to `devDependencies` — `typescript`, `tsx`, `vite`, `prettier`, `tar`, `tsc-alias` and `@nocobase/dev-config`, taking the target template's ranges.
 2. Replace `scripts` with the target template's: `postinstall`, `dev`, `build` and `start` run `nocobase …`, and the quality scripts stay. Delete the command aliases (`config:*`, `db:*`, `migrate`, `seed`, `collections:generate`, `plugin:*`, `package:remove`, `skills:sync`, `upload`, `deploy`, `server:deps:*`, `nocobase`); each is now `pnpm nocobase <topic> <command>`. Keep scripts the user added that are not aliases, and ask before dropping one they redefined.
-3. If the application published to a Hub (it had `upload` and `deploy`), those commands have no replacement; see [Hub publishing](#hub-publishing).
+3. The `upload` and `deploy` scripts have no replacement. Tell the user which CI steps and scripts used them and that they need another deployment route, such as a `pnpm build --tar` archive installed with `@nocobase/app-installer` or the application's `Dockerfile` (see the `nocobase-deployment` Skill). Ask before rewriting a pipeline; do not delete one silently.
 4. Delete `scripts/dev.mjs`, `scripts/build.mjs`, `scripts/start.mjs` and `scripts/server-deps.mjs`, and `cli/index.ts`. Compare any locally modified script first and move application-specific behavior into a plugin build or dev hook.
 5. Delete `cli/commands/index.ts`, `cli/standard-commands.ts` and any `cli/database-command.ts`, `cli/hub-publishing.ts` or `cli/commands/i18n-check.ts` forwarding files. Keep every command file the application wrote under `cli/commands/`: it is now registered by its path, so `cli/commands/sync-orders.ts` answers to `nocobase app sync-orders`. Its name comes from the file, not from the key it had in the old `cli/commands/index.ts`, so rename a file whose key differed; a file must default-export its command class.
 6. In `cli/plugins.ts` and `vite.config.ts`, import from `@nocobase/app-cli` and `@nocobase/app-cli/dev/proxy`.
 7. Remove `scripts/*.ts` from `tsconfig.node.json`'s `include` and `scripts` from `files`, as the target template does.
-8. Replace every `app` command id in the application's own documentation, CI and scripts: `nocobase app db apply` is `nocobase db apply`, `app db doctor` is `collections doctor`, `app i18n:check` is `locales check`, `app upload` and `app deploy` are gone with [Hub publishing](#hub-publishing), `plugin skills sync` is `skills sync`, `server:deps:retarget` and `server:deps:verify` are `dist retarget` and `dist check`, and `plugin cli-hooks` is gone because plugins declare `buildHooks` and `devHooks` in `defineCliPlugin`, which `nocobase build` and `nocobase dev` read themselves. A plugin topic follows its package name, so the scheduler's `schedule sync` is `scheduler sync` and the CLI example's `demo` topic is `cli-example`.
+8. Replace every `app` command id in the application's own documentation, CI and scripts: `nocobase app db apply` is `nocobase db apply`, `app db doctor` is `collections doctor`, `app i18n:check` is `locales check`, `app upload` and `app deploy` are gone, `plugin skills sync` is `skills sync`, `server:deps:retarget` and `server:deps:verify` are `dist retarget` and `dist check`, and `plugin cli-hooks` is gone because plugins declare `buildHooks` and `devHooks` in `defineCliPlugin`, which `nocobase build` and `nocobase dev` read themselves. A plugin topic follows its package name, so the scheduler's `schedule sync` is `scheduler sync` and the CLI example's `demo` topic is `cli-example`.
 9. Update deployment runbooks. A `dist/` built by the earlier release had `migrate`, `seed`, `config:init`, `config:check`, `config:set` and `config:env` scripts in its `dist/package.json`; a new build writes only `start` and `nocobase`. Inside `dist/`, run `pnpm nocobase db apply` where a runbook ran `pnpm migrate` or `pnpm seed`, and `pnpm nocobase config init` (or `check`, `set`, `env`) where it ran `pnpm config:*`; from anywhere else, `node dist/cli/index.js db apply` and `node dist/cli/index.js config …` do the same.
 10. Update whatever reads `--json`. Every command now prints one envelope, `{ schemaVersion, ok, command, status, result | error, warnings }`: fields a command used to print at the top level are under `result`, a failure's code, suggestions and data are under `error`, `operation` is replaced by `command` (`db apply`, not `db:apply`), and `status` is one of `success`, `success-noop`, `partial-success` and `failure` — `config init`'s `unchanged` is `success-noop`, `config check`'s `passed` is `success`, and a failed `config check` carries its findings in `error.details.findings`. Every `--dry-run`, and a `db` command that found nothing to do, answers `success-noop`. A bad argument is reported as `INVALID_USAGE`, where the earlier commands reported `INVALID_ARGUMENTS`, and a usage error's message names flags but no longer repeats what was typed. Change CI steps and scripts in the same upgrade; keep the exit-code checks, which are unchanged.
 11. The application's own commands keep working as oclif `Command` subclasses, but only an `AppCommand` gets the envelope, `withApp()` and `appPath()`. Convert each one: extend `AppCommand` from `@nocobase/app-cli`, delete its hand-written `json` flag and `if (flags.json)` branches, return the result from `run()`, and throw `CommandError` instead of printing an error and calling `exit()`. The application's `nocobase-app-development` Skill describes the contract; ask before converting a command whose output something else parses.
@@ -230,7 +230,7 @@ Make these changes together, before the [Finish step](../SKILL.md#8-finish) inst
 3. In `eslint.config.js`, `createPortalConfig` is `createApplicationConfig`. In `client/runtime.ts`, drop `basename` from `defineAppRuntime`; the runtime reads it from the page. `client/lib/utils.ts` keeps only `cn`, and `client/vite-env.d.ts` loses the `__PORTAL_*` declarations.
 4. In `server/config/spa.ts`, remove the `runtime` block (`storagePrefix`, `storageType`, `shareToken`); `SpaConfig` no longer has it.
 5. Take the target's `tests/setup/client-config.ts` and its `setupFiles` entry in `vitest.config.ts`. A client test that renders without a configuration block in the page now throws, so a test with its own expectations about the mount path renders one itself, as the target's `client-theme.test.tsx` does.
-6. Take the target's `Dockerfile`. `APP_BASE_PATH` is no longer a build argument; the image defaults to `/main`, and `docker run -e APP_BASE_PATH=<path>` mounts it elsewhere. Remove `--build-arg APP_BASE_PATH` and `APP_BASE_PATH=… pnpm build` from the application's own CI and deployment scripts, and pass the path where the server runs instead: `app.env` or `--base-path` for app-installer, the container environment for Docker. Preserve the source build's `ARG CDN_BASE_URL` and any `--build-arg CDN_BASE_URL=…` or `CDN_BASE_URL=… pnpm build` in those scripts: the CDN asset prefix is still a build-time setting. A Hub mounts each application at `/<appId>` whatever it was built for.
+6. Take the target's `Dockerfile`. `APP_BASE_PATH` is no longer a build argument; the image defaults to `/main`, and `docker run -e APP_BASE_PATH=<path>` mounts it elsewhere. Remove `--build-arg APP_BASE_PATH` and `APP_BASE_PATH=… pnpm build` from the application's own CI and deployment scripts, and pass the path where the server runs instead: `app.env` or `--base-path` for app-installer, the container environment for Docker. Preserve the source build's `ARG CDN_BASE_URL` and any `--build-arg CDN_BASE_URL=…` or `CDN_BASE_URL=… pnpm build` in those scripts: the CDN asset prefix is still a build-time setting.
 
 After the Finish step, run `pnpm typecheck`, `pnpm test` and `pnpm build`, then `pnpm dev` and open a deep route directly and a page that loads its own styles. A build made before this release is tied to the path it was built for, so rebuild before deploying: app-installer refuses such an archive at another path with `BASE_PATH_MISMATCH`. An upgrade done by hand, outside this Skill, needs the same six steps.
 
@@ -252,15 +252,6 @@ Make these changes together, before the [Finish step](../SKILL.md#8-finish) inst
 3. Search for imports from `@refinedev/` in `client/` before removing the packages. An application that adopted Refine's data hooks with a data provider of its own keeps those packages and mounts `<Refine>` itself in an `application`-layer entry of `client/react-providers.ts`, passing what the old shell passed: its data provider, `routerProvider` from `@refinedev/react-router`, and `options={{ syncWithLocation: true, disableTelemetry: true }}`. Refine's data hooks call TanStack Query's hooks, which read the nearest `QueryClientProvider`, so when a page calls them they use the cache around the routes, as they did before. Refine's own `authProvider` invalidates the cache Refine creates for itself, which pages do not read. Resolve a single copy of `@tanstack/react-query`, since the hooks of a second copy read another context and find no cache. An application that relied on Refine's translations also passes an `i18nProvider` of its own, because `createRefineI18nProvider` is no longer exported from `@nocobase/i18n/client`.
 
 After the Finish step, run `pnpm typecheck`, `pnpm test` and `pnpm build`, then open a page that loads data and, when the application has one, the inbox.
-
-## Hub publishing
-
-NocoBase Hub is discontinued, and with it `@nocobase/hub-cli` and the `pnpm nocobase hub` commands. An application that depends on `@nocobase/hub-cli`, sets `"nocobase": { "cli": { "publishing": true } }`, or runs `release upload`, `release deploy`, `hub upload` or `hub deploy` in CI or scripts published to a Hub. An application with none of these needs none of the steps below.
-
-1. Remove `@nocobase/hub-cli` with `pnpm nocobase package remove @nocobase/hub-cli`, and the `publishing` flag from `package.json` if it is still there.
-2. Delete `.nocobase/hub.json` and the `HUB_*` variables in `.env` and any example environment file.
-3. Tell the user which CI steps and scripts published to a Hub, and that they need another deployment route: a deployment archive from `pnpm build --tar` installed with `@nocobase/app-installer`, or the application's `Dockerfile`, as the `nocobase-deployment` Skill describes. Ask before rewriting a pipeline; do not delete one silently.
-4. Ask the user to remove the saved Hub API keys from their credentials file themselves; never read or print them.
 
 ## Compact role list source upgrades
 
@@ -295,3 +286,51 @@ Keep empty-scope explanations in the range help tooltip rather than a permanent 
 ## Explicit Member assignments
 
 When upgrading to the explicit Member role behavior, upgrade Authentication, Authorization, and Users together and stop old account writers before `pnpm nocobase db apply`. The Authorization seed preserves existing Member access as direct assignments before removing its global assignment; do not edit old tasks or recreate the old association. Merge the prepared user form, list, and settings translations separately. Use the new role-scope `defaultValue` only on creation, respect explicit empty arrays, and never restore Member during profile edits. Verify role removal through a direct API request and a fresh login. Recover with the database backup and matching old packages, not an inverse role assignment script.
+
+## Version-specific changes
+
+`SKILL.md` lists which reference each template change needs. These notes say what each one requires beyond its reference; plan them in step 4, check application-owned consumers in step 5, and verify them in the Finish step. Dependency installation or Skill synchronization alone implements none of them: each needs its copied sources reconciled in the same upgrade, not left as a separate page-patching task. Preserve application identity, grants, custom behavior and retained data throughout.
+
+### Project plugin development Skill
+
+When the target package introduces the project plugin development Skill, read [its migration procedure](plugin-development-skill.md), inspect same-named global installations, and include their exact cleanup and recovery in the plan. After `pnpm nocobase skills sync`, verify the project replacement before removing the old global installation, then report cleanup and session reload requirements. When the App already supplies that Skill, check for a missed migration even if no template version change is needed; this cleanup does not advance `defaultTemplateVersion`.
+
+### Application cookies
+
+For language and login isolation between applications on one host, follow [application cookie isolation](application-cookie-isolation.md).
+
+### Realtime contracts
+
+When BASE → TARGET changes Realtime contracts, read [Realtime upgrades](realtime-upgrade.md) during planning and include application-owned consumers, custom plugins, workers and transport/test adapters in step 5. Topic authorization, ignored publication promises and recovery gaps can survive type checking; use the actual package contracts and project usage to decide which migration steps apply. Finish with the [Realtime acceptance checks](realtime-upgrade.md#verify-the-migrated-application), including access denial, reconnect catch-up and publication failure; a connected socket alone is insufficient evidence.
+
+### Notification contracts
+
+When BASE → TARGET changes notification contracts, read [Notification upgrades](notification-upgrade.md) during planning. Include application-owned test-send forms, API clients, permissions, log pages, E2E fixtures and custom channel extensions in step 5; distinguish removed TestAdapter APIs from deprecated registration and configuration APIs that remain compatible. Finish with the [notification acceptance checks](notification-upgrade.md#verify-the-migrated-application) through business notifications, including delivery results, log permissions and inbox ownership. Preserve historical records and report which configured transports were exercised.
+
+For a target that adds notification template administration, follow [notification template source reconciliation](notification-template-upgrade.md), preserving business renderers, workflows, permissions and channel configuration.
+
+### Form feedback and submission protection
+
+When the target adds standard form feedback, follow [form feedback source upgrades](form-feedback-upgrade.md). Reconcile copied components and application-owned form consumers as well as dependencies, and verify new and retained applications with the same scenarios.
+
+When the target introduces standard submission protection, follow [submission source upgrades](submission-upgrade.md) during planning and reconciliation. Dependency or version-marker changes alone do not update copied forms, custom actions or the application's receipt migrations. Verify both a fresh application and retained customized data.
+
+### Lists
+
+When the template changes list-return behavior, read [list navigation upgrades](list-navigation-upgrade.md). Merge the routing context, breadcrumb and back-link sources together, and examine application-owned detail links and forms.
+
+When the template changes loading, empty, filtered or failed list feedback, follow [list feedback source upgrades](list-feedback-upgrade.md). Reconcile copied components, every template and application-owned table/card request owner, translations, business empty content and installed Registry copies together, and verify both new and upgraded applications with retained permissions and records.
+
+When the template adds or changes cross-view updates after writes (`client/hooks/use-data-changes.ts` and the `scopes`/`merge` options of `useListData`), follow [data change upgrades](data-change-upgrade.md). Merge both hooks together, keep application changes to `useListData`, and migrate business pages one at a time; existing `Outlet` reload callbacks keep working until a page moves.
+
+### Settings and permissions
+
+When the template introduces or changes the System settings structure (one settings entry, a home page of cards, tabs inside a module), follow [System settings navigation upgrades](settings-navigation-upgrade.md). Merge the navigation transform, routing, settings pages and locales, and move existing administration pages into categories without changing their names, paths or authorization; updating dependencies alone keeps the old navigation.
+
+When the template changes the permission workspace, follow [Permission editor source upgrades](#permission-editor-source-upgrades). Merge copied permission models and translations while preserving application-specific descriptions, grants and role behavior.
+
+### Processes and lifecycles
+
+When the target adds or changes the standard process UI sources, follow [standard process management source upgrades](#standard-process-management-source-upgrades): confirm existing process pages actually consume the merged components, while preserving explicit user customizations, parameters, grants and history.
+
+When the application defines lifecycles (`defineLifecycle()`) and the target adds definition versions, follow [lifecycle definition versions upgrade](lifecycle-versioning-upgrade.md) in the same upgrade: give every definition `key` and `version`, add and backfill each process's definition field from its creation log with a conflict list, move category assignments to the key, and plan the write window and deployment order. Missing values only warn in this release and are required in the next minor release. For lifecycle behavior changes or deletion during an upgrade, follow the [Git freezing decision and user-confirmed retirement rules](../../nocobase-app-development/references/lifecycle-versions.md); an upgrade does not itself authorize deleting definition code, merged migrations or historical data.

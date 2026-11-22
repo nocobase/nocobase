@@ -808,6 +808,18 @@ describe('workflow management pages', () => {
     await screen.findByText('Save failed');
     expect(screen.getByRole('dialog')).toBeInTheDocument();
     expect(screen.getByLabelText('second')).toHaveValue(3);
+    // Unsaved parameters are the layer's question: leaving asks first, and Keep editing keeps the input.
+    await userEvent.keyboard('{Escape}');
+    const question = await screen.findByRole('alertdialog', {
+      name: 'Discard changes?',
+    });
+    await userEvent.click(
+      within(question).getByRole('button', { name: 'Keep editing' }),
+    );
+    await waitFor(() =>
+      expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument(),
+    );
+    expect(screen.getByLabelText('second')).toHaveValue(3);
     fail = false;
     await userEvent.click(
       screen.getByRole('button', { name: 'Save parameters' }),

@@ -7,9 +7,16 @@ import { RouteDialog } from '#components/route-dialog';
 import { useRouteOverlay } from '#components/use-route-overlay';
 import { Button } from '#components/ui/button';
 import { Label } from '#components/ui/label';
+import { announceDataChange } from '#hooks/use-data-changes';
 import { RelationPicker } from './relation-picker.js';
 import { Choice, StatusChoice, WriteFeedback } from './shared.js';
-import { base, useCrmAction, useWriteLock, type BatchResult } from './model.js';
+import {
+  base,
+  customerScope,
+  useCrmAction,
+  useWriteLock,
+  type BatchResult,
+} from './model.js';
 import type { CustomerListContext } from './index.js';
 
 export default function CustomerBatchPage() {
@@ -49,13 +56,8 @@ export default function CustomerBatchPage() {
         json: { ids, values },
       });
       setResult(response.data);
-      context.onBatchSaved(
-        response.data.items
-          .filter((item) => item.outcome === 'updated')
-          .map((item) => item.id),
-        values,
-      );
-      context.reload();
+      // Every selected customer may have changed, including one that failed on a state the list no longer shows.
+      announceDataChange({ scopes: ids.map(customerScope) });
       context.clearSelection();
     } catch (failure) {
       setError(failure);

@@ -47,13 +47,13 @@ Browser checks belong to a running target App that registers the plugin. Use its
 
 Start with the self-contained [complete plugin example](testing-example.md) for one plugin spanning a migration, service, configuration factory, protected API, translated Client component and CLI command. Its source and fixture App travel with this Skill under `assets/testing-example/`; the accompanying verifier runs lint, typecheck and both test environments against an installed NocoBase 3 application's dependencies.
 
-The application Skill's complete examples live under `packages/app/app-skills/skills/nocobase-app-development/references/testing/`: `database/repository.md`, `database/migration.md`, `server/routes.md`, `client/page.md`, `cli/command.md`, `cli/files.md` and `playwright/login.md`. In an App, first look for these references under its synchronized `.agents/skills/nocobase-app-development/references/testing/`; in the source workspace, read the paths above. Use the available examples matching the installed version rather than requiring a repository checkout. Adapt application-owned imports to the production plugin and explicitly register it in the fixture; do not copy an application composition unchanged and assume it includes the plugin. Those paths are repository lookup locations, not relative dependencies of this package-distributed Skill.
+The application Skill's [worked examples by directory](../../nocobase-app-development/references/testing.md#worked-examples-by-directory) cover repositories, migrations, routes, a client page, commands and Playwright sign-in; in an App they are under `.agents/skills/nocobase-app-development/references/testing/`. Adapt application-owned imports to the production plugin and register it explicitly in the fixture; an application composition copied unchanged does not include the plugin.
 
 Maintained executable fixtures also live in `packages/tools/app-testing/tests/`, with its minimal App in `tests/fixtures/app/`, and scaffold tests in `packages/tools/create-plugin/template/tests/`. Inspect the current exports and fixture configuration before borrowing code; keep tests focused on the plugin's behavior rather than copying the harness's own tests.
 
 ## Component reuse check
 
-For changed client source, run [the shared component checker](ui-design.md#verify-component-reuse) with the plugin as its root. Record scanned scope, findings and reviewed exceptions alongside the source/import audit. Missing dependencies or parse errors are incomplete checks, not a pass. Follow the plugin test commands above as well; this scan neither runs browser checks nor proves every custom wrapper reuses shadcn.
+For changed client source, run [the shared component checker](ui-design.md#verify-component-reuse) with the plugin as its root and report its findings and reviewed exceptions. Follow the plugin test commands above as well; this scan neither runs browser checks nor proves every custom wrapper reuses shadcn.
 
 ## Select observable checks
 
@@ -91,7 +91,7 @@ Run migrations against a real test database, verifying both physical schema and 
 
 Call actual component loaders and render public components through their supported imports. Before clicking a menu, popover, select or dialog trigger in a jsdom test, find it by its ready state, such as `findByRole('button', { name, expanded: false })`, and click what that returned: its label renders while the overlay is still mounting, so clicking the first element with that name passes locally and fails under CI load. For routed Tabs, cover a direct child URL, reload, back/forward navigation, the parent redirect, denied children, and preserved queries. A page calling a Server endpoint needs a real page-to-API workflow in the target App.
 
-For UI work, use [shared UI design and host acceptance](ui-design.md): compare original references under their recorded modes and authorized exceptions, verify actual overlay/footer geometry with long content and narrow viewports, and check affected business journeys in the host. Verify shadcn interaction and keyboard behavior, the shared theme in light/dark modes, host density and style isolation, and loading, empty, error, and success states. Record missing browser or host evidence as Not verified. An App alias resolving in one development environment does not prove compiled plugin imports resolve for an installed consumer.
+For UI work, use [shared UI design and host acceptance](ui-design.md): verify actual overlay/footer geometry with long content and narrow viewports, and check affected business journeys in the host. Verify shadcn interaction and keyboard behavior, the shared theme in light/dark modes, host density and style isolation, and loading, empty, error, and success states. Report missing browser or host evidence as not verified. An App alias resolving in one development environment does not prove compiled plugin imports resolve for an installed consumer.
 
 Use `en-US` as the locale key-shape source, confirm every locale manifest of the plugin and of libraries it depends on that ship translations lists all ten [supported languages](i18n.md#ship-all-ten-supported-languages) with complete resources, run the repository’s `i18n:check`/strict check only when that script is available (otherwise use plugin typechecking and the App’s own checks), and render at least two supported languages. Public components must also work outside their plugin's render subtree. Server request tests cover session/header/default locale resolution and stable `code/ns/key/params` plus translated messages. Jobs, mail, and notifications must load resources before obtaining a fixed translator for a non-default recipient locale. Ensure emitted locale chunks are present in the build and tarball. See [internationalization](i18n.md).
 
@@ -103,15 +103,7 @@ Check Plugin Skill frontmatter, ownership prefixes, absence of drafts, publicati
 
 ## Keep tests lean
 
-These are habits rather than mechanical rules. When a suite gets slow, measure where the time goes (building, migrating, waiting, starting servers) and fix the largest part first.
-
-- **Test at the cheapest layer that proves the behavior.** Browser tests are for what only a real browser shows, such as a flow across pages, real input, history and focus. States, copy and combinations of locale, theme or role belong in component or unit tests, and a server contract in a route or service test.
-- **Do not repeat expensive setup per test.** Migrate a test database once per suite where the test tooling allows it, and start a whole App only for tests that need one.
-- **Do not wait for real time.** Make back-offs, poll and sweep intervals and cache lifetimes configurable and set them short in tests, or use fake timers. Never sleep to show that something did not happen.
-- **Keep tests independent.** Use a test's own user and data rather than changing shared fixtures or global settings, and let background work settle before closing a database.
-- **Remove tests with what they cover, and do not guard absences.** When a feature, route, option or export goes away, delete or rewrite its tests in the same change. Do not add tests that prove something removed stays removed, such as a deleted route answering 404 or an old key never returning. Do not keep one-off evidence tests written for a task, and do not test the wording of README, Skill or other documentation files.
-- **Test behavior, not implementation details.** Assert what a user or caller observes, not internal call counts, private helpers, patched timer values or copy that is not the subject of the change.
-- **Do not check the same thing twice.** Do not duplicate what a dedicated check already compares, such as the API document or generated references, and replace a large snapshot nobody reads with assertions on the figures that matter.
+Follow [Keeping the suite fast and honest](../../nocobase-app-development/references/testing.md#keeping-the-suite-fast-and-honest) in the application Skill: test at the cheapest layer, migrate once, never wait for real time, keep tests independent, remove tests with what they cover, and test behavior rather than implementation.
 
 ## Run scoped package and consumer checks
 

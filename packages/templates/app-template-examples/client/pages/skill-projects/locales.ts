@@ -1,7 +1,5 @@
 export const enUS = {
   search: 'Search projects',
-  noResults: 'No projects match this search.',
-  clearSearch: 'Clear search',
   totalMetric: 'Total projects',
   metricUnavailable: 'Unavailable',
   deleteAction: 'Delete',
@@ -13,7 +11,6 @@ export const enUS = {
   deleteFailed: 'Unable to delete this project. Try again.',
   deleteUncertain:
     'The delete result is unknown. The page is checking the project again; retry to confirm with the same request.',
-  emptyTitle: 'No projects',
   saved: 'Saved “{{name}}”.',
   created: 'Created “{{name}}”.',
   createAction: 'Create',
@@ -37,7 +34,6 @@ export const enUS = {
   edit: 'Edit project',
   create: 'Create project',
   loading: 'Loading projects…',
-  refreshing: 'Refreshing…',
   empty: 'No projects yet. Create a project to get started.',
   cap: 'Showing the first 100 projects.',
   expired: 'Your session has ended. Sign in again.',
@@ -56,8 +52,6 @@ export const enUS = {
 
 export const zhCN = {
   search: '搜索项目',
-  noResults: '没有符合搜索条件的项目。',
-  clearSearch: '清除搜索',
   totalMetric: '项目总数',
   metricUnavailable: '暂不可用',
   deleteAction: '删除',
@@ -69,7 +63,6 @@ export const zhCN = {
   deleteFailed: '无法删除此项目，请重试。',
   deleteUncertain:
     '删除结果尚未确定，页面正在重新读取此项目；重试将使用同一请求确认结果。',
-  emptyTitle: '暂无项目',
   saved: '已保存“{{name}}”。',
   created: '已创建“{{name}}”。',
   createAction: '创建',
@@ -89,7 +82,6 @@ export const zhCN = {
   edit: '编辑项目',
   create: '创建项目',
   loading: '正在加载项目…',
-  refreshing: '正在刷新…',
   empty: '暂无项目，请先创建项目。',
   cap: '仅显示前 100 个项目。',
   expired: '登录已过期，请重新登录。',

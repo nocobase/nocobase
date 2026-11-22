@@ -6,7 +6,7 @@ The standard form feedback capability lives in `@nocobase/app-client` and copied
 
 Use the upgrade Skill's actual BASE and TARGET tarballs. The initial source baselines are Default `1.0.0-beta.83` and Examples `1.0.0-beta.67`. The implementation is an unreleased source change until a template release containing `client/components/feedback-form.tsx` is published. Record the exact target template version and its `@nocobase/app-client` dependency from that release; do not independently select a runtime dist-tag or claim that the baseline versions already contain the feature. A checkout fixture must record its commit, manifest versions, local dependency bindings and artifact hashes instead of calling itself a released upgrade.
 
-Older NocoBase 3 applications can use the same three-source reconciliation, after establishing their real BASE and reviewing intermediate contract changes. They are outside the initial verified baseline pair. NocoBase 2 and discontinued Hub templates do not follow this procedure.
+Older NocoBase 3 applications can use the same three-source reconciliation, after establishing their real BASE and reviewing intermediate contract changes. They are outside the initial verified baseline pair. NocoBase 2 applications do not follow this procedure.
 
 ## Merge the complete capability
 

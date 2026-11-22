@@ -1,17 +1,21 @@
 import type { ColumnDef } from '@tanstack/react-table';
 import { useTranslation } from '@nocobase/i18n/client';
 import { Link, Outlet, useLocation, useSearchParams } from 'react-router';
-import { DataTable } from '#components/data-table';
+import {
+  DataTable,
+  DataTableFilter,
+  DataTableSearch,
+} from '#components/data-table';
 import { RecordLink } from '#components/record-link';
 import { PageContainer } from '#components/page-container';
 import { PageHeader } from '#components/page-header';
-import { Input } from '#components/ui/input';
 import { Button } from '#components/ui/button';
 import { Alert, AlertDescription } from '#components/ui/alert';
 import { useListData } from '#hooks/use-list-data';
 import { useTableUrlState } from '#hooks/use-table-url-state';
 import { type OnboardingDetail } from '../../../shared/onboarding.js';
 import { Choice } from './choice.js';
+import { onboardingScope } from './scopes.js';
 
 type Record = OnboardingDetail['record'];
 export default function OnboardingPage() {
@@ -23,16 +27,21 @@ export default function OnboardingPage() {
   const status = params.get('status') ?? '';
   const request = useListData<{ data: Record[]; meta: { total: number } }>(
     `onboarding?${new URLSearchParams({ q, ...(status ? { status } : {}), page: String(table.paginationState.pageIndex + 1), pageSize: String(table.paginationState.pageSize) })}`,
+    { scopes: [onboardingScope] },
   );
   const context = useListData<{ data: { coordinate: boolean; view: boolean } }>(
     'onboarding/context',
   );
   const filter = (key: string, value: string) =>
-    setParams((old) => {
-      old.set(key, value);
-      old.delete('page');
-      return old;
-    });
+    setParams(
+      (old) => {
+        if (value) old.set(key, value);
+        else old.delete(key);
+        old.delete('page');
+        return old;
+      },
+      { replace: true },
+    );
   const columns: ColumnDef<Record>[] = [
     {
       accessorKey: 'fullName',
@@ -79,27 +88,6 @@ export default function OnboardingPage() {
           <AlertDescription>{t('onboarding.denied')}</AlertDescription>
         </Alert>
       ) : null}
-      {/* The search box and the status filter share one row on a phone too (mobile.md M4.1). */}
-      <div className='flex items-center gap-2'>
-        <Input
-          className='min-w-0 flex-1 md:max-w-sm md:flex-none'
-          aria-label={t('onboarding.search')}
-          placeholder={t('onboarding.search')}
-          value={q}
-          onChange={(e) => filter('q', e.target.value)}
-        />
-        <div className='w-36 shrink-0 md:w-48'>
-          <Choice
-            label={t('onboarding.all')}
-            value={status}
-            onChange={(v) => filter('status', v)}
-            options={['draft', 'submitted'].map((id) => ({
-              id,
-              name: t(`onboarding.${id || 'all'}`),
-            }))}
-          />
-        </div>
-      </div>
       {request.error ? (
         <Alert variant='destructive'>
           <AlertDescription>
@@ -119,6 +107,33 @@ export default function OnboardingPage() {
         paginationState={table.paginationState}
         onPaginationChange={table.onPaginationChange}
         showSelectedCount={false}
+        // Search and the status filter share one row; on a phone the filter moves into the Filters sheet (M4.1, M4.2).
+        search={
+          <DataTableSearch
+            value={q}
+            label={t('onboarding.search')}
+            onSearch={(value) => filter('q', value)}
+          />
+        }
+        filters={
+          <DataTableFilter label={t('onboarding.all')}>
+            <Choice
+              label={t('onboarding.all')}
+              value={status}
+              onChange={(v) => filter('status', v)}
+              options={['draft', 'submitted'].map((id) => ({
+                id,
+                name: t(`onboarding.${id || 'all'}`),
+              }))}
+            />
+          </DataTableFilter>
+        }
+        filterCount={status ? 1 : 0}
+        filtered={Boolean(q || status)}
+        onClearFilters={() => {
+          filter('q', '');
+          filter('status', '');
+        }}
         emptyMessage={t('onboarding.empty')}
         // Phones show one card per person (mobile.md M3): the name and status, then the work email.
         renderCard={(row) => (
@@ -142,7 +157,7 @@ export default function OnboardingPage() {
           </div>
         )}
       />
-      <Outlet context={{ reload: request.reload }} />
+      <Outlet />
     </PageContainer>
   );
 }

@@ -11,287 +11,112 @@ metadata:
 
 # NocoBase 3 application development
 
-When the task creates or maintains a plugin under this App's `packages/`, read `<app-root>/.agents/skills/nocobase-app-plugin-development/SKILL.md` by its explicit project path. It ships alongside this Skill in `@nocobase/app-skills`. Use this application's guidance for App-owned features and the plugin Skill for plugin-owned contracts and packaging; do not install the older global plugin development Skill.
+## When this Skill applies
 
-Use this Skill when building a complete application or an individual feature: business and administration pages, endpoints, data, services and their tests.
+Use it to build a complete application or an individual feature in a NocoBase 3 application: business and administration pages, endpoints, data, permissions, services and their tests.
 
-For plugin-owned code, use the project plugin development Skill, whether the plugin stays local to this App or is published for reuse. Plugin development does not require a separate repository or a NocoBase source checkout.
+- Plugin-owned code, whether the plugin stays under this App's `packages/` or is published, follows `<app-root>/.agents/skills/nocobase-app-plugin-development/SKILL.md`, which ships alongside this Skill in `@nocobase/app-skills`. Do not install the older global plugin Skill.
+- Upgrading the template this application was generated from, which is also how it moves to a newer NocoBase version, is `.agents/skills/nocobase-app-upgrade/`.
+- Deploying is `.agents/skills/nocobase-deployment/`.
 
-Do not use it to upgrade the template this application was generated from, which is also how the application moves to a newer NocoBase version when the user asks to upgrade NocoBase or its core. That is `.agents/skills/nocobase-app-upgrade/`, which reconciles a newer template release against the application without reverting the user's work.
-
-Check [browser API compatibility](references/frontend/frontend-dev.md#browser-api-compatibility) for direct calls and third-party integrations. HTTPS-only APIs require capability detection and a clear user-facing explanation when unavailable. UUID generation and copying text must support HTTP; use `createUuid()` and `copyText()` from `@nocobase/app-client`.
+Confirm you are in an application: it has `client/runtime.ts`, `server/runtime.ts` and `config.example.yml`. A `client/plugin.ts`, `server/plugin.ts` or `defineServerPlugin()` means a plugin package, where this Skill does not apply.
 
 ## Before you start
 
-Read the application's `AGENTS.md` first for the rules that apply everywhere, and the `.agents/rules/` files its index points to for your task. This Skill's references are the detail behind it. Before running any `pnpm nocobase` command, read [the command line](references/cli.md): it maps tasks to commands and states the flags an agent must not add on its own.
-
-Confirm you are in an application and not a plugin package. An application has:
-
-```text
-client/runtime.ts
-server/runtime.ts
-config.example.yml
-```
-
-If instead you find `client/plugin.ts`, `server/plugin.ts`, or a `defineServerPlugin()` declaration, you are in a plugin package and this Skill does not apply.
-
-Do not infer the application's capabilities from a template name or from this Skill. Inspect `package.json`, `client/plugins.ts`, `server/plugins.ts`, `cli/plugins.ts`, `server/config/index.ts`, and `database/` before deciding what is installed, registered, configured, or application-owned. `nocobase.templatePackage` and `nocobase.templateKind` identify known template ancestry when present, but a new template remains valid without being listed here. Read [template variants](references/template-variants.md) only when those files identify one of the documented official templates.
-
-## Plan the complete feature before implementation
-
-For a new application or a feature spanning frontend and backend, identify the users' tasks, pages and key interactions together with the data, endpoint contracts and permissions before implementing either side. Read [the frontend workflow](references/frontend/ui-workflow.md#choosing-a-workflow) at this point, not only when opening `client/`. Reuse existing requirements, designs and installed capabilities; a routine CRUD feature can use a short implementation plan without a separate design document. Keep API-only, UI-only and other explicitly limited requests within their requested scope.
-
-Proceed through the authorized implementation and verification without a routine design approval stop. Ask early only when a material business rule or scope decision cannot be resolved from the requirements, existing decisions and conventions, when work exceeds authorization, or when the user explicitly requested review first. State reasonable assumptions, preserve prior answers and continue unaffected work while a necessary decision is pending. Internal design and acceptance reviews are quality checks, not additional user approval rounds.
-
-Deliver the requested user operation across its layers: pages invoke real endpoints, data is saved and refreshed correctly, permissions hold, and loading, empty and failure states are handled. Backend tests or a design document alone are progress, not completion of a full application. If the backend is already implemented, reuse and check its contracts against the required pages, close any gaps and finish the frontend without restarting design approval. Report missing implementation and unavailable verification explicitly.
-
-## Choose where the feature belongs
-
-For parent/child business flows, scoped references, single-person review or multi-step forms with private recoverable drafts, consult the [business example catalogue](references/business-examples.md) and its runnable scenario index. Its resources supplement the existing list/edit patterns; read each scenario's integration dependencies before adapting it.
-
-Build application-specific features directly in the application by default. Use a plugin when the user requests one or when code reuse or modular organization calls for a separately registered, maintainable feature. Create local plugins under `packages/` with the project plugin development Skill; do not use the source repository's `packages/plugins/` layout. The App builds and packages registered local plugins for deployment without an npm release. Publish only when distributing the plugin through a package registry.
-
-Ordinary internal workspace packages can share code without plugin registration. Follow [internal workspace packages](references/dependencies.md#internal-workspace-packages), keeping one application at the workspace root with internal packages under `packages/`. The [runnable package example](references/internal-package-example.md) supplies complete configuration and explains declaration watching.
-
-## Check the installed plugins first
-
-NocoBase packages may publish Skills under `.agents/skills/`. Current application templates run `pnpm nocobase skills sync` automatically through `postinstall`; run it manually if install scripts were disabled or that directory is missing or stale. Confirm that the package is a direct `@nocobase/*` dependency or a registered plugin before relying on its Skill. The common capability mappings are:
-
-| The requirement sounds like                                    | Read the Skill for                                      |
-| -------------------------------------------------------------- | ------------------------------------------------------- |
-| Email, IM, or in-app messages                                  | `@nocobase/app-plugin-notification`                     |
-| Knowledge bases, document spaces, search and document review   | `@nocobase/app-plugin-knowledge`                        |
-| Approval processes, joint decisions and approval tasks         | `@nocobase/app-plugin-approval` (commercial Pro plugin) |
-| Roles, permissions, per-user or per-record access              | `@nocobase/app-plugin-authorization`                    |
-| Sign-in, registration, sessions                                | `@nocobase/app-plugin-authentication`                   |
-| File upload and metadata through Repository                    | `@nocobase/app-plugin-file`                             |
-| File storage, disk configuration, or custom drivers            | `@nocobase/drive`                                       |
-| Translated text and language switching                         | `@nocobase/app-plugin-i18n`                             |
-| User administration and application-owned role assignment      | `@nocobase/app-plugin-users`                            |
-| Live updates, snapshot recovery and replacing business polling | `@nocobase/realtime` (`nocobase-realtime`)              |
-| Reading or writing data, schema changes, migrations            | `@nocobase/db`                                          |
-
-Read the relevant Skill before writing the feature, but treat this table as a map rather than an installed-package list. Implementing a permission system, a notification sender, or a scheduler by hand when a registered plugin provides one is the most expensive mistake available here.
-
-For any required commercial NocoBase package, follow [commercial package access](references/plugins.md#commercial-package-access): automatically probe pkg-v3 with existing credentials, install a compatible authorized package without prompting, and leave a brief conversation notice for unavailable access while continuing independent work. This includes plugins and commercial database drivers; do not infer access to one package from another.
-
-For knowledge base requirements, check `@nocobase/app-plugin-knowledge` first and follow [knowledge package integration](references/plugins.md#knowledge-base-integration). Apply the same automatic pkg-v3 access workflow when installation or update is needed. Read its synchronized Skill when available, otherwise its installed README, docs and public exports; do not assume it ships a Skill or build a substitute because one is absent.
-
-For approval requirements, check `@nocobase/app-plugin-approval` first and follow [approval integration prerequisites](references/lifecycle.md#approval-requests-check-the-pro-plugin-first), then the plugin's installed Skill. Do not silently build a substitute approval engine from lifecycle examples. Simple single-person confirmation or rejection can remain lifecycle actions.
-
-When the stages of a business record are fixed by developers rather than drawn by administrators — an expense report, a ticket, a contract, an order — build it with `@nocobase/lifecycle` as [record lifecycles](references/lifecycle.md) describes: the state stays in the record's own field and business actions use declared transitions. Declare only required business paths with precise sources and destinations; the diagram expands every `from × to` pair rather than analyzing routing logic. Follow [readable process graphs](references/lifecycle-ui.md#keep-process-graphs-readable) before rendering dense definitions.
-
-When requirements call for administrators to suspend, resume, reset, or restart an existing record's process, follow [administrator controls for lifecycle instances](references/lifecycle-management.md). Define which commands and reentry targets the business supports, wire record-scoped authorization, and use the runtime's management commands and audit history.
-
-Before changing lifecycle behavior or removing a version, read [versions of a process](references/lifecycle-versions.md): behavior freezes against the target main branch, unmerged new versions can be edited continuously, and deleting a frozen version requires explicit user retirement confirmation.
-
-For notification configuration or sending, follow the notification plugin Skill: `notification.channels` maps each name to one flat channel configuration with `type` (`provider` remains a compatibility alias), and `send({ idempotencyKey, messages })` supplies a complete message per Channel. Use native addresses; email and in-app arrays create independent deliveries, while Webhooks forbid `to`.
-
-Install, update and customize plugins, and remove a direct NocoBase package, as [plugins](references/plugins.md) describes: `pnpm nocobase plugin register`, `plugin update` and `package remove` keep the manifest, the lockfile, the composition roots and the synchronized Skills consistent, so never hand-edit only one of them.
-
-Whenever you add business permissions, fill in `permissionWorkspaceSelection` in `client/pages/settings/permission-workspace.ts`. Use the [three-tab role editor guide](references/authorization.md#configure-the-three-tab-role-editor) to match page and object IDs, translate each action description and scope title, and check the result with an ordinary user.
-
-Business role assignments must be visible and editable through administration. Default to explicit users; do not assign application roles to every authenticated identity or broaden the inherited member role merely to enable a feature. Follow [permission assignment safety](references/authorization.md#visible-and-manageable-assignments) and run the template's initialized-assignment guard before delivery.
-
-## Waiting feedback
-
-For page/panel waits and native submit buttons, follow [pending feedback](references/pending-feedback.md). Use installed Loading/PendingButton and the shared timing hook; retain submission and list-state owners.
-
-## Choose sample data or a demo system
-
-A request to add example customers, orders or tasks normally means sample data in the existing application. Use `sample: true` seeds or `sampleDataToken`; see [sample data and demo systems](references/migrations.md#sample-data-and-demo-systems). Keep required initialization data in ordinary seeds. Do not infer an isolated demo deployment from the words "demo data" alone.
-
-A dedicated demo system has its own database and storage, repeatable business-data generation/clear/reset, visitor write policies and optional simulated external or Agent execution. For that requirement, follow the `nocobase-app-plugin-demo-mode` Skill. If `@nocobase/app-plugin-demo-mode` is not yet a dependency, register it with `pnpm nocobase plugin register demo-mode`, which also synchronizes its Skill; the Skill exists in the application only after synchronization. The plugin supplies the environment mechanisms; the application supplies its dataset, cleanup, management UI and any simulation adapters. Sample data alone supplies none of those operating policies. Use the user's stated deployment and lifecycle requirements to choose; if the intended scope remains ambiguous, clarify it before adding full-business cleanup or changing the environment mode. A trial, staging or customer environment where users keep their data, a provider's sandbox credentials and an in-app presentation mode are not demo systems.
-
-When the application already depends on `@nocobase/app-plugin-demo-mode`, a change that adds business collections, outbound integrations or background jobs also updates the demo dataset's cleanup and adapters; follow that Skill's maintenance section.
-
-## Deliver system administration by default
-
-When a user asks you to build a complete application, deliver the System settings structure ([System settings navigation](references/settings-navigation.md)) and administration pages alongside the business features, unless the user explicitly excludes them or requests a narrower deliverable such as an API-only service or a prototype explicitly limited to business screens. Users do not need to request administration pages individually. Include user management and role and permission management by default. Register workflow management, background tasks and other applicable administration as module cards of the System settings home; show execution status, failures and supported recovery actions within each capability's pages, without an additional Operational monitoring group. Reuse existing pages and installed plugins, and implement missing application-owned pages. Read [system administration](references/system-administration.md) for the baseline, capability-specific pages and acceptance criteria. For a focused feature change, extend existing administration where that feature requires it.
-
-Whenever application requirements include a process to develop, deliver its workflow management pages by default, even when the user mentions only the business process. Reuse the installed `workflow-management` UI Library block, or install it with `yes n | pnpm exec shadcn add @nocobase/workflow-management`. Follow [Lifecycle UI](references/lifecycle-ui.md) for installation, application adapters and the default layout: one Workflow management settings card with in-page Definitions and Executions tabs, definition diagrams with visible parameter forms, and execution details with history and effects. The two tab views use URL-backed child routes without sidebar `navigation`. Extend an existing management area rather than adding a duplicate. Follow the scope exceptions in [system administration](references/system-administration.md#default-delivery).
-
-For process management, distinguish administrator-adjustable reviewers, departments, thresholds and other [lifecycle parameters](references/lifecycle-parameters.md) from workflow structure, which remains defined in source unless a supported visual designer is explicitly required.
-
-## Learn the endpoints from the API document
-
-The running application describes every `/api` endpoint it serves — its own routes, every installed plugin's, the data endpoints and Better Auth's `/api/auth/...` — in an OpenAPI 3.1 document. Before calling an endpoint or building on one, fetch that document instead of reading route sources:
-
-```bash
-curl -H "x-api-key: <key>" http://127.0.0.1:13000/main/api/swagger
-```
-
-Replace `/main` with the application's `APP_BASE_PATH`. Swagger UI for people is at `<APP_BASE_PATH>/api/swagger/docs`. Reading either needs a signed-in session or an API key, which a signed-in user creates with `POST <APP_BASE_PATH>/api/apiKeys`; without one the routes answer `401`, and an application with no access check registered, such as one without the authentication plugin, answers `404`. Ask the user for a key rather than creating one yourself. [HTTP API design](references/http-api.md#api-documentation) explains how to read the document and how a new route declares itself in it.
-
-## Include administration by default
-
-For every application feature, apply [system settings delivery](references/system-settings.md) and place every administration surface in the [System settings navigation](references/settings-navigation.md) (one sidebar entry, a home of cards by category, tabs inside a module): keep unused business settings disabled in a newly created application while retaining its restricted App Foundation entry; as the application develops beyond that basic shell, reconcile the template's prepared Users and Roles and permissions routes and the management surfaces for each capability actually used. Inspect this on every build or iteration, enable missing routes once and preserve already enabled pages, including workflow definitions, diagrams, configuration and authorized execution history. When building process rules, proactively declare appropriate thresholds and reviewer choices as validated, authorized business parameters and provide visible parameter forms in workflow management, with optional diagram-bound shortcuts to the same editor; the user need not ask for configurability. Apply the same check to non-workflow business policy, mutable dictionaries, business document numbering, important operation records and the other used capabilities in that reference. Follow its [business administration recipes](references/business-administration.md) for application-owned implementations and acceptance. The real execution must consume the saved values; source/deployment configuration retains its owner. This is part of implementing the feature, not a separate user request.
-
-For initialization prerequisites introduced by the feature, apply [setup readiness](references/setup-readiness.md): wire real required-role membership and applicable business relationship checks with the standard contextual hint. Users should see what configuration is missing and an authorized path to fix it. Installed plugins, read failures and missing business configuration are different states; keep the bare app and its protected App Foundation entry unchanged.
-
-## Frontend work
-
-Before implementing interactions, follow [component selection and source review](references/frontend/component-selection.md): existing business component → installed shadcn primitive → registry addition → justified custom composition/primitive. Record the actual component source and run the targeted component checker before delivery; a matching screenshot alone does not justify duplicating a primitive. A date field follows [Dates](references/frontend/references/form.md#dates): read the matching official shadcn Date Picker example, reuse or compose `client/components/date-picker.tsx` once, reuse it on every page, then run the checker and the field's behavior tests; a native or shadcn `Input` date input is never a date picker.
-
-Application and plugin UI share [the UI design contract](references/frontend/design-contract.md). Read the application's existing design records and original UI references first: record whether a reference controls appearance, structure or style, apply authorized page exceptions, and retain reusable decisions outside synchronized Skills. Use the contract's system-design section when planning a business system across modules; do not redesign the system for a small edit. Plugin implementation still belongs to `nocobase-app-plugin-development`, whose UI entry points to these same design and acceptance rules.
-
-For business lists, reuse the template-provided `DataTable` and companions from `#components/data-table`, backed by the supported TanStack Table v8 dependency. Use its controlled manual mode for server paging/sorting. Do not replace it with an agent-written table engine when a dependency version is incompatible; inspect and repair the dependency first. See [tables](references/frontend/references/table.md).
-
-Every page and overlay you build or change works on a phone in the first delivery, without the user asking: decide its phone layout while designing it and verify it at phone widths before calling it done, following [the phone experience](references/frontend/mobile.md). Shrinking the desktop page, wrapping its toolbar or scrolling an ordinary table sideways does not count; ordinary lists use `DataTable`'s phone cards (`renderCard`) and its `search`, `filters` and `getColumnLabel` toolbar row, and create and edit forms sit in a `FeedbackForm` given `values={form.getValues}` and `savedValues` (the stored record, or the blank values; never the restored draft) inside the route overlay, which asks before discarding any difference on every way out, whatever changed it and with or without a saved draft.
-
-**Table row actions are one "⋮" menu (T1.5, Must).** Every table row's actions, a single action included, render through `RowActions` from `#components/row-actions` at the end of the row: the same icon-only "⋮" trigger on every row, in every record state and on every page, business and administration lists alike, with no visible header text over the actions column and no sticky or right-pinned column. The record's state and the viewer's permissions change which items the menu holds, never how the entry looks; no item left means no menu. Never show an action as a text link, an outline button or a row of buttons because it seems frequent or primary: show a named action outside the menu (`exposed`) only when the user asked for it or a confirmed page design shows it, and pin the column only for a wide table whose actions are otherwise out of reach, recording the reason. Details: [section 8 of `table.md`](references/frontend/references/table.md#8-column-definitions-and-row-actions).
-
-**Unsaved input is never lost silently (M7.4, Must).** Every create or edit form is a `FeedbackForm` from `#components/feedback-form` with `values={form.getValues}` and `savedValues` (the stored record as the form shows it, or the blank values of a new record; never the restored draft), rendered inside its `RouteDialog`, `RouteDrawer` or covering `RouteChildPage`; a form kept in `useState` instead of React Hook Form passes `values={() => values}` and `savedValues` the same way. That layer then asks "Discard changes?" before Cancel, ×, Esc, the backdrop, browser back and links, and the browser warns before a reload, whenever the form differs from what is saved. Keeping a draft does not replace the question, and neither does working storage: do not swap `FeedbackForm` for a plain `<form>`, do not make `dirty` or a `beforeunload` handler depend on a draft or storage state, do not render `OwnDiscardQuestion` because a draft is kept (it only declares that the file's own guard asks about its unsaved input, as the settings forms do; a guard that only blocks while a save runs asks nothing), and do not test "cancel, reopen, the input is back" as the cancel path. An unknown outcome is not a lock: after a lost response, a 5xx or a timeout, `submission.pending` stays true for the same-key retry, but only `submitting` blocks leaving. Cancel stays enabled, `beforeClose` and any guard of your own read only the save in flight (never `submission.pending`), and the `FeedbackForm`'s `values` and `savedValues` make every way out ask "Discard changes?" as before the save; "Keep editing" keeps the input for the retry, and "Discard" really leaves, with the key left in session storage so reopening offers the same retry. The [component checker](scripts/check-ui-components.mjs) rejects a plain create or edit `<form>`, a `FeedbackForm` without `values` and `savedValues` (React Hook Form or `useState`), a draft-based `dirty`, and an `OwnDiscardQuestion` whose file has no guard reading an unsaved state, and no exception marker waives these findings. Details: [unsaved changes in an overlay](references/frontend/references/overlay.md#25-beforeclose-checks-before-closing).
-
-Use [the frontend workflow](references/frontend/ui-workflow.md) selected during feature planning, or select it before a frontend-only change. Routine pages and CRUD using established patterns take the quick workflow; complex interactions and cross-module design decisions take the full workflow with internal design and acceptance reviews. Theme changes use their own verification. Each workflow routes to the relevant [UI guidelines](references/frontend/ui-guidelines.md) and [frontend handbook](references/frontend/frontend-dev.md); none adds a default user approval round.
-
-The handbook's "Look up by task" table routes each frontend task to the sections that cover it, and [the worked example](references/frontend/references/example.md) holds the complete files of the projects feature its rules are illustrated with. Components are shadcn/ui primitives, added with the CLI when a page first needs one: the shadcn/ui skill in `references/frontend/shadcn/` covers their API and composition rules, and [its guide in this handbook](references/frontend/references/shadcn.md) says what to read there and where this application departs from it.
-
-## Choose your reference
-
-Read the page for the task in front of you. Do not read all of them.
-
-| Task                                                                                                                              | Read                                                                                                                                                                                                                                                                                                                                 |
-| --------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Anything under `client/`: pages, routes, components, styling, forms, API calls, copy, frontend tests                              | [frontend workflow](references/frontend/ui-workflow.md), which routes to the [frontend handbook](references/frontend/frontend-dev.md), the theme reference or the worked example                                                                                                                                                     |
-| How a page works on a phone: first screen, lists as cards, filters, tabs, forms, overlays, touch, phone verification              | [phone experience](references/frontend/mobile.md)                                                                                                                                                                                                                                                                                    |
-| Search/paginate relation choices, save associations, or batch-assign selected records                                             | [executable relation and batch example](references/frontend/references/executable-relation-batch.md), then the installed authorization Skill                                                                                                                                                                                         |
-| Add an API endpoint, a webhook, or a callback; authenticate and authorize it                                                      | [server routes](references/server-routes.md)                                                                                                                                                                                                                                                                                         |
-| Name an endpoint, shape its response or errors, validate its input, paginate a list, document it in the API document              | [HTTP API design](references/http-api.md)                                                                                                                                                                                                                                                                                            |
-| A list, chart or polled endpoint, or keeping one live: read it with a fixed number of queries, refresh only what changed          | [server routes](references/server-routes.md#lists-and-statistics-a-fixed-number-of-queries) and [client API requests](references/frontend/references/api.md#keeping-lists-and-charts-live)                                                                                                                                           |
-| Query or write data, resolve the database, work with transactions                                                                 | [database and data access](references/database-and-data.md)                                                                                                                                                                                                                                                                          |
-| Create a table, alter a column, add an index, write required initial data                                                         | [migrations and seeds](references/migrations.md)                                                                                                                                                                                                                                                                                     |
-| Switch the database, register a dialect, add a second connection                                                                  | [database connections](references/database-connections.md)                                                                                                                                                                                                                                                                           |
-| Translate server-produced text, add a language, set the default language                                                          | [internationalization](references/i18n.md)                                                                                                                                                                                                                                                                                           |
-| Departments, positions or another organisation dimension that permission sets are assigned to                                     | [organisation dimension](references/organization.md)                                                                                                                                                                                                                                                                                 |
-| Design who gets what across departments, heads and cross-department work                                                          | [organisation permission design](references/organization/permission-design.md)                                                                                                                                                                                                                                                       |
-| Add a reusable service, share it across routes, run background or scheduled work                                                  | [services and jobs](references/services-and-jobs.md)                                                                                                                                                                                                                                                                                 |
-| Approval processes, joint decisions, added reviewers, reassignment or approval tasks                                              | [approval plugin prerequisites](references/lifecycle.md#approval-requests-check-the-pro-plugin-first), then the installed `@nocobase/app-plugin-approval` Skill                                                                                                                                                                      |
-| A record that moves through stages defined in code: simple confirmations, tickets, orders, timeouts, effects after a state change | [record lifecycles](references/lifecycle.md)                                                                                                                                                                                                                                                                                         |
-| Administrator-adjustable approval departments, reviewers, thresholds or business values in a code-defined lifecycle               | [configurable lifecycle parameters](references/lifecycle-parameters.md); keep workflow structure in source. For management forms and optional diagram-bound editing, see [Lifecycle UI](references/lifecycle-ui.md).                                                                                                                 |
-| Lifecycle definition catalogs, execution lists, process details, history or parameter settings                                    | [Lifecycle UI](references/lifecycle-ui.md)                                                                                                                                                                                                                                                                                           |
-| Changing lifecycle behavior, adding or deleting a version, or choosing an entry point's version                                   | [versions of a process](references/lifecycle-versions.md)                                                                                                                                                                                                                                                                            |
-| Flowcharts, process diagrams or lifecycle state diagrams                                                                          | Use UI Library `@nocobase/flow-diagram` for generic graphs and `@nocobase/lifecycle-diagram` for lifecycle descriptions; see [diagram guidance](references/lifecycle.md#draw-an-interactive-lifecycle-diagram) and the [UI catalog](references/frontend/references/ui-library.md#diagrams). Preserve their application theme tokens. |
-| Use `@nocobase/app-testing` for database, server, client or CLI tests; verify before finishing                                    | [testing and verification](references/testing.md)                                                                                                                                                                                                                                                                                    |
-| Run a CLI command: configure, migrate, manage plugins, read the data model                                                        | [the command line](references/cli.md)                                                                                                                                                                                                                                                                                                |
-| Add or change an application command under `cli/commands/`                                                                        | [adding an application command](references/commands.md)                                                                                                                                                                                                                                                                              |
-| Where a file goes, how the client and server are composed, configuration, changing the framework structure                        | [application structure](references/app-structure.md)                                                                                                                                                                                                                                                                                 |
-| Register, update, customize or remove a plugin; check what an installed plugin already provides                                   | [plugins](references/plugins.md)                                                                                                                                                                                                                                                                                                     |
-| Add an npm package, decide `dependencies` versus `devDependencies`, diagnose a missing module or native binary                    | [adding a dependency](references/dependencies.md)                                                                                                                                                                                                                                                                                    |
-| Report the application's URL, dev server restarts and file watching, develop against another backend                              | [the development server](references/dev-server.md)                                                                                                                                                                                                                                                                                   |
-| Understand behavior inherited from an official application template                                                               | [template variants](references/template-variants.md)                                                                                                                                                                                                                                                                                 |
-
-A feature with a page and an API usually needs migrations, server routes, and a frontend change that follows the frontend workflow.
-
-The three database pages above are the application side — where the files live, which commands run them, how connections are configured. The database API they are written against belongs to `@nocobase/db` and is documented by the `nocobase-db` Skill synchronized alongside this one. Read that Skill before writing a migration, a seed, or a query.
-
-Frontend validation complements server-side validation and does not replace it.
-
-## Business permissions
-
-When users describe different jobs, team responsibilities, confidential data, collaboration, field editing or restricted operations, read [application permission development](references/authorization.md) and the installed `nocobase-app-plugin-authorization` Skill before implementing the feature. Design pages, business actions and record scopes separately; apply database policies on the server and use client checks for visibility. The dedicated Skill covers declarations, custom scopes, relations, inherited subjects, optional rules, assignments and verification. Keep application-owned implementation in this App rather than scaffolding a plugin.
-
-## Database configuration factories
-
-When a database driver requires `@nocobase/db` as a runtime peer, keep both in `dependencies`. TypeScript also uses that declaration to resolve inferred database configuration through the public package name; putting it only in `devDependencies` can cause TS2883 in an installed application even while a source workspace builds successfully.
-
-Declare database defaults with `defineAppDatabaseConfig` from `@nocobase/app-server/database`. When switching or adding connections, read [database connections](references/database-connections.md) for complete examples, YAML overrides, schema ownership and verification.
-
-## Where to work
-
-Business code belongs in a small, stable set of places:
-
-```text
-client/routes.ts, client/pages/, client/components/, client/hooks/,
-client/locales/, client/service-provider.ts, server/routes/,
-server/providers/, database/main/migrations/, database/main/seeds/, tests/
-```
-
-Everything else — `client/routing/`, `client/layouts/`, `client/theme/`, the server entry points, the build scripts, the tsconfigs — is the framework structure the template provides and evolves. Prefer the mechanism the system already offers: most work that looks like it needs a change there does not. [Application structure](references/app-structure.md) maps every directory and the composition files.
-
-When the built-in mechanism genuinely cannot express the requirement, changing that structure is a legitimate answer. Comment what you changed and why the built-in path did not fit, and in the same change record the application-specific guidance in the matching `.agents/rules/<topic>.md`, adding its entry to the `AGENTS.md` index, so the guidance still describes the real application. Do not write the detail into `AGENTS.md` itself: it is a small always-on index of at most 32 KB that every agent loads on every start. The synchronized NocoBase Skills are package-owned; propose a change to their source package when the shared framework guidance itself is wrong.
-
-When you do change the shell (`client/layouts/`, `client/routing/`), keep the behaviors listed in [customizing the shell](references/frontend/references/shell.md#1-behaviors-to-keep): a single App shell with administration pages under its one System settings entry rather than a separate settings layout, the language submenu, navigation group state, permission refresh and sign-out handling.
+- Read the application's `AGENTS.md` and the `.agents/rules/` files its index points to for your task.
+- Before running any `pnpm nocobase` command, read [the command line](references/cli.md): it maps tasks to commands and names the flags an agent must not add on its own.
+- Do not infer capabilities from a template name or from this Skill. Inspect `package.json`, `client/plugins.ts`, `server/plugins.ts`, `cli/plugins.ts`, `server/config/index.ts` and `database/` for what is installed, registered, configured or application-owned. Read [template variants](references/template-variants.md) only when `nocobase.templatePackage` names a documented official template.
+- Learn endpoints from the running application's OpenAPI document, not from route sources: `curl -H "x-api-key: <key>" http://127.0.0.1:13000/main/api/swagger` (replace `/main` with `APP_BASE_PATH`; people use `<APP_BASE_PATH>/api/swagger/docs`). Ask the user for an API key rather than creating one. See [HTTP API design](references/http-api.md#api-documentation).
+
+## Delivery principles
+
+- **Deliver what the user asked for.** Add only the minimal administration entry for a capability the feature actually uses (for example the role assignment a new business role needs). Parameter forms, dictionaries, document numbering, operation records and process-diagram configuration are built when the user asks for them; mention them as options in the report otherwise. API-only, UI-only and other explicitly limited requests stay within their scope.
+- **Plan frontend and backend together, then build without an approval stop.** For a new application or a feature spanning both sides, identify the users' tasks, pages and key interactions together with the data, endpoint contracts and permissions before implementing either side; [the frontend workflow](references/frontend/ui-workflow.md) says how. Ask early only when a material business rule or scope decision cannot be resolved from the requirements and conventions, when work exceeds authorization, or when the user asked to review first. State reasonable assumptions and continue unaffected work.
+- **A feature is done when the user can do the task.** Pages call real endpoints, data saves and refreshes, permissions hold, and loading, empty and failure states are handled. Backend tests or a design document alone are progress. Report what is missing and what could not be verified.
+- **Ask before installing.** Registering a plugin, installing a commercial package or adding a dependency the user did not ask for is proposed first; continue independent work while waiting. See [plugins](references/plugins.md) and [commercial package access](references/plugins.md#commercial-package-access).
+- **Verify only what you changed.** Scope formatting, lint, type checking, tests, builds and runtime checks to the affected files, packages and their consumers; documentation-only changes need formatting and link checks. Verify observable behavior, not only that commands passed. See [testing and verification](references/testing.md).
+
+## Where a feature belongs
+
+- Build application-specific features directly in the application. Use a plugin when the user asks for one or reuse calls for a separately registered feature; create it under `packages/` with the plugin development Skill. The App builds registered local plugins for deployment without an npm release.
+- Ordinary shared code goes in an [internal workspace package](references/dependencies.md#internal-workspace-packages) under `packages/`; the [runnable package example](references/internal-package-example.md) has the complete configuration.
+- Business code lives in `client/routes.ts`, `client/pages/`, `client/components/`, `client/hooks/`, `client/locales/`, `client/service-provider.ts`, `server/routes/`, `server/providers/`, `database/main/migrations/`, `database/main/seeds/` and `tests/`. Everything else (`client/routing/`, `client/layouts/`, `client/theme/`, server entry points, build scripts, tsconfigs) is template-provided framework structure; see [application structure](references/app-structure.md).
+- Change framework structure only when the built-in mechanism cannot express the requirement: comment what changed and why, and record the application-specific guidance in `.agents/rules/<topic>.md` with its entry in the `AGENTS.md` index. When changing the shell, keep the behaviors in [customizing the shell](references/frontend/references/shell.md#1-behaviors-to-keep).
+- Parent/child business flows, scoped references, single-person review and multi-step forms with recoverable drafts have runnable scenarios in the [business example catalogue](references/business-examples.md).
+
+## Use installed capabilities first
+
+NocoBase packages publish Skills that `pnpm nocobase skills sync` copies into `.agents/skills/` (templates run it on `postinstall`; run it if that directory is missing or stale). Confirm a package is a direct dependency or a registered plugin before relying on its Skill, then read that Skill before writing the feature. Hand-building a permission system, notification sender, approval engine or scheduler that an installed plugin provides is the most expensive mistake available here.
+
+- Email, IM, or in-app messages: `@nocobase/app-plugin-notification`
+- Knowledge bases, document spaces, search, document review: `@nocobase/app-plugin-knowledge` ([integration](references/plugins.md#knowledge-base-integration))
+- Approval processes, joint decisions, approval tasks: `@nocobase/app-plugin-approval` (commercial; [prerequisites](references/lifecycle.md#approval-requests-check-the-pro-plugin-first))
+- Roles, permissions, per-user or per-record access, departments: `@nocobase/app-plugin-authorization`
+- Sign-in, registration, sessions: `@nocobase/app-plugin-authentication`
+- File upload and metadata through Repository: `@nocobase/app-plugin-file`
+- File storage, disks, custom drivers: `@nocobase/drive`
+- Translated text and language switching: `@nocobase/app-plugin-i18n`
+- User administration and role assignment: `@nocobase/app-plugin-users`
+- Live updates and replacing business polling: `@nocobase/realtime` (`nocobase-realtime`)
+- Reading or writing data, schema changes, migrations: `@nocobase/db` (`nocobase-db`)
+- A dedicated demo system with reset and visitor policies: `@nocobase/app-plugin-demo-mode` ([when](references/operations.md#sample-data-and-demo-systems))
+
+A record whose stages are fixed by developers (an expense report, a ticket, a contract, an order) is built with `@nocobase/lifecycle` as [record lifecycles](references/lifecycle.md) describes; simple single-person confirmation stays a lifecycle action. Install, update, customize and remove packages only through `pnpm nocobase plugin register`, `plugin update` and `package remove` ([plugins](references/plugins.md)), never by hand-editing one of the manifest, lockfile, composition roots or synchronized Skills.
+
+## Frontend
+
+Every frontend change follows [the frontend workflow](references/frontend/ui-workflow.md): change an existing page (verify at 1440 and 390 px), or build a new page or module (a short page plan, start from the runnable example, independent acceptance). [UI guidelines](references/frontend/ui-guidelines.md) are the only home of visual and interaction rules. Hard constraints:
+
+- Pages work on a phone by default; lists use `DataTable` with `renderCard`, search with `DataTableSearch`.
+- Row actions go in `RowActions`' "⋮" menu; at most two planned primary actions are exposed.
+- Forms open in a `RouteDialog` inside a `FeedbackForm` with `values` and `savedValues`, so leaving asks before discarding input.
+- Views refresh after a write only through `scopes` and `announceDataChange`.
+- Reuse components before writing new ones and run `scripts/check-ui-components.mjs` before delivery ([design contract](references/frontend/design-contract.md)).
+
+## Find the reference for the task
+
+Read the page for the task in front of you, not all of them.
+
+- Anything under `client/`: [frontend workflow](references/frontend/ui-workflow.md), then [the handbook's lookup table](references/frontend/frontend-dev.md#look-up-by-task); phones: [phone experience](references/frontend/mobile.md); browser APIs, UUIDs and copying text over HTTP: [browser API compatibility](references/frontend/frontend-dev.md#browser-api-compatibility).
+- Waiting states and submit buttons: [pending feedback](references/pending-feedback.md); duplicate submissions and unknown outcomes: [submission protection](references/submission.md).
+- Relation pickers, saving associations, batch assignment: [executable relation and batch example](references/frontend/references/executable-relation-batch.md).
+- Add an endpoint, webhook or callback and authorize it: [server routes](references/server-routes.md); name it, shape responses and errors, validate, paginate and document it: [HTTP API design](references/http-api.md).
+- Lists, charts and polled endpoints with a fixed number of queries: [server routes](references/server-routes.md#lists-and-statistics-a-fixed-number-of-queries) and [keeping lists live](references/frontend/references/api.md#keeping-lists-and-charts-live).
+- Query or write data, transactions: [database and data access](references/database-and-data.md); tables, columns, indexes and seeds: [migrations and seeds](references/migrations.md); switch or add databases: [database connections](references/database-connections.md). The database API itself is the `nocobase-db` Skill; read it before writing a migration, seed or query.
+- Business permissions (jobs, teams, confidential data, restricted fields or operations): [application permission development](references/authorization.md) and the authorization plugin Skill. For new business permissions, follow the [role editor setup](references/authorization.md#configure-the-three-tab-role-editor).
+- Reusable services, background and scheduled work: [services and jobs](references/services-and-jobs.md).
+- Record lifecycles: [lifecycles](references/lifecycle.md), [versions](references/lifecycle-versions.md), administrator-adjustable [parameters](references/lifecycle-parameters.md), management pages and diagrams: [Lifecycle UI](references/lifecycle-ui.md). For requested administrator commands, see [instance controls](references/lifecycle-management.md).
+- Administration surfaces and System settings: [system settings](references/system-settings.md), [settings navigation](references/settings-navigation.md), [system administration](references/system-administration.md), [business administration recipes](references/business-administration.md), [setup readiness](references/setup-readiness.md).
+- Server-side translations, languages, startup defaults: [internationalization](references/i18n.md) and [languages and startup defaults](references/operations.md#languages-and-startup-defaults).
+- Tests and verification: [testing](references/testing.md); CLI commands: [the command line](references/cli.md); new application commands: [adding a command](references/commands.md).
+- Files, composition and configuration: [application structure](references/app-structure.md); dependencies and native binaries: [adding a dependency](references/dependencies.md); database configuration factories: [database connections](references/database-connections.md).
+- The application URL, restarts, file watching, remote backends: [the development server](references/dev-server.md). Report the `Local:` URL `pnpm dev` prints, with the base path.
+- Builds and targets, logging, storage, sample data and demo systems: [operations](references/operations.md).
 
 ## Ownership
 
 ```text
 You own       pages, components, endpoints, tables, migrations, services,
               translations, tests, navigation, theme, business logic
-
 Packages own  their routes, components, tokens, services, internal tables,
               and any skills/ they publish
-
-Generated     .agents/skills/ — synchronized copies, gitignored, replaced
-              wholesale on the next sync; never edit
-              .claude/skills/ — symbolic links to the above so Claude Code
-              discovers them; gitignored, rewritten by the same sync
-
-Rules         .agents/rules/ — application-specific guidance, committed and
-              application-owned; AGENTS.md indexes it
-
-Config        config.yml — written by pnpm nocobase config init, gitignored, holds
-              secrets; document options in config.example.yml instead
+Generated     .agents/skills/ (synchronized copies, gitignored, never edit) and
+              .claude/skills/ (links to them, rewritten by the same sync)
+Rules         .agents/rules/ (application-specific guidance, committed; AGENTS.md indexes it)
+Config        config.yml (written by pnpm nocobase config init, gitignored, holds
+              secrets; document options in config.example.yml)
 ```
 
-Reach a plugin's capability only through its documented package exports. Never import a plugin's internal source path or write to its tables directly.
-
-## Reversible customization
-
-When customizing template or registry UI, prefer existing props and composition, then new application components outside `client/extensions/`. Keep the original extension implementation as the reusable baseline; edit it only when explicitly requested or when composition cannot reasonably meet the requirement, and explain that choice. See [styling](references/frontend/references/styling.md).
-
-Treat disabling a feature as a reversible availability change by default: preserve its page and component source, conditionally exclude or guard its route, and hide its links and actions. A hidden navigation item alone does not disable direct URL access. Enforce the same feature policy on the server so direct API calls cannot execute the disabled operation. Do not delete feature code merely to remove it from the current UI; explicit permanent removal can justify deletion. See [pages and routes](references/frontend/references/page.md).
-
-When workflows or approvals are used, deliver a standard process-management table first, even for a single process. A row opens that process's definition/design, node configuration and scoped execution history. Use the standard vertically arranged, automatically sized lifecycle diagram by default, with readable node summaries and configuration buttons; do not wait for an explicit request for these system settings. Reconcile later processes into the same directory and validate their identifiers and authorization on the server; a bare Home-only create-app still gets no unused settings. See [system settings delivery](references/system-settings.md).
+Reach a plugin's capability only through its documented package exports; never import a plugin's internal source or write to its tables. Customize template or registry UI through props and composition first, keeping `client/extensions/` as the reusable baseline. Disabling a feature is reversible by default: guard its route, hide its links and actions, and enforce the same policy on the server ([pages and routes](references/frontend/references/page.md)). Propose changes to synchronized Skills to their source package.
 
 ## Non-negotiables
 
-These cause real damage and appear in every reference:
-
 - **Every server route owns its own authentication and authorization.** Mounting under `/api` authenticates nothing.
-- **Every `/api` route follows [HTTP API design](references/http-api.md).** camelCase paths, `{ data }` on success, `ApiError` on failure, input validated through `apiValidator()`, and a `describeRoute()` declaration for the API document. Never hand-write an error body.
-- **A migration is immutable history and self-contained.** Never import an evolving definition into one. Never edit one whose branch is merged, not even to reformat it: change the schema incrementally with a new migration. See [migrations change incrementally](references/migrations.md#migrations-change-incrementally).
-- **Every user-visible string goes through a translation key**, the English built into shadcn/ui primitives included.
-- **Let the owning page supply `PageContainer`.** One per page; inline child pages and tabs use the parent's, covering child pages add their own, overlays use their own container. See [section 2 of pages and routes](references/frontend/references/page.md#2-the-page-component).
-- **Visual consistency is application-wide.** Restyling only your part is a defect. Change the design tokens if a change is needed.
-- **Route paths never include the deployment base path.** The runtime restores it.
-- **Route navigation creates sidebar entries.** Declare `navigation` in `client/routes.ts`; pages load data with `useApiClient` (see [calling the API](references/frontend/references/api.md)).
-- **Reach for the built-in mechanism first.** Changing framework structure is allowed when nothing else fits — comment it and record it in `.agents/rules/`.
-- **Tests live in `tests/`,** never beside the source; browser tests against a running application go in `tests/playwright/`.
-- **Remove direct NocoBase packages with `package remove` after reviewing their usage.** Do not hand-delete only the manifest entry or leave synchronized Skills and plugin registrations behind.
-
-## The development server
-
-When reporting or opening this application's address, use the `Local:` URL printed by `pnpm dev`, including the application base path; never infer it from default ports or from a response on Vite's port. [The development server](references/dev-server.md) covers verifying an existing run's URL, what restarts the development run, file watching, and developing the client against another backend with `PROXY_TARGET_URL`.
-
-## Finishing
-
-`pnpm build --help` (or `-h`) lists build options and exits without loading build dependencies, running hooks, or modifying `dist/`. Every successful build records `nocobase.buildTarget` in `dist/package.json`, including builds with no native modules: `platform`, `arch`, `libc`, `nodeMajor`, and `nodeAbi`. Use `libc` only for Linux; its value on other platforms is a compatibility placeholder. Deployment checks should compare these fields with the host runtime and also respect `engines.node`. With `--target current` (the default), the Node version and ABI come from the running process; an explicit platform target defaults to Node 24 unless `--node-version` is supplied.
-
-When building for another platform, pass `--target` and verify the native binaries retained in `dist/node_modules`. `better-sqlite3` 13 bundles N-API binaries for multiple platforms; Alpine targets need the `linuxmusl` binary, while other Linux targets use the `linux` binary.
-
-For each change, scope all verification to affected files, projects, or packages and their affected consumers, including formatting, lint, type checking, tests, builds, and runtime checks. Use supported file selectors, project configurations, and workspace package filters. Do not default to full-application or workspace-wide commands or `pnpm check`. Run the smallest supported scope when a required check cannot be narrowed further, and explain why. Expand or repeat checks only when further changes, dependency impact, configuration changes, or failures justify it, or the user requests it. Documentation-only changes need formatting and link checks for changed documents, not type checking, runtime tests, or builds. Follow [Testing and verification](references/testing.md) for selection examples.
-
-Verify observable behavior, not just that the commands passed. [Testing and verification](references/testing.md) lists what to check for each kind of change.
-
-After adding or removing a language in `client/locales/` or `server/locales/`, run `pnpm nocobase locales check`. It compares only the two language lists: it reports a language declared on one side alone and exits nonzero until the lists align. A client-only language is still supported at runtime and the server falls back to English; add matching server translations when server-produced text should use that language.
-
-Application startup defaults belong in `config.yml`: `i18n.defaultLocale` for the language, and `client.app.defaultColorScheme` and `client.app.defaultTheme` for appearance. Valid browser-local choices take precedence. Which languages the interface offers is not configured — `client/locales/` is that list, while `server/locales/` independently defines the server's translated languages. See [internationalization](references/i18n.md), [frontend copy](references/frontend/references/i18n.md) and [themes and tokens](references/frontend/references/theme.md).
-
-## Logging
-
-Use the application logging service for diagnostics so entries carry application identity and follow its level and output policy. Development pretty output uses local time and displays `[appId/logger]`; file and JSON console output retain UTC timestamps and structured context. Request starts and headers, configuration diagnostics and AI resource loading stages are DEBUG; request completions and AI resource totals are INFO. Default optional `ai/skills` directories may be absent; explicitly configured missing directories still warn.
-
-Deployed releases carry their own runtime and logging packages: an old release keeps the formatter it was built with. Upgrade the application dependencies, rebuild and deploy a new release; never edit a deployed artifact or intercept process-wide stdout to rewrite its logs. Verify console enablement and pretty mode after upgrading.
-
-Authentication diagnostics use the application `auth` logger unless an explicit authentication logger is configured. A missing Better Auth base URL is a configuration warning, not a logging error: configure `app.publicOrigin` with the externally reachable origin in the application deployment configuration. Do not substitute the internal Host bind address or suppress the warning to make startup appear clean.
-
-## Storage
-
-For file storage configuration and custom driver factories in `drive.disks`, read `.agents/skills/nocobase-drive/SKILL.md`, supplied by the installed `@nocobase/drive` package. Keep the application's shared Drive provider and token when adding a custom disk. [File storage](references/app-structure.md#file-storage) identifies the application configuration entry point.
-
-Standalone source and compiled entries share the deployment directory's storage; `APP_STORAGE_DIR` selects another storage directory, and explicit storage paths take precedence over it. Embedded applications use Host-provided paths. Expanded releases live at `appRevisionsDir/<appId>/<sha256>` and restart recovery requires their installed metadata. Build archives use `storage/exports/dist.tar.gz`.
-
-## Process UI delivery gate
-
-When adding a business process, read [Lifecycle UI](references/lifecycle-ui.md#default-diagram-and-configuration-contract) before selecting a renderer. Current templates already ship the standard React Flow components and workflow-management parts. Preserve their default style unless the user explicitly requests another style; declare and connect suitable business parameters and contextual configuration automatically. UI Registry entries are not npm packages: an npm 404 is not installation failure. Acceptance must compare actual component use and configuration behavior to the original requirement, even if an intermediate design approved a fallback.
+- **Every `/api` route follows [HTTP API design](references/http-api.md):** camelCase paths, `{ data }` on success, `ApiError` on failure, input validated through `apiValidator()`, and a `describeRoute()` declaration. Never hand-write an error body.
+- **A migration is immutable history and self-contained.** Never import an evolving definition into one and never edit a merged one; change the schema with a new migration ([migrations](references/migrations.md#migrations-change-incrementally)).
+- **Every user-visible string goes through a translation key**, shadcn/ui primitives' built-in English included. Frontend validation never replaces server-side validation.
+- **Role assignments stay explicit and visible.** Assign business roles to explicit users through administration, never to every authenticated identity ([assignment safety](references/authorization.md#visible-and-manageable-assignments)).
+- **Visual consistency is application-wide.** Change design tokens, not one page's styles.
+- **Route paths never include the deployment base path**; declare sidebar entries with `navigation` in `client/routes.ts`; one `PageContainer` per page ([pages](references/frontend/references/page.md#2-the-page-component)).
+- **Tests live in `tests/`,** never beside the source; browser tests go in `tests/playwright/`.
+- **Remove direct NocoBase packages with `package remove`** after reviewing their usage.

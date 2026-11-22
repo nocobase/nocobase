@@ -2,7 +2,7 @@
 
 Use this page to switch the application's database or add a connection: the dialect packages and their fields, what `server/config/database.ts` and `config.yml` each own, and the installation and typing problems that follow. For schema changes read [migrations and seeds](migrations.md); for runtime queries read [database and data access](database-and-data.md).
 
-What a connection means once code touches it — `schemaManagement` as a schema-ownership boundary rather than read-only credentials, and what `database/<connectionName>/collections/` and `metadata/` hold — is in `.agents/skills/nocobase-db/SKILL.md` sections 1 and 6.
+What a connection means once code touches it — `schemaManagement` as a schema-ownership boundary, environment variable mapping, and what `database/<connectionName>/collections/` and `metadata/` hold — is in the [nocobase-db Skill](../../nocobase-db/SKILL.md#1-configuration) sections 1 and 6.
 
 ## Creating and configuring an application
 
@@ -41,11 +41,9 @@ Start by reading `server/config/database.ts` and the connection structure in `co
 
 The callback passed to `defineAppDatabaseConfig` receives the runtime context and runs during configuration resolution, not at module import. When supplied, explicit drivers determine the accepted dialects and connection fields in TypeScript. Without registrations, use a driver-owned connection type with `satisfies` when strict dialect-specific checking is needed. YAML overrides are resolved at runtime; passing `pnpm typecheck` does not validate their contents or prove connectivity.
 
-The second argument of `defineAppDatabaseConfig` declares the section's environment variables. The templates pass `{ env: connectionEnvironment('main') }`, which maps `DB_DIALECT`, `DB_HOST`, `DB_PORT`, `DB_DATABASE`, `DB_USERNAME`, `DB_PASSWORD`, `DB_SSL` and `DB_FILENAME` onto `connections.main`, above `config.yml`. A connection you add declares its own with a prefix naming it, merged into the same `env`: `{ ...connectionEnvironment('main'), ...connectionEnvironment('analytics', 'DB_ANALYTICS') }`. For SQLite, a `database` alias in `config.yml` still takes precedence over `DB_FILENAME`.
+Environment variables (`connectionEnvironment`) and the rule that switching a dialect changes both code and `config.yml` are in the [nocobase-db Skill](../../nocobase-db/SKILL.md#1-configuration). For SQLite, a `database` alias in `config.yml` still takes precedence over `DB_FILENAME`. Check existing environment overrides in the Configuration section of the application's `README.MD`.
 
-`config.yml` deep-merges into code defaults. Changing a dialect in code does not remove an old YAML override or fields belonging to the previous dialect. Update both layers when switching, and check any existing environment overrides using the Configuration section of `README.MD` in the application root.
-
-Official drivers are optional peers of `@nocobase/app-server`. Install the needed package in application `dependencies` and configure its dialect; no driver import or registration is required. The application runtime awaits `resolveDatabaseConfig()` after configuration and defaults are merged, before provider registration. It imports only configured dialects and does not open connections. The core manager stays synchronous and requires prepared or explicitly registered drivers. YAML cannot install packages. Explicit `drivers` and connection-level `databaseDriver` values retain precedence and conflict checking. Custom dialects require explicit registration; registration keys must match their driver's dialect.
+The application runtime awaits `resolveDatabaseConfig()` after configuration and defaults are merged, before provider registration. It imports only configured dialects and does not open connections. The core manager stays synchronous and requires prepared or explicitly registered drivers. YAML cannot install packages. Explicit `drivers` and connection-level `databaseDriver` values retain precedence and conflict checking. Custom dialects require explicit registration; registration keys must match their driver's dialect.
 
 ### SQLite paths
 
@@ -129,10 +127,7 @@ export default defineAppDatabaseConfig((runtime) => ({
 
 Configure each new target and its credentials under `database.connections.analytics` or `database.connections.externalCrm` in YAML, using the same structure as the PostgreSQL example above. Document those connection names and placeholders in `config.example.yml`.
 
-| Connection purpose | Schema and task behavior                                                                                                                                                                                                   |
-| ------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `managed`          | The application owns schema changes. Put application migrations and seeds under `database/<connectionName>/migrations/` and `seeds/` when needed.                                                                          |
-| `external`         | Another system owns the schema. Startup skips migrations and seeds for this connection; explicitly running those tasks against it is an error. Runtime reads and writes remain possible according to database permissions. |
+A `managed` connection keeps its migrations and seeds under `database/<connectionName>/`; an `external` one has none, as [`schemaManagement`](../../nocobase-db/SKILL.md#1-configuration) defines.
 
 Connection names used by database tasks contain only letters, digits, underscores or hyphens. Directories do not register connections, and connections without application-owned migrations or seeds need no empty directories.
 
@@ -205,4 +200,4 @@ Application server builds retain declaration emission with `isolatedDeclarations
 
 Default's main connection uses SQLite as its code default. Its generated application preinstalls official open-source drivers for development. Each official dialect selected in the effective configuration needs a direct entry in the application's `dependencies` for deployment.
 
-KingbaseES, Dameng and OceanBase drivers are NocoBase Pro commercial packages requiring the appropriate commercial license and authenticated access to the private package registry. Follow [commercial package access](plugins.md#commercial-package-access) to automatically probe pkg-v3 and install a compatible authorized driver in the application’s production dependencies without prompting, then configure its dialect and connection settings. If access is unavailable, leave a brief conversation notice and continue independent work; keep the requested driver integration pending and preserve existing database configuration. Automatic loading and `config init --dialect` remain supported; explicit registration in `database.drivers` is optional and takes precedence.
+KingbaseES, Dameng and OceanBase drivers are NocoBase Pro commercial packages requiring the appropriate commercial license and authenticated access to the private package registry. Follow [commercial package access](plugins.md#commercial-package-access): probe access, tell the user what is needed, and after they agree install a compatible driver in the application’s production dependencies and configure its dialect and connection settings. Until then keep the driver integration pending and the existing database configuration intact. Automatic loading and `config init --dialect` remain supported; explicit registration in `database.drivers` is optional and takes precedence.

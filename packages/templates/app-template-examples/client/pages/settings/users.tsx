@@ -6,9 +6,16 @@ import {
   readTableUrlState,
   useTableUrlState,
 } from '#hooks/use-table-url-state';
-import { DataTable, DataTableColumnHeader } from '#components/data-table';
+import {
+  DataTable,
+  DataTableColumnHeader,
+  DataTableFilter,
+  DataTableSearch,
+} from '#components/data-table';
 import type { ColumnDef } from '@tanstack/react-table';
 import { useSettingsData, useUserPermission } from './hooks.js';
+import { userChange, usersScope } from './user-scopes.js';
+import { announceDataChange } from '#hooks/use-data-changes';
 import {
   resolveListState,
   useApiClient,
@@ -35,7 +42,6 @@ import { cn } from 'cn';
 import { PageContainer } from '#components/page-container';
 import { PageHeader } from '#components/page-header';
 import { Button } from '#components/ui/button';
-import { Input } from '#components/ui/input';
 import { StatusBadge } from '#components/status-badge';
 import { RowActions } from '#components/row-actions';
 import {
@@ -62,10 +68,11 @@ function UserName({ user }: { readonly user: ManagedUser }): ReactElement {
 
 function UserActions({
   user,
-  reload,
+  onDone,
 }: {
   readonly user: ManagedUser;
-  readonly reload: (updated?: ManagedUser) => void;
+  /** Returns focus to the list after the action's dialog closes; data refreshes through scopes. */
+  readonly onDone: () => void;
 }): ReactElement {
   const { t } = useTranslation();
   const api = useApiClient();
@@ -97,7 +104,8 @@ function UserActions({
         title: t(`settings.userActionSaved.${action}`, { name: user.name }),
       });
       setAction(undefined);
-      reload(updated ?? undefined);
+      announceDataChange(userChange(user.id, updated ?? undefined));
+      onDone();
     } catch (next) {
       setError(next);
     } finally {
@@ -179,17 +187,6 @@ export default function UsersPage(): ReactElement {
     });
     return () => cancelAnimationFrame(frame);
   }, [listPath, location.pathname]);
-  const [queryDraft, setQueryDraft] = useState<{
-    key: string;
-    value: string;
-  }>();
-  const query =
-    queryDraft?.key === location.key
-      ? queryDraft.value
-      : (params.get('q') ?? '');
-  const setQuery = (value: string) =>
-    setQueryDraft({ key: location.key, value });
-  const [composing, setComposing] = useState(false);
   const options = useSettingsData<{ data: UsersOptions }>('users/options');
   const roleScopes = useMemo(
     () => options.data?.data.roleScopes ?? [],
@@ -241,22 +238,18 @@ export default function UsersPage(): ReactElement {
       { replace: true },
     );
   };
-  useEffect(() => {
-    if (composing || query === (params.get('q') ?? '')) return;
-    const timer = setTimeout(() => {
-      setParams(
-        (old) => {
-          const next = new URLSearchParams(old);
-          if (query) next.set('q', query);
-          else next.delete('q');
-          next.delete('page');
-          return next;
-        },
-        { replace: true },
-      );
-    }, 300);
-    return () => clearTimeout(timer);
-  }, [query, composing, params, setParams]);
+  const setSearch = (value: string) => {
+    setParams(
+      (old) => {
+        const next = new URLSearchParams(old);
+        if (value) next.set('q', value);
+        else next.delete('q');
+        next.delete('page');
+        return next;
+      },
+      { replace: true },
+    );
+  };
   const remote = new URLSearchParams({
     page: String(page),
     pageSize: String(pageSize),
@@ -275,7 +268,23 @@ export default function UsersPage(): ReactElement {
   const request = useSettingsData<{
     data: readonly ManagedUser[];
     meta: { total: number };
-  }>(requestPath, { keepPreviousData: true, active });
+  }>(requestPath, {
+    keepPreviousData: true,
+    active,
+    scopes: [usersScope],
+    // Show a confirmed change to a shown user at once; the verification read follows.
+    merge: (current, change) => {
+      let changed = false;
+      const data = current.data.map((row) => {
+        const result = change.results?.[`${usersScope}/${row.id}`] as
+          { data: ManagedUser } | null | undefined;
+        if (!result) return row;
+        changed = true;
+        return result.data;
+      });
+      return changed ? { ...current, data } : undefined;
+    },
+  });
   const hasCurrentResponse = request.path === requestPath;
   const tableState = useTableUrlState({
     active,
@@ -289,7 +298,6 @@ export default function UsersPage(): ReactElement {
         : undefined,
   });
   const clearFilters = () => {
-    setQuery('');
     setParams(
       (old) => {
         const next = new URLSearchParams(old);
@@ -300,22 +308,10 @@ export default function UsersPage(): ReactElement {
       { replace: true },
     );
   };
-  const { data: pageData, replaceData, reload: refreshUsers } = request;
-  const reload = useCallback(
-    (updated?: ManagedUser) => {
-      if (updated && pageData)
-        replaceData({
-          ...pageData,
-          data: pageData.data.map((row) =>
-            row.id === updated.id ? updated : row,
-          ),
-        });
-      refreshUsers();
-      if (updated && location.pathname === listPath)
-        requestAnimationFrame(() => searchRef.current?.focus());
-    },
-    [pageData, replaceData, refreshUsers, location.pathname, listPath],
-  );
+  const focusSearch = useCallback(() => {
+    if (location.pathname === listPath)
+      requestAnimationFrame(() => searchRef.current?.focus());
+  }, [location.pathname, listPath]);
   const canCreate = useUserPermission('create');
   const canAssign = useUserPermission('assign-role');
   const rows = request.data?.data ?? [];
@@ -394,10 +390,12 @@ export default function UsersPage(): ReactElement {
         id: 'actions',
         header: () => <span className='sr-only'>{t('settings.actions')}</span>,
         enableSorting: false,
-        cell: ({ row }) => <UserActions user={row.original} reload={reload} />,
+        cell: ({ row }) => (
+          <UserActions user={row.original} onDone={focusSearch} />
+        ),
       },
     ],
-    [t, reload, roleScopes, roleText],
+    [t, focusSearch, roleScopes, roleText],
   );
   const create =
     canCreate && canAssign ? (
@@ -420,82 +418,6 @@ export default function UsersPage(): ReactElement {
           description={t('settings.usersDescription')}
           actions={canShowCreate ? create : undefined}
         />
-        <div className='flex flex-wrap items-center gap-3'>
-          <Input
-            ref={searchRef}
-            className='w-full sm:max-w-xs'
-            value={query}
-            aria-label={t('settings.userSearch')}
-            placeholder={t('settings.userSearch')}
-            onCompositionStart={() => setComposing(true)}
-            onCompositionEnd={() => setComposing(false)}
-            onChange={(event) => setQuery(event.target.value)}
-          />
-          <Select
-            items={['all', 'enabled', 'disabled'].map((value) => ({
-              value,
-              label: t(`settings.${value}`),
-            }))}
-            value={status}
-            onValueChange={(value) => update('status', String(value))}
-          >
-            <SelectTrigger aria-label={t('settings.status')}>
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent className='w-auto max-w-[min(var(--container-sm),var(--available-width))] min-w-(--anchor-width) [&_[data-slot=select-item]>:first-child]:whitespace-normal'>
-              {['all', 'enabled', 'disabled'].map((item) => (
-                <SelectItem key={item} value={item}>
-                  {t(`settings.${item}`)}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <Select
-            items={[
-              { value: 'all', label: t('settings.allRoles') },
-              ...roleChoices,
-            ]}
-            value={selectedRole}
-            onValueChange={(value) => {
-              if (!value) return;
-              setParams(
-                (old) => {
-                  const next = new URLSearchParams(old);
-                  next.delete('page');
-                  if (value === 'all') {
-                    next.delete('roleScope');
-                    next.delete('role');
-                  } else {
-                    const [scope, key] = JSON.parse(value) as [string, string];
-                    next.set('roleScope', scope);
-                    next.set('role', key);
-                  }
-                  return next;
-                },
-                { replace: true },
-              );
-            }}
-          >
-            <SelectTrigger aria-label={t('settings.roleFilter')}>
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent className='w-auto max-w-[min(var(--container-sm),var(--available-width))] min-w-(--anchor-width) [&_[data-slot=select-item]>:first-child]:whitespace-normal'>
-              {[
-                { value: 'all', label: t('settings.allRoles') },
-                ...roleChoices,
-              ].map((option) => (
-                <SelectItem key={option.value} value={option.value}>
-                  {option.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          {filtered && listState !== 'no-results' && (
-            <Button variant='ghost' onClick={clearFilters}>
-              {t('settings.clear')}
-            </Button>
-          )}
-        </div>
         {Boolean(roleScope) !== Boolean(role) && (
           <p role='alert' className='text-sm text-destructive'>
             {t('settings.roleFilterIncomplete')}
@@ -515,6 +437,92 @@ export default function UsersPage(): ReactElement {
           loadingIdentity={requestPath}
           listState={listState}
           onRetry={request.reload}
+          search={
+            <DataTableSearch
+              value={params.get('q') ?? ''}
+              label={t('settings.userSearch')}
+              onSearch={setSearch}
+              inputRef={searchRef}
+            />
+          }
+          filters={
+            <>
+              <DataTableFilter label={t('settings.status')}>
+                <Select
+                  items={['all', 'enabled', 'disabled'].map((value) => ({
+                    value,
+                    label: t(`settings.${value}`),
+                  }))}
+                  value={status}
+                  onValueChange={(value) => update('status', String(value))}
+                >
+                  <SelectTrigger
+                    className='w-full'
+                    aria-label={t('settings.status')}
+                  >
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent className='w-auto max-w-[min(var(--container-sm),var(--available-width))] min-w-(--anchor-width) [&_[data-slot=select-item]>:first-child]:whitespace-normal'>
+                    {['all', 'enabled', 'disabled'].map((item) => (
+                      <SelectItem key={item} value={item}>
+                        {t(`settings.${item}`)}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </DataTableFilter>
+              <DataTableFilter label={t('settings.roleFilter')}>
+                <Select
+                  items={[
+                    { value: 'all', label: t('settings.allRoles') },
+                    ...roleChoices,
+                  ]}
+                  value={selectedRole}
+                  onValueChange={(value) => {
+                    if (!value) return;
+                    setParams(
+                      (old) => {
+                        const next = new URLSearchParams(old);
+                        next.delete('page');
+                        if (value === 'all') {
+                          next.delete('roleScope');
+                          next.delete('role');
+                        } else {
+                          const [scope, key] = JSON.parse(value) as [
+                            string,
+                            string,
+                          ];
+                          next.set('roleScope', scope);
+                          next.set('role', key);
+                        }
+                        return next;
+                      },
+                      { replace: true },
+                    );
+                  }}
+                >
+                  <SelectTrigger
+                    className='w-full'
+                    aria-label={t('settings.roleFilter')}
+                  >
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent className='w-auto max-w-[min(var(--container-sm),var(--available-width))] min-w-(--anchor-width) [&_[data-slot=select-item]>:first-child]:whitespace-normal'>
+                    {[
+                      { value: 'all', label: t('settings.allRoles') },
+                      ...roleChoices,
+                    ].map((option) => (
+                      <SelectItem key={option.value} value={option.value}>
+                        {option.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </DataTableFilter>
+            </>
+          }
+          filterCount={(status !== 'all' ? 1 : 0) + (roleScope || role ? 1 : 0)}
+          filtered={filtered}
           onClearFilters={clearFilters}
         />
         {request.data && (
@@ -530,7 +538,7 @@ export default function UsersPage(): ReactElement {
           </p>
         )}
       </PageContainer>
-      <Outlet context={{ reload }} />
+      <Outlet />
     </>
   );
 }

@@ -35,6 +35,10 @@ export interface FeedbackFormProps extends Omit<
   readonly error?: unknown;
   /** Trusted application copy/actions for a request failure; never pass raw server content. */
   readonly errorContent?: ReactNode;
+  /**
+   * The request in flight (`submission.submitting`). An enclosing route overlay lets the save's own navigation leave
+   * without asking only while it runs, so a submit that fails validation still asks before discarding the input.
+   */
   readonly submitting?: boolean;
   /** For unmounted tabs, repeated rows and extension controls, register stable descriptors. */
   readonly feedback?: FormFeedback;
@@ -44,7 +48,7 @@ export interface FeedbackFormProps extends Omit<
   /**
    * The form's current values, read when the user tries to leave: React Hook Form's `form.getValues`. With
    * `savedValues`, an enclosing route overlay asks "Discard changes?" whenever they differ, whatever changed them:
-   * typing, a Select, a date or relation picker, an upload, or a restored draft (mobile.md M7.4).
+   * typing, a Select, a date or relation picker, an upload, or a restored draft (ui-guidelines.md T3.9).
    */
   readonly values?: () => unknown;
   /**
@@ -116,7 +120,7 @@ export function FeedbackForm({
   fieldMessage,
   validationErrors,
   noValidate,
-  submitting = false,
+  submitting: submittingProp,
   values,
   savedValues,
   ref,
@@ -131,23 +135,20 @@ export function FeedbackForm({
     savedValuesRef.current = savedValues;
   });
   const tracksValues = values !== undefined;
-  // The save the enclosing layer is told about (`RouteOverlay`, `RouteChildPage`): it runs from the submit until the
-  // `onSubmit` promise settles, or, for an `onSubmit` that starts the request without returning it (`void submit()`),
-  // until `submitting` has come and gone. Its navigation away then does not ask to discard the input.
-  const submittingRef = useRef(submitting);
-  const saveEndRef = useRef<(() => void) | null>(null);
+  const formRef = useRef<HTMLFormElement>(null);
+  // The save the enclosing layer is told about (`RouteOverlay`, `RouteChildPage`), so the navigation it ends with does
+  // not ask to discard the input. With `submitting`, it runs while the request does: a submit that fails validation
+  // first never starts it, so leaving still asks. Without `submitting`, it runs from the submit. Either way it ends one
+  // task after `submitting` is off and the `onSubmit` promise has settled, for a close the save started at its end.
+  const tracksSubmitting = submittingProp !== undefined;
+  const submitting = submittingProp ?? false;
+  const saveRef = useRef<SaveState>({ form: null, submitting, running: 0 });
   useLayoutEffect(() => {
-    const was = submittingRef.current;
-    submittingRef.current = submitting;
-    if (!was || submitting || !saveEndRef.current) return;
-    const end = saveEndRef.current;
-    saveEndRef.current = null;
-    // One task later, for a navigation the save started right after the request; at once if the form goes first.
-    const timer = setTimeout(end, 0);
-    return () => {
-      clearTimeout(timer);
-      end();
-    };
+    const save = saveRef.current;
+    const was = save.submitting;
+    save.submitting = submitting;
+    if (!was && submitting && formRef.current) startSave(save, formRef.current);
+    else if (was && !submitting) settleSave(save);
   }, [submitting]);
   useLayoutEffect(() => {
     if (!unsavedValues || !tracksValues) return;
@@ -192,7 +193,6 @@ export function FeedbackForm({
     feedback.getSnapshot,
   );
   const [unfocusableState, setUnfocusableState] = useState<FormFeedbackState>();
-  const formRef = useRef<HTMLFormElement>(null);
   const messageRef = useRef<HTMLDivElement>(null);
   const attemptRef = useRef<FormFeedbackAttempt | undefined>(undefined);
   const prefixId = useId();
@@ -468,48 +468,25 @@ export function FeedbackForm({
           );
           return;
         }
-        // Tells an enclosing route overlay that the save is running, so the navigation it ends with does not ask to
-        // discard the input (`RouteOverlay`'s `dirty`). The end waits one task, for a close the save started.
-        const form = event.currentTarget;
-        const announce = (phase: 'start' | 'end'): void => {
-          // The end runs a task later, when the form may already be gone: a removed form has no ancestor to tell, and its document may have been torn down with it.
-          if (!form.isConnected) return;
-          form.dispatchEvent(
-            new CustomEvent('nocobase:form-submit', {
-              bubbles: true,
-              detail: { phase },
-            }),
-          );
-        };
-        announce('start');
-        let ended = false;
-        const end = (): void => {
-          if (ended) return;
-          ended = true;
-          if (saveEndRef.current === end) saveEndRef.current = null;
-          announce('end');
-        };
-        const settle = (): void => {
-          setTimeout(end, 0);
-        };
+        const save = saveRef.current;
+        if (!tracksSubmitting) startSave(save, event.currentTarget);
         try {
           const result = onSubmit?.(event);
-          if (result) void result.then(settle, settle);
-          else {
-            // The request runs on its own: wait for `submitting` to end, or end now if it never started.
-            saveEndRef.current = end;
-            setTimeout(() => {
-              if (!submittingRef.current && saveEndRef.current === end) end();
-            }, 0);
-          }
-          if (result)
+          if (result) {
+            save.running += 1;
+            const settled = (): void => {
+              save.running -= 1;
+              settleSave(save);
+            };
+            void result.then(settled, settled);
             void result.catch((next: unknown) => {
               if (feedback.getAttemptSequence() !== current.sequence) return;
               focusPendingRef.current = true;
               feedback.failure(next, current);
             });
+          } else settleSave(save);
         } catch (next) {
-          settle();
+          settleSave(save);
           if (feedback.getAttemptSequence() !== current.sequence) return;
           focusPendingRef.current = true;
           feedback.failure(next, current);
@@ -550,6 +527,41 @@ export function FeedbackForm({
       })}
     </form>
   );
+}
+
+/** The save a `FeedbackForm` reports: the form while it runs, the last `submitting` and the unsettled `onSubmit` promises. */
+interface SaveState {
+  form: HTMLFormElement | null;
+  submitting: boolean;
+  running: number;
+}
+
+function announceSave(form: HTMLFormElement, phase: 'start' | 'end'): void {
+  // The end runs a task later, when the form may already be gone: a removed form has no ancestor to tell, and its
+  // document may have been torn down with it.
+  if (!form.isConnected) return;
+  form.dispatchEvent(
+    new CustomEvent('nocobase:form-submit', {
+      bubbles: true,
+      detail: { phase },
+    }),
+  );
+}
+
+function startSave(save: SaveState, form: HTMLFormElement): void {
+  if (save.form) return;
+  save.form = form;
+  announceSave(form, 'start');
+}
+
+/** Ends the save one task later, once `submitting` is off and every `onSubmit` promise has settled. */
+function settleSave(save: SaveState): void {
+  setTimeout(() => {
+    const form = save.form;
+    if (!form || save.submitting || save.running) return;
+    save.form = null;
+    announceSave(form, 'end');
+  }, 0);
 }
 
 function ancestors(control: HTMLElement): HTMLElement[] {

@@ -1,22 +1,17 @@
 # Delete confirmation: `project-delete-dialog.tsx`
 
-Use the parent list's shared `useListData().reload` after a confirmed success. For partial batch success, wait for every outcome, keep failed ids and errors, and refresh once; do not decrement a total optimistically. For an uncertain network result verify the list without automatically replaying the delete. See [list recovery](../table.md#delete-and-recover-a-list).
+Part of the [projects worked example](../example.md). **Depends on**: [types](types.md). Used by the [list page](list-page.md) and the [detail drawer](detail-drawer.md).
 
-Part of the [projects worked example](../example.md).
+Rules: ["Delete confirmation" in `overlay.md`](../overlay.md), [delete and recover a list](../table.md#delete-and-recover-a-list), the outcome table of [data changes](../data-changes.md#outcomes), guideline R3.
 
-**Depends on**: [session alert](session-expired-alert.md), [types](types.md), [copy](copy.md).
-
-**Add first**: `yes n | pnpm exec shadcn add alert-dialog`, then format the files it creates ([how](../shadcn.md#1-what-the-template-ships-and-how-to-add-the-rest)).
-
-Rules: [section 4 of `overlay.md`](../overlay.md#4-delete-confirmation-alertdialog).
+The confirmation is component state, not a route: it belongs to one click. A confirmed delete, and a 404 (someone else deleted it first, which is what the user wanted), announce `null` for the record's scope, so the list drops the row and an open drawer switches to its missing state. A network failure or 5xx announces the scope without a result, so the views read what actually happened; the dialog never replays the delete by itself.
 
 ```tsx
 // client/pages/projects/project-delete-dialog.tsx
 import { ApiClientError, useApiClient, useToaster } from '@nocobase/app-client';
 import { useTranslation } from '@nocobase/i18n/client';
-import { type ReactElement, type RefObject, useRef, useState } from 'react';
+import { type ReactElement, useState } from 'react';
 
-import { SessionExpiredAlert } from '#components/session-expired-alert';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -28,20 +23,18 @@ import {
   AlertDialogTitle,
 } from '#components/ui/alert-dialog';
 import { Spinner } from '#components/ui/spinner';
+import { announceDataChange } from '#hooks/use-data-changes';
 
-import type { Project } from './types.js';
+import { RequestError } from './request-error.js';
+import { type Project, projectScope } from './types.js';
 
 export interface ProjectDeleteDialogProps {
   readonly open: boolean;
   readonly onOpenChange: (open: boolean) => void;
-  /** The record to delete. The parent keeps it after closing, so the title does not go blank during the exit animation. */
-  readonly project: Pick<Project, 'id' | 'name'> | null | undefined;
-  /** Called when the delete succeeds or the record was already deleted by someone else (404). The parent closes the confirmation dialog (or the whole drawer) and refreshes the list. */
-  readonly onDeleted: () => void;
-  /** Verify server state after an uncertain response without replaying the delete. */
-  readonly onUncertain: () => void;
-  /** Where focus goes after the delete. The button that opened the confirmation dialog usually disappears along with the record (guideline A6). */
-  readonly deletedFocusRef?: RefObject<HTMLElement | null>;
+  /** Kept by the parent after closing, so the title does not go blank during the exit animation. */
+  readonly project: Pick<Project, 'id' | 'name'> | null;
+  /** Runs after the delete was confirmed and announced, such as closing the drawer it was opened from. */
+  readonly onDeleted?: () => void;
 }
 
 export function ProjectDeleteDialog({
@@ -49,21 +42,15 @@ export function ProjectDeleteDialog({
   onOpenChange,
   project,
   onDeleted,
-  onUncertain,
-  deletedFocusRef,
 }: ProjectDeleteDialogProps): ReactElement {
   const { t } = useTranslation();
   const api = useApiClient();
   const toaster = useToaster();
   const [pending, setPending] = useState(false);
-  const [error, setError] = useState<
-    'sessionExpired' | 'forbidden' | 'requestFailed'
-  >();
-  const deletedRef = useRef(false);
+  const [error, setError] = useState<unknown>();
 
-  async function confirmDelete(
-    target: Pick<Project, 'id' | 'name'>,
-  ): Promise<void> {
+  async function confirm(target: Pick<Project, 'id' | 'name'>): Promise<void> {
+    const scope = projectScope(target.id);
     setPending(true);
     setError(undefined);
     try {
@@ -77,49 +64,36 @@ export function ProjectDeleteDialog({
       });
     } catch (caught: unknown) {
       const status = caught instanceof ApiClientError ? caught.status : 0;
-      if (status === 0 || status >= 500) onUncertain();
       if (status !== 404) {
-        // Other failures: keep the confirmation dialog open and explain the reason inside it, without showing the backend's raw message.
-        setError(
-          status === 401
-            ? 'sessionExpired'
-            : status === 403
-              ? 'forbidden'
-              : 'requestFailed',
-        );
+        // Keep the dialog open and explain; an unknown outcome makes the views verify.
+        if (status === 0 || status >= 500)
+          announceDataChange({ scopes: [scope] });
+        setError(caught);
         setPending(false);
         return;
       }
-      // 404: someone else already deleted the record. What the user wanted has already happened, so explain that and treat it as a successful delete (guideline R3).
       toaster.show({
         type: 'info',
         title: t('projects.delete.notFound', { name: target.name }),
       });
     }
     setPending(false);
-    deletedRef.current = true;
-    onDeleted();
+    announceDataChange({ scopes: [scope], results: { [scope]: null } });
+    onOpenChange(false);
+    onDeleted?.();
   }
 
+  const status = error instanceof ApiClientError ? error.status : 0;
   return (
     <AlertDialog
       open={open}
       onOpenChange={(next) => {
-        // No closing while the delete is in progress (Esc and the cancel button end up here; an AlertDialog ignores backdrop clicks).
-        if (!next && pending) return;
-        // Clear the error on close, so the next open starts clean.
+        if (!next && pending) return; // no closing while the request runs
         if (!next) setError(undefined);
         onOpenChange(next);
       }}
     >
-      <AlertDialogContent
-        finalFocus={() => {
-          const target = deletedRef.current ? deletedFocusRef?.current : null;
-          deletedRef.current = false;
-          // Returning true keeps the default behavior: focus returns to the element that had focus before the confirmation dialog opened.
-          return target ?? true;
-        }}
-      >
+      <AlertDialogContent>
         <AlertDialogHeader>
           <AlertDialogTitle>
             {t('projects.delete.title', { name: project?.name ?? '' })}
@@ -128,29 +102,17 @@ export function ProjectDeleteDialog({
             {t('projects.delete.description')}
           </AlertDialogDescription>
         </AlertDialogHeader>
-        {error === 'sessionExpired' ? (
-          // The session ended: offer to sign in again rather than a retry that cannot succeed.
-          <SessionExpiredAlert />
-        ) : error ? (
-          <p role='alert' className='text-sm text-destructive'>
-            {error === 'forbidden'
-              ? t('projects.error.forbidden')
-              : t('projects.error.requestFailed')}
-          </p>
-        ) : null}
+        {error ? <RequestError error={error} /> : null}
         <AlertDialogFooter>
           <AlertDialogCancel disabled={pending}>
-            {t('actions.cancel')}
+            {t('projects.actions.cancel')}
           </AlertDialogCancel>
-          {/* AlertDialogAction does not close the confirmation dialog automatically: on success, onDeleted has the parent close it. */}
           <AlertDialogAction
             variant='destructive'
-            // Without permission a retry will not succeed either, so the button can no longer be clicked (guideline S4).
-            disabled={
-              pending || (error !== undefined && error !== 'requestFailed')
-            }
+            // Without permission or a session a second click cannot succeed (guideline S4).
+            disabled={pending || status === 401 || status === 403}
             onClick={() => {
-              if (project) void confirmDelete(project);
+              if (project) void confirm(project);
             }}
           >
             {pending ? <Spinner data-icon='inline-start' /> : null}
@@ -162,3 +124,5 @@ export function ProjectDeleteDialog({
   );
 }
 ```
+
+Focus: after a delete from a row's menu the trigger disappears with the row; move focus to a stable target such as the page heading (guideline A6), as the [executable list](../executable-list-edit.md) does when it becomes visible again.

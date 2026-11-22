@@ -2,7 +2,7 @@
 
 ## Inherited teams or departments
 
-When the application has no organisation model yet, build it with the application development Skill's `references/organization.md`; this section covers only the subject registration contract. To decide which sets go to departments, to department heads as a derived fixed subject, or to people, and which department data scope each grant uses, read that Skill's `references/organization/permission-design.md`; it works with permission sets alone and marks what needs a rule plugin.
+When the application has no organisation model yet, build it with [the organisation dimension](organization/overview.md); this section covers only the subject registration contract. To decide which sets go to departments, to department heads as a derived fixed subject, or to people, and which department data scope each grant uses, read [organisation permission design](organization/permission-design.md); it works with permission sets alone and marks what needs a rule plugin.
 
 Register the type through `authz.subjects.add('org.team', { resolveFor, filterActive, administration })` in provider boot and call the function it returns on shutdown. `resolveFor(principal)` returns membership IDs from the authoritative team service; `filterActive(ids, transaction?)` excludes inactive/deleted teams. Use the passed transaction when reading validity during protected assignment changes. The registration below is a minimal flat team. It assumes the feature owns `teams` (id, title, active) and `teamMembers` (userId, teamId); adapt those table names to the customer model.
 

@@ -219,7 +219,7 @@ it.each(['/users', '/settings/users'])(
     );
     await waitFor(() =>
       expect(
-        screen.getByRole('textbox', { name: enUS.settings.userSearch }),
+        screen.getByRole('searchbox', { name: enUS.settings.userSearch }),
       ).toHaveFocus(),
     );
     expect(screen.queryByText('Fallback home')).not.toBeInTheDocument();

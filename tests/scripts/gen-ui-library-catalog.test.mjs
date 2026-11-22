@@ -46,52 +46,41 @@ const example = {
   files: [],
 };
 
-test('a block installs into its own directory and names its plugins, items, example and docs', () => {
-  const section = itemSection(block, [example]);
-  assert.match(section, /^### device-approval$/mu);
-  assert.match(section, /- Kind: block/u);
-  assert.match(
-    section,
-    /- Install: `yes n \| pnpm exec shadcn add @nocobase\/device-approval`/u,
+test('an entry is one line: name, kind, first sentence and plugins', () => {
+  const entry = itemSection(
+    { ...block, description: 'Approves a device. Wire it after sign-in.' },
+    [example],
   );
-  assert.match(
-    section,
-    /- Installs to: `client\/extensions\/nocobase-device-approval\/`/u,
-  );
-  assert.match(
-    section,
-    /- Plugin dependencies: `@nocobase\/app-plugin-authentication`$/mu,
-  );
-  assert.match(section, /- Also installs: `@nocobase\/auth-centered-layout`/u);
-  assert.match(section, /- Example: `@nocobase\/device-approval-demo`/u);
-  assert.match(
-    section,
-    /- After installing: Enable deviceAuthorization\(\)\./u,
-  );
+  assert.equal(entry.split('\n').length, 1);
+  assert.match(entry, /^- `device-approval` \(block\): Approves a device\. /u);
+  assert.match(entry, /Plugins: `@nocobase\/app-plugin-authentication`\./u);
+  assert.doesNotMatch(entry, /Wire it after sign-in/u);
+  assert.doesNotMatch(entry, /Installs to/u);
+  assert.doesNotMatch(entry, /No example/u);
 });
 
-test('a component lists each file it installs and has no plugin dependency', () => {
-  const section = itemSection(component, []);
-  assert.match(section, /- Kind: component/u);
+test('a component in client/components names no location, plugins or example it lacks', () => {
+  const entry = itemSection(component, []);
   assert.match(
-    section,
-    /- Installs to: `client\/components\/route-dialog\.tsx`, `client\/components\/use-route-overlay\.ts`/u,
+    entry,
+    /^- `route-dialog` \(component\): A child route as a dialog\./u,
   );
-  assert.match(section, /- Plugin dependencies: none/u);
-  assert.doesNotMatch(section, /- Example:/u);
+  assert.doesNotMatch(entry, /Plugins:|Installs to/u);
+  assert.match(entry, /No example\./u);
 });
 
-test('the catalog groups items by their group and leaves examples out as entries', () => {
+test('the catalog groups items by their group, leaves examples out and stays small', () => {
   const catalog = renderCatalog([component, example, block]);
   assert.ok(
     catalog.indexOf('## Authentication') < catalog.indexOf('## Route overlays'),
   );
-  assert.doesNotMatch(catalog, /^### device-approval-demo$/mu);
+  assert.doesNotMatch(catalog, /`device-approval-demo`/u);
+  assert.match(catalog, /pnpm exec shadcn add @nocobase\/<item>/u);
 });
 
 // An add-on can extend the base recipe in the base recipe's installed directory.
 test('an add-on names its actual installed directory rather than inventing one from its item name', () => {
-  const section = itemSection(
+  const entry = itemSection(
     {
       ...block,
       name: 'agent-chat-details',
@@ -105,8 +94,8 @@ test('an add-on names its actual installed directory rather than inventing one f
     [],
   );
   assert.match(
-    section,
-    /- Installs to: `client\/extensions\/nocobase-agent-chat\/`/u,
+    entry,
+    /Installs to `client\/extensions\/nocobase-agent-chat\/`/u,
   );
-  assert.doesNotMatch(section, /nocobase-agent-chat-details\//u);
+  assert.doesNotMatch(entry, /nocobase-agent-chat-details\//u);
 });

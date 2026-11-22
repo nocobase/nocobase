@@ -29,7 +29,7 @@ function SaveEquipmentButton({
 }
 ```
 
-The form's submit handler calls `submission.run(input, execute)` before asynchronous validation or effects, following [submission protection](submission.md). Preserve the controller, server operation key, failure recovery and input. The button is presentation, not duplicate-write protection. Never use `submission.pending` as busy: an unknown outcome can remain recoverable after active work stops. Existing application guards may also contribute real request busy state. The standard Users editor retains its existing guard while consuming `submission.submitting`.
+The form's submit handler validates and then calls `submission.run(input, execute)` before any effects, following [submission protection](submission.md). Preserve the controller, server operation key, failure recovery and input. The button is presentation, not duplicate-write protection. Never use `submission.pending` as busy: an unknown outcome can remain recoverable after active work stops. Existing application guards may also contribute real request busy state. The standard Users editor retains its existing guard while consuming `submission.submitting`.
 
 Pass the real request's `pending` to Loading, a stable query key as `identity`, and a translated `label`.
 
@@ -37,7 +37,7 @@ Render within the slot that actually loads; only application startup uses `fulls
 
 ## A new list page
 
-A new business list needs no feedback code of its own. Read through `useListData`, derive the state with `resolveListState`, and hand `active && request.loading`, its path as `loadingIdentity`, and its retry to the preinstalled `DataTable`. This feedback-focused excerpt requests only page 1 and leaves pagination to the table, so it is not a complete server-paginated list; for URL-backed page state, `manualPagination`, and the server's total, follow the [complete server-paginated table example](frontend/references/example/server-table.md).
+A new business list needs no feedback code of its own. Read through `useListData`, derive the state with `resolveListState`, and hand `active && request.loading`, its path as `loadingIdentity`, and its retry to the preinstalled `DataTable`. This feedback-focused excerpt requests only page 1 and leaves pagination to the table, so it is not a complete server-paginated list; for URL-backed page state, `manualPagination`, and the server's total, follow the [server-paginated list example](frontend/references/example/list-page.md).
 
 ```tsx
 const path = `equipment?page=1&pageSize=20${query ? `&q=${encodeURIComponent(query)}` : ''}`;

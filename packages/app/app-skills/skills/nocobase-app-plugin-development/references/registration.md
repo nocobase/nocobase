@@ -19,9 +19,7 @@ An App can consume local plugins from its `packages/` workspace with `workspace:
 
 ## Required commercial dependencies
 
-When target App integration needs a commercial NocoBase plugin or driver, automatically request that package's metadata from `https://pkg-v3.nocobase.com/` with existing npm/pnpm credentials and command-local global/scoped registry overrides. Check access per package and choose a published version compatible with the host runtime and peer requirements. When authorized, install it without a confirmation prompt; plugins also need runtime registration, while drivers are ordinary production dependencies. Verify installation and read synchronized package Skills before using their APIs. The App development Skill's `references/plugins.md` describes the commands when that Skill is available.
-
-If access or a compatible version is unavailable, leave one brief conversation notice and immediately continue independent work without asking for purchase, login, a token or installation approval. Distinguish explicit authorization denial from missing credentials, network failures, 404s and version incompatibility; none of the latter proves that the user has no license. Keep dependent integration pending and preserve working configuration rather than inventing package APIs or silently substituting a backend. Use bounded requests and never expose registry credentials.
+When target App integration needs a commercial NocoBase plugin or driver, follow [commercial package access](../../nocobase-app-development/references/plugins.md#commercial-package-access) in the App development Skill: probe access per package, tell the user what is needed, and install after they agree. Plugins also need runtime registration, while drivers are ordinary production dependencies. Keep dependent integration pending rather than inventing package APIs or silently substituting a backend.
 
 ## Register a local plugin in an App
 

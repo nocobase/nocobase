@@ -1,32 +1,29 @@
 # Shared form: `project-form.tsx`
 
-Part of the [projects worked example](../example.md).
+Part of the [projects worked example](../example.md). **Depends on**: [types](types.md). Used by the [create dialog](create-dialog.md) and the [edit dialog](edit-dialog.md).
 
-**Depends on**: [session alert](session-expired-alert.md), [types](types.md), [copy](copy.md).
+Rules: [`form.md`](../form.md) and guideline T3 (T3.9 for unsaved input). The fields are name (required), owner (optional) and status (a Select). Passing `project` means editing (`PATCH`); omitting it means creating (`POST`). The form renders no buttons: the dialog's footer holds them and links the submit button through `formId`.
 
-**Add first**: `yes n | pnpm exec shadcn add alert field select`, then format the files it creates ([how](../shadcn.md#1-what-the-template-ships-and-how-to-add-the-rest)).
-
-The assumed custom REST backend must implement the [transaction receipt adapter](../../../submission.md#server-contract-and-custom-actions) before this form is used; the header alone does not provide idempotency.
-
-Rules: [`form.md`](../form.md). The fields are name (required), owner (optional) and status (a Select). Passing `project` means editing (`PATCH`); omitting it means creating (`POST`). The form renders no buttons: the container puts the submit button outside the `<FeedbackForm>` and links it through `formId`.
+- **Unsaved input**: `FeedbackForm` gets `values={form.getValues}` and `savedValues={saved}` (the stored record, or the blank values of a new project). The enclosing `RouteDialog` then asks "Discard changes?" on every way out while they differ; the page writes no guard of its own ([`overlay.md`](../overlay.md)).
+- **One submission at a time** through `useSubmission`, whose key goes in the `Idempotency-Key` header; after an unknown outcome a retry reuses it ([submission protection](../../../submission.md)).
+- **After a confirmed save** the form announces the result for the record's scope, so the list and an open detail update without callbacks ([data changes](../data-changes.md)). After a 404 or an unknown outcome it announces the scope without a result, so views read what actually happened.
 
 ```tsx
 // client/pages/projects/project-form.tsx
-import { FeedbackForm } from '#components/feedback-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import {
   ApiClientError,
   useApiClient,
-  useToaster,
   useSubmission,
+  useToaster,
 } from '@nocobase/app-client';
-import { useTranslation } from '@nocobase/i18n/client';
 import { useAuthentication } from '@nocobase/app-plugin-authentication/client';
-import { type ReactElement, useEffect, useMemo, useRef } from 'react';
+import { useTranslation } from '@nocobase/i18n/client';
+import { type ReactElement, useMemo, useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import { z } from 'zod';
 
-import { SessionExpiredAlert } from '#components/session-expired-alert';
+import { FeedbackForm } from '#components/feedback-form';
 import {
   Field,
   FieldError,
@@ -37,27 +34,28 @@ import { Input } from '#components/ui/input';
 import {
   Select,
   SelectContent,
-  SelectGroup,
   SelectItem,
   SelectTrigger,
   SelectValue,
 } from '#components/ui/select';
+import { announceDataChange } from '#hooks/use-data-changes';
 
-import { PROJECT_STATUSES, type Project } from './types.js';
+import { RequestError } from './request-error.js';
+import {
+  PROJECT_STATUSES,
+  type Project,
+  projectScope,
+  projectsScope,
+} from './types.js';
 
 export interface ProjectFormProps {
-  /** When editing, pass the latest record, just loaded; omit it when creating. */
+  /** When editing, the record just read; omit it when creating. */
   readonly project?: Project;
-  /** The `<FeedbackForm>` id. When the submit button is outside the form, the button sets `form={formId}`. */
+  /** The `<FeedbackForm>` id, also the prefix of the field ids. */
   readonly formId: string;
-  /** Called after a successful save with the record the endpoint returned. The form has already shown the success message. */
+  /** Runs after a confirmed save; the form has already announced it and shown the success toast. */
   readonly onSubmitted: (project: Project) => void;
-  /** Receives `true` when submission starts and `false` when it ends; on success, `false` comes before `onSubmitted` is called. */
   readonly onSubmittingChange?: (submitting: boolean) => void;
-  /** When editing, the endpoint returned 404: the record has been deleted. */
-  readonly onNotFound?: () => void;
-  /** Receives `true` once a field differs from its default value and `false` when it no longer does. */
-  readonly onDirtyChange?: (dirty: boolean) => void;
 }
 
 export function ProjectForm({
@@ -65,19 +63,17 @@ export function ProjectForm({
   formId,
   onSubmitted,
   onSubmittingChange,
-  onNotFound,
-  onDirtyChange,
 }: ProjectFormProps): ReactElement {
   const { t } = useTranslation();
   const api = useApiClient();
   const toaster = useToaster();
   const { session } = useAuthentication();
   const submission = useSubmission({
-    scope: `${session?.user.id}:projects:${formId}`,
+    scope: `${session?.user.id}:projects:${project?.id ?? 'new'}`,
   });
-  const entry = useRef(false);
+  const [error, setError] = useState<unknown>();
 
-  // The schema lives in the component so validation messages can be built with t and follow the current language.
+  // Inside the component, so the messages follow the current language.
   const schema = useMemo(
     () =>
       z.object({
@@ -85,146 +81,90 @@ export function ProjectForm({
           .string()
           .trim()
           .min(1, t('projects.form.nameRequired'))
-          .max(100, t('projects.form.nameTooLong', { max: 100 })),
-        owner: z
-          .string()
-          .trim()
-          .max(50, t('projects.form.ownerTooLong', { max: 50 })),
+          .max(100),
+        owner: z.string().trim().max(50),
         status: z.enum(PROJECT_STATUSES),
       }),
     [t],
   );
-
-  // No generic: the types are inferred from zodResolver(schema).
-  // What is saved, as the form shows it: the record when editing, the blank values when creating. The FeedbackForm
-  // compares the current values with these, so the overlay asks before discarding any difference (M7.4).
-  const saved = useMemo(
-    () => ({
-      name: project?.name ?? '',
-      owner: project?.owner ?? '',
-      status: project?.status ?? ('planning' as const),
-    }),
-    [project],
-  );
+  // What is saved, as the form shows it. A restored draft would go to `defaultValues`, never here.
+  const [saved] = useState(() => ({
+    name: project?.name ?? '',
+    owner: project?.owner ?? '',
+    status: project?.status ?? ('planning' as const),
+  }));
   const form = useForm({
-    shouldFocusError: false,
     resolver: zodResolver(schema),
-    // A form that restores a draft starts from it, `defaultValues: draft ?? saved`, and still passes `saved` below:
-    // the draft is unsaved input, so leaving with it asks.
     defaultValues: saved,
+    shouldFocusError: false,
   });
-
-  // Only for a container that is not an overlay (create-page.md guards its page itself); an overlay reads the values.
-  const { isDirty } = form.formState;
-  useEffect(() => {
-    onDirtyChange?.(isDirty);
-  }, [isDirty, onDirtyChange]);
-
   const statusItems = PROJECT_STATUSES.map((value) => ({
     value,
     label: t(`projects.status.${value}`),
   }));
 
-  const validatedSubmit = form.handleSubmit(async (values) => {
-    // values is the data after validation and trimming; empty optional text becomes null.
-    const json = {
-      name: values.name,
-      owner: values.owner || null,
-      status: values.status,
-    };
-    let saved: Project;
+  const submit = form.handleSubmit(async (values) => {
+    const json = { ...values, owner: values.owner || null };
+    const scope = project ? projectScope(project.id) : projectsScope;
+    setError(undefined);
+    onSubmittingChange?.(true);
+    let result: { data: Project } | undefined;
     try {
-      const result = await submission.run(json, (key) =>
-        project
-          ? api.request<{ data: Project }>({
-              path: `projects/${encodeURIComponent(project.id)}`,
-              method: 'PATCH',
-              headers: { 'Idempotency-Key': key },
-              json,
-            })
-          : api.request<{ data: Project }>({
-              path: 'projects',
-              method: 'POST',
-              headers: { 'Idempotency-Key': key },
-              json,
-            }),
+      result = await submission.run(json, (key, signal) =>
+        api.request<{ data: Project }>({
+          path: project
+            ? `projects/${encodeURIComponent(project.id)}`
+            : 'projects',
+          method: project ? 'PATCH' : 'POST',
+          headers: { 'Idempotency-Key': key },
+          signal,
+          json,
+        }),
       );
-      if (!result) return;
-      saved = result.data;
-    } catch (error: unknown) {
-      const apiError = error instanceof ApiClientError ? error : undefined;
+    } catch (caught: unknown) {
+      const status = caught instanceof ApiClientError ? caught.status : 0;
       if (
-        apiError?.status === 409 &&
-        apiError.reason === 'PROJECT_NAME_TAKEN'
+        status === 409 &&
+        caught instanceof ApiClientError &&
+        caught.reason === 'PROJECT_NAME_TAKEN'
       ) {
-        // Duplicate name: show the error below the name field and move focus there.
-        form.setError(
-          'name',
-          { message: t('projects.form.nameTaken') },
-          { shouldFocus: false },
-        );
-      } else if (apiError?.status === 401) {
-        // The session ended. Keep the input and let the user choose to sign in again (SessionExpiredAlert below).
-        form.setError('root', { type: 'sessionExpired' });
-      } else if (project && apiError?.status === 404) {
-        // The record has been deleted: let the caller explain and refresh the list, so the user does not submit again.
-        onNotFound?.();
+        form.setError('name', { message: t('projects.form.nameTaken') });
       } else {
-        // Other errors appear at the top of the form, without the raw message the backend returned.
-        form.setError('root', {
-          message:
-            apiError?.status === 403
-              ? t('projects.error.forbidden')
-              : t('projects.error.requestFailed'),
-        });
+        setError(caught);
+        // Gone, or the outcome is unknown: let the views read the server again.
+        if (status === 404 || status === 0 || status >= 500)
+          announceDataChange({ scopes: [scope] });
       }
       return;
-    }
-    // Let the container close; the synchronous entry lock stays held through onSubmitted.
-    onSubmittingChange?.(false);
-    toaster.show({
-      type: 'success',
-      title: project
-        ? t('projects.edit.success', { name: saved.name })
-        : t('projects.create.success', { name: saved.name }),
-    });
-    onSubmitted(saved);
-  });
-
-  const onSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    if (entry.current) return;
-    entry.current = true;
-    onSubmittingChange?.(true);
-    try {
-      await validatedSubmit(event);
     } finally {
-      entry.current = false;
       onSubmittingChange?.(false);
     }
-  };
-
-  const rootError = form.formState.errors.root;
+    if (!result) return;
+    const savedScope = projectScope(result.data.id);
+    announceDataChange({
+      scopes: [savedScope],
+      results: { [savedScope]: result },
+    });
+    toaster.show({
+      type: 'success',
+      title: t(project ? 'projects.edit.success' : 'projects.create.success', {
+        name: result.data.name,
+      }),
+    });
+    onSubmitted(result.data);
+  });
 
   return (
     <FeedbackForm
-      // The enclosing RouteDialog or RouteDrawer asks "Discard changes?" whenever these differ, whatever changed them:
-      // typing, the status Select, a picker, an upload or a restored draft (section 2.5 of overlay.md).
-      values={form.getValues}
-      savedValues={saved}
-      submitting={form.formState.isSubmitting}
-      validationErrors={form.formState.errors}
-      error={rootError}
-      errorContent={
-        rootError?.type === 'sessionExpired' ? (
-          <SessionExpiredAlert inline />
-        ) : (
-          rootError?.message
-        )
-      }
       id={formId}
       noValidate
-      onSubmit={(event) => onSubmit(event)}
+      values={form.getValues}
+      savedValues={saved}
+      submitting={submission.submitting}
+      validationErrors={form.formState.errors}
+      error={error}
+      errorContent={error ? <RequestError error={error} /> : undefined}
+      onSubmit={submit}
     >
       <FieldGroup>
         <Controller
@@ -241,7 +181,6 @@ export function ProjectForm({
               <Input
                 {...field}
                 id={`${formId}-name`}
-                autoComplete='off'
                 aria-required='true'
                 aria-invalid={fieldState.invalid}
               />
@@ -269,8 +208,8 @@ export function ProjectForm({
         <Controller
           control={form.control}
           name='status'
-          render={({ field, fieldState }) => (
-            <Field data-invalid={fieldState.invalid}>
+          render={({ field }) => (
+            <Field>
               <FieldLabel htmlFor={`${formId}-status`}>
                 {t('projects.fields.status')}
               </FieldLabel>
@@ -285,22 +224,18 @@ export function ProjectForm({
                   ref={field.ref}
                   id={`${formId}-status`}
                   className='w-full'
-                  aria-invalid={fieldState.invalid}
                   onBlur={field.onBlur}
                 >
                   <SelectValue />
                 </SelectTrigger>
-                <SelectContent className='w-auto max-w-[min(var(--container-sm),var(--available-width))] min-w-(--anchor-width) [&_[data-slot=select-item]>:first-child]:whitespace-normal'>
-                  <SelectGroup>
-                    {statusItems.map((item) => (
-                      <SelectItem key={item.value} value={item.value}>
-                        {item.label}
-                      </SelectItem>
-                    ))}
-                  </SelectGroup>
+                <SelectContent>
+                  {statusItems.map((item) => (
+                    <SelectItem key={item.value} value={item.value}>
+                      {item.label}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
-              <FieldError errors={[fieldState.error]} />
             </Field>
           )}
         />
@@ -309,12 +244,3 @@ export function ProjectForm({
   );
 }
 ```
-
-| Prop                             | Description                                                                                                                                            |
-| -------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `project`                        | When editing, the latest record, just loaded; omit it when creating                                                                                    |
-| `formId`                         | The `<FeedbackForm>` id; a submit button outside the form sets `form={formId}`. Also the prefix of the field ids, so two stacked forms do not collide  |
-| `onSubmitted(project)`           | The save succeeded; the argument is the record the endpoint returned. The form has already shown the success message; the caller must not show another |
-| `onSubmittingChange(submitting)` | `true` when submission starts, `false` when it ends; on success, `false` comes before `onSubmitted` is called                                          |
-| `onNotFound()`                   | When editing, the endpoint returned 404                                                                                                                |
-| `onDirtyChange(dirty)`           | Whether any field differs from its default value, for a container on an ordinary page; `RouteDialog`, `RouteDrawer` and `RouteChildPage` need nothing  |

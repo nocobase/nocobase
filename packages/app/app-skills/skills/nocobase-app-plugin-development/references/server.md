@@ -116,7 +116,7 @@ export const apiRoutes: AppApiRouteContribution<AppPluginApplication> =
   });
 ```
 
-Every `/api` route declares itself with `describeRoute()` for the application's OpenAPI document, served at `/api/swagger/docs`, and validates its input with `apiValidator()`; both come from `@nocobase/app-server/router`, never from `hono-openapi`. This route takes no input and checks no permission, so it lists only `401` and `500`. The [HTTP API rules](http-api.md#api-documentation) describe tags, `operationId`s, response schemas, `security: []` for a route reached without a credential, and the few kinds of route that are hidden instead.
+Every `/api` route declares itself with `describeRoute()` for the application's OpenAPI document, served at `/api/swagger/docs`, and validates its input with `apiValidator()`; both come from `@nocobase/app-server/router`, never from `hono-openapi`. This route takes no input and checks no permission, so it lists only `401` and `500`. The [HTTP API rules](http-api.md#documentation) describe tags, `operationId`s, response schemas, `security: []` for a route reached without a credential, and the few kinds of route that are hidden instead.
 
 This status endpoint deliberately permits every authenticated user. Authentication establishes who the caller is; authorization establishes whether that caller may perform the business action. Sensitive routes normally need both. Resolve the owner-exported authorization token, install its middleware, and require stable resource/action pairs inside handlers. Test `401` for anonymous callers, `403` for authenticated callers without the action, success for an allowed caller, and that `findUndeclaredApiRoutes()` reports none of the plugin's routes.
 

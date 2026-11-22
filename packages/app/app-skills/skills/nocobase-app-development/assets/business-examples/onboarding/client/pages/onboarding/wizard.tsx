@@ -1,10 +1,5 @@
 import { useEffect, useId, useRef, useState, type ReactNode } from 'react';
-import {
-  useParams,
-  useNavigate,
-  useLocation,
-  useOutletContext,
-} from 'react-router';
+import { useParams, useNavigate, useLocation } from 'react-router';
 import {
   useApiClient,
   useSubmission,
@@ -16,25 +11,12 @@ import { useAuthentication } from '@nocobase/app-plugin-authentication/client';
 import { useTranslation } from '@nocobase/i18n/client';
 import { CheckIcon, CircleAlertIcon, PlusIcon, XIcon } from 'lucide-react';
 import { cn } from 'cn';
-import { BackButton } from '#components/back-button';
-import { PageContainer } from '#components/page-container';
-import { PageHeader } from '#components/page-header';
-import { RouteChildPage } from '#components/route-child-page';
+import { RouteDialog } from '#components/route-dialog';
 import { StatusBadge } from '#components/status-badge';
 import { Input } from '#components/ui/input';
 import { Label } from '#components/ui/label';
 import { Button } from '#components/ui/button';
 import { Alert, AlertDescription, AlertTitle } from '#components/ui/alert';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from '#components/ui/alert-dialog';
 import {
   Card,
   CardContent,
@@ -58,8 +40,8 @@ import {
 } from '#components/ui/table';
 import { Separator } from '#components/ui/separator';
 import { ToggleGroup, ToggleGroupItem } from '#components/ui/toggle-group';
-import { OwnDiscardQuestion } from '#components/discard-guard';
 import { FeedbackForm } from '#components/feedback-form';
+import { announceDataChange } from '#hooks/use-data-changes';
 import { useListData } from '#hooks/use-list-data';
 import {
   OnboardingInput,
@@ -69,6 +51,7 @@ import {
   type OnboardingDetail,
 } from '../../../shared/onboarding.js';
 import { Choice } from './choice.js';
+import { caseScope } from './scopes.js';
 
 const steps = ['basic', 'employment', 'documents', 'confirmation'] as const;
 type DocumentKind = OnboardingInput['documents'][number]['kind'];
@@ -78,70 +61,67 @@ const documentKinds: DocumentKind[] = [
   'serviceAgreement',
 ];
 
-/** The covering child page every state of the wizard renders in: it keeps the list, its filters and scroll beneath. */
+/** The route dialog every state of the wizard renders in: the list, its filters and scroll stay beneath it. */
 function Frame({
   title,
   status,
   description,
+  footer,
   children,
 }: {
   title: string;
   status?: OnboardingDetail['record']['status'];
   description?: string;
+  footer?: ReactNode;
   children: ReactNode;
 }) {
   const { t } = useTranslation();
   return (
-    <RouteChildPage>
-      {/* A full-height column, so the action bar sits at the bottom even when a step is short. */}
-      <PageContainer className='flex min-h-full flex-col'>
-        <BackButton>{t('onboarding.back')}</BackButton>
-        <PageHeader
-          title={
-            <span className='flex flex-wrap items-center gap-2'>
-              {title}
-              {status ? (
-                <StatusBadge
-                  size='sm'
-                  tone={status === 'submitted' ? 'success' : 'neutral'}
-                >
-                  {t(`onboarding.${status}`)}
-                </StatusBadge>
-              ) : null}
-            </span>
-          }
-          description={description}
-        />
-        {children}
-      </PageContainer>
-    </RouteChildPage>
+    <RouteDialog
+      title={
+        <span className='flex flex-wrap items-center gap-2'>
+          {title}
+          {status ? (
+            <StatusBadge
+              size='sm'
+              tone={status === 'submitted' ? 'success' : 'neutral'}
+            >
+              {t(`onboarding.${status}`)}
+            </StatusBadge>
+          ) : null}
+        </span>
+      }
+      description={description}
+      className='sm:max-w-5xl'
+      footer={footer}
+    >
+      <div className='space-y-6'>{children}</div>
+    </RouteDialog>
   );
 }
+
+/** Cases created by this page's first save, until their detail page has read the mark once. */
+const createdCases = new Set<string>();
 
 export default function OnboardingWizard() {
   const { id } = useParams();
   const { t } = useTranslation();
   const request = useListData<{ data: OnboardingDetail }>(`onboarding/${id}`, {
     active: !!id,
+    scopes: id ? [caseScope(id)] : [],
   });
   // Only the version first loaded is a restore: saving remounts the editor with a newer version.
   const version = request.data?.data.record.lifecycleVersion;
   const [restoredVersion, setRestoredVersion] = useState<number>();
-  // A case just created by its first save opens with this marker, which is then dropped so a reload counts as a restore.
-  const location = useLocation();
-  const navigate = useNavigate();
-  const created = !!(location.state as { created?: boolean } | null)?.created;
-  // Keep the creation origin until this page closes, even if detail arrives after the URL marker is cleared.
+  // A case just created by its first save is marked in memory rather than in the history entry, so a reload counts as
+  // a restore without a second navigation to clear the mark: that navigation raced the user's Close after saving.
+  const created = !!id && createdCases.has(id);
+  // Keep the creation origin until this page closes, after the mark itself is consumed.
   const [createdCaseId, setCreatedCaseId] = useState(created ? id : undefined);
   if (created && createdCaseId !== id) setCreatedCaseId(id);
   useEffect(() => {
-    if (created) {
-      void navigate(
-        { pathname: location.pathname, search: location.search },
-        { replace: true, state: null },
-      );
-    }
-  }, [created, id, location.pathname, location.search, navigate]);
+    if (created && id) createdCases.delete(id);
+  }, [created, id]);
   if (version !== undefined && restoredVersion === undefined)
     setRestoredVersion(version);
   if (id && (!request.data || request.error)) {
@@ -240,9 +220,9 @@ function Editor({
   const { session } = useAuthentication();
   const navigate = useNavigate();
   const location = useLocation();
-  const { reload } = useOutletContext<{ reload: () => void }>();
   const formId = useId();
   const [input, setInput] = useState(() => values(detail));
+  const [saved] = useState(() => ({ input: values(detail), pending: false }));
   const [step, setStep] = useState(() =>
     detail
       ? detail.record.status === 'submitted'
@@ -257,11 +237,6 @@ function Editor({
   const [writing, setWriting] = useState(false);
   const lockedRef = useRef(false);
   const navigatingAfterSaveRef = useRef(false);
-  const [confirmDiscard, setConfirmDiscard] = useState(false);
-  const discardRef = useRef<{
-    promise: Promise<boolean>;
-    resolve: (value: boolean) => void;
-  } | null>(null);
   const [pendingAction, setPendingAction] = useState<'save' | 'submit'>();
   const [documentKeys, setDocumentKeys] = useState(
     () => detail?.documents.map((doc) => doc.id) ?? [],
@@ -275,37 +250,17 @@ function Editor({
     'onboarding/candidates?kind=departments',
     { active: editable },
   );
-  const decideDiscard = (discard: boolean) => {
-    discardRef.current?.resolve(discard);
-    discardRef.current = null;
-    setConfirmDiscard(false);
-  };
-  useEffect(
-    () => () => {
-      discardRef.current?.resolve(false);
-    },
-    [],
+  // The only lock is a write or refresh in flight; unsaved input is the dialog's question, asked through the
+  // FeedbackForm's values below (ui-guidelines.md T3.9).
+  useNavigationGuard(
+    () => navigatingAfterSaveRef.current || !(lockedRef.current || refreshing),
   );
-  useNavigationGuard(() => {
-    if (navigatingAfterSaveRef.current) return true;
-    if (lockedRef.current || refreshing) return false;
-    // An unknown outcome is unsaved too: leaving asks, and discarding leaves; it never locks the page.
-    if (!dirty && !submission.pending) return true;
-    if (discardRef.current) return discardRef.current.promise;
-    let resolve!: (value: boolean) => void;
-    const promise = new Promise<boolean>((done) => {
-      resolve = done;
-    });
-    discardRef.current = { promise, resolve };
-    setConfirmDiscard(true);
-    return promise;
-  });
   useEffect(() => {
-    if (!dirty && !busy && !submission.pending) return;
+    if (!busy) return;
     const warn = (event: BeforeUnloadEvent) => event.preventDefault();
     window.addEventListener('beforeunload', warn);
     return () => window.removeEventListener('beforeunload', warn);
-  }, [dirty, busy, submission.pending]);
+  }, [busy]);
   const update = (patch: Partial<OnboardingInput>) => {
     setInput((old) => ({ ...old, ...patch }));
     setDirty(true);
@@ -383,13 +338,14 @@ function Editor({
       );
       if (result) {
         setDirty(false);
-        reload();
-        if (detail) refresh();
-        else {
+        // The list and this case read again through their scopes; no callback through the Outlet.
+        announceDataChange({ scopes: [caseScope(result.data.id)] });
+        if (!detail) {
           navigatingAfterSaveRef.current = true;
+          createdCases.add(result.data.id);
           await navigate(
             { pathname: `../${result.data.id}`, search: location.search },
-            { replace: true, state: { created: true } },
+            { replace: true },
           );
         }
       }
@@ -548,36 +504,56 @@ function Editor({
       {t(detail ? 'onboarding.saved' : 'onboarding.notSaved')}
     </span>
   );
+  // The dialog's footer keeps the actions reachable on long steps.
+  const footer = editable ? (
+    <div className='flex w-full flex-wrap items-center justify-between gap-3'>
+      <div className='flex items-center gap-3'>
+        <Button
+          type='submit'
+          form={formId}
+          variant='outline'
+          disabled={busy || (submission.pending && pendingAction !== 'save')}
+        >
+          {t('onboarding.save')}
+        </Button>
+        {saveState}
+      </div>
+      <div className='grid w-full grid-cols-2 gap-2 sm:flex sm:w-auto [&>:only-child]:col-span-2'>
+        {step > 0 ? (
+          <Button
+            variant='outline'
+            disabled={actionsLocked}
+            onClick={() => go(step - 1)}
+          >
+            {t('onboarding.previous')}
+          </Button>
+        ) : null}
+        {step < 3 ? (
+          <Button disabled={actionsLocked} onClick={next}>
+            {t('onboarding.next')}
+          </Button>
+        ) : detail?.actions.submit ? (
+          <Button
+            disabled={
+              busy ||
+              dirty ||
+              (submission.pending && pendingAction !== 'submit')
+            }
+            onClick={() => void write('submit')}
+          >
+            {t('onboarding.submit')}
+          </Button>
+        ) : null}
+      </div>
+    </div>
+  ) : undefined;
   return (
     <Frame
       title={title}
       status={detail?.record.status}
       description={description}
+      footer={footer}
     >
-      {/* The wizard asks its own question: its input spans steps whose fields are not all on screen, so the page's
-          layer cannot compare them, and leaving during a held submission is blocked rather than asked. */}
-      <OwnDiscardQuestion />
-      <AlertDialog
-        open={confirmDiscard}
-        onOpenChange={(open) => {
-          if (!open) decideDiscard(false);
-        }}
-      >
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>{t('onboarding.discard')}</AlertDialogTitle>
-            <AlertDialogDescription>
-              {t('onboarding.discardDescription')}
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>{t('onboarding.keepEditing')}</AlertDialogCancel>
-            <AlertDialogAction onClick={() => decideDiscard(true)}>
-              {t('onboarding.discardAction')}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
       {/* Below lg the step list collapses into the current step and a four-part progress bar. */}
       <div className='space-y-2 lg:hidden'>
         <p className='text-sm text-muted-foreground'>
@@ -670,13 +646,14 @@ function Editor({
                   )}
                 >
                   {reachable ? (
-                    <button
+                    <Button
                       type='button'
-                      className='flex w-full gap-3 rounded-lg text-left outline-none focus-visible:ring-3 focus-visible:ring-ring/50'
+                      variant='ghost'
+                      className='h-auto w-full items-start justify-start gap-3 p-0 text-left font-normal whitespace-normal hover:bg-transparent'
                       onClick={() => go(index)}
                     >
                       {label}
-                    </button>
+                    </Button>
                   ) : (
                     <div className='flex gap-3'>{label}</div>
                   )}
@@ -712,6 +689,10 @@ function Editor({
             error={error}
             errorContent={error ? t('onboarding.operationFailed') : undefined}
             submitting={busy}
+            // Every step's input, not only the fields on screen, compared with the stored case. A submission whose
+            // outcome is unknown counts as unsaved, so leaving asks before the retry is given up.
+            values={() => ({ input, pending: submission.pending })}
+            savedValues={saved}
             onSubmit={async (e) => {
               e.preventDefault();
               await write('save');
@@ -755,15 +736,16 @@ function Editor({
                         <ul className='space-y-0.5'>
                           {issueTargets.map((issue) => (
                             <li key={issue.target + issue.text}>
-                              <button
+                              <Button
                                 type='button'
-                                className='inline text-left underline underline-offset-2'
+                                variant='link'
+                                className='h-auto p-0 text-left whitespace-normal text-inherit'
                                 onClick={() =>
                                   document.getElementById(issue.target)?.focus()
                                 }
                               >
                                 {issue.text}
-                              </button>
+                              </Button>
                             </li>
                           ))}
                         </ul>
@@ -1222,55 +1204,6 @@ function Editor({
           </FeedbackForm>
         </div>
       </div>
-      {editable ? (
-        // Pinned to the bottom of the child page's scroller, so the actions stay reachable on long steps.
-        <div className='sticky bottom-0 z-10 -mx-6 mt-auto -mb-6 border-t bg-background/95 px-6 py-3 backdrop-blur md:-mx-8 md:-mb-8 md:px-8'>
-          <div className='grid gap-8 lg:grid-cols-[14rem_minmax(0,1fr)]'>
-            <div className='flex flex-wrap items-center justify-between gap-3 lg:col-start-2'>
-              <div className='flex items-center gap-3'>
-                <Button
-                  type='submit'
-                  form={formId}
-                  variant='outline'
-                  disabled={
-                    busy || (submission.pending && pendingAction !== 'save')
-                  }
-                >
-                  {t('onboarding.save')}
-                </Button>
-                {saveState}
-              </div>
-              <div className='grid w-full grid-cols-2 gap-2 sm:flex sm:w-auto [&>:only-child]:col-span-2'>
-                {step > 0 ? (
-                  <Button
-                    variant='outline'
-                    disabled={actionsLocked}
-                    onClick={() => go(step - 1)}
-                  >
-                    {t('onboarding.previous')}
-                  </Button>
-                ) : null}
-                {step < 3 ? (
-                  <Button disabled={actionsLocked} onClick={next}>
-                    {t('onboarding.next')}
-                  </Button>
-                ) : detail?.actions.submit ? (
-                  <Button
-                    disabled={
-                      busy ||
-                      dirty ||
-                      (submission.pending && pendingAction !== 'submit')
-                    }
-                    onClick={() => void write('submit')}
-                  >
-                    {t('onboarding.submit')}
-                  </Button>
-                ) : null}
-              </div>
-            </div>
-          </div>
-        </div>
-      ) : null}
     </Frame>
   );
 }

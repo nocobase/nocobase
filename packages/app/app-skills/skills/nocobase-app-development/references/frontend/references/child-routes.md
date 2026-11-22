@@ -1,156 +1,90 @@
 # Child routes
 
-Child pages, page tabs and navigation groups are all declared as routes. Routes are the source of the application's navigation; how child content is presented (inline, covering, dialog, drawer) is decided by page code.
-
-For the basic rules on route fields, `auth`, `authz`, menus, the back button and breadcrumbs, see [`page.md`](page.md). For dialogs and drawers (`RouteDialog`, `RouteDrawer`, `useRouteOverlay`, `beforeClose`), see [`overlay.md`](overlay.md).
+Child pages, page tabs and navigation groups are all declared as routes in `client/routes.ts`; what a child route's component returns decides how it is presented. Route fields, `auth`, `authz`, menus and breadcrumbs are in [`page.md`](page.md); `RouteDialog`, `RouteDrawer` and `useRouteOverlay` in [`overlay.md`](overlay.md).
 
 ## 1. Basic rules
 
-- **Child routes go in the parent route's `children`**, declared in `client/routes.ts`, not in page component files.
-- A child route's `path` is relative to its parent and is appended to the parent's path. A leading `/` is stripped before joining, so `new` and `/new` behave the same; this handbook writes the form without `/`.
-- **The parent page must place `<Outlet />` itself**, where the child content should appear. Pages do not insert an Outlet automatically, and neither do `RouteChildPage`, `RouteDialog` or `RouteDrawer`; only a plain navigation group gets its Outlet from the route renderer.
-- **A child route that is a page of its own returns `RouteChildPage`.** Only tab content renders inline. A child route with a `PageContainer` of its own — a record's page, a form too long for a dialog, an import page — wraps it in `RouteChildPage` ([section 5](#5-covering-child-pages-routechildpage)). Returned bare, it renders at the parent's `Outlet`, below everything the parent shows, and the user has to scroll past the parent page to find it. A page that returns a bare `PageContainer` belongs on a top-level route instead.
-- Child routes inherit the entry route's `auth` and cannot change it, and follow the `authz` inheritance rules in [section 4 of `page.md`](page.md#4-authz-page-authorization): a child page renders only after the parent page's check passes.
-- Link to a child route with a relative path and keep the query string ([section 2.2 of `overlay.md`](overlay.md#22-place-the-outlet-in-the-parent-page)). A relative path resolves against the route that renders the link, not the URL on screen ([section 2 of `page.md`](page.md#2-the-page-component)).
-- Route declarations have no `index` field. Do not invent an index route, and do not register a child route at the parent's own path; when "opening the parent URL shows a particular child page" is needed, use the redirect in [section 4](#4-page-tabs).
-- Do not change the shell, the route renderer or the ServiceProvider to add a menu entry; menu entries come only from `navigation` on routes ([section 6 of `page.md`](page.md#6-menus)).
-- Design paths around business needs; there is no fixed naming format. Do not write the deployment base path `/main`.
+- Child routes go in the parent route's `children`, never in component files. A child `path` is relative to its parent (`new` and `/new` are the same).
+- The parent page places `<Outlet />` itself. Nothing inserts one, neither `RouteChildPage`, `RouteDialog` nor `RouteDrawer`; only a navigation group gets its Outlet from the route renderer.
+- A child route that is a page of its own returns `RouteChildPage` ([section 5](#5-covering-child-pages-routechildpage)); only tab content renders inline. A bare `PageContainer` would render below the parent's content.
+- Child routes inherit the root's `auth`, and the `authz` rules of [section 4 of `page.md`](page.md#4-authz-page-authorization) apply: a child renders only after its parent's check passes.
+- Link with a relative path and keep `location.search`; a relative path resolves against the route that renders the link ([section 2 of `page.md`](page.md#2-the-page-component)).
+- There is no `index` route, and no child at the parent's own path; to show a default child, redirect ([section 4](#4-page-tabs)).
 
 ## 2. File layout
 
-A page with child routes becomes a folder: the page itself is `index.tsx`, and each child route is named after its path segment and placed beside it. When a child route has children of its own, it becomes a folder too:
+A page with child routes is a folder; each child is named after its segment, and becomes a folder when it has children of its own:
 
 ```text
 client/pages/projects/
-  index.tsx                  /projects                     List page; <Outlet context={outletContext} /> at the end
-  new.tsx                    /projects/new                 RouteDialog: new project
-  detail/index.tsx           /projects/:projectId          RouteDrawer: project details; <Outlet context={...} /> inside the drawer
-  detail/edit.tsx            /projects/edit/:projectId     RouteDialog: edit project from a row's menu, alone over the list
-                             /projects/:projectId/edit     The same dialog from the drawer, stacked on it
-  project-form.tsx           Form component shared by create and edit
-  project-delete-dialog.tsx  Delete confirmation (AlertDialog, state inside the component)
-  types.ts
+  index.tsx              /projects                  list page; <Outlet /> at the end
+  new.tsx                /projects/new              RouteDialog: create
+  detail/index.tsx       /projects/:projectId       RouteDrawer: details; <Outlet /> inside the drawer
+  detail/edit.tsx        /projects/:projectId/edit  RouteDialog: edit, over the drawer
+  project-form.tsx       form shared by create and edit
+  scopes.ts, types.ts
 ```
 
-- A fixed path segment uses a file of the same name: `/projects/new` is `projects/new.tsx`.
-- A parameter segment uses a name that describes what the page is for: `:projectId` is `detail/`.
-- One file serves every route that shows the same thing: both edit routes load `detail/edit.tsx`, and a page that opens the project drawer over itself loads `detail/index.tsx` ([section 2.1 of `overlay.md`](overlay.md#21-declare-the-child-routes)).
-- Components and types used only by these pages stay in the same folder, not in `client/components/` (which holds components shared across the whole application).
-- Keep components and non-primitive constants in separate files: when one file exports both a component and an object or array constant, Fast Refresh stops working and ESLint (`react-refresh/only-export-components`) reports an error; string and number constants are allowed. Put constants and types in a separate module such as `types.ts`.
-
-Adding a set of child routes usually changes these files:
-
-| File               | What to change                                                                                      |
-| ------------------ | --------------------------------------------------------------------------------------------------- |
-| `client/routes.ts` | Declare the pages, menu entries and nested `children`                                               |
-| Parent page        | Place `Outlet`; add links or tabs that point to the child routes                                    |
-| Child pages        | Default-export the page component                                                                   |
-| `client/locales/`  | Menu and page copy (`en-US.ts`, `zh-CN.ts`)                                                         |
-| `tests/`           | The route test (see [section 12 of `page.md`](page.md#12-update-the-route-test)) and behavior tests |
+- A parameter segment takes a name for what it shows (`:projectId` is `detail/`). One file serves every route that shows the same thing.
+- Components and types used only by these pages stay in the folder, not in `client/components/`.
+- Keep components and non-primitive constants in separate files, or Fast Refresh breaks and `react-refresh/only-export-components` fails.
 
 ## 3. Four ways to present a child route
 
-A child route renders in the parent page's Outlet, and what its component returns decides how it is shown. Tab content returns its content and is shown inline; every other child route returns one of the three components below and covers the parent page. There is no fifth way: a child route that returns its own `PageContainer` without `RouteChildPage` is shown inline with a second page frame, below the parent's content.
+- **Inline**: renders at the parent's Outlet, inside the parent's `PageContainer`; no `breadcrumb`. For page tabs.
+- **`RouteChildPage`**: covers the content area, not modal (sidebar and header stay usable), with its own `PageContainer` and a `breadcrumb`; left through the shell's parent link or browser back. For a complex record's detail page (`:id/details`) or an import page.
+- **`RouteDialog`**: centred and modal, no `PageContainer` or `breadcrumb`; closed by its buttons, Esc or the backdrop. For create (`new`) and edit (`:id/edit`).
+- **`RouteDrawer`**: the same, on the right. For a record of about 15 fields (`:id`).
 
-|                 | Inline (tabs, etc.)                      | `RouteChildPage`                             | `RouteDialog`                          | `RouteDrawer`    |
-| --------------- | ---------------------------------------- | -------------------------------------------- | -------------------------------------- | ---------------- |
-| Position        | Where the Outlet sits in the parent page | Covers the whole content area                | Center of the page                     | Side of the page |
-| Modal           | No                                       | No; the sidebar and header remain usable     | Yes                                    | Yes              |
-| `breadcrumb`    | Omit                                     | To name it in the header's trail             | Omit                                   | Omit             |
-| `PageContainer` | None; uses the parent page's             | Adds its own, inside `RouteChildPage`        | None                                   | None             |
-| How to leave    | Switch to another child route            | Shell parent link or browser back            | Close button, Esc, backdrop, `close()` | Same as left     |
-| Use for         | Page tabs                                | Child pages with long forms or many sections | Create and edit forms                  | Record details   |
-
-Declare what the component returns as the route's `presentation` — `{ kind: 'child-page' }`, or `{ kind: 'dialog' | 'drawer', title }` — so the application opens that container first and renders the module wait, the authorization check, a denial and a load failure inside it; see ["Declare the presentation" in `overlay.md`](overlay.md#declare-the-presentation). A hosted `RouteChildPage` adds its content to the layer the application opened and moves its `className` onto that layer, so the layout it set stays; an `<Outlet />` the page places beside it is inside that layer too. Classes that only make sense on an inner element — anything relying on the layer's own `z-index`, `overflow` or `absolute inset-0`, which the application's layer already sets — belong on the page's `PageContainer` instead, so check them when you migrate. For how to write `RouteDialog` and `RouteDrawer`, see [`overlay.md`](overlay.md). A record's own page declared beside its list declares that logical list in `usePageBreadcrumb` ([section 7 of `page.md`](page.md#7-back-button-and-breadcrumbs)).
+Forms never use a drawer or a covering page (guideline T3.1). Declare the container as the route's `presentation` (`{ kind: 'child-page' }`, or `{ kind: 'dialog' | 'drawer', title }`), so the application opens it before the module, its check and its data are ready, and renders waiting, denial and failure inside it. A hosted `RouteChildPage` moves its `className` onto that layer.
 
 ## 4. Page tabs
 
 ### Use child routes by default
 
-- When building a page with tabs, each tab is a child route by default; the user does not have to ask for "routes" separately. This is the same for every page, including plugin pages. When the user explicitly asks for a different interaction, follow the user's request.
-- A tab is a view of the parent page, not a separate destination: tab routes declare no `navigation`, and no `breadcrumb` (the header's trail stops at the parent page).
-- Tab content goes in the parent route's `children`; the parent page places `<Outlet />` in its content area; switching tabs uses route navigation.
-- **Derive the selected tab from the URL**; do not keep a separate `activeTab` state. Every tab can be opened directly, survives a reload, and works with the browser's back and forward.
-- Fixed tabs (Summary, By owner) and parameterized tabs (for example `:year`) both use this pattern. A child page with parameters reads them with `useParams()`.
-- This rule is about tabs on a page. A record detail that needs tabs is such a page rather than a drawer (guideline T2.1).
+- Each tab of a page is a child route, unless the user asks for something else. A tab is a view of its page: no `navigation`, no `breadcrumb`.
+- Derive the selected tab from the URL; keep no `activeTab` state. Every tab opens directly, survives a reload, and works with back and forward. Parameterized tabs (`:year`) read `useParams()`.
+- A record detail that needs tabs is a detail page, not a drawer (guideline T2.1).
 
 ### Default tab redirect
 
-- When the parent page's URL is opened (without a tab), redirect with `replace` to the default tab's URL, keeping the query parameters.
-- Default tab: the one the business specifies, if any; otherwise the first accessible tab in display order. When the specified tab is not accessible, also use the first accessible one.
-- While permissions or tab data are still loading, show a loading state; when no tab is accessible, show an empty state or a no-permission state, and do not redirect.
-- Clicking a tab uses ordinary navigation (without `replace`), so back and forward return to previously selected tabs.
-- When a tab's URL is opened directly or reloaded, stay on that tab. Do not redirect an explicit child route URL back to the default tab, even when the user has no permission for that tab or it does not exist; leave those cases to the child route's own permission check and the page's error handling.
-- Write the redirect in the parent page with existing React Router APIs: get the parent page's own path with `useResolvedPath('.')` and match it in full against `location.pathname`. Do not decide whether this is the parent URL from "the Outlet is empty" or from a string prefix.
+- Opening the parent URL redirects with `replace` to the default tab, keeping the query: the tab the business names, else the first accessible one.
+- While permissions or tab data load, show loading; when no tab is accessible, show an empty or no-permission state and do not redirect.
+- Clicking a tab is ordinary navigation (no `replace`). An explicit tab URL is never redirected, even when denied or unknown; its own check and the page's error handling apply.
 
 ### Complete example
 
-Put the projects list and a new "Project reports" page into the same navigation group. The reports page has two tabs, "Summary" and "By owner":
+A "Project reports" page with two tabs:
 
 ```ts
-const appRoutes: AppClientRouteContribution = defineAppRoutes([
-  // … existing routes (home, sign-in pages)
-  {
-    // Navigation group: only name, navigation and children; no componentLoader or authz, and no path here either.
-    name: 'project-management',
-    navigation: { title: 'navigation.projectManagement', icon: FolderKanban },
-    children: [
-      {
-        name: 'projects',
-        path: '/projects',
-        auth: 'required',
-        authz: 'skip',
-        navigation: { title: 'navigation.projects' },
-        componentLoader: () => import('./pages/projects/index.js'),
-        // … children as in page.md
-      },
-      {
-        name: 'project-reports',
-        path: '/project-reports',
-        auth: 'required',
-        authz: 'skip',
-        navigation: { title: 'navigation.projectReports' },
-        componentLoader: () => import('./pages/project-reports/index.js'),
-        children: [
-          {
-            // Tab: no navigation and no breadcrumb.
-            name: 'project-reports-summary',
-            path: 'summary',
-            authz: 'skip',
-            componentLoader: () => import('./pages/project-reports/summary.js'),
-          },
-          {
-            name: 'project-reports-owners',
-            path: 'owners',
-            authz: 'skip',
-            componentLoader: () => import('./pages/project-reports/owners.js'),
-          },
-        ],
-      },
-    ],
-  },
-]);
+{
+  name: 'project-reports',
+  path: '/project-reports',
+  auth: 'required',
+  authz: 'skip',
+  navigation: { title: 'navigation.projectReports' },
+  componentLoader: () => import('./pages/project-reports/index.js'),
+  children: [
+    {
+      name: 'project-reports-summary',
+      path: 'summary',
+      componentLoader: () => import('./pages/project-reports/summary.js'),
+    },
+    {
+      name: 'project-reports-owners',
+      path: 'owners',
+      componentLoader: () => import('./pages/project-reports/owners.js'),
+    },
+  ],
+},
 ```
 
-The group has no `path`, so the pages inside it use full paths: `/projects` and `/project-reports`.
-
-The parent page, `client/pages/project-reports/index.tsx`:
+`client/pages/project-reports/index.tsx`:
 
 ```tsx
-import { useTranslation } from '@nocobase/i18n/client';
-import type { ReactElement } from 'react';
-import { Navigate, NavLink, Outlet } from 'react-router';
-
-import { PageContainer } from '#components/page-container';
-import { useListTabs } from '#hooks/use-list-tabs';
-import { PageHeader } from '#components/page-header';
-import { buttonVariants } from '#components/ui/button';
-import { cn } from 'cn';
-
 export default function ProjectReportsPage(): ReactElement {
   const { t } = useTranslation();
-
-  // The order is the display order. Both tabs use the parent page's access, so the first one is the default tab.
+  // Display order; both tabs use the parent's access, so the first is the default.
   const tabs = [
     {
       path: 'summary',
@@ -163,160 +97,96 @@ export default function ProjectReportsPage(): ReactElement {
       label: t('projectReports.tabs.owners'),
     },
   ];
-
   const tabState = useListTabs({
     tabs,
-    parameterKeys: [
-      'q',
-      'status',
-      'page',
-      'pageSize',
-      'sort',
-      'order',
-      'orderBy',
-    ],
+    parameterKeys: ['q', 'status', ...TABLE_URL_KEYS],
   });
-
-  if (tabState.fallback) {
-    // replace: leaves no parent URL in the history, so going back does not get redirected again.
-    return <Navigate replace to={tabState.fallback} />;
-  }
-
+  if (tabState.fallback) return <Navigate replace to={tabState.fallback} />;
   return (
     <PageContainer>
       <PageHeader
         title={t('projectReports.title')}
         description={t('projectReports.description')}
       />
+      {/* One row that scrolls sideways on a phone, never wrapping. */}
       <nav
         aria-label={t('projectReports.tabs.label')}
-        // One row that scrolls sideways on a phone, never wrapping (M2.2 in mobile.md); a page with a header-level
-        // record keeps the current tab in view as example/detail-page-tabs.md does.
         className='flex gap-1 overflow-x-auto border-b pb-2'
       >
         {tabs.map((tab) => (
-          // Tabs are page navigation, so use links. NavLink adds aria-current='page' to the current tab, and the selected style is based on it.
           <NavLink
+            key={tab.path}
+            to={tabState.destination(tab)}
             className={cn(
               buttonVariants({ variant: 'ghost', size: 'sm' }),
               'shrink-0 text-muted-foreground aria-[current=page]:bg-muted aria-[current=page]:text-foreground',
             )}
-            key={tab.path}
-            to={tabState.destination(tab)}
           >
             {tab.label}
           </NavLink>
         ))}
       </nav>
-      {/* Detail pages can use this source in their declared breadcrumb. */}
+      {/* A detail under a tab uses this source in its breadcrumb. */}
       <Outlet context={{ source: tabState.source }} />
     </PageContainer>
   );
 }
 ```
 
-The tab page, `client/pages/project-reports/summary.tsx` (`owners.tsx` is written the same way):
+Tab content returns its content without a `PageContainer`.
 
-```tsx
-import { useTranslation } from '@nocobase/i18n/client';
-import type { ReactElement } from 'react';
-
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '#components/ui/card';
-
-// Tab content renders inside the parent page's PageContainer; do not wrap it in another PageContainer.
-export default function ProjectReportsSummary(): ReactElement {
-  const { t } = useTranslation();
-
-  return (
-    <Card>
-      <CardHeader>
-        <CardTitle>{t('projectReports.summary.title')}</CardTitle>
-        <CardDescription>
-          {t('projectReports.summary.description')}
-        </CardDescription>
-      </CardHeader>
-      <CardContent>{/* Statistics */}</CardContent>
-    </Card>
-  );
-}
-```
-
-The copy is the `projectReports` group and the `navigation` entries in [`example/copy.md`](example/copy.md); add it to both locale files.
-
-Behavior:
-
-- Opening `/project-reports?range=30d` redirects with `replace` to `/project-reports/summary?range=30d`.
-- Opening `/project-reports/owners` directly stays on "By owner".
-- Clicking a tab adds a history entry, and the content renders where the Outlet is; the sidebar keeps "Project reports" highlighted (tab routes have no menu entry, so the nearest ancestor is highlighted).
-- `useListTabs` derives the selected tab from the route. Give different datasets different `dataset` values and list every parameter owned by these lists in `parameterKeys`; changing datasets clears those keys and starts the destination at its defaults, retaining enclosing-page parameters. Display tabs for the same dataset share a `dataset` value and retain compatible state. Pass only accessible tabs and `pending: true` while permission checks load; an absent/deleted tab then replaces the URL with the first accessible tab. Keep the parent route mounted for unknown descendants (for example a final `:unavailableTab` child with a null component and children matching the declared detail paths, such as `:id`; static tab routes take precedence) so it can apply that fallback; the global unmatched-route redirect cannot infer a tab owner.
-
-Tabs stay on one row that scrolls sideways inside itself on a phone and never wrap ([M2.2 in the phone experience](../mobile.md#m2-navigation-tabs-and-returning)). Tabs are implemented as links because they are page navigation, announced as links with `aria-current` on the selected one. To borrow the button look, apply `buttonVariants` to `NavLink`. `<Button render={<NavLink />}>` would announce each tab as a button, which is right for an action that opens a route ("New project", [section 2 of `styling.md`](styling.md#2-components-are-built-on-base-ui-not-radix)) but not for navigation. The `tabs` primitive is for tabs inside one view that are not routes: it brings the ARIA tab keyboard behavior, and its `TabsTrigger` elements sit inside `TabsList` (the skill's composition rules). Using it for route tabs would mean keeping its selected value in sync with the URL yourself.
+- `useListTabs` (`#hooks/use-list-tabs`) derives the active tab from the route. Tabs with different data get different `dataset` values; `parameterKeys` lists every key the lists own, and switching dataset clears them while keeping the enclosing page's. Pass only accessible tabs, and `pending: true` while checks load; a missing tab then falls back to the first accessible one.
+- Tabs are links (`NavLink` adds `aria-current`) styled with `buttonVariants`; the `tabs` primitive is for tabs inside one view that are not routes.
 
 ### A record detail page with tabs
 
-A detail view with several sections, sub-tables or tabs is a page rather than a drawer (guideline T2.1). It combines the pieces above:
+A detail with sections, sub-tables or tabs is a page at `:customerId/details`, returning `RouteChildPage` over its list, with tab children such as `overview` and `orders`:
 
-- Route `/customers/:customerId` with tab children such as `overview` and `orders`; no `navigation`, because the path has a parameter. It covers the list as a child with `RouteChildPage` ([section 5](#5-covering-child-pages-routechildpage)), which keeps the list's state, or sits beside the list route.
-- `usePageBreadcrumb` declares the list and current record, including loading/error states; the shell supplies desktop and mobile return navigation ([standard pattern](navigation.md)); the record name is the `PageHeader` title. Beside the list, declare an application-absolute default list destination with its recorded query. Forward only known public list parameters for an explicit deep link ([section 7 of `page.md`](page.md#7-back-button-and-breadcrumbs)).
-- The page reads the id with `useParams()`, renders an inner component keyed by it, and loads the record once with the pattern in ["Loading data in a component" of `api.md`](api.md#loading-data-in-a-component), including its 401, 403 and 404 states; the record name is the `PageHeader` title.
-- The tab bar and the default-tab redirect work as in the example above; the page passes the loaded record to the tabs with `<Outlet context={…}>` (memoized, [section 2.2 of `overlay.md`](overlay.md#22-place-the-outlet-in-the-parent-page)), so the tabs do not load it again, and each tab loads only its own data, such as the customer's orders.
-- The record's actions sit in the header, above the tabs (guideline T2.2), and what they open stacks on the tab being shown: [the next section](#overlays-opened-from-the-header-of-a-page-with-tabs). [`example/detail-page-tabs.md`](example/detail-page-tabs.md) is the complete page.
+- It declares its trail with `usePageBreadcrumb`, including while loading or failed ([section 7 of `page.md`](page.md#7-back-button-and-breadcrumbs)); the record name is the `PageHeader` title.
+- It reads the id with `useParams()` and loads the record once with `useListData(path, { scopes: [customerScope(id)] })` ([`api.md`](api.md#loading-data-in-a-component)), handling 401, 403 and 404; tabs load only their own data.
+- The record's actions sit in the header, above the tabs (guideline T2.2), and what they open stacks on the tab being shown ([next section](#overlays-opened-from-the-header-of-a-page-with-tabs)). The Examples template's `client/pages/skill-projects/detail.tsx` is a detail page without tabs ([`executable-list-edit.md`](executable-list-edit.md)).
 
 ### Overlays opened from the header of a page with tabs
 
-A tab is the view the user is on, so a dialog, drawer or covering page that the page's header opens — the record's "Edit", a form too long for a dialog — opens over the tab being shown (guideline I9): `/customers/12/orders/edit`, not `/customers/12/edit`. Declared once under the page, beside the tabs, the overlay takes the tab's place in the page's `Outlet`: the tab unmounts behind the dialog, no tab is selected, a link to the dialog forgets the tab, and closing goes to `/customers/12`, which redirects to the default tab — the user who opened "Edit" on Orders comes back to Overview.
+A tab is the view the user is on, so what the page's header opens — the record's "Edit" — opens over the tab being shown (guideline I9): `/customers/12/details/orders/edit`. Declared once beside the tabs, it would replace the tab in the page's Outlet, and closing would land on the default tab.
 
-**Declare the header's overlays under every tab.** A function returns them for one tab, so each tab adds them with one call and a new overlay is added in one place; the tab's route name, passed in, keeps their names unique. The function that declares the page takes the page that opens it, as `projectDetailRoutes(owner)` does for a drawer, because the same page is declared under every page that opens a customer ([section 5](#the-same-detail-page-over-another-page)):
+**Declare the header's overlays under every tab**, from one function:
 
 ```ts
-// client/routes.ts, beside projectDetailRoutes
-/** The overlays a customer page's header opens, declared under each of its tabs; `tab` is that tab's route name. */
+/** The overlays a customer page's header opens, under one tab; `tab` is that tab's route name. */
 function customerHeaderRoutes(tab: string): AppClientRouteDefinition[] {
   return [
     {
-      // …/:customerId/<tab>/edit: edit dialog (RouteDialog), over the tab being shown
       name: `${tab}-edit`,
       path: 'edit',
-      authz: 'skip',
+      presentation: { kind: 'dialog', title: 'customers.edit.title' },
       componentLoader: () => import('./pages/customers/detail/edit.js'),
     },
   ];
 }
 
-/**
- * A customer's page, its tabs and the overlays its header opens, under a page that opens customers; `owner` keeps
- * the names unique.
- */
+/** A customer's page, its tabs and their overlays, under a page that opens customers. */
 function customerDetailRoutes(owner: string): AppClientRouteDefinition[] {
   const page = `${owner}-detail`;
   return [
     {
-      // …/:customerId: the customer's page (RouteChildPage), covering the page that declares it
       name: page,
-      path: ':customerId',
-      authz: 'skip',
+      path: ':customerId/details',
+      breadcrumb: { title: 'customers.detail.title' },
+      presentation: { kind: 'child-page' },
       componentLoader: () => import('./pages/customers/detail/index.js'),
       children: [
         {
           name: `${page}-overview`,
           path: 'overview',
-          authz: 'skip',
           componentLoader: () => import('./pages/customers/detail/overview.js'),
           children: customerHeaderRoutes(`${page}-overview`),
         },
         {
           name: `${page}-orders`,
           path: 'orders',
-          authz: 'skip',
           componentLoader: () => import('./pages/customers/detail/orders.js'),
-          // A tab's own children, such as an order's drawer, go beside the header's overlays.
-          children: customerHeaderRoutes(`${page}-orders`),
+          children: customerHeaderRoutes(`${page}-orders`), // plus the tab's own children
         },
       ],
     },
@@ -324,363 +194,106 @@ function customerDetailRoutes(owner: string): AppClientRouteDefinition[] {
 }
 ```
 
-The customers list adds the page with `...customerDetailRoutes('customer')` among its `children`, as the projects list adds its drawer ([section 1 of `page.md`](page.md#1-declare-the-route)). Write each tab out rather than generating the tabs from a list: every `componentLoader` needs a literal `import()` path, and a tab may have an `authz` and children of its own.
+The customers list adds `...customerDetailRoutes('customer')` to its `children`, beside its `new` and `:customerId/edit` dialogs. Write each tab out: every `componentLoader` needs a literal `import()`.
 
-**Link from the header through the tab on screen.** The header belongs to the page's route, where a bare `edit` resolves to `/customers/12/edit` whichever tab is showing ([section 2 of `page.md`](page.md#2-the-page-component)). The page finds the current tab among the tabs it renders, the way it finds its own URL for the redirect — ``matchPath({ path: `${pagePath.pathname}/${tab.path}`, end: false }, location.pathname)`` — and passes its path to the header's actions:
-
-```tsx
-// client/pages/customers/detail/index.tsx, beside the page component
-/**
- * The customer's actions, at the top of the page (guideline T2.2). `tab` is the tab on screen: what they open is
- * declared under every tab and stacks on this one, so closing returns to it.
- */
-function CustomerHeaderActions({
-  tab,
-}: {
-  readonly tab: string;
-}): ReactElement {
-  const { t } = useTranslation();
-  const location = useLocation();
-  return (
-    <Button
-      nativeButton={false}
-      render={
-        <Link to={{ pathname: `${tab}/edit`, search: location.search }} />
-      }
-    >
-      {t('customers.actions.edit')}
-    </Button>
-  );
-}
-```
-
-**Each tab places an `Outlet` and passes the page's context on.** The header's overlays now render through the tab, and a child route reads the context of the nearest `Outlet` above it, which is the tab's: without one, the dialog at `…/orders/edit` renders nothing; with other data, its `onSaved` and `onNotFound` never reach the page.
-
-```tsx
-// client/pages/customers/detail/orders.tsx
-import type { ReactElement } from 'react';
-import { Outlet, useOutletContext } from 'react-router';
-
-import type { CustomerPageOutletContext } from '../types.js';
-
-export default function CustomerOrdersTab(): ReactElement {
-  const context = useOutletContext<CustomerPageOutletContext>();
-  return (
-    <>
-      {/* … the customer's orders, which this tab loads itself */}
-      {/* The overlays the page's header opens render here, over this tab: pass them the page's context. */}
-      <Outlet context={context} />
-    </>
-  );
-}
-```
-
-- **An action that belongs to one tab stays in that tab** — "New order" in the Orders tab's toolbar — and links with a bare segment, which resolves under the tab by itself; its overlay is declared under that tab only. Only actions on the record itself go in the header (guideline T2.2), and only theirs are declared under every tab.
-- **Do not get back to the tab through `closeTo`, `location.state` or a query parameter** instead. With the overlay beside the tabs, the tab still unmounts while it is open and no tab is selected; state is lost on a refresh or a shared link; a query parameter travels with every link that keeps the query string.
-- **An action that leaves the page** — back to the list after the record is deleted — navigates from the page's own route, in the page component or in a function the page passes through its context: `navigate({ pathname: '..', search: withoutParams(location.search, CUSTOMER_PAGE_PARAMS) }, { relative: 'route', replace: true })`, which returns the list's parameters and removes the page's own, as its declared breadcrumb does ([section 7 of `page.md`](page.md#7-back-button-and-breadcrumbs)). Counted from inside an overlay, the number of `..` levels changes with the tab.
-- **A covering page the header opens** (`RouteChildPage`) is declared under every tab the same way and renders through the tab's `Outlet`, inside this page. It still covers this page whole, header and tab bar included, even after this page has been scrolled ([section 5](#5-covering-child-pages-routechildpage)).
-- Registration rejects two children of one tab with the same path, so a header overlay and one of the tab's own children cannot share a segment (`new` for both); name them apart.
-
-Behavior:
-
-- "Edit" on `/customers/12/orders?status=vip` — `status` being the customers list's filter, carried down — opens `/customers/12/orders/edit?status=vip`; Orders stays selected and mounted behind the dialog.
-- Closing, saving, Esc and Back return to `/customers/12/orders?status=vip`, without passing through the default-tab redirect.
-- Opening `/customers/12/orders/edit` directly shows the page, Orders and the dialog on it.
-- [`example/detail-page-tabs.md`](example/detail-page-tabs.md) is the complete page, with a test that opens "Edit" from every tab.
+- **Link from the header through the tab on screen.** The header belongs to the page's route, where a bare `edit` resolves beside the tabs. Find the current tab with ``matchPath({ path: `${pagePath}/${tab.path}`, end: false }, location.pathname)`` and link to ``{ pathname: `${tab}/edit`, search: location.search }``.
+- **Each tab places an `<Outlet />`**, or the header's overlays render nothing; when they read the page's outlet context, the tab passes it on (`<Outlet context={useOutletContext()} />`).
+- An action belonging to one tab ("New order" in the Orders toolbar) stays in that tab and is declared under it only. Never return to the tab through `closeTo`, `location.state` or a query parameter.
+- An action that leaves the page, such as returning to the list after a delete, navigates from the page's own route (`relative: 'route'`), since the number of `..` levels from an overlay depends on the tab.
+- A covering page the header opens is declared under every tab the same way and still covers the whole page.
+- Two children of one tab cannot share a path; name the header's overlays apart from the tab's own.
 
 ### When tabs have their own permissions
 
-A tab that the parent page's check covers declares `authz: 'skip'`. When a tab is only for people who have been granted access, declare its own request:
+A tab the parent's check covers omits `authz`. A tab only for some people declares `authz: { resource: { type: 'page', id: 'project-reports-owners' }, action: 'access' }`, and the parent page checks the same pair with `useCan`, once per such tab at the top level:
 
-```ts
-const appRoutes: AppClientRouteContribution = defineAppRoutes([
-  {
-    name: 'project-reports',
-    path: '/project-reports',
-    // …
-    componentLoader: () => import('./pages/project-reports/index.js'),
-    children: [
-      {
-        name: 'project-reports-summary',
-        path: 'summary',
-        authz: 'skip',
-        componentLoader: () => import('./pages/project-reports/summary.js'),
-      },
-      {
-        // Only for people who have been granted access.
-        name: 'project-reports-owners',
-        path: 'owners',
-        authz: {
-          resource: { type: 'page', id: 'project-reports-owners' },
-          action: 'access',
-        },
-        componentLoader: () => import('./pages/project-reports/owners.js'),
-      },
-    ],
-  },
-]);
-```
-
-The parent page checks the same permission with `useCan`: tabs without permission are not shown, and the default tab is decided only after the permission check finishes. The business requirement below is to show "By owner" by default, and "Summary" when the user has no permission for it:
-
-```tsx
-import { useCan } from '@nocobase/app-plugin-authorization/client';
-import { useTranslation } from '@nocobase/i18n/client';
-import type { ReactElement } from 'react';
-import { Navigate, NavLink, Outlet } from 'react-router';
-
-import { Loading } from '#components/loading';
-import { PageContainer } from '#components/page-container';
-import { useListTabs } from '#hooks/use-list-tabs';
-import { PageHeader } from '#components/page-header';
-import { buttonVariants } from '#components/ui/button';
-import { cn } from 'cn';
-
-export default function ProjectReportsPage(): ReactElement {
-  const { t } = useTranslation();
-  // Keep in sync with the authz of the owners child route in routes.ts.
-  const ownersAccess = useCan({
-    resource: { type: 'page', id: 'project-reports-owners' },
-    action: 'access',
-  });
-
-  // Tabs without permission are not shown. can is false while the check is pending and when it fails, so a failed check
-  // hides the tab like a denial (page.md section 8); the tab route's own check still decides a direct URL.
-  const tabs = [
-    {
-      path: 'summary',
-      dataset: 'summary',
-      label: t('projectReports.tabs.summary'),
-    },
-    ...(ownersAccess.can
-      ? [
-          {
-            path: 'owners',
-            dataset: 'owners',
-            label: t('projectReports.tabs.owners'),
-          },
-        ]
-      : []),
-  ];
-
-  const tabState = useListTabs({
-    tabs,
-    parameterKeys: [
-      'q',
-      'status',
-      'page',
-      'pageSize',
-      'sort',
-      'order',
-      'orderBy',
-    ],
-  });
-
-  if (tabState.fallback) {
-    // Redirecting before the permission check finishes may land on the wrong tab: show a loading state first.
-    if (ownersAccess.isPending) {
-      return (
-        <Loading
-          // Fixed on purpose: the page-level loading state in client/routing/client-route.tsx fills the viewport below the header the same way.
-          className='min-h-[calc(100svh-4rem)]'
-          label={t('status.loadingPage')}
-        />
-      );
-    }
-    // The business specifies "By owner" as the default tab; when it is not accessible, use the first accessible tab.
-    const target = tabs.find((tab) => tab.path === 'owners') ?? tabs[0];
-    return <Navigate replace to={tabState.destination(target)} />;
-  }
-
-  return (
-    <PageContainer>
-      <PageHeader
-        title={t('projectReports.title')}
-        description={t('projectReports.description')}
-      />
-      <nav
-        aria-label={t('projectReports.tabs.label')}
-        // One row that scrolls sideways on a phone, never wrapping (M2.2 in mobile.md); a page with a header-level
-        // record keeps the current tab in view as example/detail-page-tabs.md does.
-        className='flex gap-1 overflow-x-auto border-b pb-2'
-      >
-        {tabs.map((tab) => (
-          // Tabs are page navigation, so use links. NavLink adds aria-current='page' to the current tab, and the selected style is based on it.
-          <NavLink
-            className={cn(
-              buttonVariants({ variant: 'ghost', size: 'sm' }),
-              'shrink-0 text-muted-foreground aria-[current=page]:bg-muted aria-[current=page]:text-foreground',
-            )}
-            key={tab.path}
-            to={tabState.destination(tab)}
-          >
-            {tab.label}
-          </NavLink>
-        ))}
-      </nav>
-      {/* Detail pages can use this source in their declared breadcrumb. */}
-      <Outlet context={{ source: tabState.source }} />
-    </PageContainer>
-  );
-}
-```
-
-- Here "Summary" uses the parent page's permission, so there is always an accessible tab. When every tab has its own permission and none is accessible, show an empty state or a no-permission state, and do not redirect.
-- When a user without permission opens `/project-reports/owners` directly, the child route's permission check shows "Access denied"; do not redirect back to the default tab.
-- Call `useCan` at the top level of the component, once for each tab that needs a check, never inside a loop or a condition.
-- The overlays a page's header declares under a tab inherit that tab's `authz`: whoever may see the tab may open them over it. An overlay with a check of its own declares it once, in the function that declares it under every tab.
+- Leave denied tabs out of `tabs`, pass `pending: true` to `useListTabs` while a check is pending, and show `Loading` instead of redirecting until it settles; then redirect to the business default if accessible, else the first accessible tab.
+- A denied user who opens the tab URL directly gets the route's "Access denied", not a redirect. When no tab is accessible, show an empty or no-permission state.
+- Header overlays under a tab inherit that tab's `authz`; one with a check of its own declares it in the function.
 
 ## 5. Covering child pages (RouteChildPage)
 
-When a child page has a lot of content (a long form, many sections) and needs the whole page area, but the parent page's state must be preserved, cover the parent page with `RouteChildPage`. For example, add an "Import projects" page at `/projects/import` under the projects list:
+A child page that needs the whole content area while its parent keeps its state — a complex record's detail page, an import page — returns `RouteChildPage` (`#components/route-child-page`):
 
 ```ts
-const appRoutes: AppClientRouteContribution = defineAppRoutes([
-  {
-    name: 'projects',
-    path: '/projects',
-    auth: 'required',
-    authz: 'skip',
-    navigation: { title: 'navigation.projects', icon: FolderKanban },
-    componentLoader: () => import('./pages/projects/index.js'),
-    children: [
-      // … the dialogs and the drawer of page.md
-      {
-        // A covering child page; the shell supplies its parent link.
-        name: 'project-import',
-        path: 'import',
-        breadcrumb: { title: 'projects.import.title' },
-        authz: 'skip',
-        componentLoader: () => import('./pages/projects/import.js'),
-      },
-    ],
-  },
-]);
+{
+  name: 'project-import', // under the projects list's children
+  path: 'import',
+  breadcrumb: { title: 'projects.import.title' },
+  presentation: { kind: 'child-page' },
+  componentLoader: () => import('./pages/projects/import.js'),
+},
 ```
 
-`client/pages/projects/import.tsx`:
-
 ```tsx
-import { useTranslation } from '@nocobase/i18n/client';
-import type { ReactElement } from 'react';
-import { Outlet } from 'react-router';
-
-import { PageContainer } from '#components/page-container';
-import { PageHeader } from '#components/page-header';
-import { RouteChildPage } from '#components/route-child-page';
-
+// client/pages/projects/import.tsx
 export default function ProjectImportPage(): ReactElement {
   const { t } = useTranslation();
-
   return (
     <>
       <RouteChildPage>
-        {/* A covering child page uses its own PageContainer */}
         <PageContainer>
-          {/* The shell returns to /projects with its recorded list query. */}
           <PageHeader
             title={t('projects.import.title')}
             description={t('projects.import.description')}
           />
-          {/* The page's own content */}
+          {/* content */}
         </PageContainer>
       </RouteChildPage>
-      {/* Deeper child routes: the Outlet goes beside RouteChildPage, not inside it */}
+      {/* Deeper child routes: beside RouteChildPage, not inside it. */}
       <Outlet />
     </>
   );
 }
 ```
 
-The list page's `<Outlet />` is already at the end of `PageContainer` (see [section 2 of `page.md`](page.md#2-the-page-component)), so it needs no change; just add a secondary button that links to `import` in the page header: `<Button variant='outline' nativeButton={false} render={<Link to={{ pathname: 'import', search: location.search }} />}>`.
-
-- The shell breadcrumb and mobile parent arrow return to the list with its recorded query ([section 7 of `page.md`](page.md#7-back-button-and-breadcrumbs)). Put no "Back to list" button in `actions`.
-- The route's `breadcrumb` names this page, so the header shows "Projects > Import projects". The shell restores the list's recorded query. Declare a complete trail with `usePageBreadcrumb` for a dynamic or logical parent, and omit the duplicate `BackButton`.
-- Put the deeper `<Outlet />` beside `RouteChildPage`, not inside it, so the next level is a sibling of this page's layer and covers the content area as this one does. A child page that can only render inside — a covering page under a tab of this page, through the tab's `Outlet` — still covers this page whole: `RouteChildPage` positions from an outer element that does not scroll, and switches off everything of this page around it.
-- The covered parent page keeps its own DOM, including half-filled form input and the scroll position. While covering, `RouteChildPage` makes the sibling elements before it `inert` (not focusable, not clickable) and restores them when it leaves.
-- It is not modal: the sidebar and header remain usable. It has no close button and does not respond to Esc; users follow the shell parent link or the browser's back button.
-- Use it only for child pages that cover their parent page, never on a top-level page.
-- A form too long for a dialog uses the same frame; `create.tsx` ([`example/create-page.md`](example/create-page.md)) is the complete page.
+- The list links to it with a secondary header button: `<Button variant='outline' nativeButton={false} render={<Link to={{ pathname: 'import', search: location.search }} />}>`.
+- The shell's breadcrumb and phone arrow return to the list with its recorded query; add no "Back to list" button. A dynamic parent is declared with `usePageBreadcrumb`.
+- The covered page keeps its DOM, input and scroll position; `RouteChildPage` makes what it covers `inert` and restores it on leaving. It is not modal: no close button, no Esc.
+- A child page rendered inside it, through a tab's Outlet, still covers it whole. Never use `RouteChildPage` on a top-level page.
 
 ### The same detail page over another page
 
-A page that shows a record whose detail is a page of its own — an orders list's customer column, a payment list's expense number — opens that page over itself, the way a dashboard opens a project's drawer ([section 2.1 of `overlay.md`](overlay.md#the-same-drawer-over-another-page)). Declare it under this page's route with the function that declares it under its own list ([section 4](#overlays-opened-from-the-header-of-a-page-with-tabs)), so it brings its tabs and the overlays its header opens, every route under a unique name:
+A page showing a record whose detail is a page — an orders list's customer column — opens that page over itself, as a dashboard opens a project drawer (guideline I9). Declare it under this page with the same function and its own owner:
 
 ```ts
 {
   name: 'orders',
   path: '/orders',
-  // … auth, authz and navigation
-  componentLoader: () => import('./pages/orders/index.js'),
-  children: [
-    // … the orders page's own overlays
-    // /orders/:customerId, its tabs and the overlays its header opens, over the orders page:
-    // the modules the customers list declares.
-    ...customerDetailRoutes('order-customer'),
-  ],
+  // …
+  children: [...customerDetailRoutes('order-customer')], // /orders/:customerId/details/…
 },
 ```
 
-- The link is relative — `{ pathname: String(row.customerId), search: location.search }` — never the other module's path (`/customers/12`). It keeps the whole query string, the orders page's own filters (`?status=paid`) included: the customer page's declared source leads back to the recorded list query, so a filter the link dropped is gone when the user returns. The customer page and its tabs name their own parameters apart from the orders page's, read only those, and remove them on the way back ([section 5 of `table.md`](table.md#5-writing-search-and-filters-to-the-url), [section 7 of `page.md`](page.md#7-back-button-and-breadcrumbs)).
-- **The declared breadcrumb on the shared page must follow its actual owner.** Resolve the owner with `useResolvedPath('..')` and its recorded query so it follows the parent route it was opened from ([section 7 of `page.md`](page.md#7-back-button-and-breadcrumbs)); a hard-coded `to` sends the user who came from `/orders` to `/customers`, a page they were not on (I9). The page's Cancel, close and redirect paths follow the same rule.
-- Route names are unique across the application, so the function takes an owner and composes every name from it, outside in — `order-customer-detail`, `order-customer-detail-orders`, `order-customer-detail-orders-edit` — as `projectDetailRoutes(owner)` does for drawers ([section 2.1 of `overlay.md`](overlay.md#21-declare-the-child-routes)).
-- The shared page returns `RouteChildPage` as it does under its own list: under every parent it is a child route, and without the layer it renders below that parent's content.
-- The added routes join the route test's page-grant list for their own path ([section 12 of `page.md`](page.md#12-update-the-route-test)).
+- Link relatively — ``{ pathname: `${row.customerId}/details`, search: location.search }`` — never to `/customers/12/details`, and keep the whole query. The shared page names its own parameters apart from the orders page's.
+- The shared page's breadcrumb, Cancel and redirects follow its actual owner (`useResolvedPath('..')` with its recorded query), never a hard-coded list.
+- The owner prefixes every route name (`order-customer-detail-orders-edit`), and the added routes join the route test.
 
 ## 6. Navigation groups and clickable parents
 
-- **Group**: only `name`, `navigation` and `children`, with no `componentLoader`. `path` is optional; when present, it becomes the prefix of the child routes' paths; when absent, the group is only a set of entries in the menu.
-- A group renders no business component (the route renderer provides its Outlet), cannot declare `authz`, and carries no page permission of its own: the first page below a group with no page above it declares its own `authz`.
-- Groups can contain groups. A group's `name` must be unique, like a route name.
-- **How a group shows in the menu**: a top-level group is a section, its title a small heading over its entries, which are always shown; use it to sort the menu into areas such as Records or Settings. A group inside another group is a collapsible sub-menu. `NavigationMenu`'s `sections={false}` draws top-level groups as collapsible sub-menus too.
-- **Clickable parent**: a page can also have `navigation` and child pages with `navigation`. In the menu it is then both a link and expandable: the link and the expand button are two separate controls. Choose how the child pages are presented according to [section 3](#3-four-ways-to-present-a-child-route).
-- Pages that should not appear in the menu, such as details and tab content, have no `navigation`. A descendant can still declare `navigation` when its ancestor does not.
-- A path with a parameter cannot have `navigation`.
-- `navigation.order` sets the order among siblings; lower numbers come first.
-- Collapsible groups keep their expanded or collapsed state while the navigation tree stays mounted; opening a new page automatically expands its ancestor groups.
+- A group has only `name`, `navigation` and `children`; an optional `path` prefixes its children's paths. It renders no component, cannot declare `authz`, and carries no permission: the first page below it declares its own `authz`. Group names are unique.
+- A top-level group is a menu section with a heading; a nested group is a collapsible sub-menu (`NavigationMenu` `sections={false}` makes top-level groups collapsible too).
+- A clickable parent is a page with `navigation` whose children also have `navigation`: the link and the expand button are separate controls.
+- Details and tab content have no `navigation`; a parameterized path cannot have it. `navigation.order` sorts siblings, lower first.
 
 ## 7. Settings pages
 
-- A settings page is an ordinary App page in the System settings structure ([section 5 of `page.md`](page.md#5-settings-pages)); a settings module with several views uses URL-backed tabs through `SettingsModulePage` ([System settings navigation](../../settings-navigation.md)).
-- Tabs in settings pages also use child routes ([section 4](#4-page-tabs)); nested details and tabs usually have no `navigation`.
-- A settings page checks its settings item; its child pages and tabs inherit that check or declare another action or item of their own, never a page grant.
-- Navigation groups carry no page permission. Access checks in the browser do not replace server authorization.
+A settings module with several views uses URL-backed tabs through `SettingsModulePage` ([System settings navigation](../../settings-navigation.md)); its tabs inherit its settings item or declare another, never a page grant.
 
 ## 8. Verify
 
-1. Open the parent page's URL, including the form with a trailing `/` and the form with query parameters: it redirects only once, with `replace`, to the default accessible tab, and keeps the query parameters; going back does not return to the parent URL only to be redirected away again. While loading, or when no tab is accessible, it does not redirect repeatedly.
-2. Open each child route, including by typing its URL directly, and reload it at a URL with the deployment base path: it stays on the requested tab and does not return to the default tab.
-3. The parent page stays mounted, and child content appears at the expected Outlet position.
-4. Use back and forward: the selected tab and the menu highlight match the URL.
-5. Check the menu, the copy in each language, the link and expand button of clickable parents, and navigation on narrow screens.
-6. Remove permission for the parent page: none of the child pages can load. Then remove permission for just one child page that declares `authz` explicitly.
-7. Settings pages: a settings page's menu position under its group is as expected.
-8. Covering child pages: opening one covers the parent from the top of the content area, whatever the parent's scroll position, and nothing of the parent shows below it; the back button returns to the list with exactly the search and filters it had, and nothing the child page or its tabs wrote is left in the list's URL; the covered page keeps its input and scroll position; after going back, it works normally.
-9. Pages with tabs whose header opens overlays: from a tab other than the default, open each one. Its URL is the tab's URL plus its own segment, the tab stays selected and its content mounted behind it, and closing, saving, Esc and Back all return to that tab; opening that URL directly shows the same tab behind it.
+1. Opening the parent URL (with a trailing `/`, with a query) redirects once, with `replace`, to the default accessible tab and keeps the query; back does not bounce. Loading or no accessible tab does not redirect.
+2. Each child URL, typed directly and reloaded under the deployment base path, stays on its tab.
+3. Removing permission for the parent blocks every child; removing one tab's permission hides only that tab.
+4. A covering page covers from the top whatever the parent's scroll; returning restores the list's exact query and the covered page's input and scroll.
+5. From a non-default tab, each header overlay keeps the tab's URL plus its segment, the tab stays mounted behind it, and close, save, Esc and back return to that tab.
 
-Write these behaviors as tests in `tests/` (see [`testing.md`](testing.md)).
+Write these as tests in `tests/` ([`testing.md`](testing.md)).
 
 ## List-tab breadcrumbs and private conditions
 
-Register each detail under its actual list tab, including when several tabs open the same detail component. The list places `Outlet` after its table and the detail returns `RouteChildPage`; this is a full child page, not a dialog. Keep sensitive conditions in the mounted list's `useState` only. Do not put them in URLs, history state, browser storage, logs or a global cache. Refresh resets them; the template's identity-keyed session boundary unmounts the list on account changes. Keep page and sorting state in that same local owner when they depend on private conditions, and reset the page when a condition changes.
+Register a detail under each list tab that opens it, so the list stays mounted; the list places `Outlet` after its table and the detail returns `RouteChildPage`. A layout supplying its own breadcrumb passes `tabState.source` through outlet context, and the detail uses it as the list level of `usePageBreadcrumb`, which links to the source tab with its recorded query. A direct open uses the source tab's default list.
 
-A private condition must filter the complete authorized dataset before computing its total and slicing a page; filtering only the fetched server page loses matching records and leaves the total wrong. For a small bounded dataset, fetch the complete authorized collection through its existing API and keep the condition, dependent pagination and sorting in list memory. For larger data, use an existing approved private query channel rather than adding URL or persistent state. Changing or clearing the condition starts at page one. Test with a condition that matches a record outside the previously visible page, then verify the total, all three return paths, refresh and account changes.
+Keep sensitive conditions in the mounted list's `useState` only: never in URLs, history state, storage, logs or a global cache. A reload or an account change clears them. A private condition filters the complete authorized dataset before the total and the page are computed; for a small bounded dataset fetch it whole through the existing API, otherwise use an existing private query channel. Changing a condition starts at page one.
 
-For a tab layout that supplies its own breadcrumb, pass `tabState.source` through outlet context and use it as the list level of `usePageBreadcrumb` in the detail, followed by the detail's label. This links directly to the source tab and its recorded list query instead of the tab group's default redirect. Keep existing enclosing breadcrumb levels. A direct detail has no recorded list query and uses the source tab's default list. The shell mobile parent arrow follows that same source tab; browser Back follows its original history entry. Never hard-code the other module's list for a shared detail.
-
-Declare a final child under the tab group with `path: ":unavailableTab"`, a null component, and fallback children matching every supported detail shape. For example:
-
-```ts
-{
-  name: "reports-unavailable-tab",
-  path: ":unavailableTab",
-  componentLoader: () => import("./missing-tab.js"),
-  children: [{
-    name: "reports-unavailable-detail",
-    path: ":id",
-    componentLoader: () => import("./missing-tab.js"),
-  }],
-}
-```
-
-`missing-tab.js` default-exports a component returning `null`. Include any deeper supported routes (such as `:id/edit`) as well: a single `:unavailableTab` only matches the list URL and cannot recover `/reports/deleted/42`. The parent `useListTabs` fallback handles it. The runtime does not accept wildcard page paths. Give this route the same inherited access boundary as its parent and no menu or breadcrumb.
+To recover a deleted or unknown tab, declare a last child `path: ':unavailableTab'` whose module default-exports a component returning `null`, with children matching every supported detail shape (`:id/details`, `:id/edit`), no menu or breadcrumb, and the parent's access. `useListTabs`' fallback then replaces the URL; the runtime accepts no wildcard paths.

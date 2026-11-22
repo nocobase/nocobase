@@ -475,7 +475,7 @@ it('refreshes a filtered list after disabling a user, corrects an empty last pag
   expect(screen.getByTestId('location')).toHaveTextContent('status=enabled');
   await waitFor(() =>
     expect(
-      screen.getByRole('textbox', { name: enUS.settings.userSearch }),
+      screen.getByRole('searchbox', { name: enUS.settings.userSearch }),
     ).toHaveFocus(),
   );
 });

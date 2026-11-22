@@ -54,13 +54,13 @@ const appRoutes: AppClientRouteContribution = defineAppRoutes([
       {
         name: 'onboarding-new',
         path: 'new',
-        presentation: { kind: 'child-page' },
+        presentation: { kind: 'dialog', title: 'onboarding.new' },
         componentLoader: () => import('./pages/onboarding/wizard.js'),
       },
       {
         name: 'onboarding-detail',
         path: ':id',
-        presentation: { kind: 'child-page' },
+        presentation: { kind: 'dialog', title: 'onboarding.open' },
         componentLoader: () => import('./pages/onboarding/wizard.js'),
       },
     ],
@@ -76,13 +76,13 @@ const appRoutes: AppClientRouteContribution = defineAppRoutes([
       {
         name: 'procurement-new',
         path: 'new',
-        presentation: { kind: 'drawer', title: 'procurement.new' },
+        presentation: { kind: 'dialog', title: 'procurement.new' },
         componentLoader: () => import('./pages/procurement/detail.js'),
       },
       {
         name: 'procurement-detail',
         path: ':id',
-        presentation: { kind: 'drawer', title: 'procurement.open' },
+        presentation: { kind: 'dialog', title: 'procurement.open' },
         componentLoader: () => import('./pages/procurement/detail.js'),
       },
     ],
@@ -106,7 +106,7 @@ const appRoutes: AppClientRouteContribution = defineAppRoutes([
       },
       {
         name: 'customer-contacts-detail',
-        path: ':customerId',
+        path: ':customerId/details',
         presentation: { kind: 'child-page' },
         componentLoader: () => import('./pages/customer-contacts/detail.js'),
         children: [
@@ -160,22 +160,17 @@ const appRoutes: AppClientRouteContribution = defineAppRoutes([
       },
       {
         name: 'skill-projects-detail',
-        path: ':projectId/details',
-        breadcrumb: { title: 'skillProjects.detail' },
+        path: ':projectId',
+        presentation: { kind: 'drawer', title: 'skillProjects.detail' },
         componentLoader: () => import('./pages/skill-projects/detail.js'),
         children: [
           {
-            name: 'skill-projects-detail-edit',
+            name: 'skill-projects-edit',
             path: 'edit',
+            presentation: { kind: 'dialog', title: 'skillProjects.edit' },
             componentLoader: () => import('./pages/skill-projects/edit.js'),
           },
         ],
-      },
-      {
-        name: 'skill-projects-edit',
-        path: ':projectId/edit',
-        presentation: { kind: 'dialog', title: 'skillProjects.edit' },
-        componentLoader: () => import('./pages/skill-projects/edit.js'),
       },
     ],
   },

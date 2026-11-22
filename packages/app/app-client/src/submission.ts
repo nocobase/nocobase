@@ -53,7 +53,7 @@ function fingerprint(input: unknown): string {
   ).join('');
 }
 
-/** Own one controller per form. Every entry point must call run(), before asynchronous validation. */
+/** Own one controller per form. Every entry point validates first, then calls run(). */
 export class SubmissionController {
   private busy = false;
   private pending?: PendingOperation;

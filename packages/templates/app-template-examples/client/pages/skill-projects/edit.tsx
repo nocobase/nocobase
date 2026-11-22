@@ -113,7 +113,7 @@ function ProjectEditor({
   });
   // What is saved, as the form shows it: the record, or the blank values of a new project. A form that restores a
   // draft starts from it (`defaultValues: draft ?? saved`) and keeps this as `savedValues`, so leaving with the draft
-  // still asks (mobile.md M7.4).
+  // still asks (ui-guidelines.md T3.9).
   const [saved] = useState(() => ({ name: project?.name ?? '' }));
   const form = useForm({
     defaultValues: saved,
@@ -125,6 +125,9 @@ function ProjectEditor({
   const [error, setError] = useState<unknown>();
   const [gone, setGone] = useState(false);
   const busyRef = useRef(false);
+  // One submit at a time, validation included, so a repeated submit cannot write again once the first has saved. It
+  // is not the save: leaving while validation runs still asks.
+  const enteredRef = useRef(false);
   const [attempted, setAttempted] = useState(false);
   const restoringInput = submission.pending && !attempted;
   const [confirmedMissing, setConfirmedMissing] = useState<
@@ -146,7 +149,21 @@ function ProjectEditor({
     return () => window.removeEventListener('beforeunload', warn);
   }, [submission.pending]);
   const submit = async () => {
-    if (!session || busyRef.current) return;
+    if (!session || enteredRef.current) return;
+    enteredRef.current = true;
+    try {
+      await save();
+    } finally {
+      enteredRef.current = false;
+    }
+  };
+  const save = async () => {
+    // Validate before the save starts: an invalid submit starts nothing, so leaving still asks "Discard changes?".
+    let valid = false;
+    await form.handleSubmit(() => {
+      valid = true;
+    })();
+    if (!valid) return;
     busyRef.current = true;
     const recovering = submission.pending;
     const snapshot = { name: form.getValues('name'), id: project?.id };
@@ -155,11 +172,6 @@ function ProjectEditor({
     try {
       saved = await submission.run(snapshot, async (key, signal, input) => {
         setError(undefined);
-        let valid = false;
-        await form.handleSubmit(() => {
-          valid = true;
-        })();
-        if (!valid) return;
         setAttempted(true);
         return api.request<{ data: SkillProject }>({
           path: input.id
