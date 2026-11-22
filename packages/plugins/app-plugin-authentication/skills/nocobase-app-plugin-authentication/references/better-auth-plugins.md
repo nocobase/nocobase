@@ -92,6 +92,10 @@ export default migration;
 ```ts
 // The passkey() schema in @better-auth/passkey 1.7.21, with credentialID stored as
 // credentialId: an all-caps suffix does not survive the snake_case column names.
+// A WebAuthn credential ID is up to 1023 bytes, 1364 characters of base64url, so it is a
+// text column. No portable index holds a key that long (MySQL with utf8mb4 stops at 3072
+// bytes, SQL Server at 1700), so it has none: a passkey sign-in reads the table by it,
+// and people's passkeys are listed through the userId index.
 import { defineMigration, type MigrationDefinition } from '@nocobase/db';
 
 const migration: MigrationDefinition = defineMigration({
@@ -103,7 +107,7 @@ const migration: MigrationDefinition = defineMigration({
       collection.string('name', { length: 255 }).nullable();
       collection.text('publicKey').notNull();
       collection.string('userId', { length: 64 }).notNull();
-      collection.string('credentialId', { length: 255 }).notNull();
+      collection.text('credentialId').notNull();
       collection.integer('counter').notNull();
       collection.string('deviceType', { length: 32 }).notNull();
       collection.boolean('backedUp').notNull();
@@ -113,7 +117,6 @@ const migration: MigrationDefinition = defineMigration({
 
       collection.primary('id', { name: 'pk_passkey' });
       collection.index('userId', { name: 'idx_passkey_user' });
-      collection.index('credentialId', { name: 'idx_passkey_credential' });
     });
   },
 

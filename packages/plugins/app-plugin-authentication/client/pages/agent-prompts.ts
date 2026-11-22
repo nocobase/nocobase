@@ -8,8 +8,35 @@ export type Translate = (
 
 export type MethodGuide = 'twoFactor' | 'passkey';
 
+/** The application the prompts are about, as the guide pages resolve it with `guideContext`. */
+export interface GuideContext {
+  /** The application's name: the configured `app.title`, as the browser shows it. */
+  readonly appName: string;
+  /** `app.publicOrigin`, or the address being browsed when it is not set. */
+  readonly origin: string;
+  /** Whether `origin` is the configured `app.publicOrigin`. */
+  readonly originConfigured: boolean;
+}
+
+/** The application name and address every prompt states, from configuration first and the browser second. */
+export function guideContext(input: {
+  readonly configuredTitle: unknown;
+  readonly documentTitle: string;
+  readonly publicOrigin: string | null;
+  readonly browserOrigin: string;
+}): GuideContext {
+  const appName =
+    typeof input.configuredTitle === 'string' && input.configuredTitle.trim()
+      ? input.configuredTitle.trim()
+      : input.documentTitle.trim() || 'NocoBase';
+  return input.publicOrigin
+    ? { appName, origin: input.publicOrigin, originConfigured: true }
+    : { appName, origin: input.browserOrigin, originConfigured: false };
+}
+
 export interface ProviderPromptInput {
-  readonly type: 'sso' | 'social';
+  /** `oauth`: an OAuth 2.0 provider that is not one of Better Auth's built-in social providers. */
+  readonly type: 'sso' | 'social' | 'oauth';
   /** The provider id, such as `feishu` or `github`. */
   readonly id: string;
   /** The provider's display name, such as `Feishu`. */
@@ -17,6 +44,7 @@ export interface ProviderPromptInput {
   readonly discoveryUrl?: string;
   readonly signUp: 'create' | 'existing';
   readonly callbackUrl: string;
+  readonly appName: string;
   /** `app.publicOrigin`, or the address being browsed when it is not set. */
   readonly origin: string;
 }
@@ -50,6 +78,7 @@ export function providerPrompt(
   };
   return [
     t(`prompt.${input.type}.intro`, values),
+    t('prompt.application', { appName: input.appName, origin: input.origin }),
     '',
     t('prompt.followSignIn'),
     `1. ${t(`prompt.${input.type}.add`, values)}`,
@@ -84,6 +113,7 @@ export function methodPrompt(t: Translate, input: MethodPromptInput): string {
   const steps = ['add', 'migration', 'account', 'signIn', 'tests'] as const;
   return [
     t(`prompt.${input.method}.intro`),
+    t('prompt.application', { appName: input.appName, origin: input.origin }),
     '',
     t('prompt.followPlugin'),
     ...steps.map(

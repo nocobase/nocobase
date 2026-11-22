@@ -176,3 +176,63 @@ describe('the callback URL the single sign-on guide generates', () => {
     );
   });
 });
+
+describe('a social provider outside Better Auth’s built-in list', () => {
+  it('cannot be a socialProviders key, so the guide sends it through genericOAuth(), which signs in on /callback/<id>', async () => {
+    // Better Auth builds each social provider by calling its built-in factory under that key.
+    const unknown = await createAuthFixture({
+      socialProviders: {
+        custom: { clientId: 'id', clientSecret: 'secret' },
+      } as never,
+    });
+    try {
+      await expect(unknown.auth.administrationContext()).rejects.toThrow(
+        'socialProviders[key] is not a function',
+      );
+    } finally {
+      await unknown.dispose();
+    }
+
+    expect(
+      ssoConfig({ type: 'oauth', id: 'custom', signUp: 'create' }),
+    ).toContain("authorizationUrl: 'https://<provider>/oauth/authorize'");
+    const fixture = await createAuthFixture({
+      plugins: [
+        genericOAuth({
+          config: [
+            {
+              providerId: 'custom',
+              authorizationUrl: 'https://oauth.example.com/oauth/authorize',
+              tokenUrl: 'https://oauth.example.com/oauth/token',
+              userInfoUrl: 'https://oauth.example.com/oauth/userinfo',
+              clientId: 'custom-client',
+              clientSecret: 'custom-secret',
+            },
+          ],
+        }),
+      ],
+    });
+    try {
+      const start = await fixture.router.request('/api/auth/sign-in/social', {
+        method: 'POST',
+        headers: {
+          'content-type': 'application/json',
+          origin: 'http://localhost',
+        },
+        body: JSON.stringify({ provider: 'custom', callbackURL: '/' }),
+      });
+      expect(start.status).toBe(200);
+      const authorization = new URL(
+        ((await start.json()) as { url: string }).url,
+      );
+      expect(authorization.origin + authorization.pathname).toBe(
+        'https://oauth.example.com/oauth/authorize',
+      );
+      expect(authorization.searchParams.get('redirect_uri')).toBe(
+        ssoCallbackUrl(AUTH_BASE, 'custom'),
+      );
+    } finally {
+      await fixture.dispose();
+    }
+  });
+});

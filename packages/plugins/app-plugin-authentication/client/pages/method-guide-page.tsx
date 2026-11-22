@@ -5,20 +5,26 @@ import { Link } from 'react-router';
 import { Button } from '../components/ui/button.js';
 import { Spinner } from '../components/ui/spinner.js';
 import { useAuthenticationSettings } from '../settings/data.js';
-import { methodPrompt, type MethodGuide } from './agent-prompts.js';
+import { useClientApplication } from '@nocobase/app-client';
+
+import {
+  guideContext,
+  methodPrompt,
+  type MethodGuide,
+} from './agent-prompts.js';
 import { useAuthenticationTranslation } from './i18n.js';
 import { PromptBox } from './prompt-box.js';
-import { GuideStep, PublicOriginWarning, SettingsPage } from './shared.js';
+import {
+  GuideStep,
+  PublicOriginWarning,
+  SettingsLoadError,
+  SettingsPage,
+} from './shared.js';
 
 const NOTES: Record<MethodGuide, readonly string[]> = {
   twoFactor: ['note1'],
   passkey: ['note1', 'note2'],
 };
-
-/** The application's name as the browser shows it, which the template sets from its `app.title` configuration. */
-function applicationName(): string {
-  return document.title.trim() || 'NocoBase';
-}
 
 /**
  * The guide to turning on two-factor authentication or passkeys: a prompt for a development agent, filled in from this
@@ -31,12 +37,16 @@ function MethodGuidePage({
 }): ReactElement {
   const { t } = useAuthenticationTranslation();
   const settings = useAuthenticationSettings();
-  const publicOrigin = settings.data?.app.publicOrigin.value ?? null;
-  const origin = publicOrigin ?? window.location.origin;
+  const context = guideContext({
+    configuredTitle: useClientApplication().config.get<unknown>('app.title'),
+    documentTitle: document.title,
+    publicOrigin: settings.data?.app.publicOrigin.value ?? null,
+    browserOrigin: window.location.origin,
+  });
   const prompt = methodPrompt(t, {
     method,
-    appName: applicationName(),
-    origin,
+    appName: context.appName,
+    origin: context.origin,
   });
 
   return (
@@ -53,13 +63,15 @@ function MethodGuidePage({
         <div className='flex justify-center py-12'>
           <Spinner />
         </div>
+      ) : settings.data === undefined ? (
+        <SettingsLoadError onRetry={settings.refetch} />
       ) : (
         <div className='space-y-6 rounded-xl border bg-card p-4 sm:p-6'>
           <GuideStep label={t('guide.handOver')}>
             <PromptBox prompt={prompt} hint={t('guide.promptHint')} />
-            {publicOrigin ? null : (
+            {context.originConfigured ? null : (
               <PublicOriginWarning>
-                {t('guide.publicOriginMissing', { origin })}
+                {t('guide.publicOriginMissing', { origin: context.origin })}
               </PublicOriginWarning>
             )}
           </GuideStep>

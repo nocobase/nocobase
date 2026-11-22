@@ -1,5 +1,10 @@
 export interface SsoConfigInput {
-  readonly type: 'sso' | 'social';
+  /**
+   * `sso`: an OIDC provider through `genericOAuth()`; `social`: one of Better Auth's built-in social providers;
+   * `oauth`: any other OAuth 2.0 provider, also through `genericOAuth()`, because `socialProviders` accepts only the
+   * built-in ids and refuses to start with another key.
+   */
+  readonly type: 'sso' | 'social' | 'oauth';
   /** The provider id, such as `feishu` or `github`. */
   readonly id: string;
   readonly discoveryUrl?: string;
@@ -50,6 +55,24 @@ export function ssoConfig(input: SsoConfigInput): string {
       `    disableSignUp: ${existingOnly},`,
       '  },',
       '},',
+    ].join('\n');
+  if (input.type === 'oauth')
+    return [
+      ...accountLinking,
+      '',
+      "// server/config/auth.ts → plugins (import { genericOAuth } from 'better-auth/plugins')",
+      'genericOAuth({ config: [{',
+      `  providerId: '${input.id}',`,
+      "  // The provider's OAuth 2.0 endpoints; use discoveryUrl instead when it publishes OIDC discovery.",
+      "  authorizationUrl: 'https://<provider>/oauth/authorize',",
+      "  tokenUrl: 'https://<provider>/oauth/token',",
+      "  userInfoUrl: 'https://<provider>/oauth/userinfo',",
+      `  clientId: process.env.${prefix}_CLIENT_ID!,`,
+      `  clientSecret: process.env.${prefix}_CLIENT_SECRET!,`,
+      `  disableSignUp: ${existingOnly},`,
+      '}] })',
+      '',
+      '// The browser needs no client plugin: sign-in and linking go through signIn.social and linkSocial.',
     ].join('\n');
   return [
     ...accountLinking,

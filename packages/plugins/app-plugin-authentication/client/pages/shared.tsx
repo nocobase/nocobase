@@ -4,6 +4,7 @@ import { useState, type ReactElement, type ReactNode } from 'react';
 
 import { useAuthenticationTranslation } from './i18n.js';
 import { Badge } from '../components/ui/badge.js';
+import { Button } from '../components/ui/button.js';
 import type { ConfigOrigin } from '../settings/data.js';
 
 /** The frame of a settings page: padding, spacing and the heading. */
@@ -258,5 +259,28 @@ export function PublicOriginWarning({
       <TriangleAlertIcon className='mt-0.5 size-3.5 shrink-0' aria-hidden />
       {children}
     </p>
+  );
+}
+
+/**
+ * The settings could not be read: say so and offer a retry. A page that builds something from the settings shows this
+ * instead, so nothing is built from guesses such as the address being browsed.
+ */
+export function SettingsLoadError({
+  onRetry,
+}: {
+  readonly onRetry: () => void;
+}): ReactElement {
+  const { t } = useAuthenticationTranslation();
+  return (
+    <div
+      role='alert'
+      className='flex flex-wrap items-center gap-3 rounded-xl border border-destructive/30 bg-destructive/5 px-4 py-3 text-sm'
+    >
+      {t('settings.loadFailed')}
+      <Button size='sm' variant='outline' onClick={onRetry}>
+        {t('settings.retry')}
+      </Button>
+    </div>
   );
 }

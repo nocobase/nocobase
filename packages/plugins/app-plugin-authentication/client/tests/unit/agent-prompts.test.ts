@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import enUS from '../../locales/en-US.js';
 import zhCN from '../../locales/zh-CN.js';
 import {
+  guideContext,
   methodPrompt,
   providerPrompt,
   type ProviderPromptInput,
@@ -32,6 +33,7 @@ const feishu: ProviderPromptInput = {
   name: 'Feishu',
   signUp: 'create',
   callbackUrl: 'https://crm.example.com/api/auth/callback/feishu',
+  appName: 'Acme CRM',
   origin: 'https://crm.example.com',
 };
 
@@ -128,10 +130,93 @@ describe('the prompts the guides hand to a development agent', () => {
     expect(prompt).toContain('signIn.passkey');
   });
 
+  it('send a provider outside Better Auth’s built-in list through genericOAuth, never as a socialProviders key', () => {
+    const other = providerPrompt(t, {
+      ...feishu,
+      type: 'oauth',
+      id: 'custom',
+      name: 'custom',
+      callbackUrl: 'https://crm.example.com/api/auth/callback/custom',
+    });
+    expect(other).toContain('generic OAuth plugin (genericOAuth');
+    expect(other).toContain('providerId custom');
+    expect(other).toContain("providerId: 'custom'");
+    expect(other).toContain('authorizationUrl');
+    expect(other).toContain(
+      'AUTH_CUSTOM_CLIENT_ID and AUTH_CUSTOM_CLIENT_SECRET',
+    );
+    expect(other).not.toContain('socialProviders: {');
+    expect(other).toContain('/api/auth/callback/custom');
+  });
+
+  it('name the application and the address it is reached at, in all four prompts', () => {
+    const lines = [
+      providerPrompt(t, { ...feishu, appName: 'Northwind Ops' }),
+      providerPrompt(t, {
+        ...feishu,
+        type: 'social',
+        id: 'github',
+        name: 'GitHub',
+        appName: 'Northwind Ops',
+      }),
+      methodPrompt(t, {
+        method: 'twoFactor',
+        appName: 'Northwind Ops',
+        origin: 'https://crm.example.com',
+      }),
+      methodPrompt(t, {
+        method: 'passkey',
+        appName: 'Northwind Ops',
+        origin: 'https://crm.example.com',
+      }),
+    ];
+    for (const prompt of lines)
+      expect(prompt).toContain(
+        'The application is Northwind Ops, reached at https://crm.example.com.',
+      );
+  });
+
+  it('take the configured name and app.publicOrigin, or the browser’s when they are not set', () => {
+    expect(
+      guideContext({
+        configuredTitle: 'Northwind Ops',
+        documentTitle: 'Something else',
+        publicOrigin: 'https://crm.example.com',
+        browserOrigin: 'http://127.0.0.1:13000',
+      }),
+    ).toEqual({
+      appName: 'Northwind Ops',
+      origin: 'https://crm.example.com',
+      originConfigured: true,
+    });
+    expect(
+      guideContext({
+        configuredTitle: undefined,
+        documentTitle: 'Acme',
+        publicOrigin: null,
+        browserOrigin: 'http://127.0.0.1:13000',
+      }),
+    ).toEqual({
+      appName: 'Acme',
+      origin: 'http://127.0.0.1:13000',
+      originConfigured: false,
+    });
+    const browsing = guideContext({
+      configuredTitle: ' ',
+      documentTitle: '',
+      publicOrigin: null,
+      browserOrigin: 'http://127.0.0.1:13000',
+    });
+    expect(browsing.appName).toBe('NocoBase');
+    expect(methodPrompt(t, { method: 'passkey', ...browsing })).toContain(
+      'the public address is http://127.0.0.1:13000',
+    );
+  });
+
   it('have every line in Chinese too', () => {
     const zh = translator(zhCN);
     for (const signUp of ['create', 'existing'] as const)
-      for (const type of ['sso', 'social'] as const)
+      for (const type of ['sso', 'social', 'oauth'] as const)
         expect(providerPrompt(zh, { ...feishu, type, signUp })).toContain(
           '请在这个 NocoBase 应用里开启',
         );

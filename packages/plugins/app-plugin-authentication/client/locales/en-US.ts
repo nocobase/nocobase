@@ -290,6 +290,12 @@ const enUS = {
         'Turn on single sign-on with {{name}} in this NocoBase application (Better Auth genericOAuth, OIDC).',
       add: 'In server/config/auth.ts, add genericOAuth from better-auth/plugins to the plugins, keeping the plugins already there, with providerId {{id}} and discoveryUrl {{discovery}}. Read clientId and clientSecret from the environment variables {{prefix}}_CLIENT_ID and {{prefix}}_CLIENT_SECRET; never write them into code. The browser needs no client plugin: sign-in and linking go through signIn.social and linkSocial.',
     },
+    application: 'The application is {{appName}}, reached at {{origin}}.',
+    oauth: {
+      intro:
+        'Turn on sign-in with {{name}} in this NocoBase application. {{name}} is not one of Better Auth’s built-in social providers, so connect it with the generic OAuth plugin (genericOAuth, OAuth 2.0 or OIDC) instead of socialProviders, which only accepts the built-in ids.',
+      add: 'In server/config/auth.ts, add genericOAuth from better-auth/plugins to the plugins, keeping the plugins already there, with providerId {{id}} and the authorizationUrl, tokenUrl and userInfoUrl from {{name}}’s documentation (or its discoveryUrl when it publishes OIDC discovery); map its user info to id, email and name with mapProfileToUser when the field names differ. Read clientId and clientSecret from the environment variables {{prefix}}_CLIENT_ID and {{prefix}}_CLIENT_SECRET; never write them into code. The browser needs no client plugin: sign-in and linking go through signIn.social and linkSocial.',
+    },
     social: {
       intro:
         'Turn on sign-in with {{name}} in this NocoBase application (Better Auth socialProviders.{{id}}).',

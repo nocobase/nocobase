@@ -1,4 +1,8 @@
-import { copyText, useToaster } from '@nocobase/app-client';
+import {
+  copyText,
+  useClientApplication,
+  useToaster,
+} from '@nocobase/app-client';
 import { CopyIcon } from 'lucide-react';
 import { useId, useState, type ReactElement } from 'react';
 import { Link, useSearchParams } from 'react-router';
@@ -9,11 +13,16 @@ import { Label } from '../components/ui/label.js';
 import { RadioGroup, RadioGroupItem } from '../components/ui/radio-group.js';
 import { Spinner } from '../components/ui/spinner.js';
 import { useAuthenticationSettings } from '../settings/data.js';
-import { providerPrompt } from './agent-prompts.js';
+import { guideContext, providerPrompt } from './agent-prompts.js';
 import { useAuthenticationTranslation } from './i18n.js';
 import { PromptBox } from './prompt-box.js';
 import { ssoCallbackUrl, variablePrefix } from './sso-config.js';
-import { GuideStep, PublicOriginWarning, SettingsPage } from './shared.js';
+import {
+  GuideStep,
+  PublicOriginWarning,
+  SettingsLoadError,
+  SettingsPage,
+} from './shared.js';
 
 interface Preset {
   readonly id: string;
@@ -46,7 +55,7 @@ const SOCIAL_PRESETS: readonly Preset[] = [
   { id: 'google', name: 'Google' },
   { id: 'microsoft', name: 'Microsoft' },
   { id: 'apple', name: 'Apple' },
-  { id: 'gitlab', name: 'GitLab', other: true },
+  { id: 'custom', name: 'Other', other: true },
 ];
 
 /**
@@ -72,21 +81,28 @@ export default function SsoGuidePage(): ReactElement {
   };
   const id = providerId.trim() || preset.id;
   const name = preset.other ? id : preset.name;
-  const publicOrigin = settings.data?.app.publicOrigin.value ?? null;
-  const origin = publicOrigin ?? window.location.origin;
+  const context = guideContext({
+    configuredTitle: useClientApplication().config.get<unknown>('app.title'),
+    documentTitle: document.title,
+    publicOrigin: settings.data?.app.publicOrigin.value ?? null,
+    browserOrigin: window.location.origin,
+  });
   const authBase =
     settings.data?.app.authBaseUrl ??
     `${window.location.origin}${settings.data?.app.authBasePath ?? '/api/auth'}`;
   const callback = ssoCallbackUrl(authBase, id);
   const prefix = variablePrefix(id);
+  // A provider outside Better Auth's built-in list cannot be a socialProviders key; it goes through genericOAuth().
+  const promptType = type === 'social' && preset.other ? 'oauth' : type;
   const prompt = providerPrompt(t, {
-    type,
+    type: promptType,
     id,
     name,
     discoveryUrl: preset.discoveryUrl,
     signUp,
     callbackUrl: callback,
-    origin,
+    appName: context.appName,
+    origin: context.origin,
   });
   const copy = (text: string): void => {
     void copyText(text).then((copied) => {
@@ -108,6 +124,8 @@ export default function SsoGuidePage(): ReactElement {
         <div className='flex justify-center py-12'>
           <Spinner />
         </div>
+      ) : settings.data === undefined ? (
+        <SettingsLoadError onRetry={settings.refetch} />
       ) : (
         <div className='space-y-6 rounded-xl border bg-card p-4 sm:p-6'>
           <GuideStep label={t('sso.provider')}>
@@ -163,7 +181,7 @@ export default function SsoGuidePage(): ReactElement {
             <p className='mt-1 text-xs text-muted-foreground'>
               {t('sso.callbackHint', { name })}
             </p>
-            {publicOrigin ? null : (
+            {context.originConfigured ? null : (
               <PublicOriginWarning>
                 {t('sso.publicOriginMissing')}
               </PublicOriginWarning>

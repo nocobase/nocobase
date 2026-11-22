@@ -270,6 +270,12 @@ const zhCN: AuthenticationResource = {
         '请在这个 NocoBase 应用里开启 {{name}} 单点登录（Better Auth genericOAuth，OIDC）。',
       add: '在 server/config/auth.ts 的 plugins 里加 better-auth/plugins 的 genericOAuth，保留已有插件；providerId 为 {{id}}，discovery 地址为 {{discovery}}。clientId、clientSecret 从环境变量 {{prefix}}_CLIENT_ID、{{prefix}}_CLIENT_SECRET 读取，不要写进代码。浏览器端不需要客户端插件，登录和绑定走 signIn.social 和 linkSocial。',
     },
+    application: '应用名为 {{appName}}，访问地址为 {{origin}}。',
+    oauth: {
+      intro:
+        '请在这个 NocoBase 应用里开启 {{name}} 登录。{{name}} 不是 Better Auth 内置的社交提供方，请用通用 OAuth 插件（genericOAuth，支持 OAuth 2.0 和 OIDC）接入，不要写进只接受内置标识的 socialProviders。',
+      add: '在 server/config/auth.ts 的 plugins 里加上 better-auth/plugins 的 genericOAuth，保留已有插件；providerId 为 {{id}}，authorizationUrl、tokenUrl、userInfoUrl 按 {{name}} 的文档填写（提供 OIDC 发现地址时改用 discoveryUrl）；字段名不同时用 mapProfileToUser 映射出 id、email、name。clientId、clientSecret 从环境变量 {{prefix}}_CLIENT_ID、{{prefix}}_CLIENT_SECRET 读取，不要写进代码。浏览器端不需要客户端插件：登录和绑定都走 signIn.social 和 linkSocial。',
+    },
     social: {
       intro:
         '请在这个 NocoBase 应用里开启 {{name}} 登录（Better Auth socialProviders.{{id}}）。',

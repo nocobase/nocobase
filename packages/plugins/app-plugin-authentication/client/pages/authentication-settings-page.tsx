@@ -25,6 +25,7 @@ import {
   Panel,
   SettingHeader,
   SettingRow,
+  SettingsLoadError,
   SettingsPage,
   SourceBadge,
   StatusBadge,
@@ -114,15 +115,7 @@ export default function AuthenticationSettingsPage(): ReactElement {
           </Tabs>
         </>
       ) : (
-        <div
-          role='alert'
-          className='flex flex-wrap items-center gap-3 rounded-xl border border-destructive/30 bg-destructive/5 px-4 py-3 text-sm'
-        >
-          {t('settings.loadFailed')}
-          <Button size='sm' variant='outline' onClick={settings.refetch}>
-            {t('settings.retry')}
-          </Button>
-        </div>
+        <SettingsLoadError onRetry={settings.refetch} />
       )}
     </SettingsPage>
   );

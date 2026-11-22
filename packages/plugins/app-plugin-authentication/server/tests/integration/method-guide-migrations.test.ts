@@ -25,6 +25,9 @@ const files = [
   '202612010001_create_two_factor.ts',
   '202612010002_create_passkey.ts',
 ] as const;
+/** The longest credential ID WebAuthn allows: 1023 bytes, as base64url. */
+const LONGEST_CREDENTIAL_ID = Buffer.alloc(1023, 0xfb).toString('base64url');
+
 /** The plugin Skill reference the guides' prompts point a development agent to. */
 const skillReference = new URL(
   '../../../skills/nocobase-app-plugin-authentication/references/better-auth-plugins.md',
@@ -91,7 +94,7 @@ const passkeySchemaProbe = {
             name: 'Laptop',
             publicKey: 'p'.repeat(400),
             userId: 'user-1',
-            credentialID: 'c'.repeat(200),
+            credentialID: LONGEST_CREDENTIAL_ID,
             counter: 0,
             deviceType: 'multiDevice',
             backedUp: true,
@@ -103,7 +106,7 @@ const passkeySchemaProbe = {
         return context.json(
           await adapter.findOne({
             model: 'passkey',
-            where: [{ field: 'credentialID', value: 'c'.repeat(200) }],
+            where: [{ field: 'credentialID', value: LONGEST_CREDENTIAL_ID }],
           }),
         );
       },
@@ -171,7 +174,7 @@ describe('the two-factor and passkey migrations in the plugin Skill', () => {
     ).toEqual([{ verified: expect.anything() }]);
   });
 
-  it('give passkey() a table it reads and writes through Better Auth with the guide’s field mapping', async () => {
+  it('give passkey() a table it reads and writes through Better Auth with the guide’s field mapping, for the longest credential ID', async () => {
     const fixture = await createAuthFixture(
       { plugins: [passkeySchemaProbe] },
       undefined,
@@ -183,7 +186,7 @@ describe('the two-factor and passkey migrations in the plugin Skill', () => {
     });
     expect(response.status).toBe(200);
     expect(await response.json()).toMatchObject({
-      credentialID: 'c'.repeat(200),
+      credentialID: LONGEST_CREDENTIAL_ID,
       publicKey: 'p'.repeat(400),
       counter: 0,
       backedUp: true,
@@ -193,6 +196,7 @@ describe('the two-factor and passkey migrations in the plugin Skill', () => {
         .selectFrom('passkey')
         .select(['credentialId'])
         .execute(),
-    ).toEqual([{ credentialId: 'c'.repeat(200) }]);
+    ).toEqual([{ credentialId: LONGEST_CREDENTIAL_ID }]);
+    expect(LONGEST_CREDENTIAL_ID).toHaveLength(1364);
   });
 });
