@@ -1,3 +1,4 @@
+// db-test-portability: sqlite-only — backs up the application image's SQLite database through real one-off containers; the image has no database server.
 /**
  * Backs up and restores a real application image through the Docker backend against a real Docker Engine: the image's
  * own `backup` commands run in one-off containers on the App's image, storage volume, network and configuration, the
