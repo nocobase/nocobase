@@ -9,6 +9,7 @@ const zhTW: LocaleResource<typeof enUS> = {
   authorization: {
     title: '排程',
     read: '讀取',
+    manage: '管理',
   },
 };
 

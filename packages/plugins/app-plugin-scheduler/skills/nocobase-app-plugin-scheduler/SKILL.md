@@ -11,9 +11,9 @@ Use the installed version's public exports, without importing plugin internals. 
 
 ## Decide Whether to Use Scheduler
 
-The primary reason to define tasks through Scheduler is **UI observability for business administrators**. Developers define schedules and execution logic in code. Business administrators use the task list and detail pages the application builds on the Scheduler API to view schedules, track individual executions, and enable or disable tasks when authorized.
+The primary reason to define tasks through Scheduler is **UI observability for business administrators**. Developers define schedules and execution logic in code. Business administrators use the Schedules System settings page the plugin registers (`/settings/automation/schedules`) to view schedules, track individual executions, check the jobs configuration, and pause or resume tasks when they hold the `manage` permission.
 
-Tasks that do not need to be viewed and tracked through the UI must not be managed by the Scheduler plugin. Give recurring ones a `ScheduleExecutor` of their own from the application's jobs service (`jobExecutorServiceToken` in `@nocobase/app-server/jobs`), and one-off background work a `JobExecutor`; the application development Skill describes both. For administrator-visible tasks, deliver Client registration, access permissions, meaningful task names, and accurate final execution status together; successful server-side dispatch alone is incomplete.
+Tasks that do not need to be viewed and tracked through the UI must not be managed by the Scheduler plugin. Give recurring ones a `ScheduleExecutor` of their own from the application's jobs service (`jobExecutorServiceToken` in `@nocobase/app-server/jobs`), and one-off background work a `JobExecutor`; the application development Skill describes both. For administrator-visible tasks, deliver Client registration (which adds the Schedules page), the `scheduler.schedules` read and manage permissions for the roles that need them, meaningful task names, and accurate final execution status together; successful server-side dispatch alone is incomplete.
 
 ## Then Choose the Execution Model
 
@@ -33,11 +33,11 @@ Every schedule points at a registered target; `registerTarget()` is the target e
 
 - To create or change a schedule, read [Definitions, Registration, and Synchronization](references/definitions.md).
 - To register or review a target, hand its work to a `JobExecutor`, report completion, or diagnose a historical occurrence after retargeting, read [Target Extensions and Execution Protocol](references/targets.md).
-- To integrate or review the UI/API and permissions, interpret status, or diagnose missing definitions, read [Operations and Verification](references/operations.md), including the complete management route table, separate status dimensions, and application identity checks.
+- To integrate or review the UI/API and permissions, interpret status, or diagnose missing definitions, read [Operations and Verification](references/operations.md), including the settings page, its replacement with `routeComponentOverrides`, the read and manage permissions, the complete management route table, separate status dimensions, and application identity checks.
 
 ## Development Loop
 
-1. Establish which tasks and execution records administrators need to see. Check Server/Client/CLI registration, page permissions, the application's `jobs` configuration (a `redis` adapter for more than one instance; `memory` serves one process) and `JobExecutorServiceProvider` composition and target availability, then choose or register the target type.
+1. Establish which tasks and execution records administrators need to see. Check Server/Client/CLI registration, the `scheduler.schedules` permissions, the application's `jobs` configuration (a `redis` adapter for more than one instance; `memory` serves one process) and `JobExecutorServiceProvider` composition and target availability, then choose or register the target type.
 2. Implement business logic and Providers in application source, and call `schedulerServiceToken.defineSchedule(definition)` with an application-wide stable key from that Provider's `register()`/`boot()`.
 3. Validate payload/input, timezone, idempotency, and the full asynchronous chain: submission, actual job execution, terminal notification, and recovery from persisted execution state. Obtain credentials through secure business Service configuration, never `target.config`.
 4. Run application type checks, relevant tests, and build. Synchronize definitions and, in development, use an administrator account to find the task in the UI and track a real execution to its final state. Confirm the business result.

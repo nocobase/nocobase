@@ -128,7 +128,7 @@ export interface AuthenticationSettingsInput {
   readonly layers?: AppConfigLayers;
   /** Every declared environment variable and the configuration path it sets. */
   readonly environmentVariables: Readonly<Record<string, string>>;
-  /** The process environment, to tell which declared variables are set. */
+  /** The environment the configuration was loaded from, to tell which declared variables are set; values are not read. */
   readonly environment: Readonly<Record<string, string | undefined>>;
   readonly authentication: Auth;
   readonly methods: SignInMethodRegistry;

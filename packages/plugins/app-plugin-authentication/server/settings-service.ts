@@ -43,7 +43,7 @@ export interface AuthenticationSettingsServiceOptions {
   readonly secretsReady: () => boolean;
   /** Better Auth's public path, such as `/main/api/auth`. */
   readonly authBasePath: string;
-  /** Defaults to `process.env`. */
+  /** Defaults to the variables the configuration was loaded with (`loadedEnvironmentVariables()`). */
   readonly environment?: Readonly<Record<string, string | undefined>>;
 }
 
@@ -58,9 +58,12 @@ export function createAuthenticationSettingsService(
         publicOrigin: app?.publicOrigin || undefined,
         authBasePath: options.authBasePath,
         layers: options.config.layers?.(),
-        environmentVariables:
-          options.config.sectionEnvironmentVariables?.() ?? {},
-        environment: options.environment ?? process.env,
+        environmentVariables: Object.fromEntries(
+          Object.entries(
+            options.config.environmentVariableMappings?.() ?? {},
+          ).map(([variable, mapping]) => [variable, mapping.path]),
+        ),
+        environment: options.environment ?? loadedEnvironment(options.config),
         authentication: options.authentication(),
         methods: options.methods,
         resetSender: options.resetSender,
@@ -74,6 +77,20 @@ export function createAuthenticationSettingsService(
       );
     },
   };
+}
+
+/**
+ * The declared variables set in the environment the configuration was loaded from: the application's own, which a host
+ * may give each application separately, rather than the host process's. Only whether each is set matters; no value is
+ * read. An accessor that does not report it falls back to the process environment.
+ */
+function loadedEnvironment(
+  config: AppConfigAccessor,
+): Readonly<Record<string, string | undefined>> {
+  const loaded = config.loadedEnvironmentVariables?.();
+  return loaded
+    ? Object.fromEntries(loaded.map((variable) => [variable, 'set']))
+    : process.env;
 }
 
 /** Which sender password reset uses, by name only, in the precedence `createPasswordResetSender` applies. */

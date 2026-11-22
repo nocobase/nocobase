@@ -7,7 +7,7 @@ The shell is `client/routing/` and `client/layouts/`, with the header, sidebar a
 - There is no separate settings layout and no Settings or Inbox entry in the header: every signed-in page renders inside `AppLayout`. Administration pages are System settings routes under `/settings`, shown through one entry at the bottom of the sidebar that opens the first settings page the viewer may open; on any settings page the sidebar shows the settings menu instead of the business menu, and the breadcrumb's System settings level links back to `/settings` ([System settings navigation](../../settings-navigation.md)). Do not add a second layout, a resident settings sidebar or a router split for settings. The shell shares its single page permission check with pages through `RouteTreeProvider`'s `access` (`useRouteAccess`); the settings menu, `/settings` itself and module tabs read it rather than checking again.
 - The account menu's language control (`client/layouts/components/language-switcher.tsx`) is a submenu with radio items and must stay inside `DropdownMenuContent`, which provides its keyboard navigation and selected state.
 - Collapsible navigation groups keep their expanded or collapsed state while the navigation tree stays mounted; opening a new page expands its ancestor groups without collapsing the others.
-- The sidebar is shadcn's `Sidebar`, composed in `client/layouts/components/app-sidebar.tsx` (provider, desktop sidebar, phone sheet, header toggle) and `navigation-menu.tsx` (the route tree as `SidebarMenu*` entries: a top-level group with no page is a section under a heading, its entries always shown; clickable parents and nested groups are controlled `Collapsible` sub-menus; counts beside entries come from the layout through its `badges`, [`page.md`](page.md#a-count-beside-an-entry)). Keep `client/components/ui/sidebar.tsx` as the shadcn CLI writes it and change the sidebar from these two files: the widths are set through the provider's `style` in spacing units (`--sidebar-width`, `--sidebar-width-icon`) so they follow the density preset; the phone sheet is rendered in `app-sidebar.tsx` with a translated title instead of the primitive's own; and the provider's Ctrl/Cmd+B shortcut is stopped by a `document` keydown listener, so the key stays with editors.
+- The sidebar is shadcn's `Sidebar`, composed in `client/layouts/components/app-sidebar.tsx` (provider, desktop sidebar, phone sheet, header toggle) and `navigation-menu.tsx` (the route tree as `SidebarMenu*` entries: a top-level group with no page is a section under a heading, its entries always shown; clickable parents and nested groups are controlled `Collapsible` sub-menus; counts beside entries come from the route's `navigation.badge` or the layout's `badges`, [`page.md`](page.md#a-count-beside-an-entry)). Keep `client/components/ui/sidebar.tsx` as the shadcn CLI writes it and change the sidebar from these two files: the widths are set through the provider's `style` in spacing units (`--sidebar-width`, `--sidebar-width-icon`) so they follow the density preset; the phone sheet is rendered in `app-sidebar.tsx` with a translated title instead of the primitive's own; and the provider's Ctrl/Cmd+B shortcut is stopped by a `document` keydown listener, so the key stays with editors.
 - The desktop sidebar can collapse to icons: leaf entries then show their label in a tooltip without delay and section headings hide and their entries keep their icons, collapsible groups open in a popover on hover or keyboard focus, keeping the filtered entries, parent-page links, nested groups and the highlight of the group holding the current page. The collapsed state is shared through `useSidebarPreference` under `nocobase:sidebar:collapsed` by every application on the same origin, while whether the phone sheet is open stays local to each layout.
 - Keep `RouteLeaveBoundary` in `AppLayout` outside every page Activity, including nested routes. Settings forms register with this shell boundary so navigation, confirmation dialogs and `beforeunload` protection remain active during permission checks. A final denial or session change removes the retained form guards. Activity restores Effects after a successful check, so mounted data hooks re-fetch; count those requests when assessing refresh cost.
 - The authorization provider clears the permission snapshot before rendering a new session; route navigation and page guards subscribe to the authorization revision, so account switches and permission changes take effect without a reload.
@@ -15,7 +15,7 @@ The shell is `client/routing/` and `client/layouts/`, with the header, sidebar a
 
 ## 2. Header icon buttons
 
-The icon button area in the top-right corner of the page is in `client/layouts/components/header-actions.tsx` (the layout's header, not `PageHeader`'s `actions`). Choose the hover behavior by what the entry does:
+The icon button area in the top-right corner of the page is rendered by `client/layouts/components/header-actions.tsx` (the layout's header, not `PageHeader`'s `actions`): the buttons the application and its plugins register as header actions, by `order`, then the account menu, always last. On a phone it shows at most two registered buttons and moves the rest into a More popover, so the header stays on one line; a button that renders nothing takes no place and shows no badge. A signed-out visitor sees only buttons registered with `auth: 'optional'`, without badges: the layout passes `signedIn` to `useHeaderActions({ signedIn })`, which leaves the others out. Add a button by registering it in `client/header-actions.ts` — `{ name, order, component, auth?, badge? }`, where `badge` is a hook like a [navigation entry's](page.md#a-count-beside-an-entry) drawn on the button's corner — and hide or replace a plugin's button by name there with `headerActionOverrides` (`{ name: 'inbox', hidden: true }` or `{ name: 'inbox', component: MyInboxButton }`); do not edit `header-actions.tsx` for it. A plugin registers its own with `headerActions` in `defineClientPlugin()`. Choose the hover behavior by what the entry does:
 
 | What the entry does                                     | On hover                                                                                                           | Examples            |
 | ------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------ | ------------------- |
@@ -24,10 +24,11 @@ The icon button area in the top-right corner of the page is in `client/layouts/c
 
 ### Navigation entries
 
-Use `Tooltip`, `TooltipTrigger`, and `TooltipContent`, and pass the router's `Link` through the trigger's `render`. Reuse the header's existing `TooltipProvider`, and show the tooltip below (`side='bottom'`). Declare the target page in `client/routes.ts` first ([`page.md`](page.md)).
+Use `Tooltip`, `TooltipTrigger`, and `TooltipContent`, and pass the router's `Link` through the trigger's `render`. The header already provides a `TooltipProvider`; show the tooltip below (`side='bottom'`). Declare the target page in `client/routes.ts` first ([`page.md`](page.md)).
 
 ```tsx
-// client/layouts/components/header-actions.tsx
+// client/components/help-header-button.tsx, registered in client/header-actions.ts:
+// defineHeaderActions([{ name: 'help', order: 100, component: HelpHeaderButton }])
 import { useTranslation } from '@nocobase/i18n/client';
 import { CircleHelp } from 'lucide-react';
 import type { ReactElement } from 'react';
@@ -36,35 +37,26 @@ import {
   Tooltip,
   TooltipTrigger,
   TooltipContent,
-  TooltipProvider,
 } from '#components/ui/tooltip';
-// … (the other imports stay unchanged)
 
 const ACTION_LINK_CLASS =
   'inline-flex size-10 items-center justify-center rounded-xl border border-border/70 bg-background/60 text-foreground transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50';
 
-export function HeaderActions(): ReactElement {
+// Goes to the help page and shows a short hint on hover and keyboard focus.
+export function HelpHeaderButton(): ReactElement {
   const { t } = useTranslation();
-
   return (
-    <TooltipProvider>
-      <div className='flex shrink-0 items-center gap-2'>
-        {/* … */}
-        {/* New navigation entry: goes to the help page and shows a short hint on hover and keyboard focus. */}
-        <Tooltip>
-          <TooltipTrigger
-            render={<Link to='/help' className={ACTION_LINK_CLASS} />}
-            aria-label={t('help.title', { defaultValue: 'Help' })}
-          >
-            <CircleHelp className='size-5' />
-          </TooltipTrigger>
-          <TooltipContent side='bottom'>
-            {t('help.title', { defaultValue: 'Help' })}
-          </TooltipContent>
-        </Tooltip>
-        {/* … */}
-      </div>
-    </TooltipProvider>
+    <Tooltip>
+      <TooltipTrigger
+        render={<Link to='/help' className={ACTION_LINK_CLASS} />}
+        aria-label={t('help.title', { defaultValue: 'Help' })}
+      >
+        <CircleHelp className='size-5' />
+      </TooltipTrigger>
+      <TooltipContent side='bottom'>
+        {t('help.title', { defaultValue: 'Help' })}
+      </TooltipContent>
+    </Tooltip>
   );
 }
 ```

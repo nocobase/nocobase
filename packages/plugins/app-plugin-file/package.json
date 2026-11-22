@@ -76,7 +76,6 @@
     "@types/react-dom": "catalog:",
     "eslint": "catalog:",
     "jsdom": "catalog:",
-    "lucide-react": "catalog:",
     "prettier": "catalog:",
     "react-dom": "catalog:",
     "react-markdown": "catalog:",
@@ -85,15 +84,20 @@
     "vitest": "catalog:"
   },
   "dependencies": {
+    "@nocobase/drive": "workspace:^",
     "hono": "catalog:",
-    "@nocobase/drive": "workspace:^"
+    "zod": "catalog:"
   },
   "peerDependencies": {
     "@nocobase/app-client": "workspace:^",
+    "@nocobase/app-plugin-authentication": "workspace:^",
+    "@nocobase/app-plugin-authorization": "workspace:^",
     "@nocobase/app-server": "workspace:^",
     "@nocobase/db": "workspace:^",
     "@nocobase/i18n": "workspace:^",
     "@nocobase/service-provider": "workspace:^",
-    "react": "catalog:"
+    "lucide-react": "catalog:",
+    "react": "catalog:",
+    "react-router": "catalog:"
   }
 }

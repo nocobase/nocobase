@@ -33,7 +33,7 @@ const routes = [
 
 The page still sits on a server capability: the settings item and API that read and change the configuration ([system settings](system-settings.md)) check the same grant as the page's `authz`. There is no dev surface; do not ship development-only tool pages as routes. `@nocobase/app-plugin-routes-example` shows one settings page beside its App route.
 
-A page where each signed-in person configures their own account, such as their own API keys or mail accounts, is a personal settings page declared with `definePersonalSettingsRoutes()` and mounted under `/me`, opened from the account menu ([personal settings](../../nocobase-app-development/references/settings-navigation.md#personal-settings)). Its `path` is relative to `/me`, a top-level page names a personal category with `parent` through `PERSONAL_SETTINGS_CATEGORIES` (`account`, `preferences` or `other`), and without its own `authz` it admits every signed-in person and stays out of page permissions; its API reads and writes only the current person's data, taken from the session. A plugin with both an application-wide and a personal side declares one page on each surface.
+A page where each signed-in person configures their own account, such as their own API keys or mail accounts, is a personal settings page declared with `definePersonalSettingsRoutes()` and mounted under `/me`, opened from the account menu ([personal settings](../../nocobase-app-development/references/settings-navigation.md#personal-settings)). Its `path` is relative to `/me`, a top-level page names a personal category with `parent` through `PERSONAL_SETTINGS_CATEGORIES` (`account`, `preferences`, `messages` or `other`; `messages` holds a person's own notification and mailbox pages), and without its own `authz` it admits every signed-in person and stays out of page permissions; its API reads and writes only the current person's data, taken from the session. A plugin with both an application-wide and a personal side declares one page on each surface.
 
 Paths are internal application paths. Do not include `/main` or another deployment base path.
 
@@ -119,6 +119,32 @@ export default function OrdersPage(): ReactElement {
     </section>
   );
 }
+```
+
+### Badges on navigation entries
+
+`navigation.badge` puts a count beside a menu entry, such as unread messages. It is a React hook returning `{ count, tone? }` (`tone` is `default` or `attention`) or `undefined`; the menu calls it while it renders the entry, and `undefined` or `0` shows nothing. The hook runs inside the signed-in session, and the shell remounts when the person changes, so it starts over for each person. The hook owns its data: read it with a query and refresh it from a realtime topic or a write's invalidation; never start a request from the hook's body on each render. The templates show it on every page entry, including a page that has a sub-menu of its own, inside sub-menus, sections and the collapsed sidebar's popover too; a layout may pass its own count for an entry through `NavigationMenu`'s `badges`, which replaces the declared one.
+
+```ts
+import { defineAppRoutes } from '@nocobase/app-client/plugins';
+
+import { useUnreadCount } from './hooks/use-unread-count.js';
+
+export default defineAppRoutes([
+  {
+    name: 'inbox',
+    path: '/inbox',
+    authz: 'skip',
+    navigation: {
+      title: 'navigation.inbox',
+      badge: () => {
+        const unread = useUnreadCount(); // a query kept fresh by a realtime topic
+        return unread ? { count: unread, tone: 'attention' } : undefined;
+      },
+    },
+    componentLoader: () => import('./pages/inbox.js'),
+  },
+]);
 ```
 
 Relative links resolve from the current route. Test direct navigation, refresh, browser back and forward, parent layout preservation, menu selection, denied access, and each intended Outlet.

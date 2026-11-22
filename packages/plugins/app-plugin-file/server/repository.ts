@@ -18,6 +18,12 @@ import type {
   UploadOneResult,
   UploadManyResult,
 } from '../shared/types.js';
+import {
+  FileUsageRegistry,
+  type FileUsageConfig,
+  type FileUsageDefinition,
+  type FileUsageDescription,
+} from './usages.js';
 
 // Resolve the Drive type through the application peer that owns the service.
 type AppDriveManager =
@@ -148,11 +154,64 @@ export function normalizeStoragePrefix(value: string = 'objects'): string {
   return segments.join('/');
 }
 
+/** What a file Collection holds: how many records, and the sum of their `size`. */
+export interface FileUsageStats {
+  readonly files: number;
+  readonly bytes: number;
+}
+
 export class ServerFileRepositoryManager {
+  private readonly usages = new FileUsageRegistry();
+  private readonly driveSource: AppDriveManager | (() => AppDriveManager);
+
   constructor(
     private readonly database: DatabaseManager,
-    private readonly drive: AppDriveManager,
-  ) {}
+    /**
+     * Drive, or a function returning it. A function defers creating Drive to the first file operation, so declaring
+     * usages and reading the file storage page keep working when Drive cannot be created, such as when the default
+     * disk is an S3 disk without a bucket.
+     */
+    drive: AppDriveManager | (() => AppDriveManager),
+    /** The application's configuration, which resolves the disk a feature follows. */
+    private readonly config?: FileUsageConfig | undefined,
+  ) {
+    this.driveSource = drive;
+  }
+
+  private get drive(): AppDriveManager {
+    return typeof this.driveSource === 'function'
+      ? this.driveSource()
+      : this.driveSource;
+  }
+
+  /**
+   * Declares a feature that stores files: its Collection, the disk it stores new files on and how its files are
+   * downloaded. The file storage settings page lists every declared feature. Declare it from a service provider's
+   * `boot()`; `defineFileRepositoryApiRoutes` declares each exposure itself.
+   */
+  registerUsage(definition: FileUsageDefinition): void {
+    this.usages.register(definition);
+  }
+
+  /**
+   * Every declared feature with the disk it stores new files on now, such as a cluster check looking for features
+   * that keep files on a local disk. Without any, new files go to the default disk.
+   */
+  describeUsages(): FileUsageDescription[] {
+    return this.usages.describe(this.config);
+  }
+
+  /** Counts a declared feature's file records and sums their sizes, in one aggregate query. */
+  async usageStats(
+    usage: Pick<FileUsageDefinition, 'collection' | 'connection'>,
+  ): Promise<FileUsageStats> {
+    const result = (await this.database
+      .repository(usage.collection, usage.connection)
+      .aggregate({
+        aggregate: (a) => ({ files: a.count(), bytes: a.sum('size') }),
+      })) as { files?: unknown; bytes?: unknown };
+    return { files: toCount(result.files), bytes: toCount(result.bytes) };
+  }
 
   repository(
     collection: string,
@@ -515,4 +574,13 @@ function guardedQuery<T extends object>(
       for await (const record of get()) yield normalizeFileRecord(record);
     },
   };
+}
+
+/** Aggregates answer numbers, numeric strings or bigints depending on the dialect; an empty sum is null. */
+function toCount(value: unknown): number {
+  if (value === null || value === undefined) return 0;
+  const number = Number(value);
+  if (!Number.isFinite(number) || number < 0)
+    throw new Error('The aggregate returned an invalid count.');
+  return number;
 }
