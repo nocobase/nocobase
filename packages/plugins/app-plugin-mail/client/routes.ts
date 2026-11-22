@@ -29,8 +29,8 @@ export interface MailRouteOptions {
 
 /**
  * The plugin's four pages. `mail` and `mailTeam` are business pages whose navigation entries an application may move or
- * leave out (the pages and their permissions remain); the personal Mail accounts page and the Mail settings page are
- * always registered in their settings' Messages category. Each is replaceable by name with `routeComponentOverrides`.
+ * leave out (the pages and their permissions remain). Mail accounts appears under Integrations in personal settings,
+ * and Mail under Messages in system settings. Each is replaceable by name with `routeComponentOverrides`.
  */
 export function mailRoutes(
   options: MailRouteOptions = {},
@@ -67,11 +67,13 @@ export function mailRoutes(
     ]),
     definePersonalSettingsRoutes([
       {
-        parent: PERSONAL_SETTINGS_CATEGORIES.messages,
+        parent: PERSONAL_SETTINGS_CATEGORIES.integrations,
         name: 'mailAccounts',
         path: '/mail',
         navigation: {
           title: 'navigation.mailAccounts',
+          icon: Mail,
+          order: 300,
           description: 'navigation.mailAccountsDescription',
         },
         breadcrumb: { title: 'navigation.mailAccounts' },
@@ -86,6 +88,7 @@ export function mailRoutes(
         authz: MAIL_ACCESS.settingsRead,
         navigation: {
           title: 'navigation.mailSettings',
+          icon: Mail,
           description: 'navigation.mailSettingsDescription',
         },
         breadcrumb: { title: 'navigation.mailSettings' },

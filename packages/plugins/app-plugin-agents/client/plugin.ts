@@ -55,13 +55,13 @@ function chatRoute(chatPath: string): AppClientRoutePageDefinition {
   };
 }
 
-/** Personal settings › Preferences › Agent: open to every signed-in person, about themselves. */
+/** Personal settings › Account › Agent: open to every signed-in person, about themselves. */
 const preferencesRoutes = definePersonalSettingsRoutes([
   {
     name: 'agentPreferences',
     path: '/agent',
-    parent: PERSONAL_SETTINGS_CATEGORIES.preferences,
-    navigation: { title: 'me.navigation', icon: Bot },
+    parent: PERSONAL_SETTINGS_CATEGORIES.account,
+    navigation: { title: 'me.navigation', icon: Bot, order: 400 },
     breadcrumb: { title: 'me.navigation' },
     componentLoader: async () => {
       const [{ default: Page }, { withAgents }] = await Promise.all([

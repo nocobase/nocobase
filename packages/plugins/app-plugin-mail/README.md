@@ -50,12 +50,12 @@ Within a major version, existing public exports, required props, request fields,
 
 The client plugin registers four pages, each replaceable as a whole by route name with the application's `routeComponentOverrides`:
 
-| Route name     | Path             | Where                                        | Requires                                  |
-| -------------- | ---------------- | -------------------------------------------- | ----------------------------------------- |
-| `mail`         | `/mail`          | Navigation **Mail**, with the unread count   | `page` `mail.workspace` `access`          |
-| `mailTeam`     | `/mail/team`     | Navigation **Team mail**                     | `mail` `mail.management` `view`           |
-| `mailAccounts` | `/me/mail`       | Personal settings › Messages › Mail accounts | signed in; its APIs need `mail.workspace` |
-| `mailSettings` | `/settings/mail` | System settings › Messages › Mail            | `settings` `mail.admin` `read`            |
+| Route name     | Path             | Where                                            | Requires                                  |
+| -------------- | ---------------- | ------------------------------------------------ | ----------------------------------------- |
+| `mail`         | `/mail`          | Navigation **Mail**, with the unread count       | `page` `mail.workspace` `access`          |
+| `mailTeam`     | `/mail/team`     | Navigation **Team mail**                         | `mail` `mail.management` `view`           |
+| `mailAccounts` | `/me/mail`       | Personal settings › Integrations › Mail accounts | signed in; its APIs need `mail.workspace` |
+| `mailSettings` | `/settings/mail` | System settings › Messages › Mail                | `settings` `mail.admin` `read`            |
 
 `mail({ routes: { mail: { order, parent }, mailTeam: false } })` moves a navigation entry or leaves it out of the menu; the page and its permission remain. The workspace links to the personal Mail accounts page to connect or reconnect an account, and marks accounts whose authorization has lapsed. Team mail lists every member's synchronized mail by member, account, address or `@domain` and keyword; opening a message never marks it read and offers no reply. The Mail settings page shows Providers and their capabilities, every account's status, every sync and send log, and the runtime configuration with where each value comes from; it never shows a subject, body or secret.
 
