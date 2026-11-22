@@ -2,7 +2,7 @@
 
 ## Start and observe synchronization
 
-Use `MailService.startSync()` or `POST /api/mail/accounts/:accountId/sync`. The workspace's all-mailbox action targets active accounts supporting incremental synchronization; selecting an account narrows the scope. Observe history through `GET /api/mail/syncRuns` (paged by `page` and `pageSize`), a run through `GET /api/mail/syncRuns/{syncRunId}`, or `/dev/mail/logs/sync`.
+Use `MailService.startSync()` or `POST /api/mail/accounts/:accountId/sync`. The workspace's all-mailbox action targets active accounts supporting incremental synchronization; selecting an account narrows the scope. Observe history through `GET /api/mail/syncRuns` (paged by `page` and `pageSize`), a run through `GET /api/mail/syncRuns/{syncRunId}`, or Personal settings › Mail accounts › Activity.
 
 Automatic synchronization is configured globally through `mail.automaticSyncIntervalMs` or `MAIL_AUTOMATIC_SYNC_INTERVAL_MS`. It defaults to `300000` milliseconds, minimum `60000`, and applies to both existing and new accounts. The runtime checks due accounts every minute. Account forms and account-update APIs do not set independent automatic intervals.
 
@@ -66,7 +66,7 @@ Logs expose `recovering` and `historyComplete` to distinguish recovery from unfi
 | IMAP external state differs  | New-UID sync does not fully reconcile external flags, deletions or moves                                                                              |
 | Sent mail missing            | Provider visibility and sent-copy mode; delivery outcome is authoritative for whether to resend                                                       |
 
-Personal diagnostics require workspace permission and ownership. Cross-user operation history is available under admin permission as two paged lists, `GET /api/mail/settings/syncRuns` and `GET /api/mail/settings/submissions` (`page`, `pageSize` up to 100, `meta.total`); `GET /api/mail/settings/accounts` lists the accounts with API-safe metadata. It has no built-in settings page. Keep credential references, cursors, leases and internal provider errors out of application diagnostics.
+Personal diagnostics require workspace permission and ownership. Cross-user operation history is available under admin permission as two paged lists, `GET /api/mail/settings/syncRuns` and `GET /api/mail/settings/submissions` (`page`, `pageSize` up to 100, `meta.total`); `GET /api/mail/settings/accounts` lists the accounts with API-safe metadata. They need `settings:mail.admin/read` and filter by `userId`, `accountId`, `status`, `from` and `to`; retrying or cancelling a member's run or submission under `/settings` needs `settings:mail.admin/manage`. System settings › Mail shows them, never with a subject or body. Finished runs and submissions older than `mail.logRetentionDays` (default 90) are deleted. Keep credential references, cursors, leases and internal provider errors out of application diagnostics.
 
 ## Verify this path
 

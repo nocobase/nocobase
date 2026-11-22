@@ -24,8 +24,14 @@ mail.providerTypes.add({ type: 'crm-gateway', title: 'CRM gateway' });
 mail.slots.messageAside.add({ name: 'customer', component: CustomerAside });
 mail.slots.composeToolbar.add({ name: 'quote', component: InsertQuote });
 mail.slots.workspaceActions.add({ name: 'logs', component: LogsLink });
-mail.templateVariables.add({ key: 'customer', label: 'Customer', resolve: ({ to }) => findCustomer(to) });
-mail.composer.onComplete.add((result, rejected, error, details) => recordActivity(details));
+mail.templateVariables.add({
+  key: 'customer',
+  label: 'Customer',
+  resolve: ({ to }) => findCustomer(to),
+});
+mail.composer.onComplete.add((result, rejected, error, details) =>
+  recordActivity(details),
+);
 ```
 
 `messageAside` receives the open message and its lower-cased addresses and is not rendered when nothing is registered; `composeToolbar` receives the composer state with `insertText` and `insertHtml`; `workspaceActions` render after Compose and Sync and never replace them. A `templateVariables` prop of the same key wins over a registered variable. `onComplete` handlers run after the page's own completion handling and receive the same arguments as the `onComplete` prop, including the submission IDs in `details`. Each registry rejects a duplicate name, key or type, and each slot renders inside its own error boundary.

@@ -125,23 +125,22 @@ Conversation-message detail and full-thread counts retain their existing semanti
 
 None of these answers a subject, body, recipient address or secret.
 
-| Method | Path                                          | Request / result                                                                                                                                       |
-| ------ | --------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `GET`  | `/settings/overview`                          | Providers with capabilities, account and attention counts and source, account totals, and the runtime configuration with each value's source.          |
-| `GET`  | `/settings/accounts`                          | Every member's accounts with Provider, status and last synchronization; filters by `status` (comma-separated), `provider`, `userId` and `q`.            |
-| `GET`  | `/settings/syncRuns`                          | Every member's runs, newest first; filters by `userId`, `accountId`, `status`, `from` and `to`; paged with `page` and `pageSize`.                       |
-| `POST` | `/settings/syncRuns/:syncRunId/retry`         | `manage`: retries a member's failed or partial run; returns `202` and the run.                                                                          |
-| `POST` | `/settings/syncRuns/:syncRunId/cancel`        | `manage`: cancels a member's pending or running run.                                                                                                    |
-| `GET`  | `/settings/submissions`                       | Every member's sends with account, owner, recipient count, batch, result and failure code; same filters and paging as the runs.                         |
-| `POST` | `/settings/submissions/:submissionId/retry`   | `manage`: retries a member's eligible submission.                                                                                                       |
-| `POST` | `/settings/submissions/:submissionId/cancel`  | `manage`: cancels a member's pending or scheduled submission.                                                                                           |
+| Method | Path                                         | Request / result                                                                                                                              |
+| ------ | -------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
+| `GET`  | `/settings/overview`                         | Providers with capabilities, account and attention counts and source, account totals, and the runtime configuration with each value's source. |
+| `GET`  | `/settings/accounts`                         | Every member's accounts with Provider, status and last synchronization; filters by `status` (comma-separated), `provider`, `userId` and `q`.  |
+| `GET`  | `/settings/syncRuns`                         | Every member's runs, newest first; filters by `userId`, `accountId`, `status`, `from` and `to`; paged with `page` and `pageSize`.             |
+| `POST` | `/settings/syncRuns/:syncRunId/retry`        | `manage`: retries a member's failed or partial run; returns `202` and the run.                                                                |
+| `POST` | `/settings/syncRuns/:syncRunId/cancel`       | `manage`: cancels a member's pending or running run.                                                                                          |
+| `GET`  | `/settings/submissions`                      | Every member's sends with account, owner, recipient count, batch, result and failure code; same filters and paging as the runs.               |
+| `POST` | `/settings/submissions/:submissionId/retry`  | `manage`: retries a member's eligible submission.                                                                                             |
+| `POST` | `/settings/submissions/:submissionId/cancel` | `manage`: cancels a member's pending or scheduled submission.                                                                                 |
 
 Each log row carries `canManage`, true when the caller may retry or cancel it. Finished runs and submissions older than `mail.logRetentionDays` (default 90, `0` keeps them) are deleted by the maintenance loop.
 
 ## All-user management
 
 `GET /management/accounts` answers only the account ids, addresses and owners Team mail's filters need. `GET /management/messages` also filters by `userId`.
-
 
 | Method | Path                                                                            | Request / result                                                                                                   |
 | ------ | ------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------ |
