@@ -154,6 +154,16 @@ describe('app client routes', () => {
     );
   });
 
+  it('keeps workflow and process pages in System settings in a fresh application', () => {
+    const processPages = pagePaths(resolveRoutes().routes).filter((path) =>
+      /\/(?:workflows|processes)(?:\/|$)/.test(path),
+    );
+    expect(processPages).toEqual([
+      '/settings/workflows/definitions',
+      '/settings/workflows/executions',
+    ]);
+  });
+
   it('loads every page component', async () => {
     const resolved = resolveRoutes();
     const loaders = componentLoadersIn(resolved.routes);
