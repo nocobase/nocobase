@@ -3,6 +3,7 @@ import type { LocaleResource } from '@nocobase/i18n';
 import type enUS from './en-US.js';
 
 const zhTW: LocaleResource<typeof enUS> = {
+  myConversations: '我的會話',
   fileUsage: '對話附件',
   modelSuggestions: {
     design:

@@ -54,6 +54,15 @@ describe('what registering the plugin brings', () => {
 
   it('adds Personal settings › Preferences › Agent and the conversation page, for anyone signed in', () => {
     const routes = pages(resolve(agents()));
+    const conversations = routes.find(
+      (route) => route.name === 'agentConversations',
+    );
+    expect(conversations).toMatchObject({
+      path: '/chat',
+      auth: 'required',
+      authz: 'skip',
+    });
+    expect(conversations?.navigation).toBeUndefined();
     const personal = routes.find((route) => route.name === 'agentPreferences');
     expect(personal).toMatchObject({ path: '/me/agent', auth: 'required' });
     expect(personal?.authz).toBe('skip');

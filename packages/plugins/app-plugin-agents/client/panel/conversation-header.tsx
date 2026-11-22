@@ -3,6 +3,8 @@ import { CONVERSATION_TITLE_MAX } from '../../shared/conversations.js';
 import {
   ArrowLeftIcon,
   ExternalLinkIcon,
+  HistoryIcon,
+  SquarePenIcon,
   ListIcon,
   MoreHorizontalIcon,
   PanelRightIcon,
@@ -24,6 +26,7 @@ import { useChatTranslation } from './chat-i18n.js';
 export interface ConversationHeaderProps {
   readonly title: string;
   readonly onRename?: ((title: string) => void) | undefined;
+  readonly onHistory?: (() => void) | undefined;
   readonly onBack?: (() => void) | undefined;
   readonly backClassName?: string;
   readonly onNew?: (() => void) | undefined;
@@ -51,6 +54,7 @@ export interface ConversationHeaderProps {
 export function ConversationHeader({
   title,
   onRename,
+  onHistory,
   onBack,
   backClassName,
   onNew,
@@ -106,9 +110,22 @@ export function ConversationHeader({
             size='icon-sm'
             data-testid='chat-new-conversation'
             aria-label={t('chat.newConversation')}
+            title={t('chat.newConversation')}
             onClick={onNew}
           >
-            <PlusIcon />
+            {onHistory ? <SquarePenIcon /> : <PlusIcon />}
+          </Button>
+        )}
+        {onHistory && (
+          <Button
+            variant='ghost'
+            size='icon-sm'
+            data-testid='chat-history-button'
+            aria-label={t('chat.history.title')}
+            title={t('chat.history.title')}
+            onClick={onHistory}
+          >
+            <HistoryIcon />
           </Button>
         )}
         {onOpenPage && (

@@ -3,6 +3,7 @@ import type { LocaleResource } from '@nocobase/i18n';
 import type enUS from './en-US.js';
 
 const esES: LocaleResource<typeof enUS> = {
+  myConversations: 'Mis conversaciones',
   fileUsage: 'Adjuntos del chat',
   modelSuggestions: {
     design:

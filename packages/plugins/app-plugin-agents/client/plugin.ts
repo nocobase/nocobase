@@ -79,7 +79,23 @@ const factory = defineClientPlugin<AgentsClientOptions>({
   routes: (options) => [
     agentsSettingsRoutes,
     preferencesRoutes,
-    defineAppRoutes([chatRoute(resolveAgentsOptions(options).chatPath)]),
+    defineAppRoutes([
+      {
+        name: 'agentConversations',
+        path: resolveAgentsOptions(options).chatPath,
+        auth: 'required',
+        authz: 'skip',
+        breadcrumb: { title: 'myConversations' },
+        componentLoader: async () => {
+          const [{ default: Page }, { withAgents }] = await Promise.all([
+            import('./pages/chat/sessions.js'),
+            import('./query.js'),
+          ]);
+          return { default: withAgents(Page) };
+        },
+      },
+      chatRoute(resolveAgentsOptions(options).chatPath),
+    ]),
   ],
   headerActions: (options) =>
     resolveAgentsOptions(options).headerAction

@@ -364,16 +364,10 @@ describe('ChatPanel', () => {
     );
   });
 
-  it('chooses the agent of a new conversation in the panel header, then shows it read-only', async () => {
+  it('chooses the agent of a new conversation in the composer, then shows it read-only', async () => {
     renderPanel(null);
-    // In the panel the choice sits in its header, not in the composer's toolbar.
-    const choice = await screen.findByTestId('chat-header-choice');
-    const picker = await within(choice).findByTestId('chat-agent-picker');
-    expect(
-      within(screen.getByTestId('chat-composer')).queryByTestId(
-        'chat-agent-picker',
-      ),
-    ).toBeNull();
+    const composer = await screen.findByTestId('chat-composer');
+    const picker = await within(composer).findByTestId('chat-agent-picker');
     expect(picker).toHaveTextContent('Assistant');
     // Compact: the availability is in its name.
     expect(picker).toHaveAccessibleName(
@@ -425,53 +419,32 @@ describe('ChatPanel', () => {
 describe('ChatPanel modes and layout', () => {
   afterEach(() => window.history.replaceState(null, '', '/'));
 
-  it('switches between runner and online agents, each with its own conversations', async () => {
+  it('lists online and runner conversations together and allows choosing a runner for a draft', async () => {
     renderPanel(null);
     const panel = await screen.findByTestId('chat-panel');
-    // Mode switching belongs to the list, never the conversation header.
     fireEvent.click(within(panel).getByTestId('chat-history-button'));
-    const toggle = await within(panel).findByTestId('chat-mode-switch');
-    expect(toggle).toHaveAccessibleName('Switch to the online agent');
-    const runner = await within(panel).findByTestId('chat-history');
-    expect(runner).toHaveAttribute('data-mode', 'runner');
+    const history = await within(panel).findByTestId('chat-history');
     expect(
-      within(runner).getByText('Fix the flaky sign-in test'),
+      await within(history).findByText('Fix the flaky sign-in test'),
     ).toBeVisible();
     expect(
-      within(runner).getByText('Summarize PM-12 Welcome tour'),
+      within(history).getByText('Plan the onboarding release'),
     ).toBeVisible();
-    expect(
-      within(runner).queryByText('Plan the onboarding release'),
-    ).toBeNull();
-
-    fireEvent.click(toggle);
-    const online = await within(panel).findByTestId('chat-history');
-    await waitFor(() => expect(online).toHaveAttribute('data-mode', 'online'));
-    expect(within(panel).getByTestId('chat-history-header')).toHaveTextContent(
-      'Online agent',
+    fireEvent.click(
+      within(panel).getByRole('button', { name: 'New conversation' }),
     );
-    expect(
-      within(online).getByText('Plan the onboarding release'),
-    ).toBeVisible();
-    expect(within(online).queryByText('Fix the flaky sign-in test')).toBeNull();
-    // One online agent: nothing to filter by.
-    expect(
-      within(online).queryByRole('combobox', { name: 'Agent' }),
-    ).toBeNull();
-    expect(within(panel).getByTestId('chat-mode-switch')).toHaveAccessibleName(
-      'Switch to runtime agents',
+    const box = within(panel).getByLabelText('Message to the agent');
+    fireEvent.change(box, { target: { value: 'Review this change' } });
+    await userEvent.click(within(panel).getByTestId('chat-agent-picker'));
+    fireEvent.click(
+      await screen.findByRole('menuitem', { name: /Coding agent/u }),
     );
-    // A new conversation in this mode chooses a model, not a runner agent.
-    fireEvent.click(within(panel).getByTestId('chat-new-conversation'));
-    const composer = await within(panel).findByTestId('chat-composer');
-    expect(
-      within(composer).queryByText('What can Assistant do for you?'),
-    ).toBeNull();
-    expect(
-      within(within(panel).getByTestId('chat-header-choice')).getByTestId(
-        'chat-agent-picker',
+    await waitFor(() =>
+      expect(within(panel).getByTestId('chat-agent-picker')).toHaveTextContent(
+        'Coding agent',
       ),
-    ).toHaveTextContent('Default model');
+    );
+    expect(box).toHaveValue('Review this change');
   });
 
   it('hides the switch while only one kind of agent is configured', async () => {
@@ -517,20 +490,18 @@ describe('ChatPanel modes and layout', () => {
     expect(
       headerButtons.map((button) => button.getAttribute('aria-label')),
     ).toEqual([
-      // The controls share the first row with the conversation's choices (none for a Runner conversation)…
-      'Back to list',
+      null,
       'New conversation',
+      'Conversations',
       'Open full screen',
       'Full width',
       'More',
       'Close',
-      // …and the title, which renames it, has a row of its own.
-      null,
     ]);
     fireEvent.click(within(panel).getByTestId('chat-expand'));
     await waitFor(() => expect(panel).toHaveAttribute('data-mode', 'expanded'));
     expect(within(panel).getByTestId('chat-history-header')).toHaveTextContent(
-      'Runtime agents',
+      'Conversations',
     );
     expect(within(panel).getByText('Fix the flaky sign-in test')).toBeVisible();
     expect(

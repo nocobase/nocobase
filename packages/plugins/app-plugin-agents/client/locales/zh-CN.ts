@@ -11,6 +11,7 @@ import runWaitZhCN from './runWait.zh-CN.js';
 import type { AgentsResource } from './en-US.js';
 
 const zhCN: AgentsResource = {
+  myConversations: '我的会话',
   fileUsage: '会话附件',
   modelSuggestions: {
     design:

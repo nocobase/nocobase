@@ -167,10 +167,8 @@ describe('replaceable components', () => {
     renderPanel('release-plan');
     const panel = await screen.findByTestId('chat-panel');
     const customHeader = await within(panel).findByTestId('custom-header');
-    // The default header, inside the replacement, still gives the conversation's choices their place.
-    expect(
-      within(customHeader).getByTestId('chat-header-choice'),
-    ).toBeInTheDocument();
+    // Replacements can opt into a header slot; the default keeps choices in the composer.
+    expect(within(customHeader).queryByTestId('chat-header-choice')).toBeNull();
     expect(typeof header.at(-1)?.choiceSlot).toBe('function');
     const customComposer = within(panel).getByTestId('custom-composer');
     expect(

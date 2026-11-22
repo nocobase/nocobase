@@ -43,6 +43,7 @@ import {
 } from 'lucide-react';
 import {
   useCallback,
+  useContext,
   useEffect,
   useId,
   useLayoutEffect,
@@ -55,6 +56,10 @@ import {
   type ReactNode,
 } from 'react';
 
+import {
+  CapturingPageDraftContext,
+  RestoredPageDraftContext,
+} from '../../chat/page-draft.js';
 import { Badge } from '../../components/ui/badge.js';
 import { Button } from '../../components/ui/button.js';
 import {
@@ -577,7 +582,9 @@ export function AgentComposer({
     : defaultAgentComposerLabels;
   const inputId = useId();
   const textareaRef = useRef<HTMLTextAreaElement>(null);
-  const [content, setContent] = useState('');
+  const store = useContext(CapturingPageDraftContext);
+  const restored = useContext(RestoredPageDraftContext);
+  const [content, setContent] = useState(restored?.text ?? '');
   const [preparing, setPreparing] = useState(false);
   const [contextError, setContextError] = useState(false);
   const submissionRef = useRef(false);
@@ -710,6 +717,24 @@ export function AgentComposer({
     },
     [maxCount, maxSize, update],
   );
+
+  const initialFilesRef = useRef(restored?.files);
+  useEffect(() => {
+    queueMicrotask(() => {
+      if (mountedRef.current && initialFilesRef.current) {
+        addFiles(initialFilesRef.current);
+        initialFilesRef.current = undefined;
+      }
+    });
+  }, [addFiles]);
+  useLayoutEffect(() => {
+    if (!store) return;
+    return store.register('editor', () =>
+      submissionRef.current || sending
+        ? null
+        : { text: content, files: filesRef.current.map((item) => item.file) },
+    );
+  }, [store, content, sending]);
 
   const removeFile = useCallback((key: string): void => {
     const file = filesRef.current.find((entry) => entry.key === key);

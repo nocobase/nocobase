@@ -21,6 +21,7 @@ import {
   type ReactElement,
 } from 'react';
 
+import { PageDraftStoreContext, PageDraftStore } from '../chat/page-draft.js';
 import { ACCESS_NAMESPACE } from '../../shared/access.js';
 import { AIFormRegistryProvider } from '../chat/ai-form.js';
 import { CHAT_PANEL_STORAGE_KEY } from '../chat/panel-state.js';
@@ -46,6 +47,7 @@ function IdentityChat({
   readonly userId: string;
   readonly options: ResolvedAgentsOptions;
 }>): ReactElement | null {
+  const [pageDrafts] = useState(() => new PageDraftStore());
   const [ready, setReady] = useState(false);
   useLayoutEffect(() => {
     // The panel's stored state and the cache are not per person: clear them before the provider reads them.
@@ -78,7 +80,9 @@ function IdentityChat({
         }
       >
         {options.panel && options.panel.defaultOpen ? <OpenOnce /> : null}
-        {children}
+        <PageDraftStoreContext.Provider value={pageDrafts}>
+          {children}
+        </PageDraftStoreContext.Provider>
       </ChatProvider>
     </AIFormRegistryProvider>
   );
