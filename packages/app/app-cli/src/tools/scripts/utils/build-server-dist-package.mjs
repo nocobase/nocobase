@@ -76,6 +76,37 @@ const isWorkspaceVersion = (version) => version?.startsWith('workspace:');
 const getVendorPackagePath = (packageName) =>
   path.join(vendorDir, ...packageName.split('/'));
 
+/**
+ * The other application plugins a plugin builds on, kept so a deployment can still tell which plugin another one
+ * needs, with the ones marked optional still marked so. The range is `*`: a `workspace:` range means nothing outside
+ * this repository, and with `autoInstallPeers: false` the deployment installs none of them because of it.
+ */
+const pluginPeerDependencies = (packageJson) => {
+  const peers = Object.keys(packageJson.peerDependencies ?? {})
+    // Official and third-party scopes alike: the rule `isPluginPackageName` in `src/lib/plugin-package-name.ts`
+    // applies, which these plain Node scripts cannot import.
+    .filter((name) =>
+      /^@[a-z0-9][a-z0-9-]*\/app-(?:plugin|portal)-[a-z0-9]+(?:-[a-z0-9]+)*$/u.test(
+        name,
+      ),
+    )
+    .sort();
+  if (peers.length === 0) return {};
+  const optional = peers.filter(
+    (name) => packageJson.peerDependenciesMeta?.[name]?.optional === true,
+  );
+  return {
+    peerDependencies: Object.fromEntries(peers.map((name) => [name, '*'])),
+    ...(optional.length === 0
+      ? {}
+      : {
+          peerDependenciesMeta: Object.fromEntries(
+            optional.map((name) => [name, { optional: true }]),
+          ),
+        }),
+  };
+};
+
 const createRuntimePackageJson = (packageJson) => ({
   name: packageJson.name,
   displayName: packageJson.displayName,
@@ -88,6 +119,7 @@ const createRuntimePackageJson = (packageJson) => ({
   exports: packageJson.publishConfig?.exports ?? packageJson.exports,
   engines: packageJson.engines,
   nocobase: packageJson.nocobase,
+  ...pluginPeerDependencies(packageJson),
 });
 
 /**

@@ -64,5 +64,6 @@ dist retarget and dist check rerun those two steps on a dist/ that is already bu
   protected readonly tool: AppTool = 'build';
   protected override readonly toolOptions: ToolCommandOptions = {
     hooks: true,
+    cliPluginRegistrations: true,
   };
 }

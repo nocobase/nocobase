@@ -8,6 +8,16 @@
   "engines": {
     "node": ">=24.0.0"
   },
+  "nocobase": {
+    "title": {
+      "en-US": "Projects",
+      "zh-CN": "项目"
+    },
+    "description": {
+      "en-US": "Projects, issues and their progress",
+      "zh-CN": "项目、任务及其进展"
+    }
+  },
   "sideEffects": false,
   "exports": {
     "./server": {

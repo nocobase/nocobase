@@ -1,61 +1,19 @@
 import {
-  defineAppRoutes,
   defineClientPlugin,
-  SYSTEM_SETTINGS_ROUTE_PATH,
   type AppClientPluginFactory,
 } from '@nocobase/app-client/plugins';
 
-import { createElement } from 'react';
-import { Navigate, useLocation } from 'react-router';
-
 import locales from './locales/index.js';
-import {
-  createFoundationRoutes,
-  foundationDefinition,
-  type FoundationRouteOptions,
-} from './routes.js';
+import routes from './routes.js';
 
-export interface FoundationClientOptions extends FoundationRouteOptions {
-  /**
-   * `false` leaves the page unregistered, for an application that routes `FoundationPage` itself. Defaults to `true`.
-   */
-  readonly routes?: boolean;
-}
-
-const foundation: AppClientPluginFactory<FoundationClientOptions> =
-  defineClientPlugin<FoundationClientOptions>({
-    packageName: '@nocobase/app-plugin-foundation',
-    locales,
-    routes: (options) => {
-      if (options.routes === false) return [];
-      const { path, auth, authz } = foundationDefinition(options);
-      const settings = createFoundationRoutes(options);
-      if (path.startsWith(SYSTEM_SETTINGS_ROUTE_PATH + '/')) return settings;
-      return [
-        settings,
-        defineAppRoutes([
-          {
-            name: 'legacyFoundation',
-            path,
-            auth,
-            authz,
-            componentLoader: async () => ({
-              default: function LegacyFoundationRedirect() {
-                const { search, hash } = useLocation();
-                return createElement(Navigate, {
-                  replace: true,
-                  to: {
-                    pathname: SYSTEM_SETTINGS_ROUTE_PATH + path,
-                    search,
-                    hash,
-                  },
-                });
-              },
-            }),
-          },
-        ]),
-      ];
-    },
-  });
+/**
+ * The plugins page under System settings › System, and redirects from the earlier App Foundation pages. Takes no
+ * options; an application replaces the page with `routeComponentOverrides: { plugins }`.
+ */
+const foundation: AppClientPluginFactory = defineClientPlugin({
+  packageName: '@nocobase/app-plugin-foundation',
+  locales,
+  routes: [routes],
+});
 
 export default foundation;

@@ -9,6 +9,16 @@
   "engines": {
     "node": ">=24.0.0"
   },
+  "nocobase": {
+    "title": {
+      "en-US": "Roles and permissions",
+      "zh-CN": "角色和权限"
+    },
+    "description": {
+      "en-US": "Roles, permissions and access checks",
+      "zh-CN": "角色、权限和授权检查"
+    }
+  },
   "exports": {
     ".": {
       "types": "./server/index.ts",

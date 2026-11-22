@@ -8,6 +8,16 @@
   "engines": {
     "node": ">=24.0.0"
   },
+  "nocobase": {
+    "title": {
+      "en-US": "Notifications",
+      "zh-CN": "通知"
+    },
+    "description": {
+      "en-US": "Notification types and personal delivery settings",
+      "zh-CN": "通知类型和个人接收设置"
+    }
+  },
   "sideEffects": false,
   "main": "./dist/server/index.js",
   "types": "./dist/server/index.d.ts",
