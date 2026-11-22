@@ -9,6 +9,8 @@ import { expect, it } from 'vitest';
 import { Breadcrumbs } from '../../client/components/breadcrumbs.js';
 import SettingsHomePage from '../../client/pages/settings/settings-home.js';
 import settingsRoutes from '../../client/pages/settings/routes.js';
+import WorkflowDefinitionsPage from '../../client/pages/settings/workflows/definitions.js';
+import WorkflowExecutionsPage from '../../client/pages/settings/workflows/executions.js';
 import shellRoutes from '../../client/pages/settings/shell-routes.js';
 import { RouteTreeProvider } from '../../client/routing/route-context.js';
 import { useRouteNavigation } from '../../client/routing/route-navigation.js';
@@ -45,6 +47,14 @@ function mount(
     <Shell>
       <Routes>
         <Route path='/settings' element={<SettingsHomePage />} />
+        <Route
+          path='/settings/workflows/definitions'
+          element={<WorkflowDefinitionsPage />}
+        />
+        <Route
+          path='/settings/workflows/executions'
+          element={<WorkflowExecutionsPage />}
+        />
         <Route path='*' element={<Where />} />
       </Routes>
     </Shell>,
@@ -66,7 +76,7 @@ it('groups the modules an administrator may open into categories of cards that o
   expect(cards[0]).toHaveAttribute('href', '/main/settings/users');
   expect(cards[1]).toHaveAttribute('href', '/main/settings/roles');
   // Categories without a module this viewer may open are not shown.
-  expect(screen.getAllByRole('region')).toHaveLength(1);
+  expect(screen.getAllByRole('region')).toHaveLength(2);
   cards[1].focus();
   await user.keyboard('{Enter}');
   await waitFor(() =>
@@ -91,6 +101,9 @@ it('shows a restricted viewer only what they may open, opening a tabbed module o
   });
   // Categories without a module this viewer may open are not shown.
   expect(screen.getAllByRole('region')).toHaveLength(1);
+  expect(
+    screen.queryByRole('link', { name: /Workflow management/ }),
+  ).toBeNull();
   const cards = within(account).getAllByRole('link');
   expect(cards).toHaveLength(1);
   expect(cards[0]).toHaveAttribute('href', '/main/settings/default-access');
@@ -109,4 +122,32 @@ it('links the System settings breadcrumb back to the home from a module view', a
     await within(trail).findByRole('link', { name: 'System settings' }),
   ).toHaveAttribute('href', '/main/settings');
   expect(within(trail).getByText('Roles and permissions')).toBeVisible();
+});
+
+it('opens workflow definitions from the settings card and switches to execution history', async () => {
+  const user = userEvent.setup();
+  await mount();
+  await user.click(
+    await screen.findByRole('link', { name: /Workflow management/ }),
+  );
+  expect(
+    await screen.findByText('No workflows have been defined yet.'),
+  ).toBeVisible();
+  await user.click(await screen.findByRole('tab', { name: 'Executions' }));
+  expect(
+    await screen.findByText('No workflow executions have been recorded yet.'),
+  ).toBeVisible();
+  expect(screen.getByRole('tab', { name: 'Executions' })).toHaveAttribute(
+    'aria-selected',
+    'true',
+  );
+});
+
+it('opens execution history directly in Chinese', async () => {
+  await mount({ locale: 'zh-CN' }, '/settings/workflows/executions');
+  expect(await screen.findByRole('tab', { name: '执行记录' })).toHaveAttribute(
+    'aria-selected',
+    'true',
+  );
+  expect(screen.getByText('暂无流程执行记录。')).toBeVisible();
 });

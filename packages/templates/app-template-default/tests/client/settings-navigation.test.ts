@@ -50,6 +50,11 @@ const catalog = (
     category.modules.map((module) => [module.route.name, module.target.path]),
   ]);
 
+const workflowCategory = [
+  'settingsBusiness',
+  [['workflowManagement', '/settings/workflows/definitions']],
+];
+
 const systemModules = (
   routes: readonly AppClientRegisteredRoute[],
   denied = new Set<string>(),
@@ -126,6 +131,8 @@ describe('System settings navigation', () => {
       '/settings/users/create',
       '/settings/roles/member/edit',
       '/settings/default-access',
+      '/settings/workflows/definitions',
+      '/settings/workflows/executions',
     ])
       expect(selectedNavigationId(routes, path)).toBe(entry);
   });
@@ -140,6 +147,7 @@ describe('System settings navigation', () => {
           ['permissionManagement', '/settings/roles'],
         ],
       ],
+      workflowCategory,
     ]);
     const roles = find(routes, 'settingsRoles');
     expect(catalog(routes, new Set([routeKey(roles)]))).toEqual([
@@ -150,11 +158,16 @@ describe('System settings navigation', () => {
           ['permissionManagement', '/settings/default-access'],
         ],
       ],
+      workflowCategory,
     ]);
     const denied = new Set(
-      ['settingsUsers', 'settingsRoles', 'settingsDefaultAccess'].map((name) =>
-        routeKey(find(routes, name)),
-      ),
+      [
+        'settingsUsers',
+        'settingsRoles',
+        'settingsDefaultAccess',
+        'workflowDefinitions',
+        'workflowExecutions',
+      ].map((name) => routeKey(find(routes, name))),
     );
     expect(catalog(routes, denied)).toEqual([]);
     // Without a module to open, the sidebar entry disappears too.
@@ -209,10 +222,10 @@ describe('System settings navigation', () => {
         routes: foundation,
       },
     ]).routes;
-    // The bare shell: only App Foundation, which only an unrestricted administrator may open.
     const menu = buildRouteNavigation(routes, new Set());
     expect(menu.map(({ route }) => route.name)).toEqual(['settingsHome']);
     expect(catalog(routes)).toEqual([
+      workflowCategory,
       ['settingsSystem', [['foundation', '/foundation']]],
     ]);
     // The signed-in shell receives the tree filtered to its pages; empty categories keep their titles there.
@@ -221,11 +234,14 @@ describe('System settings navigation', () => {
       (route) => route.auth === 'required',
     );
     expect(catalog(signedIn)).toEqual([
+      workflowCategory,
       ['settingsSystem', [['foundation', '/foundation']]],
     ]);
     const page = find(routes, 'foundation');
     expect(page.navigation?.description).toBe('nav.foundationDescription');
-    expect(buildRouteNavigation(routes, new Set([routeKey(page)]))).toEqual([]);
+    expect(catalog(routes, new Set([routeKey(page)]))).toEqual([
+      workflowCategory,
+    ]);
   });
 
   it('shows the notification template view as a System card once an invitation mailer is configured', () => {

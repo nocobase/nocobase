@@ -186,6 +186,8 @@ describe('app client routes', () => {
       { name: 'home', authorizedAs: null },
       { name: 'inbox', authorizedAs: null },
       { name: 'settingsHome', authorizedAs: null },
+      { name: 'workflowDefinitions', authorizedAs: 'unrestricted' },
+      { name: 'workflowExecutions', authorizedAs: 'unrestricted' },
       { name: 'databaseExplorer', authorizedAs: 'database-explorer' },
     ];
     expect(pageAuthorizations(resolved.routes)).toEqual(

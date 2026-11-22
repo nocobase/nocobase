@@ -1,3 +1,4 @@
+import { workflowSettingsRoute } from './workflows/routes.js';
 import { Settings } from 'lucide-react';
 import {
   defineAppRoutes,
@@ -8,8 +9,7 @@ import {
  * The System settings shell: one sidebar entry opening a home page of cards. Child groups are the home page's
  * categories; register an administration module with `parent` naming its category, such as
  * `parent: 'settingsAccount'`. A module with several views is a group whose pages become its tabs
- * (`SettingsModulePage`). A category the viewer can open nothing in is not shown, so a bare application shows only
- * what its plugins contribute, such as App Foundation for an unrestricted administrator.
+ * (`SettingsModulePage`). Categories appear when the viewer can open at least one built-in or contributed module.
  */
 const settingsShellRoutes: AppClientRouteContribution = defineAppRoutes([
   {
@@ -34,7 +34,7 @@ const settingsShellRoutes: AppClientRouteContribution = defineAppRoutes([
       {
         name: 'settingsBusiness',
         navigation: { title: 'settings.categories.business', order: 20 },
-        children: [],
+        children: [workflowSettingsRoute],
       },
       {
         name: 'settingsAi',

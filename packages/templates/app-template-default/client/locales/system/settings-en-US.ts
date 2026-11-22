@@ -1,4 +1,12 @@
 const settings = {
+  workflows: {
+    title: 'Workflow management',
+    description: 'View workflow definitions and execution history.',
+    definitions: 'Definitions',
+    executions: 'Executions',
+    emptyDefinitions: 'No workflows have been defined yet.',
+    emptyExecutions: 'No workflow executions have been recorded yet.',
+  },
   notificationManagementDescription:
     'View registered notification templates and synthetic content previews.',
   notificationTemplates: 'Notification templates',

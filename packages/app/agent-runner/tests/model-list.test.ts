@@ -51,6 +51,27 @@ describe('reported models', () => {
     expect(ids).toEqual(builtInModels('claude').map((model) => model.id));
   });
 
+  it.each([
+    ['codex', ''],
+    ['opencode', 'openai/'],
+  ] as const)(
+    'reports the updated built-in Codex models for %s',
+    (kind, prefix) => {
+      const reported = reportedModels(
+        { kind, authenticated: true, modelsDetectionStatus: 'unsupported' },
+        undefined,
+      );
+      expect(reported.modelsSource).toBe('builtin');
+      expect(
+        reported.models?.filter(({ id }) => id.startsWith(`${prefix}gpt-`)),
+      ).toEqual(
+        ['gpt-6.2-sol', 'gpt-6.2-astra', 'gpt-6-luna'].map((id) => ({
+          id: `${prefix}${id}`,
+        })),
+      );
+    },
+  );
+
   it('reports nothing for a tool that is not signed in, not detected yet, or whose detection failed', () => {
     const signedOut = {
       kind: 'codex' as const,
@@ -134,7 +155,10 @@ describe('config models', () => {
     const shown = await cli(['config', 'models', 'pi', 'show', '--json'], env);
     expect(JSON.parse(shown.stdout).result).toMatchObject({
       tool: 'pi',
-      builtin: expect.arrayContaining(['openai/gpt-6.1-sol']),
+      builtin: expect.arrayContaining([
+        'openai/gpt-6.2-sol',
+        'openai/gpt-6.2-astra',
+      ]),
     });
     await cli(['config', 'models', 'pi', 'reset'], env);
     expect(stored()).toBeUndefined();
