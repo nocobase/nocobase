@@ -36,6 +36,10 @@ const jaJP: LocaleResource<typeof enUS> = {
       read: '表示',
       manage: '管理する',
     },
+    humanOnly: {
+      servicesManage:
+        'モデルサービスの管理ではプロバイダーのキーを書き込みます。人のみが実行できます。',
+    },
     keyScopes: {
       agents: {
         title: 'エージェント',

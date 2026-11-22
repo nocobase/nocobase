@@ -180,7 +180,24 @@ export type KeyScopeAccess =
       readonly action: BusinessAction;
     };
 
-/** A permission group a scoped API key may hold, structurally the API keys plugin's `KeyScopeGroupDeclaration`. */
+/**
+ * Settings actions no API key may hold, with the reason the permission editor shows: managing model services writes
+ * provider keys.
+ */
+export const HUMAN_ONLY_SETTINGS: Readonly<
+  Record<
+    string,
+    Readonly<Record<string, { readonly key: string; readonly ns: string }>>
+  >
+> = {
+  'agents.services': { manage: accessText('humanOnly.servicesManage') },
+};
+
+/**
+ * @deprecated Format `1` of API key scopes; the plugin now marks what no key may hold (`HUMAN_ONLY_SETTINGS`) with the
+ * authorization plugin. Kept for applications that still register these groups.
+ *
+ * A permission group a scoped API key may hold, structurally the API keys plugin's `KeyScopeGroupDeclaration`. */
 export interface KeyScopeGroup {
   readonly id: string;
   readonly category: 'business' | 'administration' | 'account';
@@ -199,6 +216,8 @@ const setting = (id: SettingsItem, action: SettingsAction): KeyScopeAccess => ({
 });
 
 /**
+ * @deprecated Format `1`; see `KeyScopeGroup`.
+ *
  * What a scoped key may be given here. None of them limits to some records: agents and prices have no record-level
  * checks to enforce a selection. Writing agents covers editing them at whatever level the key's user
  * holds.

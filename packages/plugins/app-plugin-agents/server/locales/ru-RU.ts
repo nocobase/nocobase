@@ -38,6 +38,10 @@ const ruRU: LocaleResource<typeof enUS> = {
       read: 'Просмотр',
       manage: 'Управление',
     },
+    humanOnly: {
+      servicesManage:
+        'Управление сервисами моделей записывает ключи поставщиков; это может сделать только человек.',
+    },
     keyScopes: {
       agents: {
         title: 'Agent',

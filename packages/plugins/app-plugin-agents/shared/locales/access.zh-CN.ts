@@ -31,6 +31,9 @@ const accessZhCN: AccessLocale = {
       },
     },
     actions: { read: '查看', manage: '管理' },
+    humanOnly: {
+      servicesManage: '管理模型服务会写入服务商密钥，只能由人操作。',
+    },
     keyScopes: {
       agents: {
         title: 'Agent',

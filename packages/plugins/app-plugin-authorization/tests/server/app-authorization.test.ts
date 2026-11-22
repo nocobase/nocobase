@@ -87,7 +87,7 @@ describe('what an application configures about its own authorization', () => {
   const root = (key: string) => ({
     [key]: {
       owner: PERMISSION_SETS_PROTECTION_OWNER,
-      allow: ['assign', 'revoke'],
+      allow: ['updateTitle', 'assign', 'revoke'],
       requireActiveAssignment: true,
       unrestricted: true,
       // A superuser is an account; this host's principal type is `user`.

@@ -30,6 +30,11 @@ export class JobsBackendNotRegisteredError extends Error {
 
 /** Pure parsing and both executor factories are registered atomically. */
 export interface JobsImplementation<TConfig extends ResolvedJobsConfig> {
+  /**
+   * Declared by the implementation: `local` keeps jobs in this process, `shared` in a store every instance reaches.
+   * Left out, the backend is reported as `unknown`.
+   */
+  readonly sharing?: 'local' | 'shared';
   resolve(
     config: JobsAdapterConfig,
     base: ResolvedJobsConfig,
@@ -61,8 +66,10 @@ type Resolver = (
 /** One registry per service/application; implementations cannot be replaced. */
 export class JobsBackendRegistry {
   private readonly adapters = new Map<string, Resolver>();
+  private readonly sharing = new Map<string, 'local' | 'shared'>();
   public constructor() {
     this.register('memory', {
+      sharing: 'local',
       resolve: resolveMemoryJobsConfig,
       createJobExecutor: (config, { logger }) =>
         new BackendJobExecutor(new MemoryJobBackend(config), logger),
@@ -90,6 +97,15 @@ export class JobsBackendRegistry {
       throw new TypeError(
         'A jobs implementation requires a resolver and both executor factories.',
       );
+    if (
+      implementation.sharing !== undefined &&
+      implementation.sharing !== 'local' &&
+      implementation.sharing !== 'shared'
+    )
+      throw new TypeError(
+        `Jobs backend "${name}" declares an unknown sharing "${String(implementation.sharing)}".`,
+      );
+    if (implementation.sharing) this.sharing.set(name, implementation.sharing);
     this.adapters.set(name, (raw, base, dependencies) => {
       const config = implementation.resolve(raw, base, dependencies);
       return {
@@ -100,6 +116,17 @@ export class JobsBackendRegistry {
           implementation.createScheduleExecutor(config, dependencies),
       };
     });
+  }
+
+  /** Whether an adapter is registered and the sharing it declared; never resolves a configuration. */
+  public describe(adapter: string): {
+    readonly registered: boolean;
+    readonly sharing: 'local' | 'shared' | 'unknown';
+  } {
+    return {
+      registered: this.adapters.has(adapter),
+      sharing: this.sharing.get(adapter) ?? 'unknown',
+    };
   }
 
   public select(

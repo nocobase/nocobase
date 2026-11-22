@@ -2,9 +2,14 @@ import { ApiClientError, useApiClient } from '@nocobase/app-client';
 import { useTranslation } from '@nocobase/i18n/client';
 import { CheckIcon, ChevronDownIcon, XIcon } from 'lucide-react';
 import {
+  Suspense,
+  createElement,
+  use,
   useEffect,
   useMemo,
   useState,
+  useSyncExternalStore,
+  type ComponentType,
   type ReactElement,
   type ReactNode,
 } from 'react';
@@ -35,6 +40,7 @@ import type {
   AuthorizationOptionsResponse,
   AuthorizationSubject,
   ConfiguredAccess,
+  ConfiguredCredential,
   SubjectOption,
 } from '../authorization-client.js';
 import { useAuthorizationClient } from '../use-authorization-client.js';
@@ -56,7 +62,12 @@ import {
   type CheckResource,
   type ScopeDetail,
 } from './permission-check-model.js';
+import type {
+  AuthorizationCheckSubject,
+  AuthorizationCheckSubjectPickerProps,
+} from './extensions.js';
 import { SettingsError, SettingsLoading } from './shared.js';
+import { useAuthorizationSettings } from './use-authorization-settings.js';
 import { PERMISSION_CHECK_TAB } from './tab-keys.js';
 
 /** The surface whose catalog and user directory the page reads; it answers only an unrestricted viewer. */
@@ -71,7 +82,15 @@ export default function PermissionCheckPage(): ReactElement {
   const { t } = useTranslation(AUTHORIZATION_NAMESPACE);
   const authz = useAuthorizationClient();
   const [params, setParams] = useSearchParams();
-  const userId = params.get('user') ?? '';
+  const text = useLocalizedText();
+  const settings = useAuthorizationSettings();
+  const kinds = useSyncExternalStore(
+    settings.checkSubjects.subscribe,
+    settings.checkSubjects.list,
+  );
+  // A member by default; `as` names another kind of subject a plugin added, such as an API key.
+  const kind = kinds.find((entry) => entry.key === params.get('as'));
+  const userId = (kind ? params.get('subject') : params.get('user')) ?? '';
   const mode = params.get('mode') === 'check' ? 'check' : 'all';
   const [catalog, setCatalog] = useState<AuthorizationOptionsResponse>();
   const [error, setError] = useState<unknown>();
@@ -110,7 +129,43 @@ export default function PermissionCheckPage(): ReactElement {
         )
       ) : (
         <div className='flex flex-col gap-6'>
-          <UserPicker value={userId} onChange={(id) => update({ user: id })} />
+          {kinds.length > 0 && (
+            <Tabs
+              value={kind?.key ?? MEMBER_KIND}
+              onValueChange={(next) =>
+                update({
+                  as: next === MEMBER_KIND ? undefined : String(next),
+                  user: undefined,
+                  subject: undefined,
+                })
+              }
+            >
+              <TabsList aria-label={t('settings.permissionCheck.subjectKind')}>
+                <TabsTrigger value={MEMBER_KIND}>
+                  {t('settings.permissionCheck.member')}
+                </TabsTrigger>
+                {kinds.map((entry) => (
+                  <TabsTrigger key={entry.key} value={entry.key}>
+                    {text(entry.title)}
+                  </TabsTrigger>
+                ))}
+              </TabsList>
+            </Tabs>
+          )}
+          {kind ? (
+            <Suspense fallback={<SettingsLoading />}>
+              <SubjectPicker
+                kind={kind}
+                value={userId}
+                onChange={(id) => update({ subject: id })}
+              />
+            </Suspense>
+          ) : (
+            <UserPicker
+              value={userId}
+              onChange={(id) => update({ user: id })}
+            />
+          )}
           {userId ? (
             <>
               <Tabs
@@ -130,8 +185,8 @@ export default function PermissionCheckPage(): ReactElement {
                 </TabsList>
               </Tabs>
               <UserAccess
-                key={userId}
-                subject={{ type: 'user', id: userId }}
+                key={`${kind?.type ?? 'user'}:${userId}`}
+                subject={{ type: kind?.type ?? 'user', id: userId }}
                 catalog={catalog}
                 mode={mode}
                 resource={params.get('resource') ?? ''}
@@ -148,6 +203,33 @@ export default function PermissionCheckPage(): ReactElement {
       )}
     </AuthorizationPage>
   );
+}
+
+const MEMBER_KIND = '$member';
+
+const pickerModules = new WeakMap<
+  AuthorizationCheckSubject['picker'],
+  Promise<{
+    readonly default: ComponentType<AuthorizationCheckSubjectPickerProps>;
+  }>
+>();
+
+/** The picker a plugin registered for its kind of subject, loaded when it is chosen. */
+function SubjectPicker({
+  kind,
+  value,
+  onChange,
+}: {
+  readonly kind: AuthorizationCheckSubject;
+  readonly value: string;
+  readonly onChange: (id: string | undefined) => void;
+}): ReactElement {
+  let module = pickerModules.get(kind.picker);
+  if (!module) {
+    module = kind.picker();
+    pickerModules.set(kind.picker, module);
+  }
+  return createElement(use(module).default, { value, onChange });
 }
 
 function UserPicker({
@@ -358,6 +440,9 @@ function UserAccess({
           </p>
         )}
       </section>
+      {configured.credential ? (
+        <CredentialSummary credential={configured.credential} />
+      ) : null}
       {mode === 'all' ? (
         <AllPermissions
           subject={subject}
@@ -675,7 +760,11 @@ function CheckOne({
     label: text(entry.title),
   }));
   const current = decision?.key === key ? decision.value : undefined;
-  const holders = [subject, ...(configured.identity?.subjects ?? [])];
+  // A credential's data rules are the ones of the subject it acts as.
+  const holders = [
+    configured.credential?.holder ?? subject,
+    ...(configured.identity?.subjects ?? []),
+  ];
   return (
     <section className='flex flex-col gap-4'>
       <div className='grid gap-3 sm:grid-cols-2'>
@@ -749,6 +838,8 @@ function CheckOne({
             actionTitle={text(actionEntry.title)}
             roleTitle={roleTitle}
             holders={holders}
+            credential={configured.credential}
+            subject={subject}
           />
         ) : error ? null : (
           <SettingsLoading />
@@ -765,17 +856,23 @@ function Verdict({
   actionTitle,
   roleTitle,
   holders,
+  credential,
+  subject,
 }: {
+  readonly subject: AuthorizationSubject;
   readonly decision: AuthorizationDecision;
   readonly resource: CheckResource;
   readonly action: string;
   readonly actionTitle: string;
   readonly roleTitle: (key: string) => string;
   readonly holders: readonly AuthorizationSubject[];
+  readonly credential?: ConfiguredCredential | undefined;
 }): ReactElement {
   const { t } = useTranslation(AUTHORIZATION_NAMESPACE);
   const text = useLocalizedText();
   const allowed = decision.effect !== 'deny';
+  // A credential's own step comes first: it narrows whatever the roles and rules then give.
+  const first = credential ? 2 : 1;
   const roles = matchedSources(decision).filter(
     (source) => source.plugin === 'permission-sets',
   );
@@ -805,7 +902,17 @@ function Verdict({
             : t('settings.permissionCheck.cannot', names)}
       </div>
       <ol className='flex flex-col gap-3'>
-        <Step index={1} title={t('settings.permissionCheck.stepRole')}>
+        {credential ? (
+          <Step index={1} title={t('settings.permissionCheck.key.step')}>
+            <CredentialStep
+              credential={credential}
+              subject={subject}
+              resource={resource}
+              action={action}
+            />
+          </Step>
+        ) : null}
+        <Step index={first} title={t('settings.permissionCheck.stepRole')}>
           {roles.length ? (
             // Each role opens in Roles, where the permission it gives can be read and changed.
             <span className='flex flex-wrap items-center gap-1.5'>
@@ -831,7 +938,7 @@ function Verdict({
         {RULE_KINDS.map((kind, index) => (
           <RuleStep
             key={kind.key}
-            index={index + 2}
+            index={index + first + 1}
             kind={kind}
             resource={resource}
             action={action}
@@ -853,6 +960,233 @@ function Verdict({
       </details>
     </div>
   );
+}
+
+/** What a credential subject, such as an API key, adds on top of its holder's roles. */
+function CredentialSummary({
+  credential,
+}: {
+  readonly credential: ConfiguredCredential;
+}): ReactElement {
+  const { t } = useTranslation(AUTHORIZATION_NAMESPACE);
+  const actions = (credential.permissions ?? []).reduce(
+    (total, grant) => total + grant.actions.length,
+    0,
+  );
+  const limits = Object.entries(credential.objects);
+  return (
+    <section
+      className='flex flex-col gap-2 text-sm'
+      data-slot='checked-credential'
+    >
+      <h3 className='font-medium'>{t('settings.permissionCheck.key.title')}</h3>
+      {credential.state !== 'active' ? (
+        <p
+          role='alert'
+          className='rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-2 text-destructive'
+        >
+          {t(`settings.permissionCheck.key.${credential.state}`)}
+        </p>
+      ) : null}
+      <p className='text-muted-foreground'>
+        {credential.permissions === null
+          ? t('settings.permissionCheck.key.unbounded')
+          : t('settings.permissionCheck.key.bounded', { count: actions })}
+      </p>
+      {credential.personless ? (
+        <p className='text-muted-foreground'>
+          {t('settings.permissionCheck.key.personless')}
+        </p>
+      ) : null}
+      {limits.length ? (
+        <ul className='text-muted-foreground'>
+          {limits.map(([business, ids]) => (
+            <li key={business}>
+              {t('settings.permissionCheck.key.objects', {
+                business,
+                count: ids.length,
+              })}
+            </li>
+          ))}
+        </ul>
+      ) : null}
+    </section>
+  );
+}
+
+/**
+ * A credential's part in one decision: whether it covers the operation, the records it keeps as configured, and — for
+ * chosen records — which of them it reaches now, the others being left out by the roles and data rules below.
+ */
+function CredentialStep({
+  credential,
+  subject,
+  resource,
+  action,
+}: {
+  readonly credential: ConfiguredCredential;
+  readonly subject: AuthorizationSubject;
+  readonly resource: CheckResource;
+  readonly action: string;
+}): ReactElement {
+  const { t } = useTranslation(AUTHORIZATION_NAMESPACE);
+  if (credential.state !== 'active')
+    return <>{t(`settings.permissionCheck.key.${credential.state}`)}</>;
+  if (credential.permissions === null)
+    return <>{t('settings.permissionCheck.key.stepUnbounded')}</>;
+  const entry = credential.permissions
+    .find(
+      (grant) =>
+        grant.resource.type === resource.type &&
+        grant.resource.id === resource.id,
+    )
+    ?.actions.find((item) => item.action === action);
+  if (!entry) return <>{t('settings.permissionCheck.key.stepMissing')}</>;
+  const scopes: unknown = entry.policy?.scopes;
+  const records =
+    scopes && typeof scopes === 'object'
+      ? Object.entries(scopes as Record<string, unknown>)
+      : [];
+  return (
+    <span className='flex flex-col gap-1'>
+      <span>{t('settings.permissionCheck.key.stepCovers')}</span>
+      {records.map(([scope, value]) => (
+        <ScopeRecords
+          key={scope}
+          subject={subject}
+          resource={resource}
+          action={action}
+          scope={scope}
+          value={value}
+        />
+      ))}
+    </span>
+  );
+}
+
+/** One data scope of a key: what it is configured to keep, and for chosen records which of them it reaches now. */
+function ScopeRecords({
+  subject,
+  resource,
+  action,
+  scope,
+  value,
+}: {
+  readonly subject: AuthorizationSubject;
+  readonly resource: CheckResource;
+  readonly action: string;
+  readonly scope: string;
+  readonly value: unknown;
+}): ReactElement {
+  const { t } = useTranslation(AUTHORIZATION_NAMESPACE);
+  const authz = useAuthorizationClient();
+  const ids = useMemo(() => {
+    if (!value || typeof value !== 'object') return undefined;
+    const chosen: unknown = Reflect.get(value, 'ids');
+    return Reflect.get(value, 'type') === 'records' && Array.isArray(chosen)
+      ? chosen.filter((id): id is string => typeof id === 'string')
+      : undefined;
+  }, [value]);
+  const [reached, setReached] = useState<{
+    readonly ids: readonly string[];
+    readonly value?: readonly string[];
+    readonly failed?: boolean;
+  }>();
+  useEffect(() => {
+    if (!ids?.length) return;
+    let active = true;
+    authz
+      .inspectRecords(subject, {
+        resource: { type: resource.type, id: resource.id },
+        action,
+        scope,
+        ids,
+      })
+      .then(
+        (answer) => {
+          if (active) setReached({ ids, value: answer.reached });
+        },
+        // A failed read is not a refusal: it says so rather than listing every record as left out.
+        () => {
+          if (active) setReached({ ids, failed: true });
+        },
+      );
+    return () => {
+      active = false;
+    };
+  }, [authz, subject, resource.type, resource.id, action, scope, ids]);
+  const list = (values: readonly string[]) =>
+    values.length
+      ? values.join(', ')
+      : t('settings.permissionCheck.key.noRecords');
+  return (
+    <span className='flex flex-col' data-slot='credential-records'>
+      <span>
+        {t('settings.permissionCheck.key.configured', {
+          scope,
+          records: scopeLabel(value, t),
+        })}
+      </span>
+      {ids?.length ? (
+        // Only the answer for these records counts: another object's answer is never shown here.
+        reached?.ids !== ids ? (
+          <span>…</span>
+        ) : reached.failed || !reached.value ? (
+          <span role='alert' className='text-destructive'>
+            {t('settings.permissionCheck.key.recordsFailed')}
+          </span>
+        ) : (
+          <>
+            <span data-slot='credential-reached'>
+              {t('settings.permissionCheck.key.reached', {
+                records: list(reached.value),
+              })}
+            </span>
+            {ids.some((id) => !reached.value!.includes(id)) ? (
+              <span data-slot='credential-left-out'>
+                {t('settings.permissionCheck.key.leftOut', {
+                  records: list(
+                    ids.filter((id) => !reached.value!.includes(id)),
+                  ),
+                })}
+              </span>
+            ) : null}
+          </>
+        )
+      ) : (
+        <span>{t('settings.permissionCheck.key.intersection')}</span>
+      )}
+    </span>
+  );
+}
+
+/** How a key's data scope value reads: every record, the records chosen, a named record access, or none. */
+function scopeLabel(
+  value: unknown,
+  t: (key: string, options?: Record<string, unknown>) => string,
+): string {
+  if (value === '' || value === null || value === undefined)
+    return t('settings.permissionCheck.key.noRecords');
+  if (typeof value === 'string')
+    return value === 'allRecords'
+      ? t('settings.permissionCheck.key.allRecords')
+      : value;
+  if (typeof value === 'object') {
+    const type: unknown = Reflect.get(value, 'type');
+    const ids: unknown = Reflect.get(value, 'ids');
+    if (type === 'all') return t('settings.permissionCheck.key.allRecords');
+    if (type === 'records' && Array.isArray(ids))
+      return t('settings.permissionCheck.key.chosen', {
+        count: ids.length,
+        ids: ids.slice(0, 5).join(', '),
+      });
+    const key: unknown = Reflect.get(value, 'key');
+    if (type === 'recordAccess' && typeof key === 'string')
+      return key === 'allRecords'
+        ? t('settings.permissionCheck.key.allRecords')
+        : key;
+  }
+  return t('settings.permissionCheck.key.noRecords');
 }
 
 function Step({

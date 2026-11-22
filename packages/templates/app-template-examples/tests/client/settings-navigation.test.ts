@@ -5,6 +5,7 @@ import {
 } from '@nocobase/app-client/plugins';
 import { describe, expect, it } from 'vitest';
 
+import usersRoutes from '@nocobase/app-plugin-users/client/routes';
 import applicationRoutes from '../../client/routes.js';
 import packageMetadata from '../../package.json' with { type: 'json' };
 import {
@@ -20,6 +21,12 @@ function resolve() {
       packageName: packageMetadata.name,
       source: 'application',
       routes: applicationRoutes,
+    },
+    // User management joins Accounts and permissions from its plugin, as client/plugins.ts registers it.
+    {
+      packageName: '@nocobase/app-plugin-users',
+      source: 'plugin',
+      routes: usersRoutes,
     },
     authorizationPages(),
   ]).routes;
@@ -61,14 +68,14 @@ describe('System settings navigation with application menus', () => {
     expectSettingsEntry(routes);
   });
 
-  it('opens Notifications from Messages and Database Explorer from Data and files', () => {
+  it('opens Notifications from Messages and Database Explorer from System', () => {
     const routes = resolve();
     expect(categoryModules('messages', routes)).toContainEqual([
       'notificationManagement',
       '/settings/notifications/templates',
     ]);
     const explorer = ['databaseExplorer', '/settings/database-explorer'];
-    expect(categoryModules('data', routes)).toContainEqual(explorer);
+    expect(categoryModules('system', routes)).toContainEqual(explorer);
     const page = buildSettingsCatalog(routes, new Set())
       .flatMap(({ modules }) => modules)
       .find(({ route }) => route.name === 'databaseExplorer')?.route;
@@ -81,7 +88,7 @@ describe('System settings navigation with application menus', () => {
       },
     });
     expect(
-      categoryModules('data', routes, new Set([routeKey(page!)])),
+      categoryModules('system', routes, new Set([routeKey(page!)])),
     ).not.toContainEqual(explorer);
   });
 });

@@ -1,7 +1,6 @@
 import databaseExplorerRoutes from './pages/settings/database-explorer/routes.js';
 import { includeNotificationTemplateRoutes } from './pages/settings/notification-routes.js';
 import personalSettingsRoutes from './pages/me/routes.js';
-import systemSettingsRoutes from './pages/settings/routes.js';
 import { knowledgeDefinition } from '@nocobase/app-plugin-knowledge/client/routes';
 import {
   ShoppingCart,
@@ -514,13 +513,7 @@ const settingsRoutes: AppClientRouteContribution = defineSystemSettingsRoutes([
 // Their former URLs outside `/settings` redirect through `lib/settings-redirects.ts`.
 const routes: readonly AppClientRouteContribution[] =
   includeNotificationTemplateRoutes(
-    [
-      appRoutes,
-      settingsRoutes,
-      personalSettingsRoutes,
-      systemSettingsRoutes,
-      databaseExplorerRoutes,
-    ],
+    [appRoutes, settingsRoutes, personalSettingsRoutes, databaseExplorerRoutes],
     true,
   );
 

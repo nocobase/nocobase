@@ -46,10 +46,25 @@ export function createSharingRulesHandler(
   api: SharingRulesAdministrationApi,
 ): AuthorizationRouteHandler {
   const routes = createSettingsRouter();
-  const checked = (value: unknown): SharingRule => {
+  const checked = async (value: unknown): Promise<SharingRule> => {
     const rule = parse.rule(value, { withSubjects: true });
     validateDataScopeRule(authz, rule);
-    return { ...rule, subjects: rule.subjects ?? [] };
+    const subjects = rule.subjects ?? [];
+    // A subject type may keep some of its ids from being shared with, such as service accounts, which act as no person.
+    for (const type of new Set(subjects.map((subject) => subject.type))) {
+      const definition = authz.subjects.get(type);
+      if (!definition?.filterShareable) continue;
+      const ids = subjects
+        .filter((subject) => subject.type === type)
+        .map((subject) => subject.id);
+      const shareable = new Set(await definition.filterShareable(ids));
+      const refused = ids.filter((id) => !shareable.has(id));
+      if (refused.length)
+        throw new TypeError(
+          `A sharing rule cannot name ${type} ${refused.join(', ')}: only people can be shared with.`,
+        );
+    }
+    return { ...rule, subjects };
   };
   const existing = async (key: string): Promise<SharingRule> => {
     const rule = await api.get(key);
@@ -114,7 +129,7 @@ export function createSharingRulesHandler(
     }),
     apiValidator('json', SubjectRuleBody),
     async (context) => {
-      const rule = checked(context.req.valid('json'));
+      const rule = await checked(context.req.valid('json'));
       await assertRuleKeyAvailable((key) => api.get(key), rule.key);
       return context.json(
         {
@@ -154,7 +169,7 @@ export function createSharingRulesHandler(
     apiValidator('json', SubjectRulePatchBody),
     async (context) => {
       const { key } = context.req.valid('param');
-      const rule = checked({
+      const rule = await checked({
         ...(await existing(key)),
         ...context.req.valid('json'),
       });

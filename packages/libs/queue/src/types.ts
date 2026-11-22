@@ -122,6 +122,40 @@ export interface QueueService {
   setup(): Promise<void>;
   /** Stops consuming and releases every queue. Safe to call more than once. */
   shutdown(): Promise<void>;
+  /**
+   * What the service runs on: configured backends by name and adapter, and the queues bound to a backend other than
+   * the default. Never includes a backend's options. Optional so that test doubles need not implement it.
+   */
+  describe?(): QueueDescription;
+}
+
+/**
+ * Whether a backend's state is visible to every instance of the application (`shared`) or only to the process that
+ * holds it (`local`). An implementation that does not declare it is reported as `unknown`.
+ */
+export type QueueBackendSharing = 'local' | 'shared' | 'unknown';
+
+export interface QueueBackendDescription {
+  readonly name: string;
+  readonly adapter: string;
+  readonly sharing: QueueBackendSharing;
+  readonly registered: boolean;
+}
+
+export interface QueueSelection {
+  /** The logical queue name. */
+  readonly consumer: string;
+  readonly backend: string;
+}
+
+export interface QueueDescription {
+  /** The configured default backend; `null` when `queue.default` is unset and the built-in memory backend runs. */
+  readonly default: string | null;
+  readonly adapter: string;
+  readonly sharing: QueueBackendSharing;
+  readonly registered: boolean;
+  readonly backends: readonly QueueBackendDescription[];
+  readonly selections: readonly QueueSelection[];
 }
 
 /** Options `manager.configure()` changes on this instance only. */

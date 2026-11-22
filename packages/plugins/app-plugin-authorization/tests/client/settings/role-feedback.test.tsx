@@ -55,15 +55,20 @@ describe.each([
         return { data: [], meta: { total: 0 } };
       }),
     });
-    expect(
-      await screen.findByRole('button', { name: copy.settings.newRole }),
-    ).toHaveAttribute('href', '/settings/roles/create');
-    expect(
-      screen.getAllByRole('button', { name: copy.settings.newRole }),
-    ).toHaveLength(1);
+    const create = await screen.findByRole('button', {
+      name: copy.settings.newRole,
+    });
     expect(screen.getByRole('status').textContent).toBe(
       copy.listFeedback.empty,
     );
+    await userEvent.click(create);
+    expect(
+      await screen.findByRole('dialog', { name: copy.settings.newRole }),
+    ).toBeVisible();
+    await userEvent.click(
+      screen.getByRole('button', { name: copy.settings.cancel }),
+    );
+    expect(screen.queryByRole('dialog')).toBeNull();
   });
 });
 

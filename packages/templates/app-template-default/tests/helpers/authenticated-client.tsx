@@ -1,3 +1,4 @@
+import users from '@nocobase/app-plugin-users/client';
 import type { ReactElement } from 'react';
 import { randomUUID } from 'node:crypto';
 import { CookieJar } from 'jsdom';
@@ -181,6 +182,7 @@ async function renderClient(
     ],
     namespace: packageMetadata.name,
     namespaces: {
+      '@nocobase/app-plugin-users': users().locales!,
       ...options.namespaces,
       [packageMetadata.name]: {
         'en-US': async () => ({ default: enUS }),

@@ -9,8 +9,10 @@
 import {
   ChevronDownIcon,
   InfoIcon,
+  LayoutPanelLeftIcon,
+  LayersIcon,
+  SlidersHorizontalIcon,
   SearchIcon,
-  ShieldCheckIcon,
   TriangleAlertIcon,
   XIcon,
 } from 'lucide-react';
@@ -59,7 +61,7 @@ import {
   SelectValue,
 } from '#components/ui/select';
 import { Switch } from '#components/ui/switch';
-import { Tabs, TabsList, TabsTrigger } from '#components/ui/tabs';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '#components/ui/tabs';
 import {
   applyQuickSet,
   applyQuickSetMany,
@@ -132,6 +134,7 @@ export type PermissionEditorTab = 'menus' | 'objects' | 'settings';
 export interface PermissionEditorExtraTab {
   readonly value: string;
   readonly label: ReactNode;
+  readonly icon?: ReactNode;
   readonly content: ReactNode;
 }
 
@@ -227,6 +230,10 @@ export interface PermissionEditorLabels {
   readonly pageClosed: string;
   /** Unsaved changes on a tab, as its badge's accessible name. */
   readonly tabChanges: (count: number) => string;
+  /** The tag of an action only a person may take, in an editor of what a credential may do. */
+  readonly humanOnly: string;
+  /** The tag of an action no longer in effect. */
+  readonly lapsed: string;
 }
 
 export interface PermissionEditorProps {
@@ -251,10 +258,16 @@ export interface PermissionEditorProps {
   /** The draft differs from what is saved. */
   readonly dirty?: boolean | undefined;
   readonly defaultTab?: PermissionEditorTab | undefined;
+  readonly tabVariant?: 'line' | 'folder';
   /** Tabs after the built-in ones. */
   readonly tabs?: readonly PermissionEditorExtraTab[] | undefined;
   /** Unsaved changes by tab value, shown as a badge on the tab. */
   readonly tabBadges?: Readonly<Record<string, number>> | undefined;
+  /**
+   * The built-in tabs shown, in their order; defaults to all three. An editor of what a credential may do leaves out
+   * page access, which only a role has.
+   */
+  readonly builtInTabs?: readonly PermissionEditorTab[] | undefined;
   /**
    * The actions each page turns on when it is checked, by menu id, at their default scopes. Risky and managed actions
    * are never turned on this way.
@@ -268,6 +281,11 @@ export interface PermissionEditorProps {
 }
 
 const NO_SETTINGS: readonly PermissionSettingsPage[] = [];
+const ALL_TABS: readonly PermissionEditorTab[] = [
+  'menus',
+  'objects',
+  'settings',
+];
 const NO_TABS: readonly PermissionEditorExtraTab[] = [];
 const NO_GROUPS: ReadonlySet<string> = new Set();
 
@@ -275,6 +293,7 @@ const list = (items: readonly string[]): string =>
   new Intl.ListFormat('en', { type: 'conjunction' }).format(items);
 
 const TAB_TRIGGER = 'flex-none gap-1.5 py-0.5 whitespace-nowrap';
+const TAB_COUNT = 'text-xs font-normal text-muted-foreground tabular-nums';
 
 const DEFAULT_LABELS: PermissionEditorLabels = {
   menusTab: 'Page access',
@@ -375,6 +394,8 @@ const DEFAULT_LABELS: PermissionEditorLabels = {
               .filter(Boolean)
               .join(' ')
           : `Nothing was turned off: ${list(notice.actions)} ${notice.actions.length === 1 ? 'is' : 'are'} managed by the application and ${notice.actions.length === 1 ? 'needs' : 'need'} it.`,
+  humanOnly: 'People only',
+  lapsed: 'Lapsed',
 };
 
 const FOLLOW = '__same-as-view__';
@@ -388,7 +409,11 @@ function ScopeSelect({
   onChange,
 }: {
   readonly label: string;
-  readonly options: readonly { value: string; label: string }[];
+  readonly options: readonly {
+    value: string;
+    label: string;
+    disabled?: boolean | undefined;
+  }[];
   readonly value: string;
   readonly disabled: boolean;
   readonly following?: boolean | undefined;
@@ -421,6 +446,7 @@ function ScopeSelect({
             <SelectItem
               key={option.value}
               value={option.value}
+              disabled={option.disabled}
               className='*:min-w-0 *:shrink *:whitespace-normal'
             >
               {option.label}
@@ -772,7 +798,7 @@ function OperationItem({
   const locked = readOnly || Boolean(action.managed);
   const description = [
     action.description,
-    action.managed ? labels.managed : undefined,
+    action.humanOnly ?? (action.managed ? labels.managed : undefined),
   ]
     .filter(Boolean)
     .join(' · ');
@@ -797,6 +823,8 @@ function OperationItem({
           'cursor-pointer text-sm leading-5 break-words',
           dimmed && 'text-muted-foreground',
           locked && 'cursor-default',
+          action.humanOnly && 'text-muted-foreground',
+          action.lapsed && 'text-muted-foreground line-through',
         )}
       >
         {action.label}
@@ -804,6 +832,23 @@ function OperationItem({
       {description && (
         <span id={`${controlId}-description`} className='sr-only'>
           {description}
+        </span>
+      )}
+      {action.humanOnly && (
+        <span
+          data-slot='permission-human-only'
+          title={action.humanOnly}
+          className='inline-flex rounded bg-muted px-1.5 text-xs leading-5 text-muted-foreground'
+        >
+          {labels.humanOnly}
+        </span>
+      )}
+      {action.lapsed && (
+        <span
+          data-slot='permission-lapsed'
+          className='inline-flex rounded bg-amber-500/10 px-1.5 text-xs leading-5 text-amber-800 dark:text-amber-300'
+        >
+          {labels.lapsed}
         </span>
       )}
       {action.risk && (
@@ -1134,17 +1179,34 @@ export function PermissionEditor({
   dirty = false,
   settings = NO_SETTINGS,
   defaultTab = 'menus',
+  tabVariant = 'line',
   defaultObjectId,
   labels,
   className,
   tabs: extraTabs = NO_TABS,
   tabBadges,
   menuDefaults,
+  builtInTabs = ALL_TABS,
 }: PermissionEditorProps): ReactElement {
   const words: PermissionEditorLabels = { ...DEFAULT_LABELS, ...labels };
   const id = useId();
   const searchRef = useRef<HTMLInputElement>(null);
-  const [tab, setTab] = useState<string>(defaultTab);
+  const hasOperations = objects.some((object) => object.actions.length > 0);
+  const visibleBuiltIns = unrestricted
+    ? []
+    : builtInTabs.filter((key) =>
+        key === 'objects'
+          ? hasOperations
+          : key !== 'settings' || settings.length > 0,
+      );
+  const availableTabs = [
+    ...visibleBuiltIns,
+    ...extraTabs.map((extra) => extra.value),
+  ];
+  const [requestedTab, setRequestedTab] = useState<string>(defaultTab);
+  const tab = availableTabs.includes(requestedTab)
+    ? requestedTab
+    : availableTabs[0];
   const [flash, setFlash] = useState<MenuFlash | undefined>();
   const [query, setQuery] = useState('');
   const [onlyEnabled, setOnlyEnabled] = useState(false);
@@ -1392,7 +1454,7 @@ export function PermissionEditor({
   const openObject = (objectId: string): void => {
     if (!objects.some((object) => object.id === objectId)) return;
     reveal();
-    setTab('objects');
+    setRequestedTab('objects');
     setFlash(undefined);
     focusObject(objectId);
   };
@@ -1400,12 +1462,12 @@ export function PermissionEditor({
     const found = findAction(allObjects, actionId);
     if (!found) return;
     reveal();
-    setTab('objects');
+    setRequestedTab('objects');
     focusObject(found.object.id);
   };
   const openView = (warning: PermissionMenuWarning): void => {
     reveal();
-    setTab('objects');
+    setRequestedTab('objects');
     focusObject(warning.object.id);
   };
 
@@ -1438,46 +1500,6 @@ export function PermissionEditor({
     </div>
   );
   const saveBar = dirty && !unrestricted && footer ? footerBar : null;
-
-  if (unrestricted)
-    return (
-      <div
-        data-slot='permission-editor'
-        className={cn(
-          '@container/permissions min-w-0 rounded-lg border bg-card text-card-foreground',
-          className,
-        )}
-      >
-        {header && <div className='border-b px-4 py-3'>{header}</div>}
-        <div className='flex min-w-0 items-start gap-3 px-4 py-6'>
-          <ShieldCheckIcon
-            aria-hidden
-            className='mt-0.5 size-5 shrink-0 text-primary'
-          />
-          <div className='grid min-w-0 gap-1'>
-            <h2 className='text-base font-semibold'>
-              {words.unrestrictedTitle}
-            </h2>
-            <p className='text-sm text-muted-foreground'>
-              {words.unrestrictedDescription}
-            </p>
-          </div>
-        </div>
-        {/* Host tabs such as members still apply to a role that has every permission. */}
-        {extraTabs.map((extra) => (
-          <section
-            key={extra.value}
-            aria-label={
-              typeof extra.label === 'string' ? extra.label : undefined
-            }
-            className='flex min-w-0 flex-col gap-3 border-t px-4 py-4'
-          >
-            <h3 className='text-sm font-semibold'>{extra.label}</h3>
-            {extra.content}
-          </section>
-        ))}
-      </div>
-    );
 
   const messages = (
     <>
@@ -1799,6 +1821,14 @@ export function PermissionEditor({
             <div className='min-w-0'>{object.notice}</div>
           </div>
         )}
+        {object.footnote && (
+          <p
+            data-slot='permission-object-footnote'
+            className='col-span-full col-start-2 min-w-0 text-xs text-muted-foreground'
+          >
+            {object.footnote}
+          </p>
+        )}
       </section>
     );
   };
@@ -1979,6 +2009,18 @@ export function PermissionEditor({
                 <InfoIcon aria-hidden className='mt-0.5 size-4 shrink-0' />
                 <div className='min-w-0'>{object.notice}</div>
               </div>
+            ),
+        )}
+        {page.objects.map(
+          (object) =>
+            object.footnote && (
+              <p
+                key={`${object.id}-footnote`}
+                data-slot='permission-object-footnote'
+                className='col-span-full col-start-2 min-w-0 text-xs text-muted-foreground'
+              >
+                {object.footnote}
+              </p>
             ),
         )}
       </section>
@@ -2296,68 +2338,127 @@ export function PermissionEditor({
         className,
       )}
     >
-      {header && <div className='px-4 pt-3 pb-1'>{header}</div>}
-      <Tabs
-        value={tab}
-        onValueChange={(next: string) => {
-          setTab(next);
-          setNotices([]);
-          setPending(undefined);
-          setFlash(undefined);
-        }}
-      >
-        {/* The tabs stay on one row, each name beside its count; a narrow screen scrolls them sideways. */}
-        <div className='overflow-x-auto border-b px-4'>
-          <TabsList
-            variant='line'
-            className='flex w-max gap-3 py-0 group-data-horizontal/tabs:h-10'
-          >
-            <TabsTrigger value='menus' className={TAB_TRIGGER}>
-              {words.menusTab}
-              <span className='text-xs font-normal text-muted-foreground tabular-nums'>
-                {words.tabCount(menuTotals.checked, menuTotals.total)}
-              </span>
-              <TabBadge count={tabBadges?.menus} labels={words} />
-            </TabsTrigger>
-            <TabsTrigger value='objects' className={TAB_TRIGGER}>
-              {words.objectsTab}
-              <span className='text-xs font-normal text-muted-foreground tabular-nums'>
-                {words.tabCount(objectTotals.enabled, objectTotals.total)}
-              </span>
-              <TabBadge count={tabBadges?.objects} labels={words} />
-            </TabsTrigger>
-            {settings.length > 0 && (
-              <TabsTrigger value='settings' className={TAB_TRIGGER}>
-                {words.settingsTab}
-                <span className='text-xs font-normal text-muted-foreground tabular-nums'>
-                  {words.tabCount(settingsTotals.enabled, settingsTotals.total)}
-                </span>
-                <TabBadge count={tabBadges?.settings} labels={words} />
-              </TabsTrigger>
+      {(header || unrestricted) && (
+        <div
+          className={cn(
+            'px-4 pt-3 pb-1',
+            tabVariant === 'folder' && 'bg-muted/50 pb-3',
+          )}
+        >
+          {header ?? (
+            <h2 className='text-base font-semibold'>
+              {words.unrestrictedTitle}
+            </h2>
+          )}
+          {unrestricted && (
+            <p className='mt-3 text-sm text-muted-foreground'>
+              {words.unrestrictedDescription}
+            </p>
+          )}
+        </div>
+      )}
+      {tab && (
+        <Tabs
+          className='gap-0'
+          value={tab}
+          onValueChange={(next: string) => {
+            setRequestedTab(next);
+            setNotices([]);
+            setPending(undefined);
+            setFlash(undefined);
+          }}
+        >
+          <div
+            className={cn(
+              'overflow-x-auto px-4',
+              tabVariant === 'folder'
+                ? 'bg-muted/50 shadow-[inset_0_-1px_var(--border)]'
+                : 'border-b',
             )}
-            {extraTabs.map((extra) => (
-              <TabsTrigger
-                key={extra.value}
-                value={extra.value}
-                className={TAB_TRIGGER}
-              >
-                {extra.label}
-                <TabBadge count={tabBadges?.[extra.value]} labels={words} />
-              </TabsTrigger>
-            ))}
-          </TabsList>
-        </div>
-      </Tabs>
-      {extraTabs.some((extra) => extra.value === tab) ? (
-        <div className='min-w-0 px-4 py-4'>
-          {extraTabs.find((extra) => extra.value === tab)?.content}
-        </div>
-      ) : tab === 'menus' ? (
-        menusPanel
-      ) : tab === 'settings' && settings.length ? (
-        settingsPanel
-      ) : (
-        objectsPanel
+          >
+            <TabsList
+              variant={tabVariant}
+              activateOnFocus={tabVariant === 'folder'}
+              className={cn(
+                'flex w-max',
+                tabVariant === 'folder'
+                  ? 'group-data-horizontal/tabs:h-9'
+                  : 'gap-3 py-0 group-data-horizontal/tabs:h-10',
+              )}
+            >
+              {visibleBuiltIns.includes('menus') && (
+                <TabsTrigger value='menus' className={TAB_TRIGGER}>
+                  {tabVariant === 'folder' && (
+                    <LayoutPanelLeftIcon aria-hidden />
+                  )}
+                  {words.menusTab}
+                  {tabVariant === 'line' && (
+                    <span className={TAB_COUNT}>
+                      {words.tabCount(menuTotals.checked, menuTotals.total)}
+                    </span>
+                  )}
+                  <TabBadge count={tabBadges?.menus} labels={words} />
+                </TabsTrigger>
+              )}
+              {visibleBuiltIns.includes('objects') && (
+                <TabsTrigger value='objects' className={TAB_TRIGGER}>
+                  {tabVariant === 'folder' && <LayersIcon aria-hidden />}
+                  {words.objectsTab}
+                  {tabVariant === 'line' && (
+                    <span className={TAB_COUNT}>
+                      {words.tabCount(objectTotals.enabled, objectTotals.total)}
+                    </span>
+                  )}
+                  <TabBadge count={tabBadges?.objects} labels={words} />
+                </TabsTrigger>
+              )}
+              {visibleBuiltIns.includes('settings') && (
+                <TabsTrigger value='settings' className={TAB_TRIGGER}>
+                  {tabVariant === 'folder' && (
+                    <SlidersHorizontalIcon aria-hidden />
+                  )}
+                  {words.settingsTab}
+                  {tabVariant === 'line' && (
+                    <span className={TAB_COUNT}>
+                      {words.tabCount(
+                        settingsTotals.enabled,
+                        settingsTotals.total,
+                      )}
+                    </span>
+                  )}
+                  <TabBadge count={tabBadges?.settings} labels={words} />
+                </TabsTrigger>
+              )}
+              {extraTabs.map((extra) => (
+                <TabsTrigger
+                  key={extra.value}
+                  value={extra.value}
+                  className={TAB_TRIGGER}
+                >
+                  {tabVariant === 'folder' &&
+                    (extra.icon ?? <LayersIcon aria-hidden />)}
+                  {extra.label}
+                  <TabBadge count={tabBadges?.[extra.value]} labels={words} />
+                </TabsTrigger>
+              ))}
+            </TabsList>
+          </div>
+          <TabsContent key={tab} value={tab}>
+            {extraTabs.some((extra) => extra.value === tab) ? (
+              <div className='min-w-0 px-4 py-4'>
+                {extraTabs.find((extra) => extra.value === tab)?.content}
+              </div>
+            ) : tab === 'menus' && builtInTabs.includes('menus') ? (
+              menusPanel
+            ) : tab === 'settings' &&
+              settings.length &&
+              builtInTabs.includes('settings') ? (
+              settingsPanel
+            ) : tab === 'objects' ? (
+              objectsPanel
+            ) : null}
+          </TabsContent>
+        </Tabs>
       )}
       {saveBar}
     </div>

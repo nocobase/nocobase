@@ -64,15 +64,12 @@ export function RoleMembers({
   permissionSet,
   types,
   editable,
-  onCount,
   checkHref,
 }: {
   readonly permissionSet: string;
   readonly types: readonly RoleMemberType[];
   /** The person may assign and revoke this role. */
   readonly editable: boolean;
-  /** Reports how many members the role has, for the tab's badge. */
-  readonly onCount?: (count: number) => void;
   /** Where a user's permissions are checked, such as Permission check with the user picked. */
   readonly checkHref?: ((userId: string) => string) | undefined;
 }): ReactElement {
@@ -152,10 +149,6 @@ export function RoleMembers({
       active = false;
     };
   }, [authz, permissionSet, types, text, attempt]);
-
-  useEffect(() => {
-    if (members) onCount?.(members.length);
-  }, [members, onCount]);
 
   // The other roles each member holds, so a member's permissions read as the sum of their roles. Best effort: a role
   // whose members cannot be read is left out.

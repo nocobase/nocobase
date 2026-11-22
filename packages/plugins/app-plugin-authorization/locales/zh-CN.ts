@@ -28,6 +28,7 @@ const zhCN: AuthorizationServerResource = {
     },
     settings: {
       'permission-sets': '权限集',
+      'authentication-settings': '登录与认证',
     },
     subjectTypes: {
       authenticated: '所有已登录用户',

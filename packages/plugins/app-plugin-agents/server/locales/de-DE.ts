@@ -40,6 +40,10 @@ const deDE: LocaleResource<typeof enUS> = {
       read: 'Anzeigen',
       manage: 'Verwalten',
     },
+    humanOnly: {
+      servicesManage:
+        'Das Verwalten von Modelldiensten schreibt Anbieterschlüssel; nur eine Person darf das tun.',
+    },
     keyScopes: {
       agents: {
         title: 'Agenten',

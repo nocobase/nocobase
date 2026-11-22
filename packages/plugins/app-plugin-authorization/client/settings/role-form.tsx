@@ -1,3 +1,4 @@
+import { UsersRoundIcon } from 'lucide-react';
 import { FeedbackForm } from '#components/feedback-form';
 import { useAuthentication } from '@nocobase/app-plugin-authentication/client';
 import {
@@ -11,6 +12,7 @@ import { useAuthorizationClient } from '../use-authorization-client.js';
 import {
   type AuthorizationOptionsResponse,
   type LocalizedText,
+  type PermissionGrant,
   type PermissionSet,
 } from '../authorization-client.js';
 import {
@@ -27,29 +29,19 @@ import {
   type ReactElement,
 } from 'react';
 import {
-  Link,
   useLocation,
   useNavigate,
   useOutletContext,
   useParams,
   useSearchParams,
 } from 'react-router';
-import { CopyIcon, PencilIcon } from 'lucide-react';
 import { Badge } from '#components/ui/badge';
-import {
-  Dialog,
-  DialogContent,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '#components/ui/dialog';
 import {
   PermissionEditor,
   type PermissionEditorExtraTab,
   type PermissionValue,
 } from '#components/permission-editor';
 import { permissionChanges } from '#components/permission-editor-model';
-import { RowActions } from '#components/row-actions';
 import { Skeleton } from '#components/ui/skeleton';
 import type {
   AuthorizationContentTab,
@@ -80,11 +72,13 @@ import {
 } from './permissions-model.js';
 import { ConfirmAction, SettingsError, SettingsLoading } from './shared.js';
 import { usePermissionEditorLabels } from './permission-editor-labels.js';
+import { grantsOfTypes, tabsFor, withTabGrants } from './tab-grants.js';
 
 const EMPTY_VALUE: PermissionValue = { menus: [], grants: {} };
 
 export interface RolesOutletContext {
   readonly reload: () => void;
+  readonly setEditorLocked: (locked: boolean) => void;
   /** The roles list path, for links between roles. */
   readonly base: string;
 }
@@ -106,7 +100,12 @@ function RoleEditor(): ReactElement {
     sourceKey
       ? `authorization/permissionSets/${encodeURIComponent(sourceKey)}`
       : 'authorization/permissionSets/options',
-    true,
+    {
+      keepPreviousData: true,
+      scopes: sourceKey
+        ? [`authorization/permissionSets/${encodeURIComponent(sourceKey)}`]
+        : [],
+    },
   );
   const missingRef = useRef<unknown>(undefined);
   useEffect(() => {
@@ -191,13 +190,21 @@ function RoleEditor(): ReactElement {
     () => filters ?? loaded?.filters ?? {},
     [filters, loaded],
   );
-  const grants = useMemo(
-    () =>
-      workspace
-        ? grantsFromDraft(value, currentFilters, originalGrants, workspace)
-        : originalGrants,
-    [workspace, value, currentFilters, originalGrants],
-  );
+  // What role tabs declaring resource types changed, by tab key: saved with the rest of the draft.
+  const [tabDrafts, setTabDrafts] = useState<
+    ReadonlyMap<
+      string,
+      { types: readonly string[]; grants: readonly PermissionGrant[] }
+    >
+  >(() => new Map());
+  const grants = useMemo(() => {
+    let next = workspace
+      ? grantsFromDraft(value, currentFilters, originalGrants, workspace)
+      : originalGrants;
+    for (const tab of tabDrafts.values())
+      next = withTabGrants(next, tab.types, tab.grants);
+    return next;
+  }, [workspace, value, currentFilters, originalGrants, tabDrafts]);
   const sourceName = source ? text(source.title ?? source.key) : '';
   const defaultName = copyFrom
     ? sourceName
@@ -210,6 +217,7 @@ function RoleEditor(): ReactElement {
   const dirty =
     nameDraft !== undefined ||
     keyDraft !== undefined ||
+    tabDrafts.size > 0 ||
     (creating
       ? Boolean(copyFrom) ||
         value.menus.length > 0 ||
@@ -229,6 +237,11 @@ function RoleEditor(): ReactElement {
           ),
         ));
   const leave = useSettingsLeave(dirty, busy);
+  const { setEditorLocked } = parent;
+  useEffect(() => {
+    setEditorLocked(dirty || busy);
+    return () => setEditorLocked(false);
+  }, [dirty, busy, setEditorLocked]);
   const unrestricted = Boolean(source?.unrestricted) && !creating;
   const allowed = creating
     ? canCreate
@@ -239,8 +252,7 @@ function RoleEditor(): ReactElement {
   const originalRevisionRef = useRef<string | undefined>(undefined);
   const canAssign = useRolePermission('assign');
   const [reviewing, setReviewing] = useState(false);
-  const [memberCount, setMemberCount] = useState<number>();
-  const [renaming, setRenaming] = useState(false);
+
   const changes = useMemo(
     () =>
       workspace
@@ -287,43 +299,24 @@ function RoleEditor(): ReactElement {
       `${parent.base.slice(0, parent.base.lastIndexOf('/'))}/permission-check?${new URLSearchParams({ user: userId })}`,
     [parent.base],
   );
-  const onMemberCount = useCallback(
-    (count: number) => setMemberCount(count),
-    [],
-  );
-  // The members tab shows its count before it is opened.
-  useEffect(() => {
-    if (creating || !key) return;
-    let active = true;
-    authz.listAssignments(key).then(
-      (assignments) => {
-        if (active) setMemberCount((count) => count ?? assignments.length);
-      },
-      () => undefined,
-    );
-    return () => {
-      active = false;
-    };
-  }, [authz, creating, key]);
   const extraTabs = useMemo<readonly PermissionEditorExtraTab[]>(() => {
     if (creating || !key || !initial) return [];
+    const membersTab: PermissionEditorExtraTab = {
+      value: 'members',
+      icon: <UsersRoundIcon aria-hidden />,
+      label: t('settings.members.tab'),
+      content: (
+        <RoleMembers
+          permissionSet={key}
+          types={memberTypes}
+          editable={canAssign}
+          checkHref={checkHref}
+        />
+      ),
+    };
+    if (unrestricted) return [membersTab];
     return [
-      {
-        value: 'members',
-        label:
-          memberCount === undefined
-            ? t('settings.members.tab')
-            : t('settings.members.tabCount', { count: memberCount }),
-        content: (
-          <RoleMembers
-            permissionSet={key}
-            types={memberTypes}
-            editable={canAssign}
-            onCount={onMemberCount}
-            checkHref={checkHref}
-          />
-        ),
-      },
+      membersTab,
       ...roleTabs.map((tab) => ({
         value: `extension:${tab.key}`,
         label:
@@ -337,23 +330,36 @@ function RoleEditor(): ReactElement {
           <Suspense fallback={<Skeleton className='h-48 w-full' />}>
             <RoleTabContent
               tab={tab}
-              props={{ permissionSet: initial, editable: allowed }}
+              props={{
+                target: 'role',
+                permissionSet: initial,
+                editable: allowed,
+                ceiling: null,
+                value: grantsOfTypes(grants, tab.resourceTypes),
+                onChange: (next) => {
+                  if (!tab.resourceTypes?.length) return;
+                  const types = tab.resourceTypes;
+                  setTabDrafts((current) =>
+                    new Map(current).set(tab.key, { types, grants: next }),
+                  );
+                },
+              }}
             />
           </Suspense>
         ),
       })),
     ];
   }, [
+    unrestricted,
     creating,
     key,
     initial,
-    memberCount,
     memberTypes,
     canAssign,
-    onMemberCount,
     checkHref,
     roleTabs,
     allowed,
+    grants,
     t,
   ]);
 
@@ -362,6 +368,7 @@ function RoleEditor(): ReactElement {
     setKeyDraft(undefined);
     setDraft(undefined);
     setFilters(undefined);
+    setTabDrafts(new Map());
     setEditingFilter(undefined);
     setSubmitted(false);
     setError(undefined);
@@ -490,25 +497,6 @@ function RoleEditor(): ReactElement {
 
   const keyInvalid = keyConflict || (submitted && !roleKey.trim());
   const nameInvalid = submitted && !name.trim();
-  const duplicateHref =
-    !creating && canCreate && !unrestricted
-      ? {
-          pathname: `${parent.base}/create`,
-          search: `?copy=${encodeURIComponent(key)}`,
-        }
-      : undefined;
-  const duplicate =
-    duplicateHref !== undefined ? (
-      <Button
-        variant='outline'
-        size='sm'
-        nativeButton={false}
-        render={<Link to={duplicateHref} />}
-      >
-        <CopyIcon />
-        {t('settings.duplicateRole')}
-      </Button>
-    ) : null;
   const header = (
     <div className='flex flex-col gap-3'>
       {creating ? (
@@ -554,8 +542,6 @@ function RoleEditor(): ReactElement {
           </div>
         </div>
       ) : (
-        // An existing role reads as a title; its key never changes and its name changes through Rename. A phone keeps
-        // the whole name and puts Rename and Duplicate in a menu beside it.
         <div className='flex items-start gap-3'>
           <div className='flex min-w-0 flex-1 flex-wrap items-center gap-x-2 gap-y-1'>
             <h2 className='min-w-0 text-lg font-semibold break-words'>
@@ -572,53 +558,12 @@ function RoleEditor(): ReactElement {
               <Badge variant='outline'>{t('settings.protected')}</Badge>
             ) : null}
           </div>
-          <div className='hidden shrink-0 gap-2 sm:flex'>
-            {!readOnly && (
-              <Button
-                type='button'
-                variant='outline'
-                size='sm'
-                onClick={() => setRenaming(true)}
-              >
-                <PencilIcon />
-                {t('settings.rename')}
-              </Button>
-            )}
-            {duplicate}
-          </div>
-          <div className='shrink-0 sm:hidden'>
-            <RowActions
-              label={t('settings.actionsFor', { name })}
-              actions={[
-                !readOnly && {
-                  key: 'rename',
-                  label: t('settings.rename'),
-                  onClick: () => setRenaming(true),
-                },
-                duplicateHref !== undefined && {
-                  key: 'duplicate',
-                  label: t('settings.duplicateRole'),
-                  render: <Link to={duplicateHref} />,
-                },
-              ]}
-            />
-          </div>
         </div>
       )}
       {initial?.protection && !unrestricted && (
         <p className='text-sm text-muted-foreground'>
           {t('settings.protectedHint')}
         </p>
-      )}
-      {renaming && (
-        <RenameRole
-          name={name}
-          onCancel={() => setRenaming(false)}
-          onRename={(next) => {
-            setRenaming(false);
-            setNameDraft(next === defaultName ? undefined : next);
-          }}
-        />
       )}
     </div>
   );
@@ -675,6 +620,8 @@ function RoleEditor(): ReactElement {
             className='flex flex-col gap-4'
           >
             <PermissionEditor
+              tabVariant='folder'
+              className='rounded-none border-0 bg-transparent'
               menus={workspace?.menus ?? []}
               objects={objects}
               settings={workspace?.settings ?? []}
@@ -731,64 +678,6 @@ function RoleEditor(): ReactElement {
   );
 }
 
-/** Renames a role. The new name is part of the unsaved changes, saved with the rest after the review. */
-function RenameRole({
-  name,
-  onCancel,
-  onRename,
-}: {
-  readonly name: string;
-  readonly onCancel: () => void;
-  readonly onRename: (name: string) => void;
-}): ReactElement {
-  const { t } = useTranslation();
-  const [value, setValue] = useState(name);
-  const empty = !value.trim();
-  return (
-    <Dialog
-      open
-      onOpenChange={(open) => {
-        if (!open) onCancel();
-      }}
-    >
-      <DialogContent className='sm:max-w-md'>
-        <form
-          className='grid gap-4'
-          onSubmit={(event) => {
-            // The dialog sits inside the role form: its submit must not save the role.
-            event.preventDefault();
-            event.stopPropagation();
-            if (!empty) onRename(value.trim());
-          }}
-        >
-          <DialogHeader>
-            <DialogTitle>{t('settings.renameTitle')}</DialogTitle>
-          </DialogHeader>
-          <div className='grid gap-1.5'>
-            <Label htmlFor='role-rename'>{t('settings.roleName')} *</Label>
-            <Input
-              id='role-rename'
-              autoFocus
-              required
-              value={value}
-              aria-invalid={empty}
-              onChange={(event) => setValue(event.target.value)}
-            />
-          </div>
-          <DialogFooter>
-            <Button type='button' variant='outline' onClick={onCancel}>
-              {t('settings.cancel')}
-            </Button>
-            <Button type='submit' disabled={empty}>
-              {t('settings.rename')}
-            </Button>
-          </DialogFooter>
-        </form>
-      </DialogContent>
-    </Dialog>
-  );
-}
-
 type RoleTab = AuthorizationContentTab<AuthorizationRoleTabProps>;
 
 // One load per registered loader, so switching back to a tab does not load it again.
@@ -821,6 +710,7 @@ function useAllowedRoleTabs(): readonly RoleTab[] {
     settings.roleTabs.subscribe,
     settings.roleTabs.list,
   );
+  const roleOnly = useMemo(() => tabsFor(tabs, 'role'), [tabs]);
   const [allowed, setAllowed] = useState<{
     readonly tabs: readonly RoleTab[];
     readonly revision: number;
@@ -829,7 +719,7 @@ function useAllowedRoleTabs(): readonly RoleTab[] {
   useEffect(() => {
     let active = true;
     void Promise.all(
-      tabs.map((tab) =>
+      roleOnly.map((tab) =>
         tab.authz === undefined
           ? Promise.resolve(true)
           : client.can(tab.authz).then(
@@ -840,16 +730,16 @@ function useAllowedRoleTabs(): readonly RoleTab[] {
     ).then((answers) => {
       if (active)
         setAllowed({
-          tabs,
+          tabs: roleOnly,
           revision,
-          list: tabs.filter((_, index) => answers[index]),
+          list: roleOnly.filter((_, index) => answers[index]),
         });
     });
     return () => {
       active = false;
     };
-  }, [client, revision, tabs]);
-  return allowed?.tabs === tabs && allowed.revision === revision
+  }, [client, revision, roleOnly]);
+  return allowed?.tabs === roleOnly && allowed.revision === revision
     ? allowed.list
     : NO_ROLE_TABS;
 }
