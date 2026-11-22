@@ -564,14 +564,16 @@ describe('Repository lifecycle store', () => {
     ).toMatchObject({ status: 'awaitingCustomer' });
   });
 
-  it('rolls back a failed resume to its savepoint and lets the caller retry the same request', async () => {
+  it('rolls back a transition joined to the resume savepoint and lets the caller retry', async () => {
     const managed = new LifecycleRuntime({ store, clock: () => now });
     const afterCommit = vi.fn();
+    const name = 'managedTickets';
+    const actor = { id: 'agent' };
     let refuse = true;
     managed.register(
       defineLifecycle({
-        name: 'managedTickets',
-        key: 'managedTickets',
+        name,
+        key: name,
         version: 1,
         collection: 'tickets',
         initial: 'open',
@@ -591,13 +593,15 @@ describe('Repository lifecycle store', () => {
                 values: { ticketId: String(record.id), text: 'resumed' },
               });
             tx.afterCommit(afterCommit);
-            if (refuse) throw new Error('Could not resume tasks');
+            if (refuse)
+              await managed.fire(name, record.id, 'close', {
+                actor,
+                transaction: tx.handle,
+              });
           },
         },
       }),
     );
-    const name = 'managedTickets';
-    const actor = { id: 'agent' };
     const authorize = () => true;
     const {
       record: { id },
@@ -632,7 +636,7 @@ describe('Repository lifecycle store', () => {
       });
       await expect(
         managed.resume(name, id, { ...command, transaction }),
-      ).rejects.toThrow('Could not resume tasks');
+      ).rejects.toMatchObject({ code: 'INVALID_SET' });
     });
 
     expect(await store.findRecord('tickets', id)).toEqual(before);

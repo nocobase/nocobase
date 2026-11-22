@@ -1,3 +1,4 @@
+import { isDeepStrictEqual } from 'node:util';
 import { LifecycleError } from './errors.js';
 import {
   recordCondition,
@@ -112,7 +113,10 @@ export interface ManagementPolicy<T extends LifecycleTypes> {
   ) =>
     | Readonly<Record<string, unknown>>
     | Promise<Readonly<Record<string, unknown>>>;
-  /** Update domain data in the same transaction as the resume and its journal entry. */
+  /**
+   * Update domain data in the same transaction as the resume and its journal
+   * entry. The instance being resumed must keep its lifecycle-owned fields.
+   */
   readonly onResume?: (
     context: ManagementResumeContext<T>,
   ) => void | Promise<void>;
@@ -622,6 +626,17 @@ export class LifecycleManagement<R extends ManagedRegistration> {
           }
           if (command === 'resume' && policy.onResume) {
             resumeHookStarted = true;
+            const tx = this.services.scope(store, now);
+            const mutationError = () =>
+              new LifecycleError(
+                'INVALID_SET',
+                'An onResume hook cannot change the lifecycle fields of the instance being resumed.',
+              );
+            let blockedFire: LifecycleError | undefined;
+            const fields = ownedFields(lifecycle);
+            const resumedFields = structuredClone(
+              fields.map((field) => written[field]),
+            );
             await policy.onResume({
               previous: record,
               record: written,
@@ -634,8 +649,31 @@ export class LifecycleManagement<R extends ManagedRegistration> {
               services: registered.services(
                 store.transactionHandle,
               ) as ServicesOf<LifecycleTypes>,
-              tx: this.services.scope(store, now),
+              tx: Object.freeze<LifecycleTransaction>({
+                ...tx,
+                fire: async (name, targetId, transition, fireOptions) => {
+                  if (
+                    name === lifecycle.name &&
+                    (String(targetId) === recordId ||
+                      (await store.findRecord(lifecycle.collection, targetId))
+                        ?.id === written.id)
+                  )
+                    throw (blockedFire ??= mutationError());
+                  return tx.fire(name, targetId, transition, fireOptions);
+                },
+              }),
             });
+            if (blockedFire) throw blockedFire;
+            // Joined runtime calls and direct writes can also change this row.
+            const afterHook = await store.findRecord(lifecycle.collection, id);
+            if (
+              !afterHook ||
+              !isDeepStrictEqual(
+                fields.map((field) => afterHook[field]),
+                resumedFields,
+              )
+            )
+              throw mutationError();
           }
           store.afterCommit(() =>
             this.services.changed({

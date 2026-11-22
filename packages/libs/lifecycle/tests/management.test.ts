@@ -383,6 +383,60 @@ describe('management of a bound lifecycle instance', () => {
     expect(afterCommit).toHaveBeenCalledOnce();
   });
 
+  it('rejects firing the resuming instance, rolls back, and lets the same request be retried', async () => {
+    const afterCommit = vi.fn();
+    const otherId = 'another-desk';
+    let advanceCurrent = true;
+    const onResume = async ({
+      record,
+      tx,
+    }: ManagementResumeContext<LifecycleTypes>) => {
+      const scoped = tx.handle as MemoryLifecycleStore;
+      scoped.insertRecord('notes', { id: 'resumed', recordId: record.id });
+      tx.afterCommit(afterCommit);
+      if (advanceCurrent) {
+        // Catching the refusal inside the hook must still abort the resume.
+        await expect(
+          tx.fire('oldDesk', String(record.id), 'finish', { actor }),
+        ).rejects.toMatchObject({ code: 'INVALID_SET' });
+      } else {
+        await tx.requireActive('oldDesk', record.id);
+        await tx.fire('oldDesk', otherId, 'finish', { actor });
+      }
+    };
+    const { store, runtime, id, options, wait, advance, dispatch, detail } =
+      await fixture({ onResume });
+    await runtime.create('oldDesk', { id: otherId, scope: 'desk' }, { actor });
+    await runtime.fire('oldDesk', otherId, 'wait', { actor });
+    await wait();
+    await runtime.suspend('desk', id, await options());
+    const previous = store.record('records', id);
+    const history = await store.listTransitions('oldDesk', String(id));
+    advance(300);
+    const command = await options();
+    dispatch.mockClear();
+
+    await expect(runtime.resume('desk', id, command)).rejects.toMatchObject({
+      code: 'INVALID_SET',
+    });
+    expect(store.record('records', id)).toEqual(previous);
+    expect(await store.listTransitions('oldDesk', String(id))).toEqual(history);
+    expect(store.record('notes', 'resumed')).toBeUndefined();
+    expect(dispatch).not.toHaveBeenCalled();
+    expect(afterCommit).not.toHaveBeenCalled();
+
+    advanceCurrent = false;
+    const result = await runtime.resume('desk', id, command);
+    expect(result).toMatchObject({ state: 'waiting', suspended: false });
+    expect(await detail()).toMatchObject({ version: result.version });
+    expect(await runtime.resume('desk', id, command)).toEqual(result);
+    expect(store.record('records', otherId)).toMatchObject({
+      status: 'closed',
+    });
+    expect(dispatch).toHaveBeenCalledOnce();
+    expect(afterCommit).toHaveBeenCalledOnce();
+  });
+
   it('blocks an already delivered queue job and preserves the result of a running effect until resume', async () => {
     const started = deferred<void>();
     const done = deferred<object>();
