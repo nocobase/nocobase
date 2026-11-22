@@ -368,8 +368,8 @@ export class SystemApiKeys {
 
   /**
    * Permission Sets an application had named in the reserved `system-key-` prefix before it was reserved, which the
-   * prefix protection leaves alone (`protectAll`'s `except`). The upgrade lists them once, in `apiKeyPrefixExemptions`,
-   * and the list never changes afterwards, so every process, whenever it starts, leaves the same sets alone; none of
+   * prefix protection leaves alone (`protectAll`'s `except`). The migration that creates `apiKeyPrefixExemptions` lists
+   * them, again whenever it is applied again, and nothing changes the list otherwise, so every process, whenever it starts, leaves the same sets alone; none of
    * these names is ever given to a system key, even once its role is gone.
    */
   async exemptions(): Promise<string[]> {
