@@ -93,7 +93,7 @@ export interface PermissionSetsApi<TTransaction = unknown> {
 }
 
 export type PermissionSetWriteOperation =
-  'create' | 'update' | 'delete' | 'assign' | 'revoke';
+  'create' | 'update' | 'updateTitle' | 'delete' | 'assign' | 'revoke';
 
 /** Owner of a protection the library declares on its own behalf. */
 export const PERMISSION_SETS_PROTECTION_OWNER: string =
@@ -217,10 +217,8 @@ export interface PermissionSetsOptions<TTransaction = unknown> {
   /** Where Permission Sets and their assignments are read and written. */
   store: PermissionSetStore<TTransaction>;
   /**
-   * The Permission Set that confers unrestricted access. Declaring it here
-   * protects it as the library's own: it may be assigned and revoked but not
-   * edited or deleted, and it keeps an active assignment unless the
-   * application says otherwise.
+   * The Permission Set that confers unrestricted access. Its protection permits title updates, assignments and
+   * revocations. It keeps an active assignment unless the application says otherwise.
    */
   rootSet?: string | PermissionSetRootSet;
   /**
@@ -270,7 +268,7 @@ export function permissionSetsPlugin<TTransaction = unknown>(
     service.protect({
       owner: PERMISSION_SETS_PROTECTION_OWNER,
       keys: [rootSet.key],
-      allow: ['assign', 'revoke'],
+      allow: ['updateTitle', 'assign', 'revoke'],
       requireActiveAssignment: rootSet.requireActiveAssignment ?? true,
       unrestricted: true,
       ...(rootSet.assignableTo ? { assignableTo: rootSet.assignableTo } : {}),

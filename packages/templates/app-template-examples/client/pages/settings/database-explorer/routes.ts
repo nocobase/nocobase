@@ -7,7 +7,7 @@ import { Database } from 'lucide-react';
 
 export default defineSystemSettingsRoutes([
   {
-    parent: SYSTEM_SETTINGS_CATEGORIES.data,
+    parent: SYSTEM_SETTINGS_CATEGORIES.system,
     name: 'databaseExplorer',
     path: '/database-explorer',
     auth: 'required',

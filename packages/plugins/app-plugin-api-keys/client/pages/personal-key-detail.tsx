@@ -74,7 +74,7 @@ export default function PersonalKeyDetailPage(): ReactElement {
   );
 
   return (
-    <PageContainer className='max-w-[1120px]'>
+    <PageContainer>
       <PageHeader
         title={key?.name ?? (error ? t('detail.breadcrumb') : '')}
         description={key?.description ?? undefined}

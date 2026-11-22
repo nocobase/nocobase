@@ -33,7 +33,7 @@ export interface PermissionGrant {
 }
 
 export type PermissionSetWriteOperation =
-  'create' | 'update' | 'delete' | 'assign' | 'revoke';
+  'create' | 'update' | 'updateTitle' | 'delete' | 'assign' | 'revoke';
 
 export interface PermissionSetProtection {
   owner: string;
@@ -426,7 +426,7 @@ export class AuthorizationClient {
 
   updatePermissionSet(
     key: string,
-    input: PermissionSetInput,
+    input: Partial<PermissionSetInput>,
     idempotencyKey?: string,
   ): Promise<PermissionSet> {
     return this.send(

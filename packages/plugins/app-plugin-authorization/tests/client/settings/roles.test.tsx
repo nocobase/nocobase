@@ -83,16 +83,35 @@ function api(roles: PermissionSet[]) {
     }: {
       path: string;
       method: string;
-      json?: { grants: readonly PermissionGrant[] };
+      json?: {
+        key?: string;
+        title?: string;
+        grants: readonly PermissionGrant[];
+      };
     }) => {
       if (path === 'authorization/permissions')
         return { data: { unrestricted: true, permissions: [] } };
       if (path === 'authorization/permissionSets/options')
         return { data: options };
-      if (path === 'authorization/permissionSets') return { data: roles };
+      if (path === 'authorization/permissionSets') {
+        if (method === 'POST' && json?.key) {
+          const role = {
+            key: json.key,
+            title: json.title,
+            grants: json.grants,
+          };
+          roles.push(role);
+          return { data: role };
+        }
+        return { data: roles };
+      }
       const key = decodeURIComponent(path.split('/').at(-1) ?? '');
       const index = roles.findIndex((role) => role.key === key);
       if (index === -1) return new Response(null, { status: 404 });
+      if (method === 'DELETE') {
+        roles.splice(index, 1);
+        return new Response(null, { status: 204 });
+      }
       if (method === 'PATCH' && json)
         roles[index] = { ...roles[index]!, grants: json.grants };
       return { data: roles[index] };
@@ -117,14 +136,20 @@ function mount(route: string, calls: ReturnType<typeof api>) {
   );
 }
 
-it('lists the roles beside the editor, opens the first one and keeps the system administrator read-only', async () => {
+it('lists the roles beside the editor, opens the first one and only offers a title edit for the system administrator', async () => {
   const user = userEvent.setup();
   await mount(
     '/settings/roles',
     api([
       { key: 'team', title: 'NocoBase team', grants: [] },
       { key: 'cp-customer', title: 'Customer', grants: [] },
-      { key: 'root', title: 'System administrator', unrestricted: true },
+      {
+        key: 'root',
+        title: 'System administrator',
+        grants: [],
+        unrestricted: true,
+        protection: { allow: ['updateTitle', 'assign', 'revoke'] },
+      },
       {
         key: 'member',
         title: 'Member',
@@ -144,11 +169,34 @@ it('lists the roles beside the editor, opens the first one and keeps the system 
   expect(within(list).getByText(words.unrestrictedRole)).toBeVisible();
   expect(within(list).getByText(words.protected)).toBeVisible();
   // The first role opens at once: the system administrator, which has nothing to set.
-  expect(await screen.findByText(editor.unrestrictedTitle)).toBeVisible();
+  expect(await screen.findByText(editor.unrestrictedDescription)).toBeVisible();
+  const membersTab = screen.getByRole('tab', {
+    name: words.members.tab,
+    selected: true,
+  });
+  const roleDetails = screen.getByRole('tabpanel', {
+    name: words.roles,
+    exact: true,
+  });
+  expect(within(roleDetails).getAllByRole('tab')).toEqual([membersTab]);
+  expect(
+    screen.getByRole('tabpanel', { name: words.members.tab }),
+  ).toBeVisible();
   expect(screen.queryByRole('checkbox')).not.toBeInTheDocument();
   expect(
     screen.queryByRole('button', { name: words.reviewAndSave, exact: true }),
   ).not.toBeInTheDocument();
+  const nav = within(list).getByRole('navigation');
+  await user.click(
+    within(nav).getByRole('button', {
+      name: words.actionsFor.replace('{{name}}', 'System administrator'),
+    }),
+  );
+  expect(await screen.findAllByRole('menuitem')).toHaveLength(1);
+  await user.click(screen.getByRole('menuitem', { name: words.editRole }));
+  const dialog = within(screen.getByRole('dialog', { name: words.editRole }));
+  expect(dialog.getByRole('definition')).toHaveTextContent('root');
+  await user.click(dialog.getByRole('button', { name: words.cancel }));
   await user.type(
     within(list).getByRole('textbox', { name: words.roleSearch }),
     'Customer',
@@ -171,7 +219,8 @@ it('saves menu access apart from the actions, explains escalation and asks befor
   const calls = api(roles);
   await mount('/settings/roles/team/edit', calls);
   const menusTab = await screen.findByRole('tab', {
-    name: new RegExp(`${editor.menusTab}\\s*0 / \\d+`),
+    name: editor.menusTab,
+    exact: true,
   });
   expect(menusTab).toHaveAttribute('aria-selected', 'true');
   const home = screen.getByRole('checkbox', {
@@ -183,7 +232,7 @@ it('saves menu access apart from the actions, explains escalation and asks befor
   await user.click(home);
   expect(
     screen.getByRole('tab', {
-      name: new RegExp(`${editor.menusTab}\\s*1 / \\d+`),
+      name: new RegExp(editor.menusTab),
     }),
   ).toBeVisible();
   expect(
@@ -304,4 +353,62 @@ it('announces a slow retry after the role list fails to load, from the retry but
   }
   expect(await screen.findByTitle('NocoBase team')).toBeVisible();
   expect(screen.queryByText(enUS.listFeedback.failed)).not.toBeInTheDocument();
+});
+
+it('creates, copies and deletes roles from the list while targeting the chosen row', async () => {
+  const user = userEvent.setup();
+  const grants = [
+    {
+      resource: { type: 'page', id: 'start' },
+      actions: [{ action: 'access' }],
+    },
+  ];
+  const roles: PermissionSet[] = [{ key: 'sales', title: 'Sales', grants }];
+  await mount('/settings/roles/sales/edit', api(roles));
+  const list = within(
+    await screen.findByRole('complementary', { name: words.roles }),
+  );
+  await user.click(await list.findByRole('button', { name: words.newRole }));
+  const create = within(
+    await screen.findByRole('dialog', { name: words.newRole }),
+  );
+  await user.type(create.getByLabelText(/Role name/), 'Staff');
+  await user.type(create.getByLabelText(words.key), 'staff');
+  await user.click(
+    create.getByRole('button', { name: words.createRoleAction }),
+  );
+  await screen.findByRole('heading', { name: 'Staff' });
+  expect(roles.find((role) => role.key === 'staff')?.grants).toEqual([]);
+  const nav = within(list.getByRole('navigation'));
+  const actions = () =>
+    nav.getByRole('button', {
+      name: words.actionsFor.replace('{{name}}', 'Sales'),
+    });
+  await user.click(actions());
+  await user.click(
+    await screen.findByRole('menuitem', { name: words.duplicateRole }),
+  );
+  await user.click(
+    within(await screen.findByRole('dialog')).getByRole('button', {
+      name: words.createRoleAction,
+    }),
+  );
+  await screen.findByRole('heading', { name: 'Sales (copy)' });
+  expect(roles.find((role) => role.key === 'sales-copy')?.grants).toEqual(
+    grants,
+  );
+  await user.click(actions());
+  await user.click(
+    await screen.findByRole('menuitem', { name: words.deleteRole }),
+  );
+  const confirm = within(await screen.findByRole('dialog'));
+  expect(
+    confirm.getByText(words.deleteRoleHint.replace('{{name}}', 'Sales')),
+  ).toBeVisible();
+  await user.click(confirm.getByRole('button', { name: words.deleteRole }));
+  await waitFor(() =>
+    expect(nav.queryByRole('link', { name: /^Sales sales$/ })).toBeNull(),
+  );
+  expect(roles.map((role) => role.key)).toEqual(['staff', 'sales-copy']);
+  expect(screen.getByRole('heading', { name: 'Sales (copy)' })).toBeVisible();
 });
