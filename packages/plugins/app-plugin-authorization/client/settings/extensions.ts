@@ -50,6 +50,8 @@ export interface AuthorizationContentTab<TProps> extends RegisteredTab {
    * new grants through `onChange`; a role saves them with the rest of its draft, a key holds them like any other.
    */
   readonly resourceTypes?: readonly string[];
+  /** Restrict ownership within the declared types when several editors share a resource type. */
+  readonly ownsResource?: (resource: PermissionGrant['resource']) => boolean;
   readonly component: () => Promise<{
     readonly default: ComponentType<TProps>;
   }>;
@@ -128,7 +130,10 @@ export interface AuthorizationRoleTabProps {
   readonly editable: boolean;
   /** The grants of the tab's `resourceTypes`. */
   readonly value: readonly PermissionGrant[];
-  readonly onChange: (next: readonly PermissionGrant[]) => void;
+  readonly onChange: (
+    next: readonly PermissionGrant[],
+    label?: (resource: PermissionGrant['resource']) => string,
+  ) => void;
   /** For an API key, what the person giving it holds of the tab's types: the tab lists no more. Null for a role. */
   readonly ceiling: readonly PermissionGrant[] | null;
 }

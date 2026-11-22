@@ -5,9 +5,14 @@ import type { AuthorizationTabTarget } from './extensions.js';
 export function grantsOfTypes(
   grants: readonly PermissionGrant[],
   types: readonly string[] | undefined,
+  ownsResource?: (resource: PermissionGrant['resource']) => boolean,
 ): readonly PermissionGrant[] {
   if (!types?.length) return [];
-  return grants.filter((grant) => types.includes(grant.resource.type));
+  return grants.filter(
+    (grant) =>
+      types.includes(grant.resource.type) &&
+      (ownsResource?.(grant.resource) ?? true),
+  );
 }
 
 /** `grants` with those of `types` replaced by `next`, as a permission tab changes them; the others stay. */
@@ -15,13 +20,15 @@ export function withTabGrants(
   grants: readonly PermissionGrant[],
   types: readonly string[] | undefined,
   next: readonly PermissionGrant[],
+  ownsResource?: (resource: PermissionGrant['resource']) => boolean,
 ): readonly PermissionGrant[] {
   if (!types?.length) return grants;
+  const owns = (grant: PermissionGrant) =>
+    types.includes(grant.resource.type) &&
+    (ownsResource?.(grant.resource) ?? true);
   return [
-    ...grants.filter((grant) => !types.includes(grant.resource.type)),
-    ...next.filter(
-      (grant) => types.includes(grant.resource.type) && grant.actions.length,
-    ),
+    ...grants.filter((grant) => !owns(grant)),
+    ...next.filter((grant) => owns(grant) && grant.actions.length),
   ];
 }
 

@@ -123,13 +123,16 @@ function RoleEditor(): ReactElement {
   );
   const canCreate = useRolePermission('create');
   const canUpdate = useRolePermission('update');
-  const text = (value: LocalizedText): string =>
-    typeof value === 'string'
-      ? value
-      : t(value.key, {
-          ns: value.ns,
-          defaultValue: value.defaultValue ?? value.key,
-        });
+  const text = useCallback(
+    (value: LocalizedText): string =>
+      typeof value === 'string'
+        ? value
+        : t(value.key, {
+            ns: value.ns,
+            defaultValue: value.defaultValue ?? value.key,
+          }),
+    [t],
+  );
   const source = sourceKey ? request.data?.data : undefined;
   const initial = creating ? undefined : source;
   const originalGrants = useMemo(
@@ -194,7 +197,12 @@ function RoleEditor(): ReactElement {
   const [tabDrafts, setTabDrafts] = useState<
     ReadonlyMap<
       string,
-      { types: readonly string[]; grants: readonly PermissionGrant[] }
+      {
+        types: readonly string[];
+        ownsResource?: RoleTab['ownsResource'];
+        review: readonly string[];
+        grants: readonly PermissionGrant[];
+      }
     >
   >(() => new Map());
   const grants = useMemo(() => {
@@ -202,7 +210,7 @@ function RoleEditor(): ReactElement {
       ? grantsFromDraft(value, currentFilters, originalGrants, workspace)
       : originalGrants;
     for (const tab of tabDrafts.values())
-      next = withTabGrants(next, tab.types, tab.grants);
+      next = withTabGrants(next, tab.types, tab.grants, tab.ownsResource);
     return next;
   }, [workspace, value, currentFilters, originalGrants, tabDrafts]);
   const sourceName = source ? text(source.title ?? source.key) : '';
@@ -271,17 +279,20 @@ function RoleEditor(): ReactElement {
     if (creating) return list;
     if (nameDraft !== undefined && name.trim() !== defaultName)
       list.push(t('settings.review.renamed', { name: name.trim() }));
+    for (const draft of tabDrafts.values()) list.push(...draft.review);
     // Record filters are edited inside a scope and are not listed one by one.
     if (dirty && !changes.length && !list.length)
       list.push(t('settings.review.other'));
     return list;
-  }, [creating, nameDraft, name, defaultName, dirty, changes, t]);
+  }, [creating, nameDraft, name, defaultName, dirty, changes, tabDrafts, t]);
   const tabBadges = useMemo(() => {
     const counts: Record<string, number> = {};
     for (const change of changes)
       counts[change.tab] = (counts[change.tab] ?? 0) + 1;
+    for (const [key, draft] of tabDrafts)
+      counts['extension:' + key] = draft.review.length;
     return counts;
-  }, [changes]);
+  }, [changes, tabDrafts]);
   const highRisk = changes.some((change) => change.risk === 'high');
   const memberTypes = useMemo<readonly RoleMemberType[]>(
     () =>
@@ -316,7 +327,6 @@ function RoleEditor(): ReactElement {
     };
     if (unrestricted) return [membersTab];
     return [
-      membersTab,
       ...roleTabs.map((tab) => ({
         value: `extension:${tab.key}`,
         label:
@@ -335,19 +345,66 @@ function RoleEditor(): ReactElement {
                 permissionSet: initial,
                 editable: allowed,
                 ceiling: null,
-                value: grantsOfTypes(grants, tab.resourceTypes),
-                onChange: (next) => {
+                value: grantsOfTypes(
+                  grants,
+                  tab.resourceTypes,
+                  tab.ownsResource,
+                ),
+                onChange: (next, label) => {
                   if (!tab.resourceTypes?.length) return;
                   const types = tab.resourceTypes;
-                  setTabDrafts((current) =>
-                    new Map(current).set(tab.key, { types, grants: next }),
+                  const before = grantsOfTypes(
+                    originalGrants,
+                    types,
+                    tab.ownsResource,
                   );
+                  const after = grantsOfTypes(next, types, tab.ownsResource);
+                  const keyOf = (grant: PermissionGrant) =>
+                    JSON.stringify([grant.resource.type, grant.resource.id]);
+                  const previous = new Map(
+                    before.map((grant) => [keyOf(grant), grant]),
+                  );
+                  const updated = new Map(
+                    after.map((grant) => [keyOf(grant), grant]),
+                  );
+                  const review: string[] = [];
+                  for (const id of new Set([
+                    ...previous.keys(),
+                    ...updated.keys(),
+                  ])) {
+                    const old = previous.get(id);
+                    const grant = updated.get(id);
+                    if (sameGrants(old ? [old] : [], grant ? [grant] : []))
+                      continue;
+                    const resource = (grant ?? old)!.resource;
+                    const kind = !grant ? 'removed' : old ? 'scope' : 'added';
+                    review.push(
+                      [
+                        text(tab.title),
+                        t('settings.review.' + kind),
+                        label?.(resource) ?? resource.id,
+                      ].join(' · '),
+                    );
+                  }
+                  setTabDrafts((current) => {
+                    const drafts = new Map(current);
+                    if (review.length)
+                      drafts.set(tab.key, {
+                        types,
+                        ownsResource: tab.ownsResource,
+                        grants: after,
+                        review,
+                      });
+                    else drafts.delete(tab.key);
+                    return drafts;
+                  });
                 },
               }}
             />
           </Suspense>
         ),
       })),
+      membersTab,
     ];
   }, [
     unrestricted,
@@ -358,6 +415,8 @@ function RoleEditor(): ReactElement {
     canAssign,
     checkHref,
     roleTabs,
+    originalGrants,
+    text,
     allowed,
     grants,
     t,

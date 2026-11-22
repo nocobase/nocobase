@@ -606,12 +606,24 @@ function KeyPermissionTable({
                 value: grantsOfTypes(
                   readOnly ? [...value, ...(lapsed ?? [])] : value,
                   tab.resourceTypes,
+                  tab.ownsResource,
                 ),
                 onChange: (next) =>
-                  onChange?.(withTabGrants(value, tab.resourceTypes, next)),
+                  onChange?.(
+                    withTabGrants(
+                      value,
+                      tab.resourceTypes,
+                      next,
+                      tab.ownsResource,
+                    ),
+                  ),
                 ceiling: ceiling?.unrestricted
                   ? null
-                  : grantsOfTypes(ceilingGrants, tab.resourceTypes),
+                  : grantsOfTypes(
+                      ceilingGrants,
+                      tab.resourceTypes,
+                      tab.ownsResource,
+                    ),
               }}
             />
           </Suspense>

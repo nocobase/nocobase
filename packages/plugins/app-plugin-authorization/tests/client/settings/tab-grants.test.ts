@@ -27,6 +27,22 @@ describe('permission tabs for roles and API keys', () => {
     expect(tabsFor(tabs, 'apiKey').map((tab) => tab.key)).toEqual(['both']);
   });
 
+  it('preserves sibling grants when two tabs edit different resources of one type', () => {
+    const grant = (id: string) => ({
+      resource: { type: 'composite', id },
+      actions: [{ action: 'view' }],
+    });
+    const own = grant('multiApp.applications');
+    const sibling = grant('deployment.instances');
+    const owns = (resource: typeof own.resource) =>
+      resource.id === own.resource.id;
+    const grants = [own, sibling];
+    expect(grantsOfTypes(grants, ['composite'], owns)).toEqual([own]);
+    expect(withTabGrants(grants, ['composite'], [sibling], owns)).toEqual([
+      sibling,
+    ]);
+  });
+
   it('gives a tab the grants of its types and takes back only those', () => {
     const grants = [
       { resource: orders, actions: [{ action: 'read' }] },
