@@ -229,7 +229,8 @@ it('keeps unavailable catalog selections visible and read-only rather than creat
   expect(
     await screen.findByText(enUS.settings.defaultAccess.unsupported),
   ).toBeVisible();
-  expect(screen.getByRole('button', { name: 'Save' })).toBeDisabled();
+  // Save renders once the write permission answers, which may follow the notice.
+  expect(await screen.findByRole('button', { name: 'Save' })).toBeDisabled();
   expect(screen.getByRole('textbox', { name: 'Key' })).toHaveValue(
     existing.key,
   );

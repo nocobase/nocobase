@@ -31,13 +31,23 @@ describe('@nocobase/app-plugin-authorization client', () => {
       );
     expect(names(plugin())).toEqual(['permissionManagement']);
     expect(plugin({ routes: false }).routes).toEqual([]);
+    const authorizationProvider = {
+      name: 'authorization',
+      after: ['@nocobase/app-plugin-authentication:authentication'],
+      component: expect.any(Function),
+    };
+    // Stored links to Data rules leave a kind whose rule plugin is gone, only while the pages are registered.
     expect(reactProviders).toMatchObject([
+      authorizationProvider,
       {
-        name: 'authorization',
-        after: ['@nocobase/app-plugin-authentication:authentication'],
+        name: 'rule-address-fallback',
+        after: ['@nocobase/app-plugin-authorization:authorization'],
         component: expect.any(Function),
       },
     ]);
+    expect(
+      plugin({ routes: false }).reactProviders.map(({ name }) => name),
+    ).toEqual(['authorization']);
   });
 
   it('registers one injectable Authorization Client that preserves domain actions and resource ids without falling back to page grants', async () => {

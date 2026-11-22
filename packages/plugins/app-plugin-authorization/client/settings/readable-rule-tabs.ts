@@ -40,6 +40,24 @@ export function ruleKeyOfPath(pathname: string): string | undefined {
 }
 
 /**
+ * The kind of rule an address opens, including a rule's own address below it and a kind named by `?rule=` under
+ * Default access, or `undefined` for any other address.
+ */
+export function ruleKindOfAddress(
+  pathname: string,
+  search: string,
+): string | undefined {
+  const prefix = `${SYSTEM_SETTINGS_ROUTE_PATH}/`;
+  if (!pathname.startsWith(prefix)) return undefined;
+  const segment = `/${pathname.slice(prefix.length).split('/')[0]}`;
+  const kind = Object.keys(RULE_PATHS).find(
+    (key) => RULE_PATHS[key] === segment,
+  );
+  if (kind !== 'default-access') return kind;
+  return new URLSearchParams(search).get('rule') ?? kind;
+}
+
+/**
  * The registered kinds of rule the person may read, in order, or `undefined` until every answer is known. Data rules
  * is open exactly while this lists one, in the page's tabs and on the page itself.
  */
