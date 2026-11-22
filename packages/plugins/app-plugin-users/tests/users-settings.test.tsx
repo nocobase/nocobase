@@ -1,4 +1,4 @@
-import { renderSettingsClient as renderWithApp } from '../helpers/settings-client.js';
+import { renderSettingsClient as renderWithApp } from './helpers/settings-client.js';
 import { answerApi } from '@nocobase/app-testing/client';
 import { apiClientToken, type ClientApplication } from '@nocobase/app-client';
 import {
@@ -9,11 +9,11 @@ import { act, fireEvent, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { Routes, Route, useNavigate } from 'react-router';
 import { describe, expect, it, vi } from 'vitest';
-import UserForm from '../../client/pages/settings/user-form.js';
-import UsersPage from '../../client/pages/settings/users.js';
-import enUS from '../../client/locales/en-US.js';
-import zhCN from '../../client/locales/zh-CN.js';
-const settingsNamespace = '@nocobase/settings-test';
+import UserForm from '../client/pages/users/user-form.js';
+import UsersPage from '../client/pages/users/users.js';
+import enUS from '../client/locales/en-US.js';
+import zhCN from '../client/locales/zh-CN.js';
+const settingsNamespace = '@nocobase/app-plugin-users';
 const userRow = {
   id: 'alice',
   name: 'Alice',
@@ -33,7 +33,7 @@ const namespaces = {
   },
 };
 
-describe('template system settings', () => {
+describe('User management pages', () => {
   it('loads real client data, searches without losing typed input and hides actions without permission', async () => {
     const user = userEvent.setup();
     const calls = vi.fn(({ path }: { path: string }) =>
@@ -52,7 +52,7 @@ describe('template system settings', () => {
       screen.queryByRole('link', { name: 'New user' }),
     ).not.toBeInTheDocument();
     const search = screen.getByRole('textbox', {
-      name: enUS.settings.userSearch,
+      name: enUS.management.userSearch,
     });
     await user.type(search, 'Ali');
     await waitFor(() =>
@@ -90,7 +90,7 @@ describe('template system settings', () => {
       },
     );
     const search = screen.getByRole('textbox', {
-      name: enUS.settings.userSearch,
+      name: enUS.management.userSearch,
     });
     fireEvent.compositionStart(search);
     fireEvent.change(search, { target: { value: '张三' } });
@@ -141,7 +141,9 @@ describe('template system settings', () => {
         fetch: answerApi(calls),
       },
     );
-    expect((await screen.findAllByText(enUS.settings.failed))[0]).toBeVisible();
+    expect(
+      (await screen.findAllByText(enUS.management.failed))[0],
+    ).toBeVisible();
     expect(
       screen.getByRole('button', { name: 'Create', exact: true }),
     ).toBeDisabled();

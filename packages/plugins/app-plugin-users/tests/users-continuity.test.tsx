@@ -1,7 +1,4 @@
-import type { ReactElement } from 'react';
-import type { AppClientRegisteredRoute } from '@nocobase/app-client/plugins';
-import { RouteTreeProvider } from '../../client/routing/route-context.js';
-import { renderSettingsClient } from '../helpers/settings-client.js';
+import { renderSettingsClient } from './helpers/settings-client.js';
 import { answerApi } from '@nocobase/app-testing/client';
 import { apiClientToken, type ClientApplication } from '@nocobase/app-client';
 import {
@@ -18,34 +15,13 @@ import {
 import userEvent from '@testing-library/user-event';
 import { Routes, Route, useLocation } from 'react-router';
 import { expect, it, vi } from 'vitest';
-import UsersPage from '../../client/pages/settings/users.js';
-import UserDetail from '../../client/pages/settings/user-detail.js';
-import UserForm from '../../client/pages/settings/user-form.js';
-import enUS from '../../client/locales/en-US.js';
-import zhCN from '../../client/locales/zh-CN.js';
-const namespace = '@nocobase/continuity-test';
-const routes: AppClientRegisteredRoute[] = [
-  '/settings/roles',
-  '/settings/processes/loan',
-].map((path) => ({
-  id: path,
-  name: path,
-  path,
-  packageName: namespace,
-  source: 'application',
-  auth: 'required',
-  authz: 'skip',
-  componentLoader: async () => ({ default: () => null }),
-}));
-// Return targets are registered fixture pages, as they are in the running shell.
-const renderWithApp = (
-  ui: ReactElement,
-  options: Parameters<typeof renderSettingsClient>[1] = {},
-) =>
-  renderSettingsClient(
-    <RouteTreeProvider routes={routes}>{ui}</RouteTreeProvider>,
-    options,
-  );
+import UsersPage from '../client/pages/users/users.js';
+import UserDetail from '../client/pages/users/user-detail.js';
+import UserForm from '../client/pages/users/user-form.js';
+import enUS from '../client/locales/en-US.js';
+import zhCN from '../client/locales/zh-CN.js';
+const namespace = '@nocobase/app-plugin-users';
+const renderWithApp = renderSettingsClient;
 const namespaces = {
   [namespace]: {
     'en-US': async () => ({ default: enUS }),
@@ -70,7 +46,7 @@ const options = {
     ],
   },
 };
-const refreshing = enUS['status.refreshing'];
+const refreshing = 'Refreshing';
 const row = {
   id: 'alice',
   name: 'Alice',
@@ -242,7 +218,7 @@ it('does not silently discard an incomplete role filter or expose an external re
     fetch: answerApi(calls),
   });
   expect(
-    await screen.findByText(enUS.settings.roleFilterIncomplete),
+    await screen.findByText(enUS.management.roleFilterIncomplete),
   ).toBeVisible();
   await waitFor(() =>
     expect(calls).toHaveBeenCalledWith(
@@ -273,7 +249,7 @@ it('resolves localized role descriptors through their namespace without rewritin
             {
               value: 'sales',
               label: 'Fallback',
-              labelI18nKey: 'settings.roles',
+              labelI18nKey: 'management.roleFilter',
               labelI18nNs: namespace,
             },
           ],
@@ -295,7 +271,7 @@ it('resolves localized role descriptors through their namespace without rewritin
     ),
   });
   expect(
-    await screen.findByText(`${zhCN.settings.roles}, retired-role`),
+    await screen.findByText(`${zhCN.management.roleFilter}, retired-role`),
   ).toBeVisible();
 });
 
@@ -367,7 +343,7 @@ it.each(['/settings/users', '/users'])(
         exact: true,
       }),
     );
-    expect(await screen.findByText(enUS.settings.failed)).toBeVisible();
+    expect(await screen.findByText(enUS.management.failed)).toBeVisible();
     expect(name).toHaveValue('Alice updated');
     expect(screen.getByTestId('location')).toHaveTextContent('/edit');
     await user.click(
@@ -475,7 +451,7 @@ it('refreshes a filtered list after disabling a user, corrects an empty last pag
   expect(screen.getByTestId('location')).toHaveTextContent('status=enabled');
   await waitFor(() =>
     expect(
-      screen.getByRole('textbox', { name: enUS.settings.userSearch }),
+      screen.getByRole('textbox', { name: enUS.management.userSearch }),
     ).toHaveFocus(),
   );
 });

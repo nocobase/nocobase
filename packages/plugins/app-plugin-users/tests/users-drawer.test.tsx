@@ -1,4 +1,4 @@
-import { renderSettingsClient as renderWithApp } from '../helpers/settings-client.js';
+import { renderSettingsClient as renderWithApp } from './helpers/settings-client.js';
 import { answerApi } from '@nocobase/app-testing/client';
 import { apiClientToken, type ClientApplication } from '@nocobase/app-client';
 import {
@@ -7,15 +7,15 @@ import {
 } from '@nocobase/app-plugin-authorization/client';
 import { fireEvent, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { Routes, Route, useLocation } from 'react-router';
+import { Outlet, Routes, Route, useLocation } from 'react-router';
 import { expect, it, vi } from 'vitest';
-import UsersPage from '../../client/pages/settings/users.js';
-import UserDetail from '../../client/pages/settings/user-detail.js';
-import UserForm from '../../client/pages/settings/user-form.js';
-import enUS from '../../client/locales/en-US.js';
-import zhCN from '../../client/locales/zh-CN.js';
+import UsersPage from '../client/pages/users/users.js';
+import UserDetail from '../client/pages/users/user-detail.js';
+import UserForm from '../client/pages/users/user-form.js';
+import enUS from '../client/locales/en-US.js';
+import zhCN from '../client/locales/zh-CN.js';
 
-const namespace = '@nocobase/user-drawer-test';
+const namespace = '@nocobase/app-plugin-users';
 const namespaces = {
   [namespace]: {
     'en-US': async () => ({ default: enUS }),
@@ -219,7 +219,7 @@ it.each(['/users', '/settings/users'])(
     );
     await waitFor(() =>
       expect(
-        screen.getByRole('textbox', { name: enUS.settings.userSearch }),
+        screen.getByRole('textbox', { name: enUS.management.userSearch }),
       ).toHaveFocus(),
     );
     expect(screen.queryByText('Fallback home')).not.toBeInTheDocument();
@@ -239,7 +239,7 @@ it.each(['/users', '/settings/users'])(
     ).toBeInTheDocument();
     await user.clear(name);
     await user.click(save);
-    expect(await screen.findByText(enUS.settings.required)).toBeVisible();
+    expect(await screen.findByText(enUS.management.required)).toBeVisible();
     expect(
       view.calls.mock.calls.filter(([call]) => call.method === 'PATCH'),
     ).toHaveLength(0);
@@ -298,7 +298,7 @@ it('redirects legacy URLs and uses a searchable multi-select with one Save for b
     screen.getByRole('combobox', { name: 'Application', exact: true }),
   );
   const searchRoles = await screen.findByRole('combobox', {
-    name: enUS.settings.searchRoles,
+    name: enUS.management.searchRoles,
   });
   await user.type(searchRoles, 'Sales');
   expect(
@@ -344,7 +344,7 @@ it('retains both drafts on failed unified save and keeps one discard guard', asy
   await user.type(name, ' draft');
   await selectSales(user);
   await user.click(screen.getByRole('button', { name: 'Save', exact: true }));
-  expect(await screen.findByText(enUS.settings.failed)).toBeVisible();
+  expect(await screen.findByText(enUS.management.failed)).toBeVisible();
   expect(name).toHaveValue('Alice draft');
   expect(
     screen.getByRole('combobox', { name: 'Application', exact: true }),
@@ -455,7 +455,7 @@ it('blocks closing and duplicate submission until the unified save completes', a
   await user.click(screen.getByRole('button', { name: 'Save', exact: true }));
   await waitFor(() => expect(name).toBeDisabled());
   expect(
-    await screen.findByRole('button', { name: enUS.settings.saving }),
+    await screen.findByRole('button', { name: enUS.management.saving }),
   ).toBeDisabled();
   expect(
     screen.getByRole('button', { name: 'Cancel', exact: true }),
@@ -528,7 +528,7 @@ it('focuses and describes the required role dropdown when creating without a rol
     'new@example.test',
   );
   await user.type(
-    screen.getByLabelText(`${enUS.settings.password} *`),
+    screen.getByLabelText(`${enUS.management.password} *`),
     'long-enough-password',
   );
   await user.click(screen.getByRole('button', { name: 'Create', exact: true }));
@@ -538,7 +538,7 @@ it('focuses and describes the required role dropdown when creating without a rol
   });
   await waitFor(() => expect(roles).toHaveFocus());
   expect(roles).toHaveAttribute('aria-invalid', 'true');
-  expect(roles).toHaveAccessibleDescription(enUS.settings.required);
+  expect(roles).toHaveAccessibleDescription(enUS.management.required);
   expect(
     view.calls.mock.calls.filter(([call]) => call.method === 'POST'),
   ).toHaveLength(0);
@@ -567,14 +567,14 @@ it('uses Member only as a creation default and respects explicitly cleared selec
   );
   await user.keyboard('{Escape}');
   expect(roles).not.toHaveTextContent('Member');
-  expect(screen.getByText(enUS.settings.noRoleAccess)).toBeVisible();
+  expect(screen.getByText(enUS.management.noRoleAccess)).toBeVisible();
   await user.type(screen.getByRole('textbox', { name: 'Name *' }), 'Roleless');
   await user.type(
     screen.getByRole('textbox', { name: 'Email *' }),
     'roleless@example.test',
   );
   await user.type(
-    screen.getByLabelText(`${enUS.settings.password} *`),
+    screen.getByLabelText(`${enUS.management.password} *`),
     'Roleless-test-123!',
   );
   await user.click(screen.getByRole('button', { name: 'Create', exact: true }));
@@ -588,3 +588,82 @@ it('uses Member only as a creation default and respects explicitly cleared selec
     ),
   );
 });
+
+// An application that replaces only the list keeps the plugin's editor under its own `<Outlet />`, with whatever
+// context it passes there, or none.
+it.each([
+  ['no context', undefined],
+  ['a context without reload', { filter: 'active' }],
+  ['a reload callback', 'reload'],
+] as const)(
+  'saves and closes the plugin editor under a replaced list with %s',
+  async (_, context) => {
+    const reload = vi.fn();
+    let current = { ...original };
+    const calls = vi.fn(
+      ({
+        path,
+        method,
+        json,
+      }: {
+        path: string;
+        method: string;
+        json?: object;
+      }) => {
+        if (path === 'authorization/permissions')
+          return { data: { unrestricted: true, permissions: [] } };
+        if (path === 'users/options') return { data: { roleScopes: [] } };
+        if (path === 'users/alice' && method === 'PATCH')
+          current = { ...current, ...json };
+        return { data: current };
+      },
+    );
+    function MembersPage() {
+      return (
+        <>
+          <h1>Members</h1>
+          <Outlet context={context === 'reload' ? { reload } : context} />
+        </>
+      );
+    }
+    const view = await renderWithApp(
+      <>
+        <Routes>
+          <Route path='/settings/users' element={<MembersPage />}>
+            <Route path=':userId/edit' element={<UserForm />} />
+          </Route>
+        </Routes>
+        <Location />
+      </>,
+      {
+        route: '/settings/users/alice/edit',
+        namespace,
+        namespaces,
+        services,
+        fetch: answerApi(calls),
+      },
+    );
+    const name = await screen.findByRole('textbox', { name: 'Name *' });
+    await waitFor(() => expect(name).toHaveValue('Alice'));
+    await userEvent.clear(name);
+    await userEvent.type(name, 'Alice updated');
+    fireEvent.submit(name.closest('form')!);
+    await waitFor(() =>
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument(),
+    );
+    expect(view.toasts()).toMatchObject([
+      {
+        type: 'success',
+        title: enUS.management.saved.replace('{{name}}', 'Alice updated'),
+      },
+    ]);
+    expect(screen.getByTestId('location')).toHaveTextContent(
+      /^\/settings\/users$/u,
+    );
+    expect(screen.getByRole('heading', { name: 'Members' })).toBeVisible();
+    if (context === 'reload')
+      expect(reload).toHaveBeenCalledWith(
+        expect.objectContaining({ name: 'Alice updated' }),
+      );
+  },
+);

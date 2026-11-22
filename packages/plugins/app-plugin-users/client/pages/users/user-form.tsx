@@ -1,5 +1,6 @@
-import { PendingButton } from '#components/pending-button';
-import { FeedbackForm } from '#components/feedback-form';
+import { USERS_NAMESPACE } from '../../namespace.js';
+import { PendingButton } from '../../components/pending-button.js';
+import { FeedbackForm } from '../../components/feedback-form.js';
 import { useAuthentication } from '@nocobase/app-plugin-authentication/client';
 import { useSubmission } from '@nocobase/app-client';
 import {
@@ -14,7 +15,7 @@ import {
   type UsersOptions,
   type UserRoleValue,
   type UserRoleScopeOption,
-} from '@nocobase/app-plugin-users/client/user-client';
+} from '../../user-client.js';
 import { useTranslation } from '@nocobase/i18n/client';
 import {
   useEffect,
@@ -31,11 +32,11 @@ import {
   useParams,
   useResolvedPath,
 } from 'react-router';
-import { RouteDialog } from '#components/route-dialog';
-import { RouteDrawer } from '#components/route-drawer';
-import { Button } from '#components/ui/button';
-import { Input } from '#components/ui/input';
-import { Label } from '#components/ui/label';
+import { RouteDialog } from '../../components/route-dialog.js';
+import { RouteDrawer } from '../../components/route-drawer.js';
+import { Button } from '../../components/ui/button.js';
+import { Input } from '../../components/ui/input.js';
+import { Label } from '../../components/ui/label.js';
 import {
   Combobox,
   ComboboxTrigger,
@@ -44,9 +45,16 @@ import {
   ComboboxList,
   ComboboxItem,
   ComboboxEmpty,
-} from '#components/ui/combobox';
+} from '../../components/ui/combobox.js';
 import { ConfirmAction, SettingsError, SettingsLoading } from './shared.js';
 
+/** What a list route passes its user form through `<Outlet context>`. */
+export interface UserFormOutletContext {
+  /** Refreshes the list, showing `updated` in place at once when given. */
+  readonly reload: (updated?: ManagedUser) => void;
+}
+
+/** Selection of one role scope's roles, honoring options that may not be assigned or removed. */
 export function RoleSelection({
   scope,
   value,
@@ -62,7 +70,7 @@ export function RoleSelection({
   readonly id?: string;
   readonly error?: string;
 }): ReactElement {
-  const { t } = useTranslation();
+  const { t } = useTranslation(USERS_NAMESPACE);
   const generatedId = useId();
   const triggerId = id ?? generatedId;
   const label = scope.labelI18nKey
@@ -99,7 +107,7 @@ export function RoleSelection({
       ));
   const summary = selected.length
     ? selected.map(itemLabel).join(', ')
-    : t('settings.selectRoles');
+    : t('management.selectRoles');
   return (
     <div className='flex flex-col gap-2'>
       <Label htmlFor={triggerId}>
@@ -151,11 +159,11 @@ export function RoleSelection({
         </ComboboxTrigger>
         <ComboboxContent>
           <ComboboxInput
-            aria-label={t('settings.searchRoles')}
-            placeholder={t('settings.searchRoles')}
+            aria-label={t('management.searchRoles')}
+            placeholder={t('management.searchRoles')}
             showTrigger={false}
           />
-          <ComboboxEmpty>{t('settings.noRolesFound')}</ComboboxEmpty>
+          <ComboboxEmpty>{t('management.noRolesFound')}</ComboboxEmpty>
           <ComboboxList>
             {(key: string) => {
               const option = scope.options.find((item) => item.value === key);
@@ -180,7 +188,7 @@ export function RoleSelection({
       </Combobox>
       {scope.key === 'app' && selected.length === 0 && (
         <p className='text-sm text-muted-foreground'>
-          {t('settings.noRoleAccess')}
+          {t('management.noRoleAccess')}
         </p>
       )}
     </div>
@@ -190,15 +198,21 @@ export function RoleSelection({
 function UserEditor(): ReactElement {
   const { userId } = useParams();
   const creating = !userId;
-  const { t } = useTranslation();
+  const { t } = useTranslation(USERS_NAMESPACE);
   const api = useApiClient();
   const toaster = useToaster();
   const client = useMemo(() => new UsersClient(api), [api]);
   const navigate = useNavigate();
   const location = useLocation();
-  const parent = useOutletContext<{
-    reload: (updated?: ManagedUser) => void;
-  }>();
+  // The list's `<Outlet context={{ reload }} />`. A replacement list may pass no context, or a context of its own
+  // without `reload`; the form then saves and closes without refreshing it.
+  const outlet: unknown = useOutletContext();
+  const reloadParent =
+    outlet &&
+    typeof outlet === 'object' &&
+    typeof (outlet as Partial<UserFormOutletContext>).reload === 'function'
+      ? (outlet as UserFormOutletContext).reload
+      : undefined;
   const data = useSettingsData<{ data: ManagedUser }>(
     userId ? `users/${encodeURIComponent(userId)}` : 'users/options',
   );
@@ -210,9 +224,9 @@ function UserEditor(): ReactElement {
       missingRef.current !== data.error
     ) {
       missingRef.current = data.error;
-      parent.reload();
+      reloadParent?.();
     }
-  }, [data.error, parent]);
+  }, [data.error, reloadParent]);
   const options = useSettingsData<{ data: UsersOptions }>('users/options');
   const canCreate = useUserPermission('create');
   const canAssign = useUserPermission('assign-role', userId ?? '*');
@@ -290,9 +304,9 @@ function UserEditor(): ReactElement {
       (name === 'name' || (name === 'password' && creating)) &&
       !fields[name].trim()
     )
-      return t('settings.required');
+      return t('management.required');
     if (name === 'email' && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(fields.email))
-      return t('settings.invalidEmail');
+      return t('management.invalidEmail');
     return;
   };
   const save = async (form: HTMLFormElement, confirmed = false) => {
@@ -320,7 +334,7 @@ function UserEditor(): ReactElement {
       if (missing.length) {
         setServerErrors(
           Object.fromEntries(
-            missing.map((scope) => [scope.key, t('settings.required')]),
+            missing.map((scope) => [scope.key, t('management.required')]),
           ),
         );
         document
@@ -375,10 +389,10 @@ function UserEditor(): ReactElement {
       );
       if (!updated) return;
       setDirty(false);
-      parent.reload(updated);
+      reloadParent?.(updated);
       toaster.show({
         type: 'success',
-        title: t(creating ? 'settings.created' : 'settings.saved', {
+        title: t(creating ? 'management.created' : 'management.saved', {
           name: fields.name,
         }),
       });
@@ -400,8 +414,8 @@ function UserEditor(): ReactElement {
         setServerErrors({
           [field]: t(
             field === 'password'
-              ? 'settings.passwordPolicy'
-              : 'settings.identityConflict',
+              ? 'management.passwordPolicy'
+              : 'management.identityConflict',
           ),
         });
         form.querySelector<HTMLInputElement>(`[name="${field}"]`)?.focus();
@@ -430,12 +444,12 @@ function UserEditor(): ReactElement {
         disabled={busy}
         onClick={() => void navigate(closeTo, { replace: true })}
       >
-        {t('settings.cancel')}
+        {t('management.cancel')}
       </Button>
       {allowed && (
         <PendingButton
           busy={busy}
-          pendingLabel={t('settings.saving')}
+          pendingLabel={t('management.saving')}
           form={formId}
           type='submit'
           disabled={
@@ -454,7 +468,7 @@ function UserEditor(): ReactElement {
               (options.loading || Boolean(options.error) || !options.data))
           }
         >
-          {t(creating ? 'settings.create' : 'settings.save')}
+          {t(creating ? 'management.create' : 'management.save')}
         </PendingButton>
       )}
     </>
@@ -491,7 +505,7 @@ function UserEditor(): ReactElement {
             ).map((name) => (
               <div key={name} className='flex flex-col gap-2'>
                 <Label htmlFor={`${formId}-${name}`}>
-                  {t(`settings.${name}`)}
+                  {t(`management.${name}`)}
                   {name !== 'username' ? ' *' : ''}
                 </Label>
                 <Input
@@ -568,7 +582,7 @@ function UserEditor(): ReactElement {
   if (!creating)
     return (
       <RouteDrawer
-        title={t('settings.editUser')}
+        title={t('management.editUser')}
         description={initial?.name}
         closeTo={closeTo}
         beforeClose={leave.guard}
@@ -577,9 +591,9 @@ function UserEditor(): ReactElement {
         {body}
         <ConfirmAction
           open={confirmRoles}
-          title={t('settings.revokeRoleTitle', { name: fields.name })}
-          description={`${t('settings.revokeRoleHint')} ${removedRoles.join(', ')}`}
-          confirmLabel={t('settings.save')}
+          title={t('management.revokeRoleTitle', { name: fields.name })}
+          description={`${t('management.revokeRoleHint')} ${removedRoles.join(', ')}`}
+          confirmLabel={t('management.save')}
           busy={busy}
           onCancel={() => setConfirmRoles(false)}
           onConfirm={() => {
@@ -590,7 +604,7 @@ function UserEditor(): ReactElement {
     );
   return (
     <RouteDialog
-      title={t('settings.newUser')}
+      title={t('management.newUser')}
       closeTo={closeTo}
       beforeClose={leave.guard}
       footer={actions}
@@ -600,7 +614,14 @@ function UserEditor(): ReactElement {
   );
 }
 
-export default function UserForm(): ReactElement {
+/**
+ * The New user dialog (a route without `:userId`) and the Edit user drawer (a route with `:userId`), with the plugin's
+ * validation, role selection and save. It closes back to its parent route and refreshes the list through the parent's
+ * `<Outlet context={{ reload }} />` when one is given.
+ */
+export function UserForm(): ReactElement {
   const { userId } = useParams();
   return <UserEditor key={userId ?? '$new'} />;
 }
+
+export default UserForm;

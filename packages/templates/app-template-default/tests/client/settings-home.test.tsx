@@ -1,4 +1,7 @@
-import { authorizationPages } from '../helpers/plugin-routes.js';
+import {
+  authorizationPages,
+  registeredPluginRoutes,
+} from '../helpers/plugin-routes.js';
 import packageMetadata from '../../package.json' with { type: 'json' };
 import { createAuthenticatedClientRenderer } from '../helpers/authenticated-client.js';
 import { resolveAppClientContributions } from '@nocobase/app-client/plugins';
@@ -8,7 +11,6 @@ import { Route, Routes, useLocation } from 'react-router';
 import { expect, it } from 'vitest';
 import { Breadcrumbs } from '../../client/components/breadcrumbs.js';
 import SettingsHomePage from '../../client/pages/settings/settings-home.js';
-import settingsRoutes from '../../client/pages/settings/routes.js';
 import shellRoutes from '../../client/pages/settings/shell-routes.js';
 import { RouteTreeProvider } from '../../client/routing/route-context.js';
 import { useRouteNavigation } from '../../client/routing/route-navigation.js';
@@ -19,8 +21,9 @@ const { routes } = resolveAppClientContributions([
   {
     packageName: packageMetadata.name,
     source: 'application',
-    routes: [shellRoutes, settingsRoutes],
+    routes: [shellRoutes],
   },
+  registeredPluginRoutes('@nocobase/app-plugin-users'),
   authorizationPages(),
 ]);
 

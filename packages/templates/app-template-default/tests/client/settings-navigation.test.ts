@@ -7,7 +7,7 @@ import {
 } from '@nocobase/app-client/plugins';
 import { describe, expect, it } from 'vitest';
 import foundation from '@nocobase/app-plugin-foundation/client/routes';
-import settings from '../../client/pages/settings/routes.js';
+import usersRoutes from '@nocobase/app-plugin-users/client/routes';
 import shell from '../../client/pages/settings/shell-routes.js';
 import { createApplicationRoutes } from '../../client/routes.js';
 import {
@@ -21,14 +21,21 @@ import {
 
 const componentLoader = async () => ({ default: () => null });
 const app = '@nocobase/app-template-default';
+// User management joins Accounts and permissions from its plugin, as the application's client/plugins.ts registers it.
+const users = {
+  packageName: '@nocobase/app-plugin-users',
+  source: 'plugin',
+  routes: usersRoutes,
+} as const;
 
 function resolve(...extra: AppClientRouteContribution[]) {
   return resolveAppClientContributions([
     {
       packageName: app,
       source: 'application',
-      routes: [shell, settings, ...extra],
+      routes: [shell, ...extra],
     },
+    users,
     authorizationPages(),
   ]).routes;
 }
@@ -91,7 +98,9 @@ describe('System settings navigation', () => {
         },
       ],
     ]);
-    expect(find(routes, 'settingsUsers').id).toBe(`${app}:settingsUsers`);
+    expect(find(routes, 'settingsUsers').id).toBe(
+      '@nocobase/app-plugin-users:settingsUsers',
+    );
   });
 
   it('shows one sidebar entry that opens the home and stays selected on every settings page', () => {
@@ -128,7 +137,7 @@ describe('System settings navigation', () => {
       [
         'systemSettings.account',
         [
-          ['/settings/users', 'settings.users'],
+          ['/settings/users', 'management.users'],
           // A module of several views opens its first view and carries the module's title.
           ['/settings/roles', 'settings.permissionManagement'],
         ],
@@ -267,6 +276,7 @@ describe('System settings navigation', () => {
           notificationTemplates: { invitationConfigured: true },
         }),
       },
+      users,
       authorizationPages(),
     ]).routes;
     expect(catalog(routes)).toEqual([
@@ -299,6 +309,7 @@ it('places database browsing in Data and files and hides its card when access is
       source: 'application',
       routes: createApplicationRoutes({}),
     },
+    users,
     authorizationPages(),
   ]).routes;
   const page = find(routes, 'databaseExplorer');

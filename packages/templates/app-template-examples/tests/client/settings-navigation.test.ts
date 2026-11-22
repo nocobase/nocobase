@@ -5,6 +5,7 @@ import {
 } from '@nocobase/app-client/plugins';
 import { describe, expect, it } from 'vitest';
 
+import usersRoutes from '@nocobase/app-plugin-users/client/routes';
 import applicationRoutes from '../../client/routes.js';
 import packageMetadata from '../../package.json' with { type: 'json' };
 import {
@@ -20,6 +21,12 @@ function resolve() {
       packageName: packageMetadata.name,
       source: 'application',
       routes: applicationRoutes,
+    },
+    // User management joins Accounts and permissions from its plugin, as client/plugins.ts registers it.
+    {
+      packageName: '@nocobase/app-plugin-users',
+      source: 'plugin',
+      routes: usersRoutes,
     },
     authorizationPages(),
   ]).routes;

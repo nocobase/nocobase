@@ -7,12 +7,12 @@ import {
 import { act, fireEvent, screen, waitFor } from '@testing-library/react';
 import { Route, Routes } from 'react-router';
 import { expect, it, vi } from 'vitest';
-import { renderSettingsClient } from '../helpers/settings-client.js';
-import UsersPage from '../../client/pages/settings/users.js';
-import UserForm from '../../client/pages/settings/user-form.js';
-import enUS from '../../client/locales/en-US.js';
+import { renderSettingsClient } from './helpers/settings-client.js';
+import UsersPage from '../client/pages/users/users.js';
+import UserForm from '../client/pages/users/user-form.js';
+import enUS from '../client/locales/en-US.js';
 
-const namespace = '@nocobase/idle-list-test';
+const namespace = '@nocobase/app-plugin-users';
 const services = (app: ClientApplication) =>
   app.container.instance(
     authorizationClientToken,

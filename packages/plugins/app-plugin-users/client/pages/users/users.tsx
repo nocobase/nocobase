@@ -1,12 +1,16 @@
-import { useListLocation } from '#hooks/use-list-location';
-import { RecordLink } from '#components/record-link';
-import { BackButton } from '#components/back-button';
+import { USERS_NAMESPACE } from '../../namespace.js';
+import { useListLocation } from '../../hooks/use-list-location.js';
+import { RecordLink } from '../../components/record-link.js';
+import { BackButton } from '../../components/back-button.js';
 import { safeReturnTo } from '../../lib/return-to.js';
 import {
   readTableUrlState,
   useTableUrlState,
-} from '#hooks/use-table-url-state';
-import { DataTable, DataTableColumnHeader } from '#components/data-table';
+} from '../../hooks/use-table-url-state.js';
+import {
+  DataTable,
+  DataTableColumnHeader,
+} from '../../components/data-table/index.js';
 import type { ColumnDef } from '@tanstack/react-table';
 import { useSettingsData, useUserPermission } from './hooks.js';
 import {
@@ -20,7 +24,7 @@ import {
   UsersClient,
   type ManagedUser,
   type UsersOptions,
-} from '@nocobase/app-plugin-users/client/user-client';
+} from '../../user-client.js';
 import {
   useCallback,
   useRef,
@@ -32,19 +36,19 @@ import {
 import { Link, Outlet, useLocation, useResolvedPath } from 'react-router';
 import { PlusIcon } from 'lucide-react';
 import { cn } from 'cn';
-import { PageContainer } from '#components/page-container';
-import { PageHeader } from '#components/page-header';
-import { Button } from '#components/ui/button';
-import { Input } from '#components/ui/input';
-import { StatusBadge } from '#components/status-badge';
-import { RowActions } from '#components/row-actions';
+import { PageContainer } from '../../components/page-container.js';
+import { PageHeader } from '../../components/page-header.js';
+import { Button } from '../../components/ui/button.js';
+import { Input } from '../../components/ui/input.js';
+import { StatusBadge } from '../../components/status-badge.js';
+import { RowActions } from '../../components/row-actions.js';
 import {
   Select,
   SelectTrigger,
   SelectValue,
   SelectContent,
   SelectItem,
-} from '#components/ui/select';
+} from '../../components/ui/select.js';
 import { ConfirmAction, SettingsError } from './shared.js';
 
 function UserName({ user }: { readonly user: ManagedUser }): ReactElement {
@@ -67,7 +71,7 @@ function UserActions({
   readonly user: ManagedUser;
   readonly reload: (updated?: ManagedUser) => void;
 }): ReactElement {
-  const { t } = useTranslation();
+  const { t } = useTranslation(USERS_NAMESPACE);
   const api = useApiClient();
   const toaster = useToaster();
   const client = useMemo(() => new UsersClient(api), [api]);
@@ -94,7 +98,7 @@ function UserActions({
       const updated = outcome.updated;
       toaster.show({
         type: 'success',
-        title: t(`settings.userActionSaved.${action}`, { name: user.name }),
+        title: t(`management.userActionSaved.${action}`, { name: user.name }),
       });
       setAction(undefined);
       reload(updated ?? undefined);
@@ -107,23 +111,23 @@ function UserActions({
   return (
     <>
       <RowActions
-        label={t('settings.actionsFor', { name: user.name })}
+        label={t('management.actionsFor', { name: user.name })}
         actions={[
           !user.disabledAt &&
             canDisable && {
               key: 'disable',
-              label: t('settings.disable'),
+              label: t('management.disable'),
               onClick: () => setAction('disable'),
             },
           Boolean(user.disabledAt) &&
             canEnable && {
               key: 'enable',
-              label: t('settings.enable'),
+              label: t('management.enable'),
               onClick: () => setAction('enable'),
             },
           canRevoke && {
             key: 'revokeSessions',
-            label: t('settings.revokeSessions'),
+            label: t('management.revokeSessions'),
             onClick: () => setAction('revokeSessions'),
           },
         ]}
@@ -131,7 +135,7 @@ function UserActions({
       <ConfirmAction
         open={Boolean(action)}
         title={t(
-          `settings.${action === 'disable' ? 'disableTitle' : action === 'enable' ? 'enableTitle' : 'revokeTitle'}`,
+          `management.${action === 'disable' ? 'disableTitle' : action === 'enable' ? 'enableTitle' : 'revokeTitle'}`,
           { name: user.name },
         )}
         description={
@@ -139,16 +143,16 @@ function UserActions({
             <p>
               {t(
                 action === 'disable'
-                  ? 'settings.disableHint'
+                  ? 'management.disableHint'
                   : action === 'enable'
-                    ? 'settings.enableHint'
-                    : 'settings.revokeHint',
+                    ? 'management.enableHint'
+                    : 'management.revokeHint',
               )}
             </p>
             <SettingsError error={error} />
           </>
         }
-        confirmLabel={t(`settings.${action ?? 'confirm'}`)}
+        confirmLabel={t(`management.${action ?? 'confirm'}`)}
         busy={busy}
         onCancel={() => setAction(undefined)}
         onConfirm={() => void run()}
@@ -158,7 +162,7 @@ function UserActions({
 }
 
 export default function UsersPage(): ReactElement {
-  const { t } = useTranslation();
+  const { t } = useTranslation(USERS_NAMESPACE);
   const { params, setParams, active } = useListLocation();
   const location = useLocation();
   const listPath = useResolvedPath('.').pathname;
@@ -342,14 +346,14 @@ export default function UsersPage(): ReactElement {
       {
         accessorKey: 'name',
         header: ({ column }) => (
-          <DataTableColumnHeader column={column} title={t('settings.name')} />
+          <DataTableColumnHeader column={column} title={t('management.name')} />
         ),
         enableHiding: false,
         cell: ({ row }) => <UserName user={row.original} />,
       },
       {
         accessorKey: 'email',
-        header: t('settings.email'),
+        header: t('management.email'),
         enableSorting: false,
         cell: ({ row }) => (
           <span className='block max-w-64 truncate' title={row.original.email}>
@@ -359,21 +363,21 @@ export default function UsersPage(): ReactElement {
       },
       {
         id: 'status',
-        header: t('settings.status'),
+        header: t('management.status'),
         enableSorting: false,
         cell: ({ row }) => (
           <StatusBadge tone={row.original.disabledAt ? 'neutral' : 'success'}>
             {t(
               row.original.disabledAt
-                ? 'settings.disabled'
-                : 'settings.enabled',
+                ? 'management.disabled'
+                : 'management.enabled',
             )}
           </StatusBadge>
         ),
       },
       {
         id: 'roles',
-        header: t('settings.assignedRoles'),
+        header: t('management.assignedRoles'),
         enableSorting: false,
         cell: ({ row }) =>
           Object.entries(row.original.roleScopes)
@@ -388,11 +392,13 @@ export default function UsersPage(): ReactElement {
                 },
               );
             })
-            .join(', ') || t('settings.noAssignedRoles'),
+            .join(', ') || t('management.noAssignedRoles'),
       },
       {
         id: 'actions',
-        header: () => <span className='sr-only'>{t('settings.actions')}</span>,
+        header: () => (
+          <span className='sr-only'>{t('management.actions')}</span>
+        ),
         enableSorting: false,
         cell: ({ row }) => <UserActions user={row.original} reload={reload} />,
       },
@@ -406,18 +412,18 @@ export default function UsersPage(): ReactElement {
         render={<Link to={{ pathname: 'create', search: location.search }} />}
       >
         <PlusIcon />
-        {t('settings.newUser')}
+        {t('management.newUser')}
       </Button>
     ) : null;
   return (
     <>
       <PageContainer>
         {returnTo && (
-          <BackButton to={returnTo}>{t('settings.backToSource')}</BackButton>
+          <BackButton to={returnTo}>{t('management.backToSource')}</BackButton>
         )}
         <PageHeader
-          title={t('settings.users')}
-          description={t('settings.usersDescription')}
+          title={t('management.users')}
+          description={t('management.usersDescription')}
           actions={canShowCreate ? create : undefined}
         />
         <div className='flex flex-wrap items-center gap-3'>
@@ -425,8 +431,8 @@ export default function UsersPage(): ReactElement {
             ref={searchRef}
             className='w-full sm:max-w-xs'
             value={query}
-            aria-label={t('settings.userSearch')}
-            placeholder={t('settings.userSearch')}
+            aria-label={t('management.userSearch')}
+            placeholder={t('management.userSearch')}
             onCompositionStart={() => setComposing(true)}
             onCompositionEnd={() => setComposing(false)}
             onChange={(event) => setQuery(event.target.value)}
@@ -434,25 +440,25 @@ export default function UsersPage(): ReactElement {
           <Select
             items={['all', 'enabled', 'disabled'].map((value) => ({
               value,
-              label: t(`settings.${value}`),
+              label: t(`management.${value}`),
             }))}
             value={status}
             onValueChange={(value) => update('status', String(value))}
           >
-            <SelectTrigger aria-label={t('settings.status')}>
+            <SelectTrigger aria-label={t('management.status')}>
               <SelectValue />
             </SelectTrigger>
             <SelectContent className='w-auto max-w-[min(var(--container-sm),var(--available-width))] min-w-(--anchor-width) [&_[data-slot=select-item]>:first-child]:whitespace-normal'>
               {['all', 'enabled', 'disabled'].map((item) => (
                 <SelectItem key={item} value={item}>
-                  {t(`settings.${item}`)}
+                  {t(`management.${item}`)}
                 </SelectItem>
               ))}
             </SelectContent>
           </Select>
           <Select
             items={[
-              { value: 'all', label: t('settings.allRoles') },
+              { value: 'all', label: t('management.allRoles') },
               ...roleChoices,
             ]}
             value={selectedRole}
@@ -476,12 +482,12 @@ export default function UsersPage(): ReactElement {
               );
             }}
           >
-            <SelectTrigger aria-label={t('settings.roleFilter')}>
+            <SelectTrigger aria-label={t('management.roleFilter')}>
               <SelectValue />
             </SelectTrigger>
             <SelectContent className='w-auto max-w-[min(var(--container-sm),var(--available-width))] min-w-(--anchor-width) [&_[data-slot=select-item]>:first-child]:whitespace-normal'>
               {[
-                { value: 'all', label: t('settings.allRoles') },
+                { value: 'all', label: t('management.allRoles') },
                 ...roleChoices,
               ].map((option) => (
                 <SelectItem key={option.value} value={option.value}>
@@ -492,13 +498,13 @@ export default function UsersPage(): ReactElement {
           </Select>
           {filtered && listState !== 'no-results' && (
             <Button variant='ghost' onClick={clearFilters}>
-              {t('settings.clear')}
+              {t('management.clear')}
             </Button>
           )}
         </div>
         {Boolean(roleScope) !== Boolean(role) && (
           <p role='alert' className='text-sm text-destructive'>
-            {t('settings.roleFilterIncomplete')}
+            {t('management.roleFilterIncomplete')}
           </p>
         )}
         <SettingsError error={options.error} retry={options.reload} />
@@ -526,7 +532,7 @@ export default function UsersPage(): ReactElement {
             )}
             aria-hidden={!hasCurrentResponse || undefined}
           >
-            {t('settings.total', { count: request.data.meta.total })}
+            {t('management.total', { count: request.data.meta.total })}
           </p>
         )}
       </PageContainer>
