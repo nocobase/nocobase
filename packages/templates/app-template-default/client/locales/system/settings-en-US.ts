@@ -4,7 +4,9 @@ const settings = {
     description: 'View workflow definitions and execution history.',
     definitions: 'Definitions',
     executions: 'Executions',
-    emptyDefinitions: 'No workflows have been defined yet.',
+    managementHint:
+      'In your project repository, tell the Agent what workflow you want to create, change, or delete.',
+    documentation: 'View documentation',
     emptyExecutions: 'No workflow executions have been recorded yet.',
   },
   notificationManagementDescription:

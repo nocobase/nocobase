@@ -141,6 +141,21 @@ export default function DefinitionsPage(): ReactElement {
         request.data?.data.length ?? 0,
         Boolean(normalizedName) || category !== 'all',
       )}
+      empty={
+        <>
+          <span className='whitespace-normal'>
+            {t('workflows.managementHint')}
+          </span>{' '}
+          <a
+            href={`https://docs.nocobase.com${i18n.language.startsWith('zh') ? '/zh-CN' : ''}/core/developing-apps/business-workflows/`}
+            target='_blank'
+            rel='noreferrer'
+            className='whitespace-nowrap'
+          >
+            {t('workflows.documentation')}
+          </a>
+        </>
+      }
       onClearFilters={() =>
         nameFilter.clear((next) => {
           next.delete('category');

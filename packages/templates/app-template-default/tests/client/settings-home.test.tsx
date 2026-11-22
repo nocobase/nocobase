@@ -112,9 +112,16 @@ it('links the System settings breadcrumb back to the home from a module view', a
 it('opens workflow definitions and switches to execution history', async () => {
   const user = userEvent.setup();
   await mount({}, '/settings/workflows/definitions');
+  expect(await screen.findByText('No data yet')).toBeVisible();
   expect(
-    await screen.findByText('No workflows have been defined yet.'),
+    screen.getByText(/In your project repository, tell the Agent/),
   ).toBeVisible();
+  expect(
+    screen.getByRole('link', { name: 'View documentation' }),
+  ).toHaveAttribute(
+    'href',
+    'https://docs.nocobase.com/core/developing-apps/business-workflows/',
+  );
   await user.click(await screen.findByRole('tab', { name: 'Executions' }));
   expect(
     await screen.findByText('No workflow executions have been recorded yet.'),
@@ -125,11 +132,22 @@ it('opens workflow definitions and switches to execution history', async () => {
   );
 });
 
+it('shows the workflow management guidance and guide in Chinese', async () => {
+  await mount({ locale: 'zh-CN' }, '/settings/workflows/definitions');
+  expect(await screen.findByText('暂无数据')).toBeVisible();
+  expect(screen.getByText(/在项目仓库中向 Agent 描述需求/)).toBeVisible();
+  expect(screen.getByRole('link', { name: '查看文档' })).toHaveAttribute(
+    'href',
+    'https://docs.nocobase.com/zh-CN/core/developing-apps/business-workflows/',
+  );
+});
+
 it('opens execution history directly in Chinese', async () => {
   await mount({ locale: 'zh-CN' }, '/settings/workflows/executions');
   expect(await screen.findByRole('tab', { name: '执行记录' })).toHaveAttribute(
     'aria-selected',
     'true',
   );
+  expect(screen.getByText('暂无数据').closest('[role=status]')).toBeVisible();
   expect(screen.getByText('暂无流程执行记录。')).toBeVisible();
 });

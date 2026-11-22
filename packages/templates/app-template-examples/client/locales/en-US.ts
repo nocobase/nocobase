@@ -322,6 +322,9 @@ const enUS = {
     executionCount: 'Executions',
     executionActivity: 'Executions',
     lastExecutedAt: 'Last {{date}}',
+    managementHint:
+      'In your project repository, tell the Agent what workflow you want to create, change, or delete.',
+    documentation: 'View documentation',
     neverExecuted: 'Not executed yet',
     workflow: 'Workflow',
     source: 'Source',

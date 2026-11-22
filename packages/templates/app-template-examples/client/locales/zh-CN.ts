@@ -370,6 +370,8 @@ const zhCN: AppResource = {
     executionCount: '执行次数',
     executionActivity: '执行',
     lastExecutedAt: '上次 {{date}}',
+    managementHint: '在项目仓库中向 Agent 描述需求，即可创建、修改或删除流程。',
+    documentation: '查看文档',
     neverExecuted: '尚未执行',
     workflow: '流程',
     source: '来源',
