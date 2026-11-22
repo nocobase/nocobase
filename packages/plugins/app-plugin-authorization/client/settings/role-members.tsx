@@ -10,7 +10,7 @@ import {
   type ReactElement,
 } from 'react';
 
-import { useIsPhone } from '#components/data-table/data-table';
+import { useIsPhone } from '#components/data-table/use-is-phone';
 import { Button } from '#components/ui/button';
 import {
   Dialog,
