@@ -312,7 +312,7 @@ describe.runIf(ARTIFACT)('backups with a real release', () => {
     expect(backup.complete).toBe(true);
   }, 300_000);
 
-  it('keeps a failed restore traceable, with the App stopped', async () => {
+  it('keeps a refused restore traceable', async () => {
     const content = config(SQLITE);
     await expect(
       host.restoreBackup!('shop', {
@@ -331,7 +331,16 @@ describe.runIf(ARTIFACT)('backups with a real release', () => {
       status.deployments.find((deployment) => deployment.appId === 'shop')
         ?.observedState,
     ).toBe('stopped');
-    // It is a recorded failure: the same operation answers it again.
+    // It is a recorded failure: the same operation answers it again, and refuses other parameters.
+    await expect(
+      host.restoreBackup!('shop', {
+        operationId: 'r-wrong',
+        scope,
+        backupId: 'b-offline',
+        sha256: '0'.repeat(64),
+        deployment: spec('shop', 'r-wrong', content),
+      }),
+    ).rejects.toMatchObject({ code: operation?.errorCode });
     await expect(
       host.restoreBackup!('shop', {
         operationId: 'r-wrong',
@@ -339,7 +348,7 @@ describe.runIf(ARTIFACT)('backups with a real release', () => {
         backupId: 'b-offline',
         deployment: spec('shop', 'r-wrong', content),
       }),
-    ).rejects.toMatchObject({ code: operation?.errorCode });
+    ).rejects.toMatchObject({ code: 'OPERATION_CONFLICT' });
   }, 300_000);
 
   it('keeps a finished backup across a killed Host and runs an interrupted one again', async () => {
