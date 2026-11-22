@@ -1,3 +1,7 @@
+import {
+  authorizationPages,
+  registeredPluginRoutes,
+} from '../helpers/plugin-routes.js';
 import packageMetadata from '../../package.json' with { type: 'json' };
 import { createAuthenticatedClientRenderer } from '../helpers/authenticated-client.js';
 import { resolveAppClientContributions } from '@nocobase/app-client/plugins';
@@ -33,6 +37,8 @@ const { routes } = resolveAppClientContributions([
     source: 'application',
     routes: applicationRoutes,
   },
+  registeredPluginRoutes('@nocobase/app-plugin-users'),
+  authorizationPages(),
 ]);
 
 /** The shell's route tree and permission check, as `AppLayout` provides them. */
