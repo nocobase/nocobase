@@ -377,6 +377,15 @@ describe('app client routes', () => {
         name,
         authorizedAs: 'settings:authorization.default-access',
       })),
+      // Each kind of data rule opens at its own address, guarded by its own read permission.
+      {
+        name: 'settingsSharingRules',
+        authorizedAs: 'settings:authorization.sharing-rules',
+      },
+      {
+        name: 'settingsRestrictionRules',
+        authorizedAs: 'settings:authorization.restriction-rules',
+      },
       // Reading anyone's permissions is for an unrestricted role only.
       { name: 'settingsPermissionCheck', authorizedAs: 'unrestricted' },
       { name: 'workflows', authorizedAs: 'settings:workflow-management' },

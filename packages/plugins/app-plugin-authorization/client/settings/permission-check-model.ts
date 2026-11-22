@@ -148,27 +148,41 @@ const OPERATORS: Readonly<Record<string, string>> = {
   $notIn: 'not in',
 };
 
-/** A data scope's filter tree in one line, such as `ownerId = "u1" or teamId in ["t1"]`. */
-export function describeScopeFilter(node: unknown, nested = false): string {
-  if (!isRecord(node)) return '';
-  if (node.kind === 'condition') {
-    const path = Array.isArray(node.path) ? node.path.join('.') : '';
-    const operator = String(node.operator);
-    return `${path} ${OPERATORS[operator] ?? operator} ${JSON.stringify(node.value)}`;
-  }
-  if (node.kind === 'group' && Array.isArray(node.items)) {
-    const parts = node.items
-      .map((item) => describeScopeFilter(item, true))
-      .filter(Boolean);
-    const joined = parts.join(node.logic === 'or' ? ' or ' : ' and ');
-    return nested && parts.length > 1 ? `(${joined})` : joined;
-  }
-  return '';
+/**
+ * A data scope's filter tree in one line, such as `ownerId = "u1" or teamId in ["t1"]`. Comparisons read as symbols;
+ * another operator reads as its name in `operatorNames` (the filter editor's, such as "Is empty"), and an operator
+ * that takes no value, such as `$empty`, shows none.
+ */
+export function describeScopeFilter(
+  node: unknown,
+  operatorNames: Readonly<Record<string, string>> = {},
+): string {
+  const describe = (item: unknown, nested: boolean): string => {
+    if (!isRecord(item)) return '';
+    if (item.kind === 'condition') {
+      const path = Array.isArray(item.path) ? item.path.join('.') : '';
+      const operator = String(item.operator);
+      const name = OPERATORS[operator] ?? operatorNames[operator] ?? operator;
+      return item.value === undefined
+        ? `${path} ${name}`
+        : `${path} ${name} ${JSON.stringify(item.value)}`;
+    }
+    if (item.kind === 'group' && Array.isArray(item.items)) {
+      const parts = item.items
+        .map((child) => describe(child, true))
+        .filter(Boolean);
+      const joined = parts.join(item.logic === 'or' ? ' or ' : ' and ');
+      return nested && parts.length > 1 ? `(${joined})` : joined;
+    }
+    return '';
+  };
+  return describe(node, false);
 }
 
 /** The data tables a conditional decision limits and how, for each check on a data table it is made of. */
 export function scopeDetails(
   decision: AuthorizationDecision,
+  operatorNames: Readonly<Record<string, string>> = {},
 ): readonly ScopeDetail[] {
   const conditions = decision.conditions;
   const checks: readonly {
@@ -221,7 +235,9 @@ export function scopeDetails(
         ];
       });
       const scope = check.decision.conditions?.scope;
-      const described = isRecord(scope) ? describeScopeFilter(scope.root) : '';
+      const described = isRecord(scope)
+        ? describeScopeFilter(scope.root, operatorNames)
+        : '';
       return {
         collection: check.resource.id,
         selections,

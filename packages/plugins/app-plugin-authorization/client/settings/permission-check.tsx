@@ -528,7 +528,11 @@ function ScopeBadge({
 }): ReactElement {
   const { t } = useTranslation(AUTHORIZATION_NAMESPACE);
   const text = useLocalizedText();
-  const details = scopeDetails(decision);
+  const details = scopeDetails(decision, {
+    $empty: t('settings.permissionFilter.operators.$empty'),
+    $notEmpty: t('settings.permissionFilter.operators.$notEmpty'),
+    $includes: t('settings.permissionFilter.operators.$includes'),
+  });
   const label = t('settings.permissionCheck.withinScope');
   if (!details.length) return <Badge variant='outline'>{label}</Badge>;
   const tableTitle = (name: string): string => {

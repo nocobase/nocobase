@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { answerApi } from '@nocobase/app-testing/client';
-import { screen, waitFor } from '@testing-library/react';
+import { act, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { Route, Routes, useLocation } from 'react-router';
 import { expect, it } from 'vitest';
@@ -10,7 +10,10 @@ import {
   settingsRoutes,
 } from '../../helpers/settings-fixture.js';
 import { AuthorizationPage } from '../../../client/settings/authorization-page.js';
-import { authorizationSettingsToken } from '../../../client/tokens.js';
+import {
+  authorizationClientToken,
+  authorizationSettingsToken,
+} from '../../../client/tokens.js';
 import {
   DATA_RULES_TAB,
   ROLES_TAB,
@@ -30,6 +33,10 @@ const tree = (
     <Route path='/settings/roles' element={<Content tab={ROLES_TAB} />} />
     <Route
       path='/settings/default-access'
+      element={<Content tab={DATA_RULES_TAB} />}
+    />
+    <Route
+      path='/settings/sharing-rules'
       element={<Content tab={DATA_RULES_TAB} />}
     />
     <Route path='/settings/checks' element={<Content tab='checks' />} />
@@ -82,6 +89,20 @@ async function mount(
   return view;
 }
 
+/**
+ * Waits for the session's permissions, which every tab's answer reads, and renders what they decide. The tabs asked
+ * first, so their answers are in once this one is.
+ */
+async function settled(view: Awaited<ReturnType<typeof mount>>) {
+  const client = view.app.container.resolve(authorizationClientToken);
+  await act(async () => {
+    await client.can({
+      resource: { type: 'settings', id: 'authorization.permission-sets' },
+      action: 'read',
+    });
+  });
+}
+
 it('switches between the page tabs by address under one heading and keeps keyboard focus', async () => {
   const user = userEvent.setup();
   await mount('/settings/roles', [
@@ -121,13 +142,12 @@ it('switches between the page tabs by address under one heading and keeps keyboa
 });
 
 it('shows the one tab a viewer may open without a tab bar', async () => {
-  await mount('/settings/default-access', ['authorization.default-access']);
+  const view = await mount('/settings/default-access', [
+    'authorization.default-access',
+  ]);
   await screen.findByRole('heading', { name: 'Roles and permissions' });
   // The other tab is listed only once it is known to open, so wait for that answer.
-  await waitFor(() =>
-    expect(screen.queryByRole('tablist')).not.toBeInTheDocument(),
-  );
-  await new Promise((resolve) => setTimeout(resolve, 20));
+  await settled(view);
   expect(screen.queryByRole('tab')).not.toBeInTheDocument();
   expect(screen.getByRole('status', { name: 'Route' })).toHaveTextContent(
     '/settings/default-access',
@@ -161,7 +181,7 @@ it('lists a tab another package adds in its order, and only to those its page ad
   });
   // The session may not read the checks page, so its tab stays hidden.
   await screen.findByRole('tab', { name: 'Data rules' });
-  await new Promise((resolve) => setTimeout(resolve, 20));
+  await settled(view);
   expect(
     screen.queryByRole('tab', { name: 'Permission checks' }),
   ).not.toBeInTheDocument();
@@ -211,7 +231,7 @@ it('hides Data rules while no rule plugin is installed and lists it once one is'
     [],
   );
   await screen.findByRole('heading', { name: 'Roles and permissions' });
-  await new Promise((resolve) => setTimeout(resolve, 20));
+  await settled(view);
   expect(screen.queryByRole('tab')).not.toBeInTheDocument();
   const settings = view.app.container.resolve(authorizationSettingsToken);
   const remove = settings.ruleTabs.add({
@@ -233,14 +253,51 @@ it('hides Data rules while no rule plugin is installed and lists it once one is'
 });
 
 it('hides Data rules when the viewer may open none of the installed kinds of rule', async () => {
-  await mount(
+  const view = await mount(
     '/settings/roles',
     ['authorization.permission-sets', 'authorization.default-access'],
     'en-US',
     ['sharing-rules'],
   );
   await screen.findByRole('heading', { name: 'Roles and permissions' });
-  await new Promise((resolve) => setTimeout(resolve, 20));
+  await settled(view);
+  expect(
+    screen.queryByRole('tab', { name: 'Data rules' }),
+  ).not.toBeInTheDocument();
+});
+
+it('opens Data rules on sharing rules for a person who may read only those', async () => {
+  const user = userEvent.setup();
+  await mount(
+    '/settings/roles',
+    ['authorization.permission-sets', 'authorization.sharing-rules'],
+    'en-US',
+    ['default-access', 'sharing-rules'],
+  );
+  await user.click(await screen.findByRole('tab', { name: 'Data rules' }));
+  await waitFor(() =>
+    expect(screen.getByRole('status', { name: 'Route' })).toHaveTextContent(
+      '/settings/sharing-rules',
+    ),
+  );
+  expect(screen.getByRole('tab', { name: 'Data rules' })).toHaveAttribute(
+    'aria-selected',
+    'true',
+  );
+});
+
+it('leaves a stored Data rules link for the first tab the person may open while no rule plugin is installed', async () => {
+  await mount(
+    '/settings/default-access',
+    ['authorization.permission-sets', 'authorization.default-access'],
+    'en-US',
+    [],
+  );
+  await waitFor(() =>
+    expect(screen.getByRole('status', { name: 'Route' })).toHaveTextContent(
+      '/settings/roles',
+    ),
+  );
   expect(
     screen.queryByRole('tab', { name: 'Data rules' }),
   ).not.toBeInTheDocument();
