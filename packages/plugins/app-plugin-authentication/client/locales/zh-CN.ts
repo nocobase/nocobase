@@ -274,7 +274,7 @@ const zhCN: AuthenticationResource = {
     oauth: {
       intro:
         '请在这个 NocoBase 应用里开启 {{name}} 登录。{{name}} 不是 Better Auth 内置的社交提供方，请用通用 OAuth 插件（genericOAuth，支持 OAuth 2.0 和 OIDC）接入，不要写进只接受内置标识的 socialProviders。',
-      add: '在 server/config/auth.ts 的 plugins 里加上 better-auth/plugins 的 genericOAuth，保留已有插件；providerId 为 {{id}}，authorizationUrl、tokenUrl、userInfoUrl 按 {{name}} 的文档填写（提供 OIDC 发现地址时改用 discoveryUrl）；账号标识用 accountSubject 从 {{name}} 用户信息里稳定不变的字段读取，例如 ({ profile }) => profile.user_id，不设置时 Better Auth 读取 profile.id；mapProfileToUser 只映射邮箱、姓名、头像等资料。clientId、clientSecret 从环境变量 {{prefix}}_CLIENT_ID、{{prefix}}_CLIENT_SECRET 读取，不要写进代码。浏览器端不需要客户端插件：登录和绑定都走 signIn.social 和 linkSocial。',
+      add: '在 server/config/auth.ts 的 plugins 里加上 better-auth/plugins 的 genericOAuth，保留已有插件；providerId 为 {{id}}。如果 {{name}} 提供 OIDC 发现地址，就填 discoveryUrl，不要设置 accountSubject：Better Auth 会从 sub 声明读取账号标识。否则按 {{name}} 的文档填写 authorizationUrl、tokenUrl、userInfoUrl：Better Auth 会从用户信息的 id 字段读取账号标识；只有 {{name}} 把稳定的账号标识放在别的字段（例如 user_id）时，才用 accountSubject 读取该字段，例如 ({ profile }) => String(profile.user_id)。mapProfileToUser 只映射邮箱、姓名、头像等资料。clientId、clientSecret 从环境变量 {{prefix}}_CLIENT_ID、{{prefix}}_CLIENT_SECRET 读取，不要写进代码。浏览器端不需要客户端插件：登录和绑定都走 signIn.social 和 linkSocial。',
     },
     social: {
       intro:

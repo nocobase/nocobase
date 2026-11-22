@@ -98,3 +98,22 @@ describe('the social sign-in guide', () => {
     expect(screen.queryByTestId('agent-prompt')).toBeNull();
   });
 });
+
+describe('the Other identifier', () => {
+  it('stays empty while it is cleared, and the callback and configuration fall back to custom', () => {
+    settings.current = read;
+    renderGuide();
+    fireEvent.click(screen.getByRole('button', { name: 'Other' }));
+    const id = screen.getByLabelText('Identifier');
+    fireEvent.change(id, { target: { value: '' } });
+    expect(id).toHaveValue('');
+    expect(screen.getByTestId('sso-callback')).toHaveTextContent(
+      'https://crm.example.com/api/auth/callback/custom',
+    );
+    expect(
+      (screen.getByTestId('agent-prompt') as HTMLTextAreaElement).value,
+    ).toContain("providerId: 'custom'");
+    fireEvent.change(id, { target: { value: 'a' } });
+    expect(id).toHaveValue('a');
+  });
+});

@@ -333,6 +333,25 @@ describe('the account id of a provider outside Better Auth’s built-in list', (
     ).toEqual({ location: '/', account: { accountId: 'u-77' } });
   });
 
+  it('comes from the sub claim of a provider with OIDC discovery, with no accountSubject, as the guide says', async () => {
+    const config = ssoConfig({ type: 'oauth', id: 'custom', signUp: 'create' });
+    // The configuration under A, after its comment line.
+    const oidc = config.slice(
+      config.indexOf('genericOAuth({', config.indexOf('// A.')),
+      config.indexOf('// B.'),
+    );
+    expect(oidc).toContain('discoveryUrl:');
+    expect(oidc).not.toContain('accountSubject');
+    expect(
+      await signInThrough({
+        discoveryUrl: `${provider.issuer}/.well-known/openid-configuration`,
+        authorizationUrl: undefined,
+        tokenUrl: undefined,
+        userInfoUrl: undefined,
+      }),
+    ).toEqual({ location: '/', account: { accountId: 'subject-42' } });
+  });
+
   it('is missing without accountSubject, even when mapProfileToUser returns an id', async () => {
     const result = await signInThrough({
       mapProfileToUser: (profile) => ({

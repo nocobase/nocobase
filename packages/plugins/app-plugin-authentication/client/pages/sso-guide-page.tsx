@@ -156,7 +156,7 @@ export default function SsoGuidePage(): ReactElement {
             <Input
               id={fieldId}
               className='max-w-md read-only:cursor-default read-only:bg-muted read-only:text-muted-foreground'
-              value={id}
+              value={locked ? preset.id : providerId}
               readOnly={locked}
               aria-readonly={locked}
               onChange={(event) =>

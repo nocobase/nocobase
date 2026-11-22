@@ -143,6 +143,13 @@ describe('the prompts the guides hand to a development agent', () => {
     expect(other).toContain("providerId: 'custom'");
     expect(other).toContain('authorizationUrl');
     expect(other).toContain(
+      'If custom publishes OIDC discovery, set its discoveryUrl and no accountSubject',
+    );
+    expect(other).toContain(
+      'only when custom names its stable account id differently, such as user_id, add accountSubject',
+    );
+    expect(other).not.toContain('Better Auth reads profile.id');
+    expect(other).toContain(
       'AUTH_CUSTOM_CLIENT_ID and AUTH_CUSTOM_CLIENT_SECRET',
     );
     expect(other).not.toContain('socialProviders: {');

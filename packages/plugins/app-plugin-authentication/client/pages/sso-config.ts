@@ -56,28 +56,40 @@ export function ssoConfig(input: SsoConfigInput): string {
       '  },',
       '},',
     ].join('\n');
-  if (input.type === 'oauth')
-    return [
-      ...accountLinking,
-      '',
-      "// server/config/auth.ts → plugins (import { genericOAuth } from 'better-auth/plugins')",
-      'genericOAuth({ config: [{',
-      `  providerId: '${input.id}',`,
-      "  // The provider's OAuth 2.0 endpoints; use discoveryUrl instead when it publishes OIDC discovery.",
-      "  authorizationUrl: 'https://<provider>/oauth/authorize',",
-      "  tokenUrl: 'https://<provider>/oauth/token',",
-      "  userInfoUrl: 'https://<provider>/oauth/userinfo',",
-      "  // The account id: a stable field of the provider's user info (Better Auth reads profile.id without it).",
-      '  accountSubject: ({ profile }) => String(profile.user_id),',
-      '  // Profile data only: the account id never comes from here.',
-      '  mapProfileToUser: (profile) => ({ email: profile.email, name: profile.name }),',
+  if (input.type === 'oauth') {
+    const credentials = [
       `  clientId: process.env.${prefix}_CLIENT_ID!,`,
       `  clientSecret: process.env.${prefix}_CLIENT_SECRET!,`,
       `  disableSignUp: ${existingOnly},`,
+    ];
+    return [
+      ...accountLinking,
+      '',
+      "// server/config/auth.ts → plugins (import { genericOAuth } from 'better-auth/plugins'). Use one of the two.",
+      '',
+      '// A. The provider publishes OIDC discovery: Better Auth takes the account id from the sub claim; set no accountSubject.',
+      'genericOAuth({ config: [{',
+      `  providerId: '${input.id}',`,
+      "  discoveryUrl: 'https://<issuer>/.well-known/openid-configuration',",
+      ...credentials,
+      '}] })',
+      '',
+      "// B. Plain OAuth 2.0: Better Auth reads the account id from the user info's id field.",
+      'genericOAuth({ config: [{',
+      `  providerId: '${input.id}',`,
+      "  authorizationUrl: 'https://<provider>/oauth/authorize',",
+      "  tokenUrl: 'https://<provider>/oauth/token',",
+      "  userInfoUrl: 'https://<provider>/oauth/userinfo',",
+      '  // Only when the provider names its stable account id differently, such as user_id:',
+      '  accountSubject: ({ profile }) => String(profile.user_id),',
+      '  // Profile data only: the account id never comes from here.',
+      '  mapProfileToUser: (profile) => ({ email: profile.email, name: profile.name }),',
+      ...credentials,
       '}] })',
       '',
       '// The browser needs no client plugin: sign-in and linking go through signIn.social and linkSocial.',
     ].join('\n');
+  }
   return [
     ...accountLinking,
     '',
