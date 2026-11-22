@@ -9,6 +9,8 @@ import {
 import { createMigrator, type Migrator } from '@nocobase/db';
 import { afterEach, describe, expect, it } from 'vitest';
 
+import migration from '../database/migrations/202611210006_api_keys_prefix_exemptions.js';
+
 const require = createRequire(import.meta.url);
 const migrations = (packageName: string) =>
   path.join(
@@ -173,6 +175,54 @@ describe('listing the roles already named in the prefix reserved for system keys
       'system-key-sales',
       'system-key-support',
     ]);
+  });
+
+  it('refuses to roll back while a listed role’s name now matches a service account, keeping the role exempt', async () => {
+    const { created, apiKeys } = await database();
+    testDatabase = created;
+    await role(created, 'system-key-sales');
+    await apiKeys.latest();
+    expect(await listed(created)).toEqual(['system-key-sales']);
+    // A service account whose id is the role's suffix appears later: applying again would take the role for its set.
+    await serviceAccount(created, 'sales');
+    await expect(apiKeys.rollback()).rejects.toThrow(
+      /would forget 1 name\(s\).*system-key-sales/u,
+    );
+    expect(await listed(created)).toEqual(['system-key-sales']);
+    await apiKeys.latest();
+    expect(await listed(created)).toEqual(['system-key-sales']);
+  });
+
+  it('keeps the list when the roles cannot be read, saying why', async () => {
+    const { created, apiKeys } = await database();
+    testDatabase = created;
+    await role(created, 'system-key-sales');
+    await apiKeys.latest();
+    // Reading the roles fails, as on a lost connection: nothing can be checked.
+    const real = created.database.connection().query;
+    const lost = new Error('connection lost');
+    const query = new Proxy(real, {
+      get(target, property, receiver) {
+        if (property === 'selectFrom')
+          return (table: string) => {
+            if (table === 'authorizationPermissionSets') throw lost;
+            return target.selectFrom(table as never);
+          };
+        return Reflect.get(target, property, receiver) as unknown;
+      },
+    });
+    const failure = await migration
+      .down({ builder: undefined, query } as never)
+      .then(
+        () => undefined,
+        (error: unknown) => error,
+      );
+    expect(failure).toBeInstanceOf(Error);
+    expect((failure as Error).cause).toBe(lost);
+    expect(String(failure)).toMatch(
+      /Could not check .*so its list is kept: connection lost/u,
+    );
+    expect(await listed(created)).toEqual(['system-key-sales']);
   });
 
   it('tells a system key’s set by its service account after rolling back past the system keys', async () => {

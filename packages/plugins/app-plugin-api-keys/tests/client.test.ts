@@ -51,7 +51,7 @@ describe('@nocobase/app-plugin-api-keys Client', () => {
     expect(apiKeys({ routes: false }).routes).toEqual([]);
   });
 
-  it('registers System settings › API keys: system keys, managed keys, members’ keys and rules', async () => {
+  it('registers System settings › API keys: system keys, managed keys, members’ keys and rules', () => {
     const registration = apiKeys();
     const { routes } = resolveAppClientContributions([
       { packageName: registration.packageName, routes: registration.routes },
@@ -84,17 +84,15 @@ describe('@nocobase/app-plugin-api-keys Client', () => {
       [API_KEY_ROUTES.rules, '/settings/api-keys/rules'],
     ] as const)
       expect(paths.get(id)).toMatchObject({ path });
-    for (const id of Object.values(API_KEY_ROUTES)) {
-      const loaded = await (
-        paths.get(id) as {
-          componentLoader?: () => Promise<{ default: unknown }>;
-        }
-      ).componentLoader?.();
-      expect({ id, type: typeof loaded?.default }).toEqual({
+    // Every page has a loader. Loading them all here would import every page's whole UI cold, which took longer than a
+    // test's 5 seconds on a busy CI machine; each loader is a literal `import()` of its page, which typecheck and build
+    // already resolve.
+    for (const id of Object.values(API_KEY_ROUTES))
+      expect({
         id,
-        type: 'function',
-      });
-    }
+        loader: typeof (paths.get(id) as { componentLoader?: unknown })
+          ?.componentLoader,
+      }).toEqual({ id, loader: 'function' });
   });
 
   it('lets an application replace a page with its own through routeComponentOverrides', async () => {
