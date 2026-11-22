@@ -7,12 +7,12 @@ const runWaitEnUS = {
     capacity:
       'Slots used here {{used}}/{{limit}}; {{detail}}; reported free across apps {{reportedFree}}',
     reasons: {
-      updatePending: 'Runner waiting for update; new work is paused',
-      pruning: 'Runner cleaning shared store; new work is paused',
-      toolNotInstalled: 'No connected runner has this tool installed',
+      updatePending: 'Runtime waiting for update; new work is paused',
+      pruning: 'Runtime cleaning shared store; new work is paused',
+      toolNotInstalled: 'No connected runtime has this tool installed',
       incompatible:
-        'Connected runners do not support this workload; upgrade required',
-      restricted: 'Runner policy, directory, or variable restrictions',
+        'Connected runtimes do not support this workload; upgrade required',
+      restricted: 'Runtime policy, directory, or variable restrictions',
       unknown: 'Workload eligibility is not established',
 
       agentArchived: 'The agent is archived',
@@ -22,13 +22,13 @@ const runWaitEnUS = {
       toolQuota: 'Tool quota exhausted; reset time: {{until}}',
       toolUnavailable:
         'Tool not signed in, disabled, or requested model unavailable ({{tool}})',
-      noSharedRunner: 'Only other people’s personal runners are online',
+      noSharedRunner: 'Only other people’s personal runtimes are online',
       missingFeatures: 'No runtime supports {{features}}',
       secretsNotAllowed:
         'Needs a shared runtime: {{variables}} is for shared runtimes only',
       sameWorkActive: 'After the run already on it',
       concurrencyFull: 'Concurrency full ({{active}}/{{limit}})',
-      runnersBusy: 'Compatible runners are full',
+      runnersBusy: 'Compatible runtimes are full',
       toolSlotsFull: '{{tool}} slots full ({{used}}/{{limit}})',
       setupRetrying: 'Preparing it failed; retrying: {{detail}}',
       next: 'Next for a free runtime',

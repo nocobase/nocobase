@@ -32,6 +32,7 @@ const idID: LocaleResource<typeof enUS> = {
         runners: 'Lingkungan runtime',
         prices: 'Harga model',
         services: 'Layanan model',
+        skills: 'Keterampilan',
       },
     },
     actions: {

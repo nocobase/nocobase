@@ -124,6 +124,10 @@ import {
   type ModelServices,
 } from './online/index.js';
 import {
+  modelProviders,
+  type ModelProviderRegistry,
+} from './online/provider-registry.js';
+import {
   createBriefPreviewer,
   createBriefSectionRegistry,
   createClaimEligibility,
@@ -319,6 +323,8 @@ export interface Agents {
   readonly models: {
     readonly services: ModelServices;
     readonly gateway: ModelGateway;
+    /** The providers a service can use: register one with `providers.register` (`online/provider-registry.ts`). */
+    readonly providers: ModelProviderRegistry;
   };
 }
 
@@ -762,6 +768,7 @@ export function createAgents(deps: AgentsDeps): Agents {
     models: {
       services: modelServices,
       gateway,
+      providers: modelProviders,
     },
   };
 }

@@ -7,12 +7,12 @@ import { BrandWatermark } from '#components/brand-watermark';
 import { Breadcrumbs } from '#components/breadcrumbs';
 
 import { PersonalSettingsDialog } from '../routing/personal-settings-dialog.js';
-import { OnlineAgentProvider } from '#components/online-agent/provider';
-import { OnlineAgentPanelHost } from '#components/online-agent/panel-host';
 import { RouteTreeProvider } from '../routing/route-context.js';
 import { RouteLeaveBoundary } from '../routing/route-leave-boundary.js';
 
 import {
+  AppAsideOutlet,
+  AppLayoutProviders,
   PageBreadcrumbProvider,
   PersonalSettingsBackground,
 } from '@nocobase/app-client';
@@ -46,15 +46,7 @@ export interface AppLayoutProps {
   readonly routes: readonly AppClientRegisteredRoute[];
 }
 
-export function AppLayout({ routes }: AppLayoutProps): ReactElement {
-  return (
-    <OnlineAgentProvider>
-      <AuthenticatedLayout routes={routes} />
-    </OnlineAgentProvider>
-  );
-}
-
-function AuthenticatedLayout({
+export function AppLayout({
   routes: registered,
 }: AppLayoutProps): ReactElement {
   // The browser decides what it renders; this tells the server the same language so its messages match.
@@ -99,68 +91,72 @@ function AuthenticatedLayout({
       : t('navigation.label', { defaultValue: 'Application navigation' });
 
   return (
-    // The shell owns the business route tree used by its pages and navigation.
-    <RouteTreeProvider routes={routes} access={access}>
-      <PageBreadcrumbProvider>
-        <AppSidebarProvider>
-          <AppSidebar
-            label={navigationLabel}
-            footer={
-              <>
-                {/* The System settings entry stays in view at the bottom of the sidebar, outside the scrolling menu. */}
-                {!inSettings && settingsEntry.length ? (
-                  <div className='shrink-0 border-t border-sidebar-border'>
-                    <NavigationMenu
-                      items={settingsEntry}
-                      label={t('settings.title')}
-                      selectedKey={undefined}
-                    />
-                  </div>
-                ) : null}
-                <AppSidebarFooter />
-              </>
-            }
-          >
-            {inSettings ? <SettingsBack /> : null}
-            {inPersonalSettings ? <PersonalSettingsIdentity /> : null}
-            <NavigationMenu
-              items={menuItems}
+    // The shell owns the business route tree used by its pages and navigation; the plugins' layout providers (such as
+    // the Agent panel's) wrap all of it, so the header, the pages and the asides share them.
+    <AppLayoutProviders>
+      <RouteTreeProvider routes={routes} access={access}>
+        <PageBreadcrumbProvider>
+          <AppSidebarProvider>
+            <AppSidebar
               label={navigationLabel}
-              selectedKey={selectedKey}
-            />
-          </AppSidebar>
-          <div className='flex min-w-0 flex-1 flex-col'>
-            <LayoutHeader className='sticky top-0 z-40 justify-between'>
-              <div className='flex min-w-0 items-center gap-3'>
-                <AppSidebarToggle />
-                <div className='h-5 w-px shrink-0 bg-border' />
-                {/* The current page's trail: the route tree's, or the one the page declares (`usePageBreadcrumb`). */}
-                <Breadcrumbs denied={denied} />
-              </div>
-              <HeaderActions />
-            </LayoutHeader>
-            {/* Examples-only integration: the temporary chat docks beside any demo without replacing the route. */}
-            <div className='relative flex min-h-0 flex-1'>
-              <main className='app-brand-surface relative isolate min-h-0 min-w-0 flex-1 overflow-hidden'>
-                <BrandWatermark className='-z-10' />
-                {/* main only positions; the page scrolls in here, so a child page layer laid over main is neither
-            moved by the page's scrolling nor stretched by its height. */}
-                <div className='h-full overflow-y-auto'>
-                  <PersonalSettingsBackground>
-                    <RememberSettingsReturn />
-                    <RouteLeaveBoundary hidden={loading}>
-                      <Outlet />
-                    </RouteLeaveBoundary>
-                  </PersonalSettingsBackground>
+              footer={
+                <>
+                  {/* The System settings entry stays in view at the bottom of the sidebar, outside the scrolling menu. */}
+                  {!inSettings && settingsEntry.length ? (
+                    <div className='shrink-0 border-t border-sidebar-border'>
+                      <NavigationMenu
+                        items={settingsEntry}
+                        label={t('settings.title')}
+                        selectedKey={undefined}
+                      />
+                    </div>
+                  ) : null}
+                  <AppSidebarFooter />
+                </>
+              }
+            >
+              {inSettings ? <SettingsBack /> : null}
+              {inPersonalSettings ? <PersonalSettingsIdentity /> : null}
+              <NavigationMenu
+                items={menuItems}
+                label={navigationLabel}
+                selectedKey={selectedKey}
+              />
+            </AppSidebar>
+            <div className='flex min-w-0 flex-1 flex-col'>
+              <LayoutHeader className='sticky top-0 z-40 justify-between'>
+                <div className='flex min-w-0 items-center gap-3'>
+                  <AppSidebarToggle />
+                  <div className='h-5 w-px shrink-0 bg-border' />
+                  {/* The current page's trail: the route tree's, or the one the page declares (`usePageBreadcrumb`). */}
+                  <Breadcrumbs denied={denied} />
                 </div>
-              </main>
-              <OnlineAgentPanelHost />
+                <HeaderActions />
+              </LayoutHeader>
+              {/* The content row: the page, and beside it the asides plugins register (such as the Agent panel),
+            which take the width they need while the page narrows. */}
+              <div className='relative flex min-h-0 flex-1'>
+                <main className='app-brand-surface relative isolate min-h-0 min-w-0 flex-1 overflow-hidden'>
+                  <BrandWatermark className='-z-10' />
+                  {/* main only positions; the page scrolls in here, so a child page layer laid over main is neither
+            moved by the page's scrolling nor stretched by its height. */}
+                  <div className='h-full overflow-y-auto'>
+                    <PersonalSettingsBackground>
+                      <RememberSettingsReturn />
+                      <RouteLeaveBoundary hidden={loading}>
+                        <Outlet />
+                      </RouteLeaveBoundary>
+                    </PersonalSettingsBackground>
+                  </div>
+                </main>
+                <AppAsideOutlet />
+              </div>
             </div>
-          </div>
-          <PersonalSettingsDialog />
-        </AppSidebarProvider>
-      </PageBreadcrumbProvider>
-    </RouteTreeProvider>
+            <PersonalSettingsDialog />
+          </AppSidebarProvider>
+        </PageBreadcrumbProvider>
+      </RouteTreeProvider>
+    </AppLayoutProviders>
   );
 }
 

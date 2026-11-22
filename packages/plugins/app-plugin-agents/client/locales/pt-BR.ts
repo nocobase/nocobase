@@ -3,6 +3,7 @@ import type { LocaleResource } from '@nocobase/i18n';
 import type enUS from './en-US.js';
 
 const ptBR: LocaleResource<typeof enUS> = {
+  myConversations: 'Minhas conversas',
   fileUsage: 'Anexos do chat',
   modelSuggestions: {
     design:
@@ -1087,6 +1088,22 @@ const ptBR: LocaleResource<typeof enUS> = {
       thinking: 'Pensando…',
       reading: 'Olhando para {{subject}}',
       working: 'Trabalhando em {{subject}}',
+      ...{
+        count_one: '{{count}} etapa',
+        count_other: '{{count}} etapas',
+        count_many: '{{count}} etapas',
+      },
+    },
+    // Plural forms of the panel wording, outside the typed shape (the rest falls back to English).
+    ...{
+      list: {
+        waiting_one: 'Precisam de mim {{count}}',
+        waiting_other: 'Precisam de mim {{count}}',
+        waiting_many: 'Precisam de mim {{count}}',
+        active_one: 'Em andamento {{count}}',
+        active_other: 'Em andamento {{count}}',
+        active_many: 'Em andamento {{count}}',
+      },
     },
     agents: {
       personalOnly: 'Somente ambientes de execução pessoais',
@@ -1506,6 +1523,7 @@ const ptBR: LocaleResource<typeof enUS> = {
         runners: 'Ambientes de execução',
         prices: 'Preços dos modelos',
         services: 'Serviços modelo',
+        skills: 'Habilidades',
       },
     },
     actions: {

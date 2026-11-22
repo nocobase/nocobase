@@ -2,7 +2,10 @@ import type { LocaleResource } from '@nocobase/i18n';
 
 import type enUS from './en-US.js';
 
+import pagesFrFR from '../../shared/locales/pages.fr-FR.js';
+
 const frFR: LocaleResource<typeof enUS> = {
+  access: pagesFrFR.access,
   errors: {
     originalNotFound:
       'Le message original n’est plus disponible chez le fournisseur de messagerie.',

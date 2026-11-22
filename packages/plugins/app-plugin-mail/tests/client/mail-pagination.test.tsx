@@ -56,4 +56,26 @@ describe('shared mail pagination', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Page 10' }));
     expect(onPageChange).toHaveBeenLastCalledWith(10);
   });
+
+  it('offers only pages already reached when a list is paged by token', () => {
+    const onPageChange = vi.fn();
+    render(
+      <MailPagination
+        {...defaults}
+        page={2}
+        total={200}
+        maxPage={3}
+        onPageChange={onPageChange}
+      />,
+    );
+    expect(screen.queryByRole('button', { name: 'Page 10' })).toBeNull();
+    expect(screen.getByRole('button', { name: 'Page 3' })).toBeEnabled();
+    const input = screen.getByRole('spinbutton');
+    fireEvent.change(input, { target: { value: '8' } });
+    expect(
+      screen.getByRole('button', { name: 'Go', exact: true }),
+    ).toBeDisabled();
+    fireEvent.click(screen.getByRole('button', { name: 'Next page' }));
+    expect(onPageChange).toHaveBeenLastCalledWith(3);
+  });
 });

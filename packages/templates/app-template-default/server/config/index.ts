@@ -1,3 +1,4 @@
+import agents from './agents.js';
 import mailers from './mailers.js';
 import {
   defaultAppConfigs,
@@ -28,6 +29,7 @@ import users from './users.js';
 import knowledge from './knowledge.js';
 
 const defaultConfigs: AppConfigFactory<{
+  agents: ReturnType<typeof agents>;
   mailers: ReturnType<typeof mailers>;
   auth: ReturnType<typeof auth>;
   authorization: ReturnType<typeof authorization>;
@@ -53,6 +55,7 @@ const defaultConfigs: AppConfigFactory<{
   users: ReturnType<typeof users>;
   knowledge: ReturnType<typeof knowledge>;
 }> = defaultAppConfigs({
+  agents,
   mailers,
   auth,
   authorization,

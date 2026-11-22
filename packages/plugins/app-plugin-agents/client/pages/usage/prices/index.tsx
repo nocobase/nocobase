@@ -1,6 +1,6 @@
 /**
- * The Usage page's prices sheet, opened by "Set prices" (`?prices=1`): the model prices, read behind `agents.prices`
- * read and changed behind its manage.
+ * The model prices, read behind `agents.prices` read and changed behind its manage: the Usage page's Prices tab
+ * (`PricesPanel`), or the same in a sheet (`PricesSheet`) for an application that opens them elsewhere.
  */
 import { useCan } from '@nocobase/app-plugin-authorization/client';
 import { useTranslation } from '@nocobase/i18n/client';
@@ -35,14 +35,15 @@ export function PricesSheet({
           <SheetDescription>{t('prices.section.description')}</SheetDescription>
         </SheetHeader>
         <div className='min-h-0 flex-1 overflow-y-auto p-4'>
-          {open ? <Prices /> : null}
+          {open ? <PricesPanel /> : null}
         </div>
       </SheetContent>
     </Sheet>
   );
 }
 
-function Prices(): ReactElement {
+/** The model prices, as the Usage page's Prices tab shows them. */
+export function PricesPanel(): ReactElement {
   const { t } = useTranslation();
   const api = useAgentsApi();
   const canEdit = useCan({

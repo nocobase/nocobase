@@ -1,5 +1,5 @@
 /**
- * The chat's translation and the wording it hands to other items: `t` with the block's English defaults, the
+ * The chat's translation and the wording it hands to other items: `t` with the panel's English defaults, the
  * transcript rows' labels, and the HTTP status of a failed request.
  */
 import type { Translate } from '@nocobase/app-plugin-agents/client/chat';
@@ -12,7 +12,7 @@ import type { AttachmentLabels } from '#components/attachment-list';
 import type { AgentPickerLabels } from '#components/agent-picker';
 import type { RunTranscriptLabels } from '#components/agent-run-history';
 
-import agentChatEnUS from './locales/en-US.js';
+import panelEnUS from './locales/en-US.js';
 
 /** The HTTP status of a failed request, when it has one. */
 export function errorStatus(error: unknown): number | undefined {
@@ -131,10 +131,10 @@ export function useAgentPickerLabels(): AgentPickerLabels {
         name: '{name}',
         status: '{status}',
       }),
-      chooseFor: t('chat.agents.chooseFor'),
+      chooseFor: t('chat.agents.chatWith'),
       startWith: t('chat.agents.startWith'),
       boundHint: t('chat.agents.boundHint'),
-      modeHint: t('chat.agents.hint'),
+      modeHint: t('chat.agents.chatHint'),
       models: t('chat.agents.models'),
       runnerAgents: t('chat.agents.runnerAgents'),
       modelPlaceholder: t('chat.agents.modelPlaceholder'),
@@ -146,7 +146,7 @@ export function useAgentPickerLabels(): AgentPickerLabels {
       mixedHint: t('chat.agents.mixedHint'),
       search: t('chat.agents.search'),
       noResults: t('chat.agents.noResults'),
-      empty: t('chat.agents.empty'),
+      empty: t('chat.agents.noneToChat'),
       none: t('chat.agents.none'),
       field: t('chat.agents.field', { name: '{name}' }),
       unknown: t('chat.agents.unknown'),
@@ -174,7 +174,7 @@ const AVAILABILITY = [
 ] as const;
 
 function englishOf(key: string): string | undefined {
-  let node: unknown = agentChatEnUS;
+  let node: unknown = panelEnUS;
   for (const part of key.split('.')) {
     if (typeof node !== 'object' || node === null) return undefined;
     node = (node as Record<string, unknown>)[part];
@@ -183,14 +183,14 @@ function englishOf(key: string): string | undefined {
 }
 
 /**
- * `t` for the chat's views: a key missing from the application's resources renders the English wording of
- * `locales/en-US.ts` (a plural key, its `_one` and `_other` forms), and a run's failure reason, which the plugin's notice
- * texts look up as `failures.<reason>`, comes from the agents plugin's own namespace.
+ * `t` for the chat's views: a key a language does not translate yet renders the panel's English wording (a plural key,
+ * its `_one` and `_other` forms). The plugin's own panel reads its namespace wherever it renders.
  */
 export function useChatTranslation(): { readonly t: Translate } {
   const { t } = useTranslation();
   return useMemo(() => {
     const translate: Translate = (key, options) => {
+      // A run's failure reason, which the plugin's notice texts look up as `failures.<reason>`, is the plugin's own.
       if (key.startsWith('failures.'))
         return t(key, { ...options, ns: ACCESS_NAMESPACE });
       const plural = typeof options?.['count'] === 'number';

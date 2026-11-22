@@ -31,13 +31,15 @@ import { createHarness, type Harness } from './harness.js';
 
 const keyScope: KeyScope = {
   keyId: 'key-1',
+  // What the key scope group of agents reads: agents and skills.
   allows: (resource, action) =>
     resource.type === 'settings' &&
-    resource.id === 'agents.agents' &&
+    (resource.id === 'agents.agents' || resource.id === 'agents.skills') &&
     action === 'read',
   objects: () => 'all',
   permissions: [
     { resource: { type: 'settings', id: 'agents.agents' }, actions: ['read'] },
+    { resource: { type: 'settings', id: 'agents.skills' }, actions: ['read'] },
   ],
 };
 

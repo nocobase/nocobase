@@ -21,6 +21,7 @@ import {
   useContext,
   useRef,
   useState,
+  type ComponentType,
   type ReactElement,
   type ReactNode,
 } from 'react';
@@ -32,7 +33,9 @@ import { ConsultationCard } from './consultation-card.js';
 import { SentContext } from './context-chips.js';
 import { MessageAttachments } from './message-attachments.js';
 import { ReasoningPart } from './reasoning-part.js';
+import { ToolCard } from './tool-card.js';
 import { WebSearchCard } from './web-search-card.js';
+import { replaceable } from '@nocobase/app-plugin-agents/client/chat';
 import { WEB_SEARCH_TOOL } from '@nocobase/app-plugin-agents/shared/web-search';
 
 function Time({
@@ -99,7 +102,8 @@ export interface MessageItemProps {
   /** Only the message owning the current SDK response may display a writing indicator. */
   readonly streaming?: boolean;
 }
-export function MessageItem({
+/** One message of the conversation; replaceable as `MessageItem` (`agents.components.replace`). */
+export function DefaultMessageItem({
   message,
   segment,
   agentName,
@@ -240,93 +244,45 @@ export function MessageItem({
     }
     if (isToolUIPart(part)) {
       const name = getToolName(part);
-      const fallback = (
-        <div
-          key={part.toolCallId}
-          className='my-1 space-y-2 rounded-md border bg-background/60 p-3 text-sm'
-          data-chat-part='tool'
-          data-tool-call={part.toolCallId}
-        >
-          <p className='font-medium'>{name}</p>
-          {part.input !== undefined ? (
-            <pre className='overflow-auto whitespace-pre-wrap text-xs'>
-              {JSON.stringify(part.input, null, 2)}
-            </pre>
-          ) : null}
-          {part.state === 'approval-requested' ? (
-            <div className='space-y-2'>
-              <p>{t('chat.approval.request')}</p>
-              <div className='flex gap-2'>
-                <Button
-                  size='sm'
-                  disabled={
-                    readOnly || approvalDisabled || approving || !onApproval
-                  }
-                  onClick={() =>
-                    void approve({ id: part.approval.id, approved: true })
-                  }
-                >
-                  {t('chat.approval.approve')}
-                </Button>
-                <Button
-                  size='sm'
-                  variant='outline'
-                  disabled={
-                    readOnly || approvalDisabled || approving || !onApproval
-                  }
-                  onClick={() =>
-                    void approve({ id: part.approval.id, approved: false })
-                  }
-                >
-                  {t('chat.approval.deny')}
-                </Button>
-              </div>
-            </div>
-          ) : null}
-          {part.state === 'output-available' ? (
-            <pre className='overflow-auto whitespace-pre-wrap text-xs'>
-              {JSON.stringify(part.output, null, 2)}
-            </pre>
-          ) : null}
-          {part.state === 'output-denied' ? (
-            <p>{t('chat.approval.denied')}</p>
-          ) : null}
-          {part.state === 'output-error' ? (
-            <p role='alert'>{part.errorText}</p>
-          ) : null}
-        </div>
-      );
+      const context: AIToolRendererContext = {
+        readOnly,
+        streaming,
+        sourceMessage: origin,
+        sourceContext: origin?.metadata?.context ?? null,
+        approval: {
+          disabled:
+            readOnly ||
+            Boolean(approvalDisabled) ||
+            approving ||
+            !onApproval ||
+            !message.metadata?.executionId ||
+            part.state !== 'approval-requested',
+          pending: approving,
+          error: approvalError,
+          respond: async (approved, reason) => {
+            if (part.state !== 'approval-requested') return;
+            await approve({
+              id: part.approval.id,
+              approved,
+              ...(reason === undefined ? {} : { reason }),
+            });
+          },
+        },
+      };
       return (
         <ToolPart
           key={part.toolCallId}
           part={part}
           message={message}
-          context={{
-            readOnly,
-            streaming,
-            sourceMessage: origin,
-            sourceContext: origin?.metadata?.context ?? null,
-            approval: {
-              disabled:
-                readOnly ||
-                Boolean(approvalDisabled) ||
-                approving ||
-                !onApproval ||
-                !message.metadata?.executionId ||
-                part.state !== 'approval-requested',
-              pending: approving,
-              error: approvalError,
-              respond: async (approved, reason) => {
-                if (part.state !== 'approval-requested') return;
-                await approve({
-                  id: part.approval.id,
-                  approved,
-                  ...(reason === undefined ? {} : { reason }),
-                });
-              },
-            },
-          }}
-          fallback={fallback}
+          context={context}
+          fallback={
+            <ToolCard
+              toolName={name}
+              part={part}
+              message={message}
+              context={context}
+            />
+          }
         />
       );
     }
@@ -444,6 +400,12 @@ export function MessageItem({
     </li>
   );
 }
+
+// eslint-disable-next-line react-refresh/only-export-components -- wrapped once at load, so replacements follow it
+export const MessageItem: ComponentType<MessageItemProps> = replaceable(
+  'MessageItem',
+  DefaultMessageItem,
+);
 
 export interface PendingItemProps {
   readonly message: PendingMessage;

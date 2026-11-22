@@ -38,7 +38,6 @@ import { type MiddlewareHandler, Hono } from 'hono';
 import type {
   BusinessKey,
   Scope,
-  Page,
   SettingsAction,
   SettingsItem,
 } from '../shared/access.js';
@@ -467,13 +466,23 @@ export async function createHarness(
           grants.includes(`${item}/${action}`) ||
             (action === 'read' && grants.includes(`${item}/manage`)),
         ),
-      opens: (page: Page) => Promise.resolve(grants.includes(`page/${page}`)),
       scope: (key: BusinessKey) => {
         const level = levels.get(key) ?? 'none';
         return Promise.resolve(
           (level === 'related' ? { users: [user] } : level) as Scope,
         );
       },
+      // `x-test-roles`: the caller's permission sets; `x-test-unrestricted: yes` (root) chats with every agent.
+      chatAudience: () =>
+        Promise.resolve(
+          context.req.header('x-test-unrestricted') === 'yes'
+            ? ('all' as const)
+            : new Set(
+                (context.req.header('x-test-roles') ?? '')
+                  .split(',')
+                  .filter(Boolean),
+              ),
+        ),
     });
     await next();
   };
@@ -485,8 +494,8 @@ export async function createHarness(
     context.set('caller', {
       userId: run.actorUserId,
       can: () => Promise.resolve(false),
-      opens: () => Promise.resolve(false),
       scope: () => Promise.resolve('none' as Scope),
+      chatAudience: () => Promise.resolve(new Set<string>()),
       run: {
         id: run.id,
         subjectKind: run.subjectKind,

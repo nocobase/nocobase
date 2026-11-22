@@ -23,10 +23,6 @@ import { Link, MemoryRouter, Route, Routes } from 'react-router';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import locales from '../../client/locales/index.js';
-vi.mock('../../client/components/online-agent/provider.js', () => ({
-  OnlineAgentProvider: ({ children }: { readonly children: ReactNode }) =>
-    children,
-}));
 import { AppLayout } from '../../client/layouts/app-layout.js';
 import { inApplication } from '../../client/routing/settings-shell.js';
 import {

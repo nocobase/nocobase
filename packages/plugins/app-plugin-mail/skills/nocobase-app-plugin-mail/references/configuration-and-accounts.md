@@ -23,7 +23,7 @@ import { mailConfig } from '@nocobase/app-plugin-mail/server';
 export default mailConfig;
 ```
 
-Register this factory under `mail` in `server/config/index.ts` through `defaultAppConfigs()`. The Mail plugin falls back to built-in defaults when the whole namespace is absent, but provider instances still require this registration. `mailConfig` already declares all seven `MAIL_*` environment overrides using section-relative paths, and `pnpm nocobase config env` discovers them. No application-level environment file or duplicated mappings are needed. `mailEnvironmentMappings` remains a compatibility export with fully prefixed `mail.*` paths for older application-level providers; never pass it directly as a section's `env`.
+Register this factory under `mail` in `server/config/index.ts` through `defaultAppConfigs()`. The Mail plugin falls back to built-in defaults when the whole namespace is absent, but provider instances still require this registration. `mailConfig` already declares all eight `MAIL_*` environment overrides using section-relative paths, and `pnpm nocobase config env` discovers them. No application-level environment file or duplicated mappings are needed. `mailEnvironmentMappings` remains a compatibility export with fully prefixed `mail.*` paths for older application-level providers; never pass it directly as a section's `env`.
 
 Environment values override configuration files and code defaults. Before upgrading, review existing OAuth, sync, webhook and jobs variables that may previously have been inert. Undefined values keep defaults; empty or invalid integer values fail configuration loading, and Mail retains its numeric bounds. Existing application-level providers can coexist when their mappings match; section rules take priority over their custom transformations, so migrate custom parsers into the section rules when needed. A variable mapped to different paths in different sections is rejected even when unset. Mail configuration is not public browser configuration, and webhook secrets must not be exposed.
 
@@ -108,7 +108,7 @@ Connecting an account is two steps on that page. **Connect** creates the account
 
 Use public account and authorization APIs or the existing client flow. OAuth starts with an authenticated request to `POST /api/mail/authorizations`; credential-based connection uses `POST /api/mail/accounts/connect`. Preserve the plugin's short-lived, single-use OAuth state. Account and log responses must remain free of credentials and tokens.
 
-Personal account operations use `/api/mail/accounts`. `/api/mail/settings/accounts` is a read-only all-user overview, with owner names and a user-ID fallback. Suspending prevents sending and synchronization. Removing an account clears its local data and authorization without deleting provider mailbox messages; remote subscription cleanup can fail without preventing local removal.
+Personal account operations use `/api/mail/accounts`. `/api/mail/settings/accounts` is a read-only all-user overview for the Mail settings page (`settings:mail.admin/read`), with owner names and a user-ID fallback; administrators cannot authorize, reconnect or remove a member's account. Suspending prevents sending and synchronization. Removing an account clears its local data and authorization without deleting provider mailbox messages; remote subscription cleanup can fail without preventing local removal.
 
 ## OAuth callback and return page
 
@@ -120,21 +120,21 @@ https://mail.example.com/main/mail/oauth/callback
 
 Override through `mail.oauthCallbackUrl` or `MAIL_OAUTH_CALLBACK_URL`. A relative path receives the application prefix; an absolute HTTP(S) URL must already include it and reach the mounted callback. Register the exact resulting URL with the OAuth provider. Fragments are invalid. `oauthCallbackUrl` controls only the provider callback endpoint, not the page shown in the browser after authorization.
 
-Configure the browser destination through `mail.oauthReturnUrl` or `MAIL_OAUTH_RETURN_URL`. It defaults to the application's root (`/`), and the plugin registers no built-in Dev, settings or management pages or routes. Register an application-owned page rendering the public `MailAccountsPage`, such as `/mail/accounts`, and configure the return URL to match that personal account page. A relative return path receives the application public base path, so `/mail/accounts` under `/main` becomes `/main/mail/accounts`; an absolute HTTP(S) URL is also supported and is treated as trusted server configuration. Fragments are invalid.
+Configure the browser destination through `mail.oauthReturnUrl` or `MAIL_OAUTH_RETURN_URL`. It defaults to `/me/mail`, the plugin's own Personal settings › Mail accounts page, which reads the authorization result and reloads the accounts. Configure it only when the application replaces or leaves out that page. A relative return path receives the application public base path, so `/me/mail` under `/main` becomes `/main/me/mail`; an absolute HTTP(S) URL is also supported and is treated as trusted server configuration. Fragments are invalid.
 
-Mail warns once at production startup if the effective return destination targets the legacy `/dev/mail/accounts` page, including prefixed and absolute URL forms with query parameters. The current root (`/`) default does not trigger the warning. The warning does not change defaults, block startup, validate arbitrary client route existence, or expose full URLs or secrets. Production apps must register their own authenticated personal account page, such as `/mail/accounts`, with `page / mail.workspace / access` permission; reuse the public `MailAccountsPage`, which already reads authorization results and refreshes accounts. An application-owned administrator overview using the read-only all-user APIs is not a personal connection destination. See [Client integration](client-integration.md) for route composition. Set `MailWorkspacePage.accountsHref` separately: a navigation link does not configure the server's OAuth return.
+Mail warns once at production startup if the effective return destination targets the legacy `/dev/mail/accounts` page, including prefixed and absolute URL forms with query parameters. The warning does not change defaults, block startup, validate arbitrary client route existence, or expose full URLs or secrets. A replacement page needs authentication and `page / mail.workspace / access`; reuse the public `MailAccountsPage`. See [Client integration](client-integration.md) for route composition.
 
 For a production application, configure the callback and return paths together so the provider callback and application page are not confused:
 
 ```yaml
 mail:
   oauthCallbackUrl: /mail/oauth/callback
-  oauthReturnUrl: /mail/accounts
+  oauthReturnUrl: /me/mail
 ```
 
-With origin `https://mail.example.com` and public base path `/main`, the provider must redirect to `https://mail.example.com/main/mail/oauth/callback`, and the browser will finish at `https://mail.example.com/main/mail/accounts?mailAuthorization=success` or `https://mail.example.com/main/mail/accounts?mailAuthorization=failure`. Register the full callback URL with the selected OAuth provider, such as Google for Gmail or Microsoft Entra ID for Microsoft 365, not the return page URL.
+With origin `https://mail.example.com` and public base path `/main`, the provider must redirect to `https://mail.example.com/main/mail/oauth/callback`, and the browser will finish at `https://mail.example.com/main/me/mail?mailAuthorization=success` or `https://mail.example.com/main/me/mail?mailAuthorization=failure`. Register the full callback URL with the selected OAuth provider, such as Google for Gmail or Microsoft Entra ID for Microsoft 365, not the return page URL.
 
-When deployment values come from environment variables, use `MAIL_OAUTH_CALLBACK_URL=/mail/oauth/callback` and `MAIL_OAUTH_RETURN_URL=/mail/accounts` without repeating `/main`. Composing `mailConfig` as `mail` activates these overrides automatically. Current templates use configuration-section rules, not an application-level environment file. A wrapper that customizes defaults must explicitly retain `env: mailConfig.rules?.env`; merely calling `mailConfig(runtime)` returns defaults, not its environment rules. To customize parsing, spread those section rules and override the selected variable using a section-relative path. Do not pass the legacy full-path `mailEnvironmentMappings` as a section's `env`.
+When deployment values come from environment variables, use `MAIL_OAUTH_CALLBACK_URL=/mail/oauth/callback` and `MAIL_OAUTH_RETURN_URL=/me/mail` without repeating `/main`. Composing `mailConfig` as `mail` activates these overrides automatically. Current templates use configuration-section rules, not an application-level environment file. A wrapper that customizes defaults must explicitly retain `env: mailConfig.rules?.env`; merely calling `mailConfig(runtime)` returns defaults, not its environment rules. To customize parsing, spread those section rules and override the selected variable using a section-relative path. Do not pass the legacy full-path `mailEnvironmentMappings` as a section's `env`.
 
 The plugin preserves query parameters already present in the configured return URL and adds or replaces `mailAuthorization=success` or `mailAuthorization=failure`. The application-owned return page can use this status to show a result and refresh its account state.
 
@@ -142,7 +142,7 @@ The callback route still performs provider code exchange, OAuth state validation
 
 The browser flow is: the provider redirects to `oauthCallbackUrl`; Mail validates the one-time state, completes authorization and saves the account; Mail redirects to `oauthReturnUrl`; the application-owned page reads `mailAuthorization` and refreshes `GET /api/mail/accounts` if needed. A missing `state` is rejected with HTTP 400 and does not redirect to the return page.
 
-Before enabling production account connection, confirm that the application-owned return route exists in the production client, the full callback URL is registered with the provider, the configured relative paths match the public base path, and both success and failure destinations are handled.
+Before enabling production account connection, confirm that the return page exists in the production client, the full callback URL is registered with the provider, the configured relative paths match the public base path, and both success and failure destinations are handled.
 
 ## Push synchronization
 

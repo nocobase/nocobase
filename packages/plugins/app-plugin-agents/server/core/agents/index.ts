@@ -13,6 +13,7 @@ export {
   findAgents,
   listAgents,
   lockAgentForClaim,
+  lockAgentRow,
 } from './agent.store.js';
 export {
   createAgentActionCatalog,

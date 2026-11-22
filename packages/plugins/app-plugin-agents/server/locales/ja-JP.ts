@@ -29,6 +29,7 @@ const jaJP: LocaleResource<typeof enUS> = {
         runners: '実行環境',
         prices: 'モデルの価格',
         services: 'モデルサービス',
+        skills: 'スキル',
       },
     },
     actions: {

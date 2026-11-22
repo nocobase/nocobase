@@ -4,7 +4,6 @@ import { zhCN as customerContacts } from '../pages/customer-contacts/locales.js'
 import { zhCN as skillProjectszhCN } from '../pages/skill-projects/locales.js';
 import { workflowNamesZhCN } from '../../shared/workflow-names.js';
 import type { AppResource } from './en-US.js';
-import agentChatZhCN from '#extensions/nocobase-agent-chat/locales/zh-CN';
 import systemZhCN from './system/zh-CN.js';
 
 const zhCN: AppResource = {
@@ -14,7 +13,6 @@ const zhCN: AppResource = {
   skillProjects: skillProjectszhCN,
   // The template's own copy; see `./en-US.ts`.
   ...systemZhCN,
-  ...agentChatZhCN,
   knowledge: {
     indexing: '知识库索引',
     indexingDescription: '所有知识空间的文档切分与向量化方式。',
@@ -163,20 +161,12 @@ const zhCN: AppResource = {
       unitPrice: '单价',
     },
   },
-  onlineAgent: {
-    group: 'Agents',
-    agents: 'Agent 管理',
-    runtimes: '执行机',
-    skills: '技能库',
-    newSkill: '新建技能',
-    skillDetail: '技能详情',
-    connectRuntime: '连接执行机',
-    models: '模型',
-    openModels: '打开模型配置',
+  aiExamples: {
+    group: 'AI 示例',
+    openModels: '打开模型服务',
     checkingModels: '正在检查聊天模型…',
     catalogFailed: '无法读取聊天模型。',
     noModels: {
-      title: '尚未配置聊天模型',
       description: '添加模型服务并启用聊天模型，即可开始对话。',
       readOnly: '请联系管理员配置聊天模型。',
     },
@@ -628,10 +618,10 @@ const zhCN: AppResource = {
       description:
         '检查应用自有工具的提案，明确确认后填写本地草稿，不保存业务记录。',
     },
-    onlineAgent: {
-      title: 'Online Agent',
-      description: '配置聊天模型，通过全局入口与 Online Agent 实时对话。',
-      open: '打开 Agent 对话',
+    agent: {
+      title: 'Agent',
+      description: '配置模型服务，即可在任意页面向 Agent 提问。',
+      open: '打开 Agent',
     },
     i18n: {
       title: '多语言示例',

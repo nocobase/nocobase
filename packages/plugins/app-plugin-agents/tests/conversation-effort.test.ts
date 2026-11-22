@@ -1,4 +1,4 @@
-import { afterEach, expect, it } from 'vitest';
+import { afterEach, expect, it, vi } from 'vitest';
 import type { AuthorizationContext } from '@nocobase/authorization/core';
 import type { OnlineAgentContext } from '../server/online/agent/types.js';
 import { asJson } from '../server/kernel/values.js';
@@ -437,4 +437,59 @@ it('does not save an Agent default on a switch', async () => {
     (await h.services.conversations.get('alice', session.sessionId)).effort,
   ).toBeNull();
   expect((await claim(h, runner))[0].tool.effort).toBe('high');
+});
+
+it('starts a conversation with the person’s own effort when none is chosen, where the agent takes it', async () => {
+  const { id } = await fixture();
+  const saved = await h.request('PATCH', '/agents/chatPreferences', {
+    user: 'alice',
+    body: { effort: 'high' },
+  });
+  expect(saved.status).toBe(200);
+  expect(saved.body.data.effort).toBe('high');
+  // Kept across reads, as after a reload.
+  expect(
+    (await h.request('GET', '/agents/chatPreferences', { user: 'alice' })).body
+      .data.effort,
+  ).toBe('high');
+  const start = (body: Record<string, unknown>) =>
+    h.request('POST', '/agents/conversations', {
+      user: 'alice',
+      body: { agentId: id, ...body },
+    });
+  // The runtimes that could take it are read once, for the preference and its check alike: no more often than for
+  // an effort chosen outright.
+  const runnersFor = vi.spyOn(h.services.eligibility, 'runnersFor');
+  expect((await start({})).body.data.effort).toBe('high');
+  const preferred = runnersFor.mock.calls.length;
+  runnersFor.mockClear();
+  // A choice made for the conversation wins.
+  expect((await start({ effort: 'low' })).body.data.effort).toBe('low');
+  expect(preferred).toBe(runnersFor.mock.calls.length);
+  runnersFor.mockRestore();
+  // Someone else's preference is their own.
+  expect(
+    (
+      await h.request('POST', '/agents/conversations', {
+        user: 'bob',
+        body: { agentId: id },
+      })
+    ).body.data.effort,
+  ).toBeNull();
+  // An effort the agent's runtimes do not offer is left out rather than refused.
+  await h.request('PATCH', '/agents/chatPreferences', {
+    user: 'alice',
+    body: { effort: 'minimal' },
+  });
+  const other = await start({});
+  expect(other.status).toBe(201);
+  expect(other.body.data.effort).toBeNull();
+  expect(
+    (
+      await h.request('PATCH', '/agents/chatPreferences', {
+        user: 'alice',
+        body: { effort: 'nonsense' },
+      })
+    ).status,
+  ).toBe(400);
 });
