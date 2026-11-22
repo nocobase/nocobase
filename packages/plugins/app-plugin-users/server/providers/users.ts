@@ -1,5 +1,6 @@
 import { InvitationWork } from '../invitations/lifecycle.js';
 import { registerInvitationTemplate } from '../invitations/template.js';
+import { registerNotificationUserLocales } from '../preferences/notification-locales.js';
 import { createApplicationUserRoleScope } from '../services/permission-set-scope.js';
 import { databaseManagerToken } from '@nocobase/db';
 import {
@@ -62,6 +63,7 @@ export class UsersProvider extends ServiceProvider<AppPluginApplication> {
   private releasePermissionSetScope?: () => void;
   private releaseSubjectType?: () => void;
   private releaseInvitationTemplate?: () => void;
+  private notificationUserLocales = false;
 
   private readonly invitationWork = new InvitationWork();
   private invitationMailer?: ReturnType<typeof createNotificationMailer>;
@@ -114,6 +116,10 @@ export class UsersProvider extends ServiceProvider<AppPluginApplication> {
   public override async boot(): Promise<void> {
     this.releaseInvitationTemplate ??= await registerInvitationTemplate(
       this.app,
+    );
+    this.notificationUserLocales ||= await registerNotificationUserLocales(
+      this.app,
+      () => this.app.container.resolve(userPreferencesServiceToken),
     );
     if (
       !this.releasePermissionSetScope &&

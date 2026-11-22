@@ -1,6 +1,10 @@
 import { randomUUID } from 'node:crypto';
 
-import type { DatabaseManager, Row } from '@nocobase/db';
+import {
+  isUniqueConstraintViolation,
+  type DatabaseManager,
+  type Row,
+} from '@nocobase/db';
 
 /** A person's choice for one channel type of one notification kind. A kind they never changed has no row. */
 export interface NotificationPreferenceRecord {
@@ -79,26 +83,38 @@ export class DatabaseNotificationPreferenceStore implements NotificationPreferen
     const now = new Date().toISOString();
     await this.database.transaction(async (connection): Promise<void> => {
       for (const item of items) {
-        const updated = await connection.query
-          .updateTable<PreferenceRow>('notificationPreferences')
-          .set({ enabled: item.enabled, updatedAt: now })
-          .where('userId', '=', userId)
-          .where('kind', '=', item.kind)
-          .where('channelType', '=', item.channelType)
-          .execute();
-        if ((updated.updatedCount ?? 0) > 0) continue;
-        await connection.query
-          .insertInto<PreferenceRow>('notificationPreferences')
-          .values({
-            id: randomUUID(),
-            userId,
-            kind: item.kind,
-            channelType: item.channelType,
-            enabled: item.enabled,
-            createdAt: now,
-            updatedAt: now,
-          })
-          .execute();
+        const update = async (): Promise<boolean> =>
+          ((
+            await connection.query
+              .updateTable<PreferenceRow>('notificationPreferences')
+              .set({ enabled: item.enabled, updatedAt: now })
+              .where('userId', '=', userId)
+              .where('kind', '=', item.kind)
+              .where('channelType', '=', item.channelType)
+              .execute()
+          ).updatedCount ?? 0) > 0;
+        if (await update()) continue;
+        try {
+          // A savepoint, so that losing the race for the unique key to a concurrent first save leaves this transaction
+          // usable (PostgreSQL aborts the whole transaction otherwise) and the choice is written over the winner's.
+          await connection.transaction(async (savepoint): Promise<void> => {
+            await savepoint.query
+              .insertInto<PreferenceRow>('notificationPreferences')
+              .values({
+                id: randomUUID(),
+                userId,
+                kind: item.kind,
+                channelType: item.channelType,
+                enabled: item.enabled,
+                createdAt: now,
+                updatedAt: now,
+              })
+              .execute();
+          });
+        } catch (error) {
+          if (!isUniqueConstraintViolation(error) || !(await update()))
+            throw error;
+        }
       }
     });
   }

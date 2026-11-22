@@ -19,6 +19,8 @@ import type {
 } from '../server/preferences.js';
 import { createNotificationRegistry } from '../server/registry.js';
 import { NotificationTemplateRegistry } from '../server/templates.js';
+import { notificationUserLocalesToken } from '../server/tokens.js';
+import { ServiceContainer } from '@nocobase/service-provider';
 import type { ProviderSendResult } from '../server/types.js';
 import { FakeNotificationStore } from './helpers/fake-notification-store.js';
 import { InlineJobExecutor } from './helpers/inline-job-executor.js';
@@ -57,7 +59,14 @@ class MemoryPreferenceStore implements NotificationPreferenceStore {
   }
 }
 
-function harness() {
+function harness(
+  options: {
+    /** Each person's chosen language. */
+    readonly locales?: Readonly<Record<string, string>>;
+    /** Each person's push devices. */
+    readonly devices?: Readonly<Record<string, readonly string[]>>;
+  } = {},
+) {
   const sent = vi.fn(
     async (_type: string, _message: object): Promise<ProviderSendResult> => ({
       status: 'accepted',
@@ -67,10 +76,12 @@ function harness() {
   const registry = createNotificationRegistry();
   const reach = (
     type: string,
-    find: (userId: string) => object | undefined,
+    find: (userId: string) => object | readonly object[] | undefined,
+    recipientKey?: (recipient: object) => string,
   ) => {
     class UserChannel implements ChannelInstance {
       static readonly type = type;
+      readonly recipientKey = recipientKey;
       validateMessage(value: unknown) {
         const message = value as { to: object[]; title: string };
         return { message, recipients: message.to };
@@ -85,7 +96,12 @@ function harness() {
         return new Map(
           userIds.flatMap((userId) => {
             const recipient = find(userId);
-            return recipient ? [[userId, [recipient]] as const] : [];
+            const found = Array.isArray(recipient)
+              ? (recipient as readonly object[])
+              : recipient
+                ? [recipient as object]
+                : [];
+            return found.length ? [[userId, found] as const] : [];
           }),
         );
       }
@@ -100,7 +116,12 @@ function harness() {
   reach('email', (userId) =>
     ADDRESSES[userId] ? { address: ADDRESSES[userId] } : undefined,
   );
-  reach('web-push', () => undefined);
+  reach(
+    'web-push',
+    (userId) =>
+      options.devices?.[userId]?.map((id) => ({ id, userId })) ?? undefined,
+    (recipient) => (recipient as { id: string }).id,
+  );
   const kinds = new NotificationTemplateRegistry();
   kinds.register({
     id: 'approval.requested',
@@ -130,6 +151,25 @@ function harness() {
     kinds,
     preferences,
     defaultLocale: () => 'zh-CN',
+    ...(options.locales
+      ? {
+          container: (() => {
+            const container = new ServiceContainer();
+            const locales = options.locales;
+            container.instance(notificationUserLocalesToken, {
+              resolve: vi.fn(
+                async (userIds: readonly string[]) =>
+                  new Map(
+                    userIds.flatMap((userId) =>
+                      locales[userId] ? [[userId, locales[userId]]] : [],
+                    ),
+                  ),
+              ),
+            });
+            return container;
+          })(),
+        }
+      : {}),
     logger: createLogger({ level: 'silent' }),
     config: {
       channels: {
@@ -165,7 +205,7 @@ describe('notify()', () => {
           { userId: 'bob', channelType: 'web-push', reason: 'preference' },
         ]),
       );
-      // Rendered once in the application's default language, with the kind and its category.
+      // Nobody chose a language: rendered in the application's default, with the kind and its category.
       expect(h.composed[0]?.content).toMatchObject({
         kind: 'approval.requested',
         category: 'approvals',
@@ -239,6 +279,120 @@ describe('notify()', () => {
         deduplicated: true,
       });
       expect(h.sent).toHaveBeenCalledTimes(2);
+    } finally {
+      await h.manager.close();
+    }
+  });
+
+  it('replays the first send when only preferences changed, and refuses another request under the same key', async () => {
+    const h = harness();
+    try {
+      const first = await h.manager.notify('approval.requested', {
+        to: ['alice'],
+        data: { title: 'Budget' },
+        idempotencyKey: 'approval-3',
+      });
+      await h.manager.savePreferences('alice', [
+        { kind: 'approval.requested', channelType: 'email', enabled: false },
+      ]);
+      const repeat = await h.manager.notify('approval.requested', {
+        to: ['alice'],
+        data: { title: 'Budget' },
+        idempotencyKey: 'approval-3',
+      });
+      expect(repeat.send).toMatchObject({
+        notificationId: first.send!.notificationId,
+        deduplicated: true,
+      });
+      expect(repeat.send?.deliveries).toHaveLength(2);
+
+      // Another person, other data, or a direct send() under the same key is a different request.
+      for (const input of [
+        { to: ['carol'], data: { title: 'Budget' } },
+        { to: ['alice'], data: { title: 'Travel' } },
+      ])
+        await expect(
+          h.manager.notify('approval.requested', {
+            ...input,
+            idempotencyKey: 'approval-3',
+          }),
+        ).rejects.toMatchObject({ code: 'IDEMPOTENCY_KEY_CONFLICT' });
+      await expect(
+        h.manager.send({
+          idempotencyKey: 'approval-3',
+          messages: {
+            inbox: { to: [{ userId: 'alice' }], title: 'zh-CN: Budget' },
+          },
+        } as never),
+      ).rejects.toMatchObject({ code: 'IDEMPOTENCY_KEY_CONFLICT' });
+      // A send() key is not taken over by notify() either.
+      await h.manager.send({
+        idempotencyKey: 'direct-1',
+        messages: { inbox: { to: [{ userId: 'alice' }], title: 'Hello' } },
+      } as never);
+      await expect(
+        h.manager.notify('approval.requested', {
+          to: ['alice'],
+          idempotencyKey: 'direct-1',
+        }),
+      ).rejects.toMatchObject({ code: 'IDEMPOTENCY_KEY_CONFLICT' });
+    } finally {
+      await h.manager.close();
+    }
+  });
+
+  it('writes to each person in their own language, as one send that a repeat returns whole', async () => {
+    const h = harness({ locales: { alice: 'en-US', carol: 'fr-FR' } });
+    try {
+      const result = await h.manager.notify('approval.requested', {
+        to: ['alice', 'bob', 'carol'],
+        data: { title: 'Budget' },
+        idempotencyKey: 'approval-4',
+      });
+      const deliveries = await h.store.listDeliveries(
+        result.send!.notificationId,
+      );
+      const titles = Object.fromEntries(
+        deliveries.map((delivery) => [
+          delivery.recipientKey,
+          (delivery.messageSnapshot as { title: string }).title,
+        ]),
+      );
+      // alice chose English; bob chose nothing and carol a language the kind lacks: the application default.
+      expect(titles).toEqual({
+        alice: 'en-US: Budget',
+        'alice@example.com': 'en-US: Budget',
+        bob: 'zh-CN: Budget',
+        carol: 'zh-CN: Budget',
+        'carol@example.com': 'zh-CN: Budget',
+      });
+
+      const repeat = await h.manager.notify('approval.requested', {
+        to: ['carol', 'alice', 'bob'],
+        data: { title: 'Budget' },
+        idempotencyKey: 'approval-4',
+      });
+      expect(repeat.send?.notificationId).toBe(result.send!.notificationId);
+      expect(repeat.send?.deliveries).toHaveLength(5);
+    } finally {
+      await h.manager.close();
+    }
+  });
+
+  it('files each push under its device, so a filter by device finds every delivery', async () => {
+    const h = harness({ devices: { alice: ['phone', 'laptop'] } });
+    try {
+      await h.manager.savePreferences('alice', [
+        { kind: 'approval.requested', channelType: 'web-push', enabled: true },
+      ]);
+      const result = await h.manager.notify('approval.requested', {
+        to: ['alice'],
+      });
+      const push = (await h.store.listDeliveries(result.send!.notificationId))
+        .filter((delivery) => delivery.channelName === 'push')
+        .map((delivery) => delivery.recipientKey)
+        .sort();
+      expect(push).toEqual(['laptop', 'phone']);
     } finally {
       await h.manager.close();
     }

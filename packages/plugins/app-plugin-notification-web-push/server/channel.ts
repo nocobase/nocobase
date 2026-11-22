@@ -51,6 +51,10 @@ export class WebPushChannel implements ChannelInstance<
     }
     return found;
   }
+  /** The delivery log files each push under its device, so a filter by device id finds every one of them. */
+  recipientKey(recipient: PreparedPush['device']): string {
+    return recipient.id;
+  }
   /** Opens the notification's route, or the application home for an external link the worker would refuse. */
   compose(
     content: NotificationContent,

@@ -70,10 +70,8 @@ export class NotificationLogs {
   ): Promise<readonly NotificationDeliveryLogEntry[]> {
     if (!this.store.listDeliveryLog) return [];
     return (await this.store.listDeliveryLog(filter, limit, before)).map(
-      ({ delivery, ...rest }) => ({
-        ...rest,
-        delivery: redactDelivery(delivery),
-      }),
+      // The store lists no snapshot or lease already.
+      (entry) => entry,
     );
   }
 

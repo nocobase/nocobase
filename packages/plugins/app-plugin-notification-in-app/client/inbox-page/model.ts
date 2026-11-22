@@ -305,9 +305,12 @@ export function shownGroups(
       ? offered
       : offered.filter((category) => category.id === filter.kind);
   return shown.map((category) => {
-    // The server narrows the pages; what a source lists as waiting is narrowed here.
+    // The server narrows the pages; what a source lists as waiting is narrowed here, by category and, in the unread
+    // view, by read state, because a waiting approval stays listed after it is read.
     const entries = (groups[category.id] ?? []).filter(
-      (entry) => !filter.category || entry.item.category === filter.category,
+      (entry) =>
+        (!filter.category || entry.item.category === filter.category) &&
+        (filter.view !== 'unread' || !entry.item.readAt),
     );
     return {
       category,

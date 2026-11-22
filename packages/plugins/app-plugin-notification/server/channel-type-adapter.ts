@@ -100,9 +100,15 @@ export function adaptChannelType<
         throw error;
       }
       return {
-        ...(instance.resolveUsers || instance.compose
+        ...(instance.resolveUsers || instance.compose || instance.recipientKey
           ? {
               audience: {
+                ...(instance.recipientKey
+                  ? {
+                      recipientKey: (recipient: object) =>
+                        instance.recipientKey!(recipient as TRecipient),
+                    }
+                  : {}),
                 ...(instance.resolveUsers
                   ? {
                       resolveUsers: (userIds: readonly string[]) =>

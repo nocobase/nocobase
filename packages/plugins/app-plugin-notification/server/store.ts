@@ -118,8 +118,14 @@ export interface NotificationDeliveryFilter {
 }
 
 /** One row of the delivery log: a delivery with what its send was about. */
+/** A delivery as the delivery log lists it: without its recipient and message snapshots or its lease. */
+export type NotificationDeliveryLogItem = Omit<
+  NotificationDeliveryRecord,
+  'recipientSnapshot' | 'messageSnapshot' | 'leaseToken' | 'leaseExpiresAt'
+>;
+
 export interface NotificationDeliveryLogRecord {
-  readonly delivery: NotificationDeliveryRecord;
+  readonly delivery: NotificationDeliveryLogItem;
   readonly kind?: string;
   readonly sourceType: string;
   readonly sourceReferenceId?: string;
@@ -401,8 +407,9 @@ export class DatabaseNotificationStore implements NotificationStore {
     limit: number,
     before?: NotificationLogCursor,
   ): Promise<readonly NotificationDeliveryLogRecord[]> {
+    // Only what the list shows: the recipient and message snapshots can be large and the response drops them.
     let query = this.deliveryLogQuery(filter, true)
-      .selectAll('d')
+      .select(DELIVERY_LOG_COLUMNS.map((column) => `d.${column}` as const))
       .select([
         'n.kind as dispatchKind',
         'n.sourceType as dispatchSourceType',
@@ -423,7 +430,13 @@ export class DatabaseNotificationStore implements NotificationStore {
         ]),
       );
     const rows = await query.execute<
-      DeliveryRow & {
+      Omit<
+        DeliveryRow,
+        | 'recipientSnapshot'
+        | 'messageSnapshot'
+        | 'leaseToken'
+        | 'leaseExpiresAt'
+      > & {
         dispatchKind?: string | null;
         dispatchSourceType: string;
         dispatchSourceReferenceId?: string | null;
@@ -438,8 +451,19 @@ export class DatabaseNotificationStore implements NotificationStore {
         dispatchIdempotencyKey,
         ...delivery
       } = row;
+      const {
+        recipientSnapshot: _recipientSnapshot,
+        messageSnapshot: _messageSnapshot,
+        leaseToken: _leaseToken,
+        leaseExpiresAt: _leaseExpiresAt,
+        ...listed
+      } = fromDeliveryRow({
+        ...delivery,
+        recipientSnapshot: {},
+        messageSnapshot: {},
+      } as DeliveryRow);
       return {
-        delivery: fromDeliveryRow(delivery),
+        delivery: listed,
         ...(dispatchKind ? { kind: dispatchKind } : {}),
         sourceType: dispatchSourceType,
         ...(dispatchSourceReferenceId
@@ -1014,6 +1038,24 @@ function toDeliveryRow(record: NotificationDeliveryRecord): DeliveryRow {
     updatedAt: record.updatedAt,
   };
 }
+
+/** The delivery columns the delivery log lists. */
+const DELIVERY_LOG_COLUMNS = [
+  'id',
+  'notificationId',
+  'channelName',
+  'channelType',
+  'recipientKey',
+  'providerType',
+  'attemptCount',
+  'status',
+  'nextRunAt',
+  'lastError',
+  'retryResolution',
+  'providerIdempotency',
+  'createdAt',
+  'updatedAt',
+] as const satisfies readonly (keyof DeliveryRow)[];
 
 function fromDeliveryRow(row: DeliveryRow): NotificationDeliveryRecord {
   return {

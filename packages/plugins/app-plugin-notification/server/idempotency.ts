@@ -32,6 +32,30 @@ export function notificationRequestFingerprint<
     .digest('hex')}`;
 }
 
+/**
+ * What makes two `notify()` calls the same request: the kind, the people, the data, the target and the source. The
+ * messages are left out on purpose, because they follow each person's preferences and language at the time of the
+ * first call: a repeat after a preference changed is still the same request and returns the first send.
+ */
+export function notifyRequestFingerprint(input: {
+  readonly kind: string;
+  readonly to: readonly string[];
+  readonly data?: unknown;
+  readonly target?: unknown;
+  readonly source?: { readonly type: string; readonly referenceId?: string };
+}): string {
+  const canonical = normalizeValue({
+    kind: input.kind,
+    to: [...input.to].sort(compareCanonicalStrings),
+    data: input.data ?? {},
+    target: input.target,
+    source: input.source,
+  });
+  return `notify:v1:${createHash('sha256')
+    .update(JSON.stringify(canonical))
+    .digest('hex')}`;
+}
+
 function normalizeValue(value: unknown): unknown {
   if (Array.isArray(value)) return value.map(normalizeValue);
   if (!isRecord(value)) return value;

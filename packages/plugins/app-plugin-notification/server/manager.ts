@@ -13,8 +13,10 @@ import {
 import { createDeliveryJob, type DeliveryJobClass } from './delivery-job.js';
 import {
   notificationRequestFingerprint,
+  notifyRequestFingerprint,
   validateNotificationIdempotencyKey,
 } from './idempotency.js';
+import { notificationUserLocalesToken } from './tokens.js';
 import type { NotificationContent } from './channel-type.js';
 import type {
   NotificationPreferenceChange,
@@ -22,6 +24,7 @@ import type {
 } from '../shared/preferences.js';
 import { NotificationLogs } from './logs.js';
 import type { NotificationKindRuntime } from './templates.js';
+import type { NotificationTemplateContent } from '../shared/templates.js';
 import {
   DatabaseNotificationPreferenceStore,
   type NotificationPreferenceStore,
@@ -134,6 +137,8 @@ interface ExpandedRecipientTarget {
   readonly channel: string;
   readonly provider: NotificationProviderIdentity;
   readonly recipient: object;
+  /** The validated message this recipient receives; `notify()` gives each language its own. */
+  readonly message: object;
   readonly error?: NotificationErrorRecord;
 }
 
@@ -420,52 +425,79 @@ export class NotificationManager<
     const message: Record<string, object> = {};
     const expandedRecipients: ExpandedRecipient[] = [];
     for (const channel of channels) {
-      await this.ensureRuntime(channel);
-      const validated = this.channelManager.validateMessage(
+      const validated = await this.expandMessage(
         channel,
         input.messages[channel],
       );
       message[channel] = validated.message;
-      const [provider] = this.channelManager.providerIdentities(channel);
-      for (const recipient of validated.recipients)
-        expandedRecipients.push({
-          channels: [{ channel, provider, recipient }],
-        });
+      expandedRecipients.push(...validated.recipients);
     }
     const requestFingerprint = notificationRequestFingerprint({
       ...input,
       messages: message,
     });
-    const existing = await this.store.getLogByIdempotencyKey(
+    const existing = await this.replayExisting(
       input.idempotencyKey,
+      requestFingerprint,
     );
-    if (existing) {
-      if (existing.requestFingerprint !== requestFingerprint) {
-        throw new NotificationIdempotencyConflictError(input.idempotencyKey);
-      }
-      const existingDeliveries = await this.store.listDeliveries(existing.id);
-      await Promise.all(
-        existingDeliveries
-          .filter((delivery) => delivery.status === 'pending')
-          .map(async (delivery): Promise<void> => this.dispatch(delivery.id)),
-      );
-      const snapshot = await this.statusSnapshot(existing);
-      return {
-        notificationId: snapshot.notificationId,
-        idempotencyKey: input.idempotencyKey,
-        deduplicated: true,
-        status: snapshot.status,
-        deliveries: snapshot.deliveries,
-      };
-    }
+    if (existing) return existing;
     return this.sendExpanded({
       idempotencyKey: input.idempotencyKey,
       requestFingerprint,
       source: input.source,
       kind: input.kind,
       recipients: expandedRecipients,
-      message,
     });
+  }
+
+  /** Validates one channel message and lists a delivery target per recipient, each carrying that message. */
+  private async expandMessage(
+    channel: string,
+    value: unknown,
+  ): Promise<{
+    readonly message: object;
+    readonly recipients: readonly ExpandedRecipient[];
+  }> {
+    await this.ensureRuntime(channel);
+    const validated = this.channelManager.validateMessage(channel, value);
+    const [provider] = this.channelManager.providerIdentities(channel);
+    return {
+      message: validated.message,
+      recipients: validated.recipients.map((recipient) => ({
+        channels: [
+          { channel, provider, recipient, message: validated.message },
+        ],
+      })),
+    };
+  }
+
+  /**
+   * The earlier send under `idempotencyKey`, with its pending deliveries dispatched again, or `undefined` when there is
+   * none. A different request under the same key is a conflict, never a silent duplicate.
+   */
+  private async replayExisting(
+    idempotencyKey: string,
+    requestFingerprint: string,
+  ): Promise<NotificationSendResult | undefined> {
+    const existing = await this.store.getLogByIdempotencyKey(idempotencyKey);
+    if (!existing) return undefined;
+    if (existing.requestFingerprint !== requestFingerprint) {
+      throw new NotificationIdempotencyConflictError(idempotencyKey);
+    }
+    const existingDeliveries = await this.store.listDeliveries(existing.id);
+    await Promise.all(
+      existingDeliveries
+        .filter((delivery) => delivery.status === 'pending')
+        .map(async (delivery): Promise<void> => this.dispatch(delivery.id)),
+    );
+    const snapshot = await this.statusSnapshot(existing);
+    return {
+      notificationId: snapshot.notificationId,
+      idempotencyKey,
+      deduplicated: true,
+      status: snapshot.status,
+      deliveries: snapshot.deliveries,
+    };
   }
 
   private async sendExpanded(input: {
@@ -477,7 +509,6 @@ export class NotificationManager<
     };
     readonly kind?: string;
     readonly recipients: readonly ExpandedRecipient[];
-    readonly message: Readonly<Record<string, object | undefined>>;
   }): Promise<NotificationSendResult> {
     if (input.recipients.length === 0)
       throw new Error('At least one notification recipient is required.');
@@ -486,11 +517,7 @@ export class NotificationManager<
     const deliveries: NotificationDeliveryRecord[] = [];
     for (const recipient of input.recipients) {
       for (const target of recipient.channels) {
-        const message = input.message[target.channel];
-        if (!message)
-          throw new Error(
-            `Message for Channel "${target.channel}" is required.`,
-          );
+        const { message } = target;
         if (!this.channelManager.has(target.channel))
           throw new Error(
             `Notification Channel "${target.channel}" is not enabled.`,
@@ -502,7 +529,11 @@ export class NotificationManager<
           channelType: this.channelManager.type(target.channel),
           recipientSnapshot: target.recipient,
           messageSnapshot: message,
-          recipientKey: recipientKeyOf(target.recipient, target.channel),
+          recipientKey: recipientKeyOf(
+            target.recipient,
+            target.channel,
+            this.channelManager.recipientKey(target.channel, target.recipient),
+          ),
           providerType: target.provider.type,
           attemptCount: 0,
           status: target.error ? 'failed' : 'pending',
@@ -523,7 +554,12 @@ export class NotificationManager<
       sourceType: input.source?.type ?? 'application',
       sourceReferenceId: input.source?.referenceId,
       ...(input.kind === undefined ? {} : { kind: input.kind }),
-      messageSnapshot: input.message as Readonly<Record<string, object>>,
+      messageSnapshot: Object.fromEntries(
+        deliveries.map((delivery) => [
+          delivery.channelName,
+          delivery.messageSnapshot,
+        ]),
+      ),
       status: initialNotificationStatus(deliveries),
       createdAt: now,
       updatedAt: now,
@@ -598,21 +634,24 @@ export class NotificationManager<
     const idempotencyKey =
       input.idempotencyKey ?? `notify:${kindId}:${randomUUID()}`;
     validateNotificationIdempotencyKey(idempotencyKey);
-    // A repeat returns the first send as it is, whatever preferences say now.
+    const source = input.source ?? {
+      type: kind.view.contributor.slice(0, 100),
+    };
+    const requestFingerprint = notifyRequestFingerprint({
+      kind: kindId,
+      to: userIds,
+      data: input.data,
+      target: input.target,
+      source,
+    });
+    // A repeat of the same request returns the first send as it is, whatever preferences and languages say now; another
+    // request under the same key, including a direct send(), is a conflict.
     if (input.idempotencyKey !== undefined) {
-      const existing = await this.getByIdempotencyKey(idempotencyKey);
-      if (existing)
-        return {
-          kind: kindId,
-          send: {
-            notificationId: existing.notificationId,
-            idempotencyKey,
-            deduplicated: true,
-            status: existing.status,
-            deliveries: existing.deliveries,
-          },
-          skipped: [],
-        };
+      const existing = await this.replayExisting(
+        idempotencyKey,
+        requestFingerprint,
+      );
+      if (existing) return { kind: kindId, send: existing, skipped: [] };
     }
     const skipped: NotificationNotifyResult['skipped'][number][] = [];
     if (!userIds.length) return { kind: kindId, skipped };
@@ -628,14 +667,20 @@ export class NotificationManager<
       kind: kindId,
       category: kind.view.categoryKey,
       ...(input.target === undefined ? {} : { target: input.target }),
-      source: input.source ?? { type: kind.view.contributor.slice(0, 100) },
+      source,
       key: idempotencyKey,
     };
-    const rendered = await kind.render(
-      this.options.defaultLocale?.() ?? 'en-US',
-      input.data ?? {},
-    );
-    const messages: Record<string, object> = {};
+    const localeOf = await this.recipientLocales(kind, userIds);
+    const renderings = new Map<string, Promise<NotificationTemplateContent>>();
+    const render = (locale: string): Promise<NotificationTemplateContent> => {
+      let rendering = renderings.get(locale);
+      if (!rendering) {
+        rendering = kind.render(locale, input.data ?? {});
+        renderings.set(locale, rendering);
+      }
+      return rendering;
+    };
+    const recipients: ExpandedRecipient[] = [];
     for (const { type, policy } of kind.policies) {
       const receivers = userIds.filter((userId) => {
         if (policy === 'required') return true;
@@ -653,26 +698,65 @@ export class NotificationManager<
         continue;
       }
       const resolved = await channel.audience.resolveUsers(receivers);
-      const recipients = receivers.flatMap((userId) => {
+      // One message per language, each to the people who read that language.
+      const byLocale = new Map<string, object[]>();
+      for (const userId of receivers) {
         const found = resolved.get(userId) ?? [];
-        if (!found.length)
+        if (!found.length) {
           skipped.push({ userId, channelType: type, reason: 'no_recipient' });
-        return found;
-      });
-      if (!recipients.length) continue;
-      messages[channel.name] = channel.audience.compose(
-        { ...content, ...rendered },
-        recipients,
-      );
+          continue;
+        }
+        const locale = localeOf(userId);
+        byLocale.set(locale, [...(byLocale.get(locale) ?? []), ...found]);
+      }
+      for (const [locale, addressed] of byLocale) {
+        const composed = channel.audience.compose(
+          { ...content, ...(await render(locale)) },
+          addressed,
+        );
+        recipients.push(
+          ...(await this.expandMessage(channel.name, composed)).recipients,
+        );
+      }
     }
-    if (!Object.keys(messages).length) return { kind: kindId, skipped };
-    const send = await this.sendInternal({
+    if (!recipients.length) return { kind: kindId, skipped };
+    const send = await this.sendExpanded({
       idempotencyKey,
+      requestFingerprint,
       kind: kindId,
-      source: content.source,
-      messages: messages as NotificationSendInput<TChannels>['messages'],
+      source,
+      recipients,
     });
     return { kind: kindId, send, skipped };
+  }
+
+  /**
+   * The language each person receives `kind` in: their own when the kind offers it, otherwise the application's
+   * default when offered, otherwise the kind's first. A kind with one combined message uses the default for everyone.
+   */
+  private async recipientLocales(
+    kind: NotificationKindRuntime,
+    userIds: readonly string[],
+  ): Promise<(userId: string) => string> {
+    const offered = kind.view.locales;
+    const requestedDefault = this.options.defaultLocale?.() ?? 'en-US';
+    const fallback = offered.includes(requestedDefault)
+      ? requestedDefault
+      : (offered[0] ?? requestedDefault);
+    if (kind.view.localeMode === 'combined' || offered.length <= 1)
+      return () => fallback;
+    const container = this.options.container;
+    const chosen: ReadonlyMap<string, string> = container?.has(
+      notificationUserLocalesToken,
+    )
+      ? await container.resolve(notificationUserLocalesToken).resolve(userIds)
+      : new Map();
+    return (userId) => {
+      const locale = chosen.get(userId);
+      return locale !== undefined && offered.includes(locale)
+        ? locale
+        : fallback;
+    };
   }
 
   /** The first enabled channel of `type` in configuration order that reaches users, with its runtime started. */
@@ -680,7 +764,10 @@ export class NotificationManager<
     | {
         readonly name: string;
         readonly audience: Required<
-          NonNullable<ReturnType<ChannelManager['audience']>>
+          Pick<
+            NonNullable<ReturnType<ChannelManager['audience']>>,
+            'resolveUsers' | 'compose'
+          >
         >;
       }
     | undefined
@@ -1374,7 +1461,12 @@ export class NotificationManager<
 }
 
 /** What the delivery log searches a delivery by: the recipient's user id, address or device, else the channel. */
-function recipientKeyOf(recipient: object, channel: string): string {
+function recipientKeyOf(
+  recipient: object,
+  channel: string,
+  own?: string,
+): string {
+  if (typeof own === 'string' && own) return own.slice(0, 191);
   for (const key of ['userId', 'address', 'email', 'id'])
     if (key in recipient) {
       const value: unknown = Reflect.get(recipient, key);

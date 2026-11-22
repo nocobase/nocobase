@@ -71,3 +71,9 @@ it('composes a push that opens the route, or the home page for an external link'
   ).toBe('/');
   expect(WebPushChannel.summarize()).toEqual([]);
 });
+
+it('files each push delivery under its device id', () => {
+  const { push } = channel();
+  expect(push.recipientKey({ id: 'phone', userId: 'alice' })).toBe('phone');
+  expect(push.recipientKey({ id: 'laptop', userId: 'alice' })).toBe('laptop');
+});

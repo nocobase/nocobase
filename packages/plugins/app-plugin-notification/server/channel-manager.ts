@@ -24,6 +24,7 @@ export interface ChannelAudience {
     userIds: readonly string[],
   ): Promise<ReadonlyMap<string, readonly object[]>>;
   compose?(content: NotificationContent, recipients: readonly object[]): object;
+  recipientKey?(recipient: object): string;
 }
 
 export interface ChannelRuntime {
@@ -86,6 +87,11 @@ export class ChannelManager {
 
   audience(name: string): ChannelAudience | undefined {
     return this.runtimes.get(name)?.audience;
+  }
+
+  /** The channel's own log key for `recipient`, when it names one. */
+  recipientKey(name: string, recipient: object): string | undefined {
+    return this.runtimes.get(name)?.audience?.recipientKey?.(recipient);
   }
 
   providerIdentities(name: string): readonly NotificationProviderIdentity[] {

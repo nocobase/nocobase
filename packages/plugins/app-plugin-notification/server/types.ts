@@ -146,6 +146,12 @@ export type NotificationSkipReason =
   /** No enabled channel of the type is configured that can reach users. */
   | 'no_channel';
 
+/** Each person's chosen language, for `notify()`. */
+export interface NotificationUserLocales {
+  /** The language each listed person chose; people without a choice are left out. */
+  resolve(userIds: readonly string[]): Promise<ReadonlyMap<string, string>>;
+}
+
 export interface NotificationNotifyResult {
   readonly kind: string;
   /** The send, or `undefined` when nobody had a channel to receive it on. */

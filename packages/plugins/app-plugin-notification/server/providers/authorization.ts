@@ -21,6 +21,8 @@ export class NotificationAuthorizationProvider extends ServiceProvider<AppPlugin
   public readonly name: string = `${NOTIFICATION_ACCESS_NAMESPACE}/authorization`;
 
   public override boot(): Promise<void> {
+    // An application may be assembled without authorization, as a mail-only host is: there is no catalog to list in.
+    if (!this.app.container.has(authorizationToken)) return Promise.resolve();
     const authz = this.app.container.resolve(authorizationToken);
     // Another messaging plugin, such as the mail center, may own the same subsection.
     authz.ui.sections.add({

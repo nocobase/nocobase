@@ -85,6 +85,12 @@ export interface ChannelInstance<
     content: NotificationContent,
     recipients: readonly TRecipient[],
   ): TMessage;
+  /**
+   * The text the delivery log files `recipient` under, which administrators filter deliveries by: the address or id a
+   * person would search for, such as a push device's id. Without it the log takes the recipient's `userId`, `address`,
+   * `email` or `id`, in that order.
+   */
+  recipientKey?(recipient: TRecipient): string;
   validateMessage(
     input: unknown,
   ): ValidatedChannelMessage<TMessage, TRecipient>;
