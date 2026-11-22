@@ -5,7 +5,6 @@ import { includeNotificationTemplateRoutes } from './pages/settings/notification
 import { Home } from 'lucide-react';
 import personalSettingsRoutes from './pages/me/routes.js';
 import settingsShellRoutes from './pages/settings/shell-routes.js';
-import systemSettingsRoutes from './pages/settings/routes.js';
 import {
   defineAppRoutes,
   type AppClientRouteContribution,
@@ -71,9 +70,7 @@ const appRoutes: AppClientRouteContribution = defineAppRoutes([
   },
 ]);
 
-// The System settings shell shows only the modules a viewer may open. Users and Permission management
-// (`./pages/settings/routes.js`) are registered from the start, beside the Database Explorer; further business
-// administration joins the same shell.
+// The Users and Authorization plugins contribute their modules to the same settings shell as Database Explorer.
 export function createApplicationRoutes(
   rawConfig: unknown = readAppClientRuntimeConfig(),
 ): readonly AppClientRouteContribution[] {
@@ -83,7 +80,6 @@ export function createApplicationRoutes(
       appRoutes,
       settingsShellRoutes,
       personalSettingsRoutes,
-      systemSettingsRoutes,
       databaseExplorerRoutes,
     ],
     config.get<boolean>('notificationTemplates.invitationConfigured') === true,

@@ -1,3 +1,4 @@
+import { authorizationPages } from '../helpers/plugin-routes.js';
 import {
   defineSystemSettingsRoutes,
   resolveAppClientContributions,
@@ -7,7 +8,6 @@ import {
 import { describe, expect, it } from 'vitest';
 import foundation from '@nocobase/app-plugin-foundation/client/routes';
 import usersRoutes from '@nocobase/app-plugin-users/client/routes';
-import settings from '../../client/pages/settings/routes.js';
 import shell from '../../client/pages/settings/shell-routes.js';
 import { createApplicationRoutes } from '../../client/routes.js';
 import {
@@ -33,9 +33,10 @@ function resolve(...extra: AppClientRouteContribution[]) {
     {
       packageName: app,
       source: 'application',
-      routes: [shell, settings, ...extra],
+      routes: [shell, ...extra],
     },
     users,
+    authorizationPages(),
   ]).routes;
 }
 
@@ -184,9 +185,14 @@ describe('System settings navigation', () => {
       ],
     ]);
     const denied = new Set(
-      ['settingsUsers', 'settingsRoles', 'settingsDefaultAccess'].map((name) =>
-        routeKey(find(routes, name)),
-      ),
+      [
+        'settingsUsers',
+        'settingsRoles',
+        'settingsDefaultAccess',
+        'settingsSharingRules',
+        'settingsRestrictionRules',
+        'settingsPermissionCheck',
+      ].map((name) => routeKey(find(routes, name))),
     );
     expect(catalog(routes, denied)).toEqual([]);
     // Without a module to open, the sidebar entry disappears too.
@@ -271,6 +277,7 @@ describe('System settings navigation', () => {
         }),
       },
       users,
+      authorizationPages(),
     ]).routes;
     expect(catalog(routes)).toEqual([
       [
@@ -303,6 +310,7 @@ it('places database browsing in Data and files and hides its card when access is
       routes: createApplicationRoutes({}),
     },
     users,
+    authorizationPages(),
   ]).routes;
   const page = find(routes, 'databaseExplorer');
   expect(page.path).toBe('/settings/database-explorer');

@@ -1,3 +1,7 @@
+import {
+  authorizationPages,
+  registeredPluginRoutes,
+} from '../helpers/plugin-routes.js';
 import packageMetadata from '../../package.json' with { type: 'json' };
 import { createAuthenticatedClientRenderer } from '../helpers/authenticated-client.js';
 import { resolveAppClientContributions } from '@nocobase/app-client/plugins';
@@ -19,6 +23,8 @@ const { routes } = resolveAppClientContributions([
     source: 'application',
     routes: applicationRoutes,
   },
+  registeredPluginRoutes('@nocobase/app-plugin-users'),
+  authorizationPages(),
 ]);
 
 function Shell({ children }: { children: ReactNode }) {
@@ -51,12 +57,10 @@ function mount(
 }
 
 it('opens the first system settings page an administrator may open', async () => {
-  // These are the application's own settings pages; User management, which comes first in a running application, is
-  // `@nocobase/app-plugin-users`'s (see settings-navigation.test.ts).
   await mount();
   await waitFor(() =>
     expect(screen.getByRole('status', { name: 'Route' })).toHaveTextContent(
-      '/settings/roles',
+      '/settings/users',
     ),
   );
 });

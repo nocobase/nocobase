@@ -3,6 +3,7 @@ import type { LocaleResource } from '@nocobase/i18n';
 import type enUS from './en-US.js';
 
 const jaJP: LocaleResource<typeof enUS> = {
+  fileUsage: 'ナレッジベースのファイル',
   indexing: {
     failedDocumentCount: '失敗した文書：{{count}}',
     enabled: 'インデックスを有効にする',

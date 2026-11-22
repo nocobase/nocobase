@@ -13,6 +13,8 @@ export interface AuthorizationOptionsAction {
   readonly name: string;
   readonly title: OptionText;
   readonly description?: OptionText;
+  /** Composites only: page ids whose access a role editor turns this action on with. */
+  readonly defaultFor?: readonly string[];
 }
 
 export interface AuthorizationOptionsDataScope {
@@ -33,6 +35,8 @@ export interface AuthorizationOptionsResource {
   readonly description?: OptionText;
   /** A name from `ui.groups`. */
   readonly group?: string;
+  /** Composites only: page ids the actions are used on. */
+  readonly usedOn?: readonly string[];
   readonly actions: readonly AuthorizationOptionsAction[];
   /** Composites only: the data scopes of each action. */
   readonly dataScopes?: Readonly<
@@ -158,6 +162,12 @@ export async function authorizationOptions(
           ? undefined
           : host.ui.sections.other(defaultSection));
       if (section === undefined) continue;
+      const composite =
+        type.type === 'composite'
+          ? host.compositeResources
+              .list()
+              .find((entry) => entry.name === item.id)
+          : undefined;
       const dataScopes =
         type.type === 'composite'
           ? compositeDataScopes(host, item.id, fields)
@@ -179,7 +189,17 @@ export async function authorizationOptions(
               ? {}
               : { description: title(item.description, '') }),
             ...(group === undefined ? {} : { group }),
-            actions: item.actions.map(actionOption),
+            ...(composite?.usedOn?.length
+              ? { usedOn: [...composite.usedOn] }
+              : {}),
+            actions: item.actions.map((action) => {
+              const defaultFor = composite?.actions.find(
+                (entry) => entry.name === action.name,
+              )?.defaultFor;
+              return defaultFor?.length
+                ? { ...actionOption(action), defaultFor: [...defaultFor] }
+                : actionOption(action);
+            }),
             ...(dataScopes && Object.keys(dataScopes).length
               ? { dataScopes }
               : {}),

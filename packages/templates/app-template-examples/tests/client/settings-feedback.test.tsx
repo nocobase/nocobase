@@ -1,14 +1,7 @@
-import { answerApi, renderWithApp } from '@nocobase/app-testing/client';
-import { apiClientToken, type ClientApplication } from '@nocobase/app-client';
-import {
-  AuthorizationClient,
-  authorizationClientToken,
-} from '@nocobase/app-plugin-authorization/client';
+import { renderWithApp } from '@nocobase/app-testing/client';
 import { screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
-import { Routes, Route } from 'react-router';
-import RolesPage from '../../client/pages/settings/roles.js';
 import { ListRecoveryError } from '../../client/hooks/use-table-url-state.js';
 import { SettingsError } from '../../client/pages/settings/shared.js';
 import enUS from '../../client/locales/en-US.js';
@@ -21,89 +14,10 @@ const namespaces = {
     'zh-CN': async () => ({ default: zhCN }),
   },
 };
-const services = (app: ClientApplication) =>
-  app.container.instance(
-    authorizationClientToken,
-    new AuthorizationClient(app.container.resolve(apiClientToken)),
-  );
-const options = { data: { roleScopes: [] } };
-
 describe.each([
   ['en-US', enUS],
   ['zh-CN', zhCN],
 ] as const)('%s', (language, copy) => {
-  it.each(['roles'] as const)(
-    'keeps the compact empty status and hides creation for a read-only %s list',
-    async (kind) => {
-      await renderWithApp(
-        <Routes>
-          <Route path={`/settings/${kind}`} element={<RolesPage />} />
-        </Routes>,
-        {
-          route: `/settings/${kind}`,
-          locale: language,
-          namespace,
-          namespaces,
-          services,
-          fetch: answerApi(({ path }) => {
-            if (path === 'authorization/permissions')
-              return { data: { unrestricted: false, permissions: [] } };
-            if (path === 'users/options') return options;
-            return { data: [], meta: { total: 0 } };
-          }),
-        },
-      );
-      expect((await screen.findByRole('status')).textContent).toBe(
-        copy.listFeedback.empty,
-      );
-      expect(
-        screen.queryByRole('button', {
-          name: copy.settings.newRole,
-        }),
-      ).not.toBeInTheDocument();
-      expect(
-        screen.queryByText(copy.settings.noResults),
-      ).not.toBeInTheDocument();
-    },
-  );
-
-  it.each(['roles'] as const)(
-    'keeps a single creation entry for an authorized empty %s list',
-    async (kind) => {
-      await renderWithApp(
-        <Routes>
-          <Route path={`/settings/${kind}`} element={<RolesPage />} />
-        </Routes>,
-        {
-          route: `/settings/${kind}`,
-          locale: language,
-          namespace,
-          namespaces,
-          services,
-          fetch: answerApi(({ path }) => {
-            if (path === 'authorization/permissions')
-              return { data: { unrestricted: true, permissions: [] } };
-            if (path === 'users/options') return options;
-            return { data: [], meta: { total: 0 } };
-          }),
-        },
-      );
-      expect(
-        await screen.findByRole('button', {
-          name: copy.settings.newRole,
-        }),
-      ).toHaveAttribute('href', `/settings/${kind}/create`);
-      expect(
-        screen.getAllByRole('button', {
-          name: copy.settings.newRole,
-        }),
-      ).toHaveLength(1);
-      expect(screen.getByRole('status').textContent).toBe(
-        copy.listFeedback.empty,
-      );
-    },
-  );
-
   it('guides correction of invalid input without replaying it or exposing raw errors', async () => {
     const retry = vi.fn();
     await renderWithApp(

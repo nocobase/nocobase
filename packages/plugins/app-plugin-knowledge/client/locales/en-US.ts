@@ -2,6 +2,7 @@ import type { LocaleResource } from '@nocobase/i18n';
 
 // The wording of the knowledge base's page and components, in the plugin's namespace (`ACCESS_NAMESPACE`).
 const enUS = {
+  fileUsage: 'Knowledge base files',
   indexing: {
     failedDocumentCount: 'Failed documents: {{count}}',
     enabled: 'Enable indexing',

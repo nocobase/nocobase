@@ -9,6 +9,7 @@ const deDE: LocaleResource<typeof enUS> = {
   authorization: {
     title: 'Zeitpläne',
     read: 'Lesen',
+    manage: 'Verwalten',
   },
 };
 

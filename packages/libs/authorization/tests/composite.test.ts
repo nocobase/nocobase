@@ -195,6 +195,72 @@ describe('compositeResources', () => {
     }
   });
 
+  it('keeps the pages it is used on and the pages that turn an action on, without granting anything', async () => {
+    const customers = defineCompositeResource('crm.customers', (r) =>
+      r
+        .title('Customers')
+        .usedOn('crm.customers', 'dashboard')
+        .action('view', (a) =>
+          a
+            .title('View customers')
+            .defaultFor('crm.customers')
+            .grant({
+              build: () => ({
+                grants: [
+                  {
+                    resource: { type: 'records', id: 'customers' },
+                    actions: [{ action: 'read' }],
+                  },
+                ],
+              }),
+            }),
+        ),
+    );
+    const built = customers.build();
+    expect(built.usedOn).toEqual(['crm.customers', 'dashboard']);
+    expect(built.actions[0]?.defaultFor).toEqual(['crm.customers']);
+    const authz = setup([
+      {
+        resource: { type: 'page', id: 'crm.customers' },
+        actions: [{ action: 'access' }],
+      },
+    ]);
+    authz.compositeResources.define(built);
+    expect(authz.compositeResources.list()[0]?.usedOn).toEqual([
+      'crm.customers',
+      'dashboard',
+    ]);
+    // Page access alone still opens no action.
+    const decision = await authz.for(alice).authorize({
+      resource: { type: 'composite', id: 'crm.customers' },
+      action: 'view',
+    });
+    expect(decision.effect).toBe('deny');
+    expect(() =>
+      authz.compositeResources.define({
+        ...built,
+        name: 'crm.repeated',
+        usedOn: ['dashboard', 'dashboard'],
+      }),
+    ).toThrow('needs unique, nonempty page ids');
+    expect(() =>
+      defineCompositeResource('crm.blank', (r) =>
+        r.action('view', (a) =>
+          a.defaultFor('').grant({
+            build: () => ({
+              grants: [
+                {
+                  resource: { type: 'records', id: 'customers' },
+                  actions: [{ action: 'read' }],
+                },
+              ],
+            }),
+          }),
+        ),
+      ),
+    ).toThrow('needs unique, nonempty page ids');
+  });
+
   it('composes whatever its definition lists, except another composite', () => {
     const authz = setup();
     const view = (type: string) => ({

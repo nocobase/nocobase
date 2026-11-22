@@ -3,6 +3,7 @@ import type { LocaleResource } from '@nocobase/i18n';
 import type enUS from './en-US.js';
 
 const koKR: LocaleResource<typeof enUS> = {
+  fileUsage: '지식 베이스 파일',
   indexing: {
     failedDocumentCount: '실패한 문서: {{count}}',
     enabled: '인덱싱 사용',

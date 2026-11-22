@@ -13,6 +13,7 @@ import {
 
 import type { SchedulerConfig } from '../config.js';
 import { createScheduleDispatchJob } from '../dispatch.js';
+import { describeSchedulerJobs } from '../jobs-info.js';
 import { ScheduleOccurrenceStore } from '../occurrences.js';
 import { ScheduleTargetRegistry } from '../schedules/registry.js';
 import {
@@ -151,22 +152,34 @@ export class SchedulerProvider extends ServiceProvider<AppPluginApplication> {
     );
     this.internals = {
       executor,
-      service: new DefaultSchedulerService(store, occurrences, targets, {
-        stopReconciliation: () => {
-          if (this.reconcileTimer) clearInterval(this.reconcileTimer);
-          this.reconcileTimer = undefined;
+      service: new DefaultSchedulerService(
+        store,
+        occurrences,
+        targets,
+        {
+          stopReconciliation: () => {
+            if (this.reconcileTimer) clearInterval(this.reconcileTimer);
+            this.reconcileTimer = undefined;
+          },
+          shutdownExecutor: async () => {
+            // Startup may still be finishing setup/activation. Do not reopen it
+            // after shutdown; the original start caller keeps its failure.
+            await this.startPromise?.catch(() => undefined);
+            await executor.shutdown();
+          },
+          unsubscribe: () => {
+            this.unsubscribe?.();
+            this.unsubscribe = undefined;
+          },
         },
-        shutdownExecutor: async () => {
-          // Startup may still be finishing setup/activation. Do not reopen it
-          // after shutdown; the original start caller keeps its failure.
-          await this.startPromise?.catch(() => undefined);
-          await executor.shutdown();
-        },
-        unsubscribe: () => {
-          this.unsubscribe?.();
-          this.unsubscribe = undefined;
-        },
-      }),
+        () =>
+          describeSchedulerJobs({
+            config: this.app.config,
+            appName: this.app.appName,
+            rootDir: this.app.paths.rootDir,
+            storagePath: this.app.paths.storage('jobs'),
+          }),
+      ),
     };
     return this.internals;
   }

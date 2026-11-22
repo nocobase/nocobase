@@ -1,3 +1,4 @@
+import { registeredPluginRoutes } from '../helpers/plugin-routes.js';
 import {
   definePersonalSettingsRoutes,
   resolveAppClientContributions,
@@ -6,7 +7,6 @@ import {
 } from '@nocobase/app-client/plugins';
 import { describe, expect, it } from 'vitest';
 import personal from '../../client/pages/me/routes.js';
-import settings from '../../client/pages/settings/routes.js';
 import shell from '../../client/pages/settings/shell-routes.js';
 import {
   buildPersonalSettingsNavigation,
@@ -29,8 +29,9 @@ function resolve(...plugins: AppClientRouteContribution[]) {
     {
       packageName: app,
       source: 'application',
-      routes: [shell, settings, personal],
+      routes: [shell, personal],
     },
+    registeredPluginRoutes('@nocobase/app-plugin-users'),
     ...plugins.map((routes) => ({ packageName: '@example/plugin', routes })),
   ]).routes;
 }

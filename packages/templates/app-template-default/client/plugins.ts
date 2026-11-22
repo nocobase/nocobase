@@ -11,6 +11,9 @@ import {
 import apiKeys from '@nocobase/app-plugin-api-keys/client';
 import authentication from '@nocobase/app-plugin-authentication/client';
 import authorization from '@nocobase/app-plugin-authorization/client';
+import { pagePermissionTitles } from './pages/settings/page-permission-titles.js';
+import { permissionPageCatalog } from './pages/settings/permission-catalog.js';
+import { permissionWorkspaceSelection } from './pages/settings/permission-workspace.js';
 import databaseExplorer from '@nocobase/app-plugin-database-explorer/client';
 import users from '@nocobase/app-plugin-users/client';
 import notificationInApp from '@nocobase/app-plugin-notification-in-app/client';
@@ -24,7 +27,12 @@ import mail from '@nocobase/app-plugin-mail/client';
 // list; removing its entry and its import disables it.
 const clientPlugins: AppClientPlugins = defineClientPlugins([
   authentication(),
-  authorization(),
+  // The Roles and permissions pages list this application's pages and business objects.
+  authorization({
+    pageCatalog: permissionPageCatalog,
+    workspace: permissionWorkspaceSelection,
+    pageTitles: pagePermissionTitles,
+  }),
   defaultAccess(),
   sharingRules(),
   restrictionRules(),

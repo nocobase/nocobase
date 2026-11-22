@@ -2,6 +2,7 @@ import type { LocaleResource } from '@nocobase/i18n';
 
 /** English is the source of truth for this plugin's locale shape. */
 const enUS = {
+  fileUsage: 'Session images',
   navigation: { agentSessions: 'My agents' },
   actions: { close: 'Close', copy: 'Copy', cancel: 'Cancel' },
   status: {

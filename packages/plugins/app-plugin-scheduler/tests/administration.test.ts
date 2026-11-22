@@ -33,7 +33,10 @@ it.each([false, true])(
     expect(
       authz.resourceTypes.get('settings').items?.get('scheduler.schedules'),
     ).toMatchObject({
-      actions: [expect.objectContaining({ name: 'read' })],
+      actions: [
+        expect.objectContaining({ name: 'read' }),
+        expect.objectContaining({ name: 'manage' }),
+      ],
     });
     expect(
       authz.ui.placementOf({ type: 'settings', id: 'scheduler.schedules' }),
@@ -41,6 +44,12 @@ it.each([false, true])(
     expect(authz.settings.grant('scheduler.schedules', ['read'])).toEqual({
       resource: { type: 'settings', id: 'scheduler.schedules' },
       actions: [{ action: 'read' }],
+    });
+    expect(
+      authz.settings.grant('scheduler.schedules', ['read', 'manage']),
+    ).toEqual({
+      resource: { type: 'settings', id: 'scheduler.schedules' },
+      actions: [{ action: 'read' }, { action: 'manage' }],
     });
     expect(() =>
       authz.settings.grant('scheduler.schedules', ['configure']),
