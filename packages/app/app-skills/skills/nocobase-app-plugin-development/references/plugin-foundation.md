@@ -179,6 +179,22 @@ Define a Service interface and its original Token in the owning plugin. Describe
 
 Treat changed public names, paths, inputs, outputs, options, and permissions as compatibility changes. Update behavior tests and Plugin Skills, and follow repository changeset rules for publishable output. Internal refactoring should not force App callers to import new private paths.
 
+## Name and description for people
+
+An application's System settings › System › Plugins page lists each plugin by the name and one-line description its `package.json` declares under `nocobase`, next to `appConfig`, `cli` and `skills`. `title` and `description` are either one string or one string per locale; `docs` is an optional documentation link in the same form. Without a `title` the page shows the short package name, and it never shows the package's own `description`, which is written for developers. Write the description as what a user gets, in a few words, and give at least `en-US` and `zh-CN`:
+
+```json
+{
+  "nocobase": {
+    "title": { "en-US": "Reading list", "zh-CN": "阅读清单" },
+    "description": { "en-US": "Books members want to read", "zh-CN": "成员想读的书" },
+    "docs": "https://example.com/docs/reading-list"
+  }
+}
+```
+
+The same page also lists the application plugins a plugin requires, from its non-optional `peerDependencies`, and tells a user to enable them first.
+
 ## Development and publishing configuration
 
 Keep the configuration emitted by `@nocobase/create-plugin`: browser-only libraries use `client-library` without a Node runtime requirement; Server libraries use `server-library` and Node lint rules; full-stack libraries add DOM/JSX locally. Use `@nocobase/dev-config` rather than copied full configurations. Published declaration libraries follow the repository's explicit exported-type annotations and `isolatedDeclarations` requirements.

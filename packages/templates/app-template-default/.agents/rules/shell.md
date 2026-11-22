@@ -46,6 +46,6 @@ Keep the identity-keyed `SessionPreparation` boundary: mounted private list cond
 
 Follow the synchronized [page data freshness rules](../skills/nocobase-app-development/references/frontend/references/page-freshness.md): ordinary pages have no persistent Refresh action. Preserve contextual read retries, write invalidation and live progress updates. Dependency upgrades do not rewrite application-owned pages or installed Registry source; reconcile them through the template upgrade workflow.
 
-## Features and extensions
+## Plugins page
 
-Features and extensions belongs in System settings under the System category, alongside Database Explorer. Use the permission-filtered settings catalog rather than a separate sidebar footer entry. Its detail breadcrumb includes System settings and returns to the filtered catalog. The homepage retains its discovery link.
+Plugins belongs in System settings under the System category, from `@nocobase/app-plugin-foundation`. It lists the plugins the application uses with the commands that enable, update or disable them; it has no detail pages and no switches. Use the permission-filtered settings catalog rather than a separate sidebar footer entry. Replace the whole page with `routeComponentOverrides` for the route id `@nocobase/app-plugin-foundation:plugins` rather than registering a second page.

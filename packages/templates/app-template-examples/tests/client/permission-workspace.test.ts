@@ -10,7 +10,7 @@ import type {
   LocalizedText,
   PermissionGrant,
 } from '@nocobase/app-plugin-authorization/client';
-import { CAPABILITY_GUIDE_ACCESS } from '@nocobase/app-plugin-foundation/client';
+import { PLUGINS_ACCESS } from '@nocobase/app-plugin-foundation/client';
 import appRuntime from '../../client/runtime.js';
 import applicationRoutes from '../../client/routes.js';
 import {
@@ -135,6 +135,18 @@ const source = {
       title: 'Administration',
       order: 200,
       subsections: [
+        {
+          name: 'system',
+          title: 'System',
+          resources: [
+            {
+              type: 'settings',
+              id: 'foundation.plugins',
+              title: 'Plugins',
+              actions: [{ name: 'read', title: 'View' }],
+            },
+          ],
+        },
         {
           name: 'authorization',
           title: 'Authorization',
@@ -431,42 +443,20 @@ describe('role permission workspace', () => {
     expect(
       users.actions.find((action) => action.label === enUS.settings.assignRole),
     ).toMatchObject({ risk: 'high' });
-    // A page guarded by a page grant opens with one action, stored as that page's access and not as a menu.
-    const guide = ws.settings.find((item) =>
-      item.objects.some((object) =>
-        object.actions.some(
-          (action) =>
-            action.id ===
-            permissionRowId(
-              { type: 'page', id: CAPABILITY_GUIDE_ACCESS.resource.id },
-              'access',
-            ),
-        ),
+    // The plugins page stands behind its settings item «Plugins · View», listed in the System subsection.
+    const plugins = ws.settings.find((item) =>
+      item.objects.some(
+        (object) => object.id === 'settings:foundation.plugins',
       ),
     )!;
-    const open = guide.objects[0]!.actions[0]!;
-    expect(open).toMatchObject({ label: enUS.settings.openPage, view: true });
-    expect(
-      [...ws.menuPages.values()].some((pages) =>
-        pages.includes(CAPABILITY_GUIDE_ACCESS.resource.id),
-      ),
-    ).toBe(false);
-    const saved = grantsFromDraft(
-      { menus: [], grants: { [open.id]: {} } },
-      {},
-      [],
-      ws,
-    );
-    expect(saved).toEqual([
-      {
-        resource: { type: 'page', id: CAPABILITY_GUIDE_ACCESS.resource.id },
-        actions: [{ action: 'access' }],
-      },
-    ]);
-    expect(draftFromGrants(saved, ws).draft).toEqual({
-      menus: [],
-      grants: { [open.id]: {} },
+    expect(plugins.label).toBe('nav.plugins');
+    expect(plugins.objects[0]!.actions[0]).toMatchObject({
+      id: permissionRowId(PLUGINS_ACCESS.resource, 'read'),
+      view: true,
     });
+    expect(
+      [...ws.menuPages.values()].some((pages) => pages.includes('plugins')),
+    ).toBe(false);
     // Enable all for a page leaves the risky actions off.
     const enabled = applyQuickSet(
       [...ws.objects, ...ws.settings.flatMap((item) => item.objects)],
