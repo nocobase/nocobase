@@ -18,6 +18,8 @@ const settings = {
     kindBusiness: 'business operations',
     kindTable: 'data table',
     kindLabel: '{{title}} ({{kind}})',
+    keyFromName: 'Filled in from the rule name. You can change it.',
+    keyFromResource: 'Filled in from the business object. You can change it.',
     noResourcesShort: 'No configurable objects available',
     scopeInvalid:
       'Choose a valid data scope or complete its filter conditions.',
@@ -146,6 +148,8 @@ const settings = {
     allowed: 'What this user may do',
     nothing: 'This user may do nothing configurable.',
     withinScope: 'Within a data scope',
+    scopeTitle: 'Records this user reaches',
+    scopeConditions: 'Conditions:',
     fromRoles: 'from {{roles}}',
     fromRules: 'from rule {{rules}}',
     tables: 'Data tables',

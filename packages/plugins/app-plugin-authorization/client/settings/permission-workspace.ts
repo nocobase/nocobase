@@ -122,6 +122,17 @@ const USER_ACTIONS: readonly { name: string; title: string }[] = [
  * Actions that let a holder change what others, or they themselves, may do. The server does not limit a holder to
  * the permissions they already have, so they are never turned on automatically and the object explains why.
  */
+/**
+ * The Roles and permissions page's own settings, named as its tabs name them rather than by the resource titles their
+ * packages register for the API, such as "Permission Sets".
+ */
+const SETTINGS_TITLES: Readonly<Record<string, string>> = {
+  'settings:authorization.permission-sets': 'settings.roles',
+  'settings:authorization.default-access': 'settings.defaultAccess.title',
+  'settings:authorization.sharing-rules': 'settings.sharingRules.title',
+  'settings:authorization.restriction-rules': 'settings.restrictionRules.title',
+};
+
 const ESCALATION: Readonly<
   Record<string, Readonly<Record<string, PermissionRisk>>>
 > = {
@@ -500,9 +511,9 @@ export function permissionWorkspace(
     }
     const object: PermissionObject = {
       id: key,
-      label: text(
-        catalogResource?.title ?? { key: 'settings.userPermissions' },
-      ),
+      label: SETTINGS_TITLES[key]
+        ? t(SETTINGS_TITLES[key])
+        : text(catalogResource?.title ?? { key: 'settings.userPermissions' }),
       actions,
       ...(ESCALATION[key]
         ? {

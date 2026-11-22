@@ -115,7 +115,7 @@ it('loads and inspects existing scopes without writes, preserving nested filters
     route: '/default-access/project-default/edit?q=Projects',
     fetch: answerApi(calls),
   });
-  expect(await screen.findByRole('textbox', { name: 'Key *' })).toHaveValue(
+  expect(await screen.findByRole('textbox', { name: 'Key' })).toHaveValue(
     existing.key,
   );
   await screen.findByRole('combobox', { name: 'Edit · Projects' });
@@ -123,7 +123,7 @@ it('loads and inspects existing scopes without writes, preserving nested filters
   await user.click(screen.getByRole('button', { name: 'Cancel' }));
   await waitFor(() =>
     expect(
-      screen.queryByRole('textbox', { name: 'Key *' }),
+      screen.queryByRole('textbox', { name: 'Key' }),
     ).not.toBeInTheDocument(),
   );
   expect(
@@ -230,7 +230,7 @@ it('keeps unavailable catalog selections visible and read-only rather than creat
     await screen.findByText(enUS.settings.defaultAccess.unsupported),
   ).toBeVisible();
   expect(screen.getByRole('button', { name: 'Save' })).toBeDisabled();
-  expect(screen.getByRole('textbox', { name: 'Key *' })).toHaveValue(
+  expect(screen.getByRole('textbox', { name: 'Key' })).toHaveValue(
     existing.key,
   );
 });
@@ -258,7 +258,7 @@ it.each(['en-US', 'zh-CN'])(
       }),
     });
     await user.type(
-      await screen.findByRole('textbox', { name: `${copy.settings.key} *` }),
+      await screen.findByRole('textbox', { name: copy.settings.key }),
       'new-baseline',
     );
     await user.click(
@@ -336,7 +336,7 @@ it('retains the create draft when the server rejects a duplicate and shows a con
     ),
   });
   await user.type(
-    await screen.findByRole('textbox', { name: 'Key *' }),
+    await screen.findByRole('textbox', { name: 'Key' }),
     'new-rule',
   );
   await user.click(screen.getByRole('combobox', { name: 'Business object *' }));
@@ -345,9 +345,7 @@ it('retains the create draft when the server rejects a duplicate and shows a con
   expect(
     await screen.findByText(enUS.settings.defaultAccess.duplicate),
   ).toBeVisible();
-  expect(screen.getByRole('textbox', { name: 'Key *' })).toHaveValue(
-    'new-rule',
-  );
+  expect(screen.getByRole('textbox', { name: 'Key' })).toHaveValue('new-rule');
 });
 
 it('configures custom conditions in a temporary draft and cancels without saving or replacing the previous scope', async () => {
@@ -406,6 +404,9 @@ it('validates a missing key on submit and focuses its inline error without sendi
     await screen.findByRole('combobox', { name: 'Business object *' }),
   );
   await user.click(await screen.findByRole('option', { name: 'Projects' }));
+  // The key is filled in from the business object until it is changed.
+  expect(screen.getByRole('textbox', { name: 'Key' })).toHaveValue('projects');
+  await user.clear(screen.getByRole('textbox', { name: 'Key' }));
   expect(
     screen.queryByText(enUS.settings.defaultAccess.keyRequired),
   ).not.toBeInTheDocument();
@@ -414,7 +415,7 @@ it('validates a missing key on submit and focuses its inline error without sendi
     await screen.findByText(enUS.settings.defaultAccess.keyRequired),
   ).toBeVisible();
   await waitFor(() =>
-    expect(screen.getByRole('textbox', { name: 'Key *' })).toHaveFocus(),
+    expect(screen.getByRole('textbox', { name: 'Key' })).toHaveFocus(),
   );
   expect(writes).toBe(0);
 });

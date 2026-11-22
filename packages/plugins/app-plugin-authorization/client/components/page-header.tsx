@@ -44,7 +44,7 @@ export function PageHeader({
         </h1>
       </div>
       {below ? (
-        <div className='col-span-2 min-w-0 sm:col-span-1'>
+        <div className='col-span-2 row-start-2 min-w-0 sm:col-span-1'>
           {description ? (
             <p className='line-clamp-2 max-w-2xl text-sm leading-6 text-muted-foreground sm:line-clamp-none'>
               {description}

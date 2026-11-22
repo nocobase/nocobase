@@ -103,15 +103,14 @@ export function DataRuleList({
   const resources = catalog.data
     ? ruleResources(catalog.data.data, settings.workspace)
     : [];
+  // The list names business objects plainly; only a data table that shares a business object's name says so.
   const labels = ruleResourceLabels(resources, text, (title, type) =>
-    t('settings.defaultAccess.kindLabel', {
-      title,
-      kind: t(
-        type === 'table'
-          ? 'settings.defaultAccess.kindTable'
-          : 'settings.defaultAccess.kindBusiness',
-      ),
-    }),
+    type === 'table'
+      ? t('settings.defaultAccess.kindLabel', {
+          title,
+          kind: t('settings.defaultAccess.kindTable'),
+        })
+      : title,
   );
   const all = rules.data?.data ?? [];
   const subjectTitles = useSubjectTitles(
@@ -174,6 +173,25 @@ export function DataRuleList({
       subjects: subjectsSummary(rule, titles) || k('nobody'),
     });
   };
+  // The rule's name, with its object and key in small type under it.
+  const nameCell = (rule: DataRule): ReactElement => (
+    <div className='flex min-w-0 flex-col'>
+      <RecordLink to={{ search: editorSearch(params, { edit: rule.key }) }}>
+        {name(rule)}
+      </RecordLink>
+      {kind.subjects && (
+        <span className='truncate text-xs text-muted-foreground'>
+          {resourceName(rule)}
+        </span>
+      )}
+      <code
+        className='max-w-56 truncate font-mono text-xs text-muted-foreground'
+        title={rule.key}
+      >
+        {rule.key}
+      </code>
+    </div>
+  );
   // Default access sorted its rules by `resource` before it shared this list, and stored links still say so.
   const nameColumn = kind.subjects ? 'name' : 'resource';
   const columns: ColumnDef<DataRule>[] = [
@@ -190,20 +208,7 @@ export function DataRuleList({
           }
         />
       ),
-      cell: ({ row }) => (
-        <div className='flex min-w-0 flex-col'>
-          <RecordLink
-            to={{ search: editorSearch(params, { edit: row.original.key }) }}
-          >
-            {name(row.original)}
-          </RecordLink>
-          {kind.subjects && (
-            <span className='truncate text-xs text-muted-foreground'>
-              {resourceName(row.original)}
-            </span>
-          )}
-        </div>
-      ),
+      cell: ({ row }) => nameCell(row.original),
     },
     ...(kind.subjects
       ? [
@@ -232,27 +237,15 @@ export function DataRuleList({
         ]
       : []),
     {
-      accessorKey: 'key',
-      header: t('settings.key'),
-      enableSorting: false,
-      cell: ({ row }) => (
-        <span
-          className='block max-w-48 truncate text-muted-foreground'
-          title={row.original.key}
-        >
-          {row.original.key}
-        </span>
-      ),
-    },
-    {
       id: 'summary',
       header: kind.subjects
         ? k('sentenceHeader')
         : t('settings.defaultAccess.scopes'),
       enableSorting: false,
+      // The sentence is what the list is read for, so it wraps over two lines instead of being cut short.
       cell: ({ row }) => (
         <span
-          className='block max-w-96 truncate'
+          className='line-clamp-2 min-w-64 whitespace-normal'
           title={sentence(row.original)}
         >
           {sentence(row.original)}
@@ -537,6 +530,20 @@ export function DataRuleList({
           catalog.reload();
         }}
         onClearFilters={clearSearch}
+        renderCard={(row) => (
+          <div className='flex min-w-0 flex-col gap-2'>
+            {nameCell(row.original)}
+            {kind.subjects && row.original.subjects?.length ? (
+              <span className='text-xs text-muted-foreground'>
+                {t('settings.ruleSubjects.appliesTo')}:{' '}
+                {subjectsSummary(row.original)}
+              </span>
+            ) : null}
+            <span className='line-clamp-3 text-sm'>
+              {sentence(row.original)}
+            </span>
+          </div>
+        )}
       />
       <ConfirmAction
         error={<SettingsError error={error} />}

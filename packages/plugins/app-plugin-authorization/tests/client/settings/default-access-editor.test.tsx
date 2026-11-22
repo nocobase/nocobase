@@ -36,7 +36,7 @@ it('reports one explicit scope choice and does not mutate its controlled fields 
     onScopeChange,
   };
   render(<DefaultAccessEditor {...props} existing />);
-  expect(screen.getByRole('textbox', { name: 'Key *' })).toBeDisabled();
+  expect(screen.getByRole('textbox', { name: 'Key' })).toBeDisabled();
   expect(props.onKeyChange).not.toHaveBeenCalled();
   await user.click(screen.getByRole('combobox', { name: 'View · Projects' }));
   expect(onScopeChange).not.toHaveBeenCalled();

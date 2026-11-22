@@ -1,6 +1,6 @@
 import { ApiClientError, useApiClient } from '@nocobase/app-client';
 import { useTranslation } from '@nocobase/i18n/client';
-import { CheckIcon, XIcon } from 'lucide-react';
+import { CheckIcon, ChevronDownIcon, XIcon } from 'lucide-react';
 import {
   useEffect,
   useMemo,
@@ -11,6 +11,11 @@ import {
 import { Link, useResolvedPath, useSearchParams } from 'react-router';
 
 import { Badge } from '#components/ui/badge';
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '#components/ui/popover';
 import { Button } from '#components/ui/button';
 import { Input } from '#components/ui/input';
 import { Label } from '#components/ui/label';
@@ -47,7 +52,9 @@ import {
   checkResources,
   matchedSources,
   matchingRules,
+  scopeDetails,
   type CheckResource,
+  type ScopeDetail,
 } from './permission-check-model.js';
 import { SettingsError, SettingsLoading } from './shared.js';
 import { PERMISSION_CHECK_TAB } from './tab-keys.js';
@@ -489,9 +496,11 @@ function AllPermissions({
                   <li key={entry.name} className='flex flex-wrap gap-x-2'>
                     <span>{text(entry.title)}</span>
                     {inspection.decision.effect === 'conditional' && (
-                      <Badge variant='outline'>
-                        {t('settings.permissionCheck.withinScope')}
-                      </Badge>
+                      <ScopeBadge
+                        decision={inspection.decision}
+                        catalog={catalog}
+                        roleTitle={roleTitle}
+                      />
                     )}
                     <span className='text-muted-foreground'>
                       {source(inspection.decision)}
@@ -504,6 +513,98 @@ function AllPermissions({
         </ul>
       )}
     </section>
+  );
+}
+
+/** "Within a data scope", opening the records each data table is limited to and where each limit comes from. */
+function ScopeBadge({
+  decision,
+  catalog,
+  roleTitle,
+}: {
+  readonly decision: AuthorizationDecision;
+  readonly catalog: AuthorizationOptionsResponse;
+  readonly roleTitle: (key: string) => string;
+}): ReactElement {
+  const { t } = useTranslation(AUTHORIZATION_NAMESPACE);
+  const text = useLocalizedText();
+  const details = scopeDetails(decision);
+  const label = t('settings.permissionCheck.withinScope');
+  if (!details.length) return <Badge variant='outline'>{label}</Badge>;
+  const tableTitle = (name: string): string => {
+    const found = catalog.collections.find(
+      (collection) => collection.name === name,
+    );
+    return found?.title ? text(found.title) : name;
+  };
+  const selectionLabel = (
+    selection: ScopeDetail['selections'][number]['selection'],
+  ): string =>
+    selection.type === 'all'
+      ? t('settings.defaultAccess.all')
+      : selection.type === 'records'
+        ? t('settings.defaultAccess.records', {
+            count: selection.ids?.length ?? 0,
+          })
+        : selection.type === 'recordAccess' && selection.key
+          ? text(
+              catalog.recordAccess.find((entry) => entry.key === selection.key)
+                ?.title ?? selection.key,
+            )
+          : selection.type;
+  return (
+    <Popover>
+      <PopoverTrigger
+        render={
+          <button
+            type='button'
+            data-slot='permission-scope'
+            className='inline-flex h-5 items-center gap-0.5 rounded-4xl border border-border px-2 text-xs font-medium underline-offset-4 hover:bg-muted hover:underline focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-none'
+          />
+        }
+      >
+        {label}
+        <ChevronDownIcon aria-hidden className='size-3' />
+      </PopoverTrigger>
+      <PopoverContent align='start' className='w-80'>
+        <div className='font-medium'>
+          {t('settings.permissionCheck.scopeTitle')}
+        </div>
+        <ul
+          className='flex flex-col gap-2'
+          data-slot='permission-scope-details'
+        >
+          {details.map((detail) => (
+            <li key={detail.collection} className='flex flex-col gap-1'>
+              <span className='font-medium'>
+                {tableTitle(detail.collection)}
+              </span>
+              {detail.selections.map((entry) => (
+                <span
+                  key={`${entry.source.plugin}:${entry.source.id}:${JSON.stringify(entry.selection)}`}
+                  className='text-muted-foreground'
+                >
+                  {selectionLabel(entry.selection)} ·{' '}
+                  {entry.source.plugin === 'permission-sets'
+                    ? t('settings.permissionCheck.fromRoles', {
+                        roles: roleTitle(entry.source.id),
+                      })
+                    : t('settings.permissionCheck.fromRules', {
+                        rules: entry.source.id,
+                      })}
+                </span>
+              ))}
+              {detail.conditions && (
+                <span className='text-xs text-muted-foreground'>
+                  {t('settings.permissionCheck.scopeConditions')}{' '}
+                  <code className='break-all'>{detail.conditions}</code>
+                </span>
+              )}
+            </li>
+          ))}
+        </ul>
+      </PopoverContent>
+    </Popover>
   );
 }
 

@@ -3,6 +3,7 @@ import type { AuthorizationOptionsResponse } from '../../../client/index.js';
 import {
   actionKey,
   ruleResourceLabels,
+  suggestRuleKey,
   ruleResources,
   ruleScopes,
   replaceRuleScope,
@@ -225,4 +226,20 @@ it('titles data with registered collection titles and tells same-named business 
   expect([
     ...ruleResourceLabels(resources.slice(0, 1), text, () => 'unused').values(),
   ]).toEqual(['Customers']);
+});
+
+it('suggests a new rule key from its name, or its object, numbered past keys in use', () => {
+  expect(
+    suggestRuleKey(
+      'Sales managers see the team’s customers',
+      'crm.customers',
+      [],
+    ),
+  ).toBe('sales-managers-see-the-team-s-customers');
+  expect(suggestRuleKey('Café Owners', 'x', [])).toBe('cafe-owners');
+  // A name without Latin letters or digits falls back to the object.
+  expect(suggestRuleKey('销售经理', 'crm.customers', [])).toBe('crm-customers');
+  expect(suggestRuleKey('Team', 'x', ['team', 'team-2'])).toBe('team-3');
+  expect(suggestRuleKey('Records', 'x', [])).toBe('records-2');
+  expect(suggestRuleKey('', '', [])).toBe('');
 });

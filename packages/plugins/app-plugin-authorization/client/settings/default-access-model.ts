@@ -204,3 +204,37 @@ export function editableRule(
     })
   );
 }
+
+/** Keys the rule routes use for their own paths, so a rule cannot take them. */
+export const RESERVED_RULE_KEYS: readonly string[] = [
+  'options',
+  'subjects',
+  'records',
+];
+
+const slug = (text: string): string =>
+  text
+    .normalize('NFKD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+/, '')
+    .slice(0, 48)
+    .replace(/-+$/, '');
+
+/**
+ * The key a new rule gets until the person types one: its name in lowercase words joined by hyphens, or its object's
+ * id when the name has no Latin letters or digits, numbered on when another rule or a route already uses it.
+ */
+export function suggestRuleKey(
+  title: string,
+  resourceId: string,
+  taken: readonly string[],
+): string {
+  const base = slug(title) || slug(resourceId);
+  if (!base) return '';
+  const used = new Set([...taken, ...RESERVED_RULE_KEYS]);
+  let key = base;
+  for (let n = 2; used.has(key); n += 1) key = `${base}-${n}`;
+  return key;
+}
