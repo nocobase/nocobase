@@ -1,6 +1,14 @@
+import { useApiClient } from '@nocobase/app-client';
 import { SYSTEM_SETTINGS_ROUTE_PATH } from '@nocobase/app-client/plugins';
 import { useEffect, useState, useSyncExternalStore } from 'react';
 
+import type { AuthorizationOptionsResponse } from '../authorization-client.js';
+import {
+  DEFAULT_ACCESS_RULES,
+  SHARING_RULES,
+  RESTRICTION_RULES,
+} from './data-rule-kinds.js';
+import { ruleResources } from './default-access-model.js';
 import { useAuthorizationClient } from '../use-authorization-client.js';
 import { useAuthorizationRevision } from '../use-authorization-revision.js';
 import type {
@@ -67,6 +75,7 @@ export function useReadableRuleTabs(): readonly RuleTab[] | undefined {
     settings.ruleTabs.subscribe,
     settings.ruleTabs.list,
   );
+  const api = useApiClient();
   const client = useAuthorizationClient();
   const revision = useAuthorizationRevision();
   const [answer, setAnswer] = useState<{
@@ -75,18 +84,36 @@ export function useReadableRuleTabs(): readonly RuleTab[] | undefined {
     readonly readable: readonly RuleTab[];
   }>();
   useEffect(() => {
-    let active = true;
+    const controller = new AbortController();
     void Promise.all(
-      tabs.map((tab) =>
-        tab.authz === undefined
-          ? Promise.resolve(true)
-          : client.can(tab.authz).then(
-              (can) => can,
-              () => false,
-            ),
-      ),
+      tabs.map(async (tab) => {
+        if (tab.authz && !(await client.can(tab.authz).catch(() => false)))
+          return false;
+        const kind = [
+          DEFAULT_ACCESS_RULES,
+          SHARING_RULES,
+          RESTRICTION_RULES,
+        ].find((item) => item.key === tab.key);
+        if (!kind) return true;
+        const path = `authorization/${kind.path}`;
+        try {
+          const catalog = await api.request<{
+            data: AuthorizationOptionsResponse;
+          }>({ path: `${path}/options`, signal: controller.signal });
+          if (ruleResources(catalog.data, settings.workspace).length > 0)
+            return true;
+          const rules = await api.request<{ data: readonly unknown[] }>({
+            path,
+            signal: controller.signal,
+          });
+          return rules.data.length > 0;
+        } catch {
+          // Keep the page reachable so its request error and retry action remain available.
+          return true;
+        }
+      }),
     ).then((answers) => {
-      if (active)
+      if (!controller.signal.aborted)
         setAnswer({
           tabs,
           revision,
@@ -94,9 +121,9 @@ export function useReadableRuleTabs(): readonly RuleTab[] | undefined {
         });
     });
     return () => {
-      active = false;
+      controller.abort();
     };
-  }, [client, revision, tabs]);
+  }, [api, client, revision, settings, tabs]);
   return answer?.tabs === tabs && answer.revision === revision
     ? answer.readable
     : undefined;

@@ -273,7 +273,7 @@ describe('System settings navigation', () => {
   });
 });
 
-it('places database browsing in Data and files and hides its card when access is denied', () => {
+it('places database browsing in System and hides its card when access is denied', () => {
   const routes = resolveAppClientContributions([
     {
       packageName: app,
@@ -301,11 +301,11 @@ it('places database browsing in Data and files and hides its card when access is
     account,
     workflowCategory,
     [
-      'systemSettings.data',
+      'systemSettings.system',
       [['databaseExplorer', '/settings/database-explorer']],
     ],
   ]);
-  // The empty Data and files category is hidden; Accounts and permissions stays.
+  // The empty System category is hidden; Accounts and permissions stays.
   expect(catalog(routes, new Set([routeKey(page)]))).toEqual([
     account,
     workflowCategory,

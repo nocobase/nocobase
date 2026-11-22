@@ -55,6 +55,12 @@ async function mount(
   readable: readonly string[],
   locale = 'en-US',
   rules: readonly string[] = DEFAULT_RULES,
+  available: readonly string[] = [
+    'defaultAccess',
+    'sharingRules',
+    'restrictionRules',
+  ],
+  existing: readonly string[] = [],
 ) {
   const view = await renderWithApp(tree, {
     route,
@@ -72,7 +78,20 @@ async function mount(
               })),
             },
           }
-        : { data: [] },
+        : path.endsWith('/options')
+          ? {
+              data: {
+                sections: [],
+                collections: available.includes(path.split('/')[1] ?? '')
+                  ? [{ name: 'projects' }]
+                  : [],
+              },
+            }
+          : {
+              data: existing.includes(path.split('/')[1] ?? '')
+                ? [{ key: 'saved' }]
+                : [],
+            },
     ),
   });
   const settings = view.app.container.resolve(authorizationSettingsToken);
@@ -301,4 +320,48 @@ it('leaves a stored Data rules link for the first tab the person may open while 
   expect(
     screen.queryByRole('tab', { name: 'Data rules' }),
   ).not.toBeInTheDocument();
+});
+
+it('leaves an empty rule surface for roles when all three kinds have no resources or rules', async () => {
+  await mount(
+    '/settings/default-access',
+    [
+      'authorization.permission-sets',
+      'authorization.default-access',
+      'authorization.sharing-rules',
+      'authorization.restriction-rules',
+    ],
+    'en-US',
+    ['default-access', 'sharing-rules', 'restriction-rules'],
+    [],
+  );
+  await waitFor(() =>
+    expect(screen.getByRole('status', { name: 'Route' })).toHaveTextContent(
+      '/settings/roles',
+    ),
+  );
+  expect(
+    screen.queryByRole('tab', { name: 'Data rules' }),
+  ).not.toBeInTheDocument();
+});
+
+it('opens the remaining kind with saved rules even when its catalog is empty', async () => {
+  await mount(
+    '/settings/roles',
+    [
+      'authorization.permission-sets',
+      'authorization.default-access',
+      'authorization.sharing-rules',
+    ],
+    'en-US',
+    ['default-access', 'sharing-rules'],
+    [],
+    ['sharingRules'],
+  );
+  await userEvent.click(await screen.findByRole('tab', { name: 'Data rules' }));
+  await waitFor(() =>
+    expect(screen.getByRole('status', { name: 'Route' })).toHaveTextContent(
+      '/settings/sharing-rules',
+    ),
+  );
 });

@@ -103,7 +103,7 @@ export default function PersonalKeyCreatePage(): ReactElement {
   };
 
   return (
-    <PageContainer className='max-w-[1120px]'>
+    <PageContainer>
       <PageHeader title={created ? t('created.title') : t('create.title')} />
       {loadError ? (
         <ErrorAlert error={loadError} />

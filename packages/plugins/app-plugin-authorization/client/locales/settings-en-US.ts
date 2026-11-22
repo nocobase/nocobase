@@ -5,6 +5,11 @@ const settings = {
     'Set what each role can open and do, and the data it can see.',
   rolesDescription:
     'Set the menus each role sees and what it may do with each kind of business data.',
+  createRoleAction: 'Create',
+  deleteRole: 'Delete role',
+  deleteRoleHint:
+    'Delete “{{name}}”? Members will lose the permissions granted by this role.',
+  roleKeyHint: 'The role key cannot be changed after creation.',
   editRole: 'Edit role',
   dataRules: 'Data rules',
   dataRulesDescription:

@@ -16,7 +16,7 @@ const STEPS = ['describe', 'build', 'review'] as const;
 
 export default function HomePage(): ReactElement {
   return (
-    <PageContainer className='mx-auto max-w-6xl'>
+    <PageContainer>
       <AgentIntro />
     </PageContainer>
   );

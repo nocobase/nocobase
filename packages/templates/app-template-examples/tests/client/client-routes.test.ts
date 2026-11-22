@@ -226,12 +226,11 @@ describe('app client routes', () => {
         [['knowledgeIndexing', '/settings/knowledge/indexing']],
       ],
       [
-        'systemSettings.data',
-        [['databaseExplorer', '/settings/database-explorer']],
-      ],
-      [
         'systemSettings.system',
-        [['exampleSettings', '/settings/routes-example']],
+        [
+          ['exampleSettings', '/settings/routes-example'],
+          ['databaseExplorer', '/settings/database-explorer'],
+        ],
       ],
     ]);
     expect(catalog[3].modules[0].route).toMatchObject({
@@ -412,9 +411,9 @@ describe('app client routes', () => {
       },
       { name: 'notificationSettings', authorizedAs: 'settings:notification' },
       { name: 'knowledgeIndexing', authorizedAs: 'settings:kb.indexing' },
-      { name: 'databaseExplorer', authorizedAs: 'database-explorer' },
       // A plugin's settings page without its own `authz` admits unrestricted administrators only.
       { name: 'exampleSettings', authorizedAs: 'unrestricted' },
+      { name: 'databaseExplorer', authorizedAs: 'database-explorer' },
       // Personal settings belong to whoever is signed in, so they stay out of page authorization.
       { name: 'personalSettingsHome', authorizedAs: null },
       { name: 'personalAppearance', authorizedAs: null },

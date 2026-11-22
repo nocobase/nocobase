@@ -32,7 +32,7 @@ export function SystemFrame({
   const { t } = useTranslation(API_KEYS_NAMESPACE);
   useLocation();
   return (
-    <PageContainer className='max-w-[1120px]'>
+    <PageContainer>
       <PageHeader
         title={t('system.title')}
         description={t('system.description')}

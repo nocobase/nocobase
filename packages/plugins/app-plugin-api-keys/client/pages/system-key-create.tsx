@@ -65,7 +65,7 @@ export default function SystemKeyCreatePage(): ReactElement {
     void navigate('..', { relative: 'path' });
   };
   return (
-    <PageContainer className='max-w-[1120px]'>
+    <PageContainer>
       <PageHeader
         title={created ? t('system.created.title') : t('system.create.title')}
       />

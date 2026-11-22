@@ -47,7 +47,8 @@ export function AuthorizationPage({
   readonly tab: string;
   readonly description?: ReactNode;
   readonly actions?: ReactNode;
-  readonly children: ReactNode;
+  readonly children:
+    ReactNode | ((rules: readonly RuleTab[] | undefined) => ReactNode);
 }): ReactElement {
   const { t } = useTranslation(AUTHORIZATION_NAMESPACE);
   const text = useLocalizedText();
@@ -98,7 +99,7 @@ export function AuthorizationPage({
           </div>
         ) : null}
         <TabsContent value={tab} className='space-y-6'>
-          {children}
+          {typeof children === 'function' ? children(rules) : children}
         </TabsContent>
       </Tabs>
     </PageContainer>

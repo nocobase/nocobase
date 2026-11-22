@@ -56,6 +56,7 @@ export interface DataTableProps<TData, TValue = unknown> {
   readonly sortingState?: SortingState;
   readonly onSortingChange?: OnChangeFn<SortingState>;
   readonly showSelectedCount?: boolean;
+  readonly paginationSummary?: ReactNode;
   /**
    * The current request is in flight. With rows of the current query and permission scope this is a background
    * refresh: rows stay and a delayed refresh indicator appears. Without them the body shows the loading state.
@@ -253,6 +254,7 @@ export function DataTable<TData, TValue = unknown>({
   manualSorting = false,
   sortingState,
   onSortingChange,
+  paginationSummary,
   showSelectedCount = true,
   loading,
   loadingIdentity,
@@ -619,8 +621,14 @@ export function DataTable<TData, TValue = unknown>({
             showSelectedCount={showSelectedCount}
             disabled={loading || !showPagination}
             countPending={!showPagination}
-          />
+          >
+            {paginationSummary}
+          </DataTablePagination>
         </div>
+      ) : paginationSummary != null ? (
+        <p className='px-2 text-sm text-muted-foreground'>
+          {paginationSummary}
+        </p>
       ) : null}
     </div>
   );

@@ -35,7 +35,6 @@ import {
 } from 'react';
 import { Link, Outlet, useLocation, useResolvedPath } from 'react-router';
 import { PlusIcon } from 'lucide-react';
-import { cn } from 'cn';
 import { PageContainer } from '../../components/page-container.js';
 import { PageHeader } from '../../components/page-header.js';
 import { Button } from '../../components/ui/button.js';
@@ -517,24 +516,17 @@ export default function UsersPage(): ReactElement {
           {...tableState}
           manualSorting
           showSelectedCount={false}
+          paginationSummary={
+            hasCurrentResponse && request.data
+              ? t('management.total', { count: request.data.meta.total })
+              : undefined
+          }
           loading={active && request.loading}
           loadingIdentity={requestPath}
           listState={listState}
           onRetry={request.reload}
           onClearFilters={clearFilters}
         />
-        {request.data && (
-          // A previous query's total keeps its line but is never shown as the current one.
-          <p
-            className={cn(
-              'text-sm text-muted-foreground',
-              !hasCurrentResponse && 'invisible',
-            )}
-            aria-hidden={!hasCurrentResponse || undefined}
-          >
-            {t('management.total', { count: request.data.meta.total })}
-          </p>
-        )}
       </PageContainer>
       <Outlet context={{ reload }} />
     </>

@@ -402,7 +402,7 @@ it('returns only to paths inside the application', () => {
   expect(inApplication(null)).toBeUndefined();
 });
 
-it('keeps every personal settings page, a plugin one included, at most 860px wide', async () => {
+it('renders plugin personal settings pages in the full main content area', async () => {
   const routes = personalSettingsFixture();
   await setup(
     <Routes>
@@ -413,11 +413,12 @@ it('keeps every personal settings page, a plugin one included, at most 860px wid
     </Routes>,
     '/me/plugin',
   );
+  expect(screen.getByRole('main')).toContainElement(
+    screen.getByText('Plugin page'),
+  );
   expect(
-    screen
-      .getByText('Plugin page')
-      .closest('[data-testid="personal-settings-content"]'),
-  ).toHaveClass('max-w-[860px]');
+    screen.getByText('Plugin page').closest('[class*="max-w-"]'),
+  ).toBeNull();
 });
 
 /** A page declaring its whole trail, as the agents plugin's skill pages do. */

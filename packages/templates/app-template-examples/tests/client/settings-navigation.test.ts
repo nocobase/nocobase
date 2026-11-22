@@ -72,14 +72,14 @@ describe('System settings navigation with application menus', () => {
     expectSettingsEntry(routes);
   });
 
-  it('opens Notifications from Messages and Database Explorer from Data and files', () => {
+  it('opens Notifications from Messages and Database Explorer from System', () => {
     const routes = resolve();
     expect(categoryModules('messages', routes)).toContainEqual([
       'notificationSettings',
       '/settings/notifications',
     ]);
     const explorer = ['databaseExplorer', '/settings/database-explorer'];
-    expect(categoryModules('data', routes)).toContainEqual(explorer);
+    expect(categoryModules('system', routes)).toContainEqual(explorer);
     const page = buildSettingsCatalog(routes, new Set())
       .flatMap(({ modules }) => modules)
       .find(({ route }) => route.name === 'databaseExplorer')?.route;
@@ -92,7 +92,7 @@ describe('System settings navigation with application menus', () => {
       },
     });
     expect(
-      categoryModules('data', routes, new Set([routeKey(page!)])),
+      categoryModules('system', routes, new Set([routeKey(page!)])),
     ).not.toContainEqual(explorer);
   });
 });

@@ -600,7 +600,7 @@ export default function DistributedStatusPage(): ReactElement {
   const { t } = useText();
   const { status, error, loading, reload } = useDistributedStatus();
   return (
-    <div className='mx-auto flex w-full max-w-6xl flex-col gap-4 p-4 md:p-6'>
+    <div className='flex w-full min-w-0 flex-col gap-4 p-4 md:p-6'>
       <header className='flex flex-col gap-1'>
         <h1 className='font-heading text-2xl font-semibold'>
           {t('nav.title')}
