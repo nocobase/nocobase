@@ -690,7 +690,7 @@ Set `NOCOBASE_STRICT_STARTUP=true` when running `pnpm dev` or `pnpm start` in au
 
 ## Offline Mail example
 
-The Examples application registers Mail and Mail Example on both the client and server. Open **Mail example** (`/mail-example`) after signing in to connect an offline demo mailbox, synchronize sample messages, and simulate delivery. The `demo`, `demo-microsoft`, and `demo-imap-smtp` providers are configured in `server/config/mail.ts` and require no external credentials.
+The Examples application registers Mail and Mail Example (demo providers and seed data only) on both the client and server. The pages come from the Mail plugin: connect an offline demo mailbox in **Personal settings › Messages › Mailbox accounts** (`/me/mail`), then open **Mail** (`/mail`) to synchronize sample messages, send, and simulate delivery. **System settings › Messages › Mailbox** (`/settings/mail`) shows the providers and run logs. The `demo`, `demo-microsoft`, and `demo-imap-smtp` providers are configured in `server/config/mail.ts` and require no external credentials.
 
 Mail Example is loaded only by this template. To use real Mail providers in an application created from Default, install and register `@nocobase/app-plugin-mail` and its configuration factory, then configure the desired providers using the plugin's Skill.
 
