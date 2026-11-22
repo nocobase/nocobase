@@ -8,6 +8,16 @@
   "engines": {
     "node": ">=24.0.0"
   },
+  "nocobase": {
+    "title": {
+      "en-US": "Web push",
+      "zh-CN": "浏览器推送"
+    },
+    "description": {
+      "en-US": "Push notifications to browsers and phones",
+      "zh-CN": "浏览器和手机推送通知"
+    }
+  },
   "sideEffects": false,
   "exports": {
     "./server": {

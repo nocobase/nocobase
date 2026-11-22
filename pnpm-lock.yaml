@@ -4391,9 +4391,6 @@ importers:
       '@base-ui/react':
         specifier: 'catalog:'
         version: 1.7.0(@date-fns/tz@1.5.0)(@types/react@19.2.18)(date-fns@4.4.0)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
-      '@nocobase/app-cli':
-        specifier: workspace:^
-        version: link:../../app/app-cli
       '@nocobase/app-client':
         specifier: workspace:^
         version: link:../../app/app-client
@@ -4412,9 +4409,6 @@ importers:
       '@nocobase/i18n':
         specifier: workspace:^
         version: link:../../libs/i18n
-      '@nocobase/jobs':
-        specifier: workspace:^
-        version: link:../../libs/jobs
       '@nocobase/service-provider':
         specifier: workspace:^
         version: link:../../libs/service-provider
@@ -4439,37 +4433,10 @@ importers:
       react-router:
         specifier: 'catalog:'
         version: 7.18.3(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
-      typescript:
-        specifier: 'catalog:'
-        version: 6.0.3
       zod:
         specifier: 'catalog:'
         version: 4.6.7
     devDependencies:
-      '@nocobase/app-plugin-api-keys':
-        specifier: workspace:*
-        version: link:../app-plugin-api-keys
-      '@nocobase/app-plugin-database-explorer':
-        specifier: workspace:*
-        version: link:../app-plugin-database-explorer
-      '@nocobase/app-plugin-file':
-        specifier: workspace:*
-        version: link:../app-plugin-file
-      '@nocobase/app-plugin-i18n':
-        specifier: workspace:*
-        version: link:../app-plugin-i18n
-      '@nocobase/app-plugin-mail':
-        specifier: workspace:*
-        version: link:../app-plugin-mail
-      '@nocobase/app-plugin-notification':
-        specifier: workspace:*
-        version: link:../app-plugin-notification
-      '@nocobase/app-plugin-notification-in-app':
-        specifier: workspace:*
-        version: link:../app-plugin-notification-in-app
-      '@nocobase/app-plugin-scheduler':
-        specifier: workspace:*
-        version: link:../app-plugin-scheduler
       '@nocobase/app-testing':
         specifier: workspace:*
         version: link:../../tools/app-testing

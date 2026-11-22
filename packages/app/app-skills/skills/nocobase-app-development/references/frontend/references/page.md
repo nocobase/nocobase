@@ -448,7 +448,7 @@ Do not declare a plugin's own page route a second time: registering another `/in
 
 The templates omit `route-overrides.ts` and `source-extensions.ts`. UI Library assets under `client/extensions/` are imported and composed like other application source; adding a file there does not register an extension automatically.
 
-For example, to replace the registered App Foundation page with an application-owned page, create the following optional module:
+For example, to replace the Plugins page that `@nocobase/app-plugin-foundation` registers in System settings with an application-owned page, create the following optional module:
 
 ```ts
 // client/route-overrides.ts
@@ -460,9 +460,9 @@ import {
 export const routeComponentOverrides: readonly AppClientRouteComponentOverrideDefinition[] =
   defineClientRouteComponentOverrides([
     {
-      routeId: '@nocobase/app-plugin-foundation:foundation',
-      componentEntry: './client/pages/foundation/index',
-      componentLoader: () => import('./pages/foundation/index.js'),
+      routeId: '@nocobase/app-plugin-foundation:plugins',
+      componentEntry: './client/pages/plugins/index',
+      componentLoader: () => import('./pages/plugins/index.js'),
     },
   ]);
 
