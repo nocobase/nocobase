@@ -5,7 +5,6 @@
 '@nocobase/app-plugin-notification-web-push': minor
 '@nocobase/app-plugin-projects': minor
 '@nocobase/app-plugin-notification-example': minor
-'@nocobase/app-plugin-foundation': patch
 '@nocobase/app-skills': minor
 '@nocobase/app-template-default': minor
 '@nocobase/app-template-examples': minor

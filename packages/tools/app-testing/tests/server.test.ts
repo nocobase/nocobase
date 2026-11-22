@@ -82,29 +82,11 @@ describe('createTestAppConfig', () => {
     }
   };
 
-  it("turns off App Foundation's start-up scan unless the test asks for it", async () => {
-    expect((await written()).foundation).toEqual({ scanOnStart: false });
-    expect(
-      (await written({ config: { foundation: { scanOnStart: true } } }))
-        .foundation,
-    ).toEqual({ scanOnStart: true });
-    expect(
-      (await written({ config: { foundation: { other: 1 } } })).foundation,
-    ).toEqual({ scanOnStart: false, other: 1 });
-  });
-
-  it('starts an application without App Foundation on the same file', async () => {
-    const testApp = await createTestApp({
-      createServer: createStandaloneServer,
-    });
-    try {
-      expect(testApp.application.config.get('foundation')).toEqual({
-        scanOnStart: false,
-      });
-      expect((await testApp.request('/items')).status).toBe(200);
-    } finally {
-      await testApp.close();
-    }
+  it('writes only the sections the test passes beside the test databases', async () => {
+    const config = await written({ config: { foundation: { other: 1 } } });
+    expect(Object.keys(config).sort()).toEqual(['database', 'foundation']);
+    expect(config.foundation).toEqual({ other: 1 });
+    expect(await written()).not.toHaveProperty('foundation');
   });
 });
 

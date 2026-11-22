@@ -3,6 +3,16 @@
   "displayName": "Template Print",
   "description": "Agent Skill for implementing template printing in NocoBase 3 applications.",
   "version": "0.0.2-beta.2",
+  "nocobase": {
+    "title": {
+      "en-US": "Template printing",
+      "zh-CN": "模板打印"
+    },
+    "description": {
+      "en-US": "An Agent Skill that prints records with templates",
+      "zh-CN": "用模板打印记录的 Agent Skill"
+    }
+  },
   "type": "module",
   "license": "Apache-2.0",
   "repository": {

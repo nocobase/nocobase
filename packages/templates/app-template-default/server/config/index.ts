@@ -26,7 +26,6 @@ import database from './database.js';
 import snowflake from './snowflake.js';
 import users from './users.js';
 import knowledge from './knowledge.js';
-import foundation from './foundation.js';
 
 const defaultConfigs: AppConfigFactory<{
   mailers: ReturnType<typeof mailers>;
@@ -53,7 +52,6 @@ const defaultConfigs: AppConfigFactory<{
   snowflake: ReturnType<typeof snowflake>;
   users: ReturnType<typeof users>;
   knowledge: ReturnType<typeof knowledge>;
-  foundation: ReturnType<typeof foundation>;
 }> = defaultAppConfigs({
   mailers,
   auth,
@@ -79,7 +77,6 @@ const defaultConfigs: AppConfigFactory<{
   snowflake,
   users,
   knowledge,
-  foundation,
 });
 
 export default defaultConfigs;

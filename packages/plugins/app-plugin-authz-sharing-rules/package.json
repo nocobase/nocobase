@@ -8,6 +8,16 @@
   "engines": {
     "node": ">=24.0.0"
   },
+  "nocobase": {
+    "title": {
+      "en-US": "Sharing rules",
+      "zh-CN": "共享规则"
+    },
+    "description": {
+      "en-US": "Share records with other members",
+      "zh-CN": "把记录共享给其他成员"
+    }
+  },
   "sideEffects": false,
   "exports": {
     "./server": {

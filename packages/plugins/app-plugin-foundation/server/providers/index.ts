@@ -1,9 +1,9 @@
 import type { AppPluginProviderConstructor } from '@nocobase/app-server/plugins';
 
-import { FoundationProvider } from './foundation.js';
+import { FoundationAuthorizationProvider } from './authorization.js';
 
 export const serviceProviders: readonly AppPluginProviderConstructor[] = [
-  FoundationProvider,
+  FoundationAuthorizationProvider,
 ];
 
 export default serviceProviders;

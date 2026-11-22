@@ -20,9 +20,7 @@ export interface CreateTestAppConfigOptions {
   readonly connections?: readonly string[];
   /**
    * Further configuration, section by section, written beneath the test databases into the same file, such as
-   * `{ users: { initialAdmin: … } }`. Its `database.connections` entries are merged into the provisioned ones, and its
-   * `foundation` entries into the test default `{ scanOnStart: false }`: pass `foundation: { scanOnStart: true }` for a
-   * test that needs App Foundation's scan at start.
+   * `{ users: { initialAdmin: … } }`. Its `database.connections` entries are merged into the provisioned ones.
    */
   readonly config?: TestAppConfigValues;
   /**
@@ -113,9 +111,6 @@ function testAppConfigValues(
   );
   return {
     ...extra,
-    // App Foundation's start-up scan is seconds of CPU that every test application would otherwise pay, and wait for
-    // when it closes. An application without the plugin never reads the section.
-    foundation: { scanOnStart: false, ...recordOf(extra.foundation) },
     database: {
       ...extraDatabase,
       connections: { ...extraConnections, ...connections },

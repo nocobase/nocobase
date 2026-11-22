@@ -9,6 +9,16 @@
   "engines": {
     "node": ">=24.0.0"
   },
+  "nocobase": {
+    "title": {
+      "en-US": "Sign-in and authentication",
+      "zh-CN": "登录与认证"
+    },
+    "description": {
+      "en-US": "Sign-in methods, sessions and account security",
+      "zh-CN": "登录方式、会话和账号安全"
+    }
+  },
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "exports": {

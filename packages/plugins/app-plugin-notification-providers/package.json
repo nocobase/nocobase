@@ -8,6 +8,16 @@
   "engines": {
     "node": ">=24.0.0"
   },
+  "nocobase": {
+    "title": {
+      "en-US": "Notification channels",
+      "zh-CN": "通知渠道"
+    },
+    "description": {
+      "en-US": "Email, IM and other delivery channels",
+      "zh-CN": "邮件、IM 等发送渠道"
+    }
+  },
   "sideEffects": false,
   "files": [
     "dist",
