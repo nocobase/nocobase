@@ -4,6 +4,12 @@ import type { ComponentType } from 'react';
 
 import type { ClientApplication } from './application.js';
 import type { AppClientReactProvider } from './config.js';
+import {
+  defineHeaderActions,
+  type AppClientBadgeHook,
+  type AppClientHeaderActionDefinition,
+  type AppClientHeaderActions,
+} from './header-actions.js';
 import { APP_CLIENT_NAMESPACE } from './namespace.js';
 
 const CONTRIBUTION_NAME_PATTERN = /^[a-z0-9][a-z0-9._-]*$/i;
@@ -89,12 +95,15 @@ export const SYSTEM_SETTINGS_CATEGORIES: {
 export const PERSONAL_SETTINGS_CATEGORIES: {
   readonly account: 'account';
   readonly preferences: 'preferences';
+  readonly messages: 'messages';
   readonly other: 'other';
 } = Object.freeze({
   /** The person's profile, password and sign-in methods. */
   account: 'account',
   /** Language, appearance and other personal habits. */
   preferences: 'preferences',
+  /** The messages a person receives: their notifications, their mailboxes. */
+  messages: 'messages',
   /** Pages that fit no other category. */
   other: 'other',
 } as const);
@@ -126,6 +135,7 @@ const BUILT_IN_SETTINGS_CATEGORIES: Readonly<
   personalSettings: Object.freeze([
     [PERSONAL_SETTINGS_CATEGORIES.account, 100],
     [PERSONAL_SETTINGS_CATEGORIES.preferences, 200],
+    [PERSONAL_SETTINGS_CATEGORIES.messages, 300],
     [PERSONAL_SETTINGS_CATEGORIES.other, 900],
   ] as const),
 });
@@ -313,6 +323,11 @@ export interface AppClientRouteNavigation {
    */
   readonly description?: string;
   readonly icon?: AppClientRouteIcon;
+  /**
+   * The count beside the entry, such as unread messages: a hook the menu calls while it renders the entry
+   * (`AppClientBadgeHook`). A layout may still pass a count of its own for the entry, which wins.
+   */
+  readonly badge?: AppClientBadgeHook;
 }
 
 /**
@@ -438,6 +453,8 @@ export interface AppClientContribution<TOptions = void> {
   readonly reactProviders?: AppClientReactProviders<TOptions>;
   readonly routes?: AppClientRoutes<TOptions>;
   readonly locales?: AppClientLocales;
+  /** Buttons in the header's right-hand area, left of the account menu (`AppClientHeaderActionDefinition`). */
+  readonly headerActions?: AppClientHeaderActions<TOptions>;
   readonly options?: TOptions;
 }
 
@@ -471,6 +488,7 @@ export interface AppClientPluginRegistration {
   readonly routes: readonly AppClientRouteContribution[];
   readonly reactProviders: readonly AppClientReactProviderDefinition[];
   readonly locales?: AppClientLocales;
+  readonly headerActions: readonly AppClientHeaderActionDefinition[];
   readonly routeComponentOverrides: readonly AppClientRouteComponentOverrideDefinition[];
   readonly options: unknown;
 }
@@ -516,6 +534,9 @@ export function defineClientPlugin<TOptions = void>(
         resolveContribution(definition.reactProviders, resolvedOptions) ?? [],
       ),
       locales: definition.locales,
+      headerActions: defineHeaderActions(
+        resolveContribution(definition.headerActions, resolvedOptions) ?? [],
+      ),
       routeComponentOverrides: defineClientRouteComponentOverrides(overrides),
       options: resolvedOptions,
     });
@@ -1306,6 +1327,10 @@ function normalizeNavigation(
 ): AppClientRouteNavigation {
   const { description, ...rest } = navigation;
   const trimmed = description?.trim();
+  if (navigation.badge !== undefined && typeof navigation.badge !== 'function')
+    throw new Error(
+      `Client route "${id}" from plugin "${packageName}" navigation badge must be a hook function.`,
+    );
   return Object.freeze({
     ...rest,
     title: normalizeTitle(navigation.title, id, packageName),
@@ -1872,3 +1897,18 @@ function findReactProviderCycle(
 
   return reactProviders.map((reactProvider) => reactProvider.id);
 }
+
+export {
+  applyHeaderActionOverrides,
+  badgeCount,
+  defineHeaderActionOverrides,
+  defineHeaderActions,
+  resolveHeaderActions,
+  type AppClientBadge,
+  type AppClientBadgeHook,
+  type AppClientBadgeTone,
+  type AppClientHeaderActionDefinition,
+  type AppClientHeaderActionOverride,
+  type AppClientHeaderActions,
+  type AppClientRegisteredHeaderAction,
+} from './header-actions.js';

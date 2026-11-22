@@ -76,3 +76,14 @@ A later TARGET makes the settings categories built in ([categories](../../nocoba
 ## Verify
 
 Run the application's navigation and settings tests, then check in the browser as an administrator and as a restricted user, at desktop and phone widths: one System settings entry, apart from the business menu; Personal settings first in the account menu, opening the personal settings menu for every signed-in person; on every settings page the settings menu by category with the module selected, and Back returning to the page left (or `/` when opened directly); `/settings` opens the first page the viewer may open and no empty category is shown; each old deep link and bookmark opens the same page; tabs switch by URL, refresh and Back keep the view; the breadcrumb returns to the home; a restricted user sees only the menu entries and tabs their grants open and is still refused by direct URLs and APIs; list filters, unsaved-change guards and business data are unchanged. Trigger a permission refresh while editing: content and overlays must be hidden while pending, the same draft must return if access remains allowed, and denial or a different signed-in identity must remove the previous content. While the permission request remains pending, cancel leaving through the breadcrumb and browser Back, check that the URL and draft remain, and check the native beforeunload prompt; confirm leaving and check the destination. Cancel leaving through module tabs and the home breadcrumb and check that the draft remains; confirm leaving and check the final destination.
+
+## Header actions and badges
+
+A later TARGET renders the header's right-hand buttons from registrations instead of `client/layouts/components/header-actions.tsx` writing them out, adds a personal settings category `messages`, and lets a route declare its navigation count with `navigation.badge`. Upgrade `@nocobase/app-client` first, then:
+
+1. Take the TARGET `client/header-actions.ts` and the two lines of `client/runtime.ts` that pass `headerActions` and `headerActionOverrides` to `defineAppRuntime()`.
+2. Take the TARGET `header-actions.tsx` and `navigation-menu.tsx`, and the `navigation.moreActions` copy in `client/locales/system/`.
+3. Move every button the application had added to `header-actions.tsx` into `client/header-actions.ts` as `{ name, order, component }`, keeping its component and its order from left to right; Examples-derived applications register the Agent chat button there as `agent-chat`.
+4. A count the application passes to `NavigationMenu` in `badges` keeps working; move it to the route's `navigation.badge` when the application owns the route.
+
+Verify the header at desktop and phone width: the same buttons in the same order, the account menu last, and no wrapping at 390px.

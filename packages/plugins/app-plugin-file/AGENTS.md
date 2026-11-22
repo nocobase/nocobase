@@ -1,6 +1,7 @@
 # File Plugin Development Rules
 
-- This plugin owns Client/Server Repository managers, their original service tokens, route factories. Business collections, migrations, concrete resources, and pages belong to applications or business plugins. The runnable example is packages/examples/app-plugin-file-example.
+- This plugin owns Client/Server Repository managers, their original service tokens, route factories, the in-memory registry of features that store files, and the file storage settings page with its two routes (`GET /api/file/storage`, `POST /api/file/disks/{disk}/check`). Business collections, migrations, concrete resources, and business pages belong to applications or business plugins. The runnable example is packages/examples/app-plugin-file-example.
+- File storage responses are built from an allowlist: never copy a disk configuration object into a response or an error. Report check failures by fixed reason and the error's name or code, never its message.
 - Resolve the application's database, Drive, and API Client through their owning tokens. Never create a second connection, container, or API Client.
 - Preserve the Repository implementation's current boundary: route authentication/authorization and advanced streaming (Range and conditional requests) are not built in. Document the application's responsibility for both API and content routes. Do not imply that a private disk, UUID, Repository Policy, or login page authenticates requests.
 - UI Library file components consume ClientFileRepository and FileRecord from the public ./client export. Their UI types and preview helpers live inside the recipe. Do not reintroduce the removed FilesClient protocol, file access tokens, inventory settings, or server implementation.

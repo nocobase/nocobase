@@ -10,6 +10,21 @@ afterEach(async () => {
   for (const fn of cleanup.splice(0).reverse()) await fn();
 });
 
+/** The configuration accessor the provider passes: the Drive configuration and the named connections, the first as the default. */
+function configOf(drive: unknown, connections: readonly string[]) {
+  const values: Record<string, unknown> = {
+    drive,
+    database: {
+      default: connections[0],
+      connections: Object.fromEntries(connections.map((name) => [name, {}])),
+    },
+  };
+  return {
+    get: <TValue = unknown>(key: string): TValue | undefined =>
+      values[key] as TValue | undefined,
+  };
+}
+
 async function fixture(
   defaultDisk: string,
   connections: readonly string[] = ['main'],
@@ -78,8 +93,7 @@ async function fixture(
         local: { driver: 'fs', location: '/tmp', visibility: 'private' },
       },
     }),
-    driveConfig,
-    connections,
+    configOf(driveConfig, connections),
   );
   return { manager, db };
 }
@@ -154,8 +168,10 @@ it('reports a connection it cannot read instead of failing', async () => {
         local: { driver: 'fs', location: '/tmp', visibility: 'private' },
       },
     }),
-    { default: 'local', disks: { local: { driver: 'fs' } } },
-    ['main', 'missing'],
+    configOf({ default: 'local', disks: { local: { driver: 'fs' } } }, [
+      'main',
+      'missing',
+    ]),
   );
   expect(await manager.localDiskUsage()).toEqual({
     defaultDiskIsLocal: true,

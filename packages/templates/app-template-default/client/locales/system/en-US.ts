@@ -437,6 +437,7 @@ const systemEnUS = {
     description: 'Go to a page of this application.',
     breadcrumb: 'Breadcrumb',
     breadcrumbMore: 'Show the levels in between',
+    moreActions: 'More actions',
     back: 'Back',
     backTo: 'Back to {{label}}',
   },

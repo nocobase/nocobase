@@ -1,3 +1,4 @@
+import { badgeCount, type AppClientBadge } from '@nocobase/app-client';
 import { useTranslation } from '@nocobase/i18n/client';
 import { ChevronRight } from 'lucide-react';
 import {
@@ -46,9 +47,9 @@ const SELECTED =
   'data-active:bg-sidebar-primary data-active:text-sidebar-primary-foreground data-active:hover:bg-sidebar-primary data-active:hover:text-sidebar-primary-foreground';
 
 /**
- * A count beside a menu entry. A number is what waits on the viewer, such as unread messages or requests to decide;
- * `live` is work under way, such as runs in progress, with `hint` as its words for the tooltip and screen readers. Zero
- * shows nothing.
+ * A count the layout passes for a menu entry, in place of the one its route declares (`navigation.badge`). A number is
+ * what waits on the viewer, such as unread messages or requests to decide; `live` is work under way, such as runs in
+ * progress, with `hint` as its words for the tooltip and screen readers. Zero shows nothing.
  */
 export type NavigationBadge =
   | number
@@ -59,16 +60,35 @@ export type NavigationBadges = Readonly<Record<string, NavigationBadge>>;
 
 const NavigationBadgesContext = createContext<NavigationBadges>({});
 
+const noBadge = (): AppClientBadge | undefined => undefined;
+
+/**
+ * The entry's count: the one the layout passes for it, else the one its route declares. The declared hook is called on
+ * every render either way, so the hooks of an entry stay the same while the layout's counts come and go.
+ */
 function useNavigationBadge(item: RouteNavigationItem): {
   readonly count: number;
   readonly live: boolean;
+  readonly attention: boolean;
   readonly text: string;
 } {
+  const useDeclaredBadge = item.route.navigation?.badge ?? noBadge;
+  const declared = useDeclaredBadge();
   const badge = useContext(NavigationBadgesContext)[item.route.name];
   if (typeof badge === 'object')
-    return { count: badge.count, live: true, text: badge.hint };
-  const count = badge ?? 0;
-  return { count, live: false, text: String(count) };
+    return {
+      count: badge.count,
+      live: true,
+      attention: false,
+      text: badge.hint,
+    };
+  const count = badge ?? badgeCount(declared);
+  return {
+    count,
+    live: false,
+    attention: badge === undefined && declared?.tone === 'attention',
+    text: String(count),
+  };
 }
 
 /**
@@ -90,8 +110,8 @@ export function NavigationMenu({
   /** `false` draws top-level groups as collapsible sub-menus too. */
   readonly sections?: boolean;
   /**
-   * Counts beside entries, keyed by route name, for a page entry that is not a sub-menu's: a top-level entry or a
-   * section's. They change while the page is open, so the layout passes them rather than the route declaring them.
+   * Counts beside page entries, keyed by route name, at any depth. A route usually declares its own
+   * (`navigation.badge`); a count given here, 0 included, replaces it.
    */
   readonly badges?: NavigationBadges;
 }): ReactElement {
@@ -266,8 +286,10 @@ function NavigationItem({
         <NavigationPopover
           item={item}
           label={label}
+          name={counted ?? label}
           selectedKey={selectedKey}
         />
+        {badge.count > 0 && <EntryBadge {...badge} dot />}
       </SidebarMenuItem>
     );
 
@@ -317,12 +339,17 @@ function NavigationItem({
           <SidebarMenuButton
             render={link}
             isActive={isSelected}
-            tooltip={tooltip}
+            aria-label={counted ?? undefined}
+            tooltip={
+              tooltip && counted ? { ...tooltip, children: counted } : tooltip
+            }
+            // `styles.css` leaves room for the count left of the disclosure arrow.
             className={SELECTED}
           >
             {Icon ? <Icon /> : null}
             <span>{label}</span>
           </SidebarMenuButton>
+          {counted ? <EntryBadge {...badge} dot={false} beside /> : null}
           <SidebarMenuAction
             render={<CollapsibleTrigger />}
             aria-label={label}
@@ -362,38 +389,95 @@ function NavigationItem({
 function EntryBadge({
   count,
   live,
+  attention,
   text,
   dot,
+  beside = false,
 }: {
   readonly count: number;
   readonly live: boolean;
+  /** A declared badge's `attention` tone: the count on the primary color. */
+  readonly attention: boolean;
   readonly text: string;
   readonly dot: boolean;
+  /** The row also has a disclosure arrow at its end, so the count sits left of it. */
+  readonly beside?: boolean;
 }): ReactElement {
-  const pulse = 'animate-pulse motion-reduce:animate-none';
   return (
     <>
       <SidebarMenuBadge
         aria-hidden
         title={live ? text : undefined}
-        className={
-          live
-            ? 'gap-1 rounded-full bg-primary/10 px-1.5 text-primary dark:bg-primary/20'
-            : 'rounded-full bg-foreground/8 px-1.5 dark:bg-foreground/15'
-        }
+        className={`${badgeTone({ live, attention })}${beside ? ' right-8' : ''}`}
       >
-        {live && (
-          <span className={`size-1.5 rounded-full bg-primary ${pulse}`} />
-        )}
-        {count > 99 ? '99+' : count}
+        <BadgeCount count={count} live={live} />
       </SidebarMenuBadge>
       {dot && (
         <span
           aria-hidden
           data-slot='navigation-badge-dot'
-          className={`pointer-events-none absolute top-1 right-1 size-2 rounded-full bg-primary ${live ? pulse : ''}`}
+          className={`pointer-events-none absolute top-1 right-1 size-2 rounded-full bg-primary ${live ? PULSE : ''}`}
         />
       )}
+    </>
+  );
+}
+
+/**
+ * A sub-menu entry's count, at the end of its row inside the link, in the same colors as a top-level entry's. The
+ * words are the entry's, so this is hidden from screen readers.
+ */
+function SubEntryBadge({
+  count,
+  live,
+  attention,
+  text,
+}: {
+  readonly count: number;
+  readonly live: boolean;
+  readonly attention: boolean;
+  readonly text: string;
+}): ReactElement {
+  return (
+    <span
+      aria-hidden
+      data-slot='navigation-sub-badge'
+      title={live ? text : undefined}
+      className={`ml-auto flex h-5 min-w-5 shrink-0 items-center justify-center px-1 text-xs font-medium tabular-nums ${badgeTone({ live, attention })}`}
+    >
+      <BadgeCount count={count} live={live} />
+    </span>
+  );
+}
+
+const PULSE = 'animate-pulse motion-reduce:animate-none';
+
+/** The colors of an entry's count: work under way, a declared `attention` tone, or a neutral count. */
+function badgeTone({
+  live,
+  attention,
+}: {
+  readonly live: boolean;
+  readonly attention: boolean;
+}): string {
+  if (live)
+    return 'gap-1 rounded-full bg-primary/10 px-1.5 text-primary dark:bg-primary/20';
+  if (attention)
+    return 'rounded-full bg-primary px-1.5 text-primary-foreground peer-hover/menu-button:text-primary-foreground peer-data-active/menu-button:text-primary-foreground';
+  return 'rounded-full bg-foreground/8 px-1.5 dark:bg-foreground/15';
+}
+
+function BadgeCount({
+  count,
+  live,
+}: {
+  readonly count: number;
+  readonly live: boolean;
+}): ReactElement {
+  return (
+    <>
+      {live && <span className={`size-1.5 rounded-full bg-primary ${PULSE}`} />}
+      {count > 99 ? '99+' : count}
     </>
   );
 }
@@ -408,6 +492,7 @@ function NavigationSubItem({
   const Icon = item.route.navigation?.icon;
   const isSelected = routeKey(item.route) === selectedKey;
   const disclosure = useDisclosure(item, selectedKey);
+  const badge = useNavigationBadge(item);
   const children = item.children;
   if (item.section)
     return (
@@ -426,10 +511,19 @@ function NavigationSubItem({
       aria-current={isSelected ? 'page' : undefined}
     />
   ) : undefined;
+  // A page entry, with or without a sub-menu of its own, carries its count at the end of the link.
+  const counted = link && badge.count > 0 ? `${label} · ${badge.text}` : null;
   const content = (
     <>
       {Icon ? <Icon /> : null}
-      <span>{label}</span>
+      {counted ? (
+        <>
+          <span className='min-w-0 truncate'>{label}</span>
+          <SubEntryBadge {...badge} />
+        </>
+      ) : (
+        <span>{label}</span>
+      )}
     </>
   );
 
@@ -439,6 +533,8 @@ function NavigationSubItem({
         <SidebarMenuSubButton
           render={link}
           isActive={isSelected}
+          // A counted entry is named with its count, as a top-level entry is.
+          aria-label={counted ?? undefined}
           className={SELECTED}
         >
           {content}
@@ -457,7 +553,8 @@ function NavigationSubItem({
           <SidebarMenuSubButton
             render={link}
             isActive={isSelected}
-            className={`${SELECTED} pr-8`}
+            aria-label={counted ?? undefined}
+            className={`${SELECTED} pr-8!`}
           >
             {content}
           </SidebarMenuSubButton>
@@ -534,10 +631,13 @@ function containsSelection(
 function NavigationPopover({
   item,
   label,
+  name,
   selectedKey,
 }: {
   readonly item: RouteNavigationItem;
   readonly label: string;
+  /** The entry's accessible name: its label, with its count when it has one. */
+  readonly name: string;
   readonly selectedKey: string | undefined;
 }): ReactElement {
   const [open, setOpen] = useState(false);
@@ -586,7 +686,7 @@ function NavigationPopover({
             }
           />
         }
-        aria-label={label}
+        aria-label={name}
       >
         {Icon ? <Icon /> : <span>{label}</span>}
       </SidebarMenuButton>
