@@ -43,11 +43,14 @@ function MethodGuidePage({
     publicOrigin: settings.data?.app.publicOrigin.value ?? null,
     browserOrigin: window.location.origin,
   });
-  const prompt = methodPrompt(t, {
-    method,
-    appName: context.appName,
-    origin: context.origin,
-  });
+  // Built only from settings that were read: a failed read leaves nothing to copy.
+  const prompt = settings.data
+    ? methodPrompt(t, {
+        method,
+        appName: context.appName,
+        origin: context.origin,
+      })
+    : '';
 
   return (
     <SettingsPage

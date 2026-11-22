@@ -79,7 +79,9 @@ export default function SsoGuidePage(): ReactElement {
     setPreset(next);
     setProviderId(next.id);
   };
-  const id = providerId.trim() || preset.id;
+  // A built-in social provider keeps Better Auth's own id: socialProviders accepts no other key. Only Other is free.
+  const locked = type === 'social' && !preset.other;
+  const id = locked ? preset.id : providerId.trim() || preset.id;
   const name = preset.other ? id : preset.name;
   const context = guideContext({
     configuredTitle: useClientApplication().config.get<unknown>('app.title'),
@@ -94,16 +96,19 @@ export default function SsoGuidePage(): ReactElement {
   const prefix = variablePrefix(id);
   // A provider outside Better Auth's built-in list cannot be a socialProviders key; it goes through genericOAuth().
   const promptType = type === 'social' && preset.other ? 'oauth' : type;
-  const prompt = providerPrompt(t, {
-    type: promptType,
-    id,
-    name,
-    discoveryUrl: preset.discoveryUrl,
-    signUp,
-    callbackUrl: callback,
-    appName: context.appName,
-    origin: context.origin,
-  });
+  // Built only from settings that were read: a failed read leaves nothing to copy.
+  const prompt = settings.data
+    ? providerPrompt(t, {
+        type: promptType,
+        id,
+        name,
+        discoveryUrl: preset.discoveryUrl,
+        signUp,
+        callbackUrl: callback,
+        appName: context.appName,
+        origin: context.origin,
+      })
+    : '';
   const copy = (text: string): void => {
     void copyText(text).then((copied) => {
       if (copied) toaster.show({ type: 'success', title: t('sso.copied') });
@@ -150,14 +155,16 @@ export default function SsoGuidePage(): ReactElement {
           <GuideStep label={<Label htmlFor={fieldId}>{t('sso.id')}</Label>}>
             <Input
               id={fieldId}
-              className='max-w-md'
-              value={providerId}
+              className='max-w-md read-only:cursor-default read-only:bg-muted read-only:text-muted-foreground'
+              value={id}
+              readOnly={locked}
+              aria-readonly={locked}
               onChange={(event) =>
                 setProviderId(event.target.value.replace(/[^a-z0-9-]/giu, ''))
               }
             />
             <p className='mt-1 text-xs text-muted-foreground'>
-              {t('sso.idHint')}
+              {locked ? t('sso.idLocked', { name }) : t('sso.idHint')}
             </p>
           </GuideStep>
           <GuideStep label={t('sso.createApp', { name })}>

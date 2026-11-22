@@ -294,7 +294,7 @@ const enUS = {
     oauth: {
       intro:
         'Turn on sign-in with {{name}} in this NocoBase application. {{name}} is not one of Better Auth’s built-in social providers, so connect it with the generic OAuth plugin (genericOAuth, OAuth 2.0 or OIDC) instead of socialProviders, which only accepts the built-in ids.',
-      add: 'In server/config/auth.ts, add genericOAuth from better-auth/plugins to the plugins, keeping the plugins already there, with providerId {{id}} and the authorizationUrl, tokenUrl and userInfoUrl from {{name}}’s documentation (or its discoveryUrl when it publishes OIDC discovery); map its user info to id, email and name with mapProfileToUser when the field names differ. Read clientId and clientSecret from the environment variables {{prefix}}_CLIENT_ID and {{prefix}}_CLIENT_SECRET; never write them into code. The browser needs no client plugin: sign-in and linking go through signIn.social and linkSocial.',
+      add: 'In server/config/auth.ts, add genericOAuth from better-auth/plugins to the plugins, keeping the plugins already there, with providerId {{id}} and the authorizationUrl, tokenUrl and userInfoUrl from {{name}}’s documentation (or its discoveryUrl when it publishes OIDC discovery); take the account id from a stable field of {{name}}’s user info with accountSubject, such as ({ profile }) => profile.user_id, because without it Better Auth reads profile.id; use mapProfileToUser only for profile data such as email, name and image. Read clientId and clientSecret from the environment variables {{prefix}}_CLIENT_ID and {{prefix}}_CLIENT_SECRET; never write them into code. The browser needs no client plugin: sign-in and linking go through signIn.social and linkSocial.',
     },
     social: {
       intro:
@@ -356,6 +356,8 @@ const enUS = {
     provider: 'Identity provider',
     other: 'Other',
     id: 'Identifier',
+    idLocked:
+      'Better Auth’s own id for {{name}}, which socialProviders requires. For another provider, choose Other.',
     idHint:
       'Part of the callback URL. Do not change it after deployment, or linked accounts stop working.',
     createApp: '1. Create the application in {{name}}',

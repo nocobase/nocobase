@@ -274,7 +274,7 @@ const zhCN: AuthenticationResource = {
     oauth: {
       intro:
         '请在这个 NocoBase 应用里开启 {{name}} 登录。{{name}} 不是 Better Auth 内置的社交提供方，请用通用 OAuth 插件（genericOAuth，支持 OAuth 2.0 和 OIDC）接入，不要写进只接受内置标识的 socialProviders。',
-      add: '在 server/config/auth.ts 的 plugins 里加上 better-auth/plugins 的 genericOAuth，保留已有插件；providerId 为 {{id}}，authorizationUrl、tokenUrl、userInfoUrl 按 {{name}} 的文档填写（提供 OIDC 发现地址时改用 discoveryUrl）；字段名不同时用 mapProfileToUser 映射出 id、email、name。clientId、clientSecret 从环境变量 {{prefix}}_CLIENT_ID、{{prefix}}_CLIENT_SECRET 读取，不要写进代码。浏览器端不需要客户端插件：登录和绑定都走 signIn.social 和 linkSocial。',
+      add: '在 server/config/auth.ts 的 plugins 里加上 better-auth/plugins 的 genericOAuth，保留已有插件；providerId 为 {{id}}，authorizationUrl、tokenUrl、userInfoUrl 按 {{name}} 的文档填写（提供 OIDC 发现地址时改用 discoveryUrl）；账号标识用 accountSubject 从 {{name}} 用户信息里稳定不变的字段读取，例如 ({ profile }) => profile.user_id，不设置时 Better Auth 读取 profile.id；mapProfileToUser 只映射邮箱、姓名、头像等资料。clientId、clientSecret 从环境变量 {{prefix}}_CLIENT_ID、{{prefix}}_CLIENT_SECRET 读取，不要写进代码。浏览器端不需要客户端插件：登录和绑定都走 signIn.social 和 linkSocial。',
     },
     social: {
       intro:
@@ -333,6 +333,8 @@ const zhCN: AuthenticationResource = {
     provider: '身份提供方',
     other: '其他',
     id: '标识',
+    idLocked:
+      '这是 Better Auth 为 {{name}} 规定的标识，socialProviders 只接受它。要接入其他提供方，请选「其他」。',
     idHint: '出现在回调地址里，部署后不要再改，否则已绑定的账号会失效。',
     createApp: '1. 在 {{name}} 创建应用',
     copy: '复制',

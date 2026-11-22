@@ -47,7 +47,9 @@ function startProvider(): Promise<{
         tokenRequests.push(form);
         if (
           form.get('code') !== 'local-code' ||
-          form.get('redirect_uri') !== ssoCallbackUrl(AUTH_BASE, PROVIDER)
+          ![PROVIDER, 'custom']
+            .map((id) => ssoCallbackUrl(AUTH_BASE, id))
+            .includes(form.get('redirect_uri') ?? '')
         )
           return json(400, { error: 'invalid_grant' });
         json(200, {
@@ -58,6 +60,13 @@ function startProvider(): Promise<{
       });
       return;
     }
+    // A plain OAuth 2.0 provider that names its account id user_id, as many do.
+    if (url.pathname === '/oauth/userinfo')
+      return json(200, {
+        user_id: 'u-77',
+        email: 'oauth-user@example.com',
+        name: 'OAuth User',
+      });
     if (url.pathname === '/userinfo')
       return json(200, {
         sub: 'subject-42',
@@ -234,5 +243,105 @@ describe('a social provider outside Better Auth’s built-in list', () => {
     } finally {
       await fixture.dispose();
     }
+  });
+});
+
+describe('the account id of a provider outside Better Auth’s built-in list', () => {
+  let provider: Awaited<ReturnType<typeof startProvider>>;
+  beforeAll(async () => {
+    provider = await startProvider();
+  });
+  afterAll(async () => {
+    await new Promise((resolve) => provider?.server.close(resolve));
+  });
+
+  /** Runs a whole sign-in through `custom` and returns the account it stored, if any. */
+  async function signInThrough(
+    config: Partial<Parameters<typeof genericOAuth>[0]['config'][number]>,
+  ) {
+    const fixture = await createAuthFixture({
+      plugins: [
+        genericOAuth({
+          config: [
+            {
+              providerId: 'custom',
+              authorizationUrl: `${provider.issuer}/authorize`,
+              tokenUrl: `${provider.issuer}/token`,
+              userInfoUrl: `${provider.issuer}/oauth/userinfo`,
+              clientId: 'custom-client',
+              clientSecret: 'custom-secret',
+              ...config,
+            },
+          ],
+        }),
+      ],
+    });
+    try {
+      const start = await fixture.router.request('/api/auth/sign-in/social', {
+        method: 'POST',
+        headers: {
+          'content-type': 'application/json',
+          origin: 'http://localhost',
+        },
+        body: JSON.stringify({ provider: 'custom', callbackURL: '/' }),
+      });
+      const authorization = new URL(
+        ((await start.json()) as { url: string }).url,
+      );
+      const callback = new URL(authorization.searchParams.get('redirect_uri')!);
+      callback.searchParams.set('code', 'local-code');
+      callback.searchParams.set(
+        'state',
+        authorization.searchParams.get('state')!,
+      );
+      const done = await fixture.router.request(
+        callback.pathname + callback.search,
+        {
+          headers: {
+            cookie: start.headers
+              .getSetCookie()
+              .map((cookie) => cookie.split(';')[0])
+              .join('; '),
+          },
+        },
+      );
+      const account = await fixture.connection.query
+        .selectFrom('account')
+        .select(['accountId'])
+        .where('providerId', '=', 'custom')
+        .executeTakeFirst();
+      return { location: done.headers.get('location'), account };
+    } finally {
+      await fixture.dispose();
+    }
+  }
+
+  it('comes from accountSubject, as the guide says, when the provider names it user_id', async () => {
+    const config = ssoConfig({ type: 'oauth', id: 'custom', signUp: 'create' });
+    expect(config).toContain(
+      'accountSubject: ({ profile }) => String(profile.user_id),',
+    );
+    expect(
+      await signInThrough({
+        accountSubject: ({ profile }) =>
+          String((profile as { user_id?: unknown }).user_id),
+        mapProfileToUser: (profile) => ({
+          email: profile.email as string,
+          name: profile.name as string,
+        }),
+      }),
+    ).toEqual({ location: '/', account: { accountId: 'u-77' } });
+  });
+
+  it('is missing without accountSubject, even when mapProfileToUser returns an id', async () => {
+    const result = await signInThrough({
+      mapProfileToUser: (profile) => ({
+        id: String((profile as { user_id?: unknown }).user_id),
+        email: profile.email as string,
+        name: profile.name as string,
+      }),
+    });
+    expect(result.account).toBeUndefined();
+    expect(result.location).not.toBe('/');
   });
 });
