@@ -7,6 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { cx } from '@emotion/css';
 import React from 'react';
 import { Tooltip, Form } from 'antd';
 import type { FormItemProps, TooltipProps } from 'antd';
@@ -14,7 +15,7 @@ import type { FormItemProps, TooltipProps } from 'antd';
 type ChildExtraProps = Record<string, any>;
 
 interface ExtendedFormItemProps extends FormItemProps {
-  itemMarginBottom?: number;
+  itemMarginClassName?: string;
   labelWidth?: number | string;
   labelWrap?: boolean;
   showLabel?: boolean;
@@ -61,7 +62,7 @@ export const FormItem = ({
   children,
   showLabel = true,
   labelWidth,
-  itemMarginBottom = formItemStyle.marginBottom,
+  itemMarginClassName,
   ...rest
 }: ExtendedFormItemProps & ChildExtraProps) => {
   const forwardedRest = Object.fromEntries(
@@ -130,7 +131,8 @@ export const FormItem = ({
   return (
     <Form.Item
       {...forwardedRest}
-      style={{ marginBottom: itemMarginBottom, ...forwardedRest.style }}
+      className={cx(forwardedRest.className, itemMarginClassName)}
+      style={itemMarginClassName ? forwardedRest.style : { ...formItemStyle, ...forwardedRest.style }}
       labelCol={{ style: labelColStyle }}
       layout={layout}
       label={renderLabel()}
