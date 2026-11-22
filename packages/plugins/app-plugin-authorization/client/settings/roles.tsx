@@ -106,8 +106,10 @@ export default function RolesPage(): ReactElement {
         label={t('settings.actionsFor', { name: text(role.title ?? role.key) })}
         actions={[
           canUpdate &&
-            !role.unrestricted &&
-            (!role.protection || role.protection.allow.includes('update')) && {
+            (role.protection?.allow.includes('updateTitle') ||
+              (!role.unrestricted &&
+                (!role.protection ||
+                  role.protection.allow.includes('update')))) && {
               key: 'edit',
               label: t('settings.editRole'),
               disabled: locked,

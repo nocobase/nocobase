@@ -542,7 +542,7 @@ describe('the Permission Set the library protects as the root set', () => {
       }).permissionSets.protection('administrator'),
     ).toEqual({
       owner: PERMISSION_SETS_PROTECTION_OWNER,
-      allow: ['assign', 'revoke'],
+      allow: ['updateTitle', 'assign', 'revoke'],
       requireActiveAssignment: true,
       unrestricted: true,
     });
@@ -563,7 +563,7 @@ describe('the Permission Set the library protects as the root set', () => {
 
     expect(authorization.permissionSets.protection('administrator')).toEqual({
       owner: PERMISSION_SETS_PROTECTION_OWNER,
-      allow: ['assign', 'revoke'],
+      allow: ['updateTitle', 'assign', 'revoke'],
       unrestricted: true,
     });
     await expect(

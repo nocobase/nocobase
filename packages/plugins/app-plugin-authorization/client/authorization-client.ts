@@ -33,7 +33,7 @@ export interface PermissionGrant {
 }
 
 export type PermissionSetWriteOperation =
-  'create' | 'update' | 'delete' | 'assign' | 'revoke';
+  'create' | 'update' | 'updateTitle' | 'delete' | 'assign' | 'revoke';
 
 export interface PermissionSetProtection {
   owner: string;

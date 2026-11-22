@@ -136,14 +136,20 @@ function mount(route: string, calls: ReturnType<typeof api>) {
   );
 }
 
-it('lists the roles beside the editor, opens the first one and keeps the system administrator read-only', async () => {
+it('lists the roles beside the editor, opens the first one and only offers a title edit for the system administrator', async () => {
   const user = userEvent.setup();
   await mount(
     '/settings/roles',
     api([
       { key: 'team', title: 'NocoBase team', grants: [] },
       { key: 'cp-customer', title: 'Customer', grants: [] },
-      { key: 'root', title: 'System administrator', unrestricted: true },
+      {
+        key: 'root',
+        title: 'System administrator',
+        grants: [],
+        unrestricted: true,
+        protection: { allow: ['updateTitle', 'assign', 'revoke'] },
+      },
       {
         key: 'member',
         title: 'Member',
@@ -168,6 +174,17 @@ it('lists the roles beside the editor, opens the first one and keeps the system 
   expect(
     screen.queryByRole('button', { name: words.reviewAndSave, exact: true }),
   ).not.toBeInTheDocument();
+  const nav = within(list).getByRole('navigation');
+  await user.click(
+    within(nav).getByRole('button', {
+      name: words.actionsFor.replace('{{name}}', 'System administrator'),
+    }),
+  );
+  expect(await screen.findAllByRole('menuitem')).toHaveLength(1);
+  await user.click(screen.getByRole('menuitem', { name: words.editRole }));
+  const dialog = within(screen.getByRole('dialog', { name: words.editRole }));
+  expect(dialog.getByRole('definition')).toHaveTextContent('root');
+  await user.click(dialog.getByRole('button', { name: words.cancel }));
   await user.type(
     within(list).getByRole('textbox', { name: words.roleSearch }),
     'Customer',

@@ -434,7 +434,13 @@ export function createPermissionSetHandler(
           // later schema change invalidated; startup reports those.
           if (changes.grants !== undefined)
             await validateWriteGrants(host, input.grants);
-          api.assertWritable(key, 'update');
+          const titleOnly =
+            changes.title !== undefined &&
+            changes.key === undefined &&
+            changes.grants === undefined;
+          const titleAllowed =
+            titleOnly && api.protection(key)?.allow.includes('updateTitle');
+          api.assertWritable(key, titleAllowed ? 'updateTitle' : 'update');
           if (input.key !== key)
             for (const candidate of [key, input.key]) {
               const protection = api.protection(candidate);
