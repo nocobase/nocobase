@@ -3,17 +3,7 @@ import { includeNotificationTemplateRoutes } from './pages/settings/notification
 import personalSettingsRoutes from './pages/me/routes.js';
 import { knowledgeDefinition } from '@nocobase/app-plugin-knowledge/client/routes';
 import {
-  agentsRoute,
-  modelsRoute,
-  runtimesRoute,
-  skillsRoute,
-} from '@nocobase/app-plugin-agents/client/routes';
-import {
   ShoppingCart,
-  BrainCircuit,
-  BotMessageSquare,
-  Bot,
-  Server,
   Sparkles,
   ScanText,
   FileText,
@@ -36,14 +26,6 @@ import {
 } from '@nocobase/app-client/plugins';
 
 const appRoutes: AppClientRouteContribution = defineAppRoutes([
-  {
-    name: 'conversation',
-    path: '/chat/:conversationId',
-    auth: 'required',
-    // The API checks ownership or an explicit snapshot grant on every read.
-    authz: 'skip',
-    componentLoader: () => import('./pages/chat/index.js'),
-  },
   {
     name: 'onboarding',
     path: '/onboarding',
@@ -353,30 +335,12 @@ const appRoutes: AppClientRouteContribution = defineAppRoutes([
     path: '/external-crm',
   },
   {
-    name: 'agentsNavigation',
+    // The AI demonstrations, which ask the Agent from a page. The Agent panel, its settings pages and the conversation
+    // page come from `@nocobase/app-plugin-agents`, registered in `client/plugins.ts`.
+    name: 'aiExamples',
     auth: 'required',
-    navigation: { title: 'onlineAgent.group', icon: BotMessageSquare },
+    navigation: { title: 'aiExamples.group', icon: Sparkles },
     children: [
-      {
-        ...agentsRoute,
-        navigation: { title: 'onlineAgent.agents', icon: Bot },
-        breadcrumb: { title: 'onlineAgent.agents' },
-      },
-      {
-        ...runtimesRoute,
-        navigation: { title: 'onlineAgent.runtimes', icon: Server },
-        breadcrumb: { title: 'onlineAgent.runtimes' },
-      },
-      {
-        ...skillsRoute,
-        navigation: { title: 'onlineAgent.skills', icon: Sparkles },
-        breadcrumb: { title: 'onlineAgent.skills' },
-      },
-      {
-        ...modelsRoute,
-        navigation: { title: 'onlineAgent.models', icon: BrainCircuit },
-        breadcrumb: { title: 'onlineAgent.models' },
-      },
       {
         name: 'ai-translation',
         path: '/ai-translation',

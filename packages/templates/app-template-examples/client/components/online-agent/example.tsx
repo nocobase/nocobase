@@ -1,8 +1,8 @@
+import { AskAgentButton } from '@nocobase/app-plugin-agents/client';
 import { useChatPanel } from '@nocobase/app-plugin-agents/client/chat';
 import { useTranslation } from '@nocobase/i18n/client';
-import { BotMessageSquare, ArrowUpRight } from 'lucide-react';
+import { BotMessageSquare } from 'lucide-react';
 import type { ReactElement } from 'react';
-import { Button } from '#components/ui/button';
 import {
   Card,
   CardHeader,
@@ -12,7 +12,8 @@ import {
 } from '#components/ui/card';
 import { ModelsLink } from './models-link.js';
 
-export function OnlineAgentExample(): ReactElement {
+/** The home page's Agent card: opens the panel `@nocobase/app-plugin-agents` puts beside the content. */
+export function AgentExample(): ReactElement {
   const panel = useChatPanel();
   const { t } = useTranslation();
   return (
@@ -20,19 +21,18 @@ export function OnlineAgentExample(): ReactElement {
       <CardHeader>
         <BotMessageSquare className='size-5 text-primary' aria-hidden='true' />
         <CardTitle>
-          <h2>{t('examples.onlineAgent.title')}</h2>
+          <h2>{t('examples.agent.title')}</h2>
         </CardTitle>
-        <CardDescription>
-          {t('examples.onlineAgent.description')}
-        </CardDescription>
+        <CardDescription>{t('examples.agent.description')}</CardDescription>
       </CardHeader>
-      <CardFooter className='flex flex-wrap gap-2'>
-        <Button disabled={!panel.available} onClick={() => panel.openChat()}>
-          {t('examples.onlineAgent.open')}
-          <ArrowUpRight data-icon='inline-end' />
-        </Button>
-        {panel.available ? <ModelsLink /> : null}
-      </CardFooter>
+      {panel.available ? (
+        <CardFooter className='flex flex-wrap gap-2'>
+          <AskAgentButton variant='default' size='default'>
+            {t('examples.agent.open')}
+          </AskAgentButton>
+          <ModelsLink />
+        </CardFooter>
+      ) : null}
     </Card>
   );
 }

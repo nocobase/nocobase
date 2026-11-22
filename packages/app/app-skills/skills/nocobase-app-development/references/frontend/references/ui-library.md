@@ -52,7 +52,7 @@ The one way to pick an agent: a trigger with the agent's avatar (availability do
 
 ### agent-chat
 
-A simple agent conversation panel with shared page/panel headers, history, composer and launchers. It has no association requirements. For related-work slots and conversation details, add agent-chat-details.
+The agents plugin's own conversation panel, generated from @nocobase/app-plugin-agents (client/panel) as a copy to edit: install it only to replace the whole panel, and register agents({ headerAction: false, panel: false }) so the plugin's own panel and header button stay out. Panel and page headers, history, composer and launchers; no association requirements. For related-work slots and conversation details, add agent-chat-details.
 
 - Kind: block
 - Install: `yes n | pnpm exec shadcn add @nocobase/agent-chat`
@@ -60,7 +60,7 @@ A simple agent conversation panel with shared page/panel headers, history, compo
 - Plugin dependencies: `@nocobase/app-plugin-agents`, `@nocobase/app-plugin-file`
 - Also installs: `@nocobase/markdown-view`, `@nocobase/agent-run-history`, `@nocobase/agent-composer`, `@nocobase/agent-picker`, `@nocobase/attachment-list`
 - Example: `@nocobase/agent-chat-demo` (`pnpm exec shadcn view @nocobase/agent-chat-demo`)
-- After installing: Requires the agents plugin (and the file plugin on the server for files sent in chat): wrap the routes in ChatProvider from @nocobase/app-plugin-agents/client/chat (pass memoryScope, the signed-in person's id, so a new conversation starts with the agent they used last; pass conversationPath when ChatConversationPage has a route such as /chat/:conversationId), optionally with ChatExtensionsContext for cards among the messages. Render ChatPanel as a sibling of <main> inside a `relative flex` row, ChatHeaderButton in the header and ChatFloatingButton anywhere; add the plugin's chatLinkRoutes(base) for links that open the panel; spread locales/ into client/locales/.
+- After installing: Generated from the agents plugin's panel (ui-library/scripts/sync-agent-chat.mjs); the plugin already renders this panel, so install the copy only to replace it entirely, with agents({ headerAction: false, panel: false }): the plugin keeps providing ChatProvider (from @nocobase/app-plugin-agents/client/chat) around the signed-in layout, so do not add another; optionally add ChatExtensionsContext for cards among the messages. Render ChatPanel as a sibling of <main> inside a `relative flex` row, ChatHeaderButton in the header and ChatFloatingButton anywhere; add the plugin's chatLinkRoutes(base) for links that open the panel; spread locales/ into client/locales/.
 
 ### agent-chat-details
 

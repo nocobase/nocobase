@@ -60,7 +60,7 @@ export default function SkillDetailPage(): ReactElement {
 function SkillView({ skillId }: { readonly skillId: string }): ReactElement {
   const { t } = useTranslation();
   const api = useAgentsApi();
-  const canDelete = useSetting('agents.agents', 'manage');
+  const canDelete = useSetting('agents.skills', 'manage');
   const listPath = useSkillsListPath();
   const detail = useQuery({
     queryKey: agentsKeys.skill(skillId),

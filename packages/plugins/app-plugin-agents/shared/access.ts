@@ -1,18 +1,20 @@
 /**
- * What this plugin offers to be granted: its pages and its settings items. The application that assembles the plugin
- * keeps the roles, and composes these declarations with its other plugins' into one role catalog.
+ * What this plugin offers to be granted: its settings items, each read or managed, and one business action. The
+ * application that assembles the plugin keeps the roles, and composes these declarations with its other plugins' into
+ * one role catalog. The plugin's System settings pages (Agent, Model services, Runtimes, Skills, Usage) stand behind
+ * reading the item of the same name, and their API checks the same item; the conversation panel, the conversation page
+ * and the personal Agent page need only a signed-in person.
  *
- * - The pages (`page` grants, action `access`) are the Agent management section: agents, runtimes (with "Add runtime"),
- *   skills and usage. A page grant only opens the page; what the page shows and changes is governed by the settings
- *   items below. The usage page's API (`GET agents/usage`) checks
- *   its grant too, and counts every run for a reader of agents.
- * - `agents.agents` covers agents, skills and every run; reading lets someone see them (and every runner, to pick
- *   where an agent runs), managing lets them change agents and skills and cancel or retry any run. Without it, a
- *   person still sees and cancels the runs they started.
+ * - `agents.agents` covers agents and every run; reading lets someone see them (and every runner, to pick where an
+ *   agent runs), managing lets them change agents (including who may chat with each) and cancel or retry any run.
+ *   Without it, a person still sees and cancels the runs they started.
+ * - `agents.skills` covers the skill library and the team's default skills: reading shows them, managing creates,
+ *   changes and deletes skills and sets the defaults.
  * - `agents.runners` covers every runner and every job: reading lets someone see them, managing lets them change,
  *   revoke and delete any runner and add one shared with all users. Without it, a person still adds personal runners
  *   and manages the ones they added; reading agents also shows every runner (to pick where an agent runs).
- * - `agents.prices` covers the model prices costs are estimated from: reading shows them, managing changes them.
+ * - `agents.prices` is Usage: reading shows every run's usage and the model prices costs are estimated from, managing
+ *   changes the prices. Without it, a person still sees the usage of the runs they started or own.
  * - `agents.services` covers the model services online agents call: reading lists them (never their keys), managing
  *   adds, edits, tests and deletes them, fetches a provider's models and sets their keys. Picking a service and a model
  *   for an agent needs neither: the catalog names what is offered.
@@ -31,16 +33,16 @@ export function accessText(key: string): {
   return { key: `access.${key}`, ns: ACCESS_NAMESPACE };
 }
 
-/** The app pages a role may open; the client routes (`client/routes.ts`) are named and authorized by the same ids. */
-export const PAGES = ['agents', 'runtimes', 'skills', 'usage'] as const;
-
-export type Page = (typeof PAGES)[number];
-
+/**
+ * The settings items in the order the permission workspace lists them, each the authorization of the System settings
+ * page of the same name: Agent, Model services, Runtimes, Skills and Usage.
+ */
 export const SETTINGS_ACTIONS = {
   'agents.agents': ['read', 'manage'],
-  'agents.runners': ['read', 'manage'],
-  'agents.prices': ['read', 'manage'],
   'agents.services': ['read', 'manage'],
+  'agents.runners': ['read', 'manage'],
+  'agents.skills': ['read', 'manage'],
+  'agents.prices': ['read', 'manage'],
 } as const;
 
 export type SettingsItem = keyof typeof SETTINGS_ACTIONS;
@@ -55,7 +57,7 @@ export type SettingsAction = 'read' | 'manage';
  * | Action               | What it allows                                                                              |
  * | -------------------- | ------------------------------------------------------------------------------------------- |
  * | `agents.agents/edit` | edit a skill (save it, restore a version). Related to a user: the skills they created.      |
- * |                      | Creating and deleting skills needs `manage`; so does changing an agent.                     |
+ * |                      | Creating and deleting skills needs `agents.skills` manage; changing an agent `agents.agents`. |
  */
 export const BUSINESS_ACTIONS = {
   'agents.agents': ['edit'],
@@ -163,11 +165,10 @@ export function actionText(
 export const ACCESS_SECTION = 'agents';
 
 /**
- * One permission a key-scope level covers: a page, a settings action or a business action. The same shape as the API
+ * One permission a key-scope level covers: a settings action or a business action. The same shape as the API
  * keys plugin's `AccessRef`, written here so this plugin does not depend on it; the application assembles the groups.
  */
 export type KeyScopeAccess =
-  | { readonly kind: 'page'; readonly id: Page }
   | {
       readonly kind: 'settings';
       readonly id: SettingsItem;
@@ -229,12 +230,12 @@ export const KEY_SCOPE_GROUPS: readonly KeyScopeGroup[] = [
     description: accessText('keyScopes.agents.description'),
     levels: {
       read: [
-        { kind: 'page', id: 'agents' },
-        { kind: 'page', id: 'skills' },
         setting('agents.agents', 'read'),
+        setting('agents.skills', 'read'),
       ],
       write: [
         setting('agents.agents', 'manage'),
+        setting('agents.skills', 'manage'),
         { kind: 'business', id: 'agents.agents', action: 'edit' },
       ],
     },
@@ -255,10 +256,7 @@ export const KEY_SCOPE_GROUPS: readonly KeyScopeGroup[] = [
     title: accessText('keyScopes.runners.title'),
     description: accessText('keyScopes.runners.description'),
     levels: {
-      read: [
-        { kind: 'page', id: 'runtimes' },
-        setting('agents.runners', 'read'),
-      ],
+      read: [setting('agents.runners', 'read')],
       write: [setting('agents.runners', 'manage')],
     },
   },

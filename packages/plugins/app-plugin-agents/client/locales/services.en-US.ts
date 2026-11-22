@@ -1,7 +1,7 @@
 /** The Models page (`client/pages/models/`) and its model services UI (`client/online/`). */
 const servicesEnUS = {
   models: {
-    title: 'Models',
+    title: 'Model services',
     description:
       'The model services online agents call, and the models each one offers: chat models for agents, embedding and rerank models for search.',
   },

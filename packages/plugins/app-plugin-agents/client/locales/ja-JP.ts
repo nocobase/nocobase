@@ -3,6 +3,7 @@ import type { LocaleResource } from '@nocobase/i18n';
 import type enUS from './en-US.js';
 
 const jaJP: LocaleResource<typeof enUS> = {
+  myConversations: '自分の会話',
   fileUsage: 'チャットの添付ファイル',
   modelSuggestions: {
     design:
@@ -1055,6 +1056,19 @@ const jaJP: LocaleResource<typeof enUS> = {
       thinking: '考え中…',
       reading: '{{subject}}を見て',
       working: '{{subject}}作業中',
+      ...{
+        count_one: '{{count}} ステップ',
+        count_other: '{{count}} ステップ',
+      },
+    },
+    // Plural forms of the panel wording, outside the typed shape (the rest falls back to English).
+    ...{
+      list: {
+        waiting_one: '要対応 {{count}}',
+        waiting_other: '要対応 {{count}}',
+        active_one: '進行中 {{count}}',
+        active_other: '進行中 {{count}}',
+      },
     },
     agents: {
       personalOnly: '個人実行環境限定',
@@ -1472,6 +1486,7 @@ const jaJP: LocaleResource<typeof enUS> = {
         runners: '実行環境',
         prices: 'モデルの価格',
         services: 'モデルサービス',
+        skills: 'スキル',
       },
     },
     actions: {

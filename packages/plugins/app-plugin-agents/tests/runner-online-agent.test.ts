@@ -674,13 +674,16 @@ it('preserves directory defaults, personal eligibility and offline reasons, and 
   });
   expect(catalog.status).toBe(200);
   expect(catalog.body).toEqual({ data: alice, meta: { total: alice.length } });
-  expect(directory).toHaveBeenCalledExactlyOnceWith('alice');
+  expect(directory).toHaveBeenCalledExactlyOnceWith(
+    'alice',
+    expect.any(Function),
+  );
   const bobCatalog = await h.request('GET', '/agents/chatAgents', {
     user: 'bob',
   });
   expect(bobCatalog.status).toBe(200);
   expect(bobCatalog.body).toEqual({ data: bob, meta: { total: bob.length } });
-  expect(directory).toHaveBeenLastCalledWith('bob');
+  expect(directory).toHaveBeenLastCalledWith('bob', expect.any(Function));
 });
 
 it('maps server context, prompt and variables into Runner input while keeping context out of public messages', async () => {
