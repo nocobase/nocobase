@@ -66,6 +66,7 @@
   },
   "file": { "en": "Files", "zh": "文件", "ja": "ファイル" },
   "files": { "en": "Files", "zh": "文件", "ja": "ファイル" },
+  "backup": { "en": "Backup", "zh": "备份", "ja": "バックアップ" },
   "drive": { "en": "Files", "zh": "文件", "ja": "ファイル" },
   "mail": { "en": "Mail", "zh": "邮件", "ja": "メール" },
   "mailer": { "en": "Mail", "zh": "邮件", "ja": "メール" },

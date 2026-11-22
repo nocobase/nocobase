@@ -17,3 +17,10 @@ export * from './router/index.js';
 export * from './runtime/index.js';
 export * from './spa/index.js';
 export * from './support/index.js';
+
+export { resolveAppBackupTarget } from './backup/target.js';
+export { enterRunningApplication } from './backup/runtime-guard.js';
+export type {
+  AppBackupConfig,
+  AppBackupFileReference,
+} from './backup/config.js';
