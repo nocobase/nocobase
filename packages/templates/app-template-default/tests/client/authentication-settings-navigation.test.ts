@@ -3,7 +3,6 @@ import authentication from '@nocobase/app-plugin-authentication/client/plugin';
 import { describe, expect, it } from 'vitest';
 
 import personal from '../../client/pages/me/routes.js';
-import settings from '../../client/pages/settings/routes.js';
 import shell from '../../client/pages/settings/shell-routes.js';
 import {
   buildPersonalSettingsNavigation,
@@ -19,7 +18,7 @@ function resolve() {
     {
       packageName: '@nocobase/app-template-default',
       source: 'application',
-      routes: [shell, settings, personal],
+      routes: [shell, personal],
     },
     {
       packageName: plugin.packageName,
