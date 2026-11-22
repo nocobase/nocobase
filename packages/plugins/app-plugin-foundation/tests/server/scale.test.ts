@@ -18,7 +18,7 @@ afterEach(async () => {
   );
 });
 
-async function application(size: number) {
+async function application(size: number, signal?: AbortSignal) {
   const rootDir = await mkdtemp(path.join(os.tmpdir(), 'foundation-scale-'));
   directories.push(rootDir);
   await writeFile(
@@ -64,6 +64,7 @@ async function application(size: number) {
   const container = new ServiceContainer();
   container.instance(databaseManagerToken, database);
   const service = new DefaultFoundationService({
+    signal,
     container,
     rootDir,
     config: { get: () => undefined },
@@ -164,4 +165,38 @@ it('retains the last successful count and its original time when a later explici
   expect(next.recordCountCheckedAt).toBe(first.recordCountCheckedAt);
   expect(next.capabilities[0]?.completeness).toBe('partial');
   expect(JSON.stringify(next)).not.toContain('private driver detail');
+});
+
+it('interrupts a scan without dispatching more reads and drains active driver queries before returning', async () => {
+  const abort = new AbortController();
+  const { service, count } = await application(50, abort.signal);
+  const entered = Promise.withResolvers<void>();
+  const release = Promise.withResolvers<void>();
+  count.mockImplementationOnce(async () => {
+    entered.resolve();
+    await release.promise;
+    return 2;
+  });
+  let settled = false;
+  const scan = service.overview({ countRecords: true });
+  const observed = scan.then(
+    () => {
+      settled = true;
+    },
+    () => {
+      settled = true;
+    },
+  );
+  try {
+    await entered.promise;
+    abort.abort(new Error('Application is stopping.'));
+    await setImmediate();
+    expect(settled).toBe(false);
+    expect(count.mock.calls.length).toBeLessThanOrEqual(4);
+  } finally {
+    release.resolve();
+    await observed;
+  }
+  await expect(scan).rejects.toBe(abort.signal.reason);
+  expect(service.checkpoint().recordCount).toBeUndefined();
 });

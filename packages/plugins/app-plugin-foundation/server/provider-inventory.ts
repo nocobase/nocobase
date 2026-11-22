@@ -111,7 +111,9 @@ export async function collectProviderInventory(
   rootDir: string,
   runtime: readonly RuntimeProviderEvidence[] = [],
   serverRegistrationsComplete = false,
+  signal?: AbortSignal,
 ): Promise<FoundationProviderInventory> {
+  signal?.throwIfAborted();
   const app = await readManifest(path.join(rootDir, 'package.json'));
   const unreadable: string[] = app ? [] : ['applicationManifest'];
   const declared = new Set([
@@ -129,6 +131,7 @@ export async function collectProviderInventory(
   const entries: FoundationProviderEntry[] = [];
   // Serial manifest reads keep the scan bounded even in applications with many dependencies.
   for (const name of names) {
+    signal?.throwIfAborted();
     if (!validPackageName(name) || name === app?.name) continue;
     const observed = runtime.filter((entry) => entry.name === name);
     const registered = observed.find(
@@ -174,6 +177,7 @@ export async function collectProviderInventory(
       ],
     });
   }
+  signal?.throwIfAborted();
   return {
     entries,
     complete: unreadable.length === 0,

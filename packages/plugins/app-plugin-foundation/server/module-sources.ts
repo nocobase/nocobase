@@ -40,7 +40,9 @@ export async function collectModuleSources(
   rootDir: string,
   runtime: readonly RuntimeProviderEvidence[] = [],
   observation?: ModuleSourceObservation,
+  signal?: AbortSignal,
 ): Promise<FoundationModuleSources> {
+  signal?.throwIfAborted();
   const routes: FoundationModuleSource[] = [];
   let complete = true;
   const roots = new Map<string, string | undefined>([['', rootDir]]);
@@ -48,9 +50,10 @@ export async function collectModuleSources(
   for (const entry of runtime)
     if (entry.rootDir) roots.set(entry.name, entry.rootDir);
   for (const [name, directory] of roots) {
+    signal?.throwIfAborted();
     if (!directory || name === '@nocobase/app-plugin-foundation') continue;
     try {
-      const graph = await SourceGraph.create(directory, observation);
+      const graph = await SourceGraph.create(directory, observation, signal);
       if (!name) overridden = await graph.overrides();
       const packageName = name || graph.packageName;
       if (!packageName) {
@@ -154,10 +157,12 @@ export async function collectModuleSources(
       }
       complete &&= declarationFiles.complete && graph.declarationsComplete;
     } catch {
+      signal?.throwIfAborted();
       observation?.unreadable();
       complete = false;
     }
   }
+  signal?.throwIfAborted();
   return { routes, complete };
 }
 
@@ -176,12 +181,15 @@ export class SourceGraph {
     private readonly aliases: Readonly<Record<string, unknown>>,
     private readonly paths: ReadonlyMap<string, string | undefined>,
     private readonly observation?: ModuleSourceObservation,
+    private readonly signal?: AbortSignal,
   ) {}
 
   public static async create(
     root: string,
     observation?: ModuleSourceObservation,
+    signal?: AbortSignal,
   ): Promise<SourceGraph> {
+    signal?.throwIfAborted();
     await observation?.watch(root);
     await observation?.watch(path.join(root, 'package.json'));
     const directory = await realpath(root);
@@ -195,10 +203,12 @@ export class SourceGraph {
       isRecord(record.imports) ? record.imports : {},
       await sourceAliases(directory, observation),
       observation,
+      signal,
     );
   }
 
   public async resolve(base: string): Promise<string | undefined> {
+    this.signal?.throwIfAborted();
     if (!inside(this.root, path.resolve(base))) return undefined;
     const extension = path.extname(base);
     const stem = SOURCE_SUFFIXES.includes(extension)
@@ -265,7 +275,11 @@ export class SourceGraph {
     if ((await this.resolve(from)) !== from) return false;
     const importer = await this.read(from);
     if (!importer?.imports.includes(specifier)) return false;
-    const dependency = await SourceGraph.create(root, this.observation);
+    const dependency = await SourceGraph.create(
+      root,
+      this.observation,
+      this.signal,
+    );
     const target = await dependency.resolve(entry);
     if (!target || target !== (await realpath(entry))) return false;
     const graph = await dependency.walk(target, false);
@@ -640,6 +654,7 @@ export class SourceGraph {
     const providers = new Set<string>();
     let complete = true;
     while (pending.length) {
+      this.signal?.throwIfAborted();
       const file = pending.shift();
       if (!file || visited.has(file)) continue;
       visited.add(file);
@@ -674,6 +689,7 @@ export class SourceGraph {
   }
 
   private async read(file: string): Promise<Source | undefined> {
+    this.signal?.throwIfAborted();
     if (this.files.has(file)) return this.files.get(file);
     if (this.files.size >= MAX_FILES) {
       this.observation?.unreadable();
@@ -688,7 +704,7 @@ export class SourceGraph {
       this.bytes += size;
       const ast = ts.createSourceFile(
         file,
-        await readFile(file, 'utf8'),
+        await readFile(file, { encoding: 'utf8', signal: this.signal }),
         ts.ScriptTarget.Latest,
         true,
       );
@@ -696,6 +712,7 @@ export class SourceGraph {
       this.files.set(file, source);
       return source;
     } catch {
+      this.signal?.throwIfAborted();
       this.observation?.unreadable();
       return undefined;
     }

@@ -3,7 +3,9 @@ import { act, fireEvent, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { UserMenu } from '../../client/layouts/components/user-menu.tsx';
-import { renderAuthenticatedClient } from '../helpers/authenticated-client.js';
+import { createAuthenticatedClientRenderer } from '../helpers/authenticated-client.js';
+
+const renderAuthenticatedClient = createAuthenticatedClientRenderer();
 
 // jsdom has no media queries; the real account menu includes the theme provider.
 beforeEach(() => {

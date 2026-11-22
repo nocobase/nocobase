@@ -77,7 +77,7 @@ export class FoundationSnapshots implements FoundationService {
       readonly appName: string;
       readonly kernelVersion?: string;
       readonly executor: JobExecutor;
-      readonly collector: () => DefaultFoundationService;
+      readonly collector: (signal: AbortSignal) => DefaultFoundationService;
     },
   ) {
     const connection = options.database.connection();
@@ -258,7 +258,7 @@ export class FoundationSnapshots implements FoundationService {
     if (!row) return;
     try {
       context.signal.throwIfAborted();
-      const collector = this.options.collector();
+      const collector = this.options.collector(context.signal);
       if (row.overview && row.checkpoint)
         collector.restore(row.overview, row.checkpoint);
       const overview = await collector.overview({
