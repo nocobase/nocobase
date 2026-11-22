@@ -121,6 +121,9 @@ export function createChatSettingsService(deps: {
     settings: (conn) => readSettings(conn ?? tx.read()),
 
     updateSettings: async (byUserId, patch) => {
+      // Nothing to change: answer without writing. Writing the whole row back would restore a default another manager
+      // replaced meanwhile, possibly one since limited to roles, because this path takes no agent lock.
+      if (patch.defaultAgentId === undefined) return readSettings(tx.read());
       await validateOnlineDefault(patch);
       return tx.run(async ({ conn }) => {
         const current = await readSettings(conn);

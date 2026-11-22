@@ -121,6 +121,45 @@ describe('who may chat with an agent', () => {
     );
   });
 
+  it('answers a team settings patch naming no default without writing, so a replaced default stays replaced', async () => {
+    h = await createHarness();
+    await h.registerRunner();
+    const [first, second] = await Promise.all(
+      ['First', 'Second'].map((name) =>
+        h.createAgent({
+          name,
+          description: 'Answers questions.',
+          source: 'runner',
+          status: 'enabled',
+        }),
+      ),
+    );
+    const setDefault = (user: string, body: Record<string, unknown>) =>
+      h.request('PATCH', '/agents/chatSettings', { user, can: MANAGE, body });
+    expect((await setDefault('admin', { defaultAgentId: first })).status).toBe(
+      200,
+    );
+    // Another manager replaces the default and then limits the old one.
+    expect(
+      (await setDefault('manager', { defaultAgentId: second })).status,
+    ).toBe(200);
+    expect((await limit(first!, ['sales'])).status).toBe(200);
+    const row = async () =>
+      h.database
+        .connection()
+        .repository('agSettings')
+        .findOne({ filter: { key: 'chat' } });
+    const before = await row();
+
+    const empty = await setDefault('admin', {});
+    expect(empty.status).toBe(200);
+    expect(empty.body.data).toEqual({ defaultAgentId: second });
+    // The row is untouched: neither who saved it nor when changed.
+    expect(await row()).toEqual(before);
+    expect(before).toMatchObject({ updatedById: 'manager' });
+    expect((await h.services.chat.settings()).defaultAgentId).toBe(second);
+  });
+
   it('decides by role, with every agent open to everyone until limited', () => {
     expect(mayChat({ chatRoles: null }, new Set())).toBe(true);
     expect(mayChat({ chatRoles: ['sales'] }, new Set(['member']))).toBe(false);
