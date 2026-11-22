@@ -15,6 +15,16 @@
   "engines": {
     "node": ">=24.0.0"
   },
+  "nocobase": {
+    "title": {
+      "en-US": "File storage",
+      "zh-CN": "文件存储"
+    },
+    "description": {
+      "en-US": "Uploads and where files are stored",
+      "zh-CN": "上传文件和存储位置"
+    }
+  },
   "exports": {
     "./package.json": "./package.json",
     "./server": {

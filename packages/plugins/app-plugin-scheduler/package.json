@@ -8,6 +8,16 @@
   "engines": {
     "node": ">=24.0.0"
   },
+  "nocobase": {
+    "title": {
+      "en-US": "Scheduled jobs",
+      "zh-CN": "定时任务"
+    },
+    "description": {
+      "en-US": "Jobs that run on a schedule",
+      "zh-CN": "按时间运行的任务"
+    }
+  },
   "sideEffects": false,
   "exports": {
     "./cli": {

@@ -8,6 +8,16 @@
   "engines": {
     "node": ">=24.0.0"
   },
+  "nocobase": {
+    "title": {
+      "en-US": "Default access",
+      "zh-CN": "默认访问规则"
+    },
+    "description": {
+      "en-US": "What new roles can see by default",
+      "zh-CN": "新角色默认能看什么"
+    }
+  },
   "sideEffects": false,
   "exports": {
     "./server": {
