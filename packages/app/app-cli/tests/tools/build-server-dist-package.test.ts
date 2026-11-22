@@ -209,6 +209,38 @@ describe('server package generation', () => {
     });
   });
 
+  it('keeps the application plugins a vendored plugin builds on as peers', () => {
+    const { root, plugin } = createWorkspace();
+    const manifest = readJson(path.join(plugin, 'package.json'));
+    writeJson(path.join(plugin, 'package.json'), {
+      ...manifest,
+      peerDependencies: {
+        ...(manifest.peerDependencies as Record<string, string>),
+        '@nocobase/app-plugin-agents': 'workspace:^',
+        '@nocobase/app-plugin-file': 'workspace:^',
+      },
+      peerDependenciesMeta: {
+        '@nocobase/app-plugin-file': { optional: true },
+      },
+    });
+
+    expect(generate(root).status).toBe(0);
+
+    const vendored = readJson(
+      path.join(
+        root,
+        'dist',
+        'vendor',
+        '@fixture',
+        'plugin-demo',
+        'package.json',
+      ),
+    );
+    expect(vendored.peerDependencies).toEqual({
+      '@nocobase/app-plugin-agents': '*',
+    });
+  });
+
   it('vendors every path a workspace package publishes, so an export beside dist does not dangle', () => {
     const { root } = createWorkspace();
 

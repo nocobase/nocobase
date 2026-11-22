@@ -76,6 +76,23 @@ const isWorkspaceVersion = (version) => version?.startsWith('workspace:');
 const getVendorPackagePath = (packageName) =>
   path.join(vendorDir, ...packageName.split('/'));
 
+/**
+ * The other application plugins a plugin builds on, kept so a deployment can still tell which plugin another one
+ * needs. The range is `*`: a `workspace:` range means nothing outside this repository, and with `autoInstallPeers:
+ * false` the deployment installs none of them because of it.
+ */
+const pluginPeerDependencies = (packageJson) => {
+  const peers = Object.keys(packageJson.peerDependencies ?? {})
+    .filter((name) => /^@nocobase\/app-(plugin|portal)-/.test(name))
+    .filter(
+      (name) => packageJson.peerDependenciesMeta?.[name]?.optional !== true,
+    )
+    .sort();
+  return peers.length === 0
+    ? undefined
+    : Object.fromEntries(peers.map((name) => [name, '*']));
+};
+
 const createRuntimePackageJson = (packageJson) => ({
   name: packageJson.name,
   displayName: packageJson.displayName,
@@ -88,6 +105,7 @@ const createRuntimePackageJson = (packageJson) => ({
   exports: packageJson.publishConfig?.exports ?? packageJson.exports,
   engines: packageJson.engines,
   nocobase: packageJson.nocobase,
+  peerDependencies: pluginPeerDependencies(packageJson),
 });
 
 /**

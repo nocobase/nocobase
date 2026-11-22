@@ -21,6 +21,10 @@ import {
 } from '../../lib/plugin-registration.ts';
 import { classifyPluginError } from '../../lib/plugin-json.ts';
 import {
+  classifyPluginRegistration,
+  type PluginRegistrationIssueCode,
+} from '@nocobase/app-server/plugins';
+import {
   createServerPluginsEditor,
   readServerPlugins,
 } from '../../lib/server-plugins.ts';
@@ -75,7 +79,11 @@ export interface PluginInspectResult {
     readonly field: 'dependencies' | 'devDependencies' | undefined;
     readonly range: string | undefined;
   };
-  readonly registration: { readonly enabled: boolean };
+  readonly registration: {
+    readonly enabled: boolean;
+    /** The plugin ships only Agent Skills, so `dependencies` alone enables it. */
+    readonly skillsOnly: boolean;
+  };
   readonly state:
     'absent' | 'preinstalled' | 'registered' | 'unregistered' | 'inconsistent';
   readonly composition: {
@@ -183,49 +191,28 @@ async function inspectPlugin(
   const cliExport = pluginDirectory
     ? await hasCliPluginEntry(pluginDirectory)
     : false;
-  const issues: PluginInspectIssue[] = [];
-
-  if (!pluginDirectory)
-    issues.push({
-      code: 'PLUGIN_NOT_INSTALLED',
-      message: `${packageName} is not installed in the App.`,
-      severity: 'error',
-    });
-  if (!dependencyRange)
-    issues.push({
-      code: 'DEPENDENCY_MISSING',
-      message: `${packageName} is not declared as an App dependency.`,
-      severity: 'error',
-    });
   const client = await inspectComposition(appRoot, packageName, 'client');
   const server = await inspectComposition(appRoot, packageName, 'server');
   const cli = await inspectComposition(appRoot, packageName, 'cli');
-  const enabled = client.registered || server.registered || cli.registered;
-  if (enabled && dependencyField === 'devDependencies')
-    issues.push({
-      code: 'REGISTERED_DEV_DEPENDENCY',
-      severity: 'error',
-      message:
-        'Run plugin register to include this registered plugin in deployment dependencies.',
-    });
-  if (client.registered && !clientExport)
-    issues.push({
-      code: 'CLIENT_ENTRY_UNEXPECTED',
-      message: 'Client registration has no matching package export.',
-      severity: 'error',
-    });
-  if (server.registered && !serverExport)
-    issues.push({
-      code: 'SERVER_ENTRY_UNEXPECTED',
-      message: 'Server registration has no matching package export.',
-      severity: 'error',
-    });
-  if (cli.registered && !cliExport)
-    issues.push({
-      code: 'CLI_ENTRY_UNEXPECTED',
-      message: 'CLI registration has no matching package export.',
-      severity: 'error',
-    });
+  // The same classification the App Foundation plugins page applies to the running application.
+  const registration = classifyPluginRegistration({
+    dependencyField,
+    installed: pluginDirectory !== undefined,
+    entries: { client: clientExport, server: serverExport, cli: cliExport },
+    registered: {
+      client: client.registered,
+      server: server.registered,
+      cli: cli.registered,
+    },
+  });
+  const { enabled, skillsOnly } = registration;
+  const issues: PluginInspectIssue[] = registration.issues.map(
+    ({ code, severity }) => ({
+      code,
+      severity,
+      message: issueMessage(code, packageName),
+    }),
+  );
 
   const skills: PluginInspectSkills = pluginDirectory
     ? await inspectSkills(appRoot, packageName, pluginDirectory)
@@ -264,16 +251,9 @@ async function inspectPlugin(
     },
     dependency: { field: dependencyField, range: dependencyRange },
     state:
-      !pluginDirectory && !dependencyField && !enabled
-        ? 'absent'
-        : issues.some((issue) => issue.severity === 'error')
-          ? 'inconsistent'
-          : enabled
-            ? 'registered'
-            : dependencyField === 'devDependencies'
-              ? 'preinstalled'
-              : 'unregistered',
-    registration: { enabled },
+      // Skills drifting out of date is a warning and never changes the state the classification decided.
+      registration.state,
+    registration: { enabled, skillsOnly },
     composition: {
       client,
       server,
@@ -378,6 +358,28 @@ async function hashDirectory(directory: string): Promise<string> {
   };
   await visit(directory);
   return hash.digest('hex');
+}
+
+function issueMessage(
+  code: PluginRegistrationIssueCode,
+  packageName: string,
+): string {
+  switch (code) {
+    case 'PLUGIN_NOT_INSTALLED':
+      return `${packageName} is not installed in the App.`;
+    case 'DEPENDENCY_MISSING':
+      return `${packageName} is not declared as an App dependency.`;
+    case 'REGISTERED_DEV_DEPENDENCY':
+      return 'Run plugin register to include this registered plugin in deployment dependencies.';
+    case 'PARTIALLY_REGISTERED':
+      return 'Only one of the Client and Server composition roots registers this plugin. Run plugin register to register the other.';
+    case 'CLIENT_ENTRY_UNEXPECTED':
+      return 'Client registration has no matching package export.';
+    case 'SERVER_ENTRY_UNEXPECTED':
+      return 'Server registration has no matching package export.';
+    case 'CLI_ENTRY_UNEXPECTED':
+      return 'CLI registration has no matching package export.';
+  }
 }
 
 /**

@@ -432,6 +432,95 @@ describe('app plugin register command', () => {
     expect(await readFile(manifestPath, 'utf8')).toBe(before);
   });
 
+  it('reports a plugin registered on only one of its Client and Server sides', async () => {
+    const appRoot = await createAppWithInstalledPlugin({ client: false });
+    await runCommand(config, 'plugin:register', [
+      'audit-log',
+      '--dir',
+      appRoot,
+      '--no-install',
+    ]);
+    // The package gains a client entry the application never registered.
+    const manifestPath = path.join(
+      appRoot,
+      'node_modules',
+      '@nocobase',
+      'app-plugin-audit-log',
+      'package.json',
+    );
+    const manifest = JSON.parse(await readFile(manifestPath, 'utf8')) as {
+      exports: Record<string, string>;
+    };
+    manifest.exports['./client'] = './client/index.js';
+    await writeFile(manifestPath, JSON.stringify(manifest));
+
+    const inspected = await runCommand(config, 'plugin:inspect', [
+      'audit-log',
+      '--dir',
+      appRoot,
+      '--json',
+    ]);
+    const response = JSON.parse(inspected.stdout) as {
+      result: {
+        state: string;
+        issues: Array<{ code: string; severity: string }>;
+        suggestions: Array<{ command: string; args: string[] }>;
+      };
+    };
+    expect(response.result.state).toBe('inconsistent');
+    expect(response.result.issues).toContainEqual(
+      expect.objectContaining({
+        code: 'PARTIALLY_REGISTERED',
+        severity: 'error',
+      }),
+    );
+    expect(response.result.suggestions).toContainEqual({
+      command: 'pnpm',
+      args: [
+        'nocobase',
+        'plugin',
+        'register',
+        'audit-log',
+        '--no-install',
+        '--dir',
+        appRoot,
+      ],
+    });
+  });
+
+  it('reports a Skills-only plugin in dependencies as registered', async () => {
+    const appRoot = await createAppWithInstalledPlugin({
+      client: false,
+      server: false,
+    });
+    await runCommand(config, 'plugin:register', [
+      'audit-log',
+      '--dir',
+      appRoot,
+      '--no-install',
+    ]);
+
+    const inspected = await runCommand(config, 'plugin:inspect', [
+      'audit-log',
+      '--dir',
+      appRoot,
+      '--json',
+    ]);
+    const response = JSON.parse(inspected.stdout) as {
+      result: {
+        state: string;
+        registration: { enabled: boolean; skillsOnly: boolean };
+        dependency: { field: string };
+      };
+    };
+    expect(response.result.dependency.field).toBe('dependencies');
+    expect(response.result.state).toBe('registered');
+    expect(response.result.registration).toEqual({
+      enabled: false,
+      skillsOnly: true,
+    });
+  });
+
   it('suggests commands that target the same workspace application the inspection did', async () => {
     // The form the repository's own Skills use, against a workspace of its own: the real repository's `packages/` holds
     // other tests' temporary applications while they run, and the workspace scan would read them mid-write.
