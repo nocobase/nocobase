@@ -244,6 +244,7 @@ describe('notification routes', () => {
           parent: 'account',
           name: 'notificationPreferences',
           path: '/notifications',
+          navigation: { order: 410 },
         },
       ],
     });

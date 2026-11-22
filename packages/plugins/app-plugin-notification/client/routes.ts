@@ -12,7 +12,7 @@ import { NOTIFICATION_SETTINGS_RESOURCE } from '../shared/access.js';
 export interface NotificationRouteOptions {
   /** `false` leaves System settings › Messages › Notifications unregistered. Defaults to `true`. */
   readonly settingsPage?: boolean;
-  /** `false` leaves Personal settings › Messages › Notifications unregistered. Defaults to `true`. */
+  /** `false` leaves Personal settings › Account › Notifications unregistered. Defaults to `true`. */
   readonly preferencesPage?: boolean;
 }
 
@@ -27,7 +27,7 @@ export const NOTIFICATION_ROUTE_IDS: {
 
 /**
  * System settings › Messages › Notifications, for whoever holds the `read` action of the `notification` settings
- * item, and the signed-in person's own Personal settings › Messages › Notifications.
+ * item, and the signed-in person's own Personal settings › Account › Notifications.
  */
 export function createNotificationRoutes(
   options: NotificationRouteOptions = {},
@@ -56,12 +56,13 @@ export function createNotificationRoutes(
     routes.push(
       definePersonalSettingsRoutes([
         {
-          parent: PERSONAL_SETTINGS_CATEGORIES.messages,
+          parent: PERSONAL_SETTINGS_CATEGORIES.account,
           name: 'notificationPreferences',
           path: '/notifications',
           navigation: {
             title: 'nav.notifications',
             description: 'nav.preferencesDescription',
+            order: 410,
             icon: BellIcon,
           },
           breadcrumb: { title: 'nav.notifications' },
