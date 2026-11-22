@@ -1,4 +1,12 @@
 const settings = {
+  workflows: {
+    title: '流程管理',
+    description: '查看流程定义和执行记录。',
+    definitions: '流程定义',
+    executions: '执行记录',
+    emptyDefinitions: '暂无流程定义。',
+    emptyExecutions: '暂无流程执行记录。',
+  },
   notificationManagementDescription: '查看已登记的通知模板和合成内容预览。',
   notificationTemplates: '通知模板',
   notificationManagement: '通知管理',
