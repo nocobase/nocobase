@@ -44,6 +44,7 @@ import {
   classifyMailProviderError,
   isMailProviderError,
   MailError,
+  mailInvalidArgument,
   toPublicError,
 } from '../services/errors.js';
 import { mailAssemblyInfoToken, mailServiceToken } from '../tokens.js';
@@ -1731,10 +1732,11 @@ export const mailApiRoutes: AppApiRouteContribution<AppPluginApplication> =
           description:
             'Newest first, paged by `pageToken`. `canManage` is true for a caller who also holds `settings:mail.admin/manage`. A failure carries its code and category only.',
           errors: {
-            400: '`pageToken` is not a token this list answered (`INVALID_MAIL_REQUEST`).',
+            400: '`pageToken` is not a token this list answered, or the request pages by `page`, which this list replaced with `pageToken` (`INVALID_MAIL_REQUEST`).',
           },
         },
       ),
+      rejectPageNumber,
       apiValidator('query', ManagedLogsQuery),
       async (context) => {
         const query = context.req.valid('query');
@@ -1812,10 +1814,11 @@ export const mailApiRoutes: AppApiRouteContribution<AppPluginApplication> =
           description:
             'Newest first, paged by `pageToken`: account, recipient count, result and failure code, never the subject, body, addresses or attachments.',
           errors: {
-            400: '`pageToken` is not a token this list answered (`INVALID_MAIL_REQUEST`).',
+            400: '`pageToken` is not a token this list answered, or the request pages by `page`, which this list replaced with `pageToken` (`INVALID_MAIL_REQUEST`).',
           },
         },
       ),
+      rejectPageNumber,
       apiValidator('query', ManagedLogsQuery),
       async (context) => {
         const query = context.req.valid('query');
@@ -2049,6 +2052,19 @@ function configLayers(
     ? (layers.call(config) as ReturnType<typeof configLayers>)
     : undefined;
 }
+
+/**
+ * The settings logs page by `pageToken`; they took `page` before. A request still sending `page` would otherwise be
+ * answered the first page whatever page it asked for, so it is refused with a hint instead.
+ */
+const rejectPageNumber: MiddlewareHandler = async (context, next) => {
+  if (context.req.query('page') !== undefined)
+    throw mailInvalidArgument(
+      'This list pages by pageToken: send the meta.nextPageToken of the previous page instead of page.',
+      'page',
+    );
+  await next();
+};
 
 /** The body of a settings log page. */
 function logPage<T>(

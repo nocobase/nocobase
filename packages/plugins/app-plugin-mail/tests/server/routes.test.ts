@@ -921,6 +921,30 @@ describe('[API][SEC] mail API routes and permission boundaries', () => {
         (await router.request(`/api/mail/settings/submissions?${query}`))
           .status,
       ).toBe(400);
+    // A client still paging by number is told to use the token, not answered the first page again.
+    const calls =
+      listManagedSyncRunsPage.mock.calls.length +
+      listManagedSubmissionsPage.mock.calls.length;
+    for (const path of ['syncRuns', 'submissions'])
+      for (const page of ['1', '2']) {
+        const response = await router.request(
+          `/api/mail/settings/${path}?page=${page}&pageSize=20`,
+        );
+        expect({ path, page, status: response.status }).toEqual({
+          path,
+          page,
+          status: 400,
+        });
+        expect(await response.json()).toMatchObject({
+          error: {
+            message: expect.stringContaining('pageToken'),
+          },
+        });
+      }
+    expect(
+      listManagedSyncRunsPage.mock.calls.length +
+        listManagedSubmissionsPage.mock.calls.length,
+    ).toBe(calls);
     await expect(
       router.request('/api/mail/settings/operationLogs'),
     ).resolves.toMatchObject({ status: 404 });

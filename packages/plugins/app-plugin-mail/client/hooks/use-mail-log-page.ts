@@ -126,12 +126,30 @@ export function useMailCursorLogPage<T>(
         tokens = new Map();
         tokenMapsRef.current.set(load, tokens);
       }
-      const result = await load(
-        page > 1 ? tokens.get(`${pageSize}:${page}`) : undefined,
+      const key = (number: number) => `${pageSize}:${number}`;
+      // Records the token a page answered for the next one. A changed or missing token means the rows before it moved,
+      // so every later page's token, which was derived from the old rows, is dropped and fetched again in order.
+      const remember = (number: number, nextCursor: string | undefined) => {
+        if (tokens.get(key(number + 1)) === nextCursor) return;
+        for (const known of [...tokens.keys()]) {
+          const [size, at] = known.split(':').map(Number);
+          if (size === pageSize && at > number) tokens.delete(known);
+        }
+        if (nextCursor) tokens.set(key(number + 1), nextCursor);
+      };
+      // A page whose token is unknown is reached through the pages before it, from the furthest one still known.
+      let from = page;
+      while (from > 1 && !tokens.has(key(from))) from -= 1;
+      let result = await load(
+        from > 1 ? tokens.get(key(from)) : undefined,
         pageSize,
       );
-      if (result.nextCursor)
-        tokens.set(`${pageSize}:${page + 1}`, result.nextCursor);
+      remember(from, result.nextCursor);
+      while (from < page && result.nextCursor) {
+        from += 1;
+        result = await load(result.nextCursor, pageSize);
+        remember(from, result.nextCursor);
+      }
       const copy = new Map(tokens);
       setKnown((current) =>
         current.load === load

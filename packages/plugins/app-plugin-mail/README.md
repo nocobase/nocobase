@@ -42,6 +42,8 @@ Other Server plugins may register custom providers through `mailProviderRegistry
 
 `MailClient` is the preferred integration with Mail's HTTP API. The [HTTP API reference](skills/nocobase-app-plugin-mail/references/http-api.md) lists the `/api/mail` paths, request and response shapes, error codes, permission resources, realtime event, OAuth callback, and Provider webhook contracts. OAuth callbacks and Provider webhooks are protocol endpoints rather than general application APIs. A running application also serves the `/api/mail` routes in its OpenAPI document, at `/api/swagger/docs` (Swagger UI) and `/api/swagger` (JSON), for a signed-in user or an API key.
 
+The command line derived from that document offers each Mail route only to callers holding the permission the route checks, which its `x-cli.action` names as `type:id/action`: `page:mail.workspace/access`, `mail:mail.management/view` or `/process`, `settings:mail.admin/read` or `/manage`. Mail registers nothing more for the command line: the host's action gate returns these action names for a caller from their roles and, for an API key, its scope, and the manifest matches them exactly, so a gate that does not report them leaves the Mail commands out.
+
 Within a major version, existing public exports, required props, request fields, response meanings, error codes, permissions, and event semantics remain compatible. Additive fields and capabilities must be optional or safely ignored by older consumers. Removing or changing a public contract requires a new major version and a migration note.
 
 ## Pages
