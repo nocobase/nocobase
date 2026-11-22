@@ -103,6 +103,26 @@ export function settingsHomeRoute(
   );
 }
 
+/** The personal settings group (`withSettingsShell`) and its home page, `/me`, which opens the first personal page. */
+export const PERSONAL_SETTINGS_GROUP = 'personalSettings';
+export const PERSONAL_SETTINGS_HOME = 'personalSettingsHome';
+
+/**
+ * The home page of the system or the personal settings group: where the group's breadcrumb level links, so the first
+ * level of `System settings › page` and `Personal settings › page` leads back to `/settings` or `/me`.
+ */
+export function settingsAreaHomeRoute(
+  route: AppClientRegisteredRoute,
+): AppClientRegisteredRoute | undefined {
+  const system = settingsHomeRoute(route);
+  if (system) return system;
+  if (route.name !== PERSONAL_SETTINGS_GROUP || route.componentLoader)
+    return undefined;
+  return route.children?.find(
+    (child) => child.name === PERSONAL_SETTINGS_HOME && child.componentLoader,
+  );
+}
+
 /**
  * The sidebar shows the settings group as one entry opening its home page; it stays selected on every page below the
  * group. Without a module the viewer may open, the entry disappears. An application without a home page keeps the

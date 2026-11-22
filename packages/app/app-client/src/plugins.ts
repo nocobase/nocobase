@@ -4,6 +4,7 @@ import type { ComponentType } from 'react';
 
 import type { ClientApplication } from './application.js';
 import type { AppClientReactProvider } from './config.js';
+import { APP_CLIENT_NAMESPACE } from './namespace.js';
 
 const CONTRIBUTION_NAME_PATTERN = /^[a-z0-9][a-z0-9._-]*$/i;
 const RESERVED_APPLICATION_ROUTE_PATHS = new Set([
@@ -139,8 +140,9 @@ interface SettingsSurfaceSpec {
    */
   readonly categoryPrefix: string;
   /**
-   * Where a built-in category's title lives: `<titlePrefix><id>` in the application's own locale namespace, so an
-   * application words it like any of its strings. Its route is named `<surface>.<id>`.
+   * Where a built-in category's title lives: `<titlePrefix><id>` in app-client's namespace (`APP_CLIENT_NAMESPACE`),
+   * which ships the English and Chinese defaults. Its route is named `<surface>.<id>`; an application rewords it with
+   * a title of its own through `defineSettingsCategories()`.
    */
   readonly titlePrefix: string;
 }
@@ -810,11 +812,7 @@ export function resolveAppClientContributions(
     }
   }
 
-  const roots = assembleRoutes(
-    inputs,
-    inputs.find((input) => input.source === 'application')?.packageName ??
-      '@nocobase/app-client',
-  );
+  const roots = assembleRoutes(inputs);
   const routes = Object.freeze([
     ...resolveRouteTree(
       roots.filter((node) => node.surface === 'app'),
@@ -859,10 +857,7 @@ interface RouteNode {
   hidden?: boolean;
 }
 
-function assembleRoutes(
-  inputs: readonly RouteInput[],
-  applicationPackage: string,
-): RouteNode[] {
+function assembleRoutes(inputs: readonly RouteInput[]): RouteNode[] {
   const roots: RouteNode[] = [];
   const groups = new Map<string, RouteNode>();
   const pending: { node: RouteNode; parent: string; category?: string }[] = [];
@@ -873,8 +868,8 @@ function assembleRoutes(
     surface: AppClientSettingsRouteSurface,
     id: string,
   ): string => `${SETTINGS_SURFACES[surface].categoryPrefix}${id}`;
-  // Every settings surface something contributes to starts with its built-in categories, titled in the application's
-  // namespace so the application words them like its own strings.
+  // Every settings surface something contributes to starts with its built-in categories, titled in app-client's
+  // namespace, which ships their default wording.
   for (const surface of ['systemSettings', 'personalSettings'] as const) {
     if (!inputs.some((input) => input.surface === surface)) continue;
     for (const [id, order] of BUILT_IN_SETTINGS_CATEGORIES[surface]) {
@@ -888,7 +883,7 @@ function assembleRoutes(
           children: Object.freeze([]),
           category: true,
         }),
-        packageName: applicationPackage,
+        packageName: APP_CLIENT_NAMESPACE,
         source: 'application',
         surface,
         children: [],
@@ -921,17 +916,11 @@ function assembleRoutes(
         throw new Error(
           `app route "${definition.name}" from "${input.packageName}" cannot declare category or kind; they belong to settings routes.`,
         );
-      if (
-        declaresCategory &&
-        (definition).category !== true
-      )
+      if (declaresCategory && definition.category !== true)
         throw new Error(
           `Settings route "${definition.name}" from "${input.packageName}" must declare category: true or leave it out.`,
         );
-      if (
-        declaresKind &&
-        (definition).kind !== 'module'
-      )
+      if (declaresKind && definition.kind !== 'module')
         throw new Error(
           `Settings route "${definition.name}" from "${input.packageName}" must declare kind: 'module' or leave it out.`,
         );
@@ -944,6 +933,15 @@ function assembleRoutes(
         if (declaresKind)
           throw new Error(
             `${capitalize(SETTINGS_SURFACES[settings].label)} category "${definition.name}" from "${input.packageName}" cannot also be a module.`,
+          );
+        // A category only groups the menu: it adds no URL segment and no breadcrumb level, so moving a page to another
+        // category, or the application hiding one, never changes the page's address.
+        if (
+          definition.path !== undefined ||
+          definition.breadcrumb !== undefined
+        )
+          throw new Error(
+            `${capitalize(SETTINGS_SURFACES[settings].label)} category "${definition.name}" from "${input.packageName}" cannot declare path or breadcrumb; its pages keep their own paths.`,
           );
       } else if (settings && isGroup && !declaresKind)
         throw new Error(
@@ -980,7 +978,15 @@ function assembleRoutes(
                 : `${capitalize(SETTINGS_SURFACES[settings].label)} category "${definition.name}" from plugin "${input.packageName}" is already registered by "${previous.packageName}".`
               : `Client route group "${id}" from plugin "${input.packageName}" is already registered by "${previous.packageName}".`,
           );
-        if (settings && isCategory) node.category = definition.name.trim();
+        if (settings && isCategory) {
+          node.category = definition.name.trim();
+          // Named after its surface like the built-in ones, so one package may declare a category of the same id in
+          // both settings surfaces.
+          node.definition = Object.freeze({
+            ...definition,
+            name: `${settings}.${node.category}`,
+          });
+        }
         groups.set(id, node);
       }
       return node;

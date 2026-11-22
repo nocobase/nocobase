@@ -7,7 +7,33 @@ import settings from './settings-en-US.js';
 const frFR: LocaleResource<typeof enUS> = {
   // The Roles and permissions pages are not translated into this language yet and show in English.
   ...components,
-  settings,
+  settings: {
+    ...settings,
+    unsavedCount_many: settings.unsavedCount_other,
+    unsavedCountRisky_many: settings.unsavedCountRisky_other,
+    review: {
+      ...settings.review,
+      description_many: settings.review.description_other,
+      description_zero: settings.review.description_other,
+      highRisk_many: settings.review.highRisk_other,
+    },
+    members: {
+      ...settings.members,
+      description_many: settings.members.description_other,
+    },
+    permissionEditor: {
+      ...settings.permissionEditor,
+      attention_many: settings.permissionEditor.attention_other,
+      confirmDisable_many: settings.permissionEditor.confirmDisable_other,
+      noticeScopeReset_many: settings.permissionEditor.noticeScopeReset_other,
+      noticeTurnOnFirst_many: settings.permissionEditor.noticeTurnOnFirst_other,
+      noticeManagedRequirement_many:
+        settings.permissionEditor.noticeManagedRequirement_other,
+      noticeManagedDependent_many:
+        settings.permissionEditor.noticeManagedDependent_other,
+      tabChanges_many: settings.permissionEditor.tabChanges_other,
+    },
+  },
   permissionSets: {
     builtIn: {
       root: 'Administrateur système',

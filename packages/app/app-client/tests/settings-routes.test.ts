@@ -102,7 +102,7 @@ describe('defineSystemSettingsRoutes', () => {
     expect(isSystemSettingsRoute(routes[0]!)).toBe(false);
   });
 
-  it('starts with the built-in categories, titled in the application namespace and in a fixed order', () => {
+  it("starts with the built-in categories, titled in app-client's namespace and in a fixed order", () => {
     const { routes } = resolveAppClientContributions([
       app,
       {
@@ -121,49 +121,49 @@ describe('defineSystemSettingsRoutes', () => {
       ]),
     ).toEqual([
       [
-        '@example/app:systemSettings.account',
+        '@nocobase/app-client:systemSettings.account',
         'account',
         '/settings',
         'settings.categories.account',
         100,
       ],
       [
-        '@example/app:systemSettings.automation',
+        '@nocobase/app-client:systemSettings.automation',
         'automation',
         '/settings',
         'settings.categories.automation',
         200,
       ],
       [
-        '@example/app:systemSettings.messages',
+        '@nocobase/app-client:systemSettings.messages',
         'messages',
         '/settings',
         'settings.categories.messages',
         300,
       ],
       [
-        '@example/app:systemSettings.ai',
+        '@nocobase/app-client:systemSettings.ai',
         'ai',
         '/settings',
         'settings.categories.ai',
         400,
       ],
       [
-        '@example/app:systemSettings.data',
+        '@nocobase/app-client:systemSettings.data',
         'data',
         '/settings',
         'settings.categories.data',
         500,
       ],
       [
-        '@example/app:systemSettings.system',
+        '@nocobase/app-client:systemSettings.system',
         'system',
         '/settings',
         'settings.categories.system',
         600,
       ],
       [
-        '@example/app:systemSettings.other',
+        '@nocobase/app-client:systemSettings.other',
         'other',
         '/settings',
         'settings.categories.other',
@@ -211,8 +211,12 @@ describe('defineSystemSettingsRoutes', () => {
     ]);
     expect(
       flatten(routes).find((route) => route.name === 'multiApp'),
+    ).toBeUndefined();
+    expect(
+      flatten(routes).find((route) => route.category === 'multiApp'),
     ).toMatchObject({
-      id: '@example/multi-app:multiApp',
+      id: '@example/multi-app:systemSettings.multiApp',
+      name: 'systemSettings.multiApp',
       kind: 'category',
       category: 'multiApp',
     });
@@ -252,6 +256,123 @@ describe('defineSystemSettingsRoutes', () => {
     ).toThrow(
       /System settings category "finance" from plugin "@example\/b" is already registered by "@example\/a"/,
     );
+  });
+
+  it('lets one package declare the same category in both settings surfaces, but not twice in one', () => {
+    const crm = (
+      define: typeof defineSystemSettingsRoutes,
+    ): AppClientContributions['routes'] =>
+      define([
+        {
+          name: 'crm',
+          category: true,
+          navigation: { title: 'CRM', order: 50 },
+          children: [],
+        },
+        {
+          parent: 'crm',
+          name: `${define === defineSystemSettingsRoutes ? 'tiers' : 'myDeals'}`,
+          path: `/${define === defineSystemSettingsRoutes ? 'tiers' : 'my-deals'}`,
+          navigation: { title: 'Page' },
+          componentLoader: page,
+        },
+      ]);
+    const { routes } = resolveAppClientContributions([
+      app,
+      { packageName: '@example/crm', routes: crm(defineSystemSettingsRoutes) },
+      {
+        packageName: '@example/crm',
+        routes: crm(definePersonalSettingsRoutes as never),
+      },
+    ]);
+    const categories = flatten(routes).filter(
+      (route) => route.category === 'crm',
+    );
+    expect(categories.map((route) => [route.id, route.surface])).toEqual([
+      ['@example/crm:systemSettings.crm', 'systemSettings'],
+      ['@example/crm:personalSettings.crm', 'personalSettings'],
+    ]);
+    expect(() =>
+      resolveAppClientContributions([
+        app,
+        {
+          packageName: '@example/crm',
+          routes: crm(defineSystemSettingsRoutes),
+        },
+        {
+          packageName: '@example/crm',
+          routes: crm(defineSystemSettingsRoutes),
+        },
+      ]),
+    ).toThrow(/System settings category "crm".*already registered/);
+  });
+
+  it('rejects a category with a path or a breadcrumb, so its pages keep their own addresses', () => {
+    for (const extra of [
+      { path: '/crm' },
+      { breadcrumb: { title: 'CRM' } },
+    ] as const)
+      expect(() =>
+        resolveAppClientContributions([
+          app,
+          {
+            packageName: '@example/crm',
+            routes: defineSystemSettingsRoutes([
+              {
+                name: 'crm',
+                category: true,
+                navigation: { title: 'CRM' },
+                children: [],
+                ...extra,
+              },
+              {
+                parent: 'crm',
+                name: 'tiers',
+                path: '/tiers',
+                navigation: { title: 'Tiers' },
+                componentLoader: page,
+              },
+            ]),
+          },
+        ]),
+      ).toThrow(
+        /System settings category "crm" from "@example\/crm" cannot declare path or breadcrumb/,
+      );
+    const tiers = (hidden: boolean) =>
+      flatten(
+        resolveAppClientContributions([
+          app,
+          {
+            packageName: '@example/app',
+            source: 'application',
+            routes: defineSettingsCategories('systemSettings', {
+              crm: { hidden },
+            }),
+          },
+          {
+            packageName: '@example/crm',
+            routes: defineSystemSettingsRoutes([
+              {
+                name: 'crm',
+                category: true,
+                navigation: { title: 'CRM' },
+                children: [],
+              },
+              {
+                parent: 'crm',
+                name: 'tiers',
+                path: '/tiers',
+                navigation: { title: 'Tiers' },
+                componentLoader: page,
+              },
+            ]),
+          },
+        ]).routes,
+      ).find((route) => route.name === 'tiers')?.path;
+    vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+    expect(tiers(false)).toBe('/settings/tiers');
+    // Hidden, the page moves to Other and keeps its address.
+    expect(tiers(true)).toBe('/settings/tiers');
   });
 
   it('requires a settings group to be a root category or a module', () => {
@@ -546,15 +667,15 @@ describe('definePersonalSettingsRoutes', () => {
         .map((route) => [route.id, route.navigation?.title]),
     ).toEqual([
       [
-        '@example/app:personalSettings.account',
+        '@nocobase/app-client:personalSettings.account',
         'settings.personal.categories.account',
       ],
       [
-        '@example/app:personalSettings.preferences',
+        '@nocobase/app-client:personalSettings.preferences',
         'settings.personal.categories.preferences',
       ],
       [
-        '@example/app:personalSettings.other',
+        '@nocobase/app-client:personalSettings.other',
         'settings.personal.categories.other',
       ],
     ]);

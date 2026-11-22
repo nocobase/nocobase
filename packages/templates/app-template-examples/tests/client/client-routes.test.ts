@@ -256,6 +256,25 @@ describe('app client routes', () => {
       );
   });
 
+  it('declares the CRM settings category ahead of the built-in ones, hidden while it holds no page', () => {
+    const routes = resolveRoutes().routes;
+    const crm = routes.find((route) => route.category === 'crm');
+    expect(crm).toMatchObject({
+      name: 'systemSettings.crm',
+      packageName: '@nocobase/app-template-examples',
+      navigation: { title: 'settings.categories.crm', order: 50 },
+    });
+    const account = routes.find(
+      (route) => route.name === 'systemSettings.account',
+    );
+    expect(routes.indexOf(crm!)).toBeLessThan(routes.indexOf(account!));
+    expect(
+      buildSettingsCatalog(routes, new Set()).some(
+        (category) => category.route.category === 'crm',
+      ),
+    ).toBe(false);
+  });
+
   it('redirects every former settings URL to its page under /settings', () => {
     const paths = new Set(pagePaths(resolveRoutes().routes));
     for (const [from, to] of SETTINGS_REDIRECTS) {

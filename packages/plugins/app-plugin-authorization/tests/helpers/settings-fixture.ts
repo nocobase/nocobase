@@ -13,15 +13,6 @@ export const appWords = {
     settings: {
       users: 'Users',
       usersDescription: 'Manage users.',
-      categories: {
-        account: 'Accounts and permissions',
-        automation: 'Workflows and automation',
-        messages: 'Messages',
-        ai: 'AI',
-        data: 'Data and files',
-        system: 'System',
-        other: 'Other',
-      },
     },
   },
   'zh-CN': {
@@ -29,15 +20,6 @@ export const appWords = {
     settings: {
       users: '用户',
       usersDescription: '管理用户。',
-      categories: {
-        account: '账号与权限',
-        automation: '流程与自动化',
-        messages: '消息',
-        ai: 'AI',
-        data: '数据与文件',
-        system: '系统',
-        other: '其他',
-      },
     },
   },
 } as const;

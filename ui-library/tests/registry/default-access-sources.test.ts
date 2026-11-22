@@ -17,7 +17,6 @@ it('keeps the Registry authorization editors and the authorization plugin’s co
       read(
         `../../../packages/plugins/app-plugin-authorization/client/components/${file}`,
       ),
-      file,
     ).toBe(read(`../../registry/authorization/${file}`));
 });
 

@@ -7,10 +7,9 @@ import {
 /**
  * The personal settings home and built-in pages. Every page declared with `definePersonalSettingsRoutes()`, by the
  * application or a plugin, is mounted under `/me`, opens from the account menu and joins one of the categories
- * `@nocobase/app-client` builds in with `parent`, such as `parent: PERSONAL_SETTINGS_CATEGORIES.preferences`. Their
- * titles are `settings.personal.categories.<id>` in this application's locales. Personal settings belong to whoever is
- * signed in: a page declares no `authz`, stays out of page permissions, and reads only the current person's data. A
- * category the viewer can open nothing in is not shown.
+ * `@nocobase/app-client` builds in with `parent`, such as `parent: PERSONAL_SETTINGS_CATEGORIES.preferences`, which also
+ * titles them. Personal settings belong to whoever is signed in: a page declares no `authz`, stays out of page
+ * permissions, and reads only the current person's data. A category the viewer can open nothing in is not shown.
  */
 const personalSettingsRoutes: AppClientRouteContribution =
   definePersonalSettingsRoutes([

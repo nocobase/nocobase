@@ -5,6 +5,7 @@ import type { ReactElement } from 'react';
 import { PageBreadcrumbProvider } from '@nocobase/app-client';
 import { MemoryRouter, Route, Routes } from 'react-router';
 
+import { Elsewhere } from './elsewhere.js';
 import { HeaderTrail } from './header-trail.js';
 
 export function renderPage(
@@ -36,7 +37,7 @@ export function renderRoute(
           <HeaderTrail />
           <Routes>
             <Route path={path} element={element} />
-            <Route path='*' element={<p>elsewhere</p>} />
+            <Route path='*' element={<Elsewhere />} />
           </Routes>
         </PageBreadcrumbProvider>
       </MemoryRouter>

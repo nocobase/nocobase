@@ -6,15 +6,14 @@ import {
 /**
  * The System settings home. Every page declared with `defineSystemSettingsRoutes()`, by the application or a plugin,
  * is mounted under `/settings` and joins one of the categories `@nocobase/app-client` builds in with `parent`, such as
- * `parent: SYSTEM_SETTINGS_CATEGORIES.account`. Their titles are `settings.categories.<id>` in this application's
- * locales; rename, reorder or hide one with `defineSettingsCategories()` rather than declaring it again. A module with
+ * `parent: SYSTEM_SETTINGS_CATEGORIES.account`, which also titles them; rename, reorder or hide one with `defineSettingsCategories()` rather than declaring it again. A module with
  * several views is a `kind: 'module'` group whose pages become its tabs (`SettingsModulePage`). A category the viewer
  * can open nothing in is not shown.
  */
 const settingsShellRoutes: AppClientRouteContribution =
   defineSystemSettingsRoutes([
     {
-      // Lists only modules the viewer may open, so it needs no grant of its own.
+      // Opens the first page the viewer may open, so it needs no grant of its own.
       name: 'settingsHome',
       path: '/',
       auth: 'required',

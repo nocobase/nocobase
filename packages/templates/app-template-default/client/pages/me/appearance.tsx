@@ -33,7 +33,7 @@ export default function AppearancePage(): ReactElement {
   const { preset, setPreset } = useThemePreset();
 
   return (
-    <PageContainer className='max-w-[860px]'>
+    <PageContainer>
       <PageHeader
         title={t('settings.personal.appearance.title')}
         description={t('settings.personal.appearance.description')}
