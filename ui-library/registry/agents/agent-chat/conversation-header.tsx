@@ -2,6 +2,8 @@ import { useState, type ReactElement, type ReactNode } from 'react';
 import { CONVERSATION_TITLE_MAX } from '@nocobase/app-plugin-agents/shared/conversations';
 import {
   ArrowLeftIcon,
+  ExternalLinkIcon,
+  ListIcon,
   MoreHorizontalIcon,
   PanelRightIcon,
   XIcon,
@@ -30,6 +32,13 @@ export interface ConversationHeaderProps {
   readonly details?: boolean | undefined;
   readonly onExpand?: (() => void) | undefined;
   readonly expanded?: boolean;
+  /** Opens the conversation on the application's full-page view. */
+  readonly onOpenPage?: (() => void) | undefined;
+  /**
+   * Receives the element the conversation's choices (agent, model, thinking level) render into: given, the controls
+   * share the first row with them and the title moves to a row of its own, as in the panel.
+   */
+  readonly choiceSlot?: ((element: HTMLElement | null) => void) | undefined;
   readonly metadata?: ReactNode;
   readonly summary?: ReactNode;
   /** Low-frequency native commands such as archive and delete. */
@@ -50,6 +59,8 @@ export function ConversationHeader({
   details = false,
   onExpand,
   expanded = false,
+  onOpenPage,
+  choiceSlot,
   metadata,
   summary,
   menuItems,
@@ -66,6 +77,13 @@ export function ConversationHeader({
       data-testid='conversation-header'
     >
       <div className='flex min-w-0 items-center gap-1'>
+        {choiceSlot ? (
+          <div
+            ref={choiceSlot}
+            className='flex min-w-0 flex-1 items-center gap-1'
+            data-testid='chat-header-choice'
+          />
+        ) : null}
         {onBack && (
           <Button
             variant='ghost'
@@ -73,12 +91,15 @@ export function ConversationHeader({
             className={cn('shrink-0', backClassName)}
             data-testid='chat-history-button'
             aria-label={t('chat.backToList')}
+            title={choiceSlot ? t('chat.backToList') : undefined}
             onClick={onBack}
           >
-            <ArrowLeftIcon />
+            {choiceSlot ? <ListIcon /> : <ArrowLeftIcon />}
           </Button>
         )}
-        <ConversationHeading title={title} onRename={onRename} />
+        {choiceSlot ? null : (
+          <ConversationHeading title={title} onRename={onRename} />
+        )}
         {onNew && (
           <Button
             variant='ghost'
@@ -88,6 +109,18 @@ export function ConversationHeader({
             onClick={onNew}
           >
             <PlusIcon />
+          </Button>
+        )}
+        {onOpenPage && (
+          <Button
+            variant='ghost'
+            size='icon-sm'
+            data-testid='chat-open-page'
+            aria-label={t('chat.openPage')}
+            title={t('chat.openPage')}
+            onClick={onOpenPage}
+          >
+            <ExternalLinkIcon />
           </Button>
         )}
         {onToggleDetails && (
@@ -140,6 +173,11 @@ export function ConversationHeader({
           </Button>
         )}
       </div>
+      {choiceSlot ? (
+        <div className='flex min-w-0 items-center'>
+          <ConversationHeading title={title} onRename={onRename} />
+        </div>
+      ) : null}
       {metadata && (
         <div className='flex min-w-0 flex-nowrap items-center gap-1.5'>
           {metadata}

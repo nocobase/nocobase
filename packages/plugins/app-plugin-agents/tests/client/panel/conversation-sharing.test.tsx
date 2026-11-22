@@ -1,3 +1,5 @@
+// @vitest-environment jsdom
+import { appResources } from './fixtures/i18n.js';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {
@@ -6,12 +8,16 @@ import {
 } from '@nocobase/i18n/testing';
 import { QueryClient } from '@tanstack/react-query';
 import { afterEach, expect, it, vi } from 'vitest';
-import { ShareConversation } from '../../registry/agents/agent-chat/share-conversation.js';
-import enUS from '../../registry/agents/agent-chat/locales/en-US.js';
-import zhCN from '../../registry/agents/agent-chat/locales/zh-CN.js';
-import type { ConversationShare } from '@nocobase/app-plugin-agents/shared/conversations';
+import { ShareConversation } from '../../../client/panel/share-conversation.js';
+import enUS from '../../../client/locales/en-US.js';
+import zhCN from '../../../client/locales/zh-CN.js';
+import type { ConversationShare } from '../../../shared/conversations.js';
 import { useState } from 'react';
-import { Dialog, DialogContent, DialogTitle } from '#components/ui/dialog';
+import {
+  Dialog,
+  DialogContent,
+  DialogTitle,
+} from '../../../client/components/ui/dialog.js';
 
 const state = vi.hoisted(() => ({
   rows: [] as ConversationShare[],
@@ -28,7 +34,7 @@ vi.mock('@nocobase/app-client', () => ({
 const queries = new QueryClient({
   defaultOptions: { queries: { retry: false } },
 });
-vi.mock('@nocobase/app-plugin-agents/client/chat', () => ({
+vi.mock('../../../client/chat.js', () => ({
   agentsQueryClient: () => queries,
   useChatPanel: () => ({ conversationPath: (id: string) => `/chat/${id}` }),
   useChatApi: () => ({
@@ -42,7 +48,8 @@ vi.mock('@nocobase/app-plugin-agents/client/chat', () => ({
   }),
 }));
 const runtime = await createTestI18nRuntime({
-  application: { namespace: 'sharing-test', resources: enUS },
+  application: { namespace: '@nocobase/test-app', resources: appResources },
+  namespaces: { '@nocobase/app-plugin-agents': enUS },
 });
 afterEach(() => {
   queries.clear();
@@ -271,7 +278,8 @@ it('formats the recipient cutoff in the application language instead of the brow
   savedShare('bob');
   const chinese = await createTestI18nRuntime({
     locale: 'zh-CN',
-    application: { namespace: 'sharing-test', resources: zhCN },
+    application: { namespace: '@nocobase/test-app', resources: appResources },
+    namespaces: { '@nocobase/app-plugin-agents': zhCN },
   });
   render(
     <TestI18nProvider runtime={chinese}>

@@ -1,5 +1,6 @@
 /**
- * The viewer's conversations, last message first, in the panel's history view, the conversation list on its left while
+ * The viewer's own conversations, grouped (waiting for them, in progress, recent) and last message first within a
+ * group, in the panel's history view, the conversation list on its left while
  * it covers the content, and the full-page view's history dialog: an optional header, search over titles and messages,
  * a filter by agent, then the list, and at the bottom the toggle between open and archived ones. With `mode` the list
  * holds that mode's conversations only (online or runner agents) and its agent filter that mode's agents; without it,
@@ -33,7 +34,13 @@ import {
   PencilIcon,
   SearchIcon,
 } from 'lucide-react';
-import { useEffect, useState, type ReactElement, type ReactNode } from 'react';
+import {
+  useEffect,
+  useState,
+  type ComponentType,
+  type ReactElement,
+  type ReactNode,
+} from 'react';
 
 import { Button } from '#components/ui/button';
 import {
@@ -62,6 +69,8 @@ import { cn } from 'cn';
 
 import { useChatTranslation } from './chat-i18n.js';
 import { LoadError, Pulse } from './chat-ui.js';
+import { replaceable } from '@nocobase/app-plugin-agents/client/chat';
+import { HISTORY_GROUPS, historyGroup } from './history-groups.js';
 
 const ALL = '__all__';
 
@@ -232,20 +241,41 @@ export function HistoryList({
                 : t('chat.history.empty')}
           </p>
         ) : (
-          <ul
-            className='flex flex-col gap-1'
+          <div
+            className='flex flex-col gap-3'
+            role='group'
             aria-label={t('chat.history.title')}
           >
-            {items.map((item) => (
-              <HistoryRow
-                key={item.id}
-                item={item}
-                active={item.id === activeId}
-                onOpen={() => onOpen(item.id)}
-                onOpenPage={onOpenPage ? () => onOpenPage(item.id) : null}
-              />
-            ))}
-          </ul>
+            {HISTORY_GROUPS.map((group) => {
+              const rows = items.filter((item) => historyGroup(item) === group);
+              if (!rows.length) return null;
+              const heading = t(`chat.history.${group}`);
+              return (
+                <section
+                  key={group}
+                  className='flex flex-col gap-1'
+                  data-history-group={group}
+                >
+                  <h3 className='px-2.5 text-xs font-medium text-muted-foreground'>
+                    {heading}
+                  </h3>
+                  <ul className='flex flex-col gap-1' aria-label={heading}>
+                    {rows.map((item) => (
+                      <ConversationListItem
+                        key={item.id}
+                        item={item}
+                        active={item.id === activeId}
+                        onOpen={() => onOpen(item.id)}
+                        onOpenPage={
+                          onOpenPage ? () => onOpenPage(item.id) : null
+                        }
+                      />
+                    ))}
+                  </ul>
+                </section>
+              );
+            })}
+          </div>
         )}
         {pages.hasNextPage ? (
           <Button
@@ -258,6 +288,9 @@ export function HistoryList({
             {t('chat.history.more')}
           </Button>
         ) : null}
+        <p className='px-1 text-xs text-muted-foreground'>
+          {t('chat.history.ownOnly')}
+        </p>
       </div>
       <div className='flex shrink-0 items-center gap-1 border-t px-2 py-2'>
         <Button
@@ -280,17 +313,22 @@ export function HistoryList({
   );
 }
 
-function HistoryRow({
+export interface ConversationListItemProps {
+  readonly item: ConversationSummary;
+  /** The conversation the panel shows. */
+  readonly active: boolean;
+  readonly onOpen: () => void;
+  /** Opens it on the application's full-page view; null without one. */
+  readonly onOpenPage: (() => void) | null;
+}
+
+/** A row of the conversation list: title, time, agent, and its menu; replaceable as `ConversationListItem`. */
+export function DefaultConversationListItem({
   item,
   active,
   onOpen,
   onOpenPage,
-}: {
-  readonly item: ConversationSummary;
-  readonly active: boolean;
-  readonly onOpen: () => void;
-  readonly onOpenPage: (() => void) | null;
-}): ReactElement {
+}: ConversationListItemProps): ReactElement {
   const { t } = useChatTranslation();
   const format = useFormatters();
   const actions = useConversationActions();
@@ -424,6 +462,10 @@ function HistoryRow({
     </li>
   );
 }
+
+// eslint-disable-next-line react-refresh/only-export-components -- wrapped once at load, so replacements follow it
+export const ConversationListItem: ComponentType<ConversationListItemProps> =
+  replaceable('ConversationListItem', DefaultConversationListItem);
 
 /**
  * The person's conversations in a dialog (search, filters, rename, archive), for a page rather than the panel: a row

@@ -1,15 +1,12 @@
 /**
- * The agent management pages as route definitions, for the application to route (the plugin registers no routes of its
- * own): `/agents`, `/runtimes` and `/skills`, each with its dialog and detail children, and `/usage`. Each page renders its own page
- * frame and heading, and brings this plugin's translations and query cache, since it renders in the application's
- * tree. The application gives each top-level page its own `navigation` and `breadcrumb`.
+ * The agents' settings pages: `agentsSettingsRoutes`, which the plugin registers as System settings › AI (Agent, Model
+ * services, Runtimes, Skills, Usage, in that order), and the same pages as plain route definitions (`agentsRoute` and
+ * the others) for an application that also routes one elsewhere. Each page renders its own page frame and heading,
+ * and brings this plugin's translations and query cache, since it renders in the application's tree.
  *
- * Each page stands behind its own page grant (`shared/access.ts` `PAGES`, named like the route), which only opens it:
- * what a page lists and changes is decided by the API on the settings items (`agents.agents`, `agents.runners`), and
- * on the runtimes page by who added each runtime.
- *
- * `agentsSettingsRoutes` offers the same pages ready-made as System settings pages in the built-in AI category, which
- * an application mounts with `agents({ settingsRoutes: true })`.
+ * Each page stands behind reading the settings item its API checks (`shared/access.ts`): Agent `agents.agents`, Model
+ * services `agents.services`, Runtimes `agents.runners`, Skills `agents.skills`, Usage `agents.prices`. Without it the
+ * entry is not shown; with reading alone a page shows no changing actions and the API refuses changes.
  */
 import {
   defineSystemSettingsRoutes,
@@ -147,15 +144,15 @@ const SETTINGS_MOUNT = settingsMount(`${SYSTEM_SETTINGS_ROUTE_PATH}/agents`);
 /**
  * The agent management pages as System settings pages in the built-in AI category: `/settings/agents`,
  * `/settings/runtimes`, `/settings/skills`, `/settings/models` and `/settings/usage`, titled in this plugin's
- * namespace. The plugin registers them when the application asks with `agents({ settingsRoutes: true })`; an
- * application that keeps the pages elsewhere routes the definitions above itself instead.
+ * namespace. The plugin registers them whatever its options; replace one with the application's
+ * `routeComponentOverrides` (`@nocobase/app-plugin-agents:agents`, `:models`, `:runtimes`, `:skills`, `:usage`).
  */
 export const agentsSettingsRoutes: AppClientSystemSettingsRoutesContribution =
   defineSystemSettingsRoutes([
     settingsPage(agentsRoute, 'agents.title', Bot),
+    settingsPage(modelsRoute, 'models.title', BrainCircuit),
     settingsPage(runtimesRoute, 'runtimes.title', Server),
     settingsPage(skillsRoute, 'skills.title', Sparkles),
-    settingsPage(modelsRoute, 'models.title', BrainCircuit),
     settingsPage(usageRoute, 'usage.title', ChartColumn),
   ]);
 

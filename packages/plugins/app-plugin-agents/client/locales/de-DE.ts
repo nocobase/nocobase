@@ -1516,6 +1516,7 @@ const deDE: LocaleResource<typeof enUS> = {
         runners: 'Laufzeitumgebungen',
         prices: 'Modellpreise',
         services: 'Musterdienste',
+        skills: 'Fähigkeiten',
       },
     },
     actions: {

@@ -1,14 +1,13 @@
+// @vitest-environment jsdom
+import { appResources } from './fixtures/i18n.js';
 import {
   ChatProvider,
   useChatPanel,
   useChatSources,
   useChatUIContextSource,
   type ChatUIContextSource,
-} from '@nocobase/app-plugin-agents/client/chat';
-import type {
-  PageContext,
-  PageUIItem,
-} from '@nocobase/app-plugin-agents/shared/conversations';
+} from '../../../client/chat.js';
+import type { PageContext, PageUIItem } from '../../../shared/conversations.js';
 import {
   createTestI18nRuntime,
   TestI18nProvider,
@@ -20,10 +19,10 @@ import { expect, it, vi } from 'vitest';
 import {
   AgentComposer,
   ComposerContextChips,
-} from '../../registry/agents/agent-composer';
-import { Composer } from '../../registry/agents/agent-chat/composer';
-import { SentContext } from '../../registry/agents/agent-chat/context-chips';
-import enUS from '../../registry/agents/agent-chat/locales/en-US';
+} from '../../../client/panel/components/agent-composer.js';
+import { Composer } from '../../../client/panel/composer.js';
+import { SentContext } from '../../../client/panel/context-chips.js';
+import enUS from '../../../client/locales/en-US.js';
 
 const host = vi.hoisted(() => ({
   api: { request: vi.fn(), stream: vi.fn() },
@@ -36,7 +35,8 @@ vi.mock('@nocobase/app-client', async (original) => ({
   useService: () => host.realtime,
 }));
 const runtime = await createTestI18nRuntime({
-  application: { namespace: 'ui-context-composer', resources: enUS },
+  application: { namespace: '@nocobase/test-app', resources: appResources },
+  namespaces: { '@nocobase/app-plugin-agents': enUS },
 });
 function Open() {
   const { openChat } = useChatPanel();

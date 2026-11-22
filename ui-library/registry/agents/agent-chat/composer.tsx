@@ -25,9 +25,11 @@ import type {
   PageContext,
 } from '@nocobase/app-plugin-agents/shared/conversations';
 import {
+  useCallback,
   useLayoutEffect,
   useMemo,
   useRef,
+  type ComponentType,
   type ReactElement,
   type ReactNode,
 } from 'react';
@@ -39,6 +41,10 @@ import {
   type AgentComposerContext,
 } from '#components/agent-composer';
 
+import {
+  AgentSlotOutlet,
+  replaceable,
+} from '@nocobase/app-plugin-agents/client/chat';
 import { useComposerLabels } from './chat-i18n.js';
 
 export interface ComposerProps {
@@ -63,6 +69,15 @@ export interface ComposerProps {
   readonly onStop: () => void;
   /** `page`: the full-page view's box, one rounded field holding the text and a round send button. */
   readonly variant?: 'panel' | 'page';
+  /** The conversation the box writes to, null before its first message; what `composerActions` are given. */
+  readonly conversationId?: string | null;
+  /** The agent the box writes to, when one is chosen. */
+  readonly agentId?: string | null;
+  /**
+   * Receives the function that puts text into the box (never sending it), for what surrounds it such as the empty
+   * state's suggestions; returns what undoes it.
+   */
+  readonly registerInsert?: (insert: (text: string) => void) => () => void;
 }
 
 /** What a chip in the composer carries, as its preview dialog shows it. */
@@ -87,7 +102,8 @@ function chipContent(chip: ChatContextChip): unknown {
   }
 }
 
-export function Composer({
+/** The panel's and the conversation page's message box; replaceable as `Composer` (`agents.components.replace`). */
+export function DefaultComposer({
   disabled,
   running,
   stopping,
@@ -98,6 +114,9 @@ export function Composer({
   onStop,
   variant = 'panel',
   registerAddFiles,
+  conversationId = null,
+  agentId = null,
+  registerInsert,
 }: ComposerProps): ReactElement {
   const location = useLocation();
   const panel = useChatPanel();
@@ -113,6 +132,22 @@ export function Composer({
       sendAllowedRef.current = false;
     };
   }, [onSend, disabled, panel.open, panel.composerRevision]);
+  // The box's own insert, handed to the `composerActions` slot and to `registerInsert`.
+  const insertRef = useRef<((text: string) => void) | null>(null);
+  const registerBoxInsert = useCallback(
+    (insert: (text: string) => void) => {
+      insertRef.current = insert;
+      const undo = registerInsert?.(insert);
+      return () => {
+        undo?.();
+        if (insertRef.current === insert) insertRef.current = null;
+      };
+    },
+    [registerInsert],
+  );
+  const insertText = useCallback((text: string) => {
+    insertRef.current?.(text);
+  }, []);
   const sources = useChatSources();
   const labels = useComposerLabels();
   const files = useChatAttachments();
@@ -174,7 +209,16 @@ export function Composer({
       running={running}
       stopping={stopping}
       notice={notice}
-      toolbar={toolbar}
+      toolbar={
+        <>
+          <AgentSlotOutlet
+            name='composerActions'
+            props={{ conversationId, agentId, insertText }}
+          />
+          {toolbar ?? null}
+        </>
+      }
+      registerInsert={registerBoxInsert}
       {...(placeholder === undefined ? {} : { placeholder })}
       labels={labels}
       context={context}
@@ -195,3 +239,9 @@ export function Composer({
     />
   );
 }
+
+// eslint-disable-next-line react-refresh/only-export-components -- wrapped once at load, so replacements follow it
+export const Composer: ComponentType<ComposerProps> = replaceable(
+  'Composer',
+  DefaultComposer,
+);

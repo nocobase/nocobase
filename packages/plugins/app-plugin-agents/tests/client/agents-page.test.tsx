@@ -184,7 +184,7 @@ describe('the Agent page', () => {
     });
   });
 
-  it('defaults to enabled only, and showing disabled adds them alongside', async () => {
+  it('lists the enabled agents, and the disabled ones under Disabled', async () => {
     renderPage(<AgentsPage />);
     const rows = await screen.findAllByTestId(/^agent-(sonnet|kimi|old)$/u);
     expect(rows.map((row) => row.dataset.state)).toEqual([
@@ -192,12 +192,17 @@ describe('the Agent page', () => {
       'unreported',
     ]);
     expect(screen.queryByTestId('agent-old')).not.toBeInTheDocument();
-    fireEvent.click(screen.getByTestId('agents-toggle-disabled'));
+    // Who may chat with each: everyone until limited to roles.
+    expect(
+      within(screen.getByTestId('agent-sonnet')).getByTestId(
+        'agent-chat-roles-cell',
+      ),
+    ).toHaveTextContent('agents.chatRoles.everyone');
+    fireEvent.click(screen.getByTestId('agents-filter-disabled'));
     await waitFor(() =>
       expect(screen.getByTestId('agent-old')).toBeInTheDocument(),
     );
-    // Showing disabled agents never hides the enabled ones that were already visible.
-    expect(screen.getByTestId('agent-sonnet')).toBeInTheDocument();
+    expect(screen.queryByTestId('agent-sonnet')).not.toBeInTheDocument();
     expect(screen.getByTestId('agent-old')).toHaveAttribute(
       'data-state',
       'disabled',

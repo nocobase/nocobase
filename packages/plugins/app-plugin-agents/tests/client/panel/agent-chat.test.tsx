@@ -1,9 +1,11 @@
-import { ConsultationCard } from '../../registry/agents/agent-chat/consultation-card';
+// @vitest-environment jsdom
+import { appResources } from './fixtures/i18n.js';
+import { ConsultationCard } from '../../../client/panel/consultation-card.js';
 import {
   ChatProvider,
   useChatContextSource,
   useChatPanel,
-} from '@nocobase/app-plugin-agents/client/chat';
+} from '../../../client/chat.js';
 import {
   TestI18nProvider,
   createTestI18nRuntime,
@@ -21,40 +23,41 @@ import { useEffect, type ReactElement, type ReactNode } from 'react';
 import { MemoryRouter, Route, Routes, useNavigate } from 'react-router';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import { LinkedChatPanel } from '../../registry/agents/agent-chat/linked-chat-panel';
-import { ChatPanel } from '../../registry/agents/agent-chat/chat-panel';
-import { ChatConversationPage } from '../../registry/agents/agent-chat/conversation-page';
-import { ChatHistoryDialog } from '../../registry/agents/agent-chat/history-list';
-import { measureFloatingClearance } from '../../registry/agents/agent-chat/floating-clearance';
+import { LinkedChatPanel } from '../../../client/panel/linked-chat-panel.js';
+import { ChatPanel } from '../../../client/panel/chat-panel.js';
+import { ChatConversationPage } from '../../../client/panel/conversation-page.js';
+import { ChatHistoryDialog } from '../../../client/panel/history-list.js';
+import { measureFloatingClearance } from '../../../client/panel/floating-clearance.js';
 import {
   AskAgentButton,
   ChatFloatingButton,
   ChatHeaderButton,
-} from '../../registry/agents/agent-chat/launchers';
-import enUS from '../../registry/agents/agent-chat/locales/en-US';
-import zhCN from '../../registry/agents/agent-chat/locales/zh-CN';
-import { resetChatDemo } from '../../website/demo/agents/agents-chat-client';
+} from '../../../client/panel/launchers.js';
+import enUS from '../../../client/locales/en-US.js';
+import zhCN from '../../../client/locales/zh-CN.js';
+import chatEnUS from '../../../client/locales/chat.en-US.js';
+import chatZhCN from '../../../client/locales/chat.zh-CN.js';
+import panelEnUS from '../../../client/locales/panel.en-US.js';
+import panelZhCN from '../../../client/locales/panel.zh-CN.js';
+import { resetChatDemo } from './fixtures/chat-client.js';
 
 // The plugin's chat hooks need a server; the preview's in-memory stand-in answers in their place.
-vi.mock(
-  '@nocobase/app-plugin-agents/client/chat',
-  () => import('../../website/demo/agents/agents-chat-client'),
-);
+vi.mock('../../../client/chat.js', () => import('./fixtures/chat-client.js'));
 
 vi.mock('@nocobase/app-client', async (original) => ({
   ...(await original<typeof import('@nocobase/app-client')>()),
   resolveAppUrl: (x: string) => x,
   // Unlinking is the only request the linked details make; the demo's stand-in answers it in memory.
-  useApiClient: (await import('../../website/demo/inbox/app-client'))
-    .useApiClient,
+  useApiClient: (await import('./fixtures/app-client.js')).useApiClient,
 }));
-vi.mock('../../registry/agents/agent-chat/use-conversation-usage.js', () => ({
+vi.mock('../../../client/panel/use-conversation-usage.js', () => ({
   useConversationUsage: () => ({ data: undefined }),
 }));
 afterEach(() => resetChatDemo());
 
 const runtime = await createTestI18nRuntime({
-  application: { namespace: '@nocobase/test-app', resources: enUS },
+  application: { namespace: '@nocobase/test-app', resources: appResources },
+  namespaces: { '@nocobase/app-plugin-agents': enUS },
 });
 
 function Open({
@@ -127,14 +130,32 @@ if (!('ResizeObserver' in globalThis))
   );
 
 describe('agent-chat locales', () => {
+  const entries = (value: object, prefix = ''): [string, string][] =>
+    Object.entries(value).flatMap(([key, child]): [string, string][] =>
+      typeof child === 'string'
+        ? [[`${prefix}${key}`, child]]
+        : entries(child as object, `${prefix}${key}.`),
+    );
+  const keys = (value: object): string[] => entries(value).map(([key]) => key);
+
   it('lists the same keys in every language', () => {
-    const keys = (value: object, prefix = ''): string[] =>
-      Object.entries(value).flatMap(([key, child]) =>
-        typeof child === 'string'
-          ? [`${prefix}${key}`]
-          : keys(child as object, `${prefix}${key}.`),
-      );
-    expect(keys(zhCN)).toEqual(keys(enUS));
+    expect(keys(panelZhCN)).toEqual(keys(panelEnUS));
+    expect(keys(chatZhCN).sort()).toEqual(keys(chatEnUS).sort());
+  });
+
+  it('gives a key the panel shares with the chat hooks one wording, and merges both into the plugin resources', () => {
+    for (const [chat, panel, merged] of [
+      [chatEnUS, panelEnUS, enUS],
+      [chatZhCN, panelZhCN, zhCN],
+    ] as const) {
+      const shared = new Map(entries(chat));
+      for (const [key, value] of entries(panel))
+        if (shared.has(key))
+          expect([key, value]).toEqual([key, shared.get(key)]);
+      const all = new Map(entries(merged));
+      for (const [key, value] of [...entries(chat), ...entries(panel)])
+        expect([key, all.get(key)]).toEqual([key, value]);
+    }
   });
 });
 
@@ -258,7 +279,7 @@ describe('ChatPanel', () => {
     renderPanel(null, <Page />);
     expect(screen.queryByTestId('chat-context-chips')).toBeNull();
     fireEvent.click(
-      screen.getByRole('button', { name: 'Ask agent', exact: true }),
+      screen.getByRole('button', { name: 'Ask Agent', exact: true }),
     );
     const chips = await screen.findByTestId('chat-context-chips');
     expect(within(chips).getByText('PM-12 Tour')).toBeVisible();
@@ -321,7 +342,7 @@ describe('ChatPanel', () => {
     const asked = within(history)
       .getByText('Summarize PM-12 Welcome tour')
       .closest('li')!;
-    expect(within(asked).queryByText('Ask agent')).toBeNull();
+    expect(within(asked).queryByText('Ask Agent')).toBeNull();
     // Archived is a toggle at the bottom of the list, not a tab.
     const archived = within(history).getByTestId('chat-history-archived');
     expect(archived).toHaveAttribute('aria-pressed', 'false');
@@ -339,28 +360,34 @@ describe('ChatPanel', () => {
       screen.getByText(/The agent stopped before answering\./u),
     ).toBeVisible();
     expect(screen.getByTestId('chat-offline')).toHaveTextContent(
-      'Release manager has no runner online right now',
+      'Release manager has no runtime online right now',
     );
   });
 
-  it('chooses the agent of a new conversation in the composer, then shows it read-only', async () => {
+  it('chooses the agent of a new conversation in the panel header, then shows it read-only', async () => {
     renderPanel(null);
-    const composer = await screen.findByTestId('chat-composer');
-    const picker = await within(composer).findByTestId('chat-agent-picker');
+    // In the panel the choice sits in its header, not in the composer's toolbar.
+    const choice = await screen.findByTestId('chat-header-choice');
+    const picker = await within(choice).findByTestId('chat-agent-picker');
+    expect(
+      within(screen.getByTestId('chat-composer')).queryByTestId(
+        'chat-agent-picker',
+      ),
+    ).toBeNull();
     expect(picker).toHaveTextContent('Assistant');
-    // Fitted to the composer: the availability is in its name.
+    // Compact: the availability is in its name.
     expect(picker).toHaveAccessibleName(
       'Agent: Assistant, Online; choose another',
     );
-    // Before the first message the header names no agent: the composer chooses it.
+    // Before the first message the header names no agent: the picker chooses it.
     expect(screen.queryByTestId('chat-agent')).toBeNull();
     await userEvent.click(picker);
     // Every enabled agent; one that cannot answer now says why and cannot be picked.
     const release = await screen.findByRole('menuitem', {
       name: /Release manager/u,
     });
-    expect(release).toHaveTextContent('No runner online, cannot be chosen');
-    expect(release).toHaveTextContent('Personal runners only');
+    expect(release).toHaveTextContent('No runtime online, cannot be chosen');
+    expect(release).toHaveTextContent('Personal runtimes only');
     expect(release).toHaveAttribute('aria-disabled', 'true');
     fireEvent.click(screen.getByRole('menuitem', { name: /Coding agent/u }));
     await waitFor(() =>
@@ -374,7 +401,7 @@ describe('ChatPanel', () => {
     expect(
       await screen.findByRole('heading', { name: 'Fix the build' }),
     ).toBeVisible();
-    // The conversation's agent is its identity: in the header, with no picker left in the composer.
+    // The conversation's agent is its identity: in the header, with no picker left.
     expect(await screen.findByTestId('chat-agent')).toHaveTextContent(
       'Coding agent',
     );
@@ -432,7 +459,7 @@ describe('ChatPanel modes and layout', () => {
       within(online).queryByRole('combobox', { name: 'Agent' }),
     ).toBeNull();
     expect(within(panel).getByTestId('chat-mode-switch')).toHaveAccessibleName(
-      'Switch to runner agents',
+      'Switch to runtime agents',
     );
     // A new conversation in this mode chooses a model, not a runner agent.
     fireEvent.click(within(panel).getByTestId('chat-new-conversation'));
@@ -440,9 +467,11 @@ describe('ChatPanel modes and layout', () => {
     expect(
       within(composer).queryByText('What can Assistant do for you?'),
     ).toBeNull();
-    expect(within(composer).getByTestId('chat-agent-picker')).toHaveTextContent(
-      'Default model',
-    );
+    expect(
+      within(within(panel).getByTestId('chat-header-choice')).getByTestId(
+        'chat-agent-picker',
+      ),
+    ).toHaveTextContent('Default model');
   });
 
   it('hides the switch while only one kind of agent is configured', async () => {
@@ -488,17 +517,20 @@ describe('ChatPanel modes and layout', () => {
     expect(
       headerButtons.map((button) => button.getAttribute('aria-label')),
     ).toEqual([
+      // The controls share the first row with the conversation's choices (none for a Runner conversation)…
       'Back to list',
-      null,
       'New conversation',
+      'Open full screen',
       'Full width',
       'More',
       'Close',
+      // …and the title, which renames it, has a row of its own.
+      null,
     ]);
     fireEvent.click(within(panel).getByTestId('chat-expand'));
     await waitFor(() => expect(panel).toHaveAttribute('data-mode', 'expanded'));
     expect(within(panel).getByTestId('chat-history-header')).toHaveTextContent(
-      'Runner agents',
+      'Runtime agents',
     );
     expect(within(panel).getByText('Fix the flaky sign-in test')).toBeVisible();
     expect(
@@ -518,7 +550,7 @@ describe('ChatPanel modes and layout', () => {
     }
     renderPanel('release-plan', <Page />);
     fireEvent.click(
-      await screen.findByRole('button', { name: 'Ask agent', exact: true }),
+      await screen.findByRole('button', { name: 'Ask Agent', exact: true }),
     );
     const chip = await screen.findByRole('button', {
       name: 'Show context: PM-12 Tour',
@@ -650,7 +682,7 @@ describe('launchers', () => {
         <ChatPanel />
       </Shell>,
     );
-    fireEvent.click(screen.getByRole('button', { name: 'Ask agent' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Ask Agent' }));
     expect(await screen.findByLabelText('Message to the agent')).toHaveValue(
       'Summarize this issue.',
     );
@@ -709,9 +741,9 @@ it.each(['en-US', 'zh-CN'])(
   'renders a historical consultation with plans in %s without a quantity prompt',
   async (locale) => {
     const cardRuntime = await createTestI18nRuntime({
-      application: {
-        namespace: 'consultation-test',
-        resources: {
+      application: { namespace: '@nocobase/test-app', resources: appResources },
+      namespaces: {
+        '@nocobase/app-plugin-agents': {
           'en-US': () => Promise.resolve({ default: enUS }),
           'zh-CN': () => Promise.resolve({ default: zhCN }),
         },

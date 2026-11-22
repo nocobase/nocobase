@@ -1,3 +1,5 @@
+// @vitest-environment jsdom
+import { appResources } from './fixtures/i18n.js';
 import { render, screen, fireEvent, within } from '@testing-library/react';
 import {
   createTestI18nRuntime,
@@ -5,13 +7,13 @@ import {
 } from '@nocobase/i18n/testing';
 import { MemoryRouter } from 'react-router';
 import { expect, it, vi } from 'vitest';
-import { ConversationHeader } from '../../registry/agents/agent-chat/conversation-header';
+import { ConversationHeader } from '../../../client/panel/conversation-header.js';
 import {
   ConversationAssociations,
   ConversationAssociationSummary,
   ConversationAssociationsProvider,
-} from '../../registry/agents/agent-chat/conversation-associations';
-import enUS from '../../registry/agents/agent-chat/locales/en-US';
+} from '../../../client/panel/conversation-associations.js';
+import enUS from '../../../client/locales/en-US.js';
 
 const state = vi.hoisted(() => ({
   remove: vi.fn(),
@@ -29,7 +31,7 @@ const state = vi.hoisted(() => ({
     },
   ],
 }));
-vi.mock('../../registry/agents/agent-chat/conversation-links.js', () => ({
+vi.mock('../../../client/panel/conversation-links.js', () => ({
   useConversationLinks: () => ({ data: state.links }),
   useRemoveConversationLink: () => ({
     mutate: state.remove,
@@ -39,7 +41,8 @@ vi.mock('../../registry/agents/agent-chat/conversation-links.js', () => ({
 }));
 vi.mock('@nocobase/app-client', () => ({ resolveAppUrl: (x: string) => x }));
 const runtime = await createTestI18nRuntime({
-  application: { namespace: 'shell-test', resources: enUS },
+  application: { namespace: '@nocobase/test-app', resources: appResources },
+  namespaces: { '@nocobase/app-plugin-agents': enUS },
 });
 function wrapper({ children }: { children: React.ReactNode }) {
   return (

@@ -210,7 +210,10 @@ export const KEY_SCOPE_GROUPS: readonly KeyScopeGroup[] = [
     title: accessText('keyScopes.agents.title'),
     description: accessText('keyScopes.agents.description'),
     levels: {
-      read: [setting('agents.agents', 'read'), setting('agents.skills', 'read')],
+      read: [
+        setting('agents.agents', 'read'),
+        setting('agents.skills', 'read'),
+      ],
       write: [
         setting('agents.agents', 'manage'),
         setting('agents.skills', 'manage'),

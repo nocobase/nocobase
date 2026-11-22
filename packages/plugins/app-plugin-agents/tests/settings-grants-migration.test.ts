@@ -103,7 +103,9 @@ describeMigration('202611210001_ag_settings_grants', {
       ),
     ).toHaveLength(1);
     // The page grants stay; sets with nothing to add are left alone, revision included.
-    expect(actions(sets['already-upgraded'].grants, 'settings', 'agents.skills')).toEqual(['read']);
+    expect(
+      actions(sets['already-upgraded'].grants, 'settings', 'agents.skills'),
+    ).toEqual(['read']);
     expect(actions(sets['agent-reader'].grants, 'page', 'agents')).toEqual([
       'access',
     ]);
@@ -119,7 +121,9 @@ describeMigration('202611210001_ag_settings_grants', {
       expect(actions(sets[key].grants, 'settings', 'agents.skills')).toEqual(
         [],
       );
-    expect(actions(sets['agent-manager'].grants, 'settings', 'agents.agents')).toEqual(['manage', 'read']);
+    expect(
+      actions(sets['agent-manager'].grants, 'settings', 'agents.agents'),
+    ).toEqual(['manage', 'read']);
     expect(sets.unrelated.grants).toEqual(SETS.unrelated);
   },
 });

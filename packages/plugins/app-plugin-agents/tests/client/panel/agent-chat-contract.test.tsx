@@ -1,3 +1,5 @@
+// @vitest-environment jsdom
+import { appResources } from './fixtures/i18n.js';
 import {
   ChatExtensionsContext,
   ChatProvider,
@@ -5,7 +7,7 @@ import {
   appUIMessageText,
   chatMessageSegments,
   type AppUIMessage,
-} from '@nocobase/app-plugin-agents/client/chat';
+} from '../../../client/chat.js';
 import {
   createTestI18nRuntime,
   TestI18nProvider,
@@ -14,9 +16,9 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { useLayoutEffect } from 'react';
 import { MemoryRouter } from 'react-router';
 import { expect, it, vi } from 'vitest';
-import { MessageItem } from '../../registry/agents/agent-chat/message-item';
-import { Composer } from '../../registry/agents/agent-chat/composer';
-import enUS from '../../registry/agents/agent-chat/locales/en-US';
+import { MessageItem } from '../../../client/panel/message-item.js';
+import { Composer } from '../../../client/panel/composer.js';
+import enUS from '../../../client/locales/en-US.js';
 
 it('shows writing only for the active response, even when saved partial parts retain SDK streaming state', () => {
   const partial: AppUIMessage = {
@@ -66,7 +68,8 @@ vi.mock('@nocobase/app-client', async (original) => ({
   useService: () => host.realtime,
 }));
 const runtime = await createTestI18nRuntime({
-  application: { namespace: 'contract-test', resources: enUS },
+  application: { namespace: '@nocobase/test-app', resources: appResources },
+  namespaces: { '@nocobase/app-plugin-agents': enUS },
 });
 const metadata = {
   conversationId: 'c',

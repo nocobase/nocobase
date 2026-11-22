@@ -18,6 +18,7 @@ export const agentsKeys: {
   readonly models: readonly ['agents', 'models'];
   readonly services: readonly ['agents', 'services'];
   readonly modelProviders: readonly ['agents', 'model-providers'];
+  readonly chatRoles: readonly ['agents', 'chat-roles'];
   readonly prices: readonly ['agents', 'prices'];
   readonly providerModels: (
     service: string,
@@ -88,6 +89,7 @@ export const agentsKeys: {
   models: ['agents', 'models'],
   services: ['agents', 'services'],
   modelProviders: ['agents', 'model-providers'],
+  chatRoles: ['agents', 'chat-roles'],
   prices: ['agents', 'prices'],
   providerModels: (service) => ['agents', 'provider-models', service],
   vocabulary: ['agents', 'vocabulary'],

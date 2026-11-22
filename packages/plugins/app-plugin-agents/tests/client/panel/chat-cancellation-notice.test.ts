@@ -1,9 +1,10 @@
-import { noticeText } from '@nocobase/app-plugin-agents/client/chat';
+// @vitest-environment jsdom
+import { noticeText } from '../../../client/chat.js';
 import { createTestI18nRuntime } from '@nocobase/i18n/testing';
 import { expect, it } from 'vitest';
 
-import enUS from '../../registry/agents/agent-chat/locales/en-US.js';
-import zhCN from '../../registry/agents/agent-chat/locales/zh-CN.js';
+import enUS from '../../../client/locales/en-US.js';
+import zhCN from '../../../client/locales/zh-CN.js';
 
 it.each([
   ['en-US', 'Cancellation requested.'],
@@ -12,16 +13,15 @@ it.each([
   'keeps an old cancellation notice distinct from terminal feedback in %s',
   async (locale, expected) => {
     const runtime = await createTestI18nRuntime({
-      application: {
-        namespace: 'chat-notice-test',
-        resources: {
+      namespaces: {
+        '@nocobase/app-plugin-agents': {
           'en-US': () => Promise.resolve({ default: enUS }),
           'zh-CN': () => Promise.resolve({ default: zhCN }),
         },
       },
       locale,
     });
-    const t = runtime.getFixedT('chat-notice-test', locale);
+    const t = runtime.getFixedT('@nocobase/app-plugin-agents', locale);
     const text = noticeText(
       t,
       { code: 'runCancelled', runId: 'still-running' },

@@ -39,6 +39,7 @@ import type {
   ReasoningLevel,
 } from '@nocobase/app-plugin-agents/shared/models';
 import { BotMessageSquareIcon, GlobeIcon, PaperclipIcon } from 'lucide-react';
+import { createPortal } from 'react-dom';
 import {
   useCallback,
   useContext,
@@ -73,6 +74,8 @@ import { Composer } from './composer.js';
 import { LiveSteps, TurnAnnouncer } from './live-steps.js';
 import { MessageItem, PendingItem } from './message-item.js';
 import { MessageActions, MessageEditor } from './message-actions.js';
+import { useHeaderChoiceSlot } from './header-slot.js';
+import { AgentSlotOutlet } from '@nocobase/app-plugin-agents/client/chat';
 
 const NO_ITEMS: readonly ChatTimelineItem[] = [];
 
@@ -515,7 +518,14 @@ function ConversationBody({
                         })
                     : undefined
                 }
-              />
+              >
+                {conversationId ? (
+                  <AgentSlotOutlet
+                    name='messageActions'
+                    props={{ conversationId, message: segment.message }}
+                  />
+                ) : null}
+              </MessageActions>
             ) : null
           }
           segment={segment}
@@ -616,6 +626,19 @@ function ConversationBody({
     !busyFeedback &&
     !running;
   const page = variant === 'page';
+  // The composer's insert, for the empty state's slot.
+  const insertRef = useRef<((text: string) => void) | null>(null);
+  const registerInsert = useCallback((insert: (text: string) => void) => {
+    insertRef.current = insert;
+    return () => {
+      if (insertRef.current === insert) insertRef.current = null;
+    };
+  }, []);
+  const insertText = useCallback((text: string) => {
+    insertRef.current?.(text);
+  }, []);
+  // In the panel the agent, model and thinking choices sit in its header.
+  const headerSlot = useHeaderChoiceSlot();
 
   // Files dropped anywhere on the conversation go to the composer, which uploads them.
   const addFilesRef = useRef<((files: readonly File[]) => void) | null>(null);
@@ -663,6 +686,71 @@ function ConversationBody({
     },
   };
 
+  const choice: ReactNode = conversation ? (
+    nativeConversation ? (
+      <ConversationModelChoice
+        services={catalog.data ?? []}
+        model={configuration.data?.selectedModel ?? null}
+        thinking={thinkingChoice}
+        allowedModels={configuration.data?.model}
+        disabled={
+          running ||
+          resend.isPending ||
+          stopping ||
+          modelChangeBlocked ||
+          catalog.isFetching ||
+          !catalog.isSuccess ||
+          chatController.submissions.blocked(
+            conversationId,
+            `registry:${source}:${conversationId ?? 'new'}`,
+          )
+        }
+        onModelChange={(selected) => {
+          const current = configuration.data?.selectedModel;
+          if (
+            current?.modelService === selected.modelService &&
+            current.model === selected.model
+          )
+            return;
+          // The level remembered for the new model comes along in the same change.
+          const thinking = thinkingMemory.remembered(selected) ?? undefined;
+          selectModel.mutate(
+            thinking === undefined
+              ? selected
+              : { selectedModel: selected, thinking },
+          );
+        }}
+      />
+    ) : null
+  ) : (
+    // Before the first message: who the conversation goes to.
+    <NewChatChoice
+      agents={offered ?? []}
+      agent={target}
+      services={catalog.data ?? []}
+      model={model}
+      thinking={thinkingChoice}
+      modelsDisabled={
+        catalog.isFetching || !catalog.isSuccess || !hasChatModels
+      }
+      onModelChange={(selected) => {
+        setChosenSearch(false);
+        setChosenThinking(newThinking(selected));
+        setChosenModel(selected);
+        selectConversation(null, 'online', {
+          preserveComposer: true,
+        });
+      }}
+      onAgentChange={(agentId) => {
+        setChosenSearch(false);
+        setChosenThinking(undefined);
+        selectConversation(null, agentId, {
+          preserveComposer: true,
+        });
+        focusComposer();
+      }}
+    />
+  );
   return (
     <section
       className={cn(
@@ -735,6 +823,10 @@ function ConversationBody({
               <p className='text-sm text-muted-foreground'>
                 {t('chat.emptyDescription')}
               </p>
+              <AgentSlotOutlet
+                name='emptyState'
+                props={{ agentId: target?.id ?? null, insertText }}
+              />
             </div>
           ) : (
             <>
@@ -927,6 +1019,9 @@ function ConversationBody({
             return accepted;
           }}
           registerAddFiles={registerAddFiles}
+          registerInsert={registerInsert}
+          conversationId={conversationId}
+          agentId={conversation ? conversation.agent.id : (target?.id ?? null)}
           toolbar={
             <div className='flex min-w-0 flex-wrap items-center gap-1'>
               {nativeConversation || target?.id === 'online' ? (
@@ -968,72 +1063,7 @@ function ConversationBody({
                   <GlobeIcon aria-hidden='true' />
                 </Button>
               ) : null}
-              {conversation ? (
-                nativeConversation ? (
-                  <ConversationModelChoice
-                    services={catalog.data ?? []}
-                    model={configuration.data?.selectedModel ?? null}
-                    thinking={thinkingChoice}
-                    allowedModels={configuration.data?.model}
-                    disabled={
-                      running ||
-                      resend.isPending ||
-                      stopping ||
-                      modelChangeBlocked ||
-                      catalog.isFetching ||
-                      !catalog.isSuccess ||
-                      chatController.submissions.blocked(
-                        conversationId,
-                        `registry:${source}:${conversationId ?? 'new'}`,
-                      )
-                    }
-                    onModelChange={(selected) => {
-                      const current = configuration.data?.selectedModel;
-                      if (
-                        current?.modelService === selected.modelService &&
-                        current.model === selected.model
-                      )
-                        return;
-                      // The level remembered for the new model comes along in the same change.
-                      const thinking =
-                        thinkingMemory.remembered(selected) ?? undefined;
-                      selectModel.mutate(
-                        thinking === undefined
-                          ? selected
-                          : { selectedModel: selected, thinking },
-                      );
-                    }}
-                  />
-                ) : null
-              ) : (
-                // Before the first message: who the conversation goes to.
-                <NewChatChoice
-                  agents={offered ?? []}
-                  agent={target}
-                  services={catalog.data ?? []}
-                  model={model}
-                  thinking={thinkingChoice}
-                  modelsDisabled={
-                    catalog.isFetching || !catalog.isSuccess || !hasChatModels
-                  }
-                  onModelChange={(selected) => {
-                    setChosenSearch(false);
-                    setChosenThinking(newThinking(selected));
-                    setChosenModel(selected);
-                    selectConversation(null, 'online', {
-                      preserveComposer: true,
-                    });
-                  }}
-                  onAgentChange={(agentId) => {
-                    setChosenSearch(false);
-                    setChosenThinking(undefined);
-                    selectConversation(null, agentId, {
-                      preserveComposer: true,
-                    });
-                    focusComposer();
-                  }}
-                />
-              )}
+              {headerSlot ? null : choice}
             </div>
           }
           notice={
@@ -1059,6 +1089,7 @@ function ConversationBody({
           }
         />
       </div>
+      {headerSlot && choice ? createPortal(choice, headerSlot) : null}
     </section>
   );
 }

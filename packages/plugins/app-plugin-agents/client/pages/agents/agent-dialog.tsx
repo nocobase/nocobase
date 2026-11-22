@@ -1,5 +1,5 @@
 /**
- * Edit the saved description, default reasoning effort and enabled state of an agent.
+ * Edit the saved description, default reasoning effort, who may chat with it and enabled state of an agent.
  * Enabling needs a description; the server refuses one without it too.
  */
 import { useTranslation } from '@nocobase/i18n/client';
@@ -32,10 +32,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from '../../components/ui/select.js';
+import { AgMultiSelect } from '../../components/ag-multi-select.js';
+import { RadioGroup, RadioGroupItem } from '../../components/ui/radio-group.js';
 import { Switch } from '../../components/ui/switch.js';
 import { Textarea } from '../../components/ui/textarea.js';
 import { useAgentsApi } from '../../hooks/use-agents-api.js';
 import { useNotify } from '../../hooks/use-notify.js';
+import { useChatRoles, useRoleTitle } from './chat-roles.js';
 import { GoodAtTemplates } from './good-at-templates.js';
 
 /** The value the effort select holds for the tool's default. */
@@ -84,6 +87,14 @@ function AgentForm({
   const [goodAt, setGoodAt] = useState(() => agent.description ?? '');
   const [effort, setEffort] = useState<string>(agent.effort ?? DEFAULT_EFFORT);
   const [enabled, setEnabled] = useState(agent.status !== 'disabled');
+  const [audience, setAudience] = useState<'everyone' | 'roles'>(
+    agent.chatRoles?.length ? 'roles' : 'everyone',
+  );
+  const [chatRoles, setChatRoles] = useState<readonly string[]>(
+    agent.chatRoles ?? [],
+  );
+  const roles = useChatRoles();
+  const roleTitle = useRoleTitle(roles.data);
   const [submitted, setSubmitted] = useState(false);
 
   const save = useMutation({
@@ -92,6 +103,7 @@ function AgentForm({
         description: goodAt.trim() || null,
         effort: effort === DEFAULT_EFFORT ? null : effort,
         enabled,
+        chatRoles: audience === 'roles' ? [...chatRoles] : null,
         expectedRevision: target.revision,
       }),
     onSuccess: async (saved) => {
@@ -114,6 +126,7 @@ function AgentForm({
   });
 
   const missing = enabled && goodAt.trim() === '';
+  const rolesMissing = audience === 'roles' && chatRoles.length === 0;
   // Every agent shows its whole model id here.
   const qualifiedModel = agentModelOf(agent).model ?? null;
   const { runners } = agent;
@@ -142,7 +155,7 @@ function AgentForm({
         onSubmit={(event) => {
           event.preventDefault();
           setSubmitted(true);
-          if (missing) return;
+          if (missing || rolesMissing) return;
           save.mutate(agent);
         }}
       >
@@ -227,6 +240,46 @@ function AgentForm({
               </FieldDescription>
             </Field>
           ) : null}
+          <Field
+            data-invalid={submitted && rolesMissing ? true : undefined}
+            data-testid='agent-chat-roles'
+          >
+            <FieldLabel id='agent-chat-roles-label'>
+              {t('agents.chatRoles.label')}
+            </FieldLabel>
+            <RadioGroup
+              aria-labelledby='agent-chat-roles-label'
+              value={audience}
+              onValueChange={(value) =>
+                setAudience(value === 'roles' ? 'roles' : 'everyone')
+              }
+            >
+              <label className='flex items-center gap-2 text-sm'>
+                <RadioGroupItem value='everyone' />
+                {t('agents.chatRoles.everyone')}
+              </label>
+              <label className='flex items-center gap-2 text-sm'>
+                <RadioGroupItem value='roles' />
+                {t('agents.chatRoles.roles')}
+              </label>
+            </RadioGroup>
+            {audience === 'roles' ? (
+              <AgMultiSelect
+                aria-label={t('agents.chatRoles.roles')}
+                options={(roles.data ?? []).map((role) => ({
+                  value: role.key,
+                  label: roleTitle(role.key),
+                }))}
+                value={chatRoles}
+                onChange={setChatRoles}
+                placeholder={t('agents.chatRoles.placeholder')}
+              />
+            ) : null}
+            <FieldDescription>{t('agents.chatRoles.hint')}</FieldDescription>
+            {submitted && rolesMissing ? (
+              <FieldError>{t('agents.chatRoles.required')}</FieldError>
+            ) : null}
+          </Field>
           <Field orientation='horizontal'>
             <Switch
               id='agent-enabled'

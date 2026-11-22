@@ -1,20 +1,20 @@
+// @vitest-environment jsdom
 import { act, render, screen } from '@testing-library/react';
 import {
   createTestI18nRuntime,
   TestI18nProvider,
 } from '@nocobase/i18n/testing';
 import { expect, it } from 'vitest';
-import { MessageItem } from '../../registry/agents/agent-chat/message-item.js';
-import enUS from '../../registry/agents/agent-chat/locales/en-US.js';
-import zhCN from '../../registry/agents/agent-chat/locales/zh-CN.js';
+import { MessageItem } from '../../../client/panel/message-item.js';
+import enUS from '../../../client/locales/en-US.js';
+import zhCN from '../../../client/locales/zh-CN.js';
 
 it.each(['en-US', 'zh-CN'] as const)(
   'renders safe file guidance and language changes in the registry UI (%s)',
   async (locale) => {
     const runtime = await createTestI18nRuntime({
-      application: {
-        namespace: 'file-failure-notice',
-        resources: {
+      namespaces: {
+        '@nocobase/app-plugin-agents': {
           'en-US': () => Promise.resolve({ default: enUS }),
           'zh-CN': () => Promise.resolve({ default: zhCN }),
         },

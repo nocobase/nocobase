@@ -1,5 +1,6 @@
-import type { AppUIMessage } from '@nocobase/app-plugin-agents/client/chat';
-import type { ConversationDetail } from '@nocobase/app-plugin-agents/shared/conversations';
+// @vitest-environment jsdom
+import type { AppUIMessage } from '../../../client/chat.js';
+import type { ConversationDetail } from '../../../shared/conversations.js';
 import {
   TestI18nProvider,
   createTestI18nRuntime,
@@ -7,10 +8,10 @@ import {
 import { render, screen } from '@testing-library/react';
 import { expect, it } from 'vitest';
 
-import { AgentNotice } from '../../registry/agents/agent-chat/agent-status';
-import { MessageItem } from '../../registry/agents/agent-chat/message-item';
-import enUS from '../../registry/agents/agent-chat/locales/en-US';
-import zhCN from '../../registry/agents/agent-chat/locales/zh-CN';
+import { AgentNotice } from '../../../client/panel/agent-status.js';
+import { MessageItem } from '../../../client/panel/message-item.js';
+import enUS from '../../../client/locales/en-US.js';
+import zhCN from '../../../client/locales/zh-CN.js';
 
 const at = '2026-01-01T00:00:00.000Z';
 const conversation: ConversationDetail = {
@@ -56,7 +57,7 @@ it.each([
   async (locale, resources, reason, action) => {
     const runtime = await createTestI18nRuntime({
       locale,
-      application: { namespace: 'chat-test', resources },
+      namespaces: { '@nocobase/app-plugin-agents': resources },
     });
     const notices = [
       { code: 'switchedToOnline', agentId: 'assistant', fromAgentId: 'coder' },

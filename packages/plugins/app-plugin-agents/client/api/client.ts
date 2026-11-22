@@ -15,6 +15,7 @@ import type {
   AgentChange,
   AgentName,
   AgentPatch,
+  ChatRole,
   AgentView,
   AvailableModelGroupsPage,
   AvailableModelsPage,
@@ -245,6 +246,11 @@ export class AgentsApi {
    * What the agent is good at, its default effort, whether it is enabled; against `patch.expectedRevision`, 409
    * `REVISION_CONFLICT` when it changed since.
    */
+  /** The roles an agent's chat may be limited to. */
+  public chatRoles(): Promise<ChatRole[]> {
+    return this.list('chatRoles');
+  }
+
   public updateAgent(agentId: string, patch: AgentPatch): Promise<Agent> {
     return this.send(id(agentId), 'PATCH', patch);
   }

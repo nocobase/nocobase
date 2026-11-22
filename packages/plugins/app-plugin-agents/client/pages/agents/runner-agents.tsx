@@ -1,7 +1,7 @@
 /**
- * Enabled agents, with disabled ones shown alongside (marked by their state badge) once "Show disabled" is on — a
- * display toggle, not a separate view: it never hides the enabled agents it was showing. A row shows where it can
- * run now (team and personal runners, with a few names), its default reasoning effort and its state; an enabled or
+ * The agents, enabled or disabled as the filter above the list says. A row shows its type and model, who may chat with
+ * it (every member or some roles), where it can run now (team and personal runners, with a few names), its default
+ * reasoning effort and its state; an enabled or
  * disabled one offers "Edit" (`agent-dialog.tsx`), for someone who manages agents; everyone else reads. The header's
  * "Add agent" opens the live available models drawer (`available-models-drawer.tsx`).
  */
@@ -20,6 +20,7 @@ import {
 } from '../../components/ag-states.js';
 import { AgTag, type Tone } from '../../components/ag-tag.js';
 import { Button } from '../../components/ui/button.js';
+import { Tabs, TabsList, TabsTrigger } from '../../components/ui/tabs.js';
 import {
   Table,
   TableBody,
@@ -32,6 +33,8 @@ import { useAgentsApi } from '../../hooks/use-agents-api.js';
 import { useFormatters } from '../../lib/format.js';
 import { useQuotaExpiry } from '../../hooks/use-quota-expiry.js';
 import { AgentDialog } from './agent-dialog.js';
+import { useChatRoles, useRoleTitle } from './chat-roles.js';
+import { TeamDefaultAgent } from './team-default.js';
 import { agentModelOf } from '../../../shared/model-catalog.js';
 import { AvailableModelsDrawer } from './available-models-drawer.js';
 import { ordered, stateOf, type AgentState } from './agent-state.js';
@@ -45,7 +48,7 @@ const STATE_TONE: Readonly<Record<AgentState, Tone>> = {
 export function RunnerAgentsSection(): ReactElement {
   const { t } = useTranslation();
   const api = useAgentsApi();
-  const [showDisabled, setShowDisabled] = useState(false);
+  const [shown, setShown] = useState<'enabled' | 'disabled'>('enabled');
   const [editing, setEditing] = useState<AgentView | null>(null);
   const [creatingOpen, setCreatingOpen] = useState(false);
   const agents = useQuery({
@@ -70,20 +73,31 @@ export function RunnerAgentsSection(): ReactElement {
             >
               {t('agents.available.open')}
             </Button>
-            <Button
-              variant='outline'
-              onClick={() => setShowDisabled((value) => !value)}
-              data-testid='agents-toggle-disabled'
+            <Tabs
+              value={shown}
+              onValueChange={(value) =>
+                setShown(value === 'disabled' ? 'disabled' : 'enabled')
+              }
             >
-              {t(
-                showDisabled
-                  ? 'agents.display.hideDisabled'
-                  : 'agents.display.showDisabled',
-              )}
-            </Button>
+              <TabsList aria-label={t('agents.filterLabel')}>
+                <TabsTrigger
+                  value='enabled'
+                  data-testid='agents-filter-enabled'
+                >
+                  {t('agents.filters.enabledOnly')}
+                </TabsTrigger>
+                <TabsTrigger
+                  value='disabled'
+                  data-testid='agents-filter-disabled'
+                >
+                  {t('agents.filters.disabled')}
+                </TabsTrigger>
+              </TabsList>
+            </Tabs>
           </>
         }
       />
+      <TeamDefaultAgent agents={agents.data} />
       {agents.isError && !agents.data ? (
         <AgLoadError
           title={t('agents.loadFailed')}
@@ -95,11 +109,7 @@ export function RunnerAgentsSection(): ReactElement {
       ) : (
         <AgentTable
           agents={ordered(
-            agents.data.filter(
-              (agent) =>
-                agent.status === 'enabled' ||
-                (showDisabled && agent.status === 'disabled'),
-            ),
+            agents.data.filter((agent) => agent.status === shown),
           )}
           onEdit={setEditing}
         />
@@ -122,13 +132,16 @@ function AgentTable({
   readonly onEdit: (agent: AgentView) => void;
 }): ReactElement {
   const { t } = useTranslation();
+  const roles = useChatRoles();
+  const roleTitle = useRoleTitle(roles.data);
   return (
-    <div className='min-w-0 max-w-full overflow-hidden rounded-lg border'>
+    <div className='min-w-0 max-w-full overflow-x-auto rounded-lg border'>
       <Table className='min-w-[48rem]'>
         <TableHeader>
           <TableRow>
             <TableHead>{t('agents.columns.agent')}</TableHead>
             <TableHead>{t('agents.columns.goodAt')}</TableHead>
+            <TableHead>{t('agents.columns.chatRoles')}</TableHead>
             <TableHead>{t('agents.columns.where')}</TableHead>
             <TableHead>{t('agents.columns.effort')}</TableHead>
             <TableHead>{t('agents.columns.state')}</TableHead>
@@ -139,7 +152,12 @@ function AgentTable({
         </TableHeader>
         <TableBody>
           {agents.map((agent) => (
-            <AgentRow key={agent.id} agent={agent} onEdit={onEdit} />
+            <AgentRow
+              key={agent.id}
+              agent={agent}
+              onEdit={onEdit}
+              roleTitle={roleTitle}
+            />
           ))}
         </TableBody>
       </Table>
@@ -150,9 +168,11 @@ function AgentTable({
 function AgentRow({
   agent,
   onEdit,
+  roleTitle,
 }: {
   readonly agent: AgentView;
   readonly onEdit: (agent: AgentView) => void;
+  readonly roleTitle: (key: string) => string;
 }): ReactElement {
   const { t } = useTranslation();
   const format = useFormatters();
@@ -212,6 +232,17 @@ function AgentRow({
         ) : (
           <span className='text-muted-foreground'>
             {t('agents.goodAtMissing')}
+          </span>
+        )}
+      </TableCell>
+      <TableCell data-testid='agent-chat-roles-cell'>
+        {agent.chatRoles?.length ? (
+          <span className='line-clamp-2'>
+            {agent.chatRoles.map(roleTitle).join(', ')}
+          </span>
+        ) : (
+          <span className='text-muted-foreground'>
+            {t('agents.chatRoles.everyone')}
           </span>
         )}
       </TableCell>

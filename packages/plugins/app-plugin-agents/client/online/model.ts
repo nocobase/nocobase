@@ -203,7 +203,10 @@ export function serviceStatus(
   providers: readonly ModelProviderOption[] = MODEL_PROVIDERS,
 ): ServiceStatus {
   if (!service.enabled) return 'off';
-  if (!service.apiKeySet && providerIn(providers, service.provider)?.keyRequired)
+  if (
+    !service.apiKeySet &&
+    providerIn(providers, service.provider)?.keyRequired
+  )
     return 'noKey';
   if (service.models.length === 0) return 'noModels';
   return 'on';

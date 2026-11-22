@@ -277,3 +277,13 @@ export {
   shownThinking,
   useThinkingMemory,
 } from './chat/thinking.js';
+export { AgentSlotOutlet, replaceable } from './ui-slots.js';
+export {
+  useAgentComponentReplacement,
+  useAgentSlot,
+  usePreferenceSections,
+  useRegisteredToolRenderer,
+  type AgentComponentName,
+  type AgentSlotName,
+  type AgentSlotProps,
+} from './ui-registry.js';

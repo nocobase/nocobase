@@ -3510,6 +3510,9 @@ importers:
       react-day-picker:
         specifier: 'catalog:'
         version: 10.0.1(@types/react@19.2.18)(react@19.2.8)
+      react-dom:
+        specifier: 'catalog:'
+        version: 19.2.8(react@19.2.8)
       react-markdown:
         specifier: 'catalog:'
         version: 10.1.0(@types/react@19.2.18)(react@19.2.8)
@@ -3571,6 +3574,9 @@ importers:
       '@types/react':
         specifier: 'catalog:'
         version: 19.2.18
+      '@types/react-dom':
+        specifier: 'catalog:'
+        version: 19.2.4(@types/react@19.2.18)
       esbuild:
         specifier: 'catalog:'
         version: 0.28.2
@@ -3592,9 +3598,6 @@ importers:
       prettier:
         specifier: 'catalog:'
         version: 3.9.6
-      react-dom:
-        specifier: 'catalog:'
-        version: 19.2.8(react@19.2.8)
       typescript:
         specifier: 'catalog:'
         version: 6.0.3
@@ -6871,6 +6874,9 @@ importers:
       jsdom:
         specifier: 'catalog:'
         version: 30.0.1(@noble/hashes@2.3.0)
+      prettier:
+        specifier: 'catalog:'
+        version: 3.9.6
       shadcn:
         specifier: ^4.18.0
         version: 4.18.0(@cfworker/json-schema@4.1.1)(typescript@6.0.3)
@@ -8683,8 +8689,8 @@ packages:
   '@jridgewell/remapping@2.3.5':
     resolution: {integrity: sha512-LI9u/+laYG4Ds1TDKSJW2YPrIlcVYOwi2fUC6xB43lueCjgxV4lffOCZCtYFiH6TNOX+tQKXx97T4IKHbhyHEQ==}
 
-  '@jridgewell/resolve-uri@3.1.2':
-    resolution: {integrity: sha512-bRISgCIjP20/tbWSPWMEi54QVPRZExkuD9lJL+UIxUKtwVJA8wW1Trb1jMs1RFXo1CBTNZ/5hpC9QvmKWdopKw==}
+  '@jridgewell/resolve-uri@3.1.3':
+    resolution: {integrity: sha512-lhTtjtoEArWBjismtfS761S9Hlyn+nIZqOZVYoZ1Xn82PMNMVnk+jj/NhC4fAXGTs7ydONcJiR5vyQBTMDu27g==}
     engines: {node: '>=6.0.0'}
 
   '@jridgewell/sourcemap-codec@1.5.5':
@@ -14418,8 +14424,8 @@ packages:
   roughjs@4.6.6:
     resolution: {integrity: sha512-ZUz/69+SYpFN/g/lUlo2FXcIjRkSu3nDarreVdGGndHEBJ6cXPdKguS8JGxwj5HA5xIbVKSmLgr5b3AWxtRfvQ==}
 
-  router@2.2.0:
-    resolution: {integrity: sha512-nLTrUKm2UyiL7rlhapu/Zl45FwNgkZGaCpZbIHajDYgwlJCOzLSk+cIPAnsEqV955GjILJnKbdQC1nVPz+gAYQ==}
+  router@2.3.0:
+    resolution: {integrity: sha512-bpowRfGjEPe8t9R6fJIzhwmyCGAXwKvxBUsgJm+bJukwdcWmUXbMo7p22w7aYmQBPQTUMNqMV39YX0kMou3z8w==}
     engines: {node: '>= 18'}
 
   run-applescript@7.1.0:
@@ -16078,7 +16084,7 @@ snapshots:
       '@alicloud/endpoint-util': 0.0.1
       '@alicloud/openapi-client': 0.4.15
       '@alicloud/openapi-util': 0.3.3
-      '@alicloud/tea-typescript': 1.8.0
+      '@alicloud/tea-typescript': 1.8.0(supports-color@8.1.1)
       '@alicloud/tea-util': 1.4.11(supports-color@8.1.1)
     transitivePeerDependencies:
       - bufferutil
@@ -16087,8 +16093,8 @@ snapshots:
 
   '@alicloud/credentials@2.4.7':
     dependencies:
-      '@alicloud/tea-typescript': 1.8.0
-      httpx: 2.3.3
+      '@alicloud/tea-typescript': 1.8.0(supports-color@8.1.1)
+      httpx: 2.3.3(supports-color@8.1.1)
       ini: 1.3.8
       kitx: 2.2.0
     transitivePeerDependencies:
@@ -16096,7 +16102,7 @@ snapshots:
 
   '@alicloud/endpoint-util@0.0.1':
     dependencies:
-      '@alicloud/tea-typescript': 1.8.0
+      '@alicloud/tea-typescript': 1.8.0(supports-color@8.1.1)
       kitx: 2.2.0
     transitivePeerDependencies:
       - supports-color
@@ -16104,7 +16110,7 @@ snapshots:
   '@alicloud/gateway-spi@0.0.8':
     dependencies:
       '@alicloud/credentials': 2.4.7
-      '@alicloud/tea-typescript': 1.8.0
+      '@alicloud/tea-typescript': 1.8.0(supports-color@8.1.1)
     transitivePeerDependencies:
       - supports-color
 
@@ -16113,7 +16119,7 @@ snapshots:
       '@alicloud/credentials': 2.4.7
       '@alicloud/gateway-spi': 0.0.8
       '@alicloud/openapi-util': 0.3.3
-      '@alicloud/tea-typescript': 1.8.0
+      '@alicloud/tea-typescript': 1.8.0(supports-color@8.1.1)
       '@alicloud/tea-util': 1.4.9
       '@alicloud/tea-xml': 0.0.3
     transitivePeerDependencies:
@@ -16123,7 +16129,7 @@ snapshots:
 
   '@alicloud/openapi-util@0.3.3':
     dependencies:
-      '@alicloud/tea-typescript': 1.8.0
+      '@alicloud/tea-typescript': 1.8.0(supports-color@8.1.1)
       '@alicloud/tea-util': 1.4.11(supports-color@8.1.1)
       kitx: 2.2.0
       sm3: 1.0.3
@@ -16132,16 +16138,16 @@ snapshots:
       - supports-color
       - utf-8-validate
 
-  '@alicloud/tea-typescript@1.8.0':
+  '@alicloud/tea-typescript@1.8.0(supports-color@8.1.1)':
     dependencies:
       '@types/node': 12.20.55
-      httpx: 2.3.3
+      httpx: 2.3.3(supports-color@8.1.1)
     transitivePeerDependencies:
       - supports-color
 
   '@alicloud/tea-util@1.4.11(supports-color@8.1.1)':
     dependencies:
-      '@alicloud/tea-typescript': 1.8.0
+      '@alicloud/tea-typescript': 1.8.0(supports-color@8.1.1)
       '@darabonba/typescript': 1.0.5(supports-color@8.1.1)
       kitx: 2.2.0
     transitivePeerDependencies:
@@ -16151,14 +16157,14 @@ snapshots:
 
   '@alicloud/tea-util@1.4.9':
     dependencies:
-      '@alicloud/tea-typescript': 1.8.0
+      '@alicloud/tea-typescript': 1.8.0(supports-color@8.1.1)
       kitx: 2.2.0
     transitivePeerDependencies:
       - supports-color
 
   '@alicloud/tea-xml@0.0.3':
     dependencies:
-      '@alicloud/tea-typescript': 1.8.0
+      '@alicloud/tea-typescript': 1.8.0(supports-color@8.1.1)
       '@types/xml2js': 0.4.14
       xml2js: 0.6.2
     transitivePeerDependencies:
@@ -17274,10 +17280,10 @@ snapshots:
 
   '@darabonba/typescript@1.0.5(supports-color@8.1.1)':
     dependencies:
-      '@alicloud/tea-typescript': 1.8.0
+      '@alicloud/tea-typescript': 1.8.0(supports-color@8.1.1)
       http-proxy-agent: 5.0.0(supports-color@8.1.1)
       https-proxy-agent: 5.0.1(supports-color@8.1.1)
-      httpx: 2.3.3
+      httpx: 2.3.3(supports-color@8.1.1)
       lodash: 4.18.1
       moment: 2.30.1
       moment-timezone: 0.5.48
@@ -17889,7 +17895,7 @@ snapshots:
       '@jridgewell/gen-mapping': 0.3.13
       '@jridgewell/trace-mapping': 0.3.31
 
-  '@jridgewell/resolve-uri@3.1.2': {}
+  '@jridgewell/resolve-uri@3.1.3': {}
 
   '@jridgewell/sourcemap-codec@1.5.5': {}
 
@@ -17897,7 +17903,7 @@ snapshots:
 
   '@jridgewell/trace-mapping@0.3.31':
     dependencies:
-      '@jridgewell/resolve-uri': 3.1.2
+      '@jridgewell/resolve-uri': 3.1.3
       '@jridgewell/sourcemap-codec': 1.6.0
 
   '@js-joda/core@6.1.0': {}
@@ -21270,7 +21276,7 @@ snapshots:
       proxy-addr: 2.0.8
       qs: 6.17.1
       range-parser: 1.3.0
-      router: 2.2.0
+      router: 2.3.0
       send: 1.2.1
       serve-static: 2.2.1
       statuses: 2.0.2
@@ -21818,7 +21824,7 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  httpx@2.3.3:
+  httpx@2.3.3(supports-color@8.1.1):
     dependencies:
       '@types/node': 20.19.43
       debug: 4.4.3(supports-color@8.1.1)
@@ -24329,7 +24335,7 @@ snapshots:
       points-on-curve: 0.2.0
       points-on-path: 0.2.1
 
-  router@2.2.0:
+  router@2.3.0:
     dependencies:
       debug: 4.4.3(supports-color@8.1.1)
       depd: 2.0.0

@@ -600,7 +600,10 @@ export function createModelServices(deps: {
           input.baseUrl === undefined
             ? undefined
             : normalizeBaseUrl(input.baseUrl);
-        if (baseUrl === null && !modelProviderOf(current.provider)?.defaultBaseUrl)
+        if (
+          baseUrl === null &&
+          !modelProviderOf(current.provider)?.defaultBaseUrl
+        )
           throw invalid('This provider needs a base URL.');
         await repo(conn).updateMany({
           filter: { name },

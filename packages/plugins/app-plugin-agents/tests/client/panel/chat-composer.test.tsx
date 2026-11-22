@@ -1,7 +1,6 @@
-import {
-  ChatProvider,
-  useChatPanel,
-} from '@nocobase/app-plugin-agents/client/chat';
+// @vitest-environment jsdom
+import { appResources } from './fixtures/i18n.js';
+import { ChatProvider, useChatPanel } from '../../../client/chat.js';
 import {
   createTestI18nRuntime,
   TestI18nProvider,
@@ -10,9 +9,9 @@ import { act, render, waitFor } from '@testing-library/react';
 import { useLayoutEffect } from 'react';
 import { MemoryRouter } from 'react-router';
 import { beforeEach, expect, it, vi } from 'vitest';
-import type { AgentComposerProps } from '../../registry/agents/agent-composer.js';
-import { Composer } from '../../registry/agents/agent-chat/composer.js';
-import enUS from '../../registry/agents/agent-chat/locales/en-US.js';
+import type { AgentComposerProps } from '../../../client/panel/components/agent-composer.js';
+import { Composer } from '../../../client/panel/composer.js';
+import enUS from '../../../client/locales/en-US.js';
 
 const host = vi.hoisted(() => ({
   accepted: vi.fn(() => true),
@@ -27,7 +26,7 @@ vi.mock('@nocobase/app-client', async (original) => ({
   useApiClient: () => host.api,
   useService: () => host.realtime,
 }));
-vi.mock('#components/agent-composer', () => ({
+vi.mock('../../../client/panel/components/agent-composer.js', () => ({
   AgentComposer: function CapturedComposer(props: AgentComposerProps) {
     useLayoutEffect(() => {
       host.send = props.onSend;
@@ -36,7 +35,8 @@ vi.mock('#components/agent-composer', () => ({
   },
 }));
 const runtime = await createTestI18nRuntime({
-  application: { namespace: 'test-app', resources: enUS },
+  application: { namespace: '@nocobase/test-app', resources: appResources },
+  namespaces: { '@nocobase/app-plugin-agents': enUS },
   strict: false,
 });
 function Open() {

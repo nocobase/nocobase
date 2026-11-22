@@ -142,7 +142,11 @@ export class FileInputProfiles {
           };
         default:
           // A provider another plugin registered: files are extracted to text, never sent natively.
-          return { nativeMediaTypes: [], maxNativeFiles: 100, extraction: 'local' };
+          return {
+            nativeMediaTypes: [],
+            maxNativeFiles: 100,
+            extraction: 'local',
+          };
       }
     }
     if (

@@ -2,6 +2,9 @@ import type { LocaleResource } from '@nocobase/i18n';
 
 import accessEnUS from '../../shared/locales/access.en-US.js';
 import chatEnUS from './chat.en-US.js';
+import { mergeLocale } from './merge.js';
+import shellEnUS from './shell.en-US.js';
+import panelEnUS from './panel.en-US.js';
 import pricesEnUS from './prices.en-US.js';
 import skillsEnUS from './skills.en-US.js';
 import servicesEnUS from './services.en-US.js';
@@ -116,8 +119,8 @@ const pages = {
     unavailableNow: 'Unavailable now',
     title: 'Agents',
     description:
-      'Add agents from the models runners report. The Lead Agent hands each step of an issue to the agent whose description fits it.',
-    fromRunners: 'Agents from runners',
+      'Add agents from the models runtimes report. The Lead Agent hands each step of an issue to the agent whose description fits it.',
+    fromRunners: 'Agents from runtimes',
     display: {
       search: 'Search models or providers',
       select: 'Select {{name}}',
@@ -128,16 +131,16 @@ const pages = {
     filters: {
       all: 'All {{count}}',
       enabled: 'Enabled {{count}}',
-      unreported: 'No runner {{count}}',
+      unreported: 'No runtime {{count}}',
     },
     loadFailed: 'Could not load the agents',
     loadMore: 'Load more',
     emptyTitle: 'No agents yet',
     emptyDescription:
-      'Connect a runner with a coding tool signed in, then add an agent from Available models.',
+      'Connect a runtime with a coding tool signed in, then add an agent from Available models.',
     noneInFilter: 'No agent here.',
     howToAdd:
-      'To add an agent, install a coding tool on a runner and sign in to a model you may use: once the runner reports it, add it from Available models by writing what it is good at. An agent only personal runners have works only on issues their owners start.',
+      'To add an agent, install a coding tool on a runtime and sign in to a model you may use: once the runtime reports it, add it from Available models by writing what it is good at. An agent only personal runtimes have works only on issues their owners start.',
     goodAtMissing: 'Not written yet',
     columns: {
       agent: 'Agent',
@@ -147,21 +150,21 @@ const pages = {
       state: 'Status',
     },
     where: {
-      none: 'No runner',
-      team_one: '{{count}} shared runner',
-      team_other: '{{count}} shared runners',
-      personal_one: '{{count}} personal runner online',
-      personal_other: '{{count}} personal runners online',
+      none: 'No runtime',
+      team_one: '{{count}} shared runtime',
+      team_other: '{{count}} shared runtimes',
+      personal_one: '{{count}} personal runtime online',
+      personal_other: '{{count}} personal runtimes online',
       both: '{{team}} shared · {{personal}} personal',
       names: '{{names}}',
-      noneOnline: 'No runner online now',
-      personalOnly: 'Personal runners only',
+      noneOnline: 'No runtime online now',
+      personalOnly: 'Personal runtimes only',
       lastReported: 'Last reported {{when}}',
     },
     state: {
       enabled: 'Enabled',
       disabled: 'Disabled',
-      unreported: 'No runner',
+      unreported: 'No runtime',
     },
     effort: {
       default: "Tool's default",
@@ -175,15 +178,15 @@ const pages = {
       ultra: 'Ultra',
     },
     enable: {
-      reportedBy_one: 'Reported by {{count}} runner online: {{names}}.',
-      reportedBy_other: 'Reported by {{count}} runners online: {{names}}.',
-      noRunnerNow: 'No runner that has it is online now.',
+      reportedBy_one: 'Reported by {{count}} runtime online: {{names}}.',
+      reportedBy_other: 'Reported by {{count}} runtimes online: {{names}}.',
+      noRunnerNow: 'No runtime that has it is online now.',
       goodAtHint:
         'The Lead Agent decides what to hand this agent by these words. Say what it suits and what it does not.',
       goodAtRequired: 'Write what it is good at before enabling it.',
       effortHint: 'The Lead Agent cannot change it when it hands work over.',
       personalOnly:
-        'Only personal runners have it: the Lead Agent hands it work only on issues their owners start.',
+        'Only personal runtimes have it: the Lead Agent hands it work only on issues their owners start.',
     },
     edit: {
       button: 'Edit',
@@ -197,7 +200,7 @@ const pages = {
       open: 'Add agent',
       title: 'Available models',
       description:
-        'Only the tools a runtime has checked are ever detected and listed here. The application’s recommended combinations create and enable themselves as soon as a runner reports them; add an agent from any other one.',
+        'Only the tools a runtime has checked are ever detected and listed here. The application’s recommended combinations create and enable themselves as soon as a runtime reports them; add an agent from any other one.',
       recommended: 'Enabled automatically when reported',
       added: 'Added',
       add: 'Add',
@@ -244,7 +247,7 @@ const pages = {
     label: 'Agent type',
     question: 'What kind of agent?',
     online: 'Online',
-    runner: 'Runner',
+    runner: 'Runtime',
     onlineHint:
       'Answers in seconds on the server through a model service. No runtime needed; it cannot touch code.',
     runnerHint:
@@ -598,6 +601,8 @@ const enUS: typeof pages &
   ...pages,
   ...runtimesEnUS,
   ...chatEnUS,
+  // The panel's own wording; the other languages fall back to English for keys they do not translate yet.
+  chat: mergeLocale(chatEnUS.chat, panelEnUS.chat),
   ...servicesEnUS,
   ...pricesEnUS,
   ...skillsEnUS,
@@ -608,4 +613,12 @@ const enUS: typeof pages &
 /** English is the source of truth for this plugin's locale shape. */
 export type AgentsResource = LocaleResource<typeof enUS>;
 
-export default enUS;
+// What the plugin brings on its own (`shell.en-US.ts`), outside the typed shape: the other languages fall back to
+// English for these keys.
+const withShell: typeof enUS = {
+  ...enUS,
+  agents: mergeLocale(enUS.agents, shellEnUS.agents),
+  ...{ me: shellEnUS.me },
+};
+
+export default withShell;

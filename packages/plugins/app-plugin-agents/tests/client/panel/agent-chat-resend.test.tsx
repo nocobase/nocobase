@@ -1,11 +1,10 @@
-import {
-  ChatProvider,
-  useChatPanel,
-} from '@nocobase/app-plugin-agents/client/chat';
+// @vitest-environment jsdom
+import { appResources } from './fixtures/i18n.js';
+import { ChatProvider, useChatPanel } from '../../../client/chat.js';
 import type {
   OnlineAgentResendOptions,
   ResendResult,
-} from '@nocobase/app-plugin-agents/client/chat';
+} from '../../../client/chat.js';
 import {
   createTestI18nRuntime,
   TestI18nProvider,
@@ -22,9 +21,9 @@ import userEvent from '@testing-library/user-event';
 import { useLayoutEffect } from 'react';
 import { MemoryRouter } from 'react-router';
 import { afterEach, expect, it, vi } from 'vitest';
-import { ChatPanel } from '../../registry/agents/agent-chat/chat-panel';
-import enUS from '../../registry/agents/agent-chat/locales/en-US';
-import { resetChatDemo } from '../../website/demo/agents/agents-chat-client';
+import { ChatPanel } from '../../../client/panel/chat-panel.js';
+import enUS from '../../../client/locales/en-US.js';
+import { resetChatDemo } from './fixtures/chat-client.js';
 
 const control = vi.hoisted(() => ({
   result: null as ResendResult | Promise<ResendResult> | null,
@@ -34,8 +33,8 @@ const control = vi.hoisted(() => ({
   hideUser: false,
   resend: vi.fn<(options: OnlineAgentResendOptions) => void>(),
 }));
-vi.mock('@nocobase/app-plugin-agents/client/chat', async () => {
-  const demo = await import('../../website/demo/agents/agents-chat-client');
+vi.mock('../../../client/chat.js', async () => {
+  const demo = await import('./fixtures/chat-client.js');
   return {
     ...demo,
     useResendMessage: (id: string | null) => {
@@ -127,7 +126,8 @@ afterEach(() => {
   resetChatDemo();
 });
 const runtime = await createTestI18nRuntime({
-  application: { namespace: 'resend-ui-test', resources: enUS },
+  application: { namespace: '@nocobase/test-app', resources: appResources },
+  namespaces: { '@nocobase/app-plugin-agents': enUS },
 });
 function Open({ id }: { readonly id: string }) {
   const { openChat } = useChatPanel();

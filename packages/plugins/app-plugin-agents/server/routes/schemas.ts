@@ -688,13 +688,10 @@ const agentObject = z.object({
   maxConcurrentRuns: z.number().int(),
   maxAttempts: z.number().int(),
   toolPolicy: toolPolicyOverrides.nullable(),
-  chatRoles: z
-    .array(z.string())
-    .nullable()
-    .meta({
-      description:
-        'Who may chat with it: null for every signed-in person, else the keys of the permission sets (roles) whose members may.',
-    }),
+  chatRoles: z.array(z.string()).nullable().meta({
+    description:
+      'Who may chat with it: null for every signed-in person, else the keys of the permission sets (roles) whose members may.',
+  }),
   lastReportedAt: dateTime.nullable().meta({
     description: 'When a runner last reported its tool and model.',
   }),

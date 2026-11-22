@@ -31,11 +31,6 @@ interface GrantRecord {
   }[];
 }
 
-interface SetRow {
-  readonly key: string;
-  readonly grants: unknown;
-}
-
 function parseGrants(value: unknown): GrantRecord[] | null {
   let parsed: unknown = value;
   if (typeof value === 'string') {
@@ -93,19 +88,14 @@ function withSettings(
     current === index
       ? {
           ...grant,
-          actions: [
-            ...grant.actions,
-            ...missing.map((action) => ({ action })),
-          ],
+          actions: [...grant.actions, ...missing.map((action) => ({ action }))],
         }
       : grant,
   );
 }
 
 /** The grants this migration gives a set, or null when it needs none. */
-function upgradeGrants(
-  grants: readonly GrantRecord[],
-): GrantRecord[] | null {
+function upgradeGrants(grants: readonly GrantRecord[]): GrantRecord[] | null {
   let next: readonly GrantRecord[] = grants;
   let changed = false;
   const agents = actionsOf(grants, 'settings', 'agents.agents');
@@ -128,11 +118,11 @@ async function rewrite(
   change: (grants: readonly GrantRecord[]) => GrantRecord[] | null,
 ): Promise<void> {
   if (!(await builder.hasCollection(TABLE))) return;
-  const rows = (await query
+  const rows = await query
     .selectFrom(TABLE)
     .select(['key', 'grants'])
     .orderBy('key')
-    .execute()) as SetRow[];
+    .execute();
   for (const row of rows) {
     const grants = parseGrants(row.grants);
     if (!grants) continue;

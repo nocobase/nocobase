@@ -1,6 +1,7 @@
+// @vitest-environment jsdom
 import { fireEvent, render, screen } from '@testing-library/react';
 import { expect, it } from 'vitest';
-import { ReasoningPart } from '../../registry/agents/agent-chat/reasoning-part';
+import { ReasoningPart } from '../../../client/panel/reasoning-part.js';
 
 it('opens live reasoning, closes at reasoning-end and never animates saved partial history', () => {
   const tree = render(

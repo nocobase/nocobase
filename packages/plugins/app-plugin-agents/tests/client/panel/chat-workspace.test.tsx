@@ -1,7 +1,6 @@
-import {
-  ChatProvider,
-  useChatPanel,
-} from '@nocobase/app-plugin-agents/client/chat';
+// @vitest-environment jsdom
+import { appResources } from './fixtures/i18n.js';
+import { ChatProvider, useChatPanel } from '../../../client/chat.js';
 import {
   TestI18nProvider,
   createTestI18nRuntime,
@@ -11,31 +10,28 @@ import { useEffect, type ReactElement, type ReactNode } from 'react';
 import { MemoryRouter } from 'react-router';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { ChatWorkspace } from '../../registry/agents/agent-chat/workspace';
-import { PanelWorkspace } from '../../registry/agents/agent-chat/linked-chat-panel';
+import { ChatWorkspace } from '../../../client/panel/workspace.js';
+import { PanelWorkspace } from '../../../client/panel/linked-chat-panel.js';
 import {
   workspaceLayout,
   useChatWorkspace,
-} from '../../registry/agents/agent-chat/workspace-layout';
-import enUS from '../../registry/agents/agent-chat/locales/en-US';
-import { resetChatDemo } from '../../website/demo/agents/agents-chat-client';
+} from '../../../client/panel/workspace-layout.js';
+import enUS from '../../../client/locales/en-US.js';
+import { resetChatDemo } from './fixtures/chat-client.js';
 
-vi.mock(
-  '@nocobase/app-plugin-agents/client/chat',
-  () => import('../../website/demo/agents/agents-chat-client'),
-);
+vi.mock('../../../client/chat.js', () => import('./fixtures/chat-client.js'));
 vi.mock('@nocobase/app-client', async (original) => ({
   ...(await original<typeof import('@nocobase/app-client')>()),
   resolveAppUrl: (x: string) => x,
-  useApiClient: (await import('../../website/demo/inbox/app-client'))
-    .useApiClient,
+  useApiClient: (await import('./fixtures/app-client.js')).useApiClient,
 }));
-vi.mock('../../registry/agents/agent-chat/use-conversation-usage.js', () => ({
+vi.mock('../../../client/panel/use-conversation-usage.js', () => ({
   useConversationUsage: () => ({ data: undefined }),
 }));
 
 const runtime = await createTestI18nRuntime({
-  application: { namespace: '@nocobase/test-app', resources: enUS },
+  application: { namespace: '@nocobase/test-app', resources: appResources },
+  namespaces: { '@nocobase/app-plugin-agents': enUS },
 });
 
 /** jsdom lays nothing out: the workspace's own width is what these tests say it is. */

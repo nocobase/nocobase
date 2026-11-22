@@ -103,17 +103,18 @@ describe('registered model providers', () => {
       ],
     });
     mock.answer({ text: ['ok'] });
-    expect(await services.check({ service: 'acme', model: 'acme-1' })).toEqual(
-      { ok: true, message: null },
-    );
+    expect(await services.check({ service: 'acme', model: 'acme-1' })).toEqual({
+      ok: true,
+      message: null,
+    });
     expect(mock.requests.at(-1)?.authorization).toBe('Bearer acme-key');
 
     // Nobody provides it any more: the service stays, and calling it says why.
     unregister();
     unregister = undefined;
-    expect((await services.list()).map((service) => service.provider)).toEqual(
-      ['acme'],
-    );
+    expect((await services.list()).map((service) => service.provider)).toEqual([
+      'acme',
+    ]);
     const check = await services.check({ service: 'acme', model: 'acme-1' });
     expect(check.ok).toBe(false);
     expect(check.message).toMatch(/not available/u);

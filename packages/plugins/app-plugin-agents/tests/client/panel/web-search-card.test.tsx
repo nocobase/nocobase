@@ -1,16 +1,19 @@
-import type { AppUIMessage } from '@nocobase/app-plugin-agents/client/chat';
+// @vitest-environment jsdom
+import { appResources } from './fixtures/i18n.js';
+import type { AppUIMessage } from '../../../client/chat.js';
 import {
   createTestI18nRuntime,
   TestI18nProvider,
 } from '@nocobase/i18n/testing';
 import { act, fireEvent, render, screen, within } from '@testing-library/react';
 import { afterEach, expect, it, vi } from 'vitest';
-import { MessageItem } from '../../registry/agents/agent-chat/message-item';
-import enUS from '../../registry/agents/agent-chat/locales/en-US';
-import zhCN from '../../registry/agents/agent-chat/locales/zh-CN';
+import { MessageItem } from '../../../client/panel/message-item.js';
+import enUS from '../../../client/locales/en-US.js';
+import zhCN from '../../../client/locales/zh-CN.js';
 
 const runtime = await createTestI18nRuntime({
-  application: { namespace: 'search-card-test', resources: enUS },
+  application: { namespace: '@nocobase/test-app', resources: appResources },
+  namespaces: { '@nocobase/app-plugin-agents': enUS },
 });
 function message(
   findings = ['Long first result', 'Long second result'],
@@ -179,7 +182,7 @@ it.each([enUS, zhCN])(
   'shows source-free findings without warning labels or fabricated sources',
   async (resources) => {
     const local = await createTestI18nRuntime({
-      application: { namespace: 'source-free-card', resources },
+      namespaces: { '@nocobase/app-plugin-agents': resources },
     });
     render(
       <TestI18nProvider runtime={local}>

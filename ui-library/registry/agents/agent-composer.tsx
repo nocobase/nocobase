@@ -242,6 +242,11 @@ export interface AgentComposerProps {
   readonly draft?: AgentComposerDraft | null;
   /** Receives a function that focuses the box; returns what undoes the registration. */
   readonly registerFocus?: (focus: () => void) => () => void;
+  /**
+   * Receives a function that puts text into the box after what it holds (never sending it), as a toolbar action does;
+   * returns what undoes the registration.
+   */
+  readonly registerInsert?: (insert: (text: string) => void) => () => void;
   /** The longest message, in characters. */
   readonly maxLength?: number;
   readonly labels?: Partial<AgentComposerLabels>;
@@ -561,6 +566,7 @@ export function AgentComposer({
   attachments,
   draft = null,
   registerFocus,
+  registerInsert,
   maxLength = MESSAGE_CONTENT_MAX,
   labels,
   className,
@@ -586,18 +592,30 @@ export function AgentComposer({
       mountedRef.current = false;
     };
   }, []);
-  // The box registers how to focus it as it mounts, and undoes that as it unmounts.
+  // The box registers how to focus it and how to put text into it as it mounts, and undoes that as it unmounts.
   const attach = useCallback(
     (node: HTMLTextAreaElement | null) => {
       textareaRef.current = node;
-      if (!node || !registerFocus) return undefined;
-      const undo = registerFocus(() => node.focus());
+      if (!node || (!registerFocus && !registerInsert)) return undefined;
+      const undoFocus = registerFocus?.(() => node.focus());
+      const undoInsert = registerInsert?.((text) => {
+        if (!text) return;
+        setContent((current) =>
+          !current
+            ? text
+            : /\s$/u.test(current)
+              ? current + text
+              : `${current}\n${text}`,
+        );
+        node.focus();
+      });
       return () => {
-        undo();
+        undoFocus?.();
+        undoInsert?.();
         textareaRef.current = null;
       };
     },
-    [registerFocus],
+    [registerFocus, registerInsert],
   );
 
   // A draft fills the box once (while rendering), then takes the focus: an empty box, or one that still holds the

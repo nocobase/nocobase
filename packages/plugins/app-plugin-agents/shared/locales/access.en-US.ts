@@ -81,12 +81,12 @@ const accessEnUS: AccessLocale = {
       },
       runners: {
         title: 'Runtimes',
-        description: 'See runners and registration tokens; manage runners.',
+        description: 'See runtimes and registration tokens; manage runtimes.',
       },
       prices: {
         title: 'Usage',
         description:
-          'See every run\'s usage and the model prices costs are estimated from; change the prices.',
+          "See every run's usage and the model prices costs are estimated from; change the prices.",
       },
       services: {
         title: 'Model services',

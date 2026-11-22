@@ -1509,6 +1509,7 @@ const ruRU: LocaleResource<typeof enUS> = {
         runners: 'Среды выполнения',
         prices: 'Цены моделей',
         services: 'Сервисы моделей',
+        skills: 'Навыки',
       },
     },
     actions: {

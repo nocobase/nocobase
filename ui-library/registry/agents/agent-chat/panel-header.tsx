@@ -1,5 +1,5 @@
 import { ShareConversation } from './share-conversation.js';
-import { useState, type ReactElement } from 'react';
+import { useState, type ComponentType, type ReactElement } from 'react';
 import {
   CHAT_MOBILE_QUERY,
   useChatPanel,
@@ -25,8 +25,23 @@ import { DeleteConversationDialog } from './delete-conversation.js';
 import { useMediaQuery } from './use-media-query.js';
 import { useChatMode } from './chat-mode.js';
 import { useChatTranslation } from './chat-i18n.js';
+import { replaceable } from '@nocobase/app-plugin-agents/client/chat';
 
-export function PanelHeader(): ReactElement {
+export interface PanelHeaderProps {
+  /**
+   * Receives the element the conversation renders its choices into (the agent, the model and its thinking level);
+   * a replacement that leaves it out shows them in the composer's toolbar instead.
+   */
+  readonly choiceSlot?: ((element: HTMLElement | null) => void) | undefined;
+}
+
+/**
+ * The panel's header over a conversation: its choices, the conversation list, a new conversation, the full-page view,
+ * the panel's size, the conversation's menu and close, then its title; replaceable as `PanelHeader`.
+ */
+export function DefaultPanelHeader({
+  choiceSlot,
+}: PanelHeaderProps): ReactElement {
   const panel = useChatPanel();
   const conversation = useConversation(panel.conversationId, {
     passive: true,
@@ -46,6 +61,12 @@ export function PanelHeader(): ReactElement {
             : undefined
         }
         onBack={() => panel.setView('history')}
+        choiceSlot={choiceSlot}
+        onOpenPage={
+          conversation && !conversation.snapshot && panel.openPage
+            ? () => panel.openPage?.(conversation.id)
+            : undefined
+        }
         onNew={
           conversation && !conversation.snapshot
             ? () => panel.selectConversation(null)
@@ -115,6 +136,12 @@ export function PanelHeader(): ReactElement {
     </>
   );
 }
+// eslint-disable-next-line react-refresh/only-export-components -- wrapped once at load, so replacements follow it
+export const PanelHeader: ComponentType<PanelHeaderProps> = replaceable(
+  'PanelHeader',
+  DefaultPanelHeader,
+);
+
 export function PanelHistoryHeader(): ReactElement {
   const panel = useChatPanel();
   const { t } = useChatTranslation();

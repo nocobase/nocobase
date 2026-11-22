@@ -1,3 +1,5 @@
+// @vitest-environment jsdom
+import { appResources } from './fixtures/i18n.js';
 import {
   agentsQueryClient,
   ChatProvider,
@@ -5,11 +7,11 @@ import {
   rememberThinking,
   CHAT_THINKING_STORAGE_KEY,
   useChatPanel,
-} from '@nocobase/app-plugin-agents/client/chat';
+} from '../../../client/chat.js';
 import type {
   ConversationDetail,
   OnlineChatConfigSnapshot,
-} from '@nocobase/app-plugin-agents/shared/conversations';
+} from '../../../shared/conversations.js';
 import {
   createTestI18nRuntime,
   TestI18nProvider,
@@ -19,8 +21,8 @@ import userEvent from '@testing-library/user-event';
 import { useLayoutEffect } from 'react';
 import { MemoryRouter } from 'react-router';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
-import { ConversationView } from '../../registry/agents/agent-chat/conversation-view';
-import enUS from '../../registry/agents/agent-chat/locales/en-US';
+import { ConversationView } from '../../../client/panel/conversation-view.js';
+import enUS from '../../../client/locales/en-US.js';
 
 const host = vi.hoisted(() => ({
   request: vi.fn(),
@@ -36,9 +38,8 @@ vi.mock('@nocobase/app-client', async (original) => ({
   useService: () => host.realtime,
   useToaster: () => ({ show: host.show }),
 }));
-vi.mock('@nocobase/app-plugin-agents/client/chat', async (original) => {
-  const actual =
-    await original<typeof import('@nocobase/app-plugin-agents/client/chat')>();
+vi.mock('../../../client/chat.js', async (original) => {
+  const actual = await original<typeof import('../../../client/chat.js')>();
   return {
     ...actual,
     useResendMessage: (
@@ -50,10 +51,8 @@ vi.mock('@nocobase/app-plugin-agents/client/chat', async (original) => {
   };
 });
 const runtime = await createTestI18nRuntime({
-  application: {
-    namespace: 'model-choice-test',
-    resources: { ...enUS, status: { loading: 'Loading' } },
-  },
+  application: { namespace: '@nocobase/test-app', resources: appResources },
+  namespaces: { '@nocobase/app-plugin-agents': enUS },
 });
 const first = { modelService: 'local', model: 'first' };
 const second = { modelService: 'local', model: 'second' };

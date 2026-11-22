@@ -2131,3 +2131,8 @@ export const useChatApi: typeof Chat.useChatApi = () =>
     }),
   }) as unknown as ReturnType<typeof Chat.useChatApi>;
 export { isChatShortcut } from '../../../../packages/plugins/app-plugin-agents/client/chat/panel-state.js';
+// The panel's extension points (`agents.slots`, `agents.components`) are the plugin's own registry, which needs no server.
+export {
+  AgentSlotOutlet,
+  replaceable,
+} from '../../../../packages/plugins/app-plugin-agents/client/ui-slots.js';

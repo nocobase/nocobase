@@ -1,22 +1,21 @@
+// @vitest-environment jsdom
 import { QueryClient } from '@tanstack/react-query';
 import { render, screen, within } from '@testing-library/react';
 import {
   createTestI18nRuntime,
   TestI18nProvider,
 } from '@nocobase/i18n/testing';
-import type { ConversationDetail } from '@nocobase/app-plugin-agents/shared/conversations';
+import type { ConversationDetail } from '../../../shared/conversations.js';
 import { afterEach, expect, it, vi } from 'vitest';
-import { SnapshotView } from '../../registry/agents/agent-chat/snapshot-view.js';
-import enUS from '../../registry/agents/agent-chat/locales/en-US.js';
-import zhCN from '../../registry/agents/agent-chat/locales/zh-CN.js';
+import { SnapshotView } from '../../../client/panel/snapshot-view.js';
+import enUS from '../../../client/locales/en-US.js';
+import zhCN from '../../../client/locales/zh-CN.js';
 
 const queries = new QueryClient({
   defaultOptions: { queries: { retry: false } },
 });
-vi.mock('@nocobase/app-plugin-agents/client/chat', async (original) => ({
-  ...(await original<
-    typeof import('@nocobase/app-plugin-agents/client/chat')
-  >()),
+vi.mock('../../../client/chat.js', async (original) => ({
+  ...(await original<typeof import('../../../client/chat.js')>()),
   agentsQueryClient: () => queries,
   useChatApi: () => ({
     messages: async () => ({
@@ -41,7 +40,7 @@ it.each([
   async (locale, resources) => {
     const runtime = await createTestI18nRuntime({
       locale,
-      application: { namespace: 'snapshot-test', resources },
+      namespaces: { '@nocobase/app-plugin-agents': resources },
     });
     const snapshotAt = '2026-11-04T14:35:00.000Z';
     const conversation = {

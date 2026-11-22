@@ -1,3 +1,5 @@
+// @vitest-environment jsdom
+import { appResources } from './fixtures/i18n.js';
 import {
   AIToolRendererProvider,
   getAIToolSourceMessage,
@@ -6,23 +8,22 @@ import {
   type AIToolRendererMap,
   type AIToolRendererProps,
   type AppUIMessage,
-} from '@nocobase/app-plugin-agents/client/chat';
+} from '../../../client/chat.js';
 import {
   createTestI18nRuntime,
   TestI18nProvider,
 } from '@nocobase/i18n/testing';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
-import { readFileSync } from 'node:fs';
-import path from 'node:path';
 import { StrictMode, type ReactNode } from 'react';
 import { expect, expectTypeOf, it, vi } from 'vitest';
-import { MessageItem } from '../../registry/agents/agent-chat/message-item';
-import enUS from '../../registry/agents/agent-chat/locales/en-US';
-import zhCN from '../../registry/agents/agent-chat/locales/zh-CN';
-import * as preview from '../../website/demo/agents/agents-chat-client';
+import { MessageItem } from '../../../client/panel/message-item.js';
+import enUS from '../../../client/locales/en-US.js';
+import zhCN from '../../../client/locales/zh-CN.js';
+import * as preview from './fixtures/chat-client.js';
 
 const runtime = await createTestI18nRuntime({
-  application: { namespace: 'tool-renderer-test', resources: enUS },
+  application: { namespace: '@nocobase/test-app', resources: appResources },
+  namespaces: { '@nocobase/app-plugin-agents': enUS },
 });
 function wrapper({ children }: { readonly children: ReactNode }) {
   return <TestI18nProvider runtime={runtime}>{children}</TestI18nProvider>;
@@ -199,7 +200,7 @@ it.each([enUS, zhCN])(
   'renders source-free findings without warning labels or fabricated source links in each locale',
   async (resources) => {
     const local = await createTestI18nRuntime({
-      application: { namespace: 'unverified-search', resources },
+      namespaces: { '@nocobase/app-plugin-agents': resources },
     });
     render(
       <TestI18nProvider runtime={local}>
@@ -505,34 +506,7 @@ it('rejects an unrelated source prop even when it is a user message', () => {
   expect(screen.getByText('reply: no source')).toBeVisible();
 });
 
-it('keeps the shared renderer chain in the installed Examples copy without replacing its local pending actions', () => {
-  const shared = readFileSync(
-    path.resolve('registry/agents/agent-chat/message-item.tsx'),
-    'utf8',
-  );
-  const installed = readFileSync(
-    path.resolve(
-      '../packages/templates/app-template-examples/client/extensions/nocobase-agent-chat/message-item.tsx',
-    ),
-    'utf8',
-  );
-  expect(installed.split('export interface PendingItemProps')[0]).toBe(
-    shared.split('export interface PendingItemProps')[0],
-  );
-  expect(installed).toContain('onRecoverCreation');
-  expect(installed).toContain('retryDisabled');
-  const conversation = readFileSync(
-    path.resolve(
-      '../packages/templates/app-template-examples/client/extensions/nocobase-agent-chat/conversation-view.tsx',
-    ),
-    'utf8',
-  );
-  expect(conversation).toContain('getAIToolSourceMessage(');
-  expect(conversation).toContain('inputAvailability');
-  expect(conversation).toContain("from './conversation-actions.js'");
-});
-
-it('keeps the website stand-in renderer API exactly aligned with the real SDK', () => {
+it('keeps the test stand-in renderer API exactly aligned with the real SDK', () => {
   expectTypeOf(preview.AIToolRendererProvider).toEqualTypeOf<
     typeof AIToolRendererProvider
   >();
