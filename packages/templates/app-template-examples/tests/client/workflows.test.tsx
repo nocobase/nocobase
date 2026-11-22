@@ -936,6 +936,22 @@ describe('workflow management pages', () => {
   });
 });
 
+it('keeps management guidance out of filtered empty results', async () => {
+  api.request.mockResolvedValue({ data: [] });
+  await view(
+    <DefinitionsPage />,
+    'en-US',
+    '/workflows/definitions?name=missing',
+  );
+  expect(await screen.findByText(enUS.listFeedback.noResults)).toBeVisible();
+  expect(
+    screen.queryByText(enUS.workflows.managementHint),
+  ).not.toBeInTheDocument();
+  expect(
+    screen.queryByRole('link', { name: enUS.workflows.documentation }),
+  ).not.toBeInTheDocument();
+});
+
 it('retains loaded definitions while refreshing and exposes the busy state', async () => {
   api.request.mockResolvedValueOnce({ data: [] }).mockResolvedValueOnce({
     data: [
@@ -970,7 +986,16 @@ it('retains loaded definitions while refreshing and exposes the busy state', asy
   ).not.toBeInTheDocument();
   expect(screen.getAllByRole('status').length).toBeGreaterThan(0);
   finish?.({ data: [] });
-  await screen.findByText(enUS.listFeedback.empty);
+  const empty = await screen.findByText(enUS.listFeedback.empty);
+  expect(screen.getByRole('table')).toContainElement(empty);
+  expect(empty.closest('[role=status]')).toBeVisible();
+  expect(screen.getByText(enUS.workflows.managementHint)).toBeVisible();
+  expect(
+    screen.getByRole('link', { name: enUS.workflows.documentation }),
+  ).toHaveAttribute(
+    'href',
+    'https://docs.nocobase.com/core/developing-apps/business-workflows/',
+  );
 });
 
 it('keeps a failed category draft and saves its trimmed name and order', async () => {
