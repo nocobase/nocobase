@@ -242,7 +242,7 @@ export function RoleMembers({
   );
   const actionsOf = (member: Member): ReactElement | null =>
     (checkHref && member.assignment.subject.type === 'user') || editable ? (
-      <div className='flex flex-wrap items-center gap-2 md:inline-flex md:justify-end'>
+      <div className='flex flex-wrap items-center gap-2 md:flex-nowrap md:justify-end'>
         {checkHref && member.assignment.subject.type === 'user' && (
           <Link
             className='text-sm text-primary underline-offset-4 hover:underline'
@@ -326,7 +326,7 @@ export function RoleMembers({
               {showType && <TableHead>{t('settings.members.type')}</TableHead>}
               <TableHead>{t('settings.members.otherRoles')}</TableHead>
               {(editable || checkHref) && (
-                <TableHead className='w-24 text-right'>
+                <TableHead className='text-right'>
                   <span className='sr-only'>{t('settings.actions')}</span>
                 </TableHead>
               )}
