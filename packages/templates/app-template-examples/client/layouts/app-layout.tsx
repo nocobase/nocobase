@@ -6,9 +6,9 @@ import { Outlet, useLocation } from 'react-router';
 import { BrandWatermark } from '#components/brand-watermark';
 import { Breadcrumbs } from '#components/breadcrumbs';
 
+import { PersonalSettingsDialog } from '../routing/personal-settings-dialog.js';
 import { OnlineAgentProvider } from '#components/online-agent/provider';
 import { OnlineAgentPanelHost } from '#components/online-agent/panel-host';
-import { PersonalSettingsDialog } from '../routing/personal-settings-dialog.js';
 import { RouteTreeProvider } from '../routing/route-context.js';
 import { RouteLeaveBoundary } from '../routing/route-leave-boundary.js';
 
