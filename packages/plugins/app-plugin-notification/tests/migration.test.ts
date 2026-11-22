@@ -20,6 +20,7 @@ import idempotencyMigration from '../database/migrations/202609080001_create_not
 import instantMigration from '../database/migrations/202609130001_notification_instant_columns.js';
 import namesMigration from '../database/migrations/202609200001_notification_channel_names.js';
 import singleProviderMigration from '../database/migrations/202609200003_notification_single_provider.js';
+import kindsMigration from '../database/migrations/202611220001_notification_kinds_and_preferences.js';
 import { notificationMigrations } from './helpers/database.js';
 
 const COLLECTIONS = [
@@ -35,6 +36,7 @@ const MIGRATION_NAMES = [
   '202609130001_notification_instant_columns',
   '202609200001_notification_channel_names',
   '202609200003_notification_single_provider',
+  '202611220001_notification_kinds_and_preferences',
 ] as const;
 
 interface DispatchRow extends Row {
@@ -544,6 +546,76 @@ describeMigration(singleProviderMigration.name, {
         nullable: false,
       });
     }
+  },
+});
+
+describeMigration(kindsMigration.name, {
+  sources: notificationMigrations,
+  before: async ({ connection }) => {
+    await connection.repository('notificationDispatches').createOne({
+      values: {
+        id: 'before-kinds',
+        sourceType: 'application',
+        createdAt: '2026-11-01T00:00:00.000Z',
+        updatedAt: '2026-11-01T00:00:00.000Z',
+      },
+    });
+  },
+  up: async ({ connection, expectCollection }) => {
+    await expectCollection('notificationPreferences').toExist();
+    await expectCollection('notificationPreferences').toHaveField('enabled', {
+      nullable: false,
+    });
+    await expectCollection('notificationDispatches').toHaveField('kind', {
+      type: 'string',
+      length: 200,
+      nullable: true,
+    });
+    await expectCollection('notificationDeliveries').toHaveField(
+      'recipientKey',
+      { type: 'string', length: 191, nullable: true },
+    );
+    // An existing send is kept and has no kind.
+    expect(
+      await connection.query
+        .selectFrom('notificationDispatches')
+        .selectAll()
+        .where('id', '=', 'before-kinds')
+        .executeTakeFirst(),
+    ).toMatchObject({ id: 'before-kinds', kind: null });
+    const preference = {
+      userId: 'user-1',
+      kind: 'example.assigned',
+      channelType: 'email',
+      enabled: false,
+      createdAt: '2026-11-22T00:00:00.000Z',
+      updatedAt: '2026-11-22T00:00:00.000Z',
+    };
+    await connection.query
+      .insertInto('notificationPreferences')
+      .values({ id: 'preference-1', ...preference })
+      .execute();
+    // One choice per person, kind and channel type.
+    await expect(
+      connection.query
+        .insertInto('notificationPreferences')
+        .values({ id: 'preference-2', ...preference })
+        .execute(),
+    ).rejects.toThrow();
+  },
+  down: async ({ connection, expectCollection }) => {
+    await expectCollection('notificationPreferences').not.toExist();
+    await expectCollection('notificationDispatches').not.toHaveField('kind');
+    await expectCollection('notificationDeliveries').not.toHaveField(
+      'recipientKey',
+    );
+    expect(
+      await connection.query
+        .selectFrom('notificationDispatches')
+        .selectAll()
+        .where('id', '=', 'before-kinds')
+        .executeTakeFirst(),
+    ).toMatchObject({ id: 'before-kinds' });
   },
 });
 

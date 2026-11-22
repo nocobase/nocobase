@@ -15,7 +15,11 @@ import {
   describeNotificationTemplateChannel,
   type NotificationTemplateDefinition,
 } from '../server/templates.js';
-import { createTemplateRoutes } from '../server/routes/templates.js';
+import { createSettingsRoutes } from '../server/routes/settings.js';
+import {
+  notificationRuntimeToken,
+  type NotificationRuntime,
+} from '../server/runtime.js';
 
 function definition(
   overrides: Partial<NotificationTemplateDefinition> = {},
@@ -180,9 +184,22 @@ function fixture(authenticated = true, allowed = true) {
   const registry = new NotificationTemplateRegistry();
   const render = vi.fn(definition().render);
   registry.register(definition({ render }));
-  const can = vi.fn(async () => allowed);
+  const require = vi.fn(async () => {
+    if (!allowed)
+      throw new ApiError({
+        status: 'PERMISSION_DENIED',
+        domain: 'authorization',
+        reason: 'AUTHORIZATION_DENIED',
+        message: 'Permission denied.',
+      });
+  });
   container.instance(notificationTemplateRegistryToken, registry);
-  container.instance(authenticationToken, {
+  container.instance(notificationRuntimeToken, {
+    store: {
+      countSendsByKind: async () => new Map([['example.assigned', 3]]),
+    },
+  } as unknown as NotificationRuntime);
+  const auth = {
     required: () => async (_context, next) => {
       if (!authenticated)
         throw new ApiError({
@@ -193,21 +210,31 @@ function fixture(authenticated = true, allowed = true) {
         });
       await next();
     },
-  } as unknown as Auth);
-  container.instance(authorizationToken, {
+  } as unknown as Auth;
+  const authorization = {
     middleware: () => async (context, next) => {
-      context.set('authz', { can });
+      context.set('authz', { require });
       await next();
     },
-  } as unknown as Authorization);
-  return { router: createTemplateRoutes(container), can, render, registry };
+  } as unknown as Authorization;
+  container.instance(authenticationToken, auth);
+  container.instance(authorizationToken, authorization);
+  return {
+    router: createSettingsRoutes(container, [
+      auth.required(),
+      authorization.middleware(),
+    ] as never),
+    require,
+    render,
+    registry,
+  };
 }
 
-describe('template routes own their permission boundary', () => {
+describe('kind routes own their permission boundary', () => {
   it.each([
-    ['GET', '/templates'],
-    ['GET', '/templates/missing'],
-    ['POST', '/templates/missing/preview'],
+    ['GET', '/kinds'],
+    ['GET', '/kinds/missing'],
+    ['POST', '/kinds/missing/preview'],
   ])(
     '%s %s checks identity and permission before existence or input',
     async (method, path) => {
@@ -215,14 +242,14 @@ describe('template routes own their permission boundary', () => {
       expect((await anonymous.router.request(path, { method })).status).toBe(
         401,
       );
-      expect(anonymous.can).not.toHaveBeenCalled();
+      expect(anonymous.require).not.toHaveBeenCalled();
       const denied = fixture(true, false);
       const response = await denied.router.request(path, { method });
       expect(response.status).toBe(403);
       expect(denied.render).not.toHaveBeenCalled();
-      expect(denied.can).toHaveBeenCalledWith({
-        resource: { type: 'page', id: 'notification.templates' },
-        action: 'access',
+      expect(denied.require).toHaveBeenCalledWith({
+        resource: { type: 'settings', id: 'notification' },
+        action: 'read',
       });
     },
   );
@@ -233,25 +260,20 @@ describe('template routes own their permission boundary', () => {
     expect(
       await (
         await router.request(
-          '/templates?search=assigned&category=Tasks&channel=in-app',
+          '/kinds?search=assigned&category=Tasks&channel=in-app',
         )
       ).json(),
-    ).toMatchObject({ meta: { total: 1 } });
+    ).toMatchObject({ data: [{ sentLast7Days: 3 }], meta: { total: 1 } });
     expect(
-      await (await router.request('/templates?search=missing')).json(),
+      await (await router.request('/kinds?search=missing')).json(),
     ).toEqual({ data: [], meta: { total: 0 } });
-    expect((await router.request('/templates/example.assigned')).status).toBe(
-      200,
-    );
-    expect((await router.request('/templates/missing')).status).toBe(404);
-    const response = await router.request(
-      '/templates/example.assigned/preview',
-      {
-        method: 'POST',
-        headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ locale: 'zh-CN' }),
-      },
-    );
+    expect((await router.request('/kinds/example.assigned')).status).toBe(200);
+    expect((await router.request('/kinds/missing')).status).toBe(404);
+    const response = await router.request('/kinds/example.assigned/preview', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ locale: 'zh-CN' }),
+    });
     expect(response.status).toBe(200);
     expect(response.headers.get('cache-control')).toBe('no-store');
     expect(await response.json()).toMatchObject({
@@ -264,7 +286,7 @@ describe('template routes own their permission boundary', () => {
     expect(render).toHaveBeenCalledTimes(2);
     expect(
       (
-        await router.request('/templates/example.assigned/preview', {
+        await router.request('/kinds/example.assigned/preview', {
           method: 'POST',
           headers: { 'content-type': 'application/json' },
           body: JSON.stringify({ locale: 'en-US', recipientId: 'real-user' }),

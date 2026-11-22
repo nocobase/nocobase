@@ -2,8 +2,11 @@ import type { DatabaseManager } from '@nocobase/db';
 import type { JobExecutor } from '@nocobase/jobs';
 import type { Logger } from '@nocobase/logging';
 import type { ServiceContainer } from '@nocobase/service-provider';
+import type { NotificationTarget } from '../shared/target.js';
 import type { ChannelConfig, ChannelTypeClass } from './channel-type.js';
+import type { NotificationPreferenceStore } from './preferences.js';
 import type { NotificationRegistry } from './registry.js';
+import type { NotificationTemplateRegistry } from './templates.js';
 import type { NotificationDeliveryStatus, NotificationStore } from './store.js';
 
 export interface NotificationChannelSchema {
@@ -43,6 +46,15 @@ export interface NotificationService {
   send(
     input: NotificationSendInput<NotificationChannelMap>,
   ): Promise<NotificationSendResult>;
+  /**
+   * Notifies application users of a registered kind: the kind's channel policies and each person's preferences decide
+   * the channels, each channel type turns the users into its own recipients, and the result is one `send()` with its
+   * delivery, retries, deduplication and log.
+   */
+  notify(
+    kind: string,
+    input: NotificationNotifyInput,
+  ): Promise<NotificationNotifyResult>;
   getByIdempotencyKey(
     idempotencyKey: string,
   ): Promise<NotificationStatusSnapshot | undefined>;
@@ -102,9 +114,47 @@ export interface NotificationSendInput<
 > {
   readonly idempotencyKey: string;
   readonly source?: { readonly type: string; readonly referenceId?: string };
+  /** The notification kind this send is for, recorded on the send so the delivery log can be filtered by it. */
+  readonly kind?: string;
   readonly messages: Partial<{
     readonly [N in keyof TChannels]: TChannels[N]['message'];
   }>;
+}
+
+export interface NotificationNotifyInput {
+  /** Application user ids. Duplicates are sent once. */
+  readonly to: readonly string[];
+  /** The values the kind's `content()` renders. */
+  readonly data?: Readonly<Record<string, unknown>>;
+  /** Where opening the notification leads. */
+  readonly target?: NotificationTarget;
+  /** The record the notification is about. Defaults to the kind's contributor. */
+  readonly source?: { readonly type: string; readonly referenceId?: string };
+  /**
+   * Makes the send happen once: a repeat with the same key returns the first send, even when someone changed a
+   * preference in between. Without it every call sends.
+   */
+  readonly idempotencyKey?: string;
+}
+
+/** Why a person was not sent a notification on a channel type. */
+export type NotificationSkipReason =
+  /** The person turned the channel type off for this kind, or did not turn on one the kind leaves off. */
+  | 'preference'
+  /** The channel type has no recipient for the person: no address, no enabled device. */
+  | 'no_recipient'
+  /** No enabled channel of the type is configured that can reach users. */
+  | 'no_channel';
+
+export interface NotificationNotifyResult {
+  readonly kind: string;
+  /** The send, or `undefined` when nobody had a channel to receive it on. */
+  readonly send?: NotificationSendResult;
+  readonly skipped: readonly {
+    readonly userId: string;
+    readonly channelType: string;
+    readonly reason: NotificationSkipReason;
+  }[];
 }
 
 export interface NotificationSendResult {
@@ -374,6 +424,12 @@ export interface NotificationManagerOptions<
   readonly registry?: NotificationRegistry;
   readonly container?: ServiceContainer;
   readonly store?: NotificationStore;
+  /** The notification kinds `notify()` sends; without it `notify()` knows no kind. */
+  readonly kinds?: NotificationTemplateRegistry;
+  /** Personal preferences; defaults to the database store. */
+  readonly preferences?: NotificationPreferenceStore;
+  /** The language `notify()` renders a kind in; defaults to `en-US`. */
+  readonly defaultLocale?: () => string;
   readonly reconcileIntervalMs?: number;
   readonly reconcileBatchSize?: number;
   readonly providerTimeoutMs?: number;

@@ -5,13 +5,27 @@ import { legacyChannelConfig } from './channel-type-adapter.js';
 
 import { Hono } from 'hono';
 
-import { ChannelManager } from './channel-manager.js';
+import {
+  ChannelManager,
+  DEFAULT_MAX_ATTEMPTS,
+  DEFAULT_RETRY_INTERVAL_MS,
+} from './channel-manager.js';
 import { createDeliveryJob, type DeliveryJobClass } from './delivery-job.js';
 import {
   notificationRequestFingerprint,
   validateNotificationIdempotencyKey,
 } from './idempotency.js';
+import type { NotificationContent } from './channel-type.js';
+import type {
+  NotificationPreferenceChange,
+  NotificationPreferencesView,
+} from '../shared/preferences.js';
 import { NotificationLogs } from './logs.js';
+import type { NotificationKindRuntime } from './templates.js';
+import {
+  DatabaseNotificationPreferenceStore,
+  type NotificationPreferenceStore,
+} from './preferences.js';
 import { NotificationReconcileJob } from './notification-reconcile-job.js';
 import {
   createNotificationRegistry,
@@ -30,7 +44,10 @@ import {
 } from './store.js';
 import type {
   NotificationDeliveryStatusSnapshot,
+  NotificationI18nText,
   NotificationManagerOptions,
+  NotificationNotifyInput,
+  NotificationNotifyResult,
   NotificationProviderIdentity,
   NotificationRetryDeliveryInput,
   NotificationSendInput,
@@ -41,6 +58,77 @@ import type {
   NotificationStatusSnapshot,
   ProviderSendResult,
 } from './types.js';
+
+/** A configured channel as the settings page lists it. Never carries configuration values beyond the summary. */
+export interface NotificationChannelView {
+  readonly name: string;
+  readonly type: string;
+  /** The message family `notify()` and preferences use: `in-app`, `email`, `web-push`, `im`. */
+  readonly channelType: string;
+  readonly typeLabel?: string | NotificationI18nText;
+  readonly contributor?: string;
+  readonly enabled: boolean;
+  readonly summary: readonly {
+    readonly label: string | NotificationI18nText;
+    readonly value: string;
+  }[];
+  /** Whether a test send can reach it: the type composes a message, and reaches users or a fixed group. */
+  readonly testable: boolean;
+  /** Whether `notify()` can reach users through it. */
+  readonly reachesUsers: boolean;
+  /** Deliveries in the last 24 hours, by outcome. */
+  readonly last24h: {
+    readonly accepted: number;
+    readonly failed: number;
+    readonly pending: number;
+    readonly unknown: number;
+  };
+}
+
+export interface NotificationDeliverySettingsView {
+  readonly retry: {
+    readonly maxAttempts: number;
+    readonly intervalMs: number;
+    readonly configured: boolean;
+  };
+  /** The `jobs` configuration deliveries run on; `undefined` follows `jobs.default`. */
+  readonly jobs?: string;
+}
+
+/** Why a channel test could not be sent. */
+export class NotificationChannelTestError extends Error {
+  constructor(
+    readonly code:
+      | 'NOTIFICATION_CHANNEL_NOT_FOUND'
+      | 'NOTIFICATION_CHANNEL_TEST_UNSUPPORTED'
+      | 'NOTIFICATION_CHANNEL_NO_RECIPIENT',
+    message: string,
+  ) {
+    super(message);
+    this.name = 'NotificationChannelTestError';
+  }
+}
+
+/** A preference change names a kind or channel type that cannot be chosen. */
+export class NotificationPreferenceError extends Error {
+  constructor(
+    readonly code:
+      'NOTIFICATION_PREFERENCE_UNKNOWN' | 'NOTIFICATION_PREFERENCE_REQUIRED',
+    readonly index: number,
+    message: string,
+  ) {
+    super(message);
+    this.name = 'NotificationPreferenceError';
+  }
+}
+
+export class NotificationKindNotFoundError extends Error {
+  readonly code = 'NOTIFICATION_KIND_NOT_FOUND';
+  constructor(readonly kind: string) {
+    super(`Notification kind "${kind}" is not registered.`);
+    this.name = 'NotificationKindNotFoundError';
+  }
+}
 
 interface ExpandedRecipientTarget {
   readonly channel: string;
@@ -105,6 +193,7 @@ export class NotificationManager<
   readonly logs: NotificationLogs;
   readonly store: NotificationStore;
   readonly registry: NotificationRegistry;
+  readonly preferences: NotificationPreferenceStore;
   private readonly channelManager: ChannelManager;
   private readonly container: ServiceContainer;
 
@@ -130,6 +219,9 @@ export class NotificationManager<
     this.store =
       options.store ?? createDatabaseNotificationStore(options.database);
     this.logs = new NotificationLogs(this.store);
+    this.preferences =
+      options.preferences ??
+      new DatabaseNotificationPreferenceStore(options.database);
     this.router = createNotificationRouter({ logs: this.logs });
     this.channelManager = new ChannelManager({
       logger: options.logger,
@@ -305,6 +397,13 @@ export class NotificationManager<
       throw new Error(
         'Notification messages must be a Channel-to-message map.',
       );
+    if (
+      input.kind !== undefined &&
+      (typeof input.kind !== 'string' ||
+        !input.kind.trim() ||
+        input.kind.length > 200)
+    )
+      throw new Error('Notification kind must be a non-empty string.');
     for (const key of [
       'to',
       'channels',
@@ -363,6 +462,7 @@ export class NotificationManager<
       idempotencyKey: input.idempotencyKey,
       requestFingerprint,
       source: input.source,
+      kind: input.kind,
       recipients: expandedRecipients,
       message,
     });
@@ -375,6 +475,7 @@ export class NotificationManager<
       readonly type: string;
       readonly referenceId?: string;
     };
+    readonly kind?: string;
     readonly recipients: readonly ExpandedRecipient[];
     readonly message: Readonly<Record<string, object | undefined>>;
   }): Promise<NotificationSendResult> {
@@ -401,6 +502,7 @@ export class NotificationManager<
           channelType: this.channelManager.type(target.channel),
           recipientSnapshot: target.recipient,
           messageSnapshot: message,
+          recipientKey: recipientKeyOf(target.recipient, target.channel),
           providerType: target.provider.type,
           attemptCount: 0,
           status: target.error ? 'failed' : 'pending',
@@ -420,6 +522,7 @@ export class NotificationManager<
       requestFingerprint: input.requestFingerprint,
       sourceType: input.source?.type ?? 'application',
       sourceReferenceId: input.source?.referenceId,
+      ...(input.kind === undefined ? {} : { kind: input.kind }),
       messageSnapshot: input.message as Readonly<Record<string, object>>,
       status: initialNotificationStatus(deliveries),
       createdAt: now,
@@ -466,6 +569,348 @@ export class NotificationManager<
       status: snapshot.status,
       deliveries: snapshot.deliveries,
     };
+  }
+
+  notify(
+    kind: string,
+    input: NotificationNotifyInput,
+  ): Promise<NotificationNotifyResult> {
+    return this.trackRequest(() => this.notifyInternal(kind, input));
+  }
+
+  private async notifyInternal(
+    kindId: string,
+    input: NotificationNotifyInput,
+  ): Promise<NotificationNotifyResult> {
+    await this.activate();
+    const kind: NotificationKindRuntime | undefined =
+      this.options.kinds?.kind(kindId);
+    if (!kind) throw new NotificationKindNotFoundError(kindId);
+    if (!Array.isArray(input?.to))
+      throw new Error('Notification to must list application user ids.');
+    const userIds: readonly string[] = [...new Set<string>(input.to)];
+    if (
+      userIds.some(
+        (id) => typeof id !== 'string' || !id.trim() || id !== id.trim(),
+      )
+    )
+      throw new Error('Notification to must list application user ids.');
+    const idempotencyKey =
+      input.idempotencyKey ?? `notify:${kindId}:${randomUUID()}`;
+    validateNotificationIdempotencyKey(idempotencyKey);
+    // A repeat returns the first send as it is, whatever preferences say now.
+    if (input.idempotencyKey !== undefined) {
+      const existing = await this.getByIdempotencyKey(idempotencyKey);
+      if (existing)
+        return {
+          kind: kindId,
+          send: {
+            notificationId: existing.notificationId,
+            idempotencyKey,
+            deduplicated: true,
+            status: existing.status,
+            deliveries: existing.deliveries,
+          },
+          skipped: [],
+        };
+    }
+    const skipped: NotificationNotifyResult['skipped'][number][] = [];
+    if (!userIds.length) return { kind: kindId, skipped };
+    const adjustable = kind.policies.filter(({ adjustable }) => adjustable);
+    const choices = new Map<string, boolean>();
+    if (adjustable.length)
+      for (const record of await this.preferences.listForKind(kindId, userIds))
+        choices.set(
+          `${record.userId}\u0000${record.channelType}`,
+          record.enabled,
+        );
+    const content: Omit<NotificationContent, 'title' | 'body' | 'html'> = {
+      kind: kindId,
+      category: kind.view.categoryKey,
+      ...(input.target === undefined ? {} : { target: input.target }),
+      source: input.source ?? { type: kind.view.contributor.slice(0, 100) },
+      key: idempotencyKey,
+    };
+    const rendered = await kind.render(
+      this.options.defaultLocale?.() ?? 'en-US',
+      input.data ?? {},
+    );
+    const messages: Record<string, object> = {};
+    for (const { type, policy } of kind.policies) {
+      const receivers = userIds.filter((userId) => {
+        if (policy === 'required') return true;
+        const chosen = choices.get(`${userId}\u0000${type}`);
+        const receives = chosen ?? policy === 'on';
+        if (!receives)
+          skipped.push({ userId, channelType: type, reason: 'preference' });
+        return receives;
+      });
+      if (!receivers.length) continue;
+      const channel = await this.userChannelOf(type);
+      if (!channel) {
+        for (const userId of receivers)
+          skipped.push({ userId, channelType: type, reason: 'no_channel' });
+        continue;
+      }
+      const resolved = await channel.audience.resolveUsers(receivers);
+      const recipients = receivers.flatMap((userId) => {
+        const found = resolved.get(userId) ?? [];
+        if (!found.length)
+          skipped.push({ userId, channelType: type, reason: 'no_recipient' });
+        return found;
+      });
+      if (!recipients.length) continue;
+      messages[channel.name] = channel.audience.compose(
+        { ...content, ...rendered },
+        recipients,
+      );
+    }
+    if (!Object.keys(messages).length) return { kind: kindId, skipped };
+    const send = await this.sendInternal({
+      idempotencyKey,
+      kind: kindId,
+      source: content.source,
+      messages: messages as NotificationSendInput<TChannels>['messages'],
+    });
+    return { kind: kindId, send, skipped };
+  }
+
+  /** The first enabled channel of `type` in configuration order that reaches users, with its runtime started. */
+  private async userChannelOf(type: string): Promise<
+    | {
+        readonly name: string;
+        readonly audience: Required<
+          NonNullable<ReturnType<ChannelManager['audience']>>
+        >;
+      }
+    | undefined
+  > {
+    for (const [name, config] of Object.entries(this.options.config.channels)) {
+      if (config.enabled === false) continue;
+      if (this.registry.describe(config)?.messageType !== type) continue;
+      try {
+        await this.ensureRuntime(name);
+      } catch (error) {
+        this.options.logger.warn(
+          {
+            event: 'notification.notify.channel_unavailable',
+            err: error,
+            channel: name,
+          },
+          'A notification channel is unavailable; notify() tries the next one of its type.',
+        );
+        continue;
+      }
+      const audience = this.channelManager.audience(name);
+      if (audience?.resolveUsers && audience.compose)
+        return {
+          name,
+          audience: {
+            resolveUsers: audience.resolveUsers.bind(audience),
+            compose: audience.compose.bind(audience),
+          },
+        };
+    }
+    return undefined;
+  }
+
+  /** Every configured channel, for the settings page: types, safe summaries and the last 24 hours of deliveries. */
+  async channels(): Promise<readonly NotificationChannelView[]> {
+    const since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+    const counts = (await this.store.countDeliveriesByChannel?.(since)) ?? [];
+    const views: NotificationChannelView[] = [];
+    for (const [name, config] of Object.entries(this.options.config.channels)) {
+      const described =
+        config.enabled === false &&
+        Reflect.get(config, 'type') === undefined &&
+        Reflect.get(config, 'provider') === undefined
+          ? undefined
+          : this.registry.describe(config);
+      const enabled = config.enabled !== false;
+      let audience: ReturnType<ChannelManager['audience']>;
+      if (enabled && described)
+        try {
+          await this.ensureRuntime(name);
+          audience = this.channelManager.audience(name);
+        } catch {
+          audience = undefined;
+        }
+      const count = (statuses: readonly string[]): number =>
+        counts
+          .filter((item) => item.key === name && statuses.includes(item.status))
+          .reduce((total, item) => total + item.count, 0);
+      views.push({
+        name,
+        type: described?.type ?? 'unknown',
+        channelType: described?.messageType ?? 'unknown',
+        ...(described?.label === undefined
+          ? {}
+          : { typeLabel: described.label }),
+        ...(described?.contributor
+          ? { contributor: described.contributor }
+          : {}),
+        enabled,
+        summary: described?.summary ?? [],
+        testable: audience?.compose !== undefined,
+        reachesUsers:
+          audience?.compose !== undefined &&
+          audience.resolveUsers !== undefined,
+        last24h: {
+          accepted: count(['accepted']),
+          failed: count(['failed']),
+          pending: count(['pending', 'preparing', 'submitting', 'retrying']),
+          unknown: count(['unknown']),
+        },
+      });
+    }
+    return views;
+  }
+
+  /** Retry and job settings deliveries use, with their defaults filled in. */
+  deliverySettings(): NotificationDeliverySettingsView {
+    const retry = this.options.config.retry;
+    return {
+      retry: {
+        maxAttempts: retry?.maxAttempts ?? DEFAULT_MAX_ATTEMPTS,
+        intervalMs: retry?.intervalMs ?? DEFAULT_RETRY_INTERVAL_MS,
+        configured:
+          retry?.maxAttempts !== undefined || retry?.intervalMs !== undefined,
+      },
+      ...(this.options.config.jobs === undefined
+        ? {}
+        : { jobs: this.options.config.jobs }),
+    };
+  }
+
+  /**
+   * Sends a test through channel `name` to `userId` alone: to their inbox, account address or devices, or to the
+   * channel's group when it reaches no users. The send is logged like any other.
+   */
+  testChannel(
+    name: string,
+    input: {
+      readonly userId: string;
+      readonly title: string;
+      readonly body: string;
+    },
+  ): Promise<NotificationSendResult> {
+    return this.trackRequest(async () => {
+      const config = this.options.config.channels[name];
+      if (!config || config.enabled === false)
+        throw new NotificationChannelTestError(
+          'NOTIFICATION_CHANNEL_NOT_FOUND',
+          `Notification Channel "${name}" is not enabled.`,
+        );
+      await this.activate();
+      await this.ensureRuntime(name);
+      const audience = this.channelManager.audience(name);
+      if (!audience?.compose)
+        throw new NotificationChannelTestError(
+          'NOTIFICATION_CHANNEL_TEST_UNSUPPORTED',
+          `Notification Channel "${name}" cannot send a test message.`,
+        );
+      let recipients: readonly object[] = [];
+      if (audience.resolveUsers) {
+        recipients =
+          (await audience.resolveUsers([input.userId])).get(input.userId) ?? [];
+        if (!recipients.length)
+          throw new NotificationChannelTestError(
+            'NOTIFICATION_CHANNEL_NO_RECIPIENT',
+            `Notification Channel "${name}" has no recipient for this user.`,
+          );
+      }
+      const idempotencyKey = `notification.test:${randomUUID()}`;
+      return this.sendInternal({
+        idempotencyKey,
+        source: { type: 'notification.test', referenceId: name },
+        messages: {
+          [name]: audience.compose(
+            {
+              kind: 'notification.test',
+              category: 'system',
+              title: input.title,
+              body: input.body,
+              key: idempotencyKey,
+            },
+            recipients,
+          ),
+        } as NotificationSendInput<TChannels>['messages'],
+      });
+    });
+  }
+
+  /**
+   * The kinds `userId` may receive with what they receive each on: a kind lists only channel types an enabled channel
+   * can reach users on. Kinds without channel policies are left out.
+   */
+  async preferencesFor(userId: string): Promise<NotificationPreferencesView> {
+    await this.activate();
+    const reachable: string[] = [];
+    for (const config of Object.values(this.options.config.channels)) {
+      if (config.enabled === false) continue;
+      const type = this.registry.describe(config)?.messageType;
+      if (!type || reachable.includes(type)) continue;
+      if (await this.userChannelOf(type)) reachable.push(type);
+    }
+    const choices = new Map(
+      (await this.preferences.listForUser(userId)).map((record) => [
+        `${record.kind}\u0000${record.channelType}`,
+        record.enabled,
+      ]),
+    );
+    const kinds = (this.options.kinds?.list() ?? []).flatMap((view) => {
+      const channels = (view.policies ?? [])
+        .filter(({ type }) => reachable.includes(type))
+        .map(({ type, policy, adjustable }) => ({
+          type,
+          policy,
+          adjustable,
+          enabled:
+            policy === 'required' ||
+            (adjustable
+              ? (choices.get(`${view.id}\u0000${type}`) ?? policy === 'on')
+              : policy === 'on'),
+        }));
+      return channels.length
+        ? [
+            {
+              id: view.id,
+              contributor: view.contributor,
+              name: view.name,
+              category: view.category,
+              categoryKey: view.categoryKey,
+              channels,
+            },
+          ]
+        : [];
+    });
+    return { channelTypes: reachable, kinds };
+  }
+
+  /** Records `userId`'s choices. Every change must name a kind's adjustable channel type, or nothing is saved. */
+  async savePreferences(
+    userId: string,
+    changes: readonly NotificationPreferenceChange[],
+  ): Promise<NotificationPreferencesView> {
+    changes.forEach((change, index) => {
+      const policy = this.options.kinds
+        ?.kind(change.kind)
+        ?.policies.find(({ type }) => type === change.channelType);
+      if (!policy)
+        throw new NotificationPreferenceError(
+          'NOTIFICATION_PREFERENCE_UNKNOWN',
+          index,
+          `Notification kind "${change.kind}" has no channel type "${change.channelType}".`,
+        );
+      if (!policy.adjustable)
+        throw new NotificationPreferenceError(
+          'NOTIFICATION_PREFERENCE_REQUIRED',
+          index,
+          `Notification kind "${change.kind}" cannot be turned off or on for "${change.channelType}".`,
+        );
+    });
+    await this.preferences.save(userId, changes);
+    return this.preferencesFor(userId);
   }
 
   async getByIdempotencyKey(
@@ -926,6 +1371,16 @@ export class NotificationManager<
       },
     });
   }
+}
+
+/** What the delivery log searches a delivery by: the recipient's user id, address or device, else the channel. */
+function recipientKeyOf(recipient: object, channel: string): string {
+  for (const key of ['userId', 'address', 'email', 'id'])
+    if (key in recipient) {
+      const value: unknown = Reflect.get(recipient, key);
+      if (typeof value === 'string' && value) return value.slice(0, 191);
+    }
+  return channel.slice(0, 191);
 }
 
 function initialNotificationStatus(
