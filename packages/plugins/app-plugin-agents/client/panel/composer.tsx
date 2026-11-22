@@ -11,6 +11,8 @@ import {
   useFileUploadLimit,
 } from '@nocobase/app-plugin-file/client';
 import {
+  CapturingPageDraftContext,
+  RestoredPageDraftContext,
   buildPageContext,
   contextChips,
   uiItemKey,
@@ -43,10 +45,6 @@ import {
   type AgentComposerContext,
 } from './components/agent-composer.js';
 
-import {
-  CapturingPageDraftContext,
-  RestoredPageDraftContext,
-} from '../chat/page-draft.js';
 import { AgentSlotOutlet, replaceable } from '../ui-slots.js';
 import { useComposerLabels } from './chat-i18n.js';
 

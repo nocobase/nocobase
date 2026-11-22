@@ -61,6 +61,7 @@ import type {
 import type { ModelService } from '../../../../shared/models.js';
 import { BotIcon } from 'lucide-react';
 import {
+  type ContextType,
   createContext,
   useCallback,
   useContext,
@@ -2131,3 +2132,11 @@ export const useChatApi: typeof Chat.useChatApi = () =>
     }),
   }) as unknown as ReturnType<typeof Chat.useChatApi>;
 export { isChatShortcut } from '../../../../client/chat/panel-state.js';
+
+export { AgentsOptionsContext } from '../../../../client/shell/options.js';
+export const CapturingPageDraftContext: typeof Chat.CapturingPageDraftContext =
+  createContext<ContextType<typeof Chat.CapturingPageDraftContext>>(null);
+export const RestoredPageDraftContext: typeof Chat.RestoredPageDraftContext =
+  createContext<ContextType<typeof Chat.RestoredPageDraftContext>>(null);
+export const PageDraftStoreContext: typeof Chat.PageDraftStoreContext =
+  createContext<ContextType<typeof Chat.PageDraftStoreContext>>(null);

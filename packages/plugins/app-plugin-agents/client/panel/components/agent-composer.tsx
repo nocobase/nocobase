@@ -19,6 +19,8 @@ import {
   DEFAULT_FILE_UPLOAD_LIMIT,
 } from '@nocobase/app-plugin-file/client';
 import {
+  CapturingPageDraftContext,
+  RestoredPageDraftContext,
   filterText,
   selectionPreview,
   type ChatContextChip,
@@ -56,10 +58,6 @@ import {
   type ReactNode,
 } from 'react';
 
-import {
-  CapturingPageDraftContext,
-  RestoredPageDraftContext,
-} from '../../chat/page-draft.js';
 import { Badge } from '../../components/ui/badge.js';
 import { Button } from '../../components/ui/button.js';
 import {

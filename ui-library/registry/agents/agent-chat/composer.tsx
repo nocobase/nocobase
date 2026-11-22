@@ -11,6 +11,8 @@ import {
   useFileUploadLimit,
 } from '@nocobase/app-plugin-file/client';
 import {
+  CapturingPageDraftContext,
+  RestoredPageDraftContext,
   buildPageContext,
   contextChips,
   uiItemKey,
@@ -26,6 +28,8 @@ import type {
 } from '@nocobase/app-plugin-agents/shared/conversations';
 import {
   useCallback,
+  useContext,
+  useState,
   useLayoutEffect,
   useMemo,
   useRef,
@@ -162,26 +166,54 @@ export function DefaultComposer({
     [files, limit, registerAddFiles],
   );
 
-  const input: ChatContextInput = {
-    route: `${location.pathname}${location.search}`,
-    pinned: panel.pinned,
-    sources: sources.items,
-    uiSources: sources.uiSources.filter((source) =>
-      sources.selectedUIKeys.has(uiItemKey(source)),
-    ),
-    filter: sources.filter,
-    selection: sources.selection,
-    removed: sources.removed,
-  };
+  const store = useContext(CapturingPageDraftContext);
+  const restored = useContext(RestoredPageDraftContext);
+  const [usedContext, setUsedContext] = useState(false);
+  const [removed, setRemoved] = useState<ReadonlySet<string>>(() => new Set());
+  const carried = !usedContext && restored?.context;
+  const input: ChatContextInput = carried
+    ? { ...carried, removed: new Set([...carried.removed, ...removed]) }
+    : {
+        route: `${location.pathname}${location.search}`,
+        pinned: panel.pinned,
+        sources: sources.items,
+        uiSources: sources.uiSources.filter((source) =>
+          sources.selectedUIKeys.has(uiItemKey(source)),
+        ),
+        filter: sources.filter,
+        selection: sources.selection,
+        removed: sources.removed,
+      };
   const inputRef = useRef(input);
   useLayoutEffect(() => {
     inputRef.current = input;
   });
+  useLayoutEffect(() => {
+    if (!store) return;
+    return store.register('context', async () => {
+      const saved = inputRef.current;
+      const ui = saved.uiSources?.length
+        ? await sources.snapshotUI()
+        : undefined;
+      return { ...saved, ...(ui ? { ui } : {}) };
+    });
+  }, [store, sources]);
   const context: AgentComposerContext = {
     chips: contextChips(input),
-    onRemove: sources.remove,
+    onRemove: carried
+      ? (key) => setRemoved((current) => new Set([...current, key]))
+      : sources.remove,
     inspect: chipContent,
     build: () => {
+      if (carried) {
+        const items = carried.ui?.items.filter(
+          (item) => !input.removed.has(uiItemKey(item)),
+        );
+        const { ui: _ui, ...rest } = input;
+        return buildPageContext(
+          items?.length ? { ...rest, ui: { version: 1, items } } : rest,
+        );
+      }
       if (sources.selectedUIKeys.size === 0) return buildPageContext(input);
       return sources.snapshotUI().then((ui) => {
         const latest = inputRef.current;
@@ -233,7 +265,10 @@ export function DefaultComposer({
         )
           return false;
         const taken = currentSendRef.current(content, carried, sent);
-        if (taken) panel.clearPinned();
+        if (taken) {
+          panel.clearPinned();
+          setUsedContext(true);
+        }
         return taken;
       }}
     />

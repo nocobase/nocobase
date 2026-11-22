@@ -3,10 +3,12 @@ import { SnapshotView } from './snapshot-view.js';
  * One conversation, the panel's main view: the messages as a log (older pages on demand), what an application adds
  * among them, the agent at work, notices about who answers, and the composer. Without a conversation
  * (`conversationId` null) it is a new one: an empty log whose first message creates it on the server, and the
- * composer's toolbar chooses its agent (`NewChatChoice`) among the agents of the panel's mode (`useChatMode`), starting
+ * composer's toolbar chooses its agent (`NewChatChoice`) from either mode, starting
  * with the one last used.
  */
 import {
+  CapturingPageDraftContext,
+  RestoredPageDraftContext,
   ChatExtensionsContext,
   getAIToolSourceMessage,
   appUIMessageText,
@@ -233,12 +235,16 @@ function ConversationBody({
     nativeConversation ? conversation.id : null,
     panel.open,
   );
-  const [chosenModel, setChosenModel] = useState<ModelRef | null>(null);
-  const [chosenSearch, setChosenSearch] = useState(false);
+  const restored = useContext(RestoredPageDraftContext);
+  const store = useContext(CapturingPageDraftContext);
+  const [chosenModel, setChosenModel] = useState<ModelRef | null>(
+    restored?.model ?? null,
+  );
+  const [chosenSearch, setChosenSearch] = useState(restored?.search ?? false);
   // A new conversation's level; undefined leaves the Agent's default.
   const [chosenThinking, setChosenThinking] = useState<
     ReasoningLevel | undefined
-  >(undefined);
+  >(restored?.thinking);
   const thinkingMemory = useThinkingMemory();
   const modelChangeBlocked =
     changingModel ||
@@ -319,7 +325,7 @@ function ConversationBody({
     revision,
   );
   const chatMode = useChatMode();
-  // A new conversation goes to an agent of the panel's mode; the online agent is the only one of its mode.
+  // The history mode sets the initial target; the draft picker offers both sources.
   const offered = agents.data ? chatMode.agents : undefined;
   const target = conversation
     ? null
@@ -328,6 +334,16 @@ function ConversationBody({
         panel.newAgentId,
         panel.lastAgentId ?? null,
       ) ?? (chatMode.mode === 'online' ? (offered?.[0] ?? null) : null));
+
+  useEffect(() => {
+    if (!store) return;
+    return store.register('choices', () => ({
+      agent: target?.id ?? null,
+      model: chosenModel,
+      thinking: chosenThinking,
+      search: chosenSearch,
+    }));
+  }, [store, target, chosenModel, chosenThinking, chosenSearch]);
 
   // Leave default resolution on the server until a model is explicitly chosen.
   const model = chosenModel;
@@ -725,7 +741,7 @@ function ConversationBody({
   ) : (
     // Before the first message: who the conversation goes to.
     <NewChatChoice
-      agents={offered ?? []}
+      agents={agents.data ?? []}
       agent={target}
       services={catalog.data ?? []}
       model={model}

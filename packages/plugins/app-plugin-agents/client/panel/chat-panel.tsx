@@ -1,10 +1,10 @@
 import { useContext, useState, type ReactElement } from 'react';
+import { HeaderChoiceSlotContext } from './header-slot.js';
 import {
   CapturingPageDraftContext,
   PageDraftStoreContext,
-} from '../chat/page-draft.js';
-import { HeaderChoiceSlotContext } from './header-slot.js';
-import { useChatPanel } from '../chat.js';
+  useChatPanel,
+} from '../chat.js';
 import { ConversationPanelFrame } from './panel-frame.js';
 import { ConversationPanelBody } from './panel-body.js';
 import { ConversationView } from './conversation-view.js';

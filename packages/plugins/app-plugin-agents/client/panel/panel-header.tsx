@@ -1,10 +1,10 @@
 import { useContext, useRef } from 'react';
 import { useNavigate } from 'react-router';
-import { AgentsOptionsContext } from '../shell/options.js';
-import { PageDraftStoreContext } from '../chat/page-draft.js';
 import { ShareConversation } from './share-conversation.js';
 import { useState, type ComponentType, type ReactElement } from 'react';
 import {
+  AgentsOptionsContext,
+  PageDraftStoreContext,
   CHAT_MOBILE_QUERY,
   useChatPanel,
   useConversation,

@@ -1,3 +1,4 @@
+export { usePageBreadcrumb } from '../../../../packages/app/app-client/src/page-breadcrumb.js';
 export { apiClientToken } from '../../../../packages/app/app-client/src/application.js';
 export { ClientApplicationContext } from '../../../../packages/app/app-client/src/application-context.js';
 export { useSubmission } from '../../../../packages/app/app-client/src/submission.js';

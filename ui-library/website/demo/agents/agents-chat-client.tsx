@@ -61,6 +61,7 @@ import type {
 import type { ModelService } from '@nocobase/app-plugin-agents/shared/models';
 import { BotIcon } from 'lucide-react';
 import {
+  type ContextType,
   createContext,
   useCallback,
   useContext,
@@ -86,6 +87,14 @@ import { clonePageUIContext } from '../../../../packages/plugins/app-plugin-agen
 // the tests: the panel's state as the plugin keeps it, and the conversations in memory. A message is answered after a
 // moment, the reply growing in place, as a run at work. Every export is
 // typed against the real one, so the block and this mock follow the plugin's contract.
+
+export { AgentsOptionsContext } from '../../../../packages/plugins/app-plugin-agents/client/shell/options.js';
+export const CapturingPageDraftContext: typeof Chat.CapturingPageDraftContext =
+  createContext<ContextType<typeof Chat.CapturingPageDraftContext>>(null);
+export const RestoredPageDraftContext: typeof Chat.RestoredPageDraftContext =
+  createContext<ContextType<typeof Chat.RestoredPageDraftContext>>(null);
+export const PageDraftStoreContext: typeof Chat.PageDraftStoreContext =
+  createContext<ContextType<typeof Chat.PageDraftStoreContext>>(null);
 
 type RunEvent = ReturnType<typeof Chat.useLiveRunEvents>[number];
 

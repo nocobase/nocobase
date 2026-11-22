@@ -1,7 +1,3 @@
-import {
-  CapturingPageDraftContext,
-  RestoredPageDraftContext,
-} from '../chat/page-draft.js';
 import { SnapshotView } from './snapshot-view.js';
 /**
  * One conversation, the panel's main view: the messages as a log (older pages on demand), what an application adds
@@ -11,6 +7,8 @@ import { SnapshotView } from './snapshot-view.js';
  * with the one last used.
  */
 import {
+  CapturingPageDraftContext,
+  RestoredPageDraftContext,
   ChatExtensionsContext,
   getAIToolSourceMessage,
   appUIMessageText,

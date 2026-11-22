@@ -287,3 +287,10 @@ export {
   type AgentSlotName,
   type AgentSlotProps,
 } from './ui-registry.js';
+
+export {
+  CapturingPageDraftContext,
+  PageDraftStoreContext,
+  RestoredPageDraftContext,
+} from './chat/page-draft.js';
+export { AgentsOptionsContext } from './shell/options.js';
