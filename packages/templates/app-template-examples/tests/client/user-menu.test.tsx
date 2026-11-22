@@ -78,11 +78,16 @@ it('opens personal settings from the first account menu entry', async () => {
     </AppThemeProvider>,
   );
   const user = userEvent.setup();
-  await user.click(screen.getByRole('button', { name: 'Open account menu' }));
-  const [first] = within(screen.getByRole('menu')).getAllByRole('menuitem');
+  // The trigger also opens on hover. Open it from the keyboard so no hover timer can close the menu again while the
+  // pointer moves from the trigger to the item, which made this test fail under load.
+  screen.getByRole('button', { name: 'Open account menu' }).focus();
+  await user.keyboard('{Enter}');
+  const [first] = within(await screen.findByRole('menu')).getAllByRole(
+    'menuitem',
+  );
   expect(first).toHaveTextContent('Personal settings');
   await user.click(first!);
-  expect(screen.getByRole('status', { name: 'Location' })).toHaveTextContent(
-    '/me',
-  );
+  expect(
+    await screen.findByRole('status', { name: 'Location' }),
+  ).toHaveTextContent('/me');
 });
