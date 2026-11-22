@@ -21,7 +21,7 @@ export interface FileStorageState {
   readonly check: (disk: string) => Promise<CheckResult>;
 }
 
-/** Reads the file storage once on mount and again after each check, so the disk list shows the new result. */
+/** Reads the file storage on mount and on `reload()`; a check's answer replaces that disk's latest check in place. */
 export function useFileStorage(): FileStorageState {
   const api = useApiClient();
   const [reads, setReads] = useState(0);

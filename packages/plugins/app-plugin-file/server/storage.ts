@@ -227,7 +227,7 @@ function describeDisk(
 export interface RunCheckInput {
   readonly disk: DiskDescription;
   readonly drive: { use(disk: string): NocoBaseDriveDisk };
-  /** Where the raw error goes; never into the response. */
+  /** Receives a failure as its fixed reason and known error code only; never the raw error or its message. */
   readonly log?: (message: string) => void;
   readonly now?: () => Date;
 }
