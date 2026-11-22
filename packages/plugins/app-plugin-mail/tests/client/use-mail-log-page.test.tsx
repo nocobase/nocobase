@@ -41,12 +41,31 @@ describe('cursor-paged log hook', () => {
     source.add();
     act(() => result.current.setPage(1));
     await waitFor(() => expect(result.current.items[0]).toBe(66));
-    expect(result.current.maxPage).toBe(2);
+    // The pages reached stay offered although their tokens went stale.
+    expect(result.current.maxPage).toBe(4);
 
-    act(() => result.current.setPage(2));
-    await waitFor(() => expect(result.current.items[0]).toBe(46));
+    // Straight from the first page to the third: the second page is fetched again on the way, not shown.
     act(() => result.current.setPage(3));
     await waitFor(() => expect(result.current.items[0]).toBe(26));
+    expect(result.current.page).toBe(3);
     expect(result.current.items).toHaveLength(20);
+    expect(result.current.hasNext).toBe(true);
+  });
+
+  it('shows a page past a list that shrank as empty and offers no further pages', async () => {
+    const source = log(65);
+    const { result } = renderHook(() => useMailCursorLogPage(source.load));
+    await waitFor(() => expect(result.current.items[0]).toBe(65));
+    for (const page of [2, 3, 4]) {
+      act(() => result.current.setPage(page));
+      await waitFor(() => expect(result.current.page).toBe(page));
+      await waitFor(() => expect(result.current.loading).toBe(false));
+    }
+    expect(result.current.items).toEqual([5, 4, 3, 2, 1]);
+    source.rows.splice(20);
+    act(() => result.current.setPage(1));
+    await waitFor(() => expect(result.current.items[0]).toBe(65));
+    await waitFor(() => expect(result.current.maxPage).toBe(1));
+    expect(result.current.hasNext).toBe(false);
   });
 });
