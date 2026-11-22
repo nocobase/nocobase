@@ -38,11 +38,7 @@ export interface PluginRegistrationIssue {
 }
 
 export type PluginRegistrationStateName =
-  | 'absent'
-  | 'preinstalled'
-  | 'registered'
-  | 'unregistered'
-  | 'inconsistent';
+  'absent' | 'preinstalled' | 'registered' | 'unregistered' | 'inconsistent';
 
 export interface PluginRegistrationState {
   readonly state: PluginRegistrationStateName;
