@@ -81,7 +81,7 @@ export class HostBackups {
       // The configuration the App runs with now: one published since it was deployed must not be overwritten.
       const runner = await this.runnerFor(
         await this.options.reconciler.commandDefinition(spec, {
-          current: true,
+          config: 'current',
         }),
       );
       const name = archiveName(backupId);
@@ -129,7 +129,7 @@ export class HostBackups {
           complete: isComplete(manifest),
           manifest,
           version: spec.artifact?.version ?? null,
-          artifact: artifactOf(spec),
+          artifact: releaseOf(runner, spec),
         };
         await this.writeRecord({ ...backup, location: runner.location });
         return backup;
@@ -208,32 +208,46 @@ export class HostBackups {
         'BACKUP_INCOMPLETE',
         { limitations: backup.manifest.limitations ?? [] },
       );
-    const target = artifactOf(options.deployment);
-    if (backup.artifact !== null && target !== backup.artifact)
-      throw new HostManagementError(
-        `Backup "${backup.backupId}" was taken with release ${backup.version ?? '?'} (${backup.artifact}); restore it with the deployment of that release, not ${options.deployment.artifact?.version ?? '?'} (${target ?? 'none'})`,
-        'BACKUP_ARTIFACT_MISMATCH',
-        { backup: backup.artifact, deployment: target },
-      );
+    // Checked with the deployment's configuration in a file of its own: refused, the App keeps running as it was,
+    // with the configuration it runs with now.
+    const preflight = await this.options.reconciler.commandDefinition(
+      options.deployment,
+      { config: 'isolated' },
+    );
+    const sha256 = options.sha256 ?? backup.sha256;
+    try {
+      const runner = await this.runnerFor(preflight);
+      const target = releaseOf(runner, options.deployment);
+      if (backup.artifact !== null && target !== backup.artifact)
+        throw new HostManagementError(
+          `Backup "${backup.backupId}" was taken with release ${backup.version ?? '?'} (${backup.artifact}); restore it with the deployment of that release, not ${options.deployment.artifact?.version ?? '?'} (${target ?? 'none'})`,
+          'BACKUP_ARTIFACT_MISMATCH',
+          { backup: backup.artifact, deployment: target },
+        );
+      // The archive is missing, damaged or not this release's.
+      await runCommand(runner, [
+        'backup',
+        'verify',
+        `${runner.backupsDir}/${archiveName(backup.backupId)}`,
+        '--sha256',
+        sha256,
+        '--json',
+      ]);
+    } finally {
+      if (
+        preflight.configPath &&
+        path.basename(path.dirname(preflight.configPath)) === 'preflight'
+      )
+        await rm(preflight.configPath, { force: true });
+    }
+    await this.options.reconciler.stopForRestore(appId);
     const runner = await this.runnerFor(
       await this.options.reconciler.commandDefinition(options.deployment),
     );
-    const archive = `${runner.backupsDir}/${archiveName(backup.backupId)}`;
-    const sha256 = options.sha256 ?? backup.sha256;
-    // Refused here, the App keeps running: the archive is missing, damaged or not this release's.
-    await runCommand(runner, [
-      'backup',
-      'verify',
-      archive,
-      '--sha256',
-      sha256,
-      '--json',
-    ]);
-    await this.options.reconciler.stopForRestore(appId);
     const restore = (await runCommand(runner, [
       'backup',
       'restore',
-      archive,
+      `${runner.backupsDir}/${archiveName(backup.backupId)}`,
       '--sha256',
       sha256,
       '--json',
@@ -441,11 +455,15 @@ function parseEnvelope(stdout: string): Envelope | null {
   return null;
 }
 
-/** The release a spec runs: its archive's checksum, or for an external service the image it runs. */
-function artifactOf(spec: HostDeploymentSpec): string | null {
-  return spec.backend === 'in-process'
-    ? (spec.artifact?.checksum ?? null)
-    : (spec.images?.[0]?.digest ?? spec.artifact?.checksum ?? null);
+/**
+ * The release a command runs: what its backend chose (the image digest for this platform), or the spec's archive
+ * checksum.
+ */
+function releaseOf(
+  runner: AppCommandRunner,
+  spec: HostDeploymentSpec,
+): string | null {
+  return runner.release ?? spec.artifact?.checksum ?? null;
 }
 
 /** What an incomplete manifest leaves out, for the error that refuses it. */

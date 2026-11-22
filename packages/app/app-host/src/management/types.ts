@@ -210,6 +210,8 @@ export interface HostOperation {
   appId: string;
   /** `deployment` when absent. */
   kind?: HostOperationKind;
+  /** A digest of a backup's or restore's parameters: the same ID asked with others is refused (`OPERATION_CONFLICT`). */
+  request?: string;
   state: HostOperationState;
   /** The App once the deployment finished. */
   status: HostDeploymentStatus | null;

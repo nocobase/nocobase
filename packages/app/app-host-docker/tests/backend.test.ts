@@ -783,4 +783,118 @@ describe('the Docker backend', () => {
       service.deleteBackup!('shop', 'b-4', { scope: scope() }),
     ).resolves.toEqual({ deleted: false });
   });
+
+  it("backs up with its platform's image and deletes backups whose image was pruned", async () => {
+    const { host } = await startHost();
+    const service = host.management;
+    const other = `sha256:${'f'.repeat(64)}`;
+    const images = (arm64: string, amd64First = true) => {
+      const list = [
+        {
+          ref: 'registry.test/team/shop',
+          digest: other,
+          platform: 'linux/amd64',
+        },
+        {
+          ref: 'registry.test/team/shop',
+          digest: arm64,
+          platform: 'linux/arm64',
+        },
+      ];
+      return amd64First ? list : list.reverse();
+    };
+    const deploy = (
+      operationId: string,
+      release: typeof v1,
+      list = images(release.digest),
+    ) => ({
+      ...specFor('shop', release, { scope: scope(), images: list }),
+      operationId,
+    });
+    const commands: FakeContainer[] = [];
+    docker.onStart = (container) => {
+      if (container.body.Labels?.[LABEL.role] !== 'command') return;
+      commands.push(container);
+      const cmd = container.body.Cmd ?? [];
+      if (cmd[1] !== 'dist/cli/index.js') return;
+      const result = {
+        create: { size: 10, sha256: 'a'.repeat(64) },
+        verify: { ok: true },
+        inspect: {
+          connections: [{ name: 'main', mode: 'dump' }],
+          disks: [{ name: 'local', mode: 'files' }],
+          limitations: [],
+        },
+        restore: { connections: [{ name: 'main', status: 'restored' }] },
+      }[cmd[3] as 'create'];
+      container.logs.push({
+        stream: 'stdout',
+        time: new Date().toISOString(),
+        text: JSON.stringify({ ok: true, result }),
+      });
+    };
+    await service.applyDeployment(deploy('d-1', v1));
+    // The engine is arm64: the backup is of the arm64 image, though the list names amd64 first.
+    const backup = await service.createBackup!('shop', {
+      operationId: 'b-1',
+      scope: scope(),
+    });
+    expect(backup.artifact).toBe(v1.digest);
+
+    // The same release with its images listed the other way round restores.
+    await expect(
+      service.restoreBackup!('shop', {
+        operationId: 'r-order',
+        scope: scope(),
+        backupId: 'b-1',
+        deployment: deploy('r-order', v1, images(v1.digest, false)),
+      }),
+    ).resolves.toMatchObject({
+      restore: { connections: [{ name: 'main', status: 'restored' }] },
+    });
+    // The first image unchanged but this platform's another: refused before the App stops.
+    commands.length = 0;
+    await expect(
+      service.restoreBackup!('shop', {
+        operationId: 'r-other',
+        scope: scope(),
+        backupId: 'b-1',
+        deployment: deploy('r-other', v1, images(v2.digest)),
+      }),
+    ).rejects.toMatchObject({ code: 'BACKUP_ARTIFACT_MISMATCH' });
+    expect(commands).toEqual([]);
+    expect(appContainers('shop')[0]!.status).toBe('running');
+
+    // After an upgrade the image that took the backups is pruned; the App's current image removes them.
+    await service.createBackup!('shop', { operationId: 'b-2', scope: scope() });
+    await service.applyDeployment(deploy('d-2', v2));
+    for (const reference of [...docker.images.keys()])
+      if (reference.includes(v1.digest.slice(7, 19)))
+        docker.images.delete(reference);
+    commands.length = 0;
+    await expect(
+      service.deleteBackup!('shop', 'b-1', { scope: scope() }),
+    ).resolves.toEqual({ deleted: true });
+    expect(commands.map((container) => container.body.Image)).toEqual([
+      appContainers('shop')[0]!.body.Image,
+    ]);
+    expect(commands[0]!.body.Cmd?.[3]).toBe('/app/backups/b-1.tar.gz');
+    await expect(
+      service.deleteBackup!('shop', 'b-1', { scope: scope() }),
+    ).resolves.toEqual({ deleted: false });
+
+    // With no image of the App left, the one that wrote the backup is pulled by digest and dropped again.
+    await service.removeDeployment('shop', { purgeData: false });
+    docker.images.clear();
+    commands.length = 0;
+    await expect(
+      service.deleteBackup!('shop', 'b-2', { scope: scope() }),
+    ).resolves.toEqual({ deleted: true });
+    const reference = `registry.test/team/shop@${v1.digest}`;
+    expect(docker.pulled.at(-1)).toBe(reference);
+    expect(commands.map((container) => container.body.Image)).toEqual([
+      reference,
+    ]);
+    expect(docker.images.has(reference)).toBe(false);
+  });
 });

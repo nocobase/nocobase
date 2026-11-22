@@ -12,6 +12,7 @@ import {
   mkdir,
   mkdtemp,
   readFile,
+  readdir,
   rename,
   rm,
   stat,
@@ -265,6 +266,45 @@ describe('backups on a managed Host', () => {
         'utf8',
       ),
     ).resolves.toBe('demo: B\n');
+  });
+
+  it('checks a restore with its own copy of the configuration, so a refusal leaves the published one', async () => {
+    const config = (content: string) => ({
+      provider: 'file' as const,
+      content,
+      revision: 'iso-d',
+    });
+    await host.applyDeployment({
+      ...spec('iso-d', withCli),
+      config: config('demo: A\n'),
+    });
+    await host.publishAppConfig('demo', 'demo: B\n');
+    await host.createBackup!('demo', { operationId: 'iso-b', scope });
+    await commands();
+    const file = path.join(volumesDir, 'demo', 'configs', 'config.iso-d.yml');
+
+    await expect(
+      host.restoreBackup!('demo', {
+        operationId: 'iso-r',
+        scope,
+        backupId: 'iso-b',
+        sha256: '0'.repeat(64),
+        deployment: { ...spec('iso-r', withCli), config: config('demo: A\n') },
+      }),
+    ).rejects.toMatchObject({ code: 'BACKUP_DIGEST_MISMATCH' });
+    // The check ran with the deployment's configuration, written elsewhere and removed again.
+    expect(await commands()).toEqual(['backup verify demo: A']);
+    await expect(readFile(file, 'utf8')).resolves.toBe('demo: B\n');
+    await expect(
+      readdir(path.join(volumesDir, 'demo', 'preflight')),
+    ).resolves.toEqual([]);
+    expect(await running()).toBe(true);
+    await host.createBackup!('demo', { operationId: 'iso-b2', scope });
+    expect(await commands()).toEqual([
+      'backup create demo: B',
+      'backup verify demo: B',
+      'backup inspect demo: B',
+    ]);
   });
 
   it('runs one operation once when it is asked for twice at the same time, and refuses its ID for anything else', async () => {
@@ -543,9 +583,26 @@ describe('backups on a managed Host', () => {
       state: 'interrupted',
       checkpoint: 'restored',
     });
-    // What the App wrote once it was back is not overwritten by the retry, which only deploys it again.
+    // Asked again with another backup or another deployment, the operation is refused, not continued with them.
     await data('written-after');
     await commands();
+    for (const changed of [
+      { backupId: 'resume-b2' },
+      { deployment: spec('resume-r', otherCli, env) },
+    ])
+      await expect(
+        host.restoreBackup!('demo', {
+          operationId: 'resume-r',
+          scope,
+          backupId: 'resume-b',
+          deployment: spec('resume-r', withCli, env),
+          ...changed,
+        }),
+      ).rejects.toMatchObject({ code: 'OPERATION_CONFLICT' });
+    await expect(
+      host.getOperation('resume-r', { scope }),
+    ).resolves.toMatchObject({ state: 'interrupted', checkpoint: 'restored' });
+    // What the App wrote once it was back is not overwritten by the retry, which only deploys it again.
     const restored = await restore();
     expect(restored.restore).toMatchObject({
       connections: [{ name: 'main', status: 'restored' }],

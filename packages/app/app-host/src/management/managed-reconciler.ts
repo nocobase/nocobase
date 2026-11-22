@@ -652,17 +652,26 @@ export class ManagedReconciler {
     spec: HostDeploymentSpec,
     options: {
       /**
-       * Run with the configuration the App has now rather than writing the spec's: what it was deployed with, or
-       * published since (`publishAppConfig`), which a backup has to read its databases from.
+       * Which configuration file the command runs with. By default the spec's, written where the App's deployment
+       * reads it. `current`: the one the App runs with now, as deployed or published since (`publishAppConfig`), which
+       * a backup has to read its databases from. `isolated`: the spec's, written to a file of its own that the caller
+       * removes, so that checking a restore it may still refuse never changes the running App's configuration.
        */
-      readonly current?: boolean;
+      readonly config?: 'current' | 'isolated';
     } = {},
   ): Promise<AppDefinition> {
     return this.enqueue(async () => {
       validateDeploymentSet({ revision: 1, deployments: [spec] });
       const configPath =
-        (options.current ? await this.currentConfig(spec) : undefined) ??
-        (await this.prepareConfig(spec));
+        options.config === 'current'
+          ? ((await this.currentConfig(spec)) ??
+            (await this.prepareConfig(spec)))
+          : options.config === 'isolated' && spec.config?.content !== undefined
+            ? await this.volumes.writeIsolatedConfig(
+                spec.appId,
+                spec.config.content,
+              )
+            : await this.prepareConfig(spec);
       if (spec.backend !== 'in-process')
         return this.serviceDefinition(spec, configPath);
       const artifact = await this.artifactResolver

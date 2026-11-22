@@ -87,6 +87,11 @@ export interface AppCommandOutput {
  * child process of the Host for an in-process App, a one-off container of the same image and volumes for a service.
  */
 export interface AppCommandRunner {
+  /**
+   * The release the command runs, when the backend chooses among several: the image digest for this machine's
+   * platform. A backup records it, and a restore has to run the same one. Absent, the spec's artifact identifies it.
+   */
+  readonly release?: string;
   /** Where the command reads and writes backup archives, as the command sees it. */
   readonly backupsDir: string;
   /** Runs the tool with these arguments; a missing tool fails with `BACKUP_COMMAND_UNAVAILABLE`. */

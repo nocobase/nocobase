@@ -424,11 +424,11 @@ export class DockerBackend implements ServiceBackend {
       names.backupVolume(definition.id),
       names.labels('app', { [LABEL.app]: definition.id }),
     );
-    const image = await this.ensureImage(
-      scope,
-      config,
-      imageTargetOf(definition),
-    );
+    const target = imageTargetOf(definition);
+    const image = await this.ensureImage(scope, config, target);
+    // The image this platform runs, which is what a backup was taken with; not the first of the release's list.
+    const platform = await this.targetPlatform(docker, config);
+    const selected = target.images.find((item) => item.platform === platform)!;
     const env: Record<string, string> = {
       ...definition.env,
       NODE_ENV: 'production',
@@ -486,7 +486,14 @@ export class DockerBackend implements ServiceBackend {
     };
     return {
       backupsDir: config.backupsPath,
-      location: { backend: this.name, scope: service.scope, image },
+      release: selected.digest,
+      location: {
+        backend: this.name,
+        scope: service.scope,
+        image,
+        reference: `${selected.ref}@${selected.digest}`,
+        platform: selected.platform,
+      },
       run: async (args) => {
         const output = await run(['node', 'dist/cli/index.js', ...args]);
         if (
@@ -520,23 +527,64 @@ export class DockerBackend implements ServiceBackend {
     name: string,
   ): Promise<void> {
     assertAppId(appId);
-    const { scope: scopeId, image } = location as {
+    const {
+      scope: scopeId,
+      image: written,
+      reference,
+      platform,
+    } = location as {
       scope?: unknown;
       image?: unknown;
+      reference?: unknown;
+      platform?: unknown;
     };
-    if (typeof scopeId !== 'string' || typeof image !== 'string')
+    if (typeof scopeId !== 'string' || typeof written !== 'string')
       throw new Error(
         `Backup ${name} of App "${appId}" has no Docker location`,
       );
-    const { docker, names } = this.scope(scopeId);
-    const config = this.settings;
+    const scope = this.scope(scopeId);
+    const { docker, names } = scope;
     const volume = names.backupVolume(appId);
     if (!(await docker.volumeExists(volume))) return;
-    if (!(await docker.imageExists(image)))
-      throw new HostManagementError(
-        `Backup ${name} of App "${appId}" cannot be removed: image ${image} that wrote it is no longer on this Docker host`,
-        'BACKEND_UNAVAILABLE',
+    // Any of the App's own release images can remove a file; the one that wrote it may have been pruned since. With
+    // none left, the writing image is pulled again by digest for the removal and dropped afterwards.
+    let image = (await docker.imageExists(written))
+      ? written
+      : (await this.appImages(scope, appId))
+          .flatMap((record) => record.RepoTags ?? [])
+          .find((tag) => tag.startsWith(`${names.imageRepository(appId)}:d-`));
+    let pulled = false;
+    if (!image) {
+      if (typeof reference !== 'string')
+        throw new HostManagementError(
+          `Backup ${name} of App "${appId}" cannot be removed: no image of the App is left on this Docker host`,
+          'BACKEND_UNAVAILABLE',
+        );
+      await docker.pullImage(
+        reference,
+        typeof platform === 'string' ? platform : null,
+        scope.secret.registryAuth,
       );
+      image = reference;
+      pulled = true;
+    }
+    try {
+      await this.removeArchive(scope, appId, image, name);
+    } finally {
+      if (pulled) await docker.removeImage(image).catch(() => undefined);
+    }
+  }
+
+  /** Removes one archive from an App's backup volume in a one-off container of `image`. */
+  private async removeArchive(
+    scope: BoundScope,
+    appId: string,
+    image: string,
+    name: string,
+  ): Promise<void> {
+    const { docker, names } = scope;
+    const config = this.settings;
+    const volume = names.backupVolume(appId);
     const id = await docker.createContainer(
       names.commandContainer(appId, randomUUID().slice(0, 8)),
       {
