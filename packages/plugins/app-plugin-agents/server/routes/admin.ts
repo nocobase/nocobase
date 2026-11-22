@@ -28,7 +28,7 @@ import {
  * - Model prices, each of a source (a model service for chat, a coding tool for work), and the coding tools paid by
  *   subscription: `agents.prices` read shows them with the models coding tools reported, manage replaces them.
  * - Usage (`GET /agents/usage`, `shared/reports.ts`): what runs used and cost, for anyone signed in: every run for a
- *   reader of usage (`agents.prices` read) or of agents, otherwise the runs the caller started or owns, on subjects
+ *   reader of usage (`agents.prices` read), otherwise the runs the caller started or owns, on subjects
  *   they may see; and `GET /agents/usage/models`, the model calls made outside runs (embeddings, reranking, utility
  *   texts), rows only for the same readers. Other reports are the application's: it reads them from `agents.reporting`.
  */
@@ -1756,12 +1756,11 @@ export function createAdminRoutes(
   );
 
   /**
-   * Whether the usage report covers every run: for a reader of usage (`agents.prices` read) or of agents; everyone else
-   * sees the runs they started or own.
+   * Whether the usage report covers every run: for a reader of usage (`agents.prices` read) only; everyone else, a
+   * reader of agents included, sees the runs they started or own.
    */
-  const usageOfAll = async (who: AdminCaller): Promise<boolean> =>
-    (await who.can('agents.prices', 'read')) ||
-    (await who.can('agents.agents', 'read'));
+  const usageOfAll = (who: AdminCaller): Promise<boolean> =>
+    who.can('agents.prices', 'read');
   router.get(
     '/usage',
     scoped,
@@ -1779,7 +1778,7 @@ export function createAdminRoutes(
         examples: ['run usage --group-by agent --from 2026-09-01'],
       }),
       description:
-        'What runs used and cost, grouped by `groupBy`, over `from` to `to` (UTC days, the last 30 by default, at most 366). Every run for a reader of usage (`agents.prices` read) or of agents, otherwise the runs the caller started or owns.',
+        'What runs used and cost, grouped by `groupBy`, over `from` to `to` (UTC days, the last 30 by default, at most 366). Every run for a reader of usage (`agents.prices` read), otherwise the runs the caller started or owns.',
       responses: {
         200: dataResponse(UsageReportSchema),
         400: apiErrorResponse(
@@ -1820,7 +1819,7 @@ export function createAdminRoutes(
       operationId: 'agentsGetModelUsage',
       ...cliRoute({ command: 'model usage' }),
       description:
-        'The model calls made outside runs (embeddings, reranking, utility texts), over `from` to `to`. Rows only for a reader of usage (`agents.prices` read) or of agents.',
+        'The model calls made outside runs (embeddings, reranking, utility texts), over `from` to `to`. Rows only for a reader of usage (`agents.prices` read).',
       responses: {
         200: dataResponse(ModelUsageReportSchema),
         400: apiErrorResponse(

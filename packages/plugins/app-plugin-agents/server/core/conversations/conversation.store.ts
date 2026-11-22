@@ -133,6 +133,15 @@ export function settingsRepo(
   return conn.repository<SettingRecord>('agSettings');
 }
 
+/** The team's default chat agent (`agSettings`, key `chat`), or null. */
+export async function teamDefaultAgentId(
+  conn: DatabaseConnection,
+): Promise<string | null> {
+  const row = await settingsRepo(conn).findOne({ filter: { key: 'chat' } });
+  const value = jsonObject(row?.value);
+  return typeof value.defaultAgentId === 'string' ? value.defaultAgentId : null;
+}
+
 export async function findConversation(
   conn: DatabaseConnection,
   id: string,

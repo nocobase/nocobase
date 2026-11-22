@@ -33,7 +33,7 @@ import {
 import { Hono, type MiddlewareHandler } from 'hono';
 import { every } from 'hono/combine';
 
-import type { ChatAudience } from '../../shared/agents.js';
+import { type ChatAudience, chatAudienceOf } from '../../shared/agents.js';
 import { agentsAccessToken, agentsToken } from '../tokens.js';
 import { createAdminRoutes, type AdminEnv } from './admin.js';
 import { createChatRoutes } from './chat.js';
@@ -88,24 +88,23 @@ export const apiRoutes: AppApiRouteContribution<AppPluginApplication> =
           : null,
         can: (item, action) =>
           authz.can({ resource: { type: 'settings', id: item }, action }),
-        // Read once per request, and only when an agent limits who may chat with it: managers of agents chat with every
-        // agent, everyone else with those open to all or to one of their permission sets.
+        // Read once per request, and only when an agent limits who may chat with it: a holder of an unrestricted set
+        // (root) chats with every agent, everyone else, managers of agents included, with those open to all or to one
+        // of their permission sets.
         chatAudience: () =>
           (audience ??= (async (): Promise<ChatAudience> => {
-            if (
-              await authz.can({
-                resource: { type: 'settings', id: 'agents.agents' },
-                action: 'manage',
-              })
-            )
-              return 'all';
             const sets = await authorization.permissionSets.getEffective({
               principal: authz.identity.principal,
               ...(authz.identity.subjects
                 ? { subjects: authz.identity.subjects }
                 : {}),
             });
-            return new Set(sets.map((set) => set.key));
+            return chatAudienceOf(
+              sets,
+              (key) =>
+                authorization.permissionSets.protection(key)?.unrestricted ===
+                true,
+            );
           })()),
         // Business levels come from the application's roles; without them, every level is none.
         scope: (key) =>

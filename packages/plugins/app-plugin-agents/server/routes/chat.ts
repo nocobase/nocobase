@@ -922,6 +922,7 @@ export function createChatRoutes(
         },
         { sessionId: id },
       );
+      await mayChatWith(context, await conversationAgentId(id));
       const seq = await agent.queue(
         [{ role: 'user', content: request.message.parts }],
         {

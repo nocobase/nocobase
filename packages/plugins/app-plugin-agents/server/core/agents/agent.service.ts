@@ -45,6 +45,7 @@ import type { IdSource } from '../../kernel/ids.js';
 import type { People } from '../../kernel/people.js';
 import type { Tx, TxRunner } from '../../kernel/tx.js';
 import { cleanList } from '../../kernel/values.js';
+import { teamDefaultAgentId } from '../conversations/conversation.store.js';
 import {
   diffAgents,
   listChanges,
@@ -445,6 +446,16 @@ export function createAgentService(deps: AgentServiceDeps): AgentService {
           const before = await require(conn, id);
           if (patch.expectedRevision !== before.revision)
             throw revisionConflict(before.revision);
+          // The team's default is everyone's: it stays open to everyone while it is the default.
+          if (
+            patch.chatRoles !== undefined &&
+            normalizeChatRoles(patch.chatRoles) &&
+            (await teamDefaultAgentId(conn)) === id
+          )
+            throw invalid(
+              'The team default agent must stay open to everyone: choose another team default first.',
+              { field: 'chatRoles', reason: 'AGENT_TEAM_DEFAULT' },
+            );
           const now = clock.now().toISOString();
           const modelEntries: RunnerModelEntry[] =
             effort === undefined

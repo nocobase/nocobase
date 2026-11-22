@@ -622,22 +622,28 @@ describe('reporting service', () => {
       onlineCost: null,
       runnerCost: { USD: 5.8 },
     });
-    // Anyone signed in reads usage: every run for a reader of usage (`agents.prices`) or of agents, else their own.
-    const usage = (can: string) =>
+    // Anyone signed in reads usage: every run for a reader of usage (`agents.prices`), else their own; reading agents
+    // alone does not show other people's runs.
+    const usage = (can: string, user = 'carol') =>
       h.app.request('/agents/usage?groupBy=type', {
-        headers: { 'x-test-user': 'carol', 'x-test-can': can },
+        headers: { 'x-test-user': user, 'x-test-can': can },
       });
-    for (const can of ['agents.prices/read', 'agents.agents/read']) {
-      const served = await usage(can);
-      expect(served.status).toBe(200);
-      expect(await served.json()).toMatchObject({
-        data: { groupBy: 'type', totals: { runs: 2, cost: { USD: 5.8 } } },
+    const served = await usage('agents.prices/read');
+    expect(served.status).toBe(200);
+    expect(await served.json()).toMatchObject({
+      data: { groupBy: 'type', totals: { runs: 2, cost: { USD: 5.8 } } },
+    });
+    for (const can of ['', 'agents.agents/read', 'agents.agents/manage']) {
+      const own = await usage(can);
+      expect(own.status).toBe(200);
+      expect(await own.json()).toMatchObject({
+        data: { groupBy: 'type', totals: { runs: 0 } },
       });
     }
-    const own = await usage('');
-    expect(own.status).toBe(200);
-    expect(await own.json()).toMatchObject({
-      data: { groupBy: 'type', totals: { runs: 0 } },
+    // Alice, who started one of the two, sees hers alone.
+    const alice = await usage('agents.agents/read', 'alice');
+    expect(await alice.json()).toMatchObject({
+      data: { groupBy: 'type', totals: { runs: 1 } },
     });
     expect(
       (

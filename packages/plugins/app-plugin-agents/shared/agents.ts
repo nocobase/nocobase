@@ -417,8 +417,17 @@ export const DEFAULT_TOOL_POLICY: ToolPolicy = {
   idleTimeoutMs: 30 * 60_000,
 };
 
-/** Who is asking to chat: every agent for a manager of agents (`all`), else the keys of their permission sets. */
+/** Who is asking to chat: every agent for an unrestricted identity such as root (`all`), else the keys of their permission sets. */
 export type ChatAudience = 'all' | ReadonlySet<string>;
+
+/** The audience of a person holding `sets`: every agent when one of them is unrestricted (root), else their keys. */
+export function chatAudienceOf(
+  sets: readonly { readonly key: string }[],
+  unrestricted: (key: string) => boolean,
+): ChatAudience {
+  if (sets.some((set) => unrestricted(set.key))) return 'all';
+  return new Set(sets.map((set) => set.key));
+}
 
 /** Whether `audience` may chat with `agent`: an agent open to everyone, or one of the roles it names. */
 export function mayChat(

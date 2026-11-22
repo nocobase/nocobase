@@ -472,10 +472,10 @@ export async function createHarness(
           (level === 'related' ? { users: [user] } : level) as Scope,
         );
       },
-      // `x-test-roles`: the caller's permission sets; managers of agents chat with every agent.
+      // `x-test-roles`: the caller's permission sets; `x-test-unrestricted: yes` (root) chats with every agent.
       chatAudience: () =>
         Promise.resolve(
-          grants.includes('agents.agents/manage')
+          context.req.header('x-test-unrestricted') === 'yes'
             ? ('all' as const)
             : new Set(
                 (context.req.header('x-test-roles') ?? '')

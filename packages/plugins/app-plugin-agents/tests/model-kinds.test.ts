@@ -241,12 +241,20 @@ describe('model kinds', () => {
         )
       ).rows,
     ).toEqual([]);
-    // Anyone signed in reads it; without reading usage or agents, there are no rows.
-    const eve = await harness.request('GET', '/agents/usage/models', {
+    // Anyone signed in reads it; without reading usage, a reader of agents included, there are no rows.
+    for (const can of [[], ['agents.agents/read']]) {
+      const eve = await harness.request('GET', '/agents/usage/models', {
+        user: 'eve',
+        can,
+      });
+      expect(eve.status).toBe(200);
+      expect(eve.body.data.rows).toEqual([]);
+    }
+    const reader = await harness.request('GET', '/agents/usage/models', {
       user: 'eve',
+      can: ['agents.prices/read'],
     });
-    expect(eve.status).toBe(200);
-    expect(eve.body.data.rows).toEqual([]);
+    expect(reader.body.data.rows.length).toBeGreaterThan(0);
   });
 
   it('checks a model as its kind says', async () => {
