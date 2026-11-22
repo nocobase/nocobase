@@ -210,13 +210,12 @@ export class HostBackups {
       );
     // Checked with the deployment's configuration in a file of its own: refused, the App keeps running as it was,
     // with the configuration it runs with now.
-    const preflight = await this.options.reconciler.commandDefinition(
+    const preflight = await this.options.reconciler.preflightDefinition(
       options.deployment,
-      { config: 'isolated' },
     );
     const sha256 = options.sha256 ?? backup.sha256;
     try {
-      const runner = await this.runnerFor(preflight);
+      const runner = await this.runnerFor(preflight.definition);
       const target = releaseOf(runner, options.deployment);
       if (backup.artifact !== null && target !== backup.artifact)
         throw new HostManagementError(
@@ -234,11 +233,7 @@ export class HostBackups {
         '--json',
       ]);
     } finally {
-      if (
-        preflight.configPath &&
-        path.basename(path.dirname(preflight.configPath)) === 'preflight'
-      )
-        await rm(preflight.configPath, { force: true });
+      await preflight.dispose();
     }
     await this.options.reconciler.stopForRestore(appId);
     const runner = await this.runnerFor(

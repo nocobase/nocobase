@@ -654,10 +654,9 @@ export class ManagedReconciler {
       /**
        * Which configuration file the command runs with. By default the spec's, written where the App's deployment
        * reads it. `current`: the one the App runs with now, as deployed or published since (`publishAppConfig`), which
-       * a backup has to read its databases from. `isolated`: the spec's, written to a file of its own that the caller
-       * removes, so that checking a restore it may still refuse never changes the running App's configuration.
+       * a backup has to read its databases from.
        */
-      readonly config?: 'current' | 'isolated';
+      readonly config?: 'current';
     } = {},
   ): Promise<AppDefinition> {
     return this.enqueue(async () => {
@@ -666,28 +665,64 @@ export class ManagedReconciler {
         options.config === 'current'
           ? ((await this.currentConfig(spec)) ??
             (await this.prepareConfig(spec)))
-          : options.config === 'isolated' && spec.config?.content !== undefined
-            ? await this.volumes.writeIsolatedConfig(
-                spec.appId,
-                spec.config.content,
-              )
-            : await this.prepareConfig(spec);
-      if (spec.backend !== 'in-process')
-        return this.serviceDefinition(spec, configPath);
-      const artifact = await this.artifactResolver
-        .restore(spec.artifact)
-        .catch(() => this.artifactResolver.resolve(spec.artifact));
-      return {
-        ...artifact.definition,
-        id: spec.appId,
-        appName: spec.appId,
-        backend: spec.backend,
-        isolation: spec.backend,
-        dataDir: await this.volumes.prepareStorageDir(spec.appId),
-        configPath,
-        env: spec.env ? { ...spec.env } : undefined,
-      };
+          : await this.prepareConfig(spec);
+      return await this.definitionFor(spec, configPath);
     });
+  }
+
+  /**
+   * The definition to check a restore with before the App stops: the spec's inline configuration is written to a
+   * file of its own rather than where the running App reads it, so a refused restore never changes that. `dispose`
+   * removes that file and nothing else; it is already removed when preparing the definition fails.
+   */
+  preflightDefinition(spec: HostDeploymentSpec): Promise<{
+    readonly definition: AppDefinition;
+    readonly dispose: () => Promise<void>;
+  }> {
+    return this.enqueue(async () => {
+      validateDeploymentSet({ revision: 1, deployments: [spec] });
+      const isolated =
+        spec.config?.content !== undefined
+          ? await this.volumes.writeIsolatedConfig(
+              spec.appId,
+              spec.config.content,
+            )
+          : undefined;
+      const dispose = async (): Promise<void> => {
+        if (isolated) await rm(isolated, { force: true });
+      };
+      try {
+        const definition = await this.definitionFor(
+          spec,
+          isolated ?? (await this.prepareConfig(spec)),
+        );
+        return { definition, dispose };
+      } catch (error) {
+        await dispose();
+        throw error;
+      }
+    });
+  }
+
+  private async definitionFor(
+    spec: HostDeploymentSpec,
+    configPath: string | undefined,
+  ): Promise<AppDefinition> {
+    if (spec.backend !== 'in-process')
+      return this.serviceDefinition(spec, configPath);
+    const artifact = await this.artifactResolver
+      .restore(spec.artifact)
+      .catch(() => this.artifactResolver.resolve(spec.artifact));
+    return {
+      ...artifact.definition,
+      id: spec.appId,
+      appName: spec.appId,
+      backend: spec.backend,
+      isolation: spec.backend,
+      dataDir: await this.volumes.prepareStorageDir(spec.appId),
+      configPath,
+      env: spec.env ? { ...spec.env } : undefined,
+    };
   }
 
   /** The configuration file an App runs with now, when the Host keeps one: published content survives here. */

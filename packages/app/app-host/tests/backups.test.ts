@@ -614,6 +614,99 @@ describe('backups on a managed Host', () => {
     expect(await data()).toBe('written-after');
   }, 60_000);
 
+  it("leaves a configuration file of the App's own alone, also in a directory named preflight", async () => {
+    const own = path.join(root, 'preflight', 'config.yml');
+    await mkdir(path.dirname(own), { recursive: true });
+    await writeFile(own, 'demo: own\n');
+    const deployment = (operationId: string): HostDeploymentSpec => ({
+      ...spec(operationId, withCli),
+      config: { provider: 'file', path: own },
+    });
+    await host.applyDeployment(deployment('own-d'));
+    await data('kept');
+    await host.createBackup!('demo', { operationId: 'own-b', scope });
+    await commands();
+    await expect(
+      host.restoreBackup!('demo', {
+        operationId: 'own-refused',
+        scope,
+        backupId: 'own-b',
+        sha256: '0'.repeat(64),
+        deployment: deployment('own-refused'),
+      }),
+    ).rejects.toMatchObject({ code: 'BACKUP_DIGEST_MISMATCH' });
+    await expect(readFile(own, 'utf8')).resolves.toBe('demo: own\n');
+    await host.restoreBackup!('demo', {
+      operationId: 'own-r',
+      scope,
+      backupId: 'own-b',
+      deployment: deployment('own-r'),
+    });
+    expect(await commands()).toEqual([
+      'backup verify demo: own',
+      'backup verify demo: own',
+      'backup restore demo: own',
+    ]);
+    await expect(readFile(own, 'utf8')).resolves.toBe('demo: own\n');
+  });
+
+  it('removes the copy of the configuration when the restore cannot even be prepared', async () => {
+    await host.applyDeployment(spec('unprepared-d', withCli));
+    await data('kept');
+    await host.createBackup!('demo', { operationId: 'unprepared-b', scope });
+    const missing = {
+      ...withCli,
+      key: 'missing.tar.gz',
+      checksum: 'f'.repeat(64),
+    };
+    await expect(
+      host.restoreBackup!('demo', {
+        operationId: 'unprepared-r',
+        scope,
+        backupId: 'unprepared-b',
+        deployment: {
+          ...spec('unprepared-r', missing),
+          config: {
+            provider: 'file',
+            content: 'demo: secret-connection\n',
+            revision: 'unprepared-r',
+          },
+        },
+      }),
+    ).rejects.toThrow(/missing\.tar\.gz|artifact/i);
+    await expect(
+      readdir(path.join(volumesDir, 'demo', 'preflight')),
+    ).resolves.toEqual([]);
+    expect(await running()).toBe(true);
+  });
+
+  it('refuses a retry on another backend as a conflict rather than checking that backend', async () => {
+    await host.applyDeployment(spec('backend-d', withCli));
+    await data('kept');
+    await host.createBackup!('demo', { operationId: 'backend-b', scope });
+    const request = {
+      operationId: 'backend-r',
+      scope,
+      backupId: 'backend-b',
+      sha256: '0'.repeat(64),
+    };
+    await expect(
+      host.restoreBackup!('demo', {
+        ...request,
+        deployment: spec('backend-r', withCli),
+      }),
+    ).rejects.toMatchObject({ code: 'BACKUP_DIGEST_MISMATCH' });
+    await expect(
+      host.restoreBackup!('demo', {
+        ...request,
+        deployment: {
+          ...spec('backend-r', withCli),
+          backend: 'external-service',
+        },
+      }),
+    ).rejects.toMatchObject({ code: 'OPERATION_CONFLICT' });
+  });
+
   it('removes a backup', async () => {
     await host.applyDeployment(spec('remove-d', withCli));
     await host.createBackup!('demo', { operationId: 'remove-b', scope });

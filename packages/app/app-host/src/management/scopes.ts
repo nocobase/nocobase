@@ -446,7 +446,6 @@ export class ManagedScopes {
     const deployment = options.scope
       ? { ...options.deployment, scope: options.scope }
       : options.deployment;
-    if (options.scope) this.assertBackend(deployment);
     const { scope: _scope, ...target } = options.deployment;
     return await this.task(
       'restore',
@@ -458,8 +457,10 @@ export class ManagedScopes {
         sha256: options.sha256 ?? null,
         deployment: target,
       }),
-      (checkpoint) =>
-        this.backups.restore(appId, {
+      (checkpoint) => {
+        // Checked once the ID is known to be new or this same request: a retry with another backend conflicts.
+        if (options.scope) this.assertBackend(deployment);
+        return this.backups.restore(appId, {
           backupId: options.backupId,
           sha256: options.sha256,
           deployment,
@@ -469,7 +470,8 @@ export class ManagedScopes {
             await this.options.reconciler.applyDeployment(spec);
             return this.status({ appIds: [appId] });
           },
-        }),
+        });
+      },
     );
   }
 
