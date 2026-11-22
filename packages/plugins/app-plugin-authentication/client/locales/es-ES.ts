@@ -44,6 +44,7 @@ const esES: LocaleResource<typeof enUS> = {
   // The settings pages are not translated into this language yet; English is shown.
   settings: withPluralForms(enUS.settings, 'es-ES'),
   guide: enUS.guide,
+  prompt: enUS.prompt,
   sso: enUS.sso,
   account: withPluralForms(enUS.account, 'es-ES'),
 };

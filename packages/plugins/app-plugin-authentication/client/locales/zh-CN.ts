@@ -230,77 +230,123 @@ const zhCN: AuthenticationResource = {
     },
   },
   guide: {
-    plugins: '1. 加插件',
-    migration: '2. 加数据库迁移',
-    migrationDescription:
-      '这个插件需要应用里还没有的数据表。把下面的迁移放进 database/main/migrations/，文件名和 name 里填上时间戳；表结构与 Better Auth 1.7.21 一致。不要对应用数据库运行 Better Auth 自带的建表命令。',
-    deploy: '3. 重新部署',
-    deployDescription:
-      '配置和迁移一起部署，启动时自动执行迁移。部署后到「登录方式」确认这一行显示为已开启。',
-    notes: '开启前注意',
+    handOver: '交给 Agent',
+    promptHint: '提示词已按本应用当前的配置填好；需要时可以先改再复制。',
+    publicOriginMissing:
+      '没有设置 app.publicOrigin，提示词按当前访问地址（{{origin}}）填写，请确认是正式访问域名。',
+    notes: '注意',
+    after: '部署后',
     twoFactor: {
       title: '开启两步验证',
       description:
-        '输入密码后，再输入一次验证器 App 上的动态码。本页只说明步骤，不保存任何配置。',
-      pluginsDescription:
-        '在服务端认证配置里加 twoFactor()，在浏览器端认证配置里加 twoFactorClient()，原有插件保留。',
-      note1:
-        '每个人在「账号与安全」里自己开启，用验证器 App 扫码绑定。「账号与安全」目前还没有这一块，需要应用补上或整页替换后再开放。',
-      note2:
-        '有人开启后，用密码登录会要求输入动态码。开启前，登录页要先支持这一步（twoFactorRedirect，再调用 twoFactor.verifyTotp）。',
-      note3:
-        '请保存绑定时显示的备用码。管理员看不到任何人的备用码；验证器和备用码都丢失时，需要替他移除两步验证。',
+        '开启后，用户在「账号与安全」里绑定验证器 App；之后登录时，输完密码还要再输入一次 6 位验证码。开启要改代码、加数据库迁移并重新部署：把下面的提示词交给你的开发 Agent（Claude Code、Codex 等，在应用代码仓库里运行）即可。本页不保存任何内容。',
+      note1: '开启后不会强制所有人使用：每个用户在「账号与安全」里自己绑定。',
+      after:
+        '回到「登录方式」看到状态变为「已开启」；「账号与安全」出现「两步验证」区块。',
     },
     passkey: {
       title: '开启通行密钥',
       description:
-        '用指纹、面容或安全密钥代替密码登录。本页只说明步骤，不保存任何配置。',
-      pluginsDescription:
-        '通行密钥在独立的 @better-auth/passkey 包里：先按 better-auth 的同一版本安装，再在服务端认证配置里加 passkey()，在浏览器端认证配置里加 passkeyClient()。',
-      publicOriginMissing:
-        '没有设置 app.publicOrigin，上面的 rpID 和 origin 是占位符。请设置 app.publicOrigin，或填入大家实际访问的地址。',
+        '开启后，用户在「账号与安全」里添加通行密钥（指纹、面容或安全密钥）；登录页出现「使用通行密钥登录」。开启要改代码、加数据库迁移并重新部署：把下面的提示词交给你的开发 Agent（Claude Code、Codex 等，在应用代码仓库里运行）即可。本页不保存任何内容。',
       note1:
-        '通行密钥只能在 HTTPS 下使用（localhost 除外）。origin 要和浏览器地址栏完全一致，包括端口。',
-      note2:
-        'rpID 是通行密钥绑定的域名，不带协议和端口。之后修改会让已注册的通行密钥全部失效。',
-      note3:
-        '登录后才能注册通行密钥，登录页也需要「用通行密钥登录」按钮。「账号与安全」和模板的登录页目前都没有，需要应用补上。',
+        '必须通过 HTTPS 访问（本机 localhost 除外），否则浏览器不允许使用通行密钥。',
+      note2: '部署后修改域名，已添加的通行密钥都会失效。',
+      after:
+        '回到「登录方式」看到状态变为「已开启」；登录页出现「使用通行密钥登录」，「账号与安全」出现「通行密钥」区块。',
     },
   },
+  prompt: {
+    title: '提示词',
+    copy: '复制提示词',
+    label: '交给开发 Agent 的提示词',
+    followSignIn:
+      '按 nocobase-app-plugin-authentication Skill 的「Adding sign-in methods」做：',
+    followPlugin:
+      '按 nocobase-app-plugin-authentication Skill 的「Enabling an official Better Auth plugin」做：',
+    discoveryUnknown: '{{name}} 的 OIDC discovery 地址',
+    sso: {
+      intro:
+        '请在这个 NocoBase 应用里开启 {{name}} 单点登录（Better Auth genericOAuth，OIDC）。',
+      add: '在 server/config/auth.ts 的 plugins 里加 better-auth/plugins 的 genericOAuth，保留已有插件；providerId 为 {{id}}，discovery 地址为 {{discovery}}。clientId、clientSecret 从环境变量 {{prefix}}_CLIENT_ID、{{prefix}}_CLIENT_SECRET 读取，不要写进代码。浏览器端不需要客户端插件，登录和绑定走 signIn.social 和 linkSocial。',
+    },
+    social: {
+      intro:
+        '请在这个 NocoBase 应用里开启 {{name}} 登录（Better Auth socialProviders.{{id}}）。',
+      add: '在 server/config/auth.ts 的 socialProviders 里加 {{id}}，clientId、clientSecret 从环境变量 {{prefix}}_CLIENT_ID、{{prefix}}_CLIENT_SECRET 读取，不要写进代码。',
+    },
+    firstSignIn: {
+      create:
+        '首次登录：自动创建账号，角色同自助注册（disableSignUp: false）。',
+      existing:
+        '首次登录：只允许已有账号（disableSignUp: true）。先在「用户」里邀请，用户在「账号与安全」里绑定 {{name}} 后才能用它登录。',
+    },
+    matching:
+      '账号按提供方返回的 issuer + subject 对应，不按邮箱自动合并到已有用户：设置 account.accountLinking.disableImplicitLinking: true。',
+    callback:
+      '回调地址是 {{callback}}，确认 app.publicOrigin 设为 {{origin}}。',
+    checkProvider:
+      '确认登录页出现「使用 {{name}} 登录」（同时把提供方写进 authentication({ signInButtons })），「账号与安全」能绑定、解绑 {{name}}。',
+    testsProvider:
+      '补上登录流程测试，跑通 lint、typecheck、test、build。不需要数据库迁移。',
+    configIntro: '可以从这段配置开始：',
+    doneProvider: '完成后告诉我改了哪些文件，以及部署时要设置哪些环境变量。',
+    twoFactor: {
+      intro:
+        '请在这个 NocoBase 应用里开启两步验证（Better Auth 官方插件 twoFactor）。',
+      add: '在 server/config/auth.ts 的 plugins 里加 better-auth/plugins 的 twoFactor({ issuer: {{appName}} })，在 client/config/auth.ts 里加 better-auth/client/plugins 的 twoFactorClient()，保留已有插件。',
+      migration:
+        '按已安装 better-auth 版本的 twoFactor schema（Skill 里有 1.7.21 对应的迁移），在 database/main/migrations/ 加一个迁移：新建 twoFactor 表，user 表加 twoFactorEnabled 字段，写好 down。不要用 better-auth 自带的 migrate 或 schema 生成。',
+      account:
+        '在「账号与安全」加「两步验证」区块（扩展页面，或用 authentication({ accountSecurityComponentLoader }) 整页替换）：用户输入密码开启，用验证器 App 扫码并校验，保存备用码，也能关闭。不强制所有人使用。',
+      signIn:
+        '登录页在登录返回 twoFactorRedirect 时要求输入验证码，用 twoFactor.verifyTotp 完成登录，备用码走 twoFactor.verifyBackupCode。',
+      tests:
+        '确认「账号与安全」出现「两步验证」区块。补上迁移测试和登录流程测试，跑通 lint、typecheck、test、build。',
+    },
+    passkey: {
+      intro:
+        '请在这个 NocoBase 应用里开启通行密钥（Better Auth 官方插件 passkey，在 @better-auth/passkey 包里）。',
+      add: "按 better-auth 的同一版本安装 @better-auth/passkey。在 server/config/auth.ts 的 plugins 里加 @better-auth/passkey 的 passkey，rpName 为 {{appName}}，rpID（主机名）和 origin 从 app.publicOrigin 读取、不要写死；正式地址是 {{origin}}，同时把它设为 app.publicOrigin。传入 schema: { passkey: { fields: { credentialID: 'credentialId' } } }，因为蛇形列名无法还原 credentialID。在 client/config/auth.ts 里加 @better-auth/passkey/client 的 passkeyClient，保留已有插件。",
+      migration:
+        '按已安装版本的 passkey schema（Skill 里有 1.7.21 对应的迁移），在 database/main/migrations/ 加一个迁移，credentialID 存为 credentialId：新建 passkey 表，写好 down。不要用 better-auth 自带的 migrate 或 schema 生成。',
+      account:
+        '在「账号与安全」加「通行密钥」区块（扩展页面，或用 authentication({ accountSecurityComponentLoader }) 整页替换），能添加、重命名、删除通行密钥。',
+      signIn: '登录页加「使用通行密钥登录」（signIn.passkey）。',
+      tests:
+        '确认「账号与安全」出现「通行密钥」区块、登录页出现通行密钥按钮。补上迁移测试，跑通 lint、typecheck、test、build。',
+    },
+    doneMethod: '完成后告诉我改了哪些文件，以及部署时要注意什么。',
+  },
   sso: {
-    title: '开启企业 SSO（OIDC）',
+    title: '开启单点登录（OIDC）',
     socialTitle: '开启社交账号登录',
     description:
-      '按步骤在身份提供方创建应用，再把下面生成的配置交给开发或运维部署。本页只生成配置，不保存任何内容，Client Secret 也不会在这里输入。',
+      '先在身份提供方创建应用，再把下面的提示词交给你的开发 Agent（Claude Code、Codex 等，在应用代码仓库里运行）。Client Secret 只放在部署环境变量里，不在本页输入。本页不保存任何内容。',
     provider: '身份提供方',
+    other: '其他',
     id: '标识',
     idHint: '出现在回调地址里，部署后不要再改，否则已绑定的账号会失效。',
-    callback: '1. 回调地址',
+    createApp: '1. 在 {{name}} 创建应用',
     copy: '复制',
     copied: '已复制',
     callbackHint:
-      '填到 {{name}} 开放平台的重定向 URL。地址由 app.publicOrigin 决定。',
+      '把回调地址填到 {{name}} 开发者后台的重定向 URL，记下 Client ID 和 Client Secret。',
     publicOriginMissing:
-      '当前未设置 app.publicOrigin，这里用的是你正在访问的地址。请先设置 app.publicOrigin 再配置身份提供方。',
+      '没有设置 app.publicOrigin，回调地址按当前访问地址生成，请确认是正式访问域名。',
     firstSignIn: '2. 首次登录',
     create: '自动创建账号',
-    createHint:
-      '任何能登录 {{name}} 的人第一次登录时创建一个新用户，角色同自助注册。',
+    createHint: '第一次用 {{name}} 登录时创建新用户，角色同自助注册。',
     existing: '只允许已有账号',
     existingHint:
-      '先在「用户」里邀请或创建，用户在「账号与安全」里绑定 {{name}} 后才能用它登录。',
-    mapping: '账号对应',
-    mappingDescription:
-      '按 {{name}} 返回的用户唯一标识（issuer + subject）对应账号，不会按邮箱自动合并到已有用户，避免冒用。',
-    config: '3. 配置',
-    configHint:
-      'Client ID 和 Client Secret 放在部署环境变量里（{{prefix}}_CLIENT_ID、{{prefix}}_CLIENT_SECRET），不要写进代码仓库。不需要数据库迁移。',
-    after: '4. 部署后',
-    afterDescription:
-      '重新部署，回到「登录方式」看到状态变为「已开启」。要在登录页显示按钮，把提供方加到登录页的 providers，并写进 authentication({ signInButtons })。',
+      '先在「用户」里邀请，用户在「账号与安全」里绑定 {{name}} 后才能用它登录。',
+    handOver: '3. 交给 Agent',
+    promptHint: '随上面的选择自动更新；需要时可以先改再复制。',
+    deploy: '4. 部署',
+    deployDescription:
+      '在部署环境设置 {{prefix}}_CLIENT_ID、{{prefix}}_CLIENT_SECRET 后重新部署。回到「登录方式」看到状态变为「已开启」，登录页出现「使用 {{name}} 登录」。',
     back: '返回',
-    copyAll: '复制全部配置',
   },
+
   account: {
     title: '账号与安全',
     navigationDescription: '你的登录信息、密码和登录过的设备。',

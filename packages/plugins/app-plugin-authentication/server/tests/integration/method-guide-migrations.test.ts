@@ -9,10 +9,6 @@ import { mergeSchema } from 'better-auth/db';
 import { twoFactor } from 'better-auth/plugins';
 import { afterEach, describe, expect, it } from 'vitest';
 
-import {
-  methodGuideSnippets,
-  type MethodGuide,
-} from '../../../client/pages/method-guides.js';
 import { createAuthFixture } from './support.js';
 
 const directory = new URL(
@@ -25,20 +21,15 @@ const guideMigrations = [
     directory: fileURLToPath(directory),
   },
 ];
-const files: Record<MethodGuide, readonly [string, string]> = {
-  twoFactor: ['202612010001', '202612010001_create_two_factor.ts'],
-  passkey: ['202612010002', '202612010002_create_passkey.ts'],
-};
-
-/** The migration a guide hands over, as the application would save it: without the path comment, with a timestamp. */
-function guideMigration(method: MethodGuide): string {
-  const [timestamp] = files[method];
-  return `${methodGuideSnippets(method)
-    .migration.split('\n')
-    .slice(1)
-    .join('\n')
-    .replaceAll('<timestamp>', timestamp)}\n`;
-}
+const files = [
+  '202612010001_create_two_factor.ts',
+  '202612010002_create_passkey.ts',
+] as const;
+/** The plugin Skill reference the guides' prompts point a development agent to. */
+const skillReference = new URL(
+  '../../../skills/nocobase-app-plugin-authentication/references/better-auth-plugins.md',
+  import.meta.url,
+);
 
 /** RFC 6238 with Better Auth's defaults (SHA-1, 6 digits, 30 seconds); the URI carries the secret in base32. */
 function totp(base32: string): string {
@@ -120,16 +111,17 @@ const passkeySchemaProbe = {
   },
 } satisfies BetterAuthPlugin;
 
-describe('the migrations the two-factor and passkey guides hand over', () => {
+describe('the two-factor and passkey migrations in the plugin Skill', () => {
   const fixtures: Awaited<ReturnType<typeof createAuthFixture>>[] = [];
   afterEach(async () => {
     await Promise.all(fixtures.splice(0).map((fixture) => fixture.dispose()));
   });
 
-  it('are the ones this test runs', () => {
-    for (const method of ['twoFactor', 'passkey'] as const)
-      expect(readFileSync(new URL(files[method][1], directory), 'utf8')).toBe(
-        guideMigration(method),
+  it('are the ones the plugin Skill gives, so a development agent copies a migration this test runs', () => {
+    const reference = readFileSync(skillReference, 'utf8');
+    for (const file of files)
+      expect(reference).toContain(
+        `\`\`\`ts\n${readFileSync(new URL(file, directory), 'utf8')}\`\`\``,
       );
   });
 

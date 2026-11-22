@@ -1,5 +1,5 @@
 import { cn } from 'cn';
-import { ChevronRightIcon } from 'lucide-react';
+import { ChevronRightIcon, TriangleAlertIcon } from 'lucide-react';
 import { useState, type ReactElement, type ReactNode } from 'react';
 
 import { useAuthenticationTranslation } from './i18n.js';
@@ -228,5 +228,35 @@ export function SettingHeader({
       <div className='hidden sm:block'>{t('settings.columns.value')}</div>
       <div className='hidden sm:block'>{t('settings.columns.source')}</div>
     </div>
+  );
+}
+
+/** A step of a guide: its label beside its content, stacked on narrow screens. */
+export function GuideStep({
+  label,
+  children,
+}: {
+  readonly label: ReactNode;
+  readonly children: ReactNode;
+}): ReactElement {
+  return (
+    <div className='grid gap-2 sm:grid-cols-[9rem_minmax(0,1fr)] sm:gap-4'>
+      <div className='pt-1.5 text-sm font-semibold'>{label}</div>
+      <div className='min-w-0'>{children}</div>
+    </div>
+  );
+}
+
+/** The warning a guide shows while `app.publicOrigin` is not set. */
+export function PublicOriginWarning({
+  children,
+}: {
+  readonly children: ReactNode;
+}): ReactElement {
+  return (
+    <p className='mt-2 flex items-start gap-2 rounded-lg bg-amber-500/10 px-3 py-2 text-xs text-amber-900 dark:text-amber-200'>
+      <TriangleAlertIcon className='mt-0.5 size-3.5 shrink-0' aria-hidden />
+      {children}
+    </p>
   );
 }

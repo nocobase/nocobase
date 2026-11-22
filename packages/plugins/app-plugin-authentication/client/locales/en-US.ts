@@ -247,78 +247,132 @@ const enUS = {
     },
   },
   guide: {
-    plugins: '1. Add the plugin',
-    migration: '2. Add a migration',
-    migrationDescription:
-      'The plugin needs tables the application does not have yet. Add this migration to database/main/migrations/ with a timestamp in its file name and name; it matches Better Auth 1.7.21. Never run Better Auth’s own schema generation against the application database.',
-    deploy: '3. Redeploy',
-    deployDescription:
-      'Deploy the configuration and the migration together; the migration runs on start. Then check that the method shows as On under Sign-in methods.',
-    notes: 'Before you turn it on',
+    handOver: 'Hand over to an agent',
+    promptHint:
+      'Filled in from this application’s configuration; edit it before copying if needed.',
+    publicOriginMissing:
+      'app.publicOrigin is not set, so the prompt uses the address you are browsing ({{origin}}). Confirm it is the public address.',
+    notes: 'Notes',
+    after: 'After deploying',
     twoFactor: {
       title: 'Turn on two-factor authentication',
       description:
-        'After their password, people enter a one-time code from an authenticator app. This page only explains the steps and saves nothing.',
-      pluginsDescription:
-        'Add twoFactor() to the server’s authentication configuration and twoFactorClient() to the browser’s, keeping the plugins already there.',
+        'Once it is on, people set up an authenticator app in Account and security, and after their password they enter a 6-digit code. It takes a code change, a database migration and a redeployment: give the prompt below to your development agent (Claude Code, Codex and the like, in the application’s repository). This page saves nothing.',
       note1:
-        'Each person turns it on for themselves in Account and security and scans the code with an authenticator app. Account and security does not include that section yet: add it to the application, or replace the page, before people need it.',
-      note2:
-        'Once a person has turned it on, signing in with a password asks for the code. The sign-in page has to handle that second step (twoFactorRedirect, then twoFactor.verifyTotp) before anyone turns it on.',
-      note3:
-        'Keep the backup codes the authenticator setup shows. An administrator cannot read a person’s codes; a person who loses both needs the factor removed for them.',
+        'Nobody is forced to use it: each person sets it up for themselves in Account and security.',
+      after:
+        'Under Sign-in methods the row shows On, and Account and security shows a Two-factor authentication section.',
     },
     passkey: {
       title: 'Turn on passkeys',
       description:
-        'People sign in with a fingerprint, their face or a security key instead of a password. This page only explains the steps and saves nothing.',
-      pluginsDescription:
-        'Passkeys come from the separate @better-auth/passkey package: install it at the same version as better-auth, then add passkey() to the server’s authentication configuration and passkeyClient() to the browser’s.',
-      publicOriginMissing:
-        'app.publicOrigin is not set, so rpID and origin above are placeholders. Set app.publicOrigin, or fill in the address people use.',
+        'Once it is on, people add a passkey (fingerprint, face or security key) in Account and security, and the sign-in page offers “Sign in with a passkey”. It takes a code change, a database migration and a redeployment: give the prompt below to your development agent (Claude Code, Codex and the like, in the application’s repository). This page saves nothing.',
       note1:
-        'Passkeys only work over HTTPS (localhost excepted). origin is the exact address the browser shows, including any port.',
+        'Passkeys only work over HTTPS (localhost excepted); otherwise the browser refuses them.',
       note2:
-        'rpID is the domain passkeys are bound to, without scheme or port. Changing it later invalidates every passkey already registered.',
-      note3:
-        'People register a passkey after signing in, and the sign-in page needs a “Sign in with a passkey” button. Neither Account and security nor the template’s sign-in page includes these yet: add them to the application.',
+        'Changing the domain after deployment invalidates every passkey already added.',
+      after:
+        'Under Sign-in methods the row shows On, the sign-in page offers “Sign in with a passkey”, and Account and security shows a Passkeys section.',
     },
+  },
+  prompt: {
+    title: 'Prompt',
+    copy: 'Copy prompt',
+    label: 'Prompt for your development agent',
+    followSignIn:
+      'Follow the “Adding sign-in methods” reference of the nocobase-app-plugin-authentication Skill:',
+    followPlugin:
+      'Follow the “Enabling an official Better Auth plugin” reference of the nocobase-app-plugin-authentication Skill:',
+    discoveryUnknown: '{{name}}’s OIDC discovery URL',
+    sso: {
+      intro:
+        'Turn on single sign-on with {{name}} in this NocoBase application (Better Auth genericOAuth, OIDC).',
+      add: 'In server/config/auth.ts, add genericOAuth from better-auth/plugins to the plugins, keeping the plugins already there, with providerId {{id}} and the discovery URL {{discovery}}. Read clientId and clientSecret from the environment variables {{prefix}}_CLIENT_ID and {{prefix}}_CLIENT_SECRET; never write them into code. The browser needs no client plugin: sign-in and linking go through signIn.social and linkSocial.',
+    },
+    social: {
+      intro:
+        'Turn on sign-in with {{name}} in this NocoBase application (Better Auth socialProviders.{{id}}).',
+      add: 'In server/config/auth.ts, add {{id}} to socialProviders. Read clientId and clientSecret from the environment variables {{prefix}}_CLIENT_ID and {{prefix}}_CLIENT_SECRET; never write them into code.',
+    },
+    firstSignIn: {
+      create:
+        'First sign-in: create an account automatically, with the same roles as self-registration (disableSignUp: false).',
+      existing:
+        'First sign-in: existing accounts only (disableSignUp: true). People are invited in Users first and link {{name}} in Account and security before signing in with it.',
+    },
+    matching:
+      'Match accounts by the provider’s identity (issuer + subject) and never merge them into an existing user by email: set account.accountLinking.disableImplicitLinking: true.',
+    callback:
+      'The callback URL is {{callback}}. Make sure app.publicOrigin is {{origin}}.',
+    checkProvider:
+      'Check that the sign-in page shows “Sign in with {{name}}” (also name the provider in authentication({ signInButtons })) and that Account and security can link and unlink {{name}}.',
+    testsProvider:
+      'Add a sign-in flow test and run lint, typecheck, test and build. No database migration is needed.',
+    configIntro: 'Configuration to start from:',
+    doneProvider:
+      'When you are done, tell me which files you changed and which environment variables the deployment must set.',
+    twoFactor: {
+      intro:
+        'Turn on two-factor authentication in this NocoBase application (the official Better Auth plugin twoFactor).',
+      add: 'In server/config/auth.ts, add twoFactor({ issuer: {{appName}} }) from better-auth/plugins to the plugins, and in client/config/auth.ts add twoFactorClient() from better-auth/client/plugins, keeping the plugins already there.',
+      migration:
+        'Add a migration in database/main/migrations/ that follows the twoFactor schema of the installed better-auth version (the Skill has the one for 1.7.21): create the twoFactor table and add twoFactorEnabled to user, with a down. Do not run better-auth’s own migrate or schema generation.',
+      account:
+        'Add a Two-factor authentication section to Account and security (extend the page or replace it with authentication({ accountSecurityComponentLoader })): people turn it on with their password, scan the code with an authenticator app, verify it, keep their backup codes and turn it off again. It stays optional for everyone.',
+      signIn:
+        'On the sign-in page, when sign-in answers twoFactorRedirect, ask for the code and finish with twoFactor.verifyTotp, or twoFactor.verifyBackupCode for a backup code.',
+      tests:
+        'Confirm Account and security shows the Two-factor authentication section. Add a migration test and a sign-in flow test, and run lint, typecheck, test and build.',
+    },
+    passkey: {
+      intro:
+        'Turn on passkeys in this NocoBase application (the official Better Auth plugin passkey, from the @better-auth/passkey package).',
+      add: "Install @better-auth/passkey at the same version as better-auth. In server/config/auth.ts, add passkey from @better-auth/passkey to the plugins with rpName {{appName}}, reading rpID (the host name) and origin from app.publicOrigin instead of hard-coding them; the public address is {{origin}}, so set app.publicOrigin to it. Pass schema: { passkey: { fields: { credentialID: 'credentialId' } } }, because snake_case column names cannot spell credentialID back. In client/config/auth.ts, add passkeyClient from @better-auth/passkey/client, keeping the plugins already there.",
+      migration:
+        'Add a migration in database/main/migrations/ that follows the passkey schema of the installed version (the Skill has the one for 1.7.21), storing credentialID as credentialId: create the passkey table, with a down. Do not run better-auth’s own migrate or schema generation.',
+      account:
+        'Add a Passkeys section to Account and security (extend the page or replace it with authentication({ accountSecurityComponentLoader })) where people add, rename and delete their passkeys.',
+      signIn:
+        'Add “Sign in with a passkey” to the sign-in page (signIn.passkey).',
+      tests:
+        'Confirm Account and security shows the Passkeys section and the sign-in page shows the passkey button. Add a migration test and run lint, typecheck, test and build.',
+    },
+    doneMethod:
+      'When you are done, tell me which files you changed and what to watch for when deploying.',
   },
   sso: {
     title: 'Turn on single sign-on (OIDC)',
     socialTitle: 'Turn on social sign-in',
     description:
-      'Create an application with the identity provider, then give the configuration below to whoever deploys this application. This page only generates configuration and saves nothing; the client secret is never entered here.',
+      'Create an application with the identity provider, then give the prompt below to your development agent (Claude Code, Codex and the like, in the application’s repository). The client secret stays in the deployment’s environment variables and is never entered here. This page saves nothing.',
     provider: 'Identity provider',
+    other: 'Other',
     id: 'Identifier',
     idHint:
       'Part of the callback URL. Do not change it after deployment, or linked accounts stop working.',
-    callback: '1. Callback URL',
+    createApp: '1. Create the application in {{name}}',
     copy: 'Copy',
     copied: 'Copied',
     callbackHint:
-      'Enter it as the redirect URL in {{name}}’s developer console. It is built from app.publicOrigin.',
+      'Enter this callback URL as the redirect URL in {{name}}’s developer console, and note the client ID and client secret.',
     publicOriginMissing:
-      'app.publicOrigin is not set, so this URL uses the address you are browsing. Set app.publicOrigin before configuring the provider.',
+      'app.publicOrigin is not set, so the callback URL uses the address you are browsing. Confirm it is the public address.',
     firstSignIn: '2. First sign-in',
     create: 'Create an account automatically',
     createHint:
-      'Anyone who can sign in to {{name}} gets a new user on their first sign-in, with the same roles as self-registration.',
+      'The first sign-in with {{name}} creates a new user, with the same roles as self-registration.',
     existing: 'Existing accounts only',
     existingHint:
-      'Invite or create the user in Users first; they link {{name}} in Account and security before signing in with it.',
-    mapping: 'Account matching',
-    mappingDescription:
-      'Accounts are matched by the user identifier {{name}} returns (issuer + subject). They are never merged into an existing user by email address, which prevents impersonation.',
-    config: '3. Configuration',
-    configHint:
-      'Keep the client id and secret in the deployment environment ({{prefix}}_CLIENT_ID, {{prefix}}_CLIENT_SECRET), never in the repository. No database migration is needed.',
-    after: '4. After deployment',
-    afterDescription:
-      'Redeploy, then check that the method shows as On under Sign-in methods. For a button on the sign-in page, add the provider to the sign-in page’s providers and to authentication({ signInButtons }).',
+      'Invite people in Users first; they link {{name}} in Account and security before signing in with it.',
+    handOver: '3. Hand over to an agent',
+    promptHint:
+      'Updates with the choices above; edit it before copying if needed.',
+    deploy: '4. Deploy',
+    deployDescription:
+      'Set {{prefix}}_CLIENT_ID and {{prefix}}_CLIENT_SECRET in the deployment and redeploy. Under Sign-in methods the row shows On, and the sign-in page shows “Sign in with {{name}}”.',
     back: 'Back',
-    copyAll: 'Copy all',
   },
+
   account: {
     title: 'Account and security',
     navigationDescription: 'Your sign-in details, password and devices.',

@@ -42,6 +42,7 @@ const koKR: LocaleResource<typeof enUS> = {
   // The settings pages are not translated into this language yet; English is shown.
   settings: withPluralForms(enUS.settings, 'ko-KR'),
   guide: enUS.guide,
+  prompt: enUS.prompt,
   sso: enUS.sso,
   account: withPluralForms(enUS.account, 'ko-KR'),
 };
