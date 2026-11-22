@@ -2,7 +2,10 @@ import type { LocaleResource } from '@nocobase/i18n';
 
 import type enUS from './en-US.js';
 
+import pagesPtBR from '../../shared/locales/pages.pt-BR.js';
+
 const ptBR: LocaleResource<typeof enUS> = {
+  ...pagesPtBR,
   content: {
     tooLarge:
       'O corpo excede o limite de visualização de 16 MiB. Abra-o em sua caixa de correio original. Os anexos ainda podem ser baixados.',
@@ -600,6 +603,7 @@ const ptBR: LocaleResource<typeof enUS> = {
     drafts: 'Rascunhos',
     moveMessage: 'Mover mensagens',
     aliases: 'Aliases',
+    downloadOriginal: 'Baixar original',
   },
   status: {
     account: {

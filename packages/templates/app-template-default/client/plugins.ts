@@ -45,7 +45,7 @@ const clientPlugins: AppClientPlugins = defineClientPlugins([
   file(),
   distributed(),
   scheduler(),
-  mail(),
+  mail({ routes: { mail: false, mailTeam: false } }),
   // The Agent panel and ✦ in the header, the conversation page, System settings › AI and Personal settings › Agent.
   agents(),
   foundation(),

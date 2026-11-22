@@ -2,7 +2,9 @@ import { Link2 } from 'lucide-react';
 import { useId, useMemo, useState } from 'react';
 import type { ReactElement } from 'react';
 
-import type { MailProviderView } from '../mail-client.js';
+import type { MailAccountView, MailProviderView } from '../mail-client.js';
+import { useMailExtensions } from '../extensions.js';
+import { MailSlotBoundary } from './mail-slot-boundary.js';
 import { Button } from './ui/button.js';
 import { Input } from './ui/input.js';
 import { NativeSelect } from './ui/native-select.js';
@@ -43,6 +45,10 @@ export interface MailAccountConnectorProps {
     provider: MailProviderView,
     credentials: MailAccountCredentials,
   ) => void;
+  /** The first day to synchronize, `YYYY-MM-DD`, given to a registered Provider type's own connection form. */
+  readonly receivedAfter?: string;
+  /** Called by a registered Provider type's own connection form once it has connected an account. */
+  readonly onConnected?: (account?: MailAccountView) => void;
 }
 
 export function MailAccountConnector({
@@ -53,7 +59,12 @@ export function MailAccountConnector({
   labels,
   onConnect,
   onConnectCredentials,
+  receivedAfter = '',
+  onConnected,
 }: MailAccountConnectorProps): ReactElement {
+  const providerTypes = useMailExtensions().providerTypes;
+  const titleOf = (provider: MailProviderView): string =>
+    providerTypes.get(provider.type)?.title ?? provider.label;
   const usernameDescriptionId = useId();
   const [selectedKey, setSelectedKey] = useState('');
   const [address, setAddress] = useState('');
@@ -73,7 +84,13 @@ export function MailAccountConnector({
         .filter(([, enabled]) => enabled)
         .map(([name]) => name)
     : [];
-  const usesCredentials = selectedProvider?.connection === 'credentials';
+  const registered = selectedProvider
+    ? providerTypes.get(selectedProvider.type)
+    : undefined;
+  const CustomConnect = providerConfigured ? registered?.connect : undefined;
+  const Icon = registered?.icon;
+  const usesCredentials =
+    !CustomConnect && selectedProvider?.connection === 'credentials';
   const credentialsReady =
     address.trim().length > 0 &&
     password.length > 0 &&
@@ -97,7 +114,7 @@ export function MailAccountConnector({
             <option value=''>{labels.chooseAccountType}</option>
             {providers.map((provider) => (
               <option key={providerKey(provider)} value={providerKey(provider)}>
-                {provider.label}
+                {titleOf(provider)}
                 {provider.name === provider.type ? '' : ` · ${provider.name}`}
                 {provider.configured === false
                   ? ` · ${labels.configurationRequired}`
@@ -106,31 +123,43 @@ export function MailAccountConnector({
             ))}
           </NativeSelect>
         </label>
-        <Button
-          disabled={
-            !selectedProvider ||
-            !providerConfigured ||
-            connecting ||
-            (usesCredentials && !credentialsReady)
-          }
-          onClick={() => {
-            if (!selectedProvider) return;
-            if (usesCredentials) {
-              onConnectCredentials?.(selectedProvider, {
-                address: address.trim(),
-                username: username.trim(),
-                password,
-                displayName: displayName.trim() || undefined,
-              });
-            } else {
-              onConnect(selectedProvider);
+        {CustomConnect ? null : (
+          <Button
+            disabled={
+              !selectedProvider ||
+              !providerConfigured ||
+              connecting ||
+              (usesCredentials && !credentialsReady)
             }
-          }}
-        >
-          <Link2 aria-hidden='true' className='size-4' />
-          {connecting ? labels.connecting : labels.connect}
-        </Button>
+            onClick={() => {
+              if (!selectedProvider) return;
+              if (usesCredentials) {
+                onConnectCredentials?.(selectedProvider, {
+                  address: address.trim(),
+                  username: username.trim(),
+                  password,
+                  displayName: displayName.trim() || undefined,
+                });
+              } else {
+                onConnect(selectedProvider);
+              }
+            }}
+          >
+            <Link2 aria-hidden='true' className='size-4' />
+            {connecting ? labels.connecting : labels.connect}
+          </Button>
+        )}
       </div>
+
+      {CustomConnect && selectedProvider ? (
+        <MailSlotBoundary>
+          <CustomConnect
+            provider={selectedProvider}
+            receivedAfter={receivedAfter}
+            onConnected={(account) => onConnected?.(account)}
+          />
+        </MailSlotBoundary>
+      ) : null}
 
       {usesCredentials && providerConfigured ? (
         <div className='grid items-start gap-3 sm:grid-cols-2'>
@@ -183,15 +212,20 @@ export function MailAccountConnector({
       {selectedProvider ? (
         <div className='rounded-lg border bg-muted/20 p-4'>
           <div className='flex flex-wrap items-center justify-between gap-2'>
-            <div>
-              <p className='font-medium'>{selectedProvider.label}</p>
-              <p className='text-xs text-muted-foreground'>
-                {providerConfigured
-                  ? labels.connectedAccounts(
-                      connectedAccountCount(selectedProvider),
-                    )
-                  : labels.configurationRequired}
-              </p>
+            <div className='flex items-center gap-3'>
+              {Icon ? (
+                <Icon className='size-5 shrink-0 text-muted-foreground' />
+              ) : null}
+              <div>
+                <p className='font-medium'>{titleOf(selectedProvider)}</p>
+                <p className='text-xs text-muted-foreground'>
+                  {providerConfigured
+                    ? labels.connectedAccounts(
+                        connectedAccountCount(selectedProvider),
+                      )
+                    : labels.configurationRequired}
+                </p>
+              </div>
             </div>
             {providerConfigured ? (
               <div className='flex flex-wrap justify-end gap-1.5'>

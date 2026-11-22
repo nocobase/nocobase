@@ -2,7 +2,7 @@
 
 Read this before working with the Mail, Mail Example and OnlineAgent demonstrations this template registers.
 
-Mail and Mail Example are registered here with three offline providers in `server/config/mail.ts`. Open `/mail-example` to prepare the demo accounts and messages. These fixtures use `@example.test` addresses and never send mail to external services; keep this example out of Default applications. The Mail plugin's synchronized Skill describes its public integration contract.
+Mail and Mail Example are registered here with three offline providers in `server/config/mail.ts`. Mail registers its own pages; open **Mail** (`/mail`) and choose **Set up demo mailboxes** to prepare the demo accounts and messages. These fixtures use `@example.test` addresses and never send mail to external services; keep this example out of Default applications. The Mail plugin's synchronized Skill describes its public integration contract.
 
 ## OnlineAgent example
 

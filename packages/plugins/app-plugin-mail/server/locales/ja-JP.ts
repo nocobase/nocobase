@@ -2,7 +2,10 @@ import type { LocaleResource } from '@nocobase/i18n';
 
 import type enUS from './en-US.js';
 
+import pagesJaJP from '../../shared/locales/pages.ja-JP.js';
+
 const jaJP: LocaleResource<typeof enUS> = {
+  access: pagesJaJP.access,
   errors: {
     originalNotFound:
       '元のメッセージはメールプロバイダーで利用できなくなりました。',

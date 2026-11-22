@@ -54,6 +54,7 @@ import { useMailTablePage } from '../hooks/use-mail-table-page.js';
 import { mailSyncDateMonthsAgo } from '../../shared/mail-sync-date.js';
 import { useMailClient } from '../runtime.js';
 import { MAIL_PLUGIN_NS } from '../namespace.js';
+import { cn } from '../lib/utils.js';
 
 export interface MailAccountsPageProps {
   readonly providerKeys?: readonly string[];
@@ -61,11 +62,17 @@ export interface MailAccountsPageProps {
     MailAccountCredentials,
     'username' | 'password'
   >;
+  /**
+   * Renders the accounts inside a page that has its own title and its own tabs for templates, signatures and labels,
+   * such as the plugin's personal Mail accounts page: no page title and no buttons opening those managers.
+   */
+  readonly embedded?: boolean;
 }
 
 export default function MailAccountsPage({
   providerKeys,
   credentialDefaults,
+  embedded = false,
 }: MailAccountsPageProps = {}): ReactElement {
   const mail = useMailClient();
   const { t } = useTranslation(MAIL_PLUGIN_NS);
@@ -387,8 +394,16 @@ export default function MailAccountsPage({
     );
   };
 
+  const reauthorizationAccounts = accounts.filter(
+    (account) =>
+      account.status === 'reauthorizationRequired' ||
+      account.status === 'revoked',
+  );
+
   return (
-    <PageContainer className='@container/accounts'>
+    <PageContainer
+      className={cn('@container/accounts', embedded && 'p-0 sm:p-0 md:p-0')}
+    >
       <PageHeader
         actions={
           <>
@@ -407,48 +422,54 @@ export default function MailAccountsPage({
                 defaultValue: 'Connect account',
               })}
             </Button>
-            <Button
-              onClick={() => {
-                setShowTemplates((current) => !current);
-                setShowConnector(false);
-                setShowLabels(false);
-                setShowSignatures(false);
-              }}
-              type='button'
-              variant={showTemplates ? 'default' : 'outline'}
-            >
-              <FileText aria-hidden='true' className='size-4' />
-              {t('dev.templateManagement', {
-                defaultValue: showTemplates ? 'Close templates' : 'Templates',
-              })}
-            </Button>
-            <Button
-              onClick={() => {
-                setShowSignatures((current) => !current);
-                setShowConnector(false);
-                setShowTemplates(false);
-                setShowLabels(false);
-                setError(undefined);
-              }}
-              type='button'
-              variant={showSignatures ? 'default' : 'outline'}
-            >
-              <PenLine aria-hidden='true' className='size-4' />
-              {t('dev.signatureManagement', { defaultValue: 'Signatures' })}
-            </Button>
-            <Button
-              onClick={() => {
-                setShowLabels((current) => !current);
-                setShowConnector(false);
-                setShowTemplates(false);
-                setShowSignatures(false);
-              }}
-              type='button'
-              variant={showLabels ? 'default' : 'outline'}
-            >
-              <Tag aria-hidden='true' className='size-4' />
-              {t('dev.labelManagement', { defaultValue: 'Labels' })}
-            </Button>
+            {embedded ? null : (
+              <>
+                <Button
+                  onClick={() => {
+                    setShowTemplates((current) => !current);
+                    setShowConnector(false);
+                    setShowLabels(false);
+                    setShowSignatures(false);
+                  }}
+                  type='button'
+                  variant={showTemplates ? 'default' : 'outline'}
+                >
+                  <FileText aria-hidden='true' className='size-4' />
+                  {t('dev.templateManagement', {
+                    defaultValue: showTemplates
+                      ? 'Close templates'
+                      : 'Templates',
+                  })}
+                </Button>
+                <Button
+                  onClick={() => {
+                    setShowSignatures((current) => !current);
+                    setShowConnector(false);
+                    setShowTemplates(false);
+                    setShowLabels(false);
+                    setError(undefined);
+                  }}
+                  type='button'
+                  variant={showSignatures ? 'default' : 'outline'}
+                >
+                  <PenLine aria-hidden='true' className='size-4' />
+                  {t('dev.signatureManagement', { defaultValue: 'Signatures' })}
+                </Button>
+                <Button
+                  onClick={() => {
+                    setShowLabels((current) => !current);
+                    setShowConnector(false);
+                    setShowTemplates(false);
+                    setShowSignatures(false);
+                  }}
+                  type='button'
+                  variant={showLabels ? 'default' : 'outline'}
+                >
+                  <Tag aria-hidden='true' className='size-4' />
+                  {t('dev.labelManagement', { defaultValue: 'Labels' })}
+                </Button>
+              </>
+            )}
             <Button
               disabled={loading}
               onClick={() => {
@@ -466,12 +487,51 @@ export default function MailAccountsPage({
             </Button>
           </>
         }
-        description={t('dev.accountsDescription', {
-          defaultValue:
-            'Connect and manage your mail accounts and choose when to start synchronizing messages.',
-        })}
-        title={t('nav.devAccounts', { defaultValue: 'Mail accounts' })}
+        description={
+          embedded
+            ? undefined
+            : t('dev.accountsDescription', {
+                defaultValue:
+                  'Connect and manage your mail accounts and choose when to start synchronizing messages.',
+              })
+        }
+        title={
+          embedded
+            ? null
+            : t('nav.devAccounts', { defaultValue: 'Mail accounts' })
+        }
       />
+      {reauthorizationAccounts.length > 0 ? (
+        <div
+          role='alert'
+          data-slot='mail-reauthorization-notice'
+          className='flex flex-wrap items-center justify-between gap-3 rounded-xl border border-destructive/30 bg-destructive/5 p-4 text-sm text-destructive'
+        >
+          <span>
+            {t('pages.accounts.reauthorizationNotice', {
+              addresses: reauthorizationAccounts
+                .map((account) => account.address)
+                .join(', '),
+              defaultValue:
+                'The authorization of {{addresses}} is no longer accepted: it does not synchronize or send until you connect it again with the same Provider.',
+            })}
+          </span>
+          <Button
+            onClick={() => {
+              setShowConnector(true);
+              setShowTemplates(false);
+              setShowLabels(false);
+              setShowSignatures(false);
+            }}
+            type='button'
+            variant='outline'
+          >
+            {t('pages.accounts.reauthorize', {
+              defaultValue: 'Reconnect',
+            })}
+          </Button>
+        </div>
+      ) : null}
       {authorizationNotice ? (
         <div
           role={authorizationNotice === 'success' ? 'status' : 'alert'}
@@ -786,6 +846,11 @@ export default function MailAccountsPage({
                   }}
                   onConnect={connect}
                   onConnectCredentials={connectWithCredentials}
+                  onConnected={() => {
+                    setShowConnector(false);
+                    refresh();
+                  }}
+                  receivedAfter={toSyncDate(policy.receivedAfter)}
                   providers={providers}
                 />
               )}

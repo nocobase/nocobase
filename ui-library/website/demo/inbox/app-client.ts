@@ -1,8 +1,8 @@
-export { usePageBreadcrumb } from '../../../../packages/app/app-client/src/page-breadcrumb.js';
 export { apiClientToken } from '../../../../packages/app/app-client/src/application.js';
 export { ClientApplicationContext } from '../../../../packages/app/app-client/src/application-context.js';
 export { useSubmission } from '../../../../packages/app/app-client/src/submission.js';
 export { usePendingFeedback } from '../../../../packages/app/app-client/src/pending-feedback.js';
+export { usePageBreadcrumb } from '../../../../packages/app/app-client/src/page-breadcrumb.js';
 export { resolveListState } from '../../../../packages/app/app-client/src/list-state.js';
 // Route overlays register their unsaved-changes question with the real navigation guard hook.
 export {

@@ -743,6 +743,78 @@ describe('MailClient → HTTP routes → service → database and jobs', () => {
     expect(cancelled.batchId).toBe(first[0].batchId);
   });
 
+  it('lists single and scheduled sends beside whole batches when grouped by batch', async () => {
+    const account = await alice.connectAccount({
+      type: 'fixture',
+      name: 'fixture',
+      initialSyncReceivedAfter: '2026-01-01T00:00:00.000Z',
+      address: 'alice@example.com',
+      username: 'alice',
+      password: 'password',
+    });
+    const create = (key: string, status: 'accepted' | 'pending') =>
+      store.createSubmission(
+        {
+          id: randomUUID(),
+          accountId: account.id,
+          status,
+          ...(status === 'pending'
+            ? { scheduledAt: '2099-01-01T00:00:00.000Z' }
+            : {}),
+        },
+        key,
+        'fixture',
+      );
+    await create('single-now', 'accepted');
+    await create('single-later', 'pending');
+    for (let index = 0; index < 3; index += 1)
+      await create(`bulk:first:${index}`, 'accepted');
+    for (let index = 0; index < 2; index += 1)
+      await create(`bulk:second:${index}`, 'pending');
+    const pages = [
+      await alice.listSubmissionsPage({ groupByBatch: true, pageSize: 2 }),
+      await alice.listSubmissionsPage({
+        groupByBatch: true,
+        page: 2,
+        pageSize: 2,
+      }),
+      await alice.listSubmissionsPage({
+        groupByBatch: true,
+        page: 3,
+        pageSize: 2,
+      }),
+    ];
+    // Four entries: two single sends and two batches, each batch whole on one page.
+    expect(pages.map((page) => page.total)).toEqual([4, 4, 4]);
+    expect(pages[2].items).toEqual([]);
+    const rows = pages.flatMap((page) => page.items);
+    expect(rows).toHaveLength(7);
+    expect(new Set(rows.map((row) => row.id)).size).toBe(7);
+    const singles = rows.filter((row) => !row.bulk);
+    expect(singles).toHaveLength(2);
+    expect(singles).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          status: 'pending',
+          scheduledAt: '2099-01-01T00:00:00.000Z',
+        }),
+        expect.objectContaining({ status: 'accepted' }),
+      ]),
+    );
+    for (const page of pages.slice(0, 2)) {
+      const batches = new Set(
+        page.items.flatMap((row) => (row.batchId ? [row.batchId] : [])),
+      );
+      const entries =
+        page.items.filter((row) => !row.bulk).length + batches.size;
+      expect(entries).toBe(2);
+    }
+    expect(
+      (await alice.listSubmissionsPage({ groupByBatch: true, bulkOnly: true }))
+        .total,
+    ).toBe(2);
+  });
+
   it('filters bulk history before pagination and rejects invalid offsets', async () => {
     const account = await alice.connectAccount({
       type: 'fixture',
