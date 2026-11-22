@@ -2,6 +2,8 @@ import { Args, Flags } from '@oclif/core';
 import type { Command, Interfaces } from '@oclif/core';
 import path from 'node:path';
 
+import type { CommandSuccessStatus } from '@nocobase/cli-envelope';
+
 import { AppCommand } from '../../context.ts';
 import {
   addDependencyCommand,
@@ -88,6 +90,14 @@ export type PluginRegisterResult =
   | PluginRegisterInstallRequiredResult
   | PluginRegisterPlanResult;
 
+/**
+ * Several plugins registered in one run, in the order given: each one's result as a single registration reports it.
+ * The run is `partial-success` when any of them is, and `success-noop` only when all of them are.
+ */
+export interface PluginRegisterManyResult {
+  readonly plugins: readonly PluginRegisterResult[];
+}
+
 export default class PluginRegister extends AppCommand {
   static override summary =
     'Install a plugin and wire it into this application.';
@@ -99,6 +109,7 @@ export default class PluginRegister extends AppCommand {
     '<%= config.bin %> <%= command.id %> @nocobase/app-plugin-audit-log',
     '<%= config.bin %> <%= command.id %> audit-log --version 1.2.0',
     '<%= config.bin %> <%= command.id %> audit-log --dry-run',
+    '<%= config.bin %> <%= command.id %> agents knowledge',
     '<%= config.bin %> <%= command.id %> audit-log --workspace-root . --app app-template-default',
   ];
 
@@ -107,10 +118,15 @@ export default class PluginRegister extends AppCommand {
   } = {
     name: Args.string({
       description:
-        'Plugin to register: a short name such as audit-log, or a full scoped app-plugin-* or app-portal-* package name.',
+        'Plugin to register: a short name such as audit-log, or a full scoped app-plugin-* or app-portal-* package name. Name several to register them in that order, a plugin after the ones it builds on.',
       required: true,
     }),
   };
+
+  // Further names follow the first one.
+  static override strict = false;
+
+  #lastStatus: CommandSuccessStatus = 'success';
 
   static override flags: {
     dir: Interfaces.OptionFlag<string | undefined>;
@@ -157,13 +173,38 @@ export default class PluginRegister extends AppCommand {
     }),
   };
 
-  public async run(): Promise<PluginRegisterResult> {
-    const { args, flags } = await this.parse(PluginRegister);
+  public async run(): Promise<PluginRegisterResult | PluginRegisterManyResult> {
+    const { argv, flags } = await this.parse(PluginRegister);
+    const names = [...new Set(argv as string[])];
     try {
-      return await this.register(args.name, flags);
+      if (names.length === 1) return await this.register(names[0], flags);
+      if (flags.version !== undefined)
+        throw pluginError(
+          '--version applies to one plugin. Register a plugin that needs a version on its own.',
+        );
+      const plugins: PluginRegisterResult[] = [];
+      const statuses: CommandSuccessStatus[] = [];
+      for (const name of names) {
+        this.#lastStatus = 'success';
+        plugins.push(await this.register(name, flags));
+        statuses.push(this.#lastStatus);
+      }
+      super.setStatus(
+        statuses.includes('partial-success')
+          ? 'partial-success'
+          : statuses.every((status) => status === 'success-noop')
+            ? 'success-noop'
+            : 'success',
+      );
+      return { plugins };
     } catch (error) {
       throw classifyPluginError(error);
     }
+  }
+
+  protected override setStatus(status: CommandSuccessStatus): void {
+    this.#lastStatus = status;
+    super.setStatus(status);
   }
 
   private async register(

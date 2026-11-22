@@ -432,6 +432,65 @@ describe('app plugin register command', () => {
     expect(await readFile(manifestPath, 'utf8')).toBe(before);
   });
 
+  it('registers several plugins in the order given', async () => {
+    const appRoot = await createAppWithInstalledPlugin();
+    const second = path.join(
+      appRoot,
+      'node_modules',
+      '@nocobase',
+      'app-plugin-knowledge',
+    );
+    await mkdir(second, { recursive: true });
+    await writeFile(
+      path.join(second, 'package.json'),
+      JSON.stringify({
+        name: '@nocobase/app-plugin-knowledge',
+        version: '1.0.0',
+        exports: { './server': './server/index.js' },
+      }),
+    );
+
+    const result = await runCommand(config, 'plugin:register', [
+      'audit-log',
+      'knowledge',
+      '--dir',
+      appRoot,
+      '--no-install',
+      '--no-skills',
+      '--json',
+    ]);
+    const response = JSON.parse(result.stdout) as {
+      status: string;
+      result: { plugins: Array<{ packageName: string; mode: string }> };
+    };
+    expect(response.status).toBe('success');
+    expect(
+      response.result.plugins.map(({ packageName, mode }) => [
+        packageName,
+        mode,
+      ]),
+    ).toEqual([
+      ['@nocobase/app-plugin-audit-log', 'register'],
+      ['@nocobase/app-plugin-knowledge', 'register'],
+    ]);
+    const manifest = JSON.parse(
+      await readFile(path.join(appRoot, 'package.json'), 'utf8'),
+    ) as { dependencies: Record<string, string> };
+    expect(Object.keys(manifest.dependencies)).toEqual(
+      expect.arrayContaining([
+        '@nocobase/app-plugin-audit-log',
+        '@nocobase/app-plugin-knowledge',
+      ]),
+    );
+    const server = await readFile(
+      path.join(appRoot, 'server', 'plugins.ts'),
+      'utf8',
+    );
+    expect(server.indexOf('app-plugin-audit-log')).toBeLessThan(
+      server.indexOf('app-plugin-knowledge'),
+    );
+  });
+
   it('reports a plugin registered on only one of its Client and Server sides', async () => {
     const appRoot = await createAppWithInstalledPlugin({ client: false });
     await runCommand(config, 'plugin:register', [
