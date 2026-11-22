@@ -181,3 +181,5 @@ export type {
   ManagementResumeContext,
   ManagementResult,
 } from './management.js';
+
+export { findStayExit } from './store.js';
