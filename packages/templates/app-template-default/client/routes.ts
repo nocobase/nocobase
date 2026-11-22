@@ -4,6 +4,7 @@ import { readAppClientRuntimeConfig } from '@nocobase/app-client/runtime';
 import { includeNotificationTemplateRoutes } from './pages/settings/notification-routes.js';
 import { Home } from 'lucide-react';
 import personalSettingsRoutes from './pages/me/routes.js';
+import workflowSettingsRoutes from './pages/settings/workflows/routes.js';
 import settingsShellRoutes from './pages/settings/shell-routes.js';
 import {
   defineAppRoutes,
@@ -80,6 +81,7 @@ export function createApplicationRoutes(
       appRoutes,
       settingsShellRoutes,
       personalSettingsRoutes,
+      workflowSettingsRoutes,
       databaseExplorerRoutes,
     ],
     config.get<boolean>('notificationTemplates.invitationConfigured') === true,

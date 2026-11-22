@@ -217,6 +217,8 @@ describe('app client routes', () => {
       },
       // Reading anyone's permissions is for an unrestricted role only.
       { name: 'settingsPermissionCheck', authorizedAs: 'unrestricted' },
+      { name: 'workflowDefinitions', authorizedAs: 'unrestricted' },
+      { name: 'workflowExecutions', authorizedAs: 'unrestricted' },
       { name: 'databaseExplorer', authorizedAs: 'database-explorer' },
       // Personal settings belong to whoever is signed in, so they stay out of page authorization.
       { name: 'personalSettingsHome', authorizedAs: null },
@@ -244,6 +246,8 @@ describe('app client routes', () => {
       '/settings/sharing-rules',
       '/settings/restriction-rules',
       '/settings/permission-check',
+      '/settings/workflows/definitions',
+      '/settings/workflows/executions',
       '/settings/database-explorer',
     ]);
     for (const loader of componentLoadersIn(resolveRoutes().routes))

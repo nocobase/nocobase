@@ -178,5 +178,6 @@ export type {
   ManagementOptions,
   ManagementPolicy,
   ManagementReentryContext,
+  ManagementResumeContext,
   ManagementResult,
 } from './management.js';

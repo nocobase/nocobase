@@ -11,6 +11,10 @@ import { Route, Routes, useLocation } from 'react-router';
 import { expect, it } from 'vitest';
 import { Breadcrumbs } from '../../client/components/breadcrumbs.js';
 import SettingsHomePage from '../../client/pages/settings/settings-home.js';
+import userEvent from '@testing-library/user-event';
+import WorkflowDefinitionsPage from '../../client/pages/settings/workflows/definitions.js';
+import WorkflowExecutionsPage from '../../client/pages/settings/workflows/executions.js';
+import workflowSettingsRoutes from '../../client/pages/settings/workflows/routes.js';
 import shellRoutes from '../../client/pages/settings/shell-routes.js';
 import { RouteTreeProvider } from '../../client/routing/route-context.js';
 import { useRouteNavigation } from '../../client/routing/route-navigation.js';
@@ -21,7 +25,7 @@ const { routes } = resolveAppClientContributions([
   {
     packageName: packageMetadata.name,
     source: 'application',
-    routes: [shellRoutes],
+    routes: [shellRoutes, workflowSettingsRoutes],
   },
   registeredPluginRoutes('@nocobase/app-plugin-users'),
   authorizationPages(),
@@ -49,6 +53,14 @@ function mount(
     <Shell>
       <Routes>
         <Route path='/settings' element={<SettingsHomePage />} />
+        <Route
+          path='/settings/workflows/definitions'
+          element={<WorkflowDefinitionsPage />}
+        />
+        <Route
+          path='/settings/workflows/executions'
+          element={<WorkflowExecutionsPage />}
+        />
         <Route path='*' element={<Where />} />
       </Routes>
     </Shell>,
@@ -95,4 +107,29 @@ it('links the System settings breadcrumb back to the home from a module view', a
     await within(trail).findByRole('link', { name: 'System settings' }),
   ).toHaveAttribute('href', '/main/settings');
   expect(within(trail).getByText('Roles and permissions')).toBeVisible();
+});
+
+it('opens workflow definitions and switches to execution history', async () => {
+  const user = userEvent.setup();
+  await mount({}, '/settings/workflows/definitions');
+  expect(
+    await screen.findByText('No workflows have been defined yet.'),
+  ).toBeVisible();
+  await user.click(await screen.findByRole('tab', { name: 'Executions' }));
+  expect(
+    await screen.findByText('No workflow executions have been recorded yet.'),
+  ).toBeVisible();
+  expect(screen.getByRole('tab', { name: 'Executions' })).toHaveAttribute(
+    'aria-selected',
+    'true',
+  );
+});
+
+it('opens execution history directly in Chinese', async () => {
+  await mount({ locale: 'zh-CN' }, '/settings/workflows/executions');
+  expect(await screen.findByRole('tab', { name: '执行记录' })).toHaveAttribute(
+    'aria-selected',
+    'true',
+  );
+  expect(screen.getByText('暂无流程执行记录。')).toBeVisible();
 });
