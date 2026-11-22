@@ -161,8 +161,10 @@ are registered by name (`createLifecycleRegistry`).
 definition is compiled again whenever the kinds or events change. The entry action `notifyOwner` on `blocked` and
 `in_review` records `owner_notified` and announces it. Notices (`server/providers/notifications.ts`) go to
 `projectsNoticesToken` when the App binds it (`ProjectsNotices`: `send` each notice with its kind, type and issue) —
-the assembling application keeps its inbox that way. Without it they go straight to the notification plugin's in-app
-channel `projects.inboxChannel` names (`inbox` by default) when that channel is configured.
+the assembling application keeps its inbox that way. Without it they go to the notification plugin's `notify()` as the
+kinds `server/providers/notice-kinds.ts` registers (`projects.mentioned`, `projects.assigned`, `projects.attention`,
+`projects.commented`, `projects.status-changed`, `projects.progress`, category `projects`): always to the in-app inbox,
+and to push and email by each kind's default and each member's notification settings.
 
 ## Permissions
 

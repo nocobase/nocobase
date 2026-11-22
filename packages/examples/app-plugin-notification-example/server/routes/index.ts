@@ -2,7 +2,10 @@ import {
   authenticationToken,
   type AuthEnv,
 } from '@nocobase/app-plugin-authentication';
-import { notificationServiceToken } from '@nocobase/app-plugin-notification/server';
+import {
+  notificationServiceToken,
+  type NotificationService as NotificationServiceContract,
+} from '@nocobase/app-plugin-notification/server';
 import { databaseManagerToken, type DatabaseManager } from '@nocobase/db';
 import type { AppPluginApplication } from '@nocobase/app-server/plugins';
 import {
@@ -19,7 +22,6 @@ import {
 } from '@nocobase/app-server/router';
 import { Hono } from 'hono';
 import { taskInvalidationToken } from '../task-realtime.js';
-import { renderTaskNotification } from '../templates.js';
 
 import {
   CreateTaskInput,
@@ -63,16 +65,7 @@ interface UserRow {
   readonly email: string;
 }
 
-interface NotificationService {
-  send(input: {
-    readonly idempotencyKey: string;
-    readonly source: {
-      readonly type: string;
-      readonly referenceId: string;
-    };
-    readonly messages: Record<string, object>;
-  }): Promise<unknown>;
-}
+type NotificationService = Pick<NotificationServiceContract, 'notify'>;
 
 type NotificationExampleApplication = AppPluginApplication;
 type NotificationExampleEnv = AuthEnv;
@@ -82,9 +75,9 @@ export const apiRoutes: AppApiRouteContribution<NotificationExampleApplication> 
     const router = new Hono<NotificationExampleEnv>();
     const authentication = container.resolve(authenticationToken);
     const database = container.resolve(databaseManagerToken);
-    const notifications = container.resolve(
+    const notifications: NotificationService = container.resolve(
       notificationServiceToken,
-    ) as unknown as NotificationService;
+    );
 
     router.onError(apiErrorHandler);
     router.use(ROUTE_PREFIX, authentication.required());
@@ -498,18 +491,19 @@ async function sendTaskNotification(
   recipientId: string,
   event: 'assigned' | 'updated',
 ): Promise<void> {
-  await notifications.send({
-    idempotencyKey: `notification-example:task:${task.id}:${event}:${task.updatedAt}:${recipientId}`,
+  // The kind decides the channels; each person's settings and devices decide who gets push or email.
+  await notifications.notify(`notification-example.task-${event}`, {
+    to: [recipientId],
+    data: {
+      title: task.title,
+      description: task.description,
+      status: task.status,
+    },
+    target: { type: 'route', path: `${TASK_PAGE_PATH}/${task.id}` },
     source: {
       type: `notification-example.task-${event}`,
       referenceId: task.id,
     },
-    messages: {
-      inbox: {
-        to: recipientId,
-        ...renderTaskNotification(task, event),
-        target: { type: 'route', path: `${TASK_PAGE_PATH}/${task.id}` },
-      },
-    },
+    idempotencyKey: `notification-example:task:${task.id}:${event}:${task.updatedAt}:${recipientId}`,
   });
 }
