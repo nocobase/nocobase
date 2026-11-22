@@ -7,6 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { css } from '@emotion/css';
 import {
   Collection,
   DisplayItemModel,
@@ -21,6 +22,16 @@ import { FieldModel } from '../../base';
 import { DetailsGridModel } from './DetailsGridModel';
 import { rebuildFieldSubModel } from '../../../internal/utils/rebuildFieldSubModel';
 import { isToManyAssociationField } from '../../../internal/utils/modelUtils';
+
+const mobileHorizontalItemMargin = css`
+  && {
+    margin-bottom: 11px;
+
+    @media (max-width: 575px) {
+      margin-bottom: 3px;
+    }
+  }
+`;
 
 /**
  * 从 record 中取值
@@ -218,7 +229,13 @@ export class DetailsItemModel extends DisplayItemModel<{
       }),
     );
     return (
-      <FormItem {...mergedProps} value={value}>
+      <FormItem
+        {...mergedProps}
+        itemMarginClassName={
+          this.context.isMobileLayout && mergedProps.layout === 'horizontal' ? mobileHorizontalItemMargin : undefined
+        }
+        value={value}
+      >
         <FieldModelRenderer model={modelForRender} />
       </FormItem>
     );
