@@ -7,9 +7,42 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import type { Collection } from '@nocobase/database';
 import { Plugin } from '@nocobase/server';
+import JSON5 from 'json5';
 import lodash from 'lodash';
 import { ErrorHandler } from './error-handler';
+
+function titleKey(title: string) {
+  return /{{\s*t\(\s*(['"`])([^'"`]+)\1\s*\)\s*}}/.exec(title)?.[2] || title;
+}
+
+function translateCollectionTitle(
+  collection: Collection,
+  t: (key: string, options: { ns: string | string[] }) => string,
+) {
+  const title = collection.options.title || collection.name;
+  const defaultNs = ['lm-collections', 'client'];
+  const expression = /^\s*{{\s*t\s*\(([\s\S]*)\)\s*}}\s*$/.exec(title);
+  if (!expression) {
+    return t(titleKey(title), { ns: defaultNs });
+  }
+
+  // Collection definitions use both JSON options and literals such as { ns: 'workflow' }.
+  try {
+    const [key, options] = JSON5.parse<[unknown, { ns?: unknown }?]>(`[${expression[1]}]`);
+    if (typeof key === 'string') {
+      const ns = options?.ns;
+      const hasNamespace =
+        typeof ns === 'string' || (Array.isArray(ns) && ns.every((value) => typeof value === 'string'));
+      return t(key, { ns: hasNamespace ? ns : defaultNs });
+    }
+  } catch {
+    // Older single-argument templates may use backticks.
+  }
+  const key = titleKey(title);
+  return t(key === title ? collection.name : key, { ns: defaultNs });
+}
 
 export class PluginErrorHandlerServer extends Plugin {
   errorHandler: ErrorHandler = new ErrorHandler();
@@ -21,9 +54,9 @@ export class PluginErrorHandlerServer extends Plugin {
   }
 
   registerSequelizeValidationErrorHandler() {
-    const findFieldTitle = (instance, path, ctx) => {
+    const findCollection = (instance, ctx): Collection | undefined => {
       if (!instance) {
-        return path;
+        return;
       }
 
       const model = instance.constructor;
@@ -31,18 +64,7 @@ export class PluginErrorHandlerServer extends Plugin {
       const dataSource = ctx.app.dataSourceManager.dataSources.get(dataSourceKey);
       const database = dataSource ? dataSource.collectionManager.db : ctx.db;
 
-      const collection = database.modelCollection.get(model);
-
-      if (!collection) {
-        return path;
-      }
-
-      const field = collection.getField(path);
-      const fieldOptions = field?.options;
-      const title = lodash.get(fieldOptions, 'uiSchema.title', path);
-      const re = /{{\s*t\(\s*(['"`])([^'"`]+)\1\s*\)\s*}}/g;
-      const parsed = re.exec(title);
-      return parsed?.[2] || title;
+      return database.modelCollection.get(model);
     };
 
     this.errorHandler.register(
@@ -51,15 +73,23 @@ export class PluginErrorHandlerServer extends Plugin {
         (err.name === 'SequelizeValidationError' || err.name === 'SequelizeUniqueConstraintError'),
       (err, ctx) => {
         ctx.body = {
-          errors: err.errors.map((err) => {
+          errors: err.errors.map((item) => {
             const t = ctx.i18n.t;
-            const title = findFieldTitle(err.instance, err.path, ctx);
-            return {
-              message: t(err.type, {
-                ns: this.i18nNs,
-                field: t(title, { ns: ['lm-collections', 'client'] }),
-              }),
-            };
+            const collection = findCollection(item.instance, ctx);
+            const field = collection?.getField(item.path);
+            const title = collection ? titleKey(lodash.get(field?.options, 'uiSchema.title', item.path)) : item.path;
+            const message = t(item.type, {
+              ns: this.i18nNs,
+              field: t(title, { ns: ['lm-collections', 'client'] }),
+            });
+            const constraint =
+              item.type === 'unique violation' ||
+              item.type === 'notNull Violation' ||
+              item.type === 'notNull violation';
+            if (constraint && collection) {
+              return { message: `${translateCollectionTitle(collection, t)}: ${message}` };
+            }
+            return { message };
           }),
         };
         ctx.status = 400;
