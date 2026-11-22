@@ -65,7 +65,8 @@
     "@nocobase/app-server": "workspace:^",
     "@nocobase/db": "workspace:^",
     "@nocobase/i18n": "workspace:^",
-    "@nocobase/app-plugin-authorization": "workspace:^"
+    "@nocobase/app-plugin-authorization": "workspace:^",
+    "@nocobase/service-provider": "workspace:^"
   },
   "devDependencies": {
     "@nocobase/app-testing": "workspace:*",

@@ -3,6 +3,7 @@ import type { LocaleResource } from '@nocobase/i18n';
 import type enUS from './en-US.js';
 
 const koKR: LocaleResource<typeof enUS> = {
+  fileUsage: '이슈 첨부 파일',
   actions: {
     cancel: '취소',
     close: '닫기',

@@ -3,6 +3,7 @@ import type { LocaleResource } from '@nocobase/i18n';
 import type enUS from './en-US.js';
 
 const esES: LocaleResource<typeof enUS> = {
+  fileUsage: 'Adjuntos de incidencias',
   actions: {
     cancel: 'Cancelar',
     close: 'Cerrar',

@@ -15,3 +15,8 @@ export {
   DEFAULT_FILE_UPLOAD_LIMIT,
   limitBytes,
 } from '../shared/upload-limits.js';
+
+export {
+  FILE_STORAGE_CHECK,
+  FILE_STORAGE_PAGE,
+} from '../shared/storage-access.js';

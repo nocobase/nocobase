@@ -1,6 +1,7 @@
 import type { AgentSessionsResource } from './en-US.js';
 
 const zhCN: AgentSessionsResource = {
+  fileUsage: '会话图片',
   navigation: { agentSessions: '我的 Agent' },
   actions: { close: '关闭', copy: '复制', cancel: '取消' },
   status: {

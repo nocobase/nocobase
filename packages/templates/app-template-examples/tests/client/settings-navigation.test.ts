@@ -1,3 +1,4 @@
+import { authorizationPages } from '../helpers/plugin-routes.js';
 import {
   resolveAppClientContributions,
   type AppClientRegisteredRoute,
@@ -26,6 +27,7 @@ function resolve() {
       source: 'plugin',
       routes: createNotificationRoutes(),
     },
+    authorizationPages(),
   ]).routes;
 }
 

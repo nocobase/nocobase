@@ -377,6 +377,29 @@ describe('section environment variables', () => {
     });
   });
 
+  it('records which declared variables the environment it was loaded from set, not those of the host process', async () => {
+    const { envString } = await import('../src/config/index.js');
+    const config = await createConfig({
+      scheduler: defineAppConfig({
+        defaults: {},
+        env: {
+          SCHEDULER_JOBS: envString('jobs'),
+          SCHEDULER_OTHER: envString('other'),
+        },
+      }),
+    });
+    const previous = process.env.SCHEDULER_OTHER;
+    process.env.SCHEDULER_OTHER = 'host';
+    try {
+      await config.loadSectionEnvironment({ SCHEDULER_JOBS: 'redis' });
+    } finally {
+      if (previous === undefined) delete process.env.SCHEDULER_OTHER;
+      else process.env.SCHEDULER_OTHER = previous;
+    }
+
+    expect(config.loadedEnvironmentVariables()).toEqual(['SCHEDULER_JOBS']);
+  });
+
   it('refuses one variable declared for two different fields', async () => {
     const { envString } = await import('../src/config/index.js');
     const config = await createConfig({

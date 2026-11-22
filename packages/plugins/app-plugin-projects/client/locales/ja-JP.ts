@@ -3,6 +3,7 @@ import type { LocaleResource } from '@nocobase/i18n';
 import type enUS from './en-US.js';
 
 const jaJP: LocaleResource<typeof enUS> = {
+  fileUsage: '課題の添付ファイル',
   actions: {
     cancel: 'キャンセル',
     close: '閉じる',

@@ -556,12 +556,12 @@ export const moduleOverviews: Readonly<Record<string, ModuleOverview>> = {
         ],
         steps: [
           [
-            'Reuse public Scheduler APIs and page:scheduler.schedules/access.',
-            '复用 Scheduler 公开接口并遵守 page:scheduler.schedules/access。',
+            'Register the Scheduler client plugin: it adds the Schedules settings page under Automation.',
+            '注册 Scheduler 客户端插件：它在「流程与自动化」下提供「定时任务」设置页。',
           ],
           [
-            'Provide list and detail entries separating rules, enabled state and execution records.',
-            '提供列表和详情入口，分别显示计划、启停与执行记录。',
+            'Grant settings:scheduler.schedules read to view, and manage to pause or resume; replace the page only through routeComponentOverrides.',
+            '授予 settings:scheduler.schedules 的 read 以查看、manage 以暂停或恢复；需要整页替换时用 routeComponentOverrides。',
           ],
           [
             'Do not treat a jobs example page as a production schedule manager.',

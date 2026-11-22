@@ -1,3 +1,4 @@
+import { authorizationPages } from '../helpers/plugin-routes.js';
 import packageMetadata from '../../package.json' with { type: 'json' };
 import { createAuthenticatedClientRenderer } from '../helpers/authenticated-client.js';
 import { resolveAppClientContributions } from '@nocobase/app-client/plugins';
@@ -19,6 +20,7 @@ const { routes } = resolveAppClientContributions([
     source: 'application',
     routes: applicationRoutes,
   },
+  authorizationPages(),
 ]);
 
 function Shell({ children }: { children: ReactNode }) {

@@ -3,6 +3,7 @@ import type { LocaleResource } from '@nocobase/i18n';
 import type enUS from './en-US.js';
 
 const idID: LocaleResource<typeof enUS> = {
+  fileUsage: 'Lampiran tugas',
   actions: {
     cancel: 'Batal',
     close: 'Tutup',
