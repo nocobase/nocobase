@@ -21,7 +21,7 @@ import type { TxRunner } from '../../kernel/tx.js';
 import { asJson, jsonObject } from '../../kernel/values.js';
 import type { AgentService } from '../agents/index.js';
 import { PREFERRED_EFFORTS } from '../../../shared/agents.js';
-import { findAgent } from '../agents/index.js';
+import { findAgent, lockAgentRow } from '../agents/index.js';
 import { preferencesRepo, settingsRepo } from './conversation.store.js';
 
 const CHAT_SETTINGS_KEY = 'chat';
@@ -130,6 +130,9 @@ export function createChatSettingsService(deps: {
           next.defaultAgentId !== null &&
           next.defaultAgentId !== 'online'
         ) {
+          // Making it the default races limiting who may chat with it (`agent.service.ts`): both lock the agent's row
+          // before reading the other's state, so the later one sees what the earlier one saved.
+          await lockAgentRow(conn, next.defaultAgentId);
           const agent = await findAgent(conn, next.defaultAgentId);
           if (!agent || agent.status !== 'enabled')
             throw invalid('defaultAgentId names no enabled agent.', {

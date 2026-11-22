@@ -656,12 +656,14 @@ export function createConversationService(
     conn: DatabaseConnection,
     agent: Agent,
     userId: string,
+    loadOptions: () => Promise<readonly string[] | undefined> = () =>
+      effortOptions(conn, agent, userId),
   ): Promise<string | undefined> {
     const entry = agent.modelEntries[0];
     if (agent.source !== 'runner' || !entry) return undefined;
     const { effort } = await deps.settings.preferences(userId, conn);
     if (!effort || !effortsFor(entry).includes(effort)) return undefined;
-    const options = await effortOptions(conn, agent, userId);
+    const options = await loadOptions();
     return options === undefined || options.includes(effort)
       ? effort
       : undefined;
@@ -672,12 +674,14 @@ export function createConversationService(
     agent: Agent,
     userId: string,
     selected: string | null | undefined,
+    loadOptions: () => Promise<readonly string[] | undefined> = () =>
+      effortOptions(conn, agent, userId),
   ): Promise<string | null> {
     // Only an explicitly selected non-default value is a conversation preference.
     const preference =
       selected && selected !== agent.modelEntries[0]?.effort ? selected : null;
     if (preference === null) return null;
-    const options = await effortOptions(conn, agent, userId);
+    const options = await loadOptions();
     if (options !== undefined && !options.includes(preference))
       throw invalid(
         'The reasoning effort is no longer supported. Select an available effort or restore the Agent default.',
@@ -2256,13 +2260,18 @@ export function createConversationService(
           throw invalid('Select a callable Runner agent.');
         if (runnerConfig && !(await canAnswer(unit.conn, agent, userId)))
           throw conflict('This agent has no available execution environment.');
+        // The runners that could take it are read once, for the preferred effort and its check alike.
+        let options: Promise<readonly string[] | undefined> | undefined;
+        const loadOptions = () =>
+          (options ??= effortOptions(unit.conn, agent, userId));
         const effort = await validateEffort(
           unit.conn,
           agent,
           userId,
           request.effort !== undefined
             ? request.effort
-            : await preferredEffort(unit.conn, agent, userId),
+            : await preferredEffort(unit.conn, agent, userId, loadOptions),
+          loadOptions,
         );
         const title =
           request.title === undefined

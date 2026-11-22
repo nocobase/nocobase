@@ -1,4 +1,4 @@
-import { afterEach, expect, it } from 'vitest';
+import { afterEach, expect, it, vi } from 'vitest';
 import type { AuthorizationContext } from '@nocobase/authorization/core';
 import type { OnlineAgentContext } from '../server/online/agent/types.js';
 import { asJson } from '../server/kernel/values.js';
@@ -457,9 +457,16 @@ it('starts a conversation with the person’s own effort when none is chosen, wh
       user: 'alice',
       body: { agentId: id, ...body },
     });
+  // The runtimes that could take it are read once, for the preference and its check alike: no more often than for
+  // an effort chosen outright.
+  const runnersFor = vi.spyOn(h.services.eligibility, 'runnersFor');
   expect((await start({})).body.data.effort).toBe('high');
+  const preferred = runnersFor.mock.calls.length;
+  runnersFor.mockClear();
   // A choice made for the conversation wins.
   expect((await start({ effort: 'low' })).body.data.effort).toBe('low');
+  expect(preferred).toBe(runnersFor.mock.calls.length);
+  runnersFor.mockRestore();
   // Someone else's preference is their own.
   expect(
     (

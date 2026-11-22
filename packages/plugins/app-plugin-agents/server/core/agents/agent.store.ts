@@ -289,6 +289,22 @@ export async function reviseAgent(
 }
 
 /**
+ * Locks the agent's row until the transaction ends, changing nothing: an update of its id to itself, which every
+ * dialect turns into a row lock (SQLite, the whole database). Changing who may chat with an agent and making it the
+ * team's default both take it before they read the other's state, so the two never pass each other's check.
+ */
+export async function lockAgentRow(
+  conn: DatabaseConnection,
+  id: string,
+): Promise<void> {
+  await conn.query
+    .updateTable(AGENTS)
+    .set({ id })
+    .where('id', '=', id)
+    .execute();
+}
+
+/**
  * Takes the agent's claim lock: an update of its row, which on databases with row locks makes concurrent claims for
  * the same agent wait for each other until the claiming transaction ends.
  */

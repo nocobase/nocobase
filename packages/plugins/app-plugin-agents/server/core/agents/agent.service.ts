@@ -60,6 +60,7 @@ import {
   insertAgent,
   isRemoved,
   listAgents,
+  lockAgentRow,
   reviseAgent,
   updateAgent,
   type AgentRecord,
@@ -443,15 +444,17 @@ export function createAgentService(deps: AgentServiceDeps): AgentService {
       try {
         return await tx.run(async (unit) => {
           const { conn, emit } = unit;
+          const limiting =
+            patch.chatRoles !== undefined &&
+            normalizeChatRoles(patch.chatRoles) !== null;
+          // Limiting who may chat with it races making it the team default (`chat-settings.ts`): both lock the
+          // agent's row before reading the other's state, so the later one sees what the earlier one saved.
+          if (limiting) await lockAgentRow(conn, id);
           const before = await require(conn, id);
           if (patch.expectedRevision !== before.revision)
             throw revisionConflict(before.revision);
           // The team's default is everyone's: it stays open to everyone while it is the default.
-          if (
-            patch.chatRoles !== undefined &&
-            normalizeChatRoles(patch.chatRoles) &&
-            (await teamDefaultAgentId(conn)) === id
-          )
+          if (limiting && (await teamDefaultAgentId(conn)) === id)
             throw invalid(
               'The team default agent must stay open to everyone: choose another team default first.',
               { field: 'chatRoles', reason: 'AGENT_TEAM_DEFAULT' },
