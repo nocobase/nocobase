@@ -27,6 +27,22 @@ describe('DatabaseNotificationStore', () => {
     await testDatabase.destroy();
   });
 
+  it('restores skipped recipients on replay, including a dispatch with no deliveries', async () => {
+    const initial = withIdempotency(createBundle(), 'event', 'fingerprint');
+    const skipped = [
+      { userId: 'recipient', channelType: 'email', reason: 'preference' },
+    ] as const;
+    await store.createOrGetByIdempotency({
+      log: { ...initial.log, skipped },
+      deliveries: [],
+    });
+    const replay = await store.createOrGetByIdempotency(initial);
+    expect(replay).toMatchObject({
+      outcome: 'existing',
+      bundle: { log: { skipped, status: 'completed' }, deliveries: [] },
+    });
+  });
+
   it('persists a delivery lifecycle and rejects stale state transitions', async () => {
     const bundle = createBundle();
     await store.create(bundle);

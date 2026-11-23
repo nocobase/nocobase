@@ -38,6 +38,7 @@ const enUS = {
       label: 'Type',
       today: 'Today',
     },
+    detailsUnavailable: 'Some inbox details could not be loaded.',
     loadFailed: 'Unable to load the inbox',
     loadFailedDescription: 'Check your connection and try again.',
     loadMore: 'Load more',

@@ -29,7 +29,7 @@ import { apiKey } from '../server/api-keys.js';
 import { IdleKeys, type IdleReminder } from '../server/idle.js';
 import { MemberKeys } from '../server/member-keys.js';
 import { apiRoutes } from '../server/routes/index.js';
-import { ScopedApiKeys } from '../server/scoped-keys.js';
+import { ScopedApiKeys, connectOwnKeyPolicy } from '../server/scoped-keys.js';
 import { createApiKeyScopes } from '../server/scopes.js';
 import { registerApiKeySettings } from '../server/settings.js';
 import {
@@ -1250,6 +1250,88 @@ describe('system keys', () => {
     expect(expiryOf()).toEqual([
       expect.objectContaining({ userId: adminId, system: true }),
     ]);
+  });
+  it('applies idle disabling to a personal key issued from the native sign-in endpoint', async () => {
+    await keys.setRules(
+      {
+        allowSameAsMe: true,
+        personalMaxDays: null,
+        personalDefaultDays: 30,
+        idleDisableDays: 30,
+      },
+      adminId,
+    );
+    const disconnect = await connectOwnKeyPolicy(auth, keys);
+    try {
+      const response = await auth.handler(
+        new Request(BASE_URL + '/api-key/create', {
+          method: 'POST',
+          headers: {
+            'content-type': 'application/json',
+            origin: 'http://localhost',
+            cookie: adminCookie,
+          },
+          body: JSON.stringify({ name: 'native personal key' }),
+        }),
+      );
+      expect(response.status).toBe(200);
+      const { id } = (await response.json()) as { id: string };
+      const idle = new IdleKeys({
+        connection: () => database.connection(),
+        config: () => ({}),
+        systemKeys,
+      });
+      const now = Date.now();
+      await idle.sweep(new Date(now + 23 * DAY));
+      await idle.sweep(new Date(now + 31 * DAY));
+      expect((await keys.get(adminId, id)).enabled).toBe(false);
+    } finally {
+      disconnect();
+    }
+  });
+
+  it('keeps a system key enabled when its last use or its issued value changed after the scan', async () => {
+    const created = await systemKeys.create(adminId, {
+      name: 'active integration',
+      ownerId: adminId,
+      expiresInDays: 30,
+      permissions: readOrders,
+    });
+    const connection = database.connection();
+    const snapshot = () =>
+      connection.query
+        .selectFrom('apikey')
+        .select(['id', 'createdAt', 'lastRequest'])
+        .where('id', '=', created.key.id)
+        .executeTakeFirstOrThrow<{
+          id: string;
+          createdAt: unknown;
+          lastRequest: unknown;
+        }>();
+    await connection.query
+      .updateTable('apikey')
+      .set({ createdAt: new Date(Date.now() - DAY) })
+      .where('id', '=', created.key.id)
+      .execute();
+    const unused = await snapshot();
+    await connection.query
+      .updateTable('apikey')
+      .set({ lastRequest: new Date() })
+      .where('id', '=', unused.id)
+      .execute();
+    const { identityId } = created.key;
+    expect(
+      await systemKeys.disableIfIdle(identityId, unused, 30, new Date()),
+    ).toBe(false);
+    const used = await snapshot();
+    await systemKeys.rotate(identityId, adminId);
+    expect(
+      await systemKeys.disableIfIdle(identityId, used, 30, new Date()),
+    ).toBe(false);
+    expect((await systemKeys.get(identityId)).enabled).toBe(true);
+    expect(
+      (await systemKeys.events(identityId)).map(({ action }) => action),
+    ).not.toContain('disable');
   });
 });
 

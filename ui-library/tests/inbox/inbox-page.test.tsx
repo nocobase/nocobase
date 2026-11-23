@@ -120,6 +120,29 @@ describe('the inbox page', () => {
     await waitFor(() => expect(plugin.mark).toHaveBeenCalledWith('a', 'read'));
   });
 
+  it('keeps native items visible and retries a failed source query independently', async () => {
+    const waiting = vi
+      .fn()
+      .mockRejectedValueOnce(new Error('Unavailable'))
+      .mockResolvedValue([]);
+    const notices = vi.fn().mockResolvedValue([]);
+    render(
+      <Frame>
+        <InboxPage source={{ id: 'test', waiting, notices }} />
+      </Frame>,
+    );
+    const status = await screen.findByRole('button', { name: 'Retry' });
+    expect(screen.getAllByText('Title a').length).toBeGreaterThan(1);
+    fireEvent.click(status);
+    await waitFor(() =>
+      expect(
+        screen.queryByRole('button', { name: 'Retry' }),
+      ).not.toBeInTheDocument(),
+    );
+    expect(waiting).toHaveBeenCalledTimes(2);
+    expect(notices).toHaveBeenCalledTimes(1);
+  });
+
   it('asks the server for one category or the unread items as the rail chooses', async () => {
     render(
       <Frame>

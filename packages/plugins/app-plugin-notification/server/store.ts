@@ -4,6 +4,7 @@ import type { DatabaseManager, Row } from '@nocobase/db';
 import {
   isNotificationProviderErrorCategory,
   type NotificationProviderErrorCategory,
+  type NotificationNotifyResult,
 } from './types.js';
 
 export type NotificationLogStatus =
@@ -29,6 +30,7 @@ export interface NotificationLogRecord {
   readonly id: string;
   readonly idempotencyKey?: string;
   readonly requestFingerprint?: string;
+  readonly skipped?: NotificationNotifyResult['skipped'];
   readonly sourceType: string;
   readonly sourceReferenceId?: string;
   /** The notification kind the send was made for (`notify()`, or `send({ kind })`). */
@@ -232,6 +234,7 @@ interface NotificationRow extends Row {
   id: string;
   idempotencyKey?: string | null;
   requestFingerprint?: string | null;
+  skipped?: NotificationNotifyResult['skipped'] | string | null;
   sourceType: string;
   sourceReferenceId?: string;
   kind?: string | null;
@@ -955,6 +958,7 @@ export function createDatabaseNotificationStore(
 export function summarizeNotificationDeliveries(
   deliveries: readonly NotificationDeliveryRecord[],
 ): NotificationLogStatus {
+  if (!deliveries.length) return 'completed';
   if (deliveries.every((item) => item.status === 'pending')) return 'pending';
   if (
     deliveries.some(
@@ -978,6 +982,7 @@ function toLogRow(record: NotificationLogRecord): NotificationRow {
     id: record.id,
     idempotencyKey: record.idempotencyKey,
     requestFingerprint: record.requestFingerprint,
+    ...(record.skipped ? { skipped: JSON.stringify(record.skipped) } : {}),
     sourceType: record.sourceType,
     sourceReferenceId: record.sourceReferenceId,
     ...(record.kind === undefined ? {} : { kind: record.kind }),
@@ -997,6 +1002,14 @@ function fromLogRow(
     id: row.id,
     idempotencyKey: row.idempotencyKey ?? undefined,
     requestFingerprint: row.requestFingerprint ?? undefined,
+    ...(row.skipped
+      ? {
+          skipped: parseRequiredJson<NotificationNotifyResult['skipped']>(
+            row.skipped,
+            'skipped',
+          ),
+        }
+      : {}),
     sourceType: row.sourceType,
     sourceReferenceId: row.sourceReferenceId,
     ...(row.kind ? { kind: row.kind } : {}),

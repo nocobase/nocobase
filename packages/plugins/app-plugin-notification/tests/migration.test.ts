@@ -21,6 +21,7 @@ import instantMigration from '../database/migrations/202609130001_notification_i
 import namesMigration from '../database/migrations/202609200001_notification_channel_names.js';
 import singleProviderMigration from '../database/migrations/202609200003_notification_single_provider.js';
 import kindsMigration from '../database/migrations/202611220005_notification_kinds_and_preferences.js';
+import skippedMigration from '../database/migrations/202611220006_notification_skipped_recipients.js';
 import { notificationMigrations } from './helpers/database.js';
 
 const COLLECTIONS = [
@@ -37,6 +38,7 @@ const MIGRATION_NAMES = [
   '202609200001_notification_channel_names',
   '202609200003_notification_single_provider',
   '202611220005_notification_kinds_and_preferences',
+  skippedMigration.name,
 ] as const;
 
 interface DispatchRow extends Row {
@@ -616,6 +618,19 @@ describeMigration(kindsMigration.name, {
         .where('id', '=', 'before-kinds')
         .executeTakeFirst(),
     ).toMatchObject({ id: 'before-kinds' });
+  },
+});
+
+describeMigration(skippedMigration.name, {
+  sources: notificationMigrations,
+  up: async ({ expectCollection }) => {
+    await expectCollection('notificationDispatches').toHaveField('skipped', {
+      type: 'json',
+      nullable: true,
+    });
+  },
+  down: async ({ expectCollection }) => {
+    await expectCollection('notificationDispatches').not.toHaveField('skipped');
   },
 });
 

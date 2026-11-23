@@ -38,6 +38,7 @@ const zhCN: InAppNotificationClientResource = {
       label: '类型',
       today: '今天',
     },
+    detailsUnavailable: '部分站内信详情加载失败。',
     loadFailed: '无法加载收件箱',
     loadFailedDescription: '请检查网络后重试。',
     loadMore: '加载更多',

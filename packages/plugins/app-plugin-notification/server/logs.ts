@@ -12,7 +12,7 @@ import type {
 import { summarizeNotificationDeliveries } from './store.js';
 
 export interface NotificationLogDetails {
-  readonly log: Omit<NotificationLogRecord, 'messageSnapshot'>;
+  readonly log: Omit<NotificationLogRecord, 'messageSnapshot' | 'skipped'>;
   readonly deliveries: readonly {
     readonly delivery: Omit<
       NotificationDeliveryRecord,
@@ -45,7 +45,9 @@ export class NotificationLogs {
 
   async list(
     limit?: number,
-  ): Promise<readonly Omit<NotificationLogRecord, 'messageSnapshot'>[]> {
+  ): Promise<
+    readonly Omit<NotificationLogRecord, 'messageSnapshot' | 'skipped'>[]
+  > {
     return (await this.store.listLogs(limit)).map(redactLog);
   }
 
@@ -146,8 +148,12 @@ export class NotificationLogs {
 
 function redactLog(
   record: NotificationLogRecord,
-): Omit<NotificationLogRecord, 'messageSnapshot'> {
-  const { messageSnapshot: _messageSnapshot, ...safe } = record;
+): Omit<NotificationLogRecord, 'messageSnapshot' | 'skipped'> {
+  const {
+    messageSnapshot: _messageSnapshot,
+    skipped: _skipped,
+    ...safe
+  } = record;
   return safe;
 }
 

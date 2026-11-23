@@ -10,7 +10,7 @@
  *   even after the sweep did not run for a while.
  * - Used after a reminder, the reminder no longer counts.
  */
-import type { DatabaseConnection } from '@nocobase/db';
+import type { DatabaseConnection, UpdateQuery } from '@nocobase/db';
 
 import type { ApiKeysConfig } from './scoped-keys.js';
 import type { SystemApiKeys } from './system-keys.js';
@@ -39,13 +39,33 @@ export interface IdleSweepResult {
   readonly notices: number;
 }
 
-interface KeyRow {
+export interface IdleKeySnapshot {
   readonly id: string;
+  readonly createdAt: unknown;
+  readonly lastRequest: unknown;
+}
+
+/** Match the same issued value and last use that the sweep evaluated. */
+export function unchangedIdleKey(
+  connection: DatabaseConnection,
+  key: IdleKeySnapshot,
+): UpdateQuery {
+  return connection.query
+    .updateTable('apikey')
+    .where('id', '=', key.id)
+    .where('enabled', '=', true)
+    .where('createdAt', '=', key.createdAt)
+    .where(
+      'lastRequest',
+      key.lastRequest == null ? 'is' : '=',
+      key.lastRequest ?? null,
+    );
+}
+
+interface KeyRow extends IdleKeySnapshot {
   readonly name: string | null;
   readonly referenceId: string;
-  readonly createdAt: unknown;
   readonly expiresAt: unknown;
-  readonly lastRequest: unknown;
   readonly metadata: unknown;
 }
 
@@ -155,18 +175,19 @@ export class IdleKeys {
         remindedAt !== null && remindedAt > start ? remindedAt : null;
       if (idle >= days && reminder !== null) {
         if (now.getTime() - reminder < IDLE_NOTICE_DAYS * DAY) continue;
-        if (systemKey)
-          await this.options.systemKeys.disable(systemKey.identityId, null, {
-            reason: 'idle',
-            idleDays: days,
-          });
-        else
-          await db.query
-            .updateTable('apikey')
-            .set({ enabled: false, updatedAt: now })
-            .where('id', '=', key.id)
-            .execute();
-        disabled += 1;
+        const changed = systemKey
+          ? await this.options.systemKeys.disableIfIdle(
+              systemKey.identityId,
+              key,
+              days,
+              now,
+            )
+          : (
+              await unchangedIdleKey(db, key)
+                .set({ enabled: false, updatedAt: now })
+                .execute()
+            ).updatedCount;
+        if (changed) disabled += 1;
         continue;
       }
       if (idle < days - IDLE_NOTICE_DAYS || reminder !== null) continue;
@@ -192,15 +213,13 @@ export class IdleKeys {
           .where('identityId', '=', systemKey.identityId)
           .execute();
       else
-        await db.query
-          .updateTable('apikey')
+        await unchangedIdleKey(db, key)
           .set({
             metadata: JSON.stringify({
               ...metadata,
               idleRemindedAt: now.toISOString(),
             }),
           })
-          .where('id', '=', key.id)
           .execute();
       reminded += 1;
     }
@@ -238,13 +257,10 @@ export class IdleKeys {
       system: true,
       disableAt: new Date(expires),
     });
-    await this.options
-      .connection()
-      .query.updateTable('apikey')
+    await unchangedIdleKey(this.options.connection(), key)
       .set({
         metadata: JSON.stringify(metadata),
       })
-      .where('id', '=', key.id)
       .execute();
     return true;
   }

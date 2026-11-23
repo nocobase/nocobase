@@ -61,6 +61,7 @@ class MemoryPreferenceStore implements NotificationPreferenceStore {
 
 function harness(
   options: {
+    readonly emailOnly?: boolean;
     /** Each person's chosen language. */
     readonly locales?: Readonly<Record<string, string>>;
     /** Each person's push devices. */
@@ -134,7 +135,9 @@ function harness(
     locales: ['en-US', 'zh-CN'],
     languagePolicy: 'The application language',
     variables: [{ name: 'title', description: 'Request title' }],
-    channels: { 'in-app': 'required', email: 'on', 'web-push': 'off' },
+    channels: options.emailOnly
+      ? { email: 'on' }
+      : { 'in-app': 'required', email: 'on', 'web-push': 'off' },
     content: ({ locale, data }) => ({
       title: `${locale}: ${String(data.title)}`,
       body: 'Please review.',
@@ -263,6 +266,34 @@ describe('notify()', () => {
     }
   });
 
+  it('replays a skipped decision after preferences change and reserves its idempotency key', async () => {
+    const h = harness({ emailOnly: true });
+    try {
+      const preference = { kind: 'approval.requested', channelType: 'email' };
+      const input = { to: ['alice'], idempotencyKey: 'skipped-event' };
+      await h.manager.savePreferences('alice', [
+        { ...preference, enabled: false },
+      ]);
+      const first = await h.manager.notify(preference.kind, input);
+      expect(first.send).toBeUndefined();
+      expect(first.skipped).toEqual([
+        { userId: 'alice', channelType: 'email', reason: 'preference' },
+      ]);
+      await h.manager.savePreferences('alice', [
+        { ...preference, enabled: true },
+      ]);
+      await expect(h.manager.notify(preference.kind, input)).resolves.toEqual(
+        first,
+      );
+      await expect(
+        h.manager.notify(preference.kind, { ...input, to: ['carol'] }),
+      ).rejects.toMatchObject({ code: 'IDEMPOTENCY_KEY_CONFLICT' });
+      expect(h.sent).not.toHaveBeenCalled();
+    } finally {
+      await h.manager.close();
+    }
+  });
+
   it('returns the first send for a repeated idempotency key', async () => {
     const h = harness();
     try {
@@ -274,6 +305,7 @@ describe('notify()', () => {
         to: ['carol'],
         idempotencyKey: 'approval-2',
       });
+      expect(second.skipped).toEqual(first.skipped);
       expect(second.send).toMatchObject({
         notificationId: first.send!.notificationId,
         deduplicated: true,

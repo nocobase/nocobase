@@ -41,7 +41,6 @@ import {
   type NotificationDeliveryRecord,
   type NotificationErrorRecord,
   type NotificationLogRecord,
-  type NotificationLogStatus,
   type NotificationRetryResolutionRecord,
   type NotificationStore,
 } from './store.js';
@@ -153,6 +152,11 @@ interface StatusSubscription {
 }
 
 const MAX_RETRY_TIMER_MS = 2_147_483_647;
+
+interface DispatchResult {
+  readonly send: NotificationSendResult;
+  readonly skipped: NotificationNotifyResult['skipped'];
+}
 
 export class NotificationIdempotencyConflictError extends Error {
   readonly code = 'IDEMPOTENCY_KEY_CONFLICT';
@@ -440,14 +444,15 @@ export class NotificationManager<
       input.idempotencyKey,
       requestFingerprint,
     );
-    if (existing) return existing;
-    return this.sendExpanded({
+    if (existing) return existing.send;
+    const result = await this.sendExpanded({
       idempotencyKey: input.idempotencyKey,
       requestFingerprint,
       source: input.source,
       kind: input.kind,
       recipients: expandedRecipients,
     });
+    return result.send;
   }
 
   /** Validates one channel message and lists a delivery target per recipient, each carrying that message. */
@@ -478,7 +483,7 @@ export class NotificationManager<
   private async replayExisting(
     idempotencyKey: string,
     requestFingerprint: string,
-  ): Promise<NotificationSendResult | undefined> {
+  ): Promise<DispatchResult | undefined> {
     const existing = await this.store.getLogByIdempotencyKey(idempotencyKey);
     if (!existing) return undefined;
     if (existing.requestFingerprint !== requestFingerprint) {
@@ -492,11 +497,14 @@ export class NotificationManager<
     );
     const snapshot = await this.statusSnapshot(existing);
     return {
-      notificationId: snapshot.notificationId,
-      idempotencyKey,
-      deduplicated: true,
-      status: snapshot.status,
-      deliveries: snapshot.deliveries,
+      skipped: existing.skipped ?? [],
+      send: {
+        notificationId: snapshot.notificationId,
+        idempotencyKey,
+        deduplicated: true,
+        status: snapshot.status,
+        deliveries: snapshot.deliveries,
+      },
     };
   }
 
@@ -509,8 +517,9 @@ export class NotificationManager<
     };
     readonly kind?: string;
     readonly recipients: readonly ExpandedRecipient[];
-  }): Promise<NotificationSendResult> {
-    if (input.recipients.length === 0)
+    readonly skipped?: NotificationNotifyResult['skipped'];
+  }): Promise<DispatchResult> {
+    if (input.recipients.length === 0 && input.skipped === undefined)
       throw new Error('At least one notification recipient is required.');
     const now = await this.store.now();
     const notificationId = randomUUID();
@@ -543,7 +552,7 @@ export class NotificationManager<
         });
       }
     }
-    if (deliveries.length === 0)
+    if (deliveries.length === 0 && input.skipped === undefined)
       throw new Error(
         'At least one notification Channel delivery is required.',
       );
@@ -560,7 +569,8 @@ export class NotificationManager<
           delivery.messageSnapshot,
         ]),
       ),
-      status: initialNotificationStatus(deliveries),
+      ...(input.skipped?.length ? { skipped: input.skipped } : {}),
+      status: summarizeNotificationDeliveries(deliveries),
       createdAt: now,
       updatedAt: now,
     };
@@ -599,11 +609,14 @@ export class NotificationManager<
         'Persisted notification could not be read after creation.',
       );
     return {
-      notificationId: snapshot.notificationId,
-      idempotencyKey: input.idempotencyKey,
-      deduplicated: persisted.outcome === 'existing',
-      status: snapshot.status,
-      deliveries: snapshot.deliveries,
+      skipped: persisted.bundle.log.skipped ?? [],
+      send: {
+        notificationId: snapshot.notificationId,
+        idempotencyKey: input.idempotencyKey,
+        deduplicated: persisted.outcome === 'existing',
+        status: snapshot.status,
+        deliveries: snapshot.deliveries,
+      },
     };
   }
 
@@ -646,15 +659,35 @@ export class NotificationManager<
     });
     // A repeat of the same request returns the first send as it is, whatever preferences and languages say now; another
     // request under the same key, including a direct send(), is a conflict.
+    const outcome = ({
+      send,
+      skipped,
+    }: DispatchResult): NotificationNotifyResult => ({
+      kind: kindId,
+      ...(send.deliveries.length ? { send } : {}),
+      skipped,
+    });
     if (input.idempotencyKey !== undefined) {
       const existing = await this.replayExisting(
         idempotencyKey,
         requestFingerprint,
       );
-      if (existing) return { kind: kindId, send: existing, skipped: [] };
+      if (existing) return outcome(existing);
     }
     const skipped: NotificationNotifyResult['skipped'][number][] = [];
-    if (!userIds.length) return { kind: kindId, skipped };
+    if (!userIds.length) {
+      if (input.idempotencyKey === undefined) return { kind: kindId, skipped };
+      return outcome(
+        await this.sendExpanded({
+          idempotencyKey,
+          requestFingerprint,
+          kind: kindId,
+          source,
+          recipients: [],
+          skipped,
+        }),
+      );
+    }
     const adjustable = kind.policies.filter(({ adjustable }) => adjustable);
     const choices = new Map<string, boolean>();
     if (adjustable.length)
@@ -721,15 +754,18 @@ export class NotificationManager<
         );
       }
     }
-    if (!recipients.length) return { kind: kindId, skipped };
-    const send = await this.sendExpanded({
-      idempotencyKey,
-      requestFingerprint,
-      kind: kindId,
-      source,
-      recipients,
-    });
-    return { kind: kindId, send, skipped };
+    if (!recipients.length && input.idempotencyKey === undefined)
+      return { kind: kindId, skipped };
+    return outcome(
+      await this.sendExpanded({
+        idempotencyKey,
+        requestFingerprint,
+        kind: kindId,
+        source,
+        recipients,
+        skipped,
+      }),
+    );
   }
 
   /**
@@ -1476,16 +1512,6 @@ function recipientKeyOf(
       if (typeof value === 'string' && value) return value.slice(0, 191);
     }
   return channel.slice(0, 191);
-}
-
-function initialNotificationStatus(
-  deliveries: readonly NotificationDeliveryRecord[],
-): NotificationLogStatus {
-  if (deliveries.every((delivery) => delivery.status === 'failed'))
-    return 'failed';
-  if (deliveries.some((delivery) => delivery.status === 'failed'))
-    return 'processing';
-  return 'pending';
 }
 
 export function createNotificationManager<

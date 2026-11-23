@@ -1234,6 +1234,10 @@ describe('API key permissions in the shape of a permission set', () => {
       await identity(),
     );
     expect((await strict.rules()).allowSameAsMe).toBe(false);
+    await expect(strict.rotate(personId, before.key.id)).rejects.toMatchObject({
+      status: 403,
+      code: 'SAME_AS_ME_DISABLED',
+    });
     for (const input of [
       { name: 'new', expiresInDays: 7, permissions: null },
       // The deprecated shape is refused the same way.

@@ -289,10 +289,13 @@ function InboxPageContent({
       list: state.list,
     };
 
+  const failedDetails = [notices, waiting, pending].filter(
+    (query) => query.isError,
+  );
   const loaded =
     pages.data !== undefined &&
-    waiting.data !== undefined &&
-    (ids.length === 0 || notices.data !== undefined) &&
+    (waiting.data !== undefined || waiting.isError) &&
+    (ids.length === 0 || notices.data !== undefined || notices.isError) &&
     (kind !== 'all' ||
       Object.values(collectionStates).every((state) => state.loaded));
   // The item shown stays shown once it leaves the list, such as when reading it in Unread.
@@ -491,6 +494,26 @@ function InboxPageContent({
             </>
           }
         />
+        {failedDetails.length > 0 && (
+          <div
+            role='status'
+            className='mt-2 flex items-center gap-2 text-sm text-muted-foreground'
+          >
+            {t('inbox.detailsUnavailable', {
+              defaultValue: 'Some inbox details could not be loaded.',
+            })}
+            <Button
+              variant='outline'
+              size='sm'
+              disabled={failedDetails.some((query) => query.isFetching)}
+              onClick={() => {
+                for (const query of failedDetails) void query.refetch();
+              }}
+            >
+              {t('inbox.retry', { defaultValue: 'Retry' })}
+            </Button>
+          </div>
+        )}
       </div>
       <div className='flex min-h-0 flex-1 max-lg:flex-col'>
         <div
@@ -544,7 +567,7 @@ function InboxPageContent({
               ),
             )}
             groups={groups}
-            loaded={loaded}
+            loaded={loaded || items.length > 0}
             query={{
               isError: pages.isError,
               error: pages.error,

@@ -300,7 +300,8 @@ const MAX_DESCRIPTION = 500;
  */
 export async function connectOwnKeyPolicy(
   auth: Pick<Auth, 'administrationContext'>,
-  keys: Pick<ScopedApiKeys, 'mayCreateOwn' | 'requireSameAsMeAllowed'>,
+  keys: Pick<ScopedApiKeys, 'mayCreateOwn' | 'requireSameAsMeAllowed'> &
+    Partial<Pick<ScopedApiKeys, 'applyIdleRule'>>,
 ): Promise<() => void> {
   const context = await auth.administrationContext();
   const slots = (context.options.plugins ?? [])
@@ -316,12 +317,15 @@ export async function connectOwnKeyPolicy(
       throw error;
     }
   };
+  const applyIdleRule = keys.applyIdleRule?.bind(keys) ?? null;
   for (const slot of slots) {
+    slot.applyIdleRule = applyIdleRule;
     slot.current = check;
     slot.sameAsMe = sameAsMe;
   }
   return () => {
     for (const slot of slots) {
+      if (slot.applyIdleRule === applyIdleRule) slot.applyIdleRule = null;
       if (slot.current === check) slot.current = null;
       if (slot.sameAsMe === sameAsMe) slot.sameAsMe = null;
     }
@@ -782,7 +786,7 @@ export class ScopedApiKeys {
     };
   }
 
-  /** Gives a key the idle rule in force now, for a system key, which is issued before it is listed as one. */
+  /** Applies the current idle rule to a newly issued system key or a personal key issued by Better Auth. */
   async applyIdleRule(keyId: string): Promise<void> {
     const days = (await this.rules()).idleDisableDays;
     if (days === null) return;
@@ -1168,6 +1172,8 @@ export class ScopedApiKeys {
    */
   async rotate(userId: string, keyId: string): Promise<CreatedApiKey> {
     const row = await this.requireRow(userId, keyId);
+    const scoped = decodeKeyPermissions(row.permissions) !== null;
+    if (!scoped) await this.requireSameAsMeAllowed(userId);
     const created = parseDate(row.createdAt);
     const expires = row.expiresAt == null ? null : parseDate(row.expiresAt);
     const kept =
@@ -1179,8 +1185,7 @@ export class ScopedApiKeys {
         : null;
     // A person's key with permissions renews for no longer than the rules allow now.
     const max =
-      decodeKeyPermissions(row.permissions) !== null &&
-      !(await this.isServiceAccountId(userId))
+      scoped && !(await this.isServiceAccountId(userId))
         ? (await this.rules()).personalMaxDays
         : null;
     const lifetime = max === null ? kept : Math.min(kept ?? max, max);

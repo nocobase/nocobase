@@ -158,7 +158,7 @@ describe('inbox extension points', () => {
       },
       {
         id: 'b',
-        pending: async () => {
+        pending: () => {
           throw new Error('offline');
         },
         notices: async () => [
@@ -171,6 +171,22 @@ describe('inbox extension points', () => {
     await expect(source.notices?.(['n1'], { api })).resolves.toMatchObject([
       { source: 'a' },
     ]);
+  });
+
+  it('reports a failed query if none of the sources that implement it can answer', async () => {
+    const source = combineInboxSources([
+      { id: 'other' },
+      {
+        id: 'offline',
+        pending: () => Promise.reject(new Error('offline')),
+      },
+    ]);
+    await expect(source.pending?.({ api: mocks.appClient })).rejects.toThrow(
+      'offline',
+    );
+    await expect(
+      source.notices?.([], { api: mocks.appClient }),
+    ).resolves.toEqual([]);
   });
 
   it('picks the renderer registered for the item kind, else the fallback', () => {

@@ -25,6 +25,7 @@ import {
   type KeyPermissions,
 } from '../shared/scopes.js';
 import { ApiKeyRequestError, type ScopedApiKeys } from './scoped-keys.js';
+import { unchangedIdleKey, type IdleKeySnapshot } from './idle.js';
 import { ApiKeyScopeError } from './scopes.js';
 
 /** The owner of every system key's hidden Permission Set; Studio's organization keys use another. */
@@ -1068,6 +1069,41 @@ export class SystemApiKeys {
     });
     await this.deliver(noticeId);
     return this.get(identityId);
+  }
+
+  /** Commit the idle decision, its audit event and manager notice only while the observed key is still idle. */
+  async disableIfIdle(
+    identityId: string,
+    key: IdleKeySnapshot,
+    days: number,
+    now: Date,
+  ): Promise<boolean> {
+    const result = await this.db.transaction(async (connection) => {
+      const changed = await unchangedIdleKey(connection, key)
+        .set({ enabled: false, updatedAt: now })
+        .execute();
+      if (!changed.updatedCount) return;
+      const row = await connection.query
+        .selectFrom('apiKeySystemKeys')
+        .selectAll()
+        .where('identityId', '=', identityId)
+        .where('keyId', '=', key.id)
+        .executeTakeFirstOrThrow<SystemRow>();
+      await this.record(
+        identityId,
+        'disable',
+        null,
+        { reason: 'idle', idleDays: days },
+        now,
+        connection,
+      );
+      return {
+        noticeId: await this.storeNotice(connection, row, null, 'disabled'),
+      };
+    });
+    if (!result) return false;
+    await this.deliver(result.noticeId);
+    return true;
   }
 
   /** Stops the key at once; its manager, if any, is told. `actorId` null: the system, such as idle disabling. */

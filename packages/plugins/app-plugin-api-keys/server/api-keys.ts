@@ -59,6 +59,7 @@ export interface OwnKeyPolicySlot {
    * from a sign-in. Unset allows it.
    */
   sameAsMe?: ((userId: string) => Promise<boolean>) | null;
+  applyIdleRule?: ((keyId: string) => Promise<void>) | null;
 }
 
 /** The slot of a plugin `apiKey()` made, or undefined for any other plugin. */
@@ -138,6 +139,39 @@ function createApiKeysPlugin(
     options: { configurations },
     hooks: {
       ...plugin.hooks,
+      after: [
+        {
+          matcher: (ctx: { path?: string }) => ctx.path === '/api-key/create',
+          handler: createAuthMiddleware(async (ctx) => {
+            if (!policy.applyIdleRule || !(ctx.request || ctx.headers)) return;
+            const key = ctx.context.returned as Partial<ApiKey> | null;
+            if (
+              !key ||
+              typeof key.id !== 'string' ||
+              key.configId !== 'default'
+            )
+              return;
+            const config = configurations.find(
+              (item) => (item.configId ?? 'default') === 'default',
+            );
+            if (
+              config?.references === 'organization' ||
+              config?.customStorage ||
+              config?.storage === 'secondary-storage'
+            )
+              return;
+            try {
+              await policy.applyIdleRule(key.id);
+            } catch (error) {
+              await ctx.context.adapter.delete({
+                model: 'apikey',
+                where: [{ field: 'id', value: key.id }],
+              });
+              throw error;
+            }
+          }),
+        },
+      ],
       before: [
         ...plugin.hooks.before,
         {

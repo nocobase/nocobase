@@ -109,14 +109,20 @@ export function combineInboxSources(
 ): InboxSource {
   if (sources.length === 1) return sources[0];
   const settled = async <T>(
-    calls: readonly (Promise<T> | undefined)[],
-  ): Promise<T[]> =>
-    (await Promise.allSettled(calls.filter(Boolean) as Promise<T>[]))
-      .filter(
-        (result): result is PromiseFulfilledResult<Awaited<T>> =>
-          result.status === 'fulfilled',
-      )
-      .map((result) => result.value);
+    call: (source: InboxSource) => Promise<T> | undefined,
+  ): Promise<T[]> => {
+    const results = await Promise.allSettled(
+      sources.map(async (source) => call(source)),
+    );
+    const values = results.flatMap((result) =>
+      result.status === 'fulfilled' && result.value !== undefined
+        ? [result.value]
+        : [],
+    );
+    const failure = results.find((result) => result.status === 'rejected');
+    if (!values.length && failure) throw failure.reason;
+    return values;
+  };
   return {
     id: sources.length
       ? sources.map((source) => source.id).join('+')
@@ -124,8 +130,8 @@ export function combineInboxSources(
     async notices(ids, request) {
       const seen = new Set<string>();
       const all: InboxNotice[] = [];
-      for (const list of await settled(
-        sources.map((source) => source.notices?.(ids, request)),
+      for (const list of await settled((source) =>
+        source.notices?.(ids, request),
       ))
         for (const notice of list)
           if (!seen.has(notice.notificationId)) {
@@ -135,8 +141,8 @@ export function combineInboxSources(
       return all;
     },
     async waiting(subject, request) {
-      const lists = await settled(
-        sources.map((source) => source.waiting?.(subject, request)),
+      const lists = await settled((source) =>
+        source.waiting?.(subject, request),
       );
       return lists
         .flat()
@@ -144,9 +150,7 @@ export function combineInboxSources(
     },
     async pending(request) {
       const totals: Record<string, number> = {};
-      for (const counts of await settled(
-        sources.map((source) => source.pending?.(request)),
-      ))
+      for (const counts of await settled((source) => source.pending?.(request)))
         for (const [category, count] of Object.entries(counts))
           totals[category] = (totals[category] ?? 0) + count;
       return totals;
