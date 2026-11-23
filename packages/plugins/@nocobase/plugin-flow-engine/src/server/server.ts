@@ -151,6 +151,19 @@ export class PluginUISchemaStorageServer extends Plugin {
         save: async (ctx, next) => {
           const { values } = ctx.action.params;
           const repository = ctx.db.getRepository('flowModels') as FlowModelRepository;
+          if (String(ctx.action.params.ensureRouteContent) === 'true') {
+            ctx.assert(
+              typeof values?.parentId === 'string' &&
+                values.parentId &&
+                typeof values.use === 'string' &&
+                ['page', 'grid'].includes(values.subKey) &&
+                values.subType === 'object',
+              400,
+              'Expected a page or grid object slot',
+            );
+            ctx.body = await repository.ensureRouteContent(values);
+            return next();
+          }
           const uid = await repository.upsertModel(values);
           ctx.body = uid;
           // ctx.body = await repository.findModelById(uid);

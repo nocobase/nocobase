@@ -1760,6 +1760,25 @@ WHERE TreeTable.depth = 1 AND  TreeTable.ancestor = :ancestor and TreeTable.sort
   }
 
   @transaction()
+  async ensureRouteContent(
+    {
+      uid: preferredUid,
+      parentId,
+      subKey,
+      use,
+    }: { uid?: string; parentId: string; subKey: 'page' | 'grid'; use: string },
+    options?: Transactionable,
+  ) {
+    // Serialize first edits of the same route or tab before checking its object slot.
+    const parent = await this.model.findByPk(parentId, { transaction: options?.transaction, lock: true });
+    if (!parent) throw new Error('Route content parent does not exist');
+    const existing = await this.findModelUidByParentId(parentId, { ...options, subKey });
+    if (existing) return existing;
+    const availableUid = preferredUid && !(await this.model.findByPk(preferredUid, options)) ? preferredUid : undefined;
+    return this.upsertModel({ uid: availableUid, parentId, subKey, use, subType: 'object', async: true }, options);
+  }
+
+  @transaction()
   async upsertModel(model: any, options?: Transactionable) {
     let childOptions: ChildOptions = null;
     if (model.parentId) {

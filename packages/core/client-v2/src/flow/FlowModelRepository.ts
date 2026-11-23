@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { FlowModel, IFlowModelRepository } from '@nocobase/flow-engine';
+import { type CreateModelOptions, type FlowEngine, FlowModel, IFlowModelRepository } from '@nocobase/flow-engine';
 import type { BaseApplication } from '../BaseApplication';
 import _ from 'lodash';
 
@@ -180,6 +180,21 @@ export class FlowModelRepository implements IFlowModelRepository<FlowModel> {
     return data ? _.cloneDeep(data) : data;
   }
 
+  async ensureRouteContent(options: CreateModelOptions) {
+    const existing = await this.findOne({ parentId: options.parentId, subKey: options.subKey });
+    if (existing) return existing;
+
+    const response = await this.app.apiClient.request({
+      method: 'POST',
+      url: 'flowModels:save',
+      params: { ensureRouteContent: true },
+      data: options,
+    });
+    const persisted = await this.findOne({ uid: response.data.data });
+    if (!persisted) throw new Error('Could not load the initialized route content');
+    return persisted;
+  }
+
   async save(model: FlowModel, options?: { onlyStepParams?: boolean }) {
     const data = model.serialize();
     if (options?.onlyStepParams) {
@@ -219,4 +234,35 @@ export class FlowModelRepository implements IFlowModelRepository<FlowModel> {
     });
     return response.data?.data;
   }
+}
+
+// A tab renderer can be mounted again when the UI Editor adds or removes its controls.
+const confirmedRouteModels = new WeakSet<FlowModel>();
+
+export function isRouteContentConfirmed(model: FlowModel) {
+  return confirmedRouteModels.has(model);
+}
+
+export async function loadRouteContentForEditing(engine: FlowEngine, options: CreateModelOptions) {
+  const repository = engine.modelRepository;
+  if (!(repository instanceof FlowModelRepository)) {
+    return engine.loadOrCreateModel(options);
+  }
+
+  // A route model can live in the outer engine while its page lives in this view's engine.
+  let cached = engine.findModelByParentId(options.parentId, options.subKey);
+  if (!cached) {
+    engine.forEachModel((model) => {
+      if (model.parentId === options.parentId && model.subKey === options.subKey) cached = model;
+    });
+  }
+  if (cached && isRouteContentConfirmed(cached)) return cached;
+  const data = await repository.ensureRouteContent({ ...options, uid: cached?.uid });
+  if (cached && cached.uid !== data.uid) engine.removeModelWithSubModels(cached.uid);
+  const model = await engine.createModelAsync(data);
+  if (model.parent && model.parent.subModels[options.subKey] !== model) {
+    model.parent.setSubModel(options.subKey, model);
+  }
+  confirmedRouteModels.add(model);
+  return model;
 }
