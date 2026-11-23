@@ -553,6 +553,25 @@ describe('skill pages', () => {
     expect(screen.getByText('skills.readOnly')).toBeInTheDocument();
   });
 
+  it("says why a skill is read only when the application explains it, and keeps the generic note otherwise", async () => {
+    current = { ...current, canEdit: false };
+    renderRoute(
+      <SkillSettingsContext.Provider
+        value={{
+          Settings: ShownSettings,
+          useReadOnlyNote: (shown) =>
+            shown.id === 's1' ? 'Built in: read only.' : undefined,
+        }}
+      >
+        <SkillDetailPage />
+      </SkillSettingsContext.Provider>,
+      '/skills/:skillId',
+      '/skills/s1',
+    );
+    expect(await screen.findByText('Built in: read only.')).toBeInTheDocument();
+    expect(screen.queryByText('skills.readOnly')).toBeNull();
+  });
+
   it('hides deleting a skill the server says may not be deleted, even from a manager', async () => {
     current = { ...current, canDelete: false };
     renderRoute(<SkillDetailPage />, '/skills/:skillId', '/skills/s1');

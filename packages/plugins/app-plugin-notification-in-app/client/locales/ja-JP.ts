@@ -1,91 +1,32 @@
-import type { InAppNotificationClientResource } from './en-US.js';
+import type { PartialLocaleResource } from '@nocobase/i18n';
 
-const jaJP: InAppNotificationClientResource = {
-  common: {
-    loading: '読み込み中',
-  },
+import type enUS from './en-US.js';
+
+/** The inbox's main words; the rest falls back to English. */
+const jaJP: PartialLocaleResource<typeof enUS> = {
   inbox: {
-    actions: {
-      delete: '削除',
-      read: '既読にする',
-      unread: '未読にする',
-    },
-    actionsFor: '{{title}} の操作',
-    allRead: 'すべて既読にしました。',
-    back: '一覧に戻る',
-    cancel: 'キャンセル',
-    categories: 'カテゴリ',
-    clearFilter: 'フィルターをクリア',
-    count: '×{{count}}',
-    deleted: '削除しました。',
-    description: 'あなたに届いた通知と依頼です。',
-    empty: {
-      decision: 'あなたの判断を待っているものはありません',
-      info: '通知はありません',
-      todo: '対応待ちのものはありません',
-      unread: 'すべて確認済みです',
-    },
-    emptyAll: 'ここには何もありません',
-    emptyDescription: 'あなたに届いた通知と依頼はここに表示されます。',
-    filters: '受信箱のフィルター',
-    forbidden: 'この操作は許可されていません。',
-    keyMove: '移動',
-    keyOpen: '開く',
-    kinds: {
-      all: 'すべての種類',
-      decision: '判断',
-      info: 'それ以前',
-      label: '種類',
-      today: '今日',
-    },
-    detailsUnavailable: '受信箱の一部の詳細を読み込めませんでした。',
-    loadFailed: '受信箱を読み込めません',
-    loadFailedDescription: '接続を確認して、もう一度お試しください。',
-    loadMore: 'さらに読み込む',
-    loading: '読み込み中',
-    noMatchDescription:
-      'すべての種類を表示するには、フィルターをクリアしてください。',
-    nothingSelected: '表示する項目を選択してください',
-    notification: '通知',
-    open: '開く',
-    outcomes: {
-      approved: '承認済み',
-      rejected: '却下済み',
-      withdrawn: '取り下げ済み',
-    },
-    pendingDecisions: '{{count}} 件が対応待ち',
-    readAll: 'すべて既読にする',
-    request: {
-      approve: '承認',
-      commentFor: '{{action}}：{{title}}',
-      commentPlaceholder: 'コメントを入力…',
-      newLine: 'で改行',
-      quickSend: 'で送信',
-      reject: '却下',
-    },
-    requestFailed: 'リクエストに失敗しました。もう一度お試しください。',
-    resolved: '対応済み',
-    retry: '再試行',
-    tabs: {
-      decision: '対応待ち',
-      info: 'それ以前',
-      today: '今日',
-    },
     title: '受信箱',
-    unread: '未読',
-    unreadCount: '未読 {{count}} 件',
     views: {
       all: 'すべて',
-      todo: '対応待ち',
       unread: '未読',
+      todo: '対応待ち',
+    },
+    categories: 'カテゴリ',
+    readAll: 'すべて既読にする',
+    open: '開く',
+    actions: {
+      read: '既読にする',
+      unread: '未読にする',
+      delete: '削除',
+    },
+    tabs: {
+      today: '今日',
+      info: 'それ以前',
+      decision: '対応待ち',
     },
   },
   inboxButton: {
-    empty: 'まだメッセージはありません',
-    pending: '受信箱、{{count}} 件が対応待ち',
-    recent: '最近のメッセージ',
     title: '受信箱',
-    unread: '受信箱、未読 {{count}} 件',
     viewAll: '受信箱を開く',
   },
   nav: {

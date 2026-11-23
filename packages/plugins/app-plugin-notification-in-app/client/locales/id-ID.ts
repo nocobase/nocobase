@@ -1,91 +1,32 @@
-import type { InAppNotificationClientResource } from './en-US.js';
+import type { PartialLocaleResource } from '@nocobase/i18n';
 
-const idID: InAppNotificationClientResource = {
-  common: {
-    loading: 'Memuat',
-  },
+import type enUS from './en-US.js';
+
+/** The inbox's main words; the rest falls back to English. */
+const idID: PartialLocaleResource<typeof enUS> = {
   inbox: {
-    actions: {
-      delete: 'Hapus',
-      read: 'Tandai sudah dibaca',
-      unread: 'Tandai belum dibaca',
-    },
-    actionsFor: 'Tindakan untuk {{title}}',
-    allRead: 'Semua ditandai sudah dibaca.',
-    back: 'Kembali ke daftar',
-    cancel: 'Batal',
-    categories: 'Kategori',
-    clearFilter: 'Hapus filter',
-    count: '×{{count}}',
-    deleted: 'Dihapus.',
-    description: 'Notifikasi dan permintaan yang dikirim kepada Anda.',
-    empty: {
-      decision: 'Tidak ada keputusan yang menunggu Anda',
-      info: 'Tidak ada notifikasi',
-      todo: 'Tidak ada yang menunggu Anda',
-      unread: 'Semua sudah dibaca',
-    },
-    emptyAll: 'Tidak ada apa pun di sini',
-    emptyDescription:
-      'Notifikasi dan permintaan yang dikirim kepada Anda muncul di sini.',
-    filters: 'Filter kotak masuk',
-    forbidden: 'Anda tidak diizinkan melakukan ini.',
-    keyMove: 'Pindah',
-    keyOpen: 'Buka',
-    kinds: {
-      all: 'Semua jenis',
-      decision: 'Keputusan',
-      info: 'Sebelumnya',
-      label: 'Jenis',
-      today: 'Hari ini',
-    },
-    detailsUnavailable: 'Sebagian detail kotak masuk tidak dapat dimuat.',
-    loadFailed: 'Tidak dapat memuat kotak masuk',
-    loadFailedDescription: 'Periksa koneksi Anda lalu coba lagi.',
-    loadMore: 'Muat lebih banyak',
-    loading: 'Memuat',
-    noMatchDescription: 'Hapus filter untuk melihat semua jenis.',
-    nothingSelected: 'Pilih item untuk melihatnya',
-    notification: 'Notifikasi',
-    open: 'Buka',
-    outcomes: {
-      approved: 'Disetujui',
-      rejected: 'Ditolak',
-      withdrawn: 'Ditarik',
-    },
-    pendingDecisions: '{{count}} menunggu',
-    readAll: 'Tandai semua sudah dibaca',
-    request: {
-      approve: 'Setujui',
-      commentFor: '{{action}}: {{title}}',
-      commentPlaceholder: 'Tulis sesuatu…',
-      newLine: 'untuk baris baru',
-      quickSend: 'untuk mengirim',
-      reject: 'Tolak',
-    },
-    requestFailed: 'Permintaan gagal. Coba lagi.',
-    resolved: 'Sudah ditangani',
-    retry: 'Coba lagi',
-    tabs: {
-      decision: 'Menunggu',
-      info: 'Sebelumnya',
-      today: 'Hari ini',
-    },
     title: 'Kotak masuk',
-    unread: 'Belum dibaca',
-    unreadCount: '{{count}} belum dibaca',
     views: {
       all: 'Semua',
-      todo: 'Menunggu',
       unread: 'Belum dibaca',
+      todo: 'Menunggu',
+    },
+    categories: 'Kategori',
+    readAll: 'Tandai semua sudah dibaca',
+    open: 'Buka',
+    actions: {
+      read: 'Tandai sudah dibaca',
+      unread: 'Tandai belum dibaca',
+      delete: 'Hapus',
+    },
+    tabs: {
+      today: 'Hari ini',
+      info: 'Sebelumnya',
+      decision: 'Menunggu',
     },
   },
   inboxButton: {
-    empty: 'Belum ada pesan',
-    pending: 'Kotak masuk, {{count}} menunggu',
-    recent: 'Pesan terbaru',
     title: 'Kotak masuk',
-    unread: 'Kotak masuk, {{count}} belum dibaca',
     viewAll: 'Buka kotak masuk',
   },
   nav: {

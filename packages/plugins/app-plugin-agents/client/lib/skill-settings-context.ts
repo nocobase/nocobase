@@ -33,6 +33,12 @@ export interface SkillSettings {
   }>;
   /** Whether to offer the team default ("global") mount for this skill; offered when absent. */
   readonly showGlobalMount?: (skill: SkillView) => boolean;
+  /**
+   * Why a skill the application protects is read only, shown in place of the generic note on its page (only the
+   * creator and administrators may change it); `undefined` keeps the generic note. A hook, so the application can
+   * translate what it returns.
+   */
+  readonly useReadOnlyNote?: (skill: SkillView) => ReactNode | undefined;
   /** Filters and a column for the library's list; a hook, so the application can translate what it returns. */
   readonly useList?: () => SkillListExtension;
 }

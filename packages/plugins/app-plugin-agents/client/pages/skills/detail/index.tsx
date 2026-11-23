@@ -245,10 +245,13 @@ function SkillFacts({
   skill,
   canEdit,
 }: {
-  readonly skill: SkillDetail;
+  readonly skill: SkillViewData;
   readonly canEdit: boolean;
 }): ReactElement | null {
   const { t } = useTranslation();
+  const extra = useContext(SkillSettingsContext);
+  // The context is the application's for the page's whole life, so the hook is called on every render or on none.
+  const note = extra?.useReadOnlyNote?.(skill);
   if (!skill.compatibility && canEdit) return null;
   return (
     <div className='flex flex-wrap items-center gap-2 text-sm text-muted-foreground'>
@@ -257,7 +260,7 @@ function SkillFacts({
           {t('skills.compatibility', { value: skill.compatibility })}
         </Badge>
       ) : null}
-      {canEdit ? null : <span>{t('skills.readOnly')}</span>}
+      {canEdit ? null : <span>{note ?? t('skills.readOnly')}</span>}
     </div>
   );
 }
