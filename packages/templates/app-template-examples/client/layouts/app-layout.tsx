@@ -152,7 +152,7 @@ export function AppLayout({
             moved by the page's scrolling nor stretched by its height. */}
                   <div className='h-full overflow-y-auto'>
                     <Background>
-                      <RememberSettingsReturn />
+                      <RememberSettingsReturn inSettings={inSettings} />
                       <RouteLeaveBoundary hidden={loading}>
                         <Outlet />
                       </RouteLeaveBoundary>
@@ -170,7 +170,12 @@ export function AppLayout({
   );
 }
 
-function RememberSettingsReturn() {
-  useRememberSettingsReturn();
+function RememberSettingsReturn({
+  inSettings,
+}: {
+  readonly inSettings: boolean;
+}): null {
+  // The layout's own answer for this location, so a page the application owns under a disabled surface is remembered.
+  useRememberSettingsReturn(() => inSettings);
   return null;
 }

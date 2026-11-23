@@ -10,6 +10,7 @@ import {
   useConversation,
   useConversationActions,
 } from '../chat.js';
+import { useChatPages } from '../chat/chat-pages.js';
 import type { ConversationDetail } from '../../shared/conversations.js';
 import {
   ArchiveIcon,
@@ -55,6 +56,8 @@ export function DefaultPanelHeader(): ReactElement {
   const [sharing, setSharing] = useState(false);
   const store = useContext(PageDraftStoreContext);
   const { chatPath } = useContext(AgentsOptionsContext);
+  // The draft opens the conversation list, which the application may have left out.
+  const { list: hasChatList } = useChatPages(chatPath);
   const navigate = useNavigate();
   const openingRef = useRef(false);
   const [openError, setOpenError] = useState(false);
@@ -106,7 +109,9 @@ export function DefaultPanelHeader(): ReactElement {
         onHistory={() => panel.setView('history')}
         onOpenPage={
           store
-            ? () => void openSessions()
+            ? hasChatList
+              ? () => void openSessions()
+              : undefined
             : conversation && !conversation.snapshot && panel.openPage
               ? () => panel.openPage?.(conversation.id)
               : undefined

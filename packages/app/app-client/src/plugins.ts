@@ -843,6 +843,20 @@ export function resolveAppClientContributions(
     }
   }
 
+  // Disabled contributions still join the tree, so another package's routes under their groups resolve, and are
+  // pruned with their descendants like excludedRouteIds. A shared settings category stays: other packages fill it.
+  const disabledRouteIds = new Set<string>();
+  function rememberDisabledIds(
+    packageName: string,
+    routes: readonly AppClientRouteDefinition[],
+  ): void {
+    for (const route of routes) {
+      if (!('category' in route && route.category === true))
+        disabledRouteIds.add(routeIdFor(route.name, packageName));
+      if (route.children) rememberDisabledIds(packageName, route.children);
+    }
+  }
+
   for (const contribution of contributions) {
     const packageName = normalizePackageName(contribution.packageName);
     const source = normalizeContributionSource(contribution.source);
@@ -855,8 +869,9 @@ export function resolveAppClientContributions(
           `Plugin "${packageName}" contributed routes to unsupported parent "${String(surface)}"; declare them with defineAppRoutes(), defineSystemSettingsRoutes() or definePersonalSettingsRoutes().`,
         );
       }
+      if (routeContribution.disabled)
+        rememberDisabledIds(packageName, routeContribution.routes);
       if (
-        routeContribution.disabled ||
         (surface === 'systemSettings' &&
           options.systemSettingsRoutes === false) ||
         (surface === 'personalSettings' &&
@@ -903,8 +918,11 @@ export function resolveAppClientContributions(
     ? new Set(options.excludedRouteIds.map((id) => id.trim()).filter(Boolean))
     : undefined;
   const tree = assembleRoutes(inputs, excludedRouteIds);
-  const roots = excludedRouteIds
-    ? excludeRoutes(tree, excludedRouteIds, excludedRoutes)
+  const prunedRouteIds = disabledRouteIds.size
+    ? new Set([...(excludedRouteIds ?? []), ...disabledRouteIds])
+    : excludedRouteIds;
+  const roots = prunedRouteIds
+    ? excludeRoutes(tree, prunedRouteIds, excludedRoutes)
     : tree;
   if (excludedRouteIds && isDevelopment()) {
     const packages = new Set(

@@ -152,6 +152,79 @@ describe('app runtime', () => {
     },
   );
 
+  it.each(['option', 'excludedRouteIds'] as const)(
+    "removes another package's pages under a disabled group: %s",
+    async (via) => {
+      const loader = async () => ({ default: () => null });
+      const reports = defineClientPlugin<{ reports?: boolean }>({
+        packageName: '@example/reports',
+        routes: (options) =>
+          defineAppRoutes(
+            [
+              {
+                name: 'reports',
+                path: '/reports',
+                children: [
+                  {
+                    name: 'summary',
+                    path: 'summary',
+                    authz: 'skip',
+                    componentLoader: loader,
+                  },
+                ],
+              },
+            ],
+            { disabled: options.reports === false },
+          ),
+      });
+      const sales = defineClientPlugin({
+        packageName: '@example/sales',
+        routes: defineAppRoutes([
+          {
+            name: 'salesReport',
+            parent: '@example/reports:reports',
+            path: 'sales',
+            authz: 'skip',
+            componentLoader: loader,
+          },
+        ]),
+        headerActions: [
+          {
+            name: 'salesShortcut',
+            routeId: '@example/sales:salesReport',
+            component: () => null,
+          },
+        ],
+      });
+      const runtime = await resolveAppRuntime(
+        defineAppRuntime({
+          packageName: '@example/app',
+          createAppConfig: createAppClientConfig,
+          plugins: defineClientPlugins([
+            reports(via === 'option' ? { reports: false } : {}),
+            sales(),
+          ]),
+          ...(via === 'excludedRouteIds'
+            ? { excludedRouteIds: ['@example/reports:reports'] }
+            : {}),
+          routes: defineAppRoutes([
+            {
+              name: 'ownReports',
+              path: '/reports',
+              authz: 'skip',
+              componentLoader: loader,
+            },
+          ]),
+        }),
+        { rawConfig: {} },
+      );
+      expect(runtime.routes.map((route) => route.id)).toEqual([
+        '@example/app:ownReports',
+      ]);
+      expect(runtime.headerActions).toEqual([]);
+    },
+  );
+
   it('excludes route groups and their cross-plugin children before claiming paths and applying overrides', async () => {
     const defaultLoader = vi.fn(async () => ({ default: () => null }));
     const applicationLoader = vi.fn(async () => ({ default: () => null }));
