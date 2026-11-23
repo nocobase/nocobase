@@ -857,7 +857,7 @@ export function resolveAppClientContributions(
   const excludedRouteIds = options.excludedRouteIds?.length
     ? new Set(options.excludedRouteIds.map((id) => id.trim()).filter(Boolean))
     : undefined;
-  const tree = assembleRoutes(inputs);
+  const tree = assembleRoutes(inputs, excludedRouteIds);
   const excludedRoutes = excludedRouteIds
     ? new Map<string, 'page' | 'group'>()
     : undefined;
@@ -924,7 +924,10 @@ interface RouteNode {
   hidden?: boolean;
 }
 
-function assembleRoutes(inputs: readonly RouteInput[]): RouteNode[] {
+function assembleRoutes(
+  inputs: readonly RouteInput[],
+  excludedRouteIds: ReadonlySet<string> | undefined,
+): RouteNode[] {
   const roots: RouteNode[] = [];
   const groups = new Map<string, RouteNode>();
   const pending: { node: RouteNode; parent: string; category?: string }[] = [];
@@ -1076,6 +1079,16 @@ function assembleRoutes(inputs: readonly RouteInput[]): RouteNode[] {
           category: !parent.includes(':') && settings ? parent : undefined,
         });
       }
+    }
+  }
+  if (excludedRouteIds?.size) {
+    for (const { category, definition, packageName } of roots) {
+      if (category === undefined) continue;
+      const id = routeIdFor(definition.name, packageName);
+      if (excludedRouteIds.has(id))
+        throw new Error(
+          `excludedRouteIds cannot exclude shared settings category "${id}". Exclude its pages or modules by ID, or use defineSettingsCategories() to hide the category and move its pages to the fallback category.`,
+        );
     }
   }
   // The application's overrides: a category keeps its id and stays registered, only how it shows changes.

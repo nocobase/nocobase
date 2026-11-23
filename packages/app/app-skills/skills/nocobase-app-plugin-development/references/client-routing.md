@@ -187,6 +187,8 @@ The target ID must resolve to a page rather than a group, and a route may have o
 
 Document the package-qualified route ID (`<plugin-package>:<route-name>`) so an application can replace its component with `routeComponentOverrides` or omit it through `excludedRouteIds` in `defineAppRuntime()`. A parent exclusion also removes its descendants and their overrides. Applications retain the Server plugin and API separately through their Server composition.
 
+In system and personal settings, applications can exclude pages and modules. Excluding a shared category ID fails runtime setup. Categories emptied by exclusions disappear from navigation.
+
 Before rendering a link to a separate page contributed by your plugin, call `useHasRoute('<plugin-package>:<route-name>')` from `@nocobase/app-client`. When the page is absent, render the label without a link or use an application-provided destination. Relative parent links within a declared route subtree follow the parent automatically. The hook checks registration after exclusions. Route permissions still apply.
 
 Register a shortcut in the Client plugin's `headerActions` declaration. Give it a stable unique name and set `routeId` to its target's package-qualified ID so excluding the page also hides the shortcut. The ID must resolve to a page, and a missing ID or a group fails runtime setup.
@@ -204,6 +206,24 @@ const headerActions = defineHeaderActions([
 ```
 
 Pass `headerActions` to `defineClientPlugin()`. The application can hide just the shortcut with `headerActionOverrides: [{ name: 'orders.shortcut', hidden: true }]` or use an override to replace its component. The standard shells render linked actions and badges only after access to the page and its ancestors is allowed. A custom shell must apply the same check to the actions returned by `useHeaderActions()`. A route exclusion can name a plugin absent from the application. In development, an exclusion that names a missing route in a registered package warns once per ID.
+
+For an optional shortcut to another plugin, omit `routeId` from the declaration and return `null` from the component when `useHasRoute()` reports the page is absent. A declared `routeId` requires the other plugin to contribute the page at runtime.
+
+```tsx
+import { useHasRoute } from '@nocobase/app-client';
+import { defineHeaderActions } from '@nocobase/app-client/plugins';
+
+function OptionalOrdersShortcut() {
+  const hasOrdersPage = useHasRoute('@example/app-plugin-orders:orders');
+  return hasOrdersPage ? <OrdersShortcut /> : null;
+}
+
+const optionalHeaderActions = defineHeaderActions([
+  { name: 'reports.orders-shortcut', component: OptionalOrdersShortcut },
+]);
+```
+
+`useHasRoute()` checks registration. If the optional shortcut also needs to respect page permissions, check access in the component. If it defines a badge hook, guard that hook's queries as well because the shell invokes it separately.
 
 ## Test declarations and behavior
 

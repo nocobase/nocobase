@@ -72,7 +72,7 @@ export interface AppRuntimeDefinition {
   readonly routes?: AppClientRoutes;
   readonly locales?: AppClientLocales;
   readonly plugins: AppClientPlugins;
-  /** Entries removed from the Client route tree by their package-qualified IDs, including descendants. */
+  /** Entries removed from the Client route tree by package-qualified ID, including descendants. Shared settings categories cannot be excluded. */
   readonly excludedRouteIds?: readonly string[];
   readonly routeComponentOverrides?: readonly AppClientRouteComponentOverrideDefinition[];
   /** The application's own header actions, beside its plugins' (`AppClientHeaderActionDefinition`). */

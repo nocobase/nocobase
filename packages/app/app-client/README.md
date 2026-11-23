@@ -464,4 +464,6 @@ When reporting an API failure, pass `...errorToastOptions(error)` from `@nocobas
 
 Set `excludedRouteIds` in `defineAppRuntime()` to remove routes by package-qualified ID before the application claims paths. A route exclusion also removes its descendants and their component overrides. A header action may declare its target's `routeId` to hide it when its target is excluded. The standard shells also hide linked actions while page permissions are pending or denied. A missing route ID or a group used as a target raises an error during Client runtime setup. To hide or replace just the action, use the application's `headerActionOverrides`.
 
+For system and personal settings, exclude individual pages or modules. Excluding a shared settings category ID raises an error. Categories emptied by exclusions disappear from navigation. Use `defineSettingsCategories()` to hide a category and move its pages to the fallback category.
+
 Use `useHasRoute(routeId)` before rendering a link to another contributed page. It reports whether the page is registered after exclusions. The route still applies its normal access check. In development, an exclusion whose package is present but whose route is missing produces one warning per ID.

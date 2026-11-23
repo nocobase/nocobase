@@ -63,6 +63,97 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
+describe('settings route exclusions', () => {
+  const categoryId = '@example/tools:systemSettings.tools';
+  const moduleId = '@example/tools:management';
+  const extraPageId = '@example/extra:extra';
+  const contributions: readonly AppClientContributions[] = [
+    app,
+    {
+      packageName: '@example/tools',
+      routes: defineSystemSettingsRoutes([
+        {
+          name: 'tools',
+          category: true,
+          navigation: { title: 'Tools' },
+          children: [],
+        },
+        {
+          name: 'management',
+          parent: 'tools',
+          kind: 'module',
+          path: '/management',
+          navigation: { title: 'Management' },
+          children: [
+            {
+              name: 'items',
+              path: 'items',
+              navigation: { title: 'Items' },
+              authz: 'skip',
+              componentLoader: page,
+            },
+          ],
+        },
+      ]),
+    },
+    {
+      packageName: '@example/extra',
+      routes: [
+        defineSystemSettingsRoutes([
+          {
+            name: 'extra',
+            parent: 'tools',
+            path: '/extra',
+            navigation: { title: 'Extra' },
+            authz: 'skip',
+            componentLoader: page,
+          },
+        ]),
+        definePersonalSettingsRoutes([
+          {
+            name: 'preferences',
+            parent: PERSONAL_SETTINGS_CATEGORIES.account,
+            path: '/preferences',
+            componentLoader: page,
+          },
+        ]),
+      ],
+    },
+  ];
+
+  it.each([categoryId, '@nocobase/app-client:personalSettings.account'])(
+    'rejects excluding the shared settings category %s',
+    (id) => {
+      expect(() =>
+        resolveAppClientContributions(contributions, {
+          excludedRouteIds: [id],
+        }),
+      ).toThrow(
+        `excludedRouteIds cannot exclude shared settings category "${id}".`,
+      );
+    },
+  );
+
+  it('excludes settings pages and modules and drops categories emptied by those exclusions', () => {
+    const withoutModule = resolveAppClientContributions(contributions, {
+      excludedRouteIds: [moduleId],
+    });
+    expect(
+      withoutModule.routes
+        .find(({ id }) => id === categoryId)
+        ?.children?.map(({ id }) => id),
+    ).toEqual([extraPageId]);
+    expect(withoutModule.excludedRoutes?.get('@example/tools:items')).toBe(
+      'page',
+    );
+
+    const withoutPages = resolveAppClientContributions(contributions, {
+      excludedRouteIds: [moduleId, extraPageId],
+    });
+    expect(withoutPages.routes.some(({ id }) => id === categoryId)).toBe(false);
+  });
+});
+
 describe('defineSystemSettingsRoutes', () => {
   it('mounts pages under /settings in the shared route tree, keeping the category out of the URL', () => {
     const { routes } = resolveAppClientContributions([
