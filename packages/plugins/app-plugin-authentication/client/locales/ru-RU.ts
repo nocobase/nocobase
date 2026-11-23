@@ -1,6 +1,7 @@
 import type { LocaleResource } from '@nocobase/i18n';
 
-import type enUS from './en-US.js';
+import { withPluralForms } from '../plural-forms.js';
+import enUS from './en-US.js';
 
 const ruRU: LocaleResource<typeof enUS> = {
   errors: {
@@ -34,9 +35,16 @@ const ruRU: LocaleResource<typeof enUS> = {
       'Этот источник не является доверенным. Укажите app.publicOrigin в config.yml как {{origin}}, перезапустите приложение и повторите попытку.',
     INVALID_ORIGIN:
       'Этот источник не является доверенным. Проверьте app.publicOrigin в config.yml, перезапустите приложение и повторите попытку.',
+    FAILED_TO_UNLINK_LAST_ACCOUNT: enUS.errors.FAILED_TO_UNLINK_LAST_ACCOUNT,
     INVALID_CSRF_ORIGIN:
       'Запрос пришёл с другого сайта и был отклонён. Перезагрузите страницу и повторите попытку.',
   },
+  // The settings pages are not translated into this language yet; English is shown.
+  settings: withPluralForms(enUS.settings, 'ru-RU'),
+  guide: enUS.guide,
+  prompt: enUS.prompt,
+  sso: enUS.sso,
+  account: withPluralForms(enUS.account, 'ru-RU'),
 };
 
 export default ruRU;

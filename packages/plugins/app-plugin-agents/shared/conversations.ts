@@ -862,6 +862,11 @@ export interface ChatPreferences {
   readonly defaultAgentId: string | null;
   /** Which kind of runner their runs queued from now on go to first. */
   readonly runnerPreference: RunnerPreference;
+  /**
+   * The reasoning effort conversations they start take when they choose none, where the agent's tool offers it; null:
+   * each agent's default.
+   */
+  readonly effort: string | null;
 }
 
 export type ChatPreferencesPatch = Partial<ChatPreferences>;

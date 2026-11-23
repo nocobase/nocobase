@@ -26,7 +26,8 @@
  * for every model call of a conversation, a new one for each call outside any.
  */
 
-export type ModelProviderName =
+/** The providers the plugin ships (`MODEL_PROVIDERS`). */
+export type BuiltinModelProviderName =
   | 'openai'
   | 'anthropic'
   | 'google'
@@ -36,6 +37,12 @@ export type ModelProviderName =
   | 'ollama'
   | 'cohere'
   | 'openai-compatible';
+
+/**
+ * A provider's type: one the plugin ships, or one another plugin registered on the server
+ * (`agents.models.providers.register`), which `GET /api/agents/modelProviders` lists beside the built-in ones.
+ */
+export type ModelProviderName = BuiltinModelProviderName | (string & {});
 
 /**
  * What a model of a service is for: `chat` (online agents talk to it), `embedding` (turns text into vectors for a
@@ -100,7 +107,11 @@ export interface ModelProviderOption {
   readonly kinds: readonly ModelKind[];
 }
 
-/** The providers a service can use, each through its Vercel AI SDK provider package (`server/online/providers.ts`). */
+/**
+ * The providers the plugin ships, each through its Vercel AI SDK provider package (`server/online/providers.ts`): the
+ * built-in registrations, listed first. Other plugins register more on the server; the client reads the full list from
+ * `GET /api/agents/modelProviders`.
+ */
 export const MODEL_PROVIDERS: readonly ModelProviderOption[] = [
   {
     name: 'openai',
@@ -170,6 +181,7 @@ export const MODEL_PROVIDERS: readonly ModelProviderOption[] = [
 export const MODEL_PROVIDER_NAMES: readonly ModelProviderName[] =
   MODEL_PROVIDERS.map((provider) => provider.name);
 
+/** A built-in provider by its type; the server's `modelProviderOf` also knows the registered ones. */
 export function providerOf(name: string): ModelProviderOption | null {
   return MODEL_PROVIDERS.find((provider) => provider.name === name) ?? null;
 }

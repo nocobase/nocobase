@@ -181,6 +181,17 @@ export function defineFileRepositoryApiRoutes<P = unknown>(
   return [
     defineApiRoutes(async (app: FileRepositoryRoutesApplication) => {
       const router = fileRouter();
+      // Every exposure stores files and serves them at a public content URL, so it is listed on the file storage page.
+      const manager = app.container.resolve(serverFileRepositoryManagerToken);
+      for (const entry of entries)
+        manager.registerUsage({
+          id: entry.name,
+          title: entry.name,
+          collection: entry.collection ?? entry.name,
+          connection: entry.connection,
+          disk: { name: entry.disk },
+          download: 'public',
+        });
       for (const entry of entries) {
         const files = resolve(app, entry, unwritablePolicy);
         const getUrl = urlFor(app, files);

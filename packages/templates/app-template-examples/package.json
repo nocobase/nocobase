@@ -1,7 +1,7 @@
 {
   "name": "@nocobase/app-template-examples",
   "displayName": "NocoBase Examples",
-  "version": "1.0.0-beta.84",
+  "version": "2.0.0-beta.0",
   "type": "module",
   "prettier": "@nocobase/dev-config/prettier",
   "engines": {
@@ -10,7 +10,7 @@
   "packageManager": "pnpm@11.11.0",
   "nocobase": {
     "templateKind": "app",
-    "defaultTemplateVersion": "1.0.0-beta.84",
+    "defaultTemplateVersion": "2.0.0-beta.0",
     "cli": {
       "bin": "nocobase-examples",
       "displayName": "NocoBase Examples",
@@ -193,6 +193,7 @@
     "@nocobase/app-plugin-cli-example": "workspace:*",
     "@nocobase/app-plugin-database-example": "workspace:*",
     "@nocobase/app-plugin-database-explorer": "workspace:*",
+    "@nocobase/app-plugin-distributed": "workspace:*",
     "@nocobase/app-plugin-file": "workspace:*",
     "@nocobase/app-plugin-file-example": "workspace:*",
     "@nocobase/app-plugin-foundation": "workspace:*",
@@ -204,6 +205,7 @@
     "@nocobase/app-plugin-notification-example": "workspace:*",
     "@nocobase/app-plugin-notification-in-app": "workspace:*",
     "@nocobase/app-plugin-notification-providers": "workspace:*",
+    "@nocobase/app-plugin-notification-web-push": "workspace:*",
     "@nocobase/app-plugin-office-flows-example": "workspace:*",
     "@nocobase/app-plugin-queue-example": "workspace:*",
     "@nocobase/app-plugin-realtime-example": "workspace:*",

@@ -2,7 +2,7 @@
   "name": "@nocobase/app-plugin-file",
   "displayName": "File App Plugin",
   "description": "File repositories, uploads, stable content URLs for NocoBase applications.",
-  "version": "1.0.0-beta.32",
+  "version": "1.0.0-beta.33",
   "type": "module",
   "prettier": "@nocobase/dev-config/prettier",
   "sideEffects": false,
@@ -14,6 +14,16 @@
   },
   "engines": {
     "node": ">=24.0.0"
+  },
+  "nocobase": {
+    "title": {
+      "en-US": "File storage",
+      "zh-CN": "文件存储"
+    },
+    "description": {
+      "en-US": "Uploads and where files are stored",
+      "zh-CN": "上传文件和存储位置"
+    }
   },
   "exports": {
     "./package.json": "./package.json",
@@ -76,7 +86,6 @@
     "@types/react-dom": "catalog:",
     "eslint": "catalog:",
     "jsdom": "catalog:",
-    "lucide-react": "catalog:",
     "prettier": "catalog:",
     "react-dom": "catalog:",
     "react-markdown": "catalog:",
@@ -85,15 +94,20 @@
     "vitest": "catalog:"
   },
   "dependencies": {
+    "@nocobase/drive": "workspace:^",
     "hono": "catalog:",
-    "@nocobase/drive": "workspace:^"
+    "zod": "catalog:"
   },
   "peerDependencies": {
     "@nocobase/app-client": "workspace:^",
+    "@nocobase/app-plugin-authentication": "workspace:^",
+    "@nocobase/app-plugin-authorization": "workspace:^",
     "@nocobase/app-server": "workspace:^",
     "@nocobase/db": "workspace:^",
     "@nocobase/i18n": "workspace:^",
     "@nocobase/service-provider": "workspace:^",
-    "react": "catalog:"
+    "lucide-react": "catalog:",
+    "react": "catalog:",
+    "react-router": "catalog:"
   }
 }

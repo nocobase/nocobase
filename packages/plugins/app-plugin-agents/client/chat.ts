@@ -1,3 +1,4 @@
+export { useSetting } from './hooks/use-access.js';
 export { useResendMessage } from './chat/use-chat.js';
 export type { ResendResult } from './chat/controller.js';
 export type { OnlineAgentResendOptions } from '../shared/resend.js';
@@ -277,3 +278,20 @@ export {
   shownThinking,
   useThinkingMemory,
 } from './chat/thinking.js';
+export { AgentSlotOutlet, replaceable } from './ui-slots.js';
+export {
+  useAgentComponentReplacement,
+  useAgentSlot,
+  usePreferenceSections,
+  useRegisteredToolRenderer,
+  type AgentComponentName,
+  type AgentSlotName,
+  type AgentSlotProps,
+} from './ui-registry.js';
+
+export {
+  CapturingPageDraftContext,
+  PageDraftStoreContext,
+  RestoredPageDraftContext,
+} from './chat/page-draft.js';
+export { AgentsOptionsContext } from './shell/options.js';

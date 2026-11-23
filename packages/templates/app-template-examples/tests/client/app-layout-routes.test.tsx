@@ -6,10 +6,6 @@ import type { ReactElement } from 'react';
 import { Route, Routes } from 'react-router';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 
-vi.mock('../../client/components/online-agent/provider.js', () => ({
-  OnlineAgentProvider: ({ children }: { readonly children: ReactNode }) =>
-    children,
-}));
 import { AppLayout } from '../../client/layouts/app-layout.js';
 import {
   createAppSidebarPreferenceStore,

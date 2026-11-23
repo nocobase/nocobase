@@ -20,7 +20,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '#components/ui/dropdown-menu';
-import { settingsHomeRoute } from '#lib/navigation-transform';
+import { settingsAreaHomeRoute } from '#lib/navigation-transform';
 import { cn } from 'cn';
 
 import {
@@ -68,43 +68,59 @@ export function Breadcrumbs({
   const searches = useRouteSearches();
   const declared = usePageBreadcrumbLevels();
   const { t } = useTranslation();
-  const candidates =
-    declared ??
-    trail.flatMap((entry): PageBreadcrumbLevel[] => {
-      const title = routeLevelTitle(entry);
-      if (title === undefined || denied?.has(routeKey(entry.route))) return [];
-      // The settings group links to its home page, the way back from any settings module.
-      const home = settingsHomeRoute(entry.route);
-      if (home)
+  // A settings group, system or personal, links to its home page, the way back from any of its pages.
+  const areaLevel = (
+    entry: RouteTrailEntry,
+  ): PageBreadcrumbLevel | undefined => {
+    const title = routeLevelTitle(entry);
+    const home = settingsAreaHomeRoute(entry.route);
+    if (!home || title === undefined || denied?.has(routeKey(entry.route)))
+      return undefined;
+    return {
+      label: t(title, { ns: entry.route.packageName, defaultValue: title }),
+      to: { pathname: home.path, search: searches.get(home.path) ?? '' },
+    };
+  };
+  // A page that declares its own trail still sits in its settings area: the area's level leads it, unless the page
+  // already starts at the area's home.
+  const area = trail.map(areaLevel).find((level) => level !== undefined);
+  const candidates = declared
+    ? area && !startsAt(declared, area)
+      ? [area, ...declared]
+      : declared
+    : trail.flatMap((entry): PageBreadcrumbLevel[] => {
+        const title = routeLevelTitle(entry);
+        if (title === undefined || denied?.has(routeKey(entry.route)))
+          return [];
+        const level = areaLevel(entry);
+        if (level) return [level];
         return [
           {
             label: t(title, {
               ns: entry.route.packageName,
               defaultValue: title,
             }),
-            to: { pathname: home.path, search: searches.get(home.path) ?? '' },
+            ...(entry.route.componentLoader
+              ? {
+                  to: {
+                    pathname: entry.pathname,
+                    search:
+                      searches.get(
+                        entry.pathname.replace(/\/+$/u, '') || '/',
+                      ) ?? '',
+                  },
+                }
+              : {}),
           },
         ];
-      return [
-        {
-          label: t(title, {
-            ns: entry.route.packageName,
-            defaultValue: title,
-          }),
-          ...(entry.route.componentLoader
-            ? {
-                to: {
-                  pathname: entry.pathname,
-                  search:
-                    searches.get(entry.pathname.replace(/\/+$/u, '') || '/') ??
-                    '',
-                },
-              }
-            : {}),
-        },
-      ];
-    });
+      });
 
+  // An untitled detail still has a parent while its record is loading or unavailable.
+  const leaf = trail.at(-1);
+  const untitledDetail =
+    !declared &&
+    leaf?.route.presentation?.kind === 'child-page' &&
+    routeLevelTitle(leaf) === undefined;
   const trailLevels = candidates.flatMap(
     (level, index): PageBreadcrumbLevel[] => {
       if (!level.to) return [level];
@@ -112,7 +128,7 @@ export function Breadcrumbs({
       // Keep the current title during permission checks, but never expose an inaccessible ancestor's name.
       return to
         ? [{ ...level, to }]
-        : index === candidates.length - 1
+        : !untitledDetail && index === candidates.length - 1
           ? [{ label: level.label }]
           : [];
     },
@@ -126,7 +142,9 @@ export function Breadcrumbs({
   }));
   const last = levels.length - 1;
   const folded = levels.slice(1, last);
-  const parent = levels.slice(0, last).findLast((level) => level.to);
+  const parent = (untitledDetail ? levels : levels.slice(0, last)).findLast(
+    (level) => level.to,
+  );
 
   return (
     <Breadcrumb
@@ -188,13 +206,15 @@ export function Breadcrumbs({
               className={cn(
                 'min-w-0',
                 index === last
-                  ? undefined
+                  ? untitledDetail
+                    ? 'hidden md:inline-flex'
+                    : undefined
                   : index === 0
                     ? 'hidden shrink-0 md:inline-flex'
                     : 'hidden shrink-0 lg:inline-flex',
               )}
             >
-              {index === last ? (
+              {index === last && !untitledDetail ? (
                 <BreadcrumbPage
                   title={level.label}
                   className='truncate font-medium'
@@ -233,3 +253,15 @@ function routeLevelTitle(entry: RouteTrailEntry): string | undefined {
 }
 
 Breadcrumbs.displayName = 'Breadcrumbs';
+
+/** Whether a declared trail already begins at `area`'s home page. */
+function startsAt(
+  declared: readonly PageBreadcrumbLevel[],
+  area: PageBreadcrumbLevel,
+): boolean {
+  const first = declared[0]?.to;
+  if (!first || !area.to) return false;
+  const path = (to: NonNullable<PageBreadcrumbLevel['to']>) =>
+    (typeof to === 'string' ? to : (to.pathname ?? '')).split(/[?#]/u)[0];
+  return path(first) === path(area.to);
+}

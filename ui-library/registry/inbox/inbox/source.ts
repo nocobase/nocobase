@@ -1,3 +1,4 @@
+// Generated from packages/plugins/app-plugin-notification-in-app/client/inbox-page/source.ts: edit it there, then run `node scripts/sync-ui-library-inbox.mjs`.
 /**
  * The one contract between the inbox and what an application adds to the in-app items: an `InboxSource`. The items
  * themselves (text, read state, deletion) are always `@nocobase/app-plugin-notification-in-app`'s; a source may say

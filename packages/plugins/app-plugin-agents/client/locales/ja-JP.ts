@@ -3,6 +3,9 @@ import type { LocaleResource } from '@nocobase/i18n';
 import type enUS from './en-US.js';
 
 const jaJP: LocaleResource<typeof enUS> = {
+  openAgentSettings: 'エージェント設定を開く',
+  myConversations: '自分の会話',
+  fileUsage: 'チャットの添付ファイル',
   modelSuggestions: {
     design:
       '最も高度な推論：提案、アーキテクチャ、難しい問題の調査、重要な変更のコードレビュー。通常の実装、パッケージ間の変更、提案書の作成にも対応。',
@@ -1055,6 +1058,19 @@ const jaJP: LocaleResource<typeof enUS> = {
       thinking: '考え中…',
       reading: '{{subject}}を見て',
       working: '{{subject}}作業中',
+      ...{
+        count_one: '{{count}} ステップ',
+        count_other: '{{count}} ステップ',
+      },
+    },
+    // Plural forms of the panel wording, outside the typed shape (the rest falls back to English).
+    ...{
+      list: {
+        waiting_one: '要対応 {{count}}',
+        waiting_other: '要対応 {{count}}',
+        active_one: '進行中 {{count}}',
+        active_other: '進行中 {{count}}',
+      },
     },
     agents: {
       personalOnly: '個人実行環境限定',
@@ -1472,11 +1488,16 @@ const jaJP: LocaleResource<typeof enUS> = {
         runners: '実行環境',
         prices: 'モデルの価格',
         services: 'モデルサービス',
+        skills: 'スキル',
       },
     },
     actions: {
       read: '表示',
       manage: '管理する',
+    },
+    humanOnly: {
+      servicesManage:
+        'モデルサービスの管理ではプロバイダーのキーを書き込みます。人のみが実行できます。',
     },
     keyScopes: {
       agents: {

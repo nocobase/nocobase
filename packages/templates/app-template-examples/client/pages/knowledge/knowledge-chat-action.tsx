@@ -35,7 +35,6 @@ import {
 } from '#components/ui/tooltip';
 import { ModelsLink } from '#components/online-agent/models-link';
 import { useModelCatalog } from '#components/online-agent/use-model-catalog';
-import { useOnlineAgentIdentityActive } from '#components/online-agent/identity-context';
 import {
   KNOWLEDGE_CHAT_SCOPE,
   KNOWLEDGE_CHAT_SOURCE,
@@ -57,7 +56,6 @@ function KnowledgeChatLauncher(): ReactElement {
   const controller = useChatController();
   const { openChat } = useChatPanel();
   const { refresh } = useAuthentication();
-  const isIdentityActive = useOnlineAgentIdentityActive();
   const [open, setOpen] = useState(false);
   const [policy, setPolicy] = useState<KnowledgeRetrievalPolicy>('on-demand');
   const [pending, setPending] = useState(false);
@@ -74,7 +72,8 @@ function KnowledgeChatLauncher(): ReactElement {
       mountedRef.current = false;
     };
   }, []);
-  const active = () => mountedRef.current && isIdentityActive();
+  // The Agent plugin remounts the signed-in tree when the person changes, so mounted means the same person.
+  const active = () => mountedRef.current;
   const start = async () => {
     if (
       !active() ||
@@ -265,12 +264,12 @@ function KnowledgeChatLauncher(): ReactElement {
                 className='flex items-center gap-2 text-sm text-muted-foreground'
               >
                 <Spinner />
-                {t('onlineAgent.checkingModels')}
+                {t('aiExamples.checkingModels')}
               </p>
             ) : catalog.phase === 'error' ? (
               <Alert variant='destructive'>
                 <AlertDescription>
-                  <p>{t('onlineAgent.catalogFailed')}</p>
+                  <p>{t('aiExamples.catalogFailed')}</p>
                   <Button
                     type='button'
                     variant='outline'
@@ -283,7 +282,7 @@ function KnowledgeChatLauncher(): ReactElement {
             ) : !catalog.canSend ? (
               <Alert>
                 <AlertDescription>
-                  <p>{t('onlineAgent.noModels.description')}</p>
+                  <p>{t('aiExamples.noModels.description')}</p>
                   <ModelsLink explain />
                 </AlertDescription>
               </Alert>

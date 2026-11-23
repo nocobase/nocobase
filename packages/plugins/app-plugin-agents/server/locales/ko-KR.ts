@@ -29,11 +29,16 @@ const koKR: LocaleResource<typeof enUS> = {
         runners: '실행 환경',
         prices: '모델 가격',
         services: '모델 서비스',
+        skills: '스킬',
       },
     },
     actions: {
       read: '보기',
       manage: '관리',
+    },
+    humanOnly: {
+      servicesManage:
+        '모델 서비스 관리는 공급자 키를 기록합니다. 사람만 할 수 있습니다.',
     },
     keyScopes: {
       agents: {

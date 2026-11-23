@@ -1,3 +1,4 @@
+// Generated from packages/plugins/app-plugin-notification-in-app/client/inbox-page/registry-scope.tsx: edit it there, then run `node scripts/sync-ui-library-inbox.mjs`.
 /** The registry's React components: the provider that gives the inbox its contributors, and the scope a part renders in. */
 import {
   NamespaceScope,

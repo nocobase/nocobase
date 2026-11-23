@@ -32,6 +32,7 @@ const enUS = {
     },
     settings: {
       'permission-sets': 'Permission Sets',
+      'authentication-settings': 'Sign-in and authentication',
     },
     subjectTypes: {
       authenticated: 'All signed-in users',

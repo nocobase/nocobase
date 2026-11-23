@@ -7,7 +7,7 @@ import {
 } from '../shared/skills.js';
 import { createHarness, skillMd, type Harness } from './harness.js';
 
-const ADMIN = ['agents.agents/manage'];
+const ADMIN = ['agents.skills/manage'];
 
 const reasons = (markdown: string) =>
   parseSkillMarkdown(markdown).problems.map(

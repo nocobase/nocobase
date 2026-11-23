@@ -2,11 +2,21 @@
   "name": "@nocobase/app-plugin-authz-default-access",
   "displayName": "Authz Default Access App Plugin",
   "description": "Default Access authorization rules and administration UI.",
-  "version": "1.0.0-beta.21",
+  "version": "1.0.0-beta.22",
   "type": "module",
   "prettier": "@nocobase/dev-config/prettier",
   "engines": {
     "node": ">=24.0.0"
+  },
+  "nocobase": {
+    "title": {
+      "en-US": "Default access",
+      "zh-CN": "默认访问规则"
+    },
+    "description": {
+      "en-US": "What new roles can see by default",
+      "zh-CN": "新角色默认能看什么"
+    }
   },
   "sideEffects": false,
   "exports": {
@@ -65,7 +75,8 @@
     "@nocobase/app-server": "workspace:^",
     "@nocobase/db": "workspace:^",
     "@nocobase/i18n": "workspace:^",
-    "@nocobase/app-plugin-authorization": "workspace:^"
+    "@nocobase/app-plugin-authorization": "workspace:^",
+    "@nocobase/service-provider": "workspace:^"
   },
   "devDependencies": {
     "@nocobase/app-testing": "workspace:*",

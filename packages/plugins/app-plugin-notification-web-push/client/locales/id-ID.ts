@@ -3,6 +3,11 @@ import type { LocaleResource } from '@nocobase/i18n';
 import type enUS from './en-US.js';
 
 const idID: LocaleResource<typeof enUS> = {
+  'push.deviceCount': 'Terdaftar: {{total}} · Aktif: {{active}}',
+  'push.active': 'Enabled',
+  'push.paused': 'Paused',
+  'push.pause': 'Pause',
+  'push.resume': 'Resume',
   'push.title': 'Pemberitahuan push',
   'push.description':
     'Terima pengingat di setiap perangkat, bahkan saat aplikasi ditutup.',
@@ -34,6 +39,9 @@ const idID: LocaleResource<typeof enUS> = {
     'Tidak dapat memperbarui pemberitahuan push. Silakan coba lagi.',
   'push.loadingFailed': 'Tidak dapat memuat perangkat. Silakan coba lagi.',
   'push.retry': 'Coba lagi',
+  'channelType.title': 'Push browser',
+  'channelType.testHint':
+    'Mengirim notifikasi uji ke browser tempat Anda mengaktifkan push. Aktifkan dulu di Pengaturan pribadi › Notifikasi.',
 };
 
 export default idID;

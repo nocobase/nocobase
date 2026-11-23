@@ -13,6 +13,8 @@ beforeEach(() => {
     matches: false,
     addListener() {},
     removeListener() {},
+    addEventListener() {},
+    removeEventListener() {},
   }));
 });
 

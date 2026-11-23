@@ -103,10 +103,13 @@ const deliveryRelations = orderPermission.update((update) =>
 export const projectResource: CompositeResource = {
   name: 'example.sales.projects',
   title: label('sales.projects'),
+  // Where the actions take effect, and which of them opening the page turns on, for the role editor only.
+  usedOn: ['example.sales.projects'],
   actions: [
     {
       name: 'view',
       title: label('sales.view'),
+      defaultFor: ['example.sales.projects'],
       ...projectPermission.bind('projects').build(),
     },
     {
@@ -125,8 +128,12 @@ export const quoteResource = defineCompositeResource(
   (resource) =>
     resource
       .title(label('sales.quotes'))
+      .usedOn('example.sales.quotes')
       .action('view', (action) =>
-        action.title(label('sales.view')).grant('quotes', quotePermission),
+        action
+          .title(label('sales.view'))
+          .defaultFor('example.sales.quotes')
+          .grant('quotes', quotePermission),
       )
       .action('edit', (action) =>
         action
@@ -150,8 +157,12 @@ export const orderResource = defineCompositeResource(
   (resource) =>
     resource
       .title(label('sales.orders'))
+      .usedOn('example.sales.orders')
       .action('view', (action) =>
-        action.title(label('sales.view')).grant('orders', orderPermission),
+        action
+          .title(label('sales.view'))
+          .defaultFor('example.sales.orders')
+          .grant('orders', orderPermission),
       )
       .action('manageRelations', (action) =>
         action

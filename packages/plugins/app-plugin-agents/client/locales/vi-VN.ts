@@ -3,6 +3,9 @@ import type { LocaleResource } from '@nocobase/i18n';
 import type enUS from './en-US.js';
 
 const viVN: LocaleResource<typeof enUS> = {
+  openAgentSettings: 'Mở cài đặt Agent',
+  myConversations: 'Cuộc trò chuyện của tôi',
+  fileUsage: 'Tệp đính kèm trò chuyện',
   modelSuggestions: {
     design:
       'Suy luận mạnh nhất: đề xuất, kiến trúc, điều tra vấn đề khó và đánh giá thay đổi quan trọng; cũng triển khai thông thường và thay đổi nhiều gói.',
@@ -1055,6 +1058,19 @@ const viVN: LocaleResource<typeof enUS> = {
       thinking: 'Đang suy nghĩ…',
       reading: 'Nhìn vào {{subject}}',
       working: 'Đang làm việc trên {{subject}}',
+      ...{
+        count_one: '{{count}} bước',
+        count_other: '{{count}} bước',
+      },
+    },
+    // Plural forms of the panel wording, outside the typed shape (the rest falls back to English).
+    ...{
+      list: {
+        waiting_one: 'Cần tôi {{count}}',
+        waiting_other: 'Cần tôi {{count}}',
+        active_one: 'Đang tiến hành {{count}}',
+        active_other: 'Đang tiến hành {{count}}',
+      },
     },
     agents: {
       personalOnly: 'Chỉ dành cho vận động viên chạy bộ cá nhân',
@@ -1471,11 +1487,16 @@ const viVN: LocaleResource<typeof enUS> = {
         runners: 'Môi trường chạy',
         prices: 'Giá mẫu',
         services: 'Dịch vụ kiểu mẫu',
+        skills: 'Kỹ năng',
       },
     },
     actions: {
       read: 'Xem',
       manage: 'Quản lý',
+    },
+    humanOnly: {
+      servicesManage:
+        'Quản lý dịch vụ mô hình sẽ ghi khóa của nhà cung cấp; chỉ người mới được làm.',
     },
     keyScopes: {
       agents: {

@@ -3,6 +3,9 @@ import type { LocaleResource } from '@nocobase/i18n';
 import type enUS from './en-US.js';
 
 const ruRU: LocaleResource<typeof enUS> = {
+  openAgentSettings: 'Открыть настройки агентов',
+  myConversations: 'Мои беседы',
+  fileUsage: 'Вложения чата',
   modelSuggestions: {
     design:
       'Самое сильное рассуждение: предложения, архитектура, сложные расследования и проверка важных изменений; также обычная реализация, изменения в нескольких пакетах и написание предложений.',
@@ -1092,6 +1095,25 @@ const ruRU: LocaleResource<typeof enUS> = {
       thinking: 'Размышляет…',
       reading: 'Смотрит {{subject}}',
       working: 'Работает над {{subject}}',
+      ...{
+        count_one: '{{count}} шаг',
+        count_other: '{{count}} шагов',
+        count_few: '{{count}} шага',
+        count_many: '{{count}} шагов',
+      },
+    },
+    // Plural forms of the panel wording, outside the typed shape (the rest falls back to English).
+    ...{
+      list: {
+        waiting_one: 'Ждут меня: {{count}}',
+        waiting_other: 'Ждут меня: {{count}}',
+        waiting_few: 'Ждут меня: {{count}}',
+        waiting_many: 'Ждут меня: {{count}}',
+        active_one: 'В работе: {{count}}',
+        active_other: 'В работе: {{count}}',
+        active_few: 'В работе: {{count}}',
+        active_many: 'В работе: {{count}}',
+      },
     },
     agents: {
       personalOnly: 'Только личные среды',
@@ -1510,11 +1532,16 @@ const ruRU: LocaleResource<typeof enUS> = {
         runners: 'Среды выполнения',
         prices: 'Цены моделей',
         services: 'Сервисы моделей',
+        skills: 'Навыки',
       },
     },
     actions: {
       read: 'Просмотр',
       manage: 'Управление',
+    },
+    humanOnly: {
+      servicesManage:
+        'Управление сервисами моделей записывает ключи поставщиков; это может сделать только человек.',
     },
     keyScopes: {
       agents: {

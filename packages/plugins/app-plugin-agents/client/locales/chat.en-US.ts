@@ -23,7 +23,7 @@ const chatEnUS = {
         'The model may not have applied the {{level}} thinking level to this reply.',
     },
     executionFailed:
-      'Execution failed. Review the saved conversation before retrying.',
+      'Execution failed. Check saved history and possibly completed actions before repeating them.',
     untitled: 'Untitled conversation',
     renamed: 'Renamed',
     archivedNamed: 'Archived “{{title}}”',
@@ -36,8 +36,8 @@ const chatEnUS = {
       agentArchived: 'Not enabled',
       forbidden: 'Not available to you',
       noModel: 'Configure a chat model first',
-      noRunner: 'No runner online, cannot be chosen',
-      othersPersonal: "Only others' personal runners have it",
+      noRunner: 'No runtime online, cannot be chosen',
+      othersPersonal: "Only others' personal runtimes have it",
       // The reason earlier versions wrote on a notice that their online fallback could not answer.
       modelUnavailable: 'Model unavailable',
     },
@@ -80,9 +80,9 @@ const chatEnUS = {
       switchedToDefault:
         'Switched to {{name}}, the system default, until {{own}} is back.',
       switchedToOnline:
-        '{{own}} has no runner for you now, so {{name}} answers until {{own}} is back.',
+        '{{own}} has no runtime for you now, so {{name}} answers until {{own}} is back.',
       onlineFallbackUnavailable:
-        'The online fallback agent cannot answer ({{reason}}). This conversation stays with {{own}} while it waits for a runner.',
+        'The online fallback agent cannot answer ({{reason}}). This conversation stays with {{own}} while it waits for a runtime.',
       switchedAgent: 'Switched to {{name}} with this conversation’s history.',
       switchedBack: 'Back with {{name}}.',
       runFailed: 'The agent stopped before answering.',
@@ -100,8 +100,8 @@ const chatEnUS = {
       working: 'Working on {{subject}}',
     },
     agents: {
-      personalOnly: 'Personal runners only',
-      hint: 'Lists the enabled agents and says why one cannot answer you now. Answers run on a runner: the first reply waits for one to take it, usually a few seconds.',
+      personalOnly: 'Personal runtimes only',
+      hint: 'Lists the enabled agents and says why one cannot answer you now. Answers run on a runtime: the first reply waits for one to take it, usually a few seconds.',
       chooseFor: 'Choose an agent',
       empty: 'No agent you may choose',
       none: 'No agent',

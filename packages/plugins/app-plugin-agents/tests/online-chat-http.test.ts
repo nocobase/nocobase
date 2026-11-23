@@ -119,8 +119,8 @@ async function fixture() {
     c.set('caller', {
       userId: id,
       can: async () => false,
-      opens: async () => true,
       scope: async () => 'none',
+      chatAudience: async () => 'all' as const,
       onlineContext: {
         user: { id },
         authorization: {

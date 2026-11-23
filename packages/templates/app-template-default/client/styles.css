@@ -425,12 +425,31 @@ label:has(> .sr-only:focus-visible),
   width: calc(var(--spacing) * 4);
   height: calc(var(--spacing) * 4);
 }
+/* A page entry with a sub-menu leaves room for its expand button at the
+   row's end, which the primitive's own padding would otherwise lose to the
+   row padding above. A collapsible row keeps `data-sidebar` but not the
+   item's `data-slot`. */
+.app-navigation
+  [data-sidebar='menu-item']:has(> [data-slot='sidebar-menu-action'])
+  > [data-slot='sidebar-menu-button'] {
+  padding-right: calc(var(--spacing) * 9);
+}
 /* An entry with a count (navigation-menu.tsx) leaves room for it at the
    row's end, so a long label truncates before reaching it. */
 .app-navigation
   [data-slot='sidebar-menu-item']:has(> [data-slot='sidebar-menu-badge'])
   > [data-slot='sidebar-menu-button'] {
   padding-right: calc(var(--spacing) * 10);
+}
+/* A page entry with a sub-menu has its expand button at the row's end, so
+   its count sits left of that button (right-8) and the label stops before
+   both: 8 units for the button, up to 8 for a 99+ count, and a unit apart. */
+.app-navigation
+  [data-sidebar='menu-item']:has(> [data-slot='sidebar-menu-badge']):has(
+    > [data-slot='sidebar-menu-action']
+  )
+  > [data-slot='sidebar-menu-button'] {
+  padding-right: calc(var(--spacing) * 17);
 }
 .app-navigation [data-slot='sidebar-menu-sub'] {
   gap: calc(var(--spacing) * 0.5);

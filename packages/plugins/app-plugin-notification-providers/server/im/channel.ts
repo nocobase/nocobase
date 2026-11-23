@@ -2,6 +2,7 @@ import type { ValidatedChannelMessage } from '@nocobase/app-plugin-notification'
 import {
   validateNotificationTarget,
   type NotificationChannelDefinition,
+  type NotificationContent,
   type NotificationTarget,
 } from '@nocobase/app-plugin-notification';
 
@@ -144,4 +145,13 @@ declare module '@nocobase/app-plugin-notification' {
   interface NotificationChannelSchemas {
     im: { readonly recipient: ImRecipient; readonly message: ImMessage };
   }
+}
+
+/** A group message from a notification: the title, the body, and its link when it is a full URL. */
+export function composeImMessage(content: NotificationContent): ImMessage {
+  return {
+    title: content.title,
+    text: content.body.trim() ? content.body : content.title,
+    ...(content.target?.type === 'url' ? { target: content.target } : {}),
+  };
 }

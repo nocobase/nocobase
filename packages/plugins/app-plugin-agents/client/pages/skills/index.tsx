@@ -38,7 +38,7 @@ export default function SkillsPage(): ReactElement {
   const api = useAgentsApi();
   const navigate = useNavigate();
   const format = useFormatters();
-  const canManage = useSetting('agents.agents', 'manage');
+  const canManage = useSetting('agents.skills', 'manage');
   const skills = useQuery({
     queryKey: agentsKeys.skills,
     queryFn: () => api.skills(),

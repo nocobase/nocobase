@@ -100,7 +100,9 @@ it('returns from real password sign-in to the pending invitation and grants its 
       return response;
     };
     vi.stubGlobal('fetch', browserFetch);
-    const route = usersRoutes.routes.find((item) => item.name === 'invite');
+    const route = usersRoutes
+      .flatMap((contribution) => contribution.routes)
+      .find((item) => item.name === 'invite');
     if (!route?.componentLoader)
       throw new Error('Missing public invitation page.');
     const { default: InvitationPage } = await route.componentLoader();

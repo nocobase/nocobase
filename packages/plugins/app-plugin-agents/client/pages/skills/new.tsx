@@ -19,6 +19,7 @@ import { Button } from '../../components/ui/button.js';
 import { Spinner } from '../../components/ui/spinner.js';
 import { useAgentsApi } from '../../hooks/use-agents-api.js';
 import { useNotify } from '../../hooks/use-notify.js';
+import { useSkillsListPath } from './paths.js';
 import { filesInput, SKILL_MD, skillTemplate } from './workbench/model.js';
 import { DiscardDialog } from './workbench/discard-dialog.js';
 import { SkillWorkbench } from './workbench/skill-workbench.js';
@@ -61,7 +62,8 @@ function NewSkill(): ReactElement {
     readonly problems: readonly SkillFrontMatterProblem[];
   } | null>(null);
   const [leaving, setLeaving] = useState(false);
-  const leave = () => void navigate('/skills');
+  const listPath = useSkillsListPath();
+  const leave = () => void navigate(listPath);
   const check = checkDraft(state.draft, state.uploading);
   const serverProblems =
     refused && refused.content === state.draft.content ? refused.problems : [];
@@ -74,7 +76,7 @@ function NewSkill(): ReactElement {
     onSuccess: (skill) => {
       notify.success(t('skills.created', { name: skill.name }));
       void queryClient.invalidateQueries({ queryKey: agentsKeys.skills });
-      void navigate(`/skills/${encodeURIComponent(skill.id)}`, {
+      void navigate(`${listPath}/${encodeURIComponent(skill.id)}`, {
         replace: true,
       });
     },
@@ -89,7 +91,7 @@ function NewSkill(): ReactElement {
     },
   });
   usePageBreadcrumb([
-    { label: t('skills.title'), to: '/skills' },
+    { label: t('skills.title'), to: listPath },
     { label: t('skills.newTitle') },
   ]);
   return (

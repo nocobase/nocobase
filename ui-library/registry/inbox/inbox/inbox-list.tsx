@@ -1,4 +1,5 @@
-import { AlertCircleIcon, InboxIcon, ListTodoIcon } from 'lucide-react';
+// Generated from packages/plugins/app-plugin-notification-in-app/client/inbox-page/inbox-list.tsx: edit it there, then run `node scripts/sync-ui-library-inbox.mjs`.
+import { AlertCircleIcon, InboxIcon } from 'lucide-react';
 import type { ReactElement, ReactNode } from 'react';
 
 import {
@@ -26,20 +27,17 @@ import {
 } from '#components/ui/select';
 import { Skeleton } from '#components/ui/skeleton';
 import { Spinner } from '#components/ui/spinner';
-import { Tabs, TabsList, TabsTrigger } from '#components/ui/tabs';
 
 import { useInboxFrameText } from './frame.js';
 import type { InboxAction } from './inbox-actions.js';
 import { InboxItemCard } from './inbox-item.js';
 import {
   categoriesOf,
-  INBOX_VIEWS,
   kindsOf,
   shownGroups,
   type InboxEntry,
   type InboxFilter,
   type InboxGroups,
-  type InboxView,
 } from './model.js';
 import { categoriesOfRegistry, useInboxRegistry } from './registry.js';
 
@@ -64,10 +62,6 @@ export interface InboxListCollection {
 
 export interface InboxListProps {
   readonly filter: InboxFilter;
-  /** Unread items among those loaded, the count on All. */
-  readonly unread: number;
-  /** What waits on the viewer, the count on To do and the header badge's. */
-  readonly pending: number;
   /** What waits in each waiting category, beside its group's heading; its unsettled items when left out. */
   readonly waiting?: Readonly<Record<string, number>>;
   readonly groups: InboxGroups;
@@ -102,8 +96,6 @@ export interface InboxListProps {
  */
 export function InboxList({
   filter,
-  unread,
-  pending,
   waiting,
   groups,
   loaded,
@@ -143,6 +135,10 @@ export function InboxList({
     !showFeeds &&
     shownCollections.length === 0 &&
     shown.every(({ entries }) => entries.length === 0);
+  // The kind filter matters only when the registry adds a collection; the rail filters everything else.
+  const showKindFilter = categories.some(
+    (category) => category.type === 'collection',
+  );
   const kinds = kindsOf(view, categories).map((value) => ({
     value,
     label:
@@ -218,7 +214,9 @@ export function InboxList({
               ? t('inbox.empty.todo', {
                   defaultValue: 'Nothing waiting for you',
                 })
-              : t('inbox.emptyAll', { defaultValue: 'Nothing here' })
+              : view === 'unread'
+                ? t('inbox.empty.unread', { defaultValue: 'All caught up' })
+                : t('inbox.emptyAll', { defaultValue: 'Nothing here' })
           }
           description={t('inbox.emptyDescription', {
             defaultValue:
@@ -309,80 +307,36 @@ export function InboxList({
 
   return (
     <>
-      {/* The views as line tabs (client/styles.css draws them as a record page's), each led by its icon, a count in
-          muted figures. */}
-      <Tabs
-        value={view}
-        onValueChange={(value) => {
-          const next = value as InboxView;
-          onFilter({
-            view: next,
-            kind: kindsOf(next, categories).includes(kind) ? kind : 'all',
-          });
-        }}
-      >
-        <TabsList
-          variant='line'
-          className='shrink-0 [--tabs-inset:--spacing(6)]'
-        >
-          {INBOX_VIEWS.map((value) => {
-            const count = value === 'todo' ? pending : unread;
-            const Icon = value === 'todo' ? ListTodoIcon : InboxIcon;
-            return (
-              <TabsTrigger key={value} value={value}>
-                <Icon aria-hidden='true' />
-                {value === 'todo'
-                  ? t('inbox.views.todo', { defaultValue: 'To do' })
-                  : t('inbox.views.all', { defaultValue: 'All' })}
-                {count > 0 ? (
-                  <span
-                    className='text-xs text-muted-foreground tabular-nums'
-                    aria-label={
-                      value === 'todo'
-                        ? t('inbox.pendingDecisions', {
-                            count,
-                            defaultValue: '{{count}} waiting',
-                          })
-                        : t('inbox.unreadCount', {
-                            count,
-                            defaultValue: '{{count}} unread',
-                          })
-                    }
-                  >
-                    {count}
-                  </span>
-                ) : null}
-              </TabsTrigger>
-            );
-          })}
-        </TabsList>
-      </Tabs>
-      <div className='flex shrink-0 flex-wrap items-center justify-between gap-2 border-b border-border px-6 py-2.5'>
-        <Select
-          items={kinds}
-          value={kind}
-          onValueChange={(next: string | null) => {
-            if (next) onFilter({ view, kind: next });
-          }}
-        >
-          <SelectTrigger
-            size='sm'
-            className='w-40'
-            aria-label={t('inbox.kinds.label', { defaultValue: 'Type' })}
-          >
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent className='w-auto max-w-[min(var(--container-sm),var(--available-width))] min-w-(--anchor-width) [&_[data-slot=select-item]>:first-child]:whitespace-normal'>
-            {kinds.map((item) => (
-              <SelectItem key={item.value} value={item.value}>
-                {item.label}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        {footer}
-      </div>
-      <div className='min-h-0 flex-1 overflow-y-auto px-6 py-3'>{content}</div>
+      {showKindFilter || footer ? (
+        <div className='flex shrink-0 flex-wrap items-center justify-between gap-2 border-b border-border px-4 py-2.5'>
+          {showKindFilter ? (
+            <Select
+              items={kinds}
+              value={kind}
+              onValueChange={(next: string | null) => {
+                if (next) onFilter({ view, kind: next });
+              }}
+            >
+              <SelectTrigger
+                size='sm'
+                className='w-40'
+                aria-label={t('inbox.kinds.label', { defaultValue: 'Type' })}
+              >
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent className='w-auto max-w-[min(var(--container-sm),var(--available-width))] min-w-(--anchor-width) [&_[data-slot=select-item]>:first-child]:whitespace-normal'>
+                {kinds.map((item) => (
+                  <SelectItem key={item.value} value={item.value}>
+                    {item.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          ) : null}
+          {footer}
+        </div>
+      ) : null}
+      <div className='min-h-0 flex-1 overflow-y-auto px-3 py-3'>{content}</div>
       <p className='hidden shrink-0 items-center gap-3 border-t px-4 py-2 text-xs text-muted-foreground lg:flex'>
         <span className='inline-flex items-center gap-1'>
           <Kbd>J</Kbd>

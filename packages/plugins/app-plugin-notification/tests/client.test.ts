@@ -5,11 +5,21 @@ import { NotificationClient } from '../client/notification-client.js';
 import notificationPlugin from '../client/plugin.js';
 
 describe('@nocobase/app-plugin-notification client', () => {
-  it('contributes its service and locale resources but no pages', () => {
+  it('contributes its service, locale resources and two settings pages', () => {
     const registration = notificationPlugin();
 
     expect(registration.serviceProviders).toHaveLength(1);
-    expect(registration.routes).toEqual([]);
+    expect(registration.routes).toMatchObject([
+      { parent: 'systemSettings', routes: [{ name: 'notificationSettings' }] },
+      {
+        parent: 'personalSettings',
+        routes: [{ name: 'notificationPreferences' }],
+      },
+    ]);
+    expect(
+      notificationPlugin({ settingsPage: false, preferencesPage: false })
+        .routes,
+    ).toEqual([]);
     expect(registration.locales).toMatchObject({
       'en-US': expect.any(Function),
       'zh-CN': expect.any(Function),

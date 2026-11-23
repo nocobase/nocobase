@@ -9,6 +9,7 @@ const frFR: LocaleResource<typeof enUS> = {
   authorization: {
     title: 'Planifications',
     read: 'Lire',
+    manage: 'Gérer',
   },
 };
 

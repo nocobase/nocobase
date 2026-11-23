@@ -1,3 +1,4 @@
+// Generated from packages/plugins/app-plugin-notification-in-app/client/inbox-page/model.ts: edit it there, then run `node scripts/sync-ui-library-inbox.mjs`.
 /**
  * The inbox as the page shows it: each in-app item of `@nocobase/app-plugin-notification-in-app` with what the
  * application's `InboxSource` knows about it (`source.ts`), sorted into categories, and the small rules the list
@@ -77,12 +78,12 @@ export type InboxTranslate = (
 ) => string;
 
 /**
- * The inbox's two views: everything (`all`), or only what waits on the viewer (`todo`): the items of a waiting
- * category not yet settled, and what each collection lists there.
+ * The inbox's three views: everything (`all`), the unread items (`unread`), or only what waits on the viewer (`todo`):
+ * the items of a waiting category not yet settled, and what each collection lists there.
  */
-export type InboxView = 'all' | 'todo';
+export type InboxView = 'all' | 'unread' | 'todo';
 
-export const INBOX_VIEWS: readonly InboxView[] = ['all', 'todo'];
+export const INBOX_VIEWS: readonly InboxView[] = ['all', 'unread', 'todo'];
 
 /** A category of in-app items, such as the decisions or the notifications. */
 export interface InboxEntryCategory {
@@ -160,10 +161,14 @@ export interface InboxCollectionCategory {
 
 export type InboxCategory = InboxEntryCategory | InboxCollectionCategory;
 
-/** The view and the kind shown: every kind (`all`) or a category's id. */
+/**
+ * The view, the kind shown (every kind, `all`, or a registry category's id) and the notification category the server
+ * narrows the items to (`?category=`, a kind's category key such as `approvals`), or null for every category.
+ */
 export interface InboxFilter {
   readonly view: InboxView;
   readonly kind: string;
+  readonly category?: string | null;
 }
 
 export function entryCategories(
@@ -190,7 +195,7 @@ export function categoriesOf(
 ): InboxCategory[] {
   return categories.filter((category) =>
     category.type === 'entries'
-      ? view === 'all' || category.waits === true
+      ? view !== 'todo' || category.waits === true
       : (category.views ?? INBOX_VIEWS).includes(view),
   );
 }
@@ -208,11 +213,14 @@ export function readInboxFilter(
   params: URLSearchParams,
   categories: readonly InboxCategory[],
 ): InboxFilter {
-  const view: InboxView = params.get('view') === 'todo' ? 'todo' : 'all';
+  const requested = params.get('view');
+  const view: InboxView =
+    requested === 'todo' || requested === 'unread' ? requested : 'all';
   const kind =
     kindsOf(view, categories).find((value) => value === params.get('kind')) ??
     'all';
-  return { view, kind };
+  const category = params.get('category')?.trim() || null;
+  return { view, kind, category };
 }
 
 /** The search of `filter` over `params`: the defaults left out, and what belonged to the previous filter dropped. */
@@ -226,6 +234,8 @@ export function inboxFilterParams(
   else next.set('view', filter.view);
   if (filter.kind === 'all') next.delete('kind');
   else next.set('kind', filter.kind);
+  if (filter.category) next.set('category', filter.category);
+  else next.delete('category');
   for (const collection of collectionCategories(categories))
     for (const name of [...(collection.params ?? []), collection.param])
       next.delete(name);
@@ -296,7 +306,13 @@ export function shownGroups(
       ? offered
       : offered.filter((category) => category.id === filter.kind);
   return shown.map((category) => {
-    const entries = groups[category.id] ?? [];
+    // The server narrows the pages; what a source lists as waiting is narrowed here, by category and, in the unread
+    // view, by read state, because a waiting approval stays listed after it is read.
+    const entries = (groups[category.id] ?? []).filter(
+      (entry) =>
+        (!filter.category || entry.item.category === filter.category) &&
+        (filter.view !== 'unread' || !entry.item.readAt),
+    );
     return {
       category,
       entries:
@@ -399,10 +415,18 @@ export function freshIds(
   );
 }
 
-/** Where opening an item goes: its route, or null without one. */
+/** Where opening an item goes inside the application: its route, or null without one. */
 export function entryLink(entry: InboxEntry): string | null {
   const { target } = entry.item;
   return target?.type === 'route' ? target.path : null;
+}
+
+/** The full web address an item opens, for a link outside the application; only HTTP(S). */
+export function entryUrl(entry: InboxEntry): string | null {
+  const { target } = entry.item;
+  return target?.type === 'url' && /^https?:\/\//iu.test(target.url)
+    ? target.url
+    : null;
 }
 
 const UNITS: readonly (readonly [Intl.RelativeTimeFormatUnit, number])[] = [

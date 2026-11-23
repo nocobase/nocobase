@@ -7,6 +7,7 @@ Use this reference when a plugin needs browser services, application-wide React 
 | Requirement                                                        | Mechanism              |
 | ------------------------------------------------------------------ | ---------------------- |
 | Add an App page                                                     | Client Route           |
+| Add a button to the header, left of the account menu               | Header action          |
 | Share React Context across several Client surfaces                 | React Provider         |
 | Register an application-scoped browser service | Client ServiceProvider |
 | Export reusable UI or Hooks                                        | Component export       |
@@ -72,6 +73,28 @@ export const reactProviders = (options: AuditLogClientOptions) =>
 ```
 
 Client-owned configuration belongs to the target App's `client/config/*.ts` and is read through `app.config.get()`. A Server value the browser needs is listed in `public` of that section's Server `defineAppConfig` and read through `app.config.public.get()` at the same path; `app.config.get()` never returns it. Declare those fields by augmenting `PublicAppConfig` from `@nocobase/app-client`, which makes the path and value type-checked. Neither Client config nor plugin options may contain Server credentials. See the [complete configuration example](configuration.md) for the factory, application registration, public accessor and boundary tests.
+
+## Header actions
+
+A plugin adds a button to the header's right-hand area, such as an inbox or an assistant, with `headerActions`: `{ name, order, component, auth?, badge? }`. The shell renders them by `order`, lower further left, and keeps the account menu last; on a phone it shows at most two and moves the rest into a More popover, counting only buttons that render something. `name` is unique across the application and its plugins and is how the application hides or replaces the button, so treat it like a route name. `component` renders the whole button, sized like the header's other buttons (`size-10`), and renders nothing when the viewer cannot use it. `auth` defaults to `required`; `optional` also shows it where an application renders a header for signed-out visitors. For a visitor a `required` button's component never runs and no badge hook runs at all, since a badge counts something waiting on a signed-in person. `badge` is the same hook as a [navigation badge](client-routing.md#badges-on-navigation-entries) and is drawn on the button's corner; include the count in the button's own accessible name when it matters.
+
+```ts
+import {
+  defineClientPlugin,
+  defineHeaderActions,
+} from '@nocobase/app-client/plugins';
+
+import { InboxButton, useInboxBadge } from './header/inbox-button.js';
+
+export default defineClientPlugin({
+  packageName: '@nocobase/app-plugin-inbox',
+  headerActions: defineHeaderActions([
+    { name: 'inbox', order: 100, component: InboxButton, badge: useInboxBadge },
+  ]),
+});
+```
+
+The application registers its own in `client/header-actions.ts` and hides or replaces any by name there with `defineHeaderActionOverrides([{ name: 'inbox', hidden: true }])` or `[{ name: 'inbox', component: MyInboxButton }]`; an override may also change `order` or `badge`, and naming an action nobody registers fails at startup. A layout reads the resolved list with `useHeaderActions({ signedIn })` from `@nocobase/app-client`: it passes whether someone is signed in, and for a visitor the hook keeps only `auth: 'optional'` actions and drops their badges, so the filtering lives in `@nocobase/app-client` rather than in each layout.
 
 ## Client ServiceProviders
 

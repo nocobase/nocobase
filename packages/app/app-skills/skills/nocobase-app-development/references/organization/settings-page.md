@@ -90,13 +90,13 @@ A department an administrator creates stores its title as plain text. A seeded d
 
 ## Settings page
 
-Declare one page in `client/routes.ts` with `defineAppRoutes`, titled with the same key and placed as a card in the Accounts and permissions category of System settings ([System settings navigation](../settings-navigation.md)); the department details are a child route, so they inherit the entry page's `authz`:
+Declare one settings page in `client/routes.ts` with `defineSystemSettingsRoutes`, titled with the same key and placed as a card in the Accounts and permissions category of System settings ([System settings navigation](../settings-navigation.md)); the department details are a child route, so they inherit the entry page's `authz`:
 
 ```ts
-defineAppRoutes([
+defineSystemSettingsRoutes([
   {
-    // A card in the Accounts and permissions category; in Default the page is at /settings/departments.
-    parent: 'settingsAccount',
+    // A card in the Accounts and permissions category, at /settings/departments.
+    parent: SYSTEM_SETTINGS_CATEGORIES.account,
     name: 'departments',
     path: '/departments',
     navigation: {

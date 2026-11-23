@@ -9,6 +9,7 @@ import { AGENT_TOOLS, type AgentTool } from '@nocobase/agent-protocol';
 import {
   AGENT_STATUSES,
   effortsFor,
+  normalizeChatRoles,
   type Agent,
   type AgentName,
   type AgentSource,
@@ -41,6 +42,7 @@ export interface AgentRecord {
   readonly maxConcurrentRuns: number;
   readonly maxAttempts: number;
   readonly toolPolicy: Readonly<Record<string, unknown>> | null;
+  readonly chatRoles: unknown;
   readonly lastClaimAt: string | null;
   readonly lastReportedAt: string | null;
   readonly archivedAt: string | null;
@@ -115,6 +117,23 @@ function i18nTextOf(value: unknown): I18nText | null {
     : null;
 }
 
+/** The stored roles who may chat, or null for everyone (a missing column reads as everyone too). */
+function chatRolesOf(value: unknown): readonly string[] | null {
+  let list: unknown = value;
+  if (typeof list === 'string') {
+    try {
+      list = JSON.parse(list) as unknown;
+    } catch {
+      return null;
+    }
+  }
+  return normalizeChatRoles(
+    Array.isArray(list)
+      ? list.filter((item): item is string => typeof item === 'string')
+      : null,
+  );
+}
+
 export function toAgent(record: AgentRecord): Agent {
   const toolPolicy =
     record.toolPolicy === null ? null : jsonObject(record.toolPolicy);
@@ -143,6 +162,7 @@ export function toAgent(record: AgentRecord): Agent {
     maxConcurrentRuns: Number(record.maxConcurrentRuns),
     maxAttempts: Number(record.maxAttempts),
     toolPolicy,
+    chatRoles: chatRolesOf(record.chatRoles),
     lastReportedAt: record.lastReportedAt,
     revision: Number(record.revision),
     createdAt: record.createdAt,
@@ -229,7 +249,7 @@ export async function insertAgent(
   conn: DatabaseConnection,
   values: Omit<
     AgentRecord,
-    'lastClaimAt' | 'archivedAt' | 'deletedAt' | 'revision'
+    'lastClaimAt' | 'archivedAt' | 'deletedAt' | 'revision' | 'chatRoles'
   >,
 ): Promise<void> {
   await agentsRepo(conn).createOne({
@@ -266,6 +286,22 @@ export async function reviseAgent(
     values: { ...values, revision: revision + 1 },
   });
   return updatedCount > 0;
+}
+
+/**
+ * Locks the agent's row until the transaction ends, changing nothing: an update of its id to itself, which every
+ * dialect turns into a row lock (SQLite, the whole database). Changing who may chat with an agent and making it the
+ * team's default both take it before they read the other's state, so the two never pass each other's check.
+ */
+export async function lockAgentRow(
+  conn: DatabaseConnection,
+  id: string,
+): Promise<void> {
+  await conn.query
+    .updateTable(AGENTS)
+    .set({ id })
+    .where('id', '=', id)
+    .execute();
 }
 
 /**

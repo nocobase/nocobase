@@ -15,6 +15,7 @@ export const demoItems: InboxItem[] = [
     title: 'Deploy v2.4.0 of CRM to production',
     body: 'Lina asks to deploy v2.4.0 of CRM to production.',
     target: { type: 'route', path: '/releases/requests/r1' },
+    category: 'releases',
     createdAt: ago(4),
   },
   {
@@ -24,6 +25,7 @@ export const demoItems: InboxItem[] = [
     title: 'Weekly report is ready',
     body: 'The sales report for week 40 is ready to read.',
     target: { type: 'route', path: '/reports/week-40' },
+    category: 'reports',
     createdAt: ago(35),
   },
   {
@@ -33,6 +35,7 @@ export const demoItems: InboxItem[] = [
     title: 'Deploy v1.9.2 of Billing to staging',
     body: 'Carl asks to deploy v1.9.2 of Billing to staging.',
     target: { type: 'route', path: '/releases/requests/r2' },
+    category: 'releases',
     createdAt: ago(90),
   },
   {
@@ -42,6 +45,7 @@ export const demoItems: InboxItem[] = [
     title: 'Mia commented on Onboarding checklist',
     body: 'Can we add the security training to week one?',
     readAt: ago(60),
+    category: 'projects',
     createdAt: ago(180),
   },
   {
@@ -51,6 +55,7 @@ export const demoItems: InboxItem[] = [
     title: 'Deploy v2.3.1 of CRM to production',
     body: 'Lina asks to deploy v2.3.1 of CRM to production.',
     readAt: ago(1400),
+    category: 'releases',
     createdAt: ago(1500),
   },
   {
@@ -94,3 +99,18 @@ export const demoNotices: InboxNotice[] = [
     outcome: 'approved',
   }),
 ];
+
+/** What the notification plugin's `GET /notifications/preferences` answers: the kinds, each with its category. */
+export const demoPreferences = {
+  channelTypes: ['in-app'],
+  kinds: [
+    { id: 'releases.requested', category: 'Releases', categoryKey: 'releases' },
+    { id: 'reports.ready', category: 'Reports', categoryKey: 'reports' },
+    { id: 'projects.commented', category: 'Projects', categoryKey: 'projects' },
+  ].map((kind) => ({
+    ...kind,
+    contributor: 'demo',
+    name: kind.id,
+    channels: [],
+  })),
+};
