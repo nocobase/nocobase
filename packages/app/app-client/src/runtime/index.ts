@@ -174,15 +174,40 @@ export async function resolveAppRuntime(
       ...(definition.routeComponentOverrides ?? []),
       ...extensionOverrides,
     ].filter(
-      ({ routeId }) => !contributions.excludedRouteIds?.has(routeId.trim()),
+      ({ routeId }) => !contributions.excludedRoutes?.has(routeId.trim()),
     ),
   );
-  const pageIds = new Set<string>();
+  const routesById = new Map<string, AppClientRegisteredRoute>();
   const visitRoute = (route: AppClientRegisteredRoute): void => {
-    if (route.componentLoader) pageIds.add(route.id);
+    routesById.set(route.id, route);
     route.children?.forEach(visitRoute);
   };
   routes.forEach(visitRoute);
+
+  const headerActions = resolveHeaderActions([
+    {
+      packageName: definition.packageName,
+      source: 'application',
+      headerActions:
+        resolveDeclaration(definition.headerActions, undefined) ?? [],
+    },
+    ...definition.plugins.plugins.map((plugin) => ({
+      packageName: plugin.packageName,
+      source: 'plugin' as const,
+      headerActions: plugin.headerActions,
+    })),
+  ]);
+  for (const { name, routeId } of headerActions) {
+    if (routeId === undefined) continue;
+    const route = routesById.get(routeId);
+    const excluded = contributions.excludedRoutes?.get(routeId);
+    if (route?.componentLoader || (!route && excluded === 'page')) continue;
+    throw new Error(
+      route || excluded === 'group'
+        ? `Header action "${name}" cannot target route group "${routeId}".`
+        : `Header action "${name}" references missing route "${routeId}".`,
+    );
+  }
 
   const runtime: AppRuntimeContext = {
     registeredPlugins: Object.freeze(
@@ -214,21 +239,11 @@ export async function resolveAppRuntime(
     routes,
     headerActions: Object.freeze(
       applyHeaderActionOverrides(
-        resolveHeaderActions([
-          {
-            packageName: definition.packageName,
-            source: 'application',
-            headerActions:
-              resolveDeclaration(definition.headerActions, undefined) ?? [],
-          },
-          ...definition.plugins.plugins.map((plugin) => ({
-            packageName: plugin.packageName,
-            source: 'plugin' as const,
-            headerActions: plugin.headerActions,
-          })),
-        ]),
+        headerActions,
         definition.headerActionOverrides ?? [],
-      ).filter(({ routeId }) => routeId === undefined || pageIds.has(routeId)),
+      ).filter(
+        ({ routeId }) => routeId === undefined || routesById.has(routeId),
+      ),
     ),
     layoutExtensions: resolveLayoutExtensions(
       definition.plugins.plugins.map((plugin) => ({

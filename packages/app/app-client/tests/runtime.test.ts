@@ -51,6 +51,13 @@ describe('app runtime', () => {
     });
     const extra = defineClientPlugin({
       packageName: '@example/extra',
+      headerActions: [
+        {
+          name: 'extra.link',
+          component: () => null,
+          routeId: '@example/extra:extra',
+        },
+      ],
       routes: defineAppRoutes([
         {
           name: 'extra',
@@ -85,6 +92,7 @@ describe('app runtime', () => {
     expect(runtime.routes.map(({ id, path }) => [id, path])).toEqual([
       ['@example/app:my-work', '/work'],
     ]);
+    expect(runtime.headerActions).toEqual([]);
     expect(defaultLoader).not.toHaveBeenCalled();
     expect(applicationLoader).not.toHaveBeenCalled();
   });
@@ -121,6 +129,72 @@ describe('app runtime', () => {
     expect(runtime.headerActions?.map(({ name }) => name)).toEqual([
       'tools.link',
     ]);
+  });
+
+  it.each([
+    ['typo', [], 'references missing route'],
+    ['typo', ['@example/tools:typo'], 'references missing route'],
+    ['group', [], 'cannot target route group'],
+    ['group', ['@example/tools:group'], 'cannot target route group'],
+  ] as const)(
+    'reports invalid shortcut targets %s with exclusions %j',
+    async (target, excludedRouteIds, error) => {
+      const component = () => null;
+      const routeId = `@example/tools:${target}`;
+      const plugin = defineClientPlugin({
+        packageName: '@example/tools',
+        headerActions: [{ name: 'tools.link', component, routeId }],
+        routes: defineAppRoutes([
+          {
+            name: 'group',
+            navigation: { title: 'Tools' },
+            children: [
+              {
+                name: 'page',
+                path: '/tools',
+                authz: 'skip',
+                componentLoader: async () => ({ default: component }),
+              },
+            ],
+          },
+        ]),
+      });
+      const definition = defineAppRuntime({
+        packageName: '@example/app',
+        createAppConfig: createAppClientConfig,
+        plugins: defineClientPlugins([plugin()]),
+        excludedRouteIds,
+      });
+      await expect(
+        resolveAppRuntime(definition, { rawConfig: {} }),
+      ).rejects.toThrow(`Header action "tools.link" ${error} "${routeId}".`);
+    },
+  );
+
+  it('warns once about missing exclusion IDs from registered packages only', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+    try {
+      await resolveAppRuntime(
+        defineAppRuntime({
+          packageName: '@example/app',
+          createAppConfig: createAppClientConfig,
+          plugins: defineClientPlugins([
+            defineClientPlugin({ packageName: '@example/tools' })(),
+          ]),
+          excludedRouteIds: [
+            ' @example/tools:missing ',
+            '@example/tools:missing',
+            '@example/absent:page',
+          ],
+        }),
+        { rawConfig: {} },
+      );
+      expect(warn).toHaveBeenCalledExactlyOnceWith(
+        'excludedRouteIds references missing route "@example/tools:missing" from registered package "@example/tools".',
+      );
+    } finally {
+      warn.mockRestore();
+    }
   });
 
   it('assembles complete configuration before the application is created', async () => {

@@ -7,8 +7,15 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { UsageReport, UsageRow } from '../../shared/reports.js';
 import { callsTo, clientMocks, resetApi } from './fake-client.js';
 import { renderRoute } from './render.js';
+import { AgentsMountContext, settingsMount } from '../../client/mount.js';
 
-vi.mock('@nocobase/app-client', () => clientMocks.appClient());
+const routeExists = vi.hoisted(() =>
+  vi.fn<(routeId: string | undefined) => boolean>(),
+);
+vi.mock('@nocobase/app-client', async () => ({
+  ...(await clientMocks.appClient()),
+  useHasRoute: routeExists,
+}));
 vi.mock('@nocobase/i18n/client', () => clientMocks.i18n());
 vi.mock('@nocobase/app-plugin-authorization/client', () =>
   clientMocks.authorization(),
@@ -71,6 +78,7 @@ const usageCalls = () =>
 
 describe('Agent management › Usage', () => {
   beforeEach(() => {
+    routeExists.mockReset().mockReturnValue(false);
     resetApi({
       'agents/usage': (request) =>
         report(request.query.groupBy as UsageReport['groupBy']),
@@ -81,6 +89,31 @@ describe('Agent management › Usage', () => {
       'agents/users': () => [],
     });
   });
+
+  it.each([false, true])(
+    'only links settings usage to a registered Agents page (%s)',
+    async (registered) => {
+      routeExists.mockImplementation(
+        (id) => registered && id === '@nocobase/app-plugin-agents:agents',
+      );
+      renderRoute(
+        <AgentsMountContext.Provider value={settingsMount('/settings/agents')}>
+          <UsagePage />
+        </AgentsMountContext.Provider>,
+        '/settings/usage',
+        '/settings/usage',
+      );
+      expect(
+        await screen.findByRole('cell', { name: 'A1' }),
+      ).toBeInTheDocument();
+      expect(routeExists).toHaveBeenCalledWith(
+        '@nocobase/app-plugin-agents:agents',
+      );
+      const link = screen.queryByRole('link', { name: 'A1' });
+      if (registered) expect(link).toHaveAttribute('href', '/settings/agents');
+      else expect(link).toBeNull();
+    },
+  );
 
   it('sums by agent by default, with the day by agent for the chart', async () => {
     renderRoute(<UsagePage />, '/usage', '/usage');

@@ -484,7 +484,7 @@ export interface ResolveAppClientContributionsOptions {
 }
 
 export interface ResolvedAppClientContributions {
-  readonly excludedRouteIds?: ReadonlySet<string>;
+  readonly excludedRoutes?: ReadonlyMap<string, 'page' | 'group'>;
   readonly routes: readonly AppClientRegisteredRoute[];
   readonly reactProviders: readonly AppClientRegisteredReactProvider[];
 }
@@ -858,7 +858,27 @@ export function resolveAppClientContributions(
     ? new Set(options.excludedRouteIds.map((id) => id.trim()).filter(Boolean))
     : undefined;
   const tree = assembleRoutes(inputs);
-  const roots = excludedRouteIds ? excludeRoutes(tree, excludedRouteIds) : tree;
+  const excludedRoutes = excludedRouteIds
+    ? new Map<string, 'page' | 'group'>()
+    : undefined;
+  const roots =
+    excludedRoutes && excludedRouteIds
+      ? excludeRoutes(tree, excludedRouteIds, excludedRoutes)
+      : tree;
+  if (excludedRouteIds && isDevelopment()) {
+    const packages = new Set(
+      contributions.map(({ packageName }) => packageName.trim()),
+    );
+    for (const id of excludedRouteIds) {
+      const separator = id.indexOf(':');
+      if (separator < 1) continue;
+      const packageName = id.slice(0, separator);
+      if (packages.has(packageName) && !excludedRoutes?.has(id))
+        console.warn(
+          `excludedRouteIds references missing route "${id}" from registered package "${packageName}".`,
+        );
+    }
+  }
   const routes = Object.freeze([
     ...resolveRouteTree(
       roots.filter((node) => node.surface === 'app'),
@@ -879,7 +899,7 @@ export function resolveAppClientContributions(
 
   return Object.freeze({
     routes,
-    ...(excludedRouteIds ? { excludedRouteIds } : {}),
+    ...(excludedRoutes ? { excludedRoutes } : {}),
     reactProviders: sortReactProviders(reactProviders),
   });
 }
@@ -1159,10 +1179,14 @@ function assembleRoutes(inputs: readonly RouteInput[]): RouteNode[] {
   return roots;
 }
 
-/** Prune assembled subtrees before their paths can conflict with the application's replacement routes. */
+/**
+ * Prune assembled subtrees before claiming their paths. The configured IDs are read-only, and excludedRoutes records
+ * the routes actually removed, including descendants, so callers can distinguish exclusion from a missing route.
+ */
 function excludeRoutes(
   nodes: readonly RouteNode[],
-  excludedIds: Set<string>,
+  excludedIds: ReadonlySet<string>,
+  excludedRoutes: Map<string, 'page' | 'group'>,
   excludeParent = false,
 ): RouteNode[] {
   return nodes.flatMap((node) => {
@@ -1170,11 +1194,12 @@ function excludeRoutes(
     const id = routeIdFor(definition.name, packageName);
     const excluded = excludeParent || excludedIds.has(id);
     const children =
-      node.children && excludeRoutes(node.children, excludedIds, excluded);
-    const emptiedGroup =
-      !definition.componentLoader && node.children?.length && !children?.length;
+      node.children &&
+      excludeRoutes(node.children, excludedIds, excludedRoutes, excluded);
+    const isPage = typeof definition.componentLoader === 'function';
+    const emptiedGroup = !isPage && node.children?.length && !children?.length;
     if (excluded || emptiedGroup) {
-      excludedIds.add(id);
+      excludedRoutes.set(id, isPage ? 'page' : 'group');
       return [];
     }
     return [{ ...node, children }];

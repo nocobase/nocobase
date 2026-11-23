@@ -49,7 +49,10 @@ export interface AppClientHeaderActionDefinition {
    * component never runs, and no action's badge hook does.
    */
   readonly auth?: 'required' | 'optional';
-  /** Package-qualified ID of the target page. The action is hidden when that page is absent. */
+  /**
+   * Package-qualified ID of the target page. Excluding that page hides the action. The application's shell also
+   * checks page access before rendering a linked action. Unknown IDs and route groups fail during runtime setup.
+   */
   readonly routeId?: string;
   /** The count on the button's corner. */
   readonly badge?: AppClientBadgeHook;

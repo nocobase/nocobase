@@ -498,7 +498,7 @@ const appRuntime = defineAppRuntime({
 });
 ```
 
-To hide a plugin toolbar shortcut while keeping its page, add `{ name, hidden: true }` to `headerActionOverrides` using the name documented by the plugin. A shortcut that declares its target's `routeId` is hidden automatically when that route is excluded.
+To hide a plugin toolbar shortcut while keeping its page, add `{ name, hidden: true }` to `headerActionOverrides` using the name documented by the plugin. A shortcut that declares its target's `routeId` is hidden automatically when that page is excluded or inaccessible to the viewer. A missing target or a group ID fails runtime setup.
 
 ## 11. Where rendering happens
 

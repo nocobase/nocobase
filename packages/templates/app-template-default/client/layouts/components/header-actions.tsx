@@ -5,6 +5,7 @@ import {
   type AppClientBadgeHook,
   type AppClientRegisteredHeaderAction,
 } from '@nocobase/app-client';
+import type { AppClientRegisteredRoute } from '@nocobase/app-client/plugins';
 import { useAuthentication } from '@nocobase/app-plugin-authentication/client';
 import { useTranslation } from '@nocobase/i18n/client';
 import { Ellipsis } from 'lucide-react';
@@ -12,6 +13,7 @@ import {
   useCallback,
   useEffect,
   useLayoutEffect,
+  useMemo,
   useRef,
   useState,
   type ReactElement,
@@ -31,6 +33,8 @@ import {
 import { TooltipProvider } from '#components/ui/tooltip';
 import { useIsMobile } from '#hooks/use-mobile';
 
+import { useRouteAccess, useRouteTree } from '../../routing/route-context.js';
+import { routeKey } from '../../routing/route-navigation.js';
 import { UserMenu } from './user-menu.js';
 
 /**
@@ -45,10 +49,23 @@ const PHONE_INLINE_ACTIONS = 2;
  */
 export function HeaderActions(): ReactElement {
   const { session } = useAuthentication();
+  const actions = useHeaderActions({ signedIn: Boolean(session?.user) });
+  const routes = useRouteTree();
+  const { denied, loading } = useRouteAccess();
+  const visible = useMemo(() => {
+    const allowedPages = new Set<string>();
+    const visit = (route: AppClientRegisteredRoute): void => {
+      if (denied.has(routeKey(route))) return;
+      if (route.componentLoader) allowedPages.add(route.id);
+      route.children?.forEach(visit);
+    };
+    if (!loading) routes.forEach(visit);
+    return actions.filter(
+      ({ routeId }) => routeId === undefined || allowedPages.has(routeId),
+    );
+  }, [actions, denied, loading, routes]);
   return (
-    <HeaderActionBar
-      actions={useHeaderActions({ signedIn: Boolean(session?.user) })}
-    >
+    <HeaderActionBar actions={visible}>
       <UserMenu />
     </HeaderActionBar>
   );

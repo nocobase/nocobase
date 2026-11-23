@@ -42,6 +42,7 @@ export {
 export {
   useApiClient,
   useClientApplication,
+  useHasRoute,
   useHeaderActions,
   useService,
 } from './hooks.js';
