@@ -5,4 +5,4 @@
 "@nocobase/backup": minor
 ---
 
-Integrate application backup and restore with startup coordination, deferred Drive deletions, and the built-in backup commands.
+Integrate application backup and restore with startup coordination, deferred Drive deletions, and the built-in backup commands, including verification of in-process deployments.

@@ -1,7 +1,7 @@
 import { realpath } from 'node:fs/promises';
 import { resolveDefaultAppConfigFile } from '../config/index.js';
 import { createHash } from 'node:crypto';
-import { relative, resolve, sep } from 'node:path';
+import { dirname, relative, resolve, sep } from 'node:path';
 import { BackupError } from '@nocobase/backup';
 import type {
   BackupConnection,
@@ -25,15 +25,14 @@ import { resolveConnections } from '../database/manager.js';
 import {
   defaultConnectionName,
   planAppDatabaseTasks,
+  type AppDatabaseTask,
 } from '../database/plan.js';
-import type {
-  AppDatabaseConfig,
-  AppDatabaseMigrationConfig,
-} from '../database/types.js';
+import type { AppDatabaseConfig } from '../database/types.js';
 import { resolveAppDriveConfig } from '../drive/config.js';
 import type { AppJobsConfig } from '../jobs/config.js';
 import type { AppLoggingConfig } from '../logging/config.js';
 import type { AppQueueConfig } from '../queue/config.js';
+import { resolveAppPackageName } from '../plugins/resolve.js';
 import { createSecretsService } from '../secrets/service.js';
 import type { AppSessionConfigInput } from '../session/config.js';
 import { readAppPackage } from '../support/app-package.js';
@@ -49,10 +48,13 @@ function text(config: object, key: string): string | undefined {
 function connectionConfig(
   name: string,
   source: ConnectionConfig,
-  migration: AppDatabaseMigrationConfig | undefined,
+  migrationTask: AppDatabaseTask | undefined,
   refs: readonly AppBackupFileReference[],
   preference: NonNullable<AppBackupConfig['connections']>[string] | undefined,
+  embeddedPackageName: string | undefined,
 ): BackupConnection {
+  const migration = migrationTask?.config;
+  const implicitAppSource = migrationTask?.implicitAppSource;
   const schemaInput: unknown = Reflect.get(source, 'schema');
   const schema =
     source.dialect === 'postgres'
@@ -111,12 +113,23 @@ function connectionConfig(
         extensions: migration.extensions,
       });
       return migrations.flatMap(
-        ({ packageName, name, checksum, legacyChecksum }) => [
-          { packageName, name, checksum },
-          ...(legacyChecksum
-            ? [{ packageName, name, checksum: legacyChecksum }]
-            : []),
-        ],
+        ({ packageName, name, filePath, checksum, legacyChecksum }) => {
+          const packageNames = [packageName];
+          if (
+            embeddedPackageName !== undefined &&
+            embeddedPackageName !== packageName &&
+            implicitAppSource?.packageName === packageName &&
+            implicitAppSource.directory === dirname(filePath)
+          ) {
+            packageNames.push(embeddedPackageName);
+          }
+          return packageNames.flatMap((owner) => [
+            { packageName: owner, name, checksum },
+            ...(legacyChecksum
+              ? [{ packageName: owner, name, checksum: legacyChecksum }]
+              : []),
+          ]);
+        },
       );
     },
     async *readFileReferences(
@@ -243,7 +256,15 @@ export async function resolveAppBackupTarget(
       paths: app.paths,
       contributions: app.databaseTaskContributions,
     });
-    const phases = new Map(plan.map((task) => [task.connection, task.config]));
+    const phases = new Map(plan.map((task) => [task.connection, task]));
+    // The Host starts an embedded release from the parent of dist, while its
+    // CLI loads the same code from dist. Match the implicit migration source
+    // under either package name without rewriting the saved history.
+    const { rootDir, deploymentRootDir } = app.paths;
+    const embeddedPackageName =
+      rootDir === resolve(deploymentRootDir, 'dist')
+        ? resolveAppPackageName(deploymentRootDir)
+        : undefined;
     const resolved = resolveConnections(
       database.connections,
       app.paths,
@@ -273,6 +294,7 @@ export async function resolveAppBackupTarget(
                 },
               }
             : backup.connections?.[name],
+          embeddedPackageName,
         ),
       );
     }
