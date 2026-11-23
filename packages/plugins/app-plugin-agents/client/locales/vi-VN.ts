@@ -1,6 +1,7 @@
 import type { LocaleResource } from '@nocobase/i18n';
 
 import type enUS from './en-US.js';
+import { mergeLocale } from './merge.js';
 
 const viVN: LocaleResource<typeof enUS> = {
   openAgentSettings: 'Mở cài đặt Agent',
@@ -1523,4 +1524,453 @@ const viVN: LocaleResource<typeof enUS> = {
   },
 };
 
-export default viVN;
+// The panel's wording (`panel.en-US.ts`) and what the plugin brings on its own (`shell.en-US.ts`) sit outside the
+// typed English shape, so they are merged in the way `en-US.ts` merges them.
+const untyped = {
+  agents: {
+    filters: {
+      disabled: 'Đã tắt',
+      enabledOnly: 'Đã bật',
+    },
+    columns: {
+      chatRoles: 'Ai có thể trò chuyện',
+    },
+    chatRoles: {
+      label: 'Ai có thể trò chuyện',
+      everyone: 'Tất cả thành viên',
+      roles: 'Vai trò cụ thể',
+      placeholder: 'Chọn vai trò',
+      hint: 'Thành viên không thuộc các vai trò này sẽ không thấy Agent này trong bảng trò chuyện và không thể bắt đầu cuộc trò chuyện với nó. Quyền quản lý Agent không thay đổi ai có thể trò chuyện; chỉ root mới truy cập được mọi Agent.',
+      required: 'Chọn ít nhất một vai trò.',
+    },
+    detail: {
+      view: 'Xem',
+      viewFor: 'Xem {{name}}',
+      readOnly:
+        'Bạn có thể xem Agent này. Chỉ người quản lý Agent mới có thể thay đổi nó.',
+      tabs: {
+        settings: 'Cài đặt',
+        actions: 'Thao tác nghiệp vụ',
+        skills: 'Kỹ năng mặc định',
+        runs: 'Lượt chạy',
+      },
+      actionsHint:
+        'Những gì ứng dụng cho phép Agent này làm với dữ liệu nghiệp vụ. Nó chỉ thực hiện khi người đã gọi nó cũng có quyền làm điều đó.',
+      actionsNone: 'Agent này không có thao tác nghiệp vụ nào.',
+      skillsHint:
+        'Các kỹ năng mặc định của nhóm mà mọi lượt chạy của mọi Agent đều nhận được. Thay đổi chúng trên trang Kỹ năng.',
+      skillsNone: 'Chưa có kỹ năng mặc định nào của nhóm.',
+      skillsUnavailable: 'Bạn cần quyền xem kỹ năng để thấy chúng.',
+    },
+    teamDefault: {
+      label: 'Agent mặc định của nhóm',
+      none: 'Không có',
+      hint: 'Cuộc trò chuyện mới sẽ được giao cho nó, trừ khi người dùng đã chọn Agent mặc định của riêng mình. Chỉ Agent đã bật và mọi thành viên đều có thể trò chuyện mới được làm mặc định của nhóm.',
+      saved: 'Đã lưu Agent mặc định của nhóm',
+    },
+  },
+  usage: {
+    tabs: {
+      usage: 'Mức sử dụng',
+      prices: 'Giá',
+    },
+  },
+  chat: {
+    thinking: {
+      title: 'Mức suy nghĩ',
+      choose: 'Mức suy nghĩ: {{level}}',
+      useDefault: 'Dùng mặc định của nhà cung cấp',
+    },
+    offline: {
+      agentMissing: '{{name}} không còn tồn tại',
+      agentArchived: '{{name}} chưa được bật',
+      forbidden: 'Bạn không còn được dùng {{name}}',
+      noModel: 'Hãy cấu hình mô hình trò chuyện trước',
+      noRunner: '{{name}} hiện không có môi trường chạy nào trực tuyến',
+      othersPersonal:
+        'Chỉ môi trường chạy cá nhân của người khác có {{name}}; hãy kết nối môi trường chạy của riêng bạn',
+      modelUnavailable:
+        'Mô hình của {{name}} không khả dụng; hãy liên hệ quản trị viên',
+      kept: 'Tin nhắn của bạn được giữ lại và sẽ được trả lời khi nó có thể trả lời.',
+      fallback: 'Dùng Agent khác cho cuộc trò chuyện này',
+      usingDefault:
+        'Cuộc trò chuyện này tạm thời dùng {{name}} thay cho {{own}}.',
+      restore: 'Chuyển lại về {{own}}',
+    },
+    consultation: {
+      question: 'Câu hỏi',
+      answer: 'Câu trả lời',
+      steps: 'Các bước của nó',
+      usage: 'Đã dùng {{input}} token đầu vào và {{output}} token đầu ra.',
+      state: {
+        running: 'Đang trả lời…',
+        completed: 'Đã trả lời',
+        failed: 'Thất bại',
+        refused: 'Bị từ chối',
+      },
+    },
+    steps: {
+      title: 'Các bước',
+      waiting: 'Đang chờ môi trường chạy tiếp nhận…',
+      starting: 'Đang bắt đầu…',
+      started: 'Agent đang trả lời.',
+      finished: 'Agent đã trả lời xong.',
+    },
+    agents: {
+      models: 'Mô hình',
+      defaultModel: 'Mô hình mặc định',
+      runnerAgents: 'Agent',
+      modelPlaceholder: 'Chọn mô hình',
+      modelSwitch: 'Mô hình: {{name}} · {{service}}; chọn mô hình hoặc Agent',
+      modelOnlySwitch: 'Mô hình: {{name}} · {{service}}; chọn mô hình',
+      modelLoadFailed: 'Không thể tải mô hình của cuộc trò chuyện',
+      modelChangeFailed: 'Không thể xác nhận việc đổi mô hình',
+      modelSearch: 'Tìm mô hình',
+      noMatchingModels: 'Không có mô hình phù hợp',
+      modelHint: 'Chọn một mô hình trực tuyến để trò chuyện.',
+      mixedHint:
+        'Chọn một mô hình trực tuyến hoặc một Agent trên môi trường chạy để trò chuyện.',
+      search: 'Tìm mô hình hoặc Agent',
+      noResults: 'Không có mô hình hoặc Agent phù hợp',
+      switch: 'Agent: {{name}}; chọn Agent khác',
+      withStatus: '{{name}}, {{status}}',
+      chatWith: 'Trò chuyện với',
+      startWith: 'Bắt đầu cuộc trò chuyện mới với',
+      boundHint:
+        'Mỗi cuộc trò chuyện gắn với Agent của nó; chọn Agent khác sẽ bắt đầu cuộc trò chuyện mới.',
+      noneToChat: 'Không có Agent nào bạn có thể trò chuyện',
+      field: 'Agent: {{name}}',
+      personal: 'Chỉ môi trường chạy cá nhân',
+      temporary: 'Tạm thời',
+      chatHint:
+        'Liệt kê các Agent đã bật và cho biết vì sao một Agent hiện không thể trả lời bạn. Câu trả lời trực tuyến dùng mô hình của ứng dụng; các Agent khác chờ một môi trường chạy khả dụng.',
+    },
+    sharing: {
+      related: 'Bản ghi liên quan',
+      title: 'Chia sẻ ảnh chụp',
+      description:
+        'Người nhận chỉ thấy nội dung tại thời điểm bạn chia sẻ. Lượt đang chưa hoàn tất sẽ không được đưa vào. Chia sẻ lại để cập nhật ảnh chụp.',
+      sensitive:
+        'Cuộc trò chuyện này có thể chứa thông tin nhạy cảm. Chỉ chia sẻ với những người nên xem.',
+      asOf: 'Được chia sẻ tính đến {{time}}',
+      recipient: 'Chọn người dùng của ứng dụng',
+      share: 'Chia sẻ',
+      update: 'Cập nhật',
+      revoke: 'Thu hồi',
+      copy: 'Sao chép liên kết',
+      copied: 'Đã sao chép liên kết',
+      copyFailed: 'Không thể sao chép liên kết',
+      none: 'Chưa có người nhận nào.',
+      failed: 'Không thể tải hoặc cập nhật chia sẻ. Vui lòng thử lại.',
+      failedRecipients:
+        'Không thể chia sẻ với: {{names}}. Những người dùng này vẫn được chọn để thử lại.',
+      older: 'Tải tin nhắn cũ hơn',
+      empty: 'Ảnh chụp này chưa có lượt nào đã hoàn tất.',
+    },
+    webSearch: {
+      title: 'Tìm kiếm trên web',
+      queryCount: 'Truy vấn · {{count}}',
+      expand: 'Mở rộng',
+      collapse: 'Thu gọn',
+      toggle: 'Tìm kiếm trên web',
+      unsupported: 'Chọn một mô hình được hỗ trợ để bật tìm kiếm trên web.',
+      searching: 'Đang tìm kiếm…',
+      completed: 'Đã lấy được nguồn',
+      unverified: 'Tìm kiếm chưa được xác minh',
+      unverifiedNotice:
+        'Nhà cung cấp trả về câu trả lời mà không có bằng chứng tìm kiếm. Không thể xác minh việc tìm kiếm có thực sự diễn ra, độ mới của thông tin và các nguồn.',
+      partial: 'Một số lượt tìm kiếm thất bại',
+      failed: 'Tìm kiếm không khả dụng',
+      cancelled: 'Đã hủy tìm kiếm',
+      interrupted: 'Tìm kiếm bị gián đoạn',
+      timeout: 'Tìm kiếm quá thời gian chờ.',
+      unavailable: 'Tìm kiếm tạm thời không khả dụng.',
+      noEvidence: 'Không có bằng chứng web đã xác minh nào được trả về.',
+      sources: 'Nguồn',
+    },
+    retrySaving: 'Thử lưu lại',
+    cancel: 'Hủy',
+    editMessage: 'Sửa',
+    copyMessage: 'Sao chép',
+    refreshReply: 'Tạo lại',
+    copyFailed: 'Không thể sao chép tin nhắn.',
+    resendConfirm: 'Gửi lại',
+    resend: {
+      rejected: 'Tin nhắn chưa được gửi lại. Nội dung bạn sửa vẫn được giữ.',
+      unknown:
+        'Không rõ kết quả gửi lại. Hãy làm mới lịch sử và chờ trước khi thử lại; tin nhắn có thể đã được tiếp nhận.',
+      needsSync:
+        'Tin nhắn đã được tiếp nhận nhưng lịch sử chưa đồng bộ. Hãy làm mới lịch sử; đừng gửi lại.',
+    },
+    contextFailed:
+      'Không thể đọc ngữ cảnh đã chọn hoặc gửi tin nhắn. Hãy kiểm tra trang hiện tại rồi thử lại.',
+    approval: {
+      request: 'Công cụ này cần bạn phê duyệt trước khi chạy.',
+      approve: 'Phê duyệt',
+      deny: 'Từ chối',
+      denied: 'Đã từ chối thực thi công cụ.',
+      failed:
+        'Việc phê duyệt chưa được xác nhận. Hãy làm mới tin nhắn đã lưu trước khi thử lại.',
+    },
+    feedback: {
+      sending: 'Đang gửi…',
+      waiting: 'Đang chờ Agent…',
+      thinking: 'Đang suy nghĩ…',
+      stopping: 'Đã yêu cầu dừng. Đang chờ Agent kết thúc…',
+      completed: 'Đã hoàn tất.',
+      cancelled:
+        'Đã hủy. Hãy kiểm tra các thao tác có thể đã hoàn tất trước khi thực hiện lại.',
+      failed:
+        'Phản hồi thất bại. Hãy xem lịch sử trước khi quyết định có gửi lại hay không.',
+      unknown:
+        'Kết quả hoặc lịch sử đã lưu của nó chưa được xác nhận. Hãy làm mới lịch sử trước khi quyết định có gửi lại hay không.',
+      effectReview:
+        'Một số thao tác có thể đã hoàn tất. Hãy kiểm tra kết quả trước khi thực hiện lại.',
+    },
+    historicalReadOnly:
+      'Cuộc trò chuyện cũ này chỉ được xem. Hãy bắt đầu cuộc trò chuyện mới để tiếp tục.',
+    connectionUnknown:
+      'Kết nối bị gián đoạn. Chưa rõ kết quả. Hãy làm mới lịch sử đã lưu trước khi quyết định gửi lại.',
+    allowAnother: 'Cho phép gửi thêm lần nữa (có thể bị trùng)',
+    refreshHistory: 'Làm mới lịch sử',
+    title: 'Trò chuyện với Agent',
+    ask: 'Hỏi Agent',
+    launcher: 'Mở Agent',
+    closeLauncher: 'Đóng Agent',
+    close: 'Đóng',
+    expand: 'Toàn chiều rộng',
+    restoreSize: 'Quay lại bảng bên',
+    openPage: 'Mở toàn màn hình',
+    openInPanel: 'Mở trong bảng bên',
+    more: 'Thêm',
+    newConversation: 'Cuộc trò chuyện mới',
+    rename: 'Đổi tên',
+    renameHint: '{{title}} (nhấp để đổi tên)',
+    archive: 'Lưu trữ',
+    unarchive: 'Bỏ lưu trữ',
+    you: 'Bạn',
+    agentGone: 'Agent đã bị xóa',
+    anyAgent: 'Agent',
+    loadFailed: 'Không thể tải cuộc trò chuyện',
+    notFound: 'Không thể mở cuộc trò chuyện này',
+    notFoundDescription: 'Có thể nó đã bị xóa hoặc thuộc về người khác.',
+    emptyTitle: '{{name}} có thể giúp gì cho bạn?',
+    emptyDescription:
+      'Hỏi bất cứ điều gì, hoặc mô tả công việc cần sắp xếp. Nội dung trang này hiển thị sẽ được gửi kèm làm ngữ cảnh.',
+    noAgent:
+      'Không có Agent nào bạn có thể trò chuyện. Hãy nhờ quản trị viên bật một Agent, hoặc kết nối một môi trường chạy.',
+    chooseAgent:
+      'Chọn đối tượng trò chuyện bên dưới. Để lần nào cũng bắt đầu với một Agent, hãy đặt Agent mặc định trong hồ sơ của bạn.',
+    messages: 'Tin nhắn',
+    olderMessages: 'Tin nhắn trước đó',
+    sources: {
+      panel: 'Bảng trò chuyện',
+    },
+    reasoning: {
+      title: 'Suy luận',
+      thinking: 'Đang suy nghĩ…',
+    },
+    reply: {
+      writing: 'Đang viết…',
+      interrupted: 'Câu trả lời đã dừng tại đây.',
+    },
+    pending: {
+      sending: 'Đang gửi…',
+      failed: 'Chưa gửi được',
+      retry: 'Gửi lại',
+      discard: 'Bỏ',
+    },
+    composer: {
+      label: 'Tin nhắn gửi Agent',
+      placeholder: 'Đặt câu hỏi, hoặc mô tả công việc cần sắp xếp…',
+      hint: 'Enter để gửi, Shift+Enter để xuống dòng',
+      runningHint: 'Đang thực hiện. Bạn có thể dừng lần thực thi này.',
+      tooLong: 'Tối đa {{max}} ký tự.',
+      send: 'Gửi',
+      stop: 'Dừng',
+      stopping: 'Đang dừng…',
+    },
+    attachments: {
+      attach: 'Đính kèm tệp',
+      label: 'Tệp gửi kèm tin nhắn tiếp theo',
+      sent: 'Tệp đã gửi kèm tin nhắn này',
+      images: 'Hình ảnh',
+      files: 'Tệp',
+      remove: 'Xóa {{name}}',
+      uploading: 'Đang tải lên…',
+      tooLarge: 'Lớn hơn {{max}}',
+      failed: 'Không thể tải lên',
+      tooMany: 'Tối đa {{max}} tệp mỗi tin nhắn.',
+      blocked: 'Hãy xóa các tệp không tải lên được để gửi.',
+      waiting: 'Sẽ gửi khi các tệp tải lên xong…',
+      drop: 'Thả tệp vào để đính kèm',
+      preview: 'Xem trước {{name}}',
+      download: 'Tải xuống {{name}}',
+      previous: 'Ảnh trước',
+      next: 'Ảnh tiếp theo',
+    },
+    context: {
+      label: 'Ngữ cảnh gửi kèm tin nhắn tiếp theo',
+      sent: 'Ngữ cảnh đã gửi kèm tin nhắn này',
+      filter: 'Bộ lọc: {{filter}}',
+      selection: 'Văn bản đã chọn: “{{text}}”',
+      remove: 'Xóa ngữ cảnh: {{label}}',
+      inspect: 'Hiện ngữ cảnh: {{label}}',
+      preview: 'Ngữ cảnh: {{label}}',
+    },
+    modes: {
+      online: 'Agent trực tuyến',
+      runner: 'Agent trên môi trường chạy',
+      switchToOnline: 'Chuyển sang Agent trực tuyến',
+      switchToRunner: 'Chuyển sang Agent trên môi trường chạy',
+    },
+    history: {
+      title: 'Cuộc trò chuyện',
+      fold: 'Thu gọn danh sách cuộc trò chuyện',
+      unfold: 'Mở rộng danh sách cuộc trò chuyện',
+      search: 'Tìm cuộc trò chuyện',
+      show: 'Hiển thị',
+      active: 'Đang mở',
+      archived: 'Đã lưu trữ',
+      agent: 'Agent',
+      allAgents: 'Tất cả Agent',
+      source: 'Bắt đầu từ',
+      allSources: 'Mọi nơi',
+      loadFailed: 'Không thể tải các cuộc trò chuyện',
+      noMatch: 'Không có cuộc trò chuyện phù hợp',
+      noArchived: 'Không có cuộc trò chuyện đã lưu trữ',
+      empty: 'Không có cuộc trò chuyện',
+      more: 'Tải thêm',
+      unread: 'Trả lời mới',
+      actions: 'Thao tác cho {{title}}',
+      waiting: 'Đang chờ bạn',
+      running: 'Đang thực hiện',
+      recent: 'Gần đây',
+      ownOnly:
+        'Chỉ các cuộc trò chuyện của bạn được liệt kê. Cuộc trò chuyện được chia sẻ với ai đó thì người đó chỉ được xem.',
+    },
+    list: {
+      label: 'Cuộc trò chuyện',
+      archivedTitle: 'Đã lưu trữ',
+      back: 'Quay lại danh sách cuộc trò chuyện',
+      all: 'Tất cả',
+      filters: 'Hiển thị',
+      today: 'Hôm nay',
+      yesterday: 'Hôm qua',
+      week: 'Tuần này',
+      earlier: 'Trước đó',
+      restore: 'Khôi phục',
+      offline: 'Môi trường chạy ngoại tuyến',
+      needsMe: 'Cần tôi',
+      working: 'Đang thực hiện',
+      reply: 'Trả lời mới',
+      failed: 'Thất bại',
+      confirm: 'Câu hỏi cho bạn',
+    },
+    loading: 'Đang tải',
+    retry: 'Thử lại',
+    errors: {
+      forbidden: 'Bạn không được phép làm việc này.',
+      notFound: 'Nó không còn tồn tại.',
+      requestFailed: 'Yêu cầu thất bại. Hãy thử lại.',
+    },
+    transcript: {
+      waiting: 'Đang chờ Agent bắt đầu…',
+      empty: 'Lượt chạy này không ghi lại sự kiện nào.',
+      fetchFailed: 'Không thể lấy sự kiện mới. Đang thử lại…',
+      expand: 'Hiện tất cả',
+      truncated: 'Đã bị cắt bớt: toàn bộ nội dung quá dài để lưu giữ.',
+      events: 'Bản ghi lượt chạy',
+      inputDelivered: 'Đã chuyển {{count}} đầu vào đến Agent',
+      tokens: '{{input}} token vào, {{output}} token ra',
+      kinds: {
+        text: 'Agent',
+        thinking: 'Suy nghĩ',
+        toolUse: 'Công cụ',
+        toolResult: 'Kết quả',
+        allowed: 'Đã cho phép',
+        denied: 'Đã từ chối',
+        input: 'Đầu vào',
+        checkout: 'Checkout',
+        status: 'Trạng thái',
+        error: 'Lỗi',
+        usage: 'Mức sử dụng',
+      },
+    },
+    backToList: 'Quay lại danh sách',
+    showDetails: 'Hiện chi tiết',
+    hideDetails: 'Ẩn chi tiết',
+    detailsTitle: 'Chi tiết phiên',
+    sessionDetails: 'Phiên',
+    runtime: 'Môi trường chạy',
+    agent: 'Agent',
+    started: 'Bắt đầu',
+    usageTitle: 'Mức sử dụng',
+    relatedWork: 'Công việc liên quan',
+    unlink: 'Gỡ liên kết',
+    unlinkFailed: 'Không thể gỡ liên kết.',
+    expandPanel: 'Toàn chiều rộng',
+    restorePanel: 'Khôi phục bảng',
+    delete: 'Xóa',
+    deleteDialog: {
+      menu: 'Xóa',
+      title: 'Xóa “{{title}}”?',
+      description:
+        'Tin nhắn, tệp và liên kết của nó sẽ bị xóa vĩnh viễn, và lượt chạy đang hoạt động sẽ bị dừng. Các bản ghi liên quan vẫn được giữ. Không thể hoàn tác thao tác này.',
+      cancel: 'Hủy',
+      confirm: 'Xóa',
+      done: 'Đã xóa “{{title}}”',
+      body: 'Tin nhắn, tệp và liên kết của nó sẽ bị xóa vĩnh viễn, và lượt chạy đang hoạt động sẽ bị dừng. Các bản ghi liên quan vẫn được giữ. Không thể hoàn tác thao tác này.',
+    },
+    usage: {
+      title: 'Mức sử dụng',
+      context: 'Ngữ cảnh {{used}} / {{size}} token ({{percent}}%)',
+      window: 'Cửa sổ ngữ cảnh',
+      input: 'Đầu vào',
+      cached: 'Đã lưu đệm',
+      output: 'Đầu ra',
+      cost: 'Chi phí',
+    },
+  },
+  me: {
+    navigation: 'Agent',
+    title: 'Agent',
+    description:
+      'Cài đặt Agent của riêng bạn: cuộc trò chuyện mới được giao cho ai, các môi trường chạy bạn đã thêm và mức sử dụng của các lượt chạy của bạn.',
+    defaultAgent: {
+      title: 'Agent mặc định của tôi',
+    },
+    effort: {
+      title: 'Mức nỗ lực suy luận',
+      description:
+        'Mức độ Agent suy nghĩ trong các cuộc trò chuyện bạn bắt đầu, trừ khi bạn chọn khác trong cuộc trò chuyện. Agent có công cụ lập trình không hỗ trợ mức này sẽ dùng mặc định của riêng nó.',
+      label: 'Mức nỗ lực suy luận của tôi',
+      default: 'Mặc định của từng Agent',
+      saved: 'Đã lưu mức nỗ lực suy luận',
+    },
+    runtimes: {
+      title: 'Môi trường chạy tôi đã thêm',
+      description:
+        'Môi trường chạy cá nhân chỉ chạy công việc của riêng bạn. Thêm một môi trường chạy từ trang Môi trường chạy trong Cài đặt hệ thống, hoặc nhờ quản trị viên.',
+      none: 'Bạn chưa thêm môi trường chạy nào.',
+      loadFailed: 'Không thể tải các môi trường chạy của bạn',
+      status: {
+        online: 'Trực tuyến',
+        offline: 'Ngoại tuyến',
+        revoked: 'Đã thu hồi',
+      },
+    },
+    usage: {
+      title: 'Mức sử dụng của tôi',
+      description: 'Mức sử dụng của các lượt chạy của bạn trong 30 ngày qua.',
+      runs: 'Lượt chạy',
+      tokens: 'Token',
+      cost: 'Chi phí ước tính',
+      loadFailed: 'Không thể tải mức sử dụng của bạn',
+    },
+  },
+};
+
+const withUntyped: typeof viVN = mergeLocale(viVN, untyped);
+
+export default withUntyped;

@@ -1,32 +1,90 @@
-import type { PartialLocaleResource } from '@nocobase/i18n';
+import type { InAppNotificationClientResource } from './en-US.js';
 
-import type enUS from './en-US.js';
-
-/** The inbox's main words; the rest falls back to English. */
-const zhTW: PartialLocaleResource<typeof enUS> = {
+const zhTW: InAppNotificationClientResource = {
+  common: {
+    loading: '載入中',
+  },
   inbox: {
-    title: '站內信',
-    views: {
-      all: '全部',
-      unread: '未讀',
-      todo: '待處理',
-    },
-    categories: '類別',
-    readAll: '全部標為已讀',
-    open: '開啟',
     actions: {
+      delete: '刪除',
       read: '標為已讀',
       unread: '標為未讀',
-      delete: '刪除',
     },
-    tabs: {
-      today: '今天',
+    actionsFor: '{{title}} 的操作',
+    allRead: '已全部標為已讀。',
+    back: '返回列表',
+    cancel: '取消',
+    categories: '類別',
+    clearFilter: '清除篩選',
+    count: '×{{count}}',
+    deleted: '已刪除。',
+    description: '傳給你的通知和請求。',
+    empty: {
+      decision: '沒有等你決定的事項',
+      info: '沒有通知',
+      todo: '沒有等你處理的事項',
+      unread: '沒有未讀的訊息',
+    },
+    emptyAll: '這裡空空如也',
+    emptyDescription: '傳給你的通知和請求會出現在這裡。',
+    filters: '站內信篩選',
+    forbidden: '你沒有執行此操作的權限。',
+    keyMove: '移動',
+    keyOpen: '開啟',
+    kinds: {
+      all: '全部類型',
+      decision: '決定',
       info: '更早',
+      label: '類型',
+      today: '今天',
+    },
+    detailsUnavailable: '部分站內信詳細資料載入失敗。',
+    loadFailed: '無法載入收件匣',
+    loadFailedDescription: '請檢查網路後重試。',
+    loadMore: '載入更多',
+    loading: '載入中',
+    noMatchDescription: '清除篩選，檢視所有類型。',
+    nothingSelected: '選擇一則檢視',
+    notification: '通知',
+    open: '開啟',
+    outcomes: {
+      approved: '已核准',
+      rejected: '已駁回',
+      withdrawn: '已撤回',
+    },
+    pendingDecisions: '{{count}} 項待處理',
+    readAll: '全部標為已讀',
+    request: {
+      approve: '核准',
+      commentFor: '{{action}}：{{title}}',
+      commentPlaceholder: '寫點什麼…',
+      newLine: '換行',
+      quickSend: '傳送',
+      reject: '駁回',
+    },
+    requestFailed: '請求失敗，請重試。',
+    resolved: '已處理',
+    retry: '重試',
+    tabs: {
       decision: '待處理',
+      info: '更早',
+      today: '今天',
+    },
+    title: '站內信',
+    unread: '未讀',
+    unreadCount: '{{count}} 則未讀',
+    views: {
+      all: '全部',
+      todo: '待處理',
+      unread: '未讀',
     },
   },
   inboxButton: {
+    empty: '還沒有訊息',
+    pending: '站內信，{{count}} 項待處理',
+    recent: '最近的訊息',
     title: '站內信',
+    unread: '站內信，{{count}} 則未讀',
     viewAll: '開啟站內信',
   },
   nav: {

@@ -1,32 +1,91 @@
-import type { PartialLocaleResource } from '@nocobase/i18n';
+import type { InAppNotificationClientResource } from './en-US.js';
 
-import type enUS from './en-US.js';
-
-/** The inbox's main words; the rest falls back to English. */
-const ruRU: PartialLocaleResource<typeof enUS> = {
+const ruRU: InAppNotificationClientResource = {
+  common: {
+    loading: 'Загрузка',
+  },
   inbox: {
-    title: 'Входящие',
-    views: {
-      all: 'Все',
-      unread: 'Непрочитанные',
-      todo: 'Ожидают',
-    },
-    categories: 'Категории',
-    readAll: 'Отметить все как прочитанные',
-    open: 'Открыть',
     actions: {
+      delete: 'Удалить',
       read: 'Отметить как прочитанное',
       unread: 'Отметить как непрочитанное',
-      delete: 'Удалить',
     },
-    tabs: {
-      today: 'Сегодня',
+    actionsFor: 'Действия для «{{title}}»',
+    allRead: 'Все отмечены как прочитанные.',
+    back: 'Назад к списку',
+    cancel: 'Отмена',
+    categories: 'Категории',
+    clearFilter: 'Сбросить фильтр',
+    count: '×{{count}}',
+    deleted: 'Удалено.',
+    description: 'Уведомления и запросы, отправленные вам.',
+    empty: {
+      decision: 'Нет решений, ожидающих вас',
+      info: 'Нет уведомлений',
+      todo: 'Ничего не ожидает вас',
+      unread: 'Всё прочитано',
+    },
+    emptyAll: 'Здесь пусто',
+    emptyDescription:
+      'Здесь появляются уведомления и запросы, отправленные вам.',
+    filters: 'Фильтры входящих',
+    forbidden: 'Вам это не разрешено.',
+    keyMove: 'Перемещение',
+    keyOpen: 'Открыть',
+    kinds: {
+      all: 'Все типы',
+      decision: 'Решения',
       info: 'Ранее',
+      label: 'Тип',
+      today: 'Сегодня',
+    },
+    detailsUnavailable: 'Некоторые сведения во входящих не удалось загрузить.',
+    loadFailed: 'Не удалось загрузить входящие',
+    loadFailedDescription: 'Проверьте подключение и повторите попытку.',
+    loadMore: 'Загрузить ещё',
+    loading: 'Загрузка',
+    noMatchDescription: 'Сбросьте фильтр, чтобы увидеть все типы.',
+    nothingSelected: 'Выберите элемент для просмотра',
+    notification: 'Уведомление',
+    open: 'Открыть',
+    outcomes: {
+      approved: 'Одобрено',
+      rejected: 'Отклонено',
+      withdrawn: 'Отозвано',
+    },
+    pendingDecisions: 'Ожидают: {{count}}',
+    readAll: 'Отметить все как прочитанные',
+    request: {
+      approve: 'Одобрить',
+      commentFor: '{{action}}: {{title}}',
+      commentPlaceholder: 'Напишите что-нибудь…',
+      newLine: '— новая строка',
+      quickSend: '— отправить',
+      reject: 'Отклонить',
+    },
+    requestFailed: 'Запрос не выполнен. Повторите попытку.',
+    resolved: 'Обработано',
+    retry: 'Повторить',
+    tabs: {
       decision: 'Ожидают',
+      info: 'Ранее',
+      today: 'Сегодня',
+    },
+    title: 'Входящие',
+    unread: 'Непрочитанные',
+    unreadCount: 'Непрочитанных: {{count}}',
+    views: {
+      all: 'Все',
+      todo: 'Ожидают',
+      unread: 'Непрочитанные',
     },
   },
   inboxButton: {
+    empty: 'Сообщений пока нет',
+    pending: 'Входящие, ожидают: {{count}}',
+    recent: 'Недавние сообщения',
     title: 'Входящие',
+    unread: 'Входящие, непрочитанных: {{count}}',
     viewAll: 'Открыть входящие',
   },
   nav: {

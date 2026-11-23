@@ -1,32 +1,90 @@
-import type { PartialLocaleResource } from '@nocobase/i18n';
+import type { InAppNotificationClientResource } from './en-US.js';
 
-import type enUS from './en-US.js';
-
-/** The inbox's main words; the rest falls back to English. */
-const koKR: PartialLocaleResource<typeof enUS> = {
+const koKR: InAppNotificationClientResource = {
+  common: {
+    loading: '불러오는 중',
+  },
   inbox: {
-    title: '받은편지함',
-    views: {
-      all: '전체',
-      unread: '읽지 않음',
-      todo: '처리 대기',
-    },
-    categories: '카테고리',
-    readAll: '모두 읽음으로 표시',
-    open: '열기',
     actions: {
+      delete: '삭제',
       read: '읽음으로 표시',
       unread: '읽지 않음으로 표시',
-      delete: '삭제',
     },
-    tabs: {
-      today: '오늘',
+    actionsFor: '{{title}} 작업',
+    allRead: '모두 읽음으로 표시했습니다.',
+    back: '목록으로 돌아가기',
+    cancel: '취소',
+    categories: '카테고리',
+    clearFilter: '필터 지우기',
+    count: '×{{count}}',
+    deleted: '삭제했습니다.',
+    description: '나에게 온 알림과 요청입니다.',
+    empty: {
+      decision: '결정을 기다리는 항목이 없습니다',
+      info: '알림이 없습니다',
+      todo: '처리할 항목이 없습니다',
+      unread: '모두 확인했습니다',
+    },
+    emptyAll: '비어 있습니다',
+    emptyDescription: '나에게 온 알림과 요청이 여기에 표시됩니다.',
+    filters: '받은편지함 필터',
+    forbidden: '이 작업을 수행할 권한이 없습니다.',
+    keyMove: '이동',
+    keyOpen: '열기',
+    kinds: {
+      all: '모든 유형',
+      decision: '결정',
       info: '이전',
+      label: '유형',
+      today: '오늘',
+    },
+    detailsUnavailable: '일부 받은편지함 세부 정보를 불러올 수 없습니다.',
+    loadFailed: '받은편지함을 불러올 수 없습니다',
+    loadFailedDescription: '연결을 확인하고 다시 시도하세요.',
+    loadMore: '더 불러오기',
+    loading: '불러오는 중',
+    noMatchDescription: '모든 유형을 보려면 필터를 지우세요.',
+    nothingSelected: '볼 항목을 선택하세요',
+    notification: '알림',
+    open: '열기',
+    outcomes: {
+      approved: '승인됨',
+      rejected: '반려됨',
+      withdrawn: '철회됨',
+    },
+    pendingDecisions: '{{count}}개 대기 중',
+    readAll: '모두 읽음으로 표시',
+    request: {
+      approve: '승인',
+      commentFor: '{{action}}: {{title}}',
+      commentPlaceholder: '내용을 입력하세요…',
+      newLine: '줄 바꿈',
+      quickSend: '보내기',
+      reject: '반려',
+    },
+    requestFailed: '요청에 실패했습니다. 다시 시도하세요.',
+    resolved: '처리됨',
+    retry: '다시 시도',
+    tabs: {
       decision: '처리 대기',
+      info: '이전',
+      today: '오늘',
+    },
+    title: '받은편지함',
+    unread: '읽지 않음',
+    unreadCount: '읽지 않음 {{count}}개',
+    views: {
+      all: '전체',
+      todo: '처리 대기',
+      unread: '읽지 않음',
     },
   },
   inboxButton: {
+    empty: '아직 메시지가 없습니다',
+    pending: '받은편지함, {{count}}개 대기 중',
+    recent: '최근 메시지',
     title: '받은편지함',
+    unread: '받은편지함, 읽지 않음 {{count}}개',
     viewAll: '받은편지함 열기',
   },
   nav: {

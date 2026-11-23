@@ -1,32 +1,91 @@
-import type { PartialLocaleResource } from '@nocobase/i18n';
+import type { InAppNotificationClientResource } from './en-US.js';
 
-import type enUS from './en-US.js';
-
-/** The inbox's main words; the rest falls back to English. */
-const viVN: PartialLocaleResource<typeof enUS> = {
+const viVN: InAppNotificationClientResource = {
+  common: {
+    loading: 'Đang tải',
+  },
   inbox: {
-    title: 'Hộp thư',
-    views: {
-      all: 'Tất cả',
-      unread: 'Chưa đọc',
-      todo: 'Đang chờ',
-    },
-    categories: 'Danh mục',
-    readAll: 'Đánh dấu tất cả đã đọc',
-    open: 'Mở',
     actions: {
+      delete: 'Xóa',
       read: 'Đánh dấu đã đọc',
       unread: 'Đánh dấu chưa đọc',
-      delete: 'Xóa',
     },
-    tabs: {
-      today: 'Hôm nay',
+    actionsFor: 'Thao tác cho {{title}}',
+    allRead: 'Đã đánh dấu tất cả là đã đọc.',
+    back: 'Quay lại danh sách',
+    cancel: 'Hủy',
+    categories: 'Danh mục',
+    clearFilter: 'Xóa bộ lọc',
+    count: '×{{count}}',
+    deleted: 'Đã xóa.',
+    description: 'Thông báo và yêu cầu được gửi cho bạn.',
+    empty: {
+      decision: 'Không có quyết định nào đang chờ bạn',
+      info: 'Không có thông báo',
+      todo: 'Không có gì đang chờ bạn',
+      unread: 'Bạn đã xem hết',
+    },
+    emptyAll: 'Chưa có gì ở đây',
+    emptyDescription:
+      'Thông báo và yêu cầu được gửi cho bạn sẽ hiển thị ở đây.',
+    filters: 'Bộ lọc hộp thư',
+    forbidden: 'Bạn không được phép làm việc này.',
+    keyMove: 'Di chuyển',
+    keyOpen: 'Mở',
+    kinds: {
+      all: 'Tất cả loại',
+      decision: 'Quyết định',
       info: 'Trước đó',
+      label: 'Loại',
+      today: 'Hôm nay',
+    },
+    detailsUnavailable: 'Không thể tải một số chi tiết của hộp thư.',
+    loadFailed: 'Không thể tải hộp thư',
+    loadFailedDescription: 'Hãy kiểm tra kết nối rồi thử lại.',
+    loadMore: 'Tải thêm',
+    loading: 'Đang tải',
+    noMatchDescription: 'Xóa bộ lọc để xem mọi loại.',
+    nothingSelected: 'Chọn một mục để xem',
+    notification: 'Thông báo',
+    open: 'Mở',
+    outcomes: {
+      approved: 'Đã phê duyệt',
+      rejected: 'Đã từ chối',
+      withdrawn: 'Đã rút lại',
+    },
+    pendingDecisions: '{{count}} đang chờ',
+    readAll: 'Đánh dấu tất cả đã đọc',
+    request: {
+      approve: 'Phê duyệt',
+      commentFor: '{{action}}: {{title}}',
+      commentPlaceholder: 'Viết gì đó…',
+      newLine: 'để xuống dòng',
+      quickSend: 'để gửi',
+      reject: 'Từ chối',
+    },
+    requestFailed: 'Yêu cầu thất bại. Hãy thử lại.',
+    resolved: 'Đã xử lý',
+    retry: 'Thử lại',
+    tabs: {
       decision: 'Đang chờ',
+      info: 'Trước đó',
+      today: 'Hôm nay',
+    },
+    title: 'Hộp thư',
+    unread: 'Chưa đọc',
+    unreadCount: '{{count}} chưa đọc',
+    views: {
+      all: 'Tất cả',
+      todo: 'Đang chờ',
+      unread: 'Chưa đọc',
     },
   },
   inboxButton: {
+    empty: 'Chưa có tin nhắn',
+    pending: 'Hộp thư, {{count}} đang chờ',
+    recent: 'Tin nhắn gần đây',
     title: 'Hộp thư',
+    unread: 'Hộp thư, {{count}} chưa đọc',
     viewAll: 'Mở hộp thư',
   },
   nav: {

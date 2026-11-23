@@ -2,7 +2,12 @@
 import { fireEvent, screen, waitFor, within } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import type { SkillInput, SkillSave, SkillView } from '../../shared/skills.js';
+import type {
+  Skill,
+  SkillInput,
+  SkillSave,
+  SkillView,
+} from '../../shared/skills.js';
 import {
   draftOf,
   entryProblem,
@@ -18,7 +23,12 @@ import {
   granted,
   resetApi,
 } from './fake-client.js';
-import { SkillSettingsContext } from '../../client/lib/skill-settings-context.js';
+import { useTranslation } from '@nocobase/i18n/client';
+
+import {
+  SkillSettingsContext,
+  type SkillListExtension,
+} from '../../client/lib/skill-settings-context.js';
 import { skill, skillDetail } from './fixtures.js';
 import { renderPage, renderRoute } from './render.js';
 
@@ -98,6 +108,27 @@ function ShownSettings({
   readonly skill: { readonly name: string };
 }) {
   return <p>{`settings ${skillId} ${skill.name}`}</p>;
+}
+
+function PurposeCell({ skill: shown }: { readonly skill: Skill }) {
+  return <span>purpose of {shown.name}</span>;
+}
+
+/** An application's list additions, translated like a real one's. */
+function useTestSkillList(): SkillListExtension {
+  const { t } = useTranslation();
+  return {
+    filters: [
+      { key: 'all', label: t('All'), match: () => true },
+      {
+        key: 'scripts',
+        label: t('With scripts'),
+        match: (shown) => shown.scriptCount > 0,
+      },
+      { key: 'none', label: t('None'), match: () => false },
+    ],
+    column: { header: t('Purpose'), Cell: PurposeCell },
+  };
 }
 
 describe('skill pages', () => {
@@ -214,6 +245,34 @@ describe('skill pages', () => {
     expect(
       within(row).getByText('skills.compatibility(value=Needs git)'),
     ).toBeInTheDocument();
+  });
+
+  it('lets the application add filters with counts and a column to the list', async () => {
+    renderPage(
+      <SkillSettingsContext.Provider
+        value={{
+          Settings: ShownSettings,
+          useList: useTestSkillList,
+        }}
+      >
+        <SkillsPage />
+      </SkillSettingsContext.Provider>,
+    );
+    const row = await screen.findByTestId('skill-s1');
+    expect(
+      within(row).getByText('purpose of pr-etiquette'),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('columnheader', { name: 'Purpose' }),
+    ).toBeInTheDocument();
+    expect(screen.getByTestId('skill-filter-scripts')).toHaveTextContent(
+      'With scripts1',
+    );
+    expect(screen.getByTestId('skill-filter-none')).toHaveTextContent('None0');
+    fireEvent.click(screen.getByTestId('skill-filter-none'));
+    await waitFor(() => expect(screen.queryByTestId('skill-s1')).toBeNull());
+    fireEvent.click(screen.getByTestId('skill-filter-scripts'));
+    expect(await screen.findByTestId('skill-s1')).toBeInTheDocument();
   });
 
   it('shows a skill as a tree of files beside the one selected', async () => {

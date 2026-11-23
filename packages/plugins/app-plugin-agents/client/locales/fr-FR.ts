@@ -1,6 +1,7 @@
 import type { LocaleResource } from '@nocobase/i18n';
 
 import type enUS from './en-US.js';
+import { mergeLocale } from './merge.js';
 
 const frFR: LocaleResource<typeof enUS> = {
   openAgentSettings: 'Ouvrir les paramètres des agents',
@@ -1578,4 +1579,466 @@ const frFR: LocaleResource<typeof enUS> = {
   },
 };
 
-export default frFR;
+// The panel's wording (`panel.en-US.ts`) and what the plugin brings on its own (`shell.en-US.ts`) sit outside the
+// typed English shape, so they are merged in the way `en-US.ts` merges them.
+const untyped = {
+  agents: {
+    filters: {
+      disabled: 'Désactivés',
+      enabledOnly: 'Activés',
+    },
+    columns: {
+      chatRoles: 'Qui peut discuter',
+    },
+    chatRoles: {
+      label: 'Qui peut discuter',
+      everyone: 'Tous les membres',
+      roles: 'Rôles spécifiques',
+      placeholder: 'Choisir des rôles',
+      hint: 'Les membres hors de ces rôles ne voient pas cet Agent dans le panneau de discussion et ne peuvent pas démarrer de conversation avec lui. Le droit de gérer les Agents ne change pas qui peut discuter ; seul root accède à tous les Agents.',
+      required: 'Choisissez au moins un rôle.',
+    },
+    detail: {
+      view: 'Voir',
+      viewFor: 'Voir {{name}}',
+      readOnly:
+        'Vous pouvez consulter cet Agent. Seules les personnes qui gèrent les Agents peuvent le modifier.',
+      tabs: {
+        settings: 'Paramètres',
+        actions: 'Actions métier',
+        skills: 'Compétences par défaut',
+        runs: 'Exécutions',
+      },
+      actionsHint:
+        'Ce que l’application autorise cet Agent à faire dans les données métier. Il n’agit que là où la personne qui l’a sollicité peut agir aussi.',
+      actionsNone: 'Cet Agent n’a aucune action métier.',
+      skillsHint:
+        'Les compétences par défaut de l’équipe, fournies à chaque exécution de chaque Agent. Modifiez-les sur la page Compétences.',
+      skillsNone: 'Aucune compétence par défaut de l’équipe pour l’instant.',
+      skillsUnavailable:
+        'Vous devez avoir le droit de consulter les compétences pour les voir.',
+    },
+    teamDefault: {
+      label: 'Agent par défaut de l’équipe',
+      none: 'Aucun',
+      hint: 'Les nouvelles conversations lui sont adressées, sauf si une personne a choisi son propre Agent par défaut. Seul un Agent activé avec lequel tous les membres peuvent discuter peut être l’Agent par défaut de l’équipe.',
+      saved: 'Agent par défaut de l’équipe enregistré',
+    },
+  },
+  usage: {
+    tabs: {
+      usage: 'Utilisation',
+      prices: 'Tarifs',
+    },
+  },
+  chat: {
+    thinking: {
+      title: 'Niveau de réflexion',
+      choose: 'Niveau de réflexion : {{level}}',
+      useDefault: 'Utiliser la valeur par défaut du fournisseur',
+    },
+    offline: {
+      agentMissing: '{{name}} n’existe plus',
+      agentArchived: '{{name}} n’est pas activé',
+      forbidden: 'Vous ne pouvez plus utiliser {{name}}',
+      noModel: 'Configurez d’abord un modèle de discussion',
+      noRunner:
+        '{{name}} n’a aucun environnement d’exécution en ligne pour le moment',
+      othersPersonal:
+        'Seuls les environnements personnels d’autres personnes disposent de {{name}} ; connectez votre propre environnement d’exécution',
+      modelUnavailable:
+        'Le modèle de {{name}} n’est pas disponible ; adressez-vous à un administrateur',
+      kept: 'Vos messages sont conservés et recevront une réponse dès que possible.',
+      fallback: 'Utiliser un autre Agent ici',
+      usingDefault:
+        'Cette conversation utilise temporairement {{name}} à la place de {{own}}.',
+      restore: 'Revenir à {{own}}',
+    },
+    consultation: {
+      question: 'Question',
+      answer: 'Réponse',
+      steps: 'Ses étapes',
+      usage:
+        '{{input}} jetons en entrée et {{output}} jetons en sortie utilisés.',
+      state: {
+        running: 'Réponse en cours…',
+        completed: 'Répondu',
+        failed: 'Échec',
+        refused: 'Refusé',
+      },
+    },
+    steps: {
+      title: 'Étapes',
+      waiting:
+        'En attente qu’un environnement d’exécution prenne cela en charge…',
+      starting: 'Démarrage…',
+      started: 'L’Agent est en train de répondre.',
+      finished: 'L’Agent a fini de répondre.',
+    },
+    agents: {
+      models: 'Modèles',
+      defaultModel: 'Modèle par défaut',
+      runnerAgents: 'Agents',
+      modelPlaceholder: 'Choisir un modèle',
+      modelSwitch:
+        'Modèle : {{name}} · {{service}} ; choisissez un modèle ou un Agent',
+      modelOnlySwitch: 'Modèle : {{name}} · {{service}} ; choisissez un modèle',
+      modelLoadFailed: 'Impossible de charger le modèle de la conversation',
+      modelChangeFailed: 'Impossible de confirmer le changement de modèle',
+      modelSearch: 'Rechercher des modèles',
+      noMatchingModels: 'Aucun modèle correspondant',
+      modelHint: 'Choisissez un modèle en ligne avec lequel discuter.',
+      mixedHint:
+        'Choisissez un modèle en ligne ou un Agent sur un environnement d’exécution avec lequel discuter.',
+      search: 'Rechercher des modèles ou des Agents',
+      noResults: 'Aucun modèle ni Agent correspondant',
+      switch: 'Agent : {{name}} ; en choisir un autre',
+      withStatus: '{{name}}, {{status}}',
+      chatWith: 'Discuter avec',
+      startWith: 'Démarrer une nouvelle conversation avec',
+      boundHint:
+        'Une conversation reste liée à son Agent ; en choisir un autre démarre une nouvelle conversation.',
+      noneToChat: 'Aucun Agent avec lequel vous pouvez discuter',
+      field: 'Agent : {{name}}',
+      personal: 'Environnements personnels uniquement',
+      temporary: 'Temporaire',
+      chatHint:
+        'Liste les Agents activés et indique pourquoi l’un d’eux ne peut pas vous répondre maintenant. Les réponses en ligne utilisent un modèle de l’application ; les autres Agents attendent un environnement d’exécution disponible.',
+    },
+    sharing: {
+      related: 'Enregistrements associés',
+      title: 'Partager un instantané',
+      description:
+        'Les destinataires ne voient que le contenu au moment du partage. Un tour inachevé est exclu. Partagez à nouveau pour mettre à jour l’instantané.',
+      sensitive:
+        'Cette conversation peut contenir des informations sensibles. Ne la partagez qu’avec les personnes qui doivent la voir.',
+      asOf: 'Partagé le {{time}}',
+      recipient: 'Sélectionner des utilisateurs de l’application',
+      share: 'Partager',
+      update: 'Mettre à jour',
+      revoke: 'Révoquer',
+      copy: 'Copier le lien',
+      copied: 'Lien copié',
+      copyFailed: 'Impossible de copier le lien',
+      none: 'Aucun destinataire pour l’instant.',
+      failed:
+        'Impossible de charger ou de mettre à jour le partage. Veuillez réessayer.',
+      failedRecipients:
+        'Impossible de partager avec : {{names}}. Ces utilisateurs restent sélectionnés pour réessayer.',
+      older: 'Charger les messages plus anciens',
+      empty: 'Cet instantané ne contient aucun tour terminé.',
+    },
+    webSearch: {
+      title: 'Recherche web',
+      queryCount: 'Requêtes · {{count}}',
+      expand: 'Développer',
+      collapse: 'Réduire',
+      toggle: 'Rechercher sur le web',
+      unsupported:
+        'Sélectionnez un modèle compatible pour activer la recherche web.',
+      searching: 'Recherche en cours…',
+      completed: 'Sources récupérées',
+      unverified: 'Recherche non vérifiée',
+      unverifiedNotice:
+        'Le fournisseur a renvoyé une réponse sans preuve de recherche. L’exécution de la recherche, la fraîcheur des résultats et les sources n’ont pas pu être vérifiées.',
+      partial: 'Certaines recherches ont échoué',
+      failed: 'Recherche indisponible',
+      cancelled: 'Recherche annulée',
+      interrupted: 'Recherche interrompue',
+      timeout: 'La recherche a expiré.',
+      unavailable: 'La recherche est temporairement indisponible.',
+      noEvidence: 'Aucune preuve web vérifiée n’a été renvoyée.',
+      sources: 'Sources',
+    },
+    retrySaving: 'Réessayer l’enregistrement',
+    cancel: 'Annuler',
+    editMessage: 'Modifier',
+    copyMessage: 'Copier',
+    refreshReply: 'Régénérer',
+    copyFailed: 'Impossible de copier le message.',
+    resendConfirm: 'Renvoyer',
+    resend: {
+      rejected:
+        'Le message n’a pas été renvoyé. Votre modification a été conservée.',
+      unknown:
+        'Le résultat du renvoi est inconnu. Actualisez l’historique et patientez avant de réessayer ; le message a peut-être déjà été accepté.',
+      needsSync:
+        'Le message a été accepté, mais l’historique n’est pas synchronisé. Actualisez l’historique ; ne le renvoyez pas.',
+    },
+    contextFailed:
+      'Impossible de lire le contexte sélectionné ou d’envoyer le message. Vérifiez la page actuelle et réessayez.',
+    approval: {
+      request: 'Cet outil a besoin de votre approbation avant de s’exécuter.',
+      approve: 'Approuver',
+      deny: 'Refuser',
+      denied: 'L’exécution de l’outil a été refusée.',
+      failed:
+        'L’approbation n’a pas été confirmée. Actualisez le message enregistré avant de réessayer.',
+    },
+    feedback: {
+      sending: 'Envoi…',
+      waiting: 'En attente de l’Agent…',
+      thinking: 'Réflexion…',
+      stopping: 'Arrêt demandé. En attente de la fin de l’Agent…',
+      completed: 'Terminé.',
+      cancelled:
+        'Annulé. Vérifiez les actions éventuellement terminées avant de les répéter.',
+      failed:
+        'La réponse a échoué. Consultez l’historique avant de décider de renvoyer le message.',
+      unknown:
+        'Le résultat ou son historique enregistré n’est pas confirmé. Actualisez l’historique avant de décider de renvoyer le message.',
+      effectReview:
+        'Certaines actions ont peut-être abouti. Vérifiez leurs résultats avant de les répéter.',
+    },
+    historicalReadOnly:
+      'Cette conversation passée est en lecture seule. Démarrez une nouvelle discussion pour continuer.',
+    connectionUnknown:
+      'Connexion interrompue. Le résultat est inconnu. Actualisez l’historique enregistré avant de décider de renvoyer le message.',
+    allowAnother: 'Autoriser un nouvel envoi (risque de doublon)',
+    refreshHistory: 'Actualiser l’historique',
+    title: 'Discussion avec l’Agent',
+    ask: 'Demander à l’Agent',
+    launcher: 'Ouvrir l’Agent',
+    closeLauncher: 'Fermer l’Agent',
+    close: 'Fermer',
+    expand: 'Pleine largeur',
+    restoreSize: 'Revenir au panneau latéral',
+    openPage: 'Ouvrir en plein écran',
+    openInPanel: 'Ouvrir dans le panneau latéral',
+    more: 'Plus',
+    newConversation: 'Nouvelle conversation',
+    rename: 'Renommer',
+    renameHint: '{{title}} (cliquez pour renommer)',
+    archive: 'Archiver',
+    unarchive: 'Désarchiver',
+    you: 'Vous',
+    agentGone: 'Agent supprimé',
+    anyAgent: 'Agent',
+    loadFailed: 'Impossible de charger la conversation',
+    notFound: 'Impossible d’ouvrir cette conversation',
+    notFoundDescription:
+      'Elle a peut-être été supprimée, ou elle appartient à quelqu’un d’autre.',
+    emptyTitle: 'Que peut faire {{name}} pour vous ?',
+    emptyDescription:
+      'Posez n’importe quelle question ou décrivez le travail à organiser. Le contenu affiché sur cette page est transmis comme contexte.',
+    noAgent:
+      'Aucun Agent avec lequel vous pouvez discuter. Demandez à un administrateur d’en activer un, ou connectez un environnement d’exécution.',
+    chooseAgent:
+      'Choisissez ci-dessous avec qui discuter. Pour commencer toujours avec un Agent, définissez votre Agent par défaut dans votre profil.',
+    messages: 'Messages',
+    olderMessages: 'Messages précédents',
+    sources: {
+      panel: 'Panneau de discussion',
+    },
+    reasoning: {
+      title: 'Raisonnement',
+      thinking: 'Réflexion…',
+    },
+    reply: {
+      writing: 'Rédaction…',
+      interrupted: 'La réponse s’est arrêtée ici.',
+    },
+    pending: {
+      sending: 'Envoi…',
+      failed: 'Non envoyé',
+      retry: 'Renvoyer',
+      discard: 'Abandonner',
+    },
+    composer: {
+      label: 'Message à l’Agent',
+      placeholder: 'Posez une question ou décrivez le travail à organiser…',
+      hint: 'Entrée pour envoyer, Maj+Entrée pour aller à la ligne',
+      runningHint: 'En cours. Vous pouvez arrêter cette exécution.',
+      tooLong: '{{max}} caractères au maximum.',
+      send: 'Envoyer',
+      stop: 'Arrêter',
+      stopping: 'Arrêt…',
+    },
+    attachments: {
+      attach: 'Joindre des fichiers',
+      label: 'Fichiers joints au prochain message',
+      sent: 'Fichiers envoyés avec ce message',
+      images: 'Images',
+      files: 'Fichiers',
+      remove: 'Retirer {{name}}',
+      uploading: 'Téléversement…',
+      tooLarge: 'Plus de {{max}}',
+      failed: 'Téléversement impossible',
+      tooMany: '{{max}} fichiers au maximum par message.',
+      blocked:
+        'Retirez les fichiers qui n’ont pas pu être téléversés pour envoyer.',
+      waiting: 'Envoi dès que les fichiers seront téléversés…',
+      drop: 'Déposez des fichiers pour les joindre',
+      preview: 'Aperçu de {{name}}',
+      download: 'Télécharger {{name}}',
+      previous: 'Image précédente',
+      next: 'Image suivante',
+    },
+    context: {
+      label: 'Contexte joint au prochain message',
+      sent: 'Contexte joint à ce message',
+      filter: 'Filtre : {{filter}}',
+      selection: 'Texte sélectionné : « {{text}} »',
+      remove: 'Retirer le contexte : {{label}}',
+      inspect: 'Afficher le contexte : {{label}}',
+      preview: 'Contexte : {{label}}',
+    },
+    modes: {
+      online: 'Agent en ligne',
+      runner: 'Agents des environnements d’exécution',
+      switchToOnline: 'Passer à l’Agent en ligne',
+      switchToRunner: 'Passer aux Agents des environnements d’exécution',
+    },
+    history: {
+      title: 'Conversations',
+      fold: 'Replier la liste des conversations',
+      unfold: 'Déplier la liste des conversations',
+      search: 'Rechercher des conversations',
+      show: 'Afficher',
+      active: 'Ouvertes',
+      archived: 'Archivées',
+      agent: 'Agent',
+      allAgents: 'Tous les Agents',
+      source: 'Démarrée depuis',
+      allSources: 'Partout',
+      loadFailed: 'Impossible de charger les conversations',
+      noMatch: 'Aucune conversation ne correspond',
+      noArchived: 'Aucune conversation archivée',
+      empty: 'Aucune conversation',
+      more: 'Charger plus',
+      unread: 'Nouvelle réponse',
+      actions: 'Actions pour {{title}}',
+      waiting: 'En attente de vous',
+      running: 'En cours',
+      recent: 'Récentes',
+      ownOnly:
+        'Seules vos conversations sont listées. Une conversation partagée avec quelqu’un est en lecture seule pour cette personne.',
+    },
+    list: {
+      label: 'Conversations',
+      archivedTitle: 'Archivées',
+      back: 'Retour aux conversations',
+      all: 'Toutes',
+      filters: 'Afficher',
+      today: 'Aujourd’hui',
+      yesterday: 'Hier',
+      week: 'Cette semaine',
+      earlier: 'Plus tôt',
+      restore: 'Restaurer',
+      offline: 'Environnement d’exécution hors ligne',
+      needsMe: 'Requiert mon intervention',
+      working: 'En cours',
+      reply: 'Nouvelle réponse',
+      failed: 'Échec',
+      confirm: 'Question pour vous',
+    },
+    loading: 'Chargement',
+    retry: 'Réessayer',
+    errors: {
+      forbidden: 'Vous n’êtes pas autorisé à effectuer cette action.',
+      notFound: 'Il n’existe plus.',
+      requestFailed: 'La requête a échoué. Réessayez.',
+    },
+    transcript: {
+      waiting: 'En attente du démarrage de l’Agent…',
+      empty: 'Cette exécution n’a enregistré aucun événement.',
+      fetchFailed:
+        'Impossible de récupérer les nouveaux événements. Nouvelle tentative…',
+      expand: 'Tout afficher',
+      truncated:
+        'Tronqué : le texte complet était trop long pour être conservé.',
+      events: 'Journal de l’exécution',
+      inputDelivered: '{{count}} entrée(s) transmise(s) à l’Agent',
+      tokens: 'Jetons {{input}} entrants, {{output}} sortants',
+      kinds: {
+        text: 'Agent',
+        thinking: 'Réflexion',
+        toolUse: 'Outil',
+        toolResult: 'Résultat',
+        allowed: 'Autorisé',
+        denied: 'Refusé',
+        input: 'Entrée',
+        checkout: 'Extraction',
+        status: 'Statut',
+        error: 'Erreur',
+        usage: 'Utilisation',
+      },
+    },
+    backToList: 'Retour à la liste',
+    showDetails: 'Afficher les détails',
+    hideDetails: 'Masquer les détails',
+    detailsTitle: 'Détails de la session',
+    sessionDetails: 'Session',
+    runtime: 'Environnement d’exécution',
+    agent: 'Agent',
+    started: 'Démarrée',
+    usageTitle: 'Utilisation',
+    relatedWork: 'Travaux associés',
+    unlink: 'Supprimer l’association',
+    unlinkFailed: 'Impossible de supprimer l’association.',
+    expandPanel: 'Pleine largeur',
+    restorePanel: 'Restaurer le panneau',
+    delete: 'Supprimer',
+    deleteDialog: {
+      menu: 'Supprimer',
+      title: 'Supprimer « {{title}} » ?',
+      description:
+        'Ses messages, fichiers et associations sont définitivement supprimés, et toute exécution active est arrêtée. Les enregistrements associés sont conservés. Cette action est irréversible.',
+      cancel: 'Annuler',
+      confirm: 'Supprimer',
+      done: '« {{title}} » supprimée',
+      body: 'Ses messages, fichiers et associations sont définitivement supprimés, et toute exécution active est arrêtée. Les enregistrements associés sont conservés. Cette action est irréversible.',
+    },
+    usage: {
+      title: 'Utilisation',
+      context: 'Contexte {{used}} / {{size}} jetons ({{percent}} %)',
+      window: 'Fenêtre de contexte',
+      input: 'Entrée',
+      cached: 'En cache',
+      output: 'Sortie',
+      cost: 'Coût',
+    },
+  },
+  me: {
+    navigation: 'Agent',
+    title: 'Agent',
+    description:
+      'Vos propres paramètres d’Agent : où vont vos nouvelles conversations, les environnements d’exécution que vous avez ajoutés et ce que vos exécutions ont consommé.',
+    defaultAgent: {
+      title: 'Mon Agent par défaut',
+    },
+    effort: {
+      title: 'Effort de raisonnement',
+      description:
+        'L’intensité de réflexion de l’Agent dans les conversations que vous démarrez, sauf si vous en choisissez une autre dans la conversation. Un Agent dont l’outil de codage ne le propose pas utilise sa propre valeur par défaut.',
+      label: 'Mon effort de raisonnement',
+      default: 'Valeur par défaut de chaque Agent',
+      saved: 'Effort de raisonnement enregistré',
+    },
+    runtimes: {
+      title: 'Environnements d’exécution que j’ai ajoutés',
+      description:
+        'Les environnements d’exécution personnels n’exécutent que votre propre travail. Ajoutez-en un depuis la page Environnements d’exécution des paramètres système, ou demandez à un administrateur.',
+      none: 'Vous n’avez ajouté aucun environnement d’exécution.',
+      loadFailed: 'Impossible de charger vos environnements d’exécution',
+      status: {
+        online: 'En ligne',
+        offline: 'Hors ligne',
+        revoked: 'Révoqué',
+      },
+    },
+    usage: {
+      title: 'Mon utilisation',
+      description:
+        'Ce que vos exécutions ont consommé au cours des 30 derniers jours.',
+      runs: 'Exécutions',
+      tokens: 'Jetons',
+      cost: 'Coût estimé',
+      loadFailed: 'Impossible de charger votre utilisation',
+    },
+  },
+};
+
+const withUntyped: typeof frFR = mergeLocale(frFR, untyped);
+
+export default withUntyped;

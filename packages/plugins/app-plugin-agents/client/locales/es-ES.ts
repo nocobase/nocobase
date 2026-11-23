@@ -1,6 +1,7 @@
 import type { LocaleResource } from '@nocobase/i18n';
 
 import type enUS from './en-US.js';
+import { mergeLocale } from './merge.js';
 
 const esES: LocaleResource<typeof enUS> = {
   openAgentSettings: 'Abrir la configuración de agentes',
@@ -1572,4 +1573,457 @@ const esES: LocaleResource<typeof enUS> = {
   },
 };
 
-export default esES;
+// The panel's wording (`panel.en-US.ts`) and what the plugin brings on its own (`shell.en-US.ts`) sit outside the
+// typed English shape, so they are merged in the way `en-US.ts` merges them.
+const untyped = {
+  agents: {
+    filters: {
+      disabled: 'Deshabilitados',
+      enabledOnly: 'Habilitados',
+    },
+    columns: {
+      chatRoles: 'Quién puede chatear',
+    },
+    chatRoles: {
+      label: 'Quién puede chatear',
+      everyone: 'Todos los miembros',
+      roles: 'Roles específicos',
+      placeholder: 'Elige roles',
+      hint: 'Los miembros fuera de estos roles no ven este Agent en el panel de chat y no pueden iniciar una conversación con él. Administrar Agents no cambia quién puede chatear; solo root accede a todos los Agents.',
+      required: 'Elige al menos un rol.',
+    },
+    detail: {
+      view: 'Ver',
+      viewFor: 'Ver {{name}}',
+      readOnly:
+        'Puedes ver este Agent. Solo los administradores de Agents pueden cambiarlo.',
+      tabs: {
+        settings: 'Configuración',
+        actions: 'Acciones de negocio',
+        skills: 'Habilidades predeterminadas',
+        runs: 'Ejecuciones',
+      },
+      actionsHint:
+        'Lo que la aplicación permite hacer a este Agent con los datos de negocio. Solo actúa donde también puede actuar la persona que lo activó.',
+      actionsNone: 'Este Agent no tiene acciones de negocio.',
+      skillsHint:
+        'Las habilidades predeterminadas del equipo que recibe cada ejecución de cada Agent. Cámbialas en la página Habilidades.',
+      skillsNone: 'Aún no hay habilidades predeterminadas del equipo.',
+      skillsUnavailable: 'Necesitas permiso para ver las habilidades.',
+    },
+    teamDefault: {
+      label: 'Agent predeterminado del equipo',
+      none: 'Ninguno',
+      hint: 'Las conversaciones nuevas van a él, salvo que la persona haya elegido su propio Agent predeterminado. Solo un Agent habilitado con el que todos los miembros pueden chatear puede ser el predeterminado del equipo.',
+      saved: 'Agent predeterminado del equipo guardado',
+    },
+  },
+  usage: {
+    tabs: {
+      usage: 'Uso',
+      prices: 'Precios',
+    },
+  },
+  chat: {
+    thinking: {
+      title: 'Nivel de razonamiento',
+      choose: 'Nivel de razonamiento: {{level}}',
+      useDefault: 'Usar el valor predeterminado del proveedor',
+    },
+    offline: {
+      agentMissing: '{{name}} ya no existe',
+      agentArchived: '{{name}} no está habilitado',
+      forbidden: 'Ya no puedes usar {{name}}',
+      noModel: 'Configura primero un modelo de chat',
+      noRunner: '{{name}} no tiene ningún entorno de ejecución en línea ahora',
+      othersPersonal:
+        'Solo los entornos de ejecución personales de otros tienen {{name}}; conecta un entorno de ejecución propio',
+      modelUnavailable:
+        'El modelo de {{name}} no está disponible; consulta a un administrador',
+      kept: 'Tus mensajes se conservan y se responderán en cuanto pueda responder.',
+      fallback: 'Usar otro Agent aquí',
+      usingDefault:
+        'Esta conversación usa temporalmente {{name}} en lugar de {{own}}.',
+      restore: 'Volver a {{own}}',
+    },
+    consultation: {
+      question: 'Pregunta',
+      answer: 'Respuesta',
+      steps: 'Sus pasos',
+      usage: 'Usó {{input}} tokens de entrada y {{output}} de salida.',
+      state: {
+        running: 'Respondiendo…',
+        completed: 'Respondida',
+        failed: 'Falló',
+        refused: 'Rechazada',
+      },
+    },
+    steps: {
+      title: 'Pasos',
+      waiting: 'Esperando a que un entorno de ejecución lo recoja…',
+      starting: 'Iniciando…',
+      started: 'El Agent está respondiendo.',
+      finished: 'El Agent terminó de responder.',
+    },
+    agents: {
+      models: 'Modelos',
+      defaultModel: 'Modelo predeterminado',
+      runnerAgents: 'Agents',
+      modelPlaceholder: 'Elige un modelo',
+      modelSwitch: 'Modelo: {{name}} · {{service}}; elige un modelo o un Agent',
+      modelOnlySwitch: 'Modelo: {{name}} · {{service}}; elige un modelo',
+      modelLoadFailed: 'No se pudo cargar el modelo de la conversación',
+      modelChangeFailed: 'No se pudo confirmar el cambio de modelo',
+      modelSearch: 'Buscar modelos',
+      noMatchingModels: 'Ningún modelo coincide',
+      modelHint: 'Elige un modelo en línea con el que chatear.',
+      mixedHint:
+        'Elige un modelo en línea o un Agent de un entorno de ejecución con el que chatear.',
+      search: 'Buscar modelos o Agents',
+      noResults: 'Ningún modelo ni Agent coincide',
+      switch: 'Agent: {{name}}; elige otro',
+      withStatus: '{{name}}, {{status}}',
+      chatWith: 'Chatear con',
+      startWith: 'Iniciar una conversación nueva con',
+      boundHint:
+        'Una conversación permanece con su Agent; elegir otro inicia una conversación nueva.',
+      noneToChat: 'No hay ningún Agent con el que puedas chatear',
+      field: 'Agent: {{name}}',
+      personal: 'Solo entornos de ejecución personales',
+      temporary: 'Temporal',
+      chatHint:
+        'Enumera los Agents habilitados e indica por qué alguno no puede responderte ahora. Las respuestas en línea usan un modelo de la aplicación; los demás Agents esperan a que haya un entorno de ejecución disponible.',
+    },
+    sharing: {
+      related: 'Registros relacionados',
+      title: 'Compartir instantánea',
+      description:
+        'Los destinatarios solo ven el contenido existente en el momento en que compartes. Un turno sin terminar queda excluido. Vuelve a compartir para actualizar la instantánea.',
+      sensitive:
+        'Esta conversación puede contener información confidencial. Compártela solo con quienes deban verla.',
+      asOf: 'Compartida a fecha de {{time}}',
+      recipient: 'Selecciona usuarios de la aplicación',
+      share: 'Compartir',
+      update: 'Actualizar',
+      revoke: 'Revocar',
+      copy: 'Copiar enlace',
+      copied: 'Enlace copiado',
+      copyFailed: 'No se pudo copiar el enlace',
+      none: 'Aún no hay destinatarios.',
+      failed:
+        'No se pudo cargar ni actualizar el uso compartido. Inténtalo de nuevo.',
+      failedRecipients:
+        'No se pudo compartir con: {{names}}. Estos usuarios siguen seleccionados para reintentarlo.',
+      older: 'Cargar mensajes anteriores',
+      empty: 'No hay turnos terminados en esta instantánea.',
+    },
+    webSearch: {
+      title: 'Búsqueda web',
+      queryCount: 'Consultas · {{count}}',
+      expand: 'Expandir',
+      collapse: 'Contraer',
+      toggle: 'Buscar en la web',
+      unsupported:
+        'Selecciona un modelo compatible para habilitar la búsqueda web.',
+      searching: 'Buscando…',
+      completed: 'Fuentes obtenidas',
+      unverified: 'Búsqueda no verificada',
+      unverifiedNotice:
+        'El proveedor devolvió una respuesta sin pruebas de búsqueda. No se pudieron verificar la ejecución de la búsqueda, su actualidad ni las fuentes.',
+      partial: 'Algunas búsquedas fallaron',
+      failed: 'Búsqueda no disponible',
+      cancelled: 'Búsqueda cancelada',
+      interrupted: 'Búsqueda interrumpida',
+      timeout: 'Se agotó el tiempo de la búsqueda.',
+      unavailable: 'La búsqueda no está disponible temporalmente.',
+      noEvidence: 'No se devolvieron pruebas web verificadas.',
+      sources: 'Fuentes',
+    },
+    retrySaving: 'Reintentar el guardado',
+    cancel: 'Cancelar',
+    editMessage: 'Editar',
+    copyMessage: 'Copiar',
+    refreshReply: 'Regenerar',
+    copyFailed: 'No se pudo copiar el mensaje.',
+    resendConfirm: 'Reenviar',
+    resend: {
+      rejected: 'El mensaje no se reenvió. Se ha conservado tu edición.',
+      unknown:
+        'Se desconoce el resultado del reenvío. Actualiza el historial y espera antes de volver a intentarlo; es posible que el mensaje ya se haya aceptado.',
+      needsSync:
+        'El mensaje se aceptó, pero el historial no se ha sincronizado. Actualiza el historial; no lo vuelvas a enviar.',
+    },
+    contextFailed:
+      'No se pudo leer el contexto seleccionado ni enviar el mensaje. Comprueba la página actual e inténtalo de nuevo.',
+    approval: {
+      request: 'Esta herramienta necesita tu aprobación antes de ejecutarse.',
+      approve: 'Aprobar',
+      deny: 'Denegar',
+      denied: 'Se denegó la ejecución de la herramienta.',
+      failed:
+        'No se confirmó la aprobación. Actualiza el mensaje guardado antes de volver a intentarlo.',
+    },
+    feedback: {
+      sending: 'Enviando…',
+      waiting: 'Esperando al Agent…',
+      thinking: 'Pensando…',
+      stopping: 'Detención solicitada. Esperando a que el Agent termine…',
+      completed: 'Completado.',
+      cancelled:
+        'Cancelado. Comprueba las acciones que puedan haberse completado antes de repetirlas.',
+      failed:
+        'La respuesta falló. Revisa el historial antes de decidir si vuelves a enviar.',
+      unknown:
+        'No se ha confirmado el resultado ni su historial guardado. Actualiza el historial antes de decidir si vuelves a enviar.',
+      effectReview:
+        'Es posible que algunas acciones se hayan completado. Comprueba sus resultados antes de repetirlas.',
+    },
+    historicalReadOnly:
+      'Esta conversación histórica es de solo lectura. Inicia un chat nuevo para continuar.',
+    connectionUnknown:
+      'Conexión interrumpida. Se desconoce el resultado. Actualiza el historial guardado antes de decidir si vuelves a enviar.',
+    allowAnother: 'Permitir otro envío (puede duplicarse)',
+    refreshHistory: 'Actualizar historial',
+    title: 'Chat con el Agent',
+    ask: 'Preguntar al Agent',
+    launcher: 'Abrir Agent',
+    closeLauncher: 'Cerrar Agent',
+    close: 'Cerrar',
+    expand: 'Ancho completo',
+    restoreSize: 'Volver al panel lateral',
+    openPage: 'Abrir a pantalla completa',
+    openInPanel: 'Abrir en el panel lateral',
+    more: 'Más',
+    newConversation: 'Nueva conversación',
+    rename: 'Renombrar',
+    renameHint: '{{title}} (haz clic para renombrar)',
+    archive: 'Archivar',
+    unarchive: 'Desarchivar',
+    you: 'Tú',
+    agentGone: 'Agent eliminado',
+    anyAgent: 'Agent',
+    loadFailed: 'No se pudo cargar la conversación',
+    notFound: 'No se puede abrir esta conversación',
+    notFoundDescription:
+      'Puede que se haya eliminado o que pertenezca a otra persona.',
+    emptyTitle: '¿Qué puede hacer {{name}} por ti?',
+    emptyDescription:
+      'Pregunta lo que quieras o describe el trabajo que hay que organizar. Lo que muestra esta página se incluye como contexto.',
+    noAgent:
+      'No hay ningún Agent con el que puedas chatear. Pide a un administrador que habilite uno o conecta un entorno de ejecución.',
+    chooseAgent:
+      'Elige abajo con quién chatear. Para empezar siempre con un Agent, establece tu predeterminado en tu perfil.',
+    messages: 'Mensajes',
+    olderMessages: 'Mensajes anteriores',
+    sources: {
+      panel: 'Panel de chat',
+    },
+    reasoning: {
+      title: 'Razonamiento',
+      thinking: 'Pensando…',
+    },
+    reply: {
+      writing: 'Escribiendo…',
+      interrupted: 'La respuesta se detuvo aquí.',
+    },
+    pending: {
+      sending: 'Enviando…',
+      failed: 'No enviado',
+      retry: 'Enviar de nuevo',
+      discard: 'Descartar',
+    },
+    composer: {
+      label: 'Mensaje para el Agent',
+      placeholder: 'Pregunta o describe el trabajo que hay que organizar…',
+      hint: 'Intro para enviar, Mayús+Intro para una nueva línea',
+      runningHint: 'Trabajando. Puedes detener esta ejecución.',
+      tooLong: 'Como máximo {{max}} caracteres.',
+      send: 'Enviar',
+      stop: 'Detener',
+      stopping: 'Deteniendo…',
+    },
+    attachments: {
+      attach: 'Adjuntar archivos',
+      label: 'Archivos que lleva el próximo mensaje',
+      sent: 'Archivos enviados con este mensaje',
+      images: 'Imágenes',
+      files: 'Archivos',
+      remove: 'Quitar {{name}}',
+      uploading: 'Subiendo…',
+      tooLarge: 'Mayor que {{max}}',
+      failed: 'No se pudo subir',
+      tooMany: 'Como máximo {{max}} archivos por mensaje.',
+      blocked: 'Quita los archivos que no se pudieron subir para poder enviar.',
+      waiting: 'Se enviará cuando se suban los archivos…',
+      drop: 'Suelta archivos para adjuntarlos',
+      preview: 'Vista previa de {{name}}',
+      download: 'Descargar {{name}}',
+      previous: 'Imagen anterior',
+      next: 'Imagen siguiente',
+    },
+    context: {
+      label: 'Contexto que lleva el próximo mensaje',
+      sent: 'Contexto que llevó este mensaje',
+      filter: 'Filtro: {{filter}}',
+      selection: 'Texto seleccionado: «{{text}}»',
+      remove: 'Quitar contexto: {{label}}',
+      inspect: 'Mostrar contexto: {{label}}',
+      preview: 'Contexto: {{label}}',
+    },
+    modes: {
+      online: 'Agent en línea',
+      runner: 'Agents de entornos de ejecución',
+      switchToOnline: 'Cambiar al Agent en línea',
+      switchToRunner: 'Cambiar a los Agents de entornos de ejecución',
+    },
+    history: {
+      title: 'Conversaciones',
+      fold: 'Contraer la lista de conversaciones',
+      unfold: 'Expandir la lista de conversaciones',
+      search: 'Buscar conversaciones',
+      show: 'Mostrar',
+      active: 'Abiertas',
+      archived: 'Archivadas',
+      agent: 'Agent',
+      allAgents: 'Todos los Agents',
+      source: 'Iniciada desde',
+      allSources: 'Cualquier lugar',
+      loadFailed: 'No se pudieron cargar las conversaciones',
+      noMatch: 'Ninguna conversación coincide',
+      noArchived: 'No hay conversaciones archivadas',
+      empty: 'No hay conversaciones',
+      more: 'Cargar más',
+      unread: 'Respuesta nueva',
+      actions: 'Acciones para {{title}}',
+      waiting: 'Esperándote',
+      running: 'En curso',
+      recent: 'Recientes',
+      ownOnly:
+        'Solo se muestran tus conversaciones. Una conversación compartida con alguien es de solo lectura para esa persona.',
+    },
+    list: {
+      label: 'Conversaciones',
+      archivedTitle: 'Archivadas',
+      back: 'Volver a las conversaciones',
+      all: 'Todas',
+      filters: 'Mostrar',
+      today: 'Hoy',
+      yesterday: 'Ayer',
+      week: 'Esta semana',
+      earlier: 'Anteriores',
+      restore: 'Restaurar',
+      offline: 'Entorno de ejecución sin conexión',
+      needsMe: 'Me necesitan',
+      working: 'En curso',
+      reply: 'Respuesta nueva',
+      failed: 'Fallida',
+      confirm: 'Pregunta para ti',
+    },
+    loading: 'Cargando',
+    retry: 'Reintentar',
+    errors: {
+      forbidden: 'No tienes permiso para hacer esto.',
+      notFound: 'Ya no existe.',
+      requestFailed: 'La solicitud falló. Inténtalo de nuevo.',
+    },
+    transcript: {
+      waiting: 'Esperando a que el Agent empiece…',
+      empty: 'Esta ejecución no registró eventos.',
+      fetchFailed: 'No se pueden obtener eventos nuevos. Reintentando…',
+      expand: 'Mostrar todo',
+      truncated:
+        'Recortado: el texto completo era demasiado largo para conservarlo.',
+      events: 'Transcripción de la ejecución',
+      inputDelivered: '{{count}} entrada(s) entregada(s) al Agent',
+      tokens: '{{input}} tokens de entrada, {{output}} de salida',
+      kinds: {
+        text: 'Agent',
+        thinking: 'Razonamiento',
+        toolUse: 'Herramienta',
+        toolResult: 'Resultado',
+        allowed: 'Permitido',
+        denied: 'Denegado',
+        input: 'Entrada',
+        checkout: 'Extracción del código',
+        status: 'Estado',
+        error: 'Error',
+        usage: 'Uso',
+      },
+    },
+    backToList: 'Volver a la lista',
+    showDetails: 'Mostrar detalles',
+    hideDetails: 'Ocultar detalles',
+    detailsTitle: 'Detalles de la sesión',
+    sessionDetails: 'Sesión',
+    runtime: 'Entorno de ejecución',
+    agent: 'Agent',
+    started: 'Iniciada',
+    usageTitle: 'Uso',
+    relatedWork: 'Trabajo relacionado',
+    unlink: 'Quitar asociación',
+    unlinkFailed: 'No se pudo quitar la asociación.',
+    expandPanel: 'Ancho completo',
+    restorePanel: 'Restaurar panel',
+    delete: 'Eliminar',
+    deleteDialog: {
+      menu: 'Eliminar',
+      title: '¿Eliminar «{{title}}»?',
+      description:
+        'Sus mensajes, archivos y asociaciones se eliminan definitivamente, y se detiene cualquier ejecución activa. Los registros relacionados se mantienen. Esta acción no se puede deshacer.',
+      cancel: 'Cancelar',
+      confirm: 'Eliminar',
+      done: 'Se eliminó «{{title}}»',
+      body: 'Sus mensajes, archivos y asociaciones se eliminan definitivamente, y se detiene cualquier ejecución activa. Los registros relacionados se mantienen. Esta acción no se puede deshacer.',
+    },
+    usage: {
+      title: 'Uso',
+      context: 'Contexto {{used}} / {{size}} tokens ({{percent}}%)',
+      window: 'Ventana de contexto',
+      input: 'Entrada',
+      cached: 'En caché',
+      output: 'Salida',
+      cost: 'Coste',
+    },
+  },
+  me: {
+    navigation: 'Agent',
+    title: 'Agent',
+    description:
+      'Tu propia configuración de Agent: adónde van tus conversaciones nuevas, los entornos de ejecución que añadiste y lo que consumieron tus ejecuciones.',
+    defaultAgent: {
+      title: 'Mi Agent predeterminado',
+    },
+    effort: {
+      title: 'Esfuerzo de razonamiento',
+      description:
+        'Cuánto razona el Agent en las conversaciones que inicias, salvo que elijas otra cosa en la conversación. Un Agent cuya herramienta de programación no lo ofrece usa su propio valor predeterminado.',
+      label: 'Mi esfuerzo de razonamiento',
+      default: 'El predeterminado de cada Agent',
+      saved: 'Esfuerzo de razonamiento guardado',
+    },
+    runtimes: {
+      title: 'Entornos de ejecución que añadí',
+      description:
+        'Los entornos de ejecución personales solo ejecutan tu propio trabajo. Añade uno desde la página Entornos de ejecución en Configuración del sistema o pídeselo a un administrador.',
+      none: 'No has añadido ningún entorno de ejecución.',
+      loadFailed: 'No se pudieron cargar tus entornos de ejecución',
+      status: {
+        online: 'En línea',
+        offline: 'Sin conexión',
+        revoked: 'Revocado',
+      },
+    },
+    usage: {
+      title: 'Mi uso',
+      description: 'Lo que consumieron tus ejecuciones en los últimos 30 días.',
+      runs: 'Ejecuciones',
+      tokens: 'Tokens',
+      cost: 'Coste estimado',
+      loadFailed: 'No se pudo cargar tu uso',
+    },
+  },
+};
+
+const withUntyped: typeof esES = mergeLocale(esES, untyped);
+
+export default withUntyped;
