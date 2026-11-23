@@ -1,3 +1,9 @@
+export { AppHeaderActions } from './app-header-actions.js';
+export {
+  appHeaderActionsToken,
+  type AppHeaderAction,
+  type AppHeaderActionRegistry,
+} from './app-header-action-registry.js';
 export {
   getAvatarInitials,
   type AvatarInitialsOptions,

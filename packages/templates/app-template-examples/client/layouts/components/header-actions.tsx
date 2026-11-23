@@ -1,3 +1,4 @@
+import { AppHeaderActions } from '@nocobase/app-client';
 import type { ReactElement } from 'react';
 import { TooltipProvider } from '#components/ui/tooltip';
 
@@ -10,6 +11,7 @@ export function HeaderActions(): ReactElement {
     <TooltipProvider>
       <div className='flex shrink-0 items-center gap-2'>
         <ChatHeaderButton />
+        <AppHeaderActions />
         <UserMenu />
       </div>
     </TooltipProvider>

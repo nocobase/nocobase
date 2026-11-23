@@ -429,3 +429,7 @@ The templates' copied `FeedbackForm` component supplies native field discovery, 
 ## Correlating error notifications
 
 When reporting an API failure, pass `...errorToastOptions(error)` from `@nocobase/app-client` into `toaster.show({ type: 'error', title, ...errorToastOptions(error) })`. The helper preserves `ApiClientError.requestId` for the host toaster to display and copy; ordinary local errors have no request ID. Keep the error's translated title and any existing action unchanged.
+
+### Application header actions
+
+A Client ServiceProvider can register an action during `boot()` with `this.app.services.resolve(appHeaderActionsToken).add({ id, component })`. Use a package-qualified ID. The standard templates render these actions in registration order before the user menu. A custom shell places `<AppHeaderActions />` in its authenticated toolbar, where actions can use the host router, session, translations and query cache.

@@ -13,6 +13,10 @@ import {
   type ServiceToken,
 } from '@nocobase/service-provider';
 
+import {
+  AppHeaderActionRegistry,
+  appHeaderActionsToken,
+} from './app-header-action-registry.js';
 import { resolveAppUrl } from './client.js';
 import type { AppClientConfig, AppClientRenderConfig } from './config.js';
 import type { AppClientRegisteredServiceProvider } from './plugins.js';
@@ -55,6 +59,10 @@ class CoreClientServiceProvider extends ServiceProvider<ClientApplication> {
     applyDocumentLocale(this.app.runtime.i18n);
 
   public override register(): void {
+    this.app.container.instance(
+      appHeaderActionsToken,
+      new AppHeaderActionRegistry(),
+    );
     this.app.container.singleton(apiClientToken, (): ApiClient => {
       const baseURL = this.app.config.get<string>('api.baseURL');
       const i18n = this.app.runtime.i18n;
