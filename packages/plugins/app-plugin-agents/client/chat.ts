@@ -1,3 +1,4 @@
+export { useSetting } from './hooks/use-access.js';
 export { useResendMessage } from './chat/use-chat.js';
 export type { ResendResult } from './chat/controller.js';
 export type { OnlineAgentResendOptions } from '../shared/resend.js';

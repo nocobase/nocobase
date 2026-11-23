@@ -20,6 +20,7 @@ import {
   timelineOrder,
   useAgentText,
   useChatAgents,
+  useSetting,
   useChatModels,
   useConversationModel,
   shownThinking,
@@ -41,6 +42,8 @@ import type {
   ReasoningLevel,
 } from '@nocobase/app-plugin-agents/shared/models';
 import { BotMessageSquareIcon, GlobeIcon, PaperclipIcon } from 'lucide-react';
+import { Link } from 'react-router';
+import { ACCESS_NAMESPACE } from '@nocobase/app-plugin-agents/shared/access';
 import { createPortal } from 'react-dom';
 import {
   useCallback,
@@ -1094,12 +1097,7 @@ function ConversationBody({
                   {t('chat.chooseAgent')}
                 </p>
               ) : (
-                <p
-                  className='text-xs text-destructive'
-                  data-testid='chat-no-agent'
-                >
-                  {t('chat.noAgent')}
-                </p>
+                <NoAgentNotice />
               )
             ) : null
           }
@@ -1107,5 +1105,23 @@ function ConversationBody({
       </div>
       {headerSlot && choice ? createPortal(choice, headerSlot) : null}
     </section>
+  );
+}
+
+function NoAgentNotice(): ReactElement {
+  const { t } = useChatTranslation();
+  const canReadSettings = useSetting('agents.agents', 'read');
+  return (
+    <p className='text-xs text-destructive' data-testid='chat-no-agent'>
+      {t('chat.noAgent')}
+      {canReadSettings ? (
+        <Link
+          className='ms-1 font-medium text-destructive underline underline-offset-2'
+          to='/settings/agents'
+        >
+          {t('openAgentSettings', { ns: ACCESS_NAMESPACE })}
+        </Link>
+      ) : null}
+    </p>
   );
 }

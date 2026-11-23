@@ -20,6 +20,7 @@ import {
   timelineOrder,
   useAgentText,
   useChatAgents,
+  useSetting,
   useChatModels,
   useConversationModel,
   shownThinking,
@@ -39,7 +40,7 @@ import type { ConversationDetail } from '../../shared/conversations.js';
 import type { ModelRef, ReasoningLevel } from '../../shared/models.js';
 import { BotMessageSquareIcon, GlobeIcon, PaperclipIcon } from 'lucide-react';
 import { Link } from 'react-router';
-import { useSetting } from '../hooks/use-access.js';
+import { ACCESS_NAMESPACE } from '../../shared/access.js';
 import { createPortal } from 'react-dom';
 import {
   useCallback,
@@ -1115,7 +1116,7 @@ function NoAgentNotice(): ReactElement {
           className='ms-1 font-medium text-destructive underline underline-offset-2'
           to='/settings/agents'
         >
-          {t('openAgentSettings')}
+          {t('openAgentSettings', { ns: ACCESS_NAMESPACE })}
         </Link>
       ) : null}
     </p>
