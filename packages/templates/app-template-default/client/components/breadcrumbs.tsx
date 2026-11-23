@@ -115,6 +115,12 @@ export function Breadcrumbs({
         ];
       });
 
+  // An untitled detail still has a parent while its record is loading or unavailable.
+  const leaf = trail.at(-1);
+  const untitledDetail =
+    !declared &&
+    leaf?.route.presentation?.kind === 'child-page' &&
+    routeLevelTitle(leaf) === undefined;
   const trailLevels = candidates.flatMap(
     (level, index): PageBreadcrumbLevel[] => {
       if (!level.to) return [level];
@@ -122,7 +128,7 @@ export function Breadcrumbs({
       // Keep the current title during permission checks, but never expose an inaccessible ancestor's name.
       return to
         ? [{ ...level, to }]
-        : index === candidates.length - 1
+        : !untitledDetail && index === candidates.length - 1
           ? [{ label: level.label }]
           : [];
     },
@@ -136,7 +142,9 @@ export function Breadcrumbs({
   }));
   const last = levels.length - 1;
   const folded = levels.slice(1, last);
-  const parent = levels.slice(0, last).findLast((level) => level.to);
+  const parent = (untitledDetail ? levels : levels.slice(0, last)).findLast(
+    (level) => level.to,
+  );
 
   return (
     <Breadcrumb
@@ -198,13 +206,15 @@ export function Breadcrumbs({
               className={cn(
                 'min-w-0',
                 index === last
-                  ? undefined
+                  ? untitledDetail
+                    ? 'hidden md:inline-flex'
+                    : undefined
                   : index === 0
                     ? 'hidden shrink-0 md:inline-flex'
                     : 'hidden shrink-0 lg:inline-flex',
               )}
             >
-              {index === last ? (
+              {index === last && !untitledDetail ? (
                 <BreadcrumbPage
                   title={level.label}
                   className='truncate font-medium'

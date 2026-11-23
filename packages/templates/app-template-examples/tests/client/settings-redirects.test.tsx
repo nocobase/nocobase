@@ -6,8 +6,12 @@ import { SettingsRedirect } from '../../client/routing/settings-redirect.js';
 import { SETTINGS_REDIRECTS } from '../../client/lib/settings-redirects.js';
 
 function Destination() {
-  const { pathname, search, hash } = useLocation();
-  return <output>{`${pathname}${search}${hash}`}</output>;
+  const { pathname, search, hash, state } = useLocation();
+  return (
+    <output
+      data-state={JSON.stringify(state)}
+    >{`${pathname}${search}${hash}`}</output>
+  );
 }
 
 it.each([
@@ -19,8 +23,11 @@ it.each([
   ],
   ['/knowledge/indexing', '/settings/knowledge/indexing'],
 ])('redirects the former settings URL %s to %s', async (from, to) => {
+  const { pathname, search, hash } = new URL(from, 'https://example.test');
   render(
-    <MemoryRouter initialEntries={[from]}>
+    <MemoryRouter
+      initialEntries={[{ pathname, search, hash, state: { fromList: true } }]}
+    >
       <Routes>
         {SETTINGS_REDIRECTS.map(([prefix]) => (
           <Route
@@ -33,5 +40,10 @@ it.each([
       </Routes>
     </MemoryRouter>,
   );
-  expect(await screen.findByRole('status')).toHaveTextContent(to);
+  const destination = await screen.findByRole('status');
+  expect(destination).toHaveTextContent(to);
+  expect(destination).toHaveAttribute(
+    'data-state',
+    JSON.stringify({ fromList: true }),
+  );
 });
