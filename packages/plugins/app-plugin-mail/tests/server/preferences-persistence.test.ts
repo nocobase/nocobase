@@ -2,6 +2,7 @@ import type { DatabaseManager } from '@nocobase/db';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { MailPreferencesService } from '../../server/services/preferences.js';
 import { createDatabaseMailStore } from '../../server/store.js';
+import { MailTemplatesStore } from '../../server/store/templates.js';
 import type { MailStore } from '../../server/types.js';
 import {
   createMailTestDatabase,
@@ -169,26 +170,51 @@ describe('mail preferences persistence and ownership', () => {
       );
     expect(collision).toBeInstanceOf(Error);
     expect(collision).not.toMatchObject({ name: 'MailError' });
-    // With the name also taken, the database may report either index, so the id collision keeps it unexpected.
+    // With the name also taken, the error follows the key the database reports for the failed write: PostgreSQL
+    // reports the primary key, SQLite the name. It holds when the template holding the id is deleted right after the
+    // failure, before the error is classified.
+    const reportsName = database.connection().dialect === 'sqlite';
     const alices = await service.saveTemplate(owner, {
       name: 'Taken',
       subject: 'Alice',
     });
-    const both = await store
-      .saveTemplate({
-        id: bobs.id,
-        name: 'Taken',
-        subject: 'Alice',
-        text: '',
-        html: '',
-        ownerId: owner.actorId,
-      })
-      .then(
-        () => undefined,
-        (error: unknown) => error,
-      );
-    expect(both).toBeInstanceOf(Error);
-    expect(both).not.toMatchObject({ name: 'MailError' });
+    const templates = new MailTemplatesStore(database);
+    const hooks = templates as unknown as {
+      writeTemplate(row: unknown, exists: boolean): Promise<void>;
+    };
+    const write = hooks.writeTemplate.bind(templates);
+    let deleteIdHolder = false;
+    hooks.writeTemplate = async (row, exists) => {
+      try {
+        await write(row, exists);
+      } catch (error) {
+        if (deleteIdHolder) await store.deleteTemplate(other.actorId, bobs.id);
+        throw error;
+      }
+    };
+    for (const deleted of [false, true]) {
+      deleteIdHolder = deleted;
+      const both = await templates
+        .saveTemplate({
+          id: bobs.id,
+          name: 'Taken',
+          subject: 'Alice',
+          text: '',
+          html: '',
+          ownerId: owner.actorId,
+        })
+        .then(
+          () => undefined,
+          (error: unknown) => error,
+        );
+      expect(both).toBeInstanceOf(Error);
+      if (reportsName)
+        expect(both).toMatchObject({
+          name: 'MailError',
+          reason: 'MAIL_TEMPLATE_ALREADY_EXISTS',
+        });
+      else expect(both).not.toMatchObject({ name: 'MailError' });
+    }
     const notNull = await store
       .saveTemplate({
         id: '00000000-0000-4000-8000-000000000006',
@@ -205,7 +231,7 @@ describe('mail preferences persistence and ownership', () => {
     expect(notNull).toBeInstanceOf(Error);
     expect(notNull).not.toMatchObject({ name: 'MailError' });
     expect(await service.listTemplates(owner)).toEqual([alices]);
-    expect(await service.listTemplates(other)).toEqual([bobs]);
+    expect(await service.listTemplates(other)).toEqual([]);
   });
 
   it('leaves new signatures non-default and persists clearing the only default', async () => {
