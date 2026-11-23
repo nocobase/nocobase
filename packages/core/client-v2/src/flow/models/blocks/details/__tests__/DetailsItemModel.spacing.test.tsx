@@ -30,21 +30,25 @@ it.each([
   const item = container.querySelector<HTMLElement>('.ant-form-item');
   expect(item.style.marginBottom).toBe(inlineMargin);
   const rules = Array.from(document.styleSheets).flatMap((sheet) => Array.from(sheet.cssRules));
-  const matchesMargin = (rule: CSSRule, value: string) =>
-    rule instanceof CSSStyleRule &&
-    rule.style.getPropertyValue('margin-bottom') === value &&
-    item.matches(rule.selectorText);
-
-  const responsive = isMobileLayout && layout === 'horizontal';
-  expect(rules.some((rule) => matchesMargin(rule, '11px'))).toBe(responsive);
-  expect(
+  const matchesStyle = (rules: CSSRule[], element: Element, property: string, value: string) =>
     rules.some(
       (rule) =>
-        rule instanceof CSSMediaRule &&
-        rule.conditionText === '(max-width: 575px)' &&
-        Array.from(rule.cssRules).some((child) => matchesMargin(child, '3px')),
-    ),
-  ).toBe(responsive);
+        rule instanceof CSSStyleRule &&
+        element.matches(rule.selectorText) &&
+        rule.style.getPropertyValue(property) === value,
+    );
+
+  const responsive = isMobileLayout && layout === 'horizontal';
+  const narrowRules = rules.flatMap((rule) =>
+    rule instanceof CSSMediaRule && rule.conditionText === '(max-width: 575px)' ? Array.from(rule.cssRules) : [],
+  );
+  expect(matchesStyle(rules, item, 'margin-bottom', '11px')).toBe(responsive);
+  expect(matchesStyle(narrowRules, item, 'margin-bottom', '10px')).toBe(responsive);
+  expect(matchesStyle(narrowRules, item.querySelector('.ant-form-item-label'), 'padding-bottom', '0')).toBe(responsive);
+  expect(matchesStyle(narrowRules, item.querySelector('label'), 'height', 'auto')).toBe(responsive);
+  expect(matchesStyle(narrowRules, item.querySelector('.ant-form-item-control-input'), 'min-height', '22px')).toBe(
+    responsive,
+  );
   expect(container.querySelector<HTMLElement>('.ant-form-item-label')?.style.paddingBottom).toBe(
     layout === 'vertical' ? '0px' : '',
   );

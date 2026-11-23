@@ -23,12 +23,27 @@ import { DetailsGridModel } from './DetailsGridModel';
 import { rebuildFieldSubModel } from '../../../internal/utils/rebuildFieldSubModel';
 import { isToManyAssociationField } from '../../../internal/utils/modelUtils';
 
-const mobileHorizontalItemMargin = css`
+const mobileHorizontalItemStyle = css`
   && {
     margin-bottom: 11px;
+  }
 
-    @media (max-width: 575px) {
-      margin-bottom: 3px;
+  @media (max-width: 575px) {
+    /* Grid cards also set a margin on their descendant form items. */
+    &&.ant-form-item {
+      margin-bottom: 10px;
+
+      > .ant-form-item-row > .ant-form-item-label {
+        padding-bottom: 0;
+
+        > label {
+          height: auto;
+        }
+      }
+
+      > .ant-form-item-row > .ant-form-item-control > .ant-form-item-control-input {
+        min-height: 22px;
+      }
     }
   }
 `;
@@ -232,7 +247,7 @@ export class DetailsItemModel extends DisplayItemModel<{
       <FormItem
         {...mergedProps}
         itemMarginClassName={
-          this.context.isMobileLayout && mergedProps.layout === 'horizontal' ? mobileHorizontalItemMargin : undefined
+          this.context.isMobileLayout && mergedProps.layout === 'horizontal' ? mobileHorizontalItemStyle : undefined
         }
         value={value}
       >
