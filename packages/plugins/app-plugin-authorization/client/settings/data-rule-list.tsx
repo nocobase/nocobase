@@ -31,6 +31,7 @@ import { subjectKey, useSubjectTitles } from './data-rule-subject-titles.js';
 import {
   actionKey,
   resourceKey,
+  newRuleResources,
   ruleResourceLabels,
   ruleResources,
   ruleScopes,
@@ -366,11 +367,12 @@ export function DataRuleList({
       },
       { replace: true },
     );
-  const eligible = resources.some(
-    (resource) =>
-      !kind.onePerResource ||
-      !all.some((rule) => resourceKey(rule.resource) === resourceKey(resource)),
-  );
+  const eligible =
+    newRuleResources(
+      resources,
+      settings.workspace,
+      kind.onePerResource ? all : [],
+    ).length > 0;
   const create =
     canCreate && rules.data && catalog.data ? (
       eligible ? (

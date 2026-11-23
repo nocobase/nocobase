@@ -39,6 +39,7 @@ import {
   editableRule,
   replaceRuleScope,
   resourceKey,
+  newRuleResources,
   ruleResourceLabels,
   ruleResources,
   ruleScopes,
@@ -157,7 +158,14 @@ export function DataRuleEditor({
           ns: item.ns,
           defaultValue: item.defaultValue ?? item.key,
         });
-  const resources = ruleResources(catalog, settings.workspace);
+  const catalogResources = ruleResources(catalog, settings.workspace);
+  const resources = creating
+    ? newRuleResources(
+        catalogResources,
+        settings.workspace,
+        kind.onePerResource ? rules : [],
+      )
+    : catalogResources;
   const resource = resources.find(
     (entry) => resourceKey(entry) === resourceKey(value.resource),
   );
@@ -176,19 +184,10 @@ export function DataRuleEditor({
       ),
     }),
   );
-  const options = resources
-    .filter(
-      (entry) =>
-        !creating ||
-        !kind.onePerResource ||
-        !rules.some(
-          (rule) => resourceKey(rule.resource) === resourceKey(entry),
-        ),
-    )
-    .map((entry) => ({
-      value: resourceKey(entry),
-      label: resourceLabels.get(resourceKey(entry)) ?? text(entry.title),
-    }));
+  const options = resources.map((entry) => ({
+    value: resourceKey(entry),
+    label: resourceLabels.get(resourceKey(entry)) ?? text(entry.title),
+  }));
   if (
     !creating &&
     !options.some((option) => option.value === resourceKey(value.resource))

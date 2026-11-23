@@ -86,6 +86,20 @@ export function ruleResources(
     return true;
   });
 }
+/** Candidates for a new rule. Default access also excludes objects that already have a rule. */
+export function newRuleResources(
+  resources: readonly CatalogResource[],
+  selection: PermissionWorkspaceSelection,
+  existing: readonly DataRule[],
+): readonly CatalogResource[] {
+  const used = new Set(existing.map((rule) => resourceKey(rule.resource)));
+  return resources.filter(
+    (resource) =>
+      !selection.excludedNewRuleResources?.[resource.type]?.includes(
+        resource.id,
+      ) && !used.has(resourceKey(resource)),
+  );
+}
 /**
  * Labels of rule resources by `resourceKey`. A business resource and a data table often share a name, such as
  * Customers; those labels say which kind each one is.

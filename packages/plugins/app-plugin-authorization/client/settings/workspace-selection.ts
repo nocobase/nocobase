@@ -60,6 +60,10 @@ export interface PermissionWorkspaceSelection {
       readonly { readonly id: string; readonly initialRecordAccess?: string }[]
     >
   >;
+  /** Resource ids, grouped by type, omitted when creating data rules. Existing rules use the full catalog. */
+  readonly excludedNewRuleResources?: Readonly<
+    Record<string, readonly string[]>
+  >;
   readonly filterFieldTitles?: Readonly<
     Record<string, Readonly<Record<string, LocalizedText>>>
   >;

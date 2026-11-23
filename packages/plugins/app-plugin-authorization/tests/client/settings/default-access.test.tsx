@@ -136,7 +136,7 @@ it('loads and inspects existing scopes without writes, preserving nested filters
     screen.getByRole('textbox', { name: 'Search business objects or keys' }),
   ).toHaveValue('Projects');
 });
-it('patches only the chosen scope and keeps the advanced filter in the other action', async () => {
+it('edits an object excluded from new rules and preserves the other action’s advanced filter', async () => {
   const user = userEvent.setup();
   let saved: unknown;
   const calls = vi.fn(
@@ -153,6 +153,12 @@ it('patches only the chosen scope and keeps the advanced filter in the other act
   );
   await renderWithApp(tree(), {
     route: '/default-access/project-default/edit',
+    authorization: {
+      workspace: {
+        business: [],
+        excludedNewRuleResources: { composite: ['projects'] },
+      },
+    },
     fetch: answerApi(calls),
   });
   await user.click(
@@ -236,6 +242,44 @@ it('keeps unavailable catalog selections visible and read-only rather than creat
   );
 });
 
+it('only offers eligible objects when creating a rule, matching both resource type and id', async () => {
+  const user = userEvent.setup();
+  await renderWithApp(tree(), {
+    route: '/default-access/create',
+    authorization: {
+      workspace: {
+        business: [],
+        excludedNewRuleResources: {
+          composite: ['projects'],
+          'database.collection': ['internal'],
+        },
+      },
+    },
+    fetch: answerApi(({ path }) => {
+      if (path === 'authorization/permissions')
+        return { data: { unrestricted: true, permissions: [] } };
+      if (path.endsWith('/options'))
+        return {
+          data: {
+            ...catalog,
+            collections: [
+              { name: 'projects', title: 'Project table', fields: ['name'] },
+              { name: 'internal', title: 'Internal data', fields: [] },
+            ],
+          },
+        };
+      return { data: [] };
+    }),
+  });
+  await user.click(
+    await screen.findByRole('combobox', { name: 'Business object *' }),
+  );
+  expect(
+    await screen.findByRole('option', { name: 'Project table' }),
+  ).toBeVisible();
+  expect(screen.queryByRole('option', { name: 'Projects' })).toBeNull();
+  expect(screen.queryByRole('option', { name: 'Internal data' })).toBeNull();
+});
 it.each(['en-US', 'zh-CN'])(
   'creates an explicitly configured rule in %s without adding all-records grants',
   async (locale) => {
