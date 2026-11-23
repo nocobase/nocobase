@@ -3,7 +3,7 @@
  * small on purpose — it never imports the panel, which loads the first time the panel opens.
  */
 import { useTranslation } from '@nocobase/i18n/client';
-import { SparklesIcon } from 'lucide-react';
+import { BotIcon } from 'lucide-react';
 import type { ComponentProps, ReactElement } from 'react';
 
 import { ACCESS_NAMESPACE } from '../../shared/access.js';
@@ -30,7 +30,9 @@ export function AgentHeaderButton(
   const panel = useChatPanel();
   const { t } = useTranslation(ACCESS_NAMESPACE);
   if (!panel.available) return null;
-  const label = t('chat.launcher', { defaultValue: 'Agent' });
+  const label = panel.open
+    ? t('chat.closeLauncher', { defaultValue: 'Close Agent' })
+    : t('chat.launcher', { defaultValue: 'Open Agent' });
   return (
     <TooltipProvider>
       <Tooltip>
@@ -49,7 +51,7 @@ export function AgentHeaderButton(
             />
           }
         >
-          <SparklesIcon />
+          <BotIcon />
         </TooltipTrigger>
         <TooltipContent side='bottom'>
           {label}

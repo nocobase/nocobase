@@ -55,15 +55,24 @@ const customer: ChatContextItem = {
 };
 
 describe('AgentHeaderButton', () => {
-  it('is named Agent, names ⌘J / Ctrl+J, and toggles the panel', async () => {
+  it('names the open action, shows ⌘J / Ctrl+J, and toggles the panel', async () => {
     renderWith(<AgentHeaderButton />);
-    const button = screen.getByRole('button', { name: 'Agent' });
+    const button = screen.getByRole('button', { name: 'Open Agent' });
     expect(button).toHaveAttribute('aria-keyshortcuts', 'Meta+J Control+J');
     expect(button).toHaveAttribute('aria-expanded', 'false');
     await userEvent.hover(button);
     expect(await screen.findByText(/^(⌘|Ctrl) J$/u)).toBeInTheDocument();
     fireEvent.click(button);
     expect(panel.toggleChat).toHaveBeenCalledTimes(1);
+  });
+
+  it('names the close action when the panel is open', () => {
+    panel.open = true;
+    renderWith(<AgentHeaderButton />);
+    expect(screen.getByRole('button', { name: 'Close Agent' })).toHaveAttribute(
+      'aria-expanded',
+      'true',
+    );
   });
 
   it('renders nothing where the viewer may not chat', () => {

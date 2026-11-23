@@ -96,6 +96,7 @@ export interface AgentChatLocale {
     readonly ask: string;
     /** The header button that opens and closes the panel. */
     readonly launcher: string;
+    readonly closeLauncher: string;
     readonly close: string;
     readonly expand: string;
     readonly restoreSize: string;
@@ -510,7 +511,8 @@ const agentChatEnUS: AgentChatLocale = {
     refreshHistory: 'Refresh history',
     title: 'Agent chat',
     ask: 'Ask Agent',
-    launcher: 'Agent',
+    launcher: 'Open Agent',
+    closeLauncher: 'Close Agent',
     close: 'Close',
     expand: 'Full width',
     restoreSize: 'Back to side panel',
