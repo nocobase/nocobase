@@ -2,7 +2,7 @@
   "name": "@nocobase/app-plugin-distributed",
   "displayName": "Distributed App Plugin",
   "description": "Shows whether an application can run on several instances, with the Agent Skills to configure it.",
-  "version": "0.1.0-beta.1",
+  "version": "0.1.0-beta.2",
   "nocobase": {
     "title": {
       "en-US": "Cluster and distribution",

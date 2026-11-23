@@ -2,6 +2,29 @@
 
 All notable changes to NocoBase 3 are documented in this file, one section per release: `nocobase-v3-beta/<date>.<n>` for a beta and `nocobase-v3/<date>.<n>` for a stable release. The versions each release published are on its GitHub Release, and every package's own changes are in its CHANGELOG.md.
 
+## [nocobase-v3-beta/2026-11-23.1](https://github.com/nocobase/nocobase/releases/tag/nocobase-v3-beta%2F2026-11-23.1)
+
+### 🎉 New Features
+
+- **[Interface]** The UI Library permission editor sets a role in three tabs: menus only control what shows in the sidebar, each business object's actions and data scope are set once with other actions following or narrowing View, and system settings pages are set on their own without data scopes. ([#11603](https://github.com/nocobase/nocobase/pull/11603))
+- **[Mail]**
+  - Choose which folders each mail account synchronizes; messages of folders you remove are deleted locally after a confirmation, while mail on the server is untouched. ([#11605](https://github.com/nocobase/nocobase/pull/11605))
+  - Download an individual mail message as an original .eml file, including its attachments. ([#11623](https://github.com/nocobase/nocobase/pull/11623))
+- **[Plugin lifecycle]** Lifecycle definitions can update related records in the same transaction when an instance resumes. ([#11659](https://github.com/nocobase/nocobase/pull/11659))
+- **[App templates]** Administrators can open Workflow management from System settings in new Default applications before the first workflow is added. ([#11660](https://github.com/nocobase/nocobase/pull/11660))
+- **[Client]** Members can manage their account security and personal API keys in Personal settings, and administrators can manage users, roles, storage and schedules in System settings. ([#11663](https://github.com/nocobase/nocobase/pull/11663))
+- **[Agents]** Runtimes can now use the Antigravity CLI as an Agent tool, and the tool list shows it after Pi. ([#11664](https://github.com/nocobase/nocobase/pull/11664))
+
+### 🚀 Improvements
+
+- **[Agents]**
+  - A new agent whose model another provider already has is named with the provider in half-width parentheses, such as "OpenCode · Qwen3.8 Flash (example-provider)". ([#11632](https://github.com/nocobase/nocobase/pull/11632))
+  - Skill pages no longer say online agents only read scripts, and the file tree marks the scripts folder with one icon instead of a badge on every file. ([#11635](https://github.com/nocobase/nocobase/pull/11635))
+- **[Skills]** The application development Skill now guides agents through adding controls to suspend, resume, reset, or restart lifecycle instances with record-level permissions and audit history. ([#11641](https://github.com/nocobase/nocobase/pull/11641))
+- **[Agent runner]** Codex, OpenCode and Pi suggest GPT-6.2 Sol and Astra and include their standard usage rates by default. ([#11645](https://github.com/nocobase/nocobase/pull/11645))
+- **[Plugin lifecycle]** Extensions can check whether a lifecycle instance has left a state since a recorded entry. ([#11661](https://github.com/nocobase/nocobase/pull/11661))
+- **[App templates]** Empty workflow lists now use consistent spacing, and the Definitions tab explains how to manage workflows with an Agent in the project repository. ([#11667](https://github.com/nocobase/nocobase/pull/11667))
+
 ## [nocobase-v3-beta/2026-11-20.1](https://github.com/nocobase/nocobase/releases/tag/nocobase-v3-beta%2F2026-11-20.1)
 
 ### 🎉 New Features

@@ -1,5 +1,19 @@
 # @nocobase/lifecycle
 
+## 0.1.0-beta.7
+
+### Minor Changes
+
+- 0a61940: Add a transactional `management.onResume` hook so lifecycle definitions can update related business records when an instance resumes.
+- b430b2d: Expose a transaction-aware query for the transition that ended a lifecycle stay.
+
+### Patch Changes
+
+- Updated dependencies [a6b9b74]
+- Updated dependencies [1048669]
+  - @nocobase/jobs@1.0.0-beta.7
+  - @nocobase/db@1.0.0-beta.30
+
 ## 0.1.0-beta.6
 
 ### Minor Changes
