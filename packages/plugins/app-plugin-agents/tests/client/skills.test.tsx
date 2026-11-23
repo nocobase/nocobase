@@ -89,6 +89,17 @@ describe('skill workbench model', () => {
   });
 });
 
+/** An application's settings for a skill, naming what it was given. */
+function ShownSettings({
+  skillId,
+  skill,
+}: {
+  readonly skillId: string;
+  readonly skill: { readonly name: string };
+}) {
+  return <p>{`settings ${skillId} ${skill.name}`}</p>;
+}
+
 describe('skill pages', () => {
   let current: SkillView;
   beforeEach(() => {
@@ -497,9 +508,7 @@ describe('skill pages', () => {
     renderRoute(
       <SkillSettingsContext.Provider
         value={{
-          Settings: ({ skill: shown, skillId }) => (
-            <p>{`settings ${skillId} ${shown.name}`}</p>
-          ),
+          Settings: ShownSettings,
           showGlobalMount: (shown) => {
             seen.push(shown.id);
             return false;
