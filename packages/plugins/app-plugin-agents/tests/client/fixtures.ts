@@ -111,6 +111,7 @@ export function skill(id: string, overrides: Partial<Skill> = {}): Skill {
     scriptCount: 0,
     scripts: [],
     createdById: 'u1',
+    updatedById: 'u1',
     createdAt: AT,
     updatedAt: AT,
     ...overrides,

@@ -47,6 +47,11 @@ export interface Skill {
   readonly scripts: readonly string[];
 
   readonly createdById: string | null;
+  /**
+   * Who wrote the current version: null when the application did (a seed or a plugin), so an application can tell
+   * content it installed from content a person saved, restored or imported since.
+   */
+  readonly updatedById: string | null;
   readonly createdAt: string;
   readonly updatedAt: string;
 }

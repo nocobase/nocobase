@@ -1474,10 +1474,10 @@ export function createAdminRoutes(
       if (canAttach) {
         const before = new Set(await services.skills.attached(target));
         const added = new Set(skillIds.filter((id) => !before.has(id)));
-        if (added.size > 0)
-          for (const skill of await services.skills.list())
-            if (added.has(skill.id) && !(await canAttach(skill, target)))
-              throw protectedSkill(`attached here (${skill.slug})`);
+        // Only the newly attached skills are read, whatever the library's size.
+        for (const skill of await services.skills.list([...added]))
+          if (!(await canAttach(skill, target)))
+            throw protectedSkill(`attached here (${skill.slug})`);
       }
       return context.json({
         data: { skillIds: await services.skills.attach(target, skillIds) },
