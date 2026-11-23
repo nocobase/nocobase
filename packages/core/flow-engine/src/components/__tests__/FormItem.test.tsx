@@ -7,7 +7,6 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { css } from '@emotion/css';
 import { render } from '@testing-library/react';
 import React from 'react';
 import { describe, expect, it, vi } from 'vitest';
@@ -24,21 +23,6 @@ describe('FormItem', () => {
     expect(formItemStyle).toEqual({
       marginBottom: 12,
     });
-  });
-
-  it.each([undefined, 'detail-margin'])('preserves caller classes with margin class %s', (itemMarginClassName) => {
-    const colorClass = css({ color: 'red' });
-    const sizeClass = css({ fontSize: 13 });
-    const { container } = render(
-      <FormItem className={`${colorClass} ${sizeClass}`} itemMarginClassName={itemMarginClassName}>
-        <input />
-      </FormItem>,
-    );
-
-    const wrapper = container.querySelector('.ant-form-item');
-    expect(wrapper).toHaveClass(colorClass, sizeClass);
-    expect(wrapper.classList.contains('detail-margin')).toBe(Boolean(itemMarginClassName));
-    expect(container.querySelector('input')).not.toHaveClass('detail-margin');
   });
 
   it('does not forward model-internal globalSort props to field children', () => {

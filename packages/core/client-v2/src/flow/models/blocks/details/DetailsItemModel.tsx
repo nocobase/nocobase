@@ -7,7 +7,6 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { css } from '@emotion/css';
 import {
   Collection,
   DisplayItemModel,
@@ -22,31 +21,6 @@ import { FieldModel } from '../../base';
 import { DetailsGridModel } from './DetailsGridModel';
 import { rebuildFieldSubModel } from '../../../internal/utils/rebuildFieldSubModel';
 import { isToManyAssociationField } from '../../../internal/utils/modelUtils';
-
-const mobileHorizontalItemStyle = css`
-  && {
-    margin-bottom: 11px;
-  }
-
-  @media (max-width: 575px) {
-    /* Grid cards also set a margin on their descendant form items. */
-    &&.ant-form-item {
-      margin-bottom: 10px;
-
-      > .ant-form-item-row > .ant-form-item-label {
-        padding-bottom: 0;
-
-        > label {
-          height: auto;
-        }
-      }
-
-      > .ant-form-item-row > .ant-form-item-control > .ant-form-item-control-input {
-        min-height: 22px;
-      }
-    }
-  }
-`;
 
 /**
  * 从 record 中取值
@@ -244,13 +218,7 @@ export class DetailsItemModel extends DisplayItemModel<{
       }),
     );
     return (
-      <FormItem
-        {...mergedProps}
-        itemMarginClassName={
-          this.context.isMobileLayout && mergedProps.layout === 'horizontal' ? mobileHorizontalItemStyle : undefined
-        }
-        value={value}
-      >
+      <FormItem {...mergedProps} value={value}>
         <FieldModelRenderer model={modelForRender} />
       </FormItem>
     );
