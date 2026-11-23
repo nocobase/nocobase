@@ -1,5 +1,17 @@
 # @nocobase/agent-runner
 
+## 0.1.0-beta.33
+
+### Patch Changes
+
+- 44395d2: Support Antigravity CLI on runtimes and list it between Pi and DeepSeek Harness, with Gemini CLI last.
+- acc1f0d: Suggest GPT-6.2 Sol and GPT-6.2 Astra for OpenAI tools and report them in the built-in runner model lists for Codex and OpenCode.
+- Updated dependencies [44395d2]
+- Updated dependencies [acc1f0d]
+  - @nocobase/acp-bridge@1.0.0-beta.8
+  - @nocobase/agent-protocol@0.1.0-beta.23
+  - @nocobase/app-cli-client@0.1.0-beta.26
+
 ## 0.1.0-beta.32
 
 ### Minor Changes
