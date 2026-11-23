@@ -294,7 +294,7 @@ const deDE: SchedulerResource = {
       full: 'Führen Sie es nur auf einem vollständigen Build mit allen Plugins aus; andernfalls werden auch die Aufgaben nicht geladener Plugins als entfernt markiert.',
     },
     readOnly:
-      'Diese Seite ist schreibgeschützt: Diese Einstellungen stehen in der Konfiguration der Anwendung und werden beim erneuten Deployment wirksam. Caches, Warteschlangen und andere Dienste werden in den Cluster- und verteilten Einstellungen behandelt.',
+      'Diese Seite ist schreibgeschützt: Diese Einstellungen stehen in der Konfiguration der Anwendung und werden beim erneuten Deployment wirksam.',
   },
   cron: {
     everyMinute: 'Jede Minute',

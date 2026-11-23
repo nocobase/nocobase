@@ -1,11 +1,11 @@
-import { render, screen } from '@testing-library/react';
+import { render, renderHook, screen } from '@testing-library/react';
 import { createElement, useMemo, type ReactElement } from 'react';
 import { describe, expect, it } from 'vitest';
 
 import { ClientApplicationContext } from '../src/application-context.js';
 import type { ClientApplication } from '../src/application.js';
 import { createAppClientConfig } from '../src/config.js';
-import { useHeaderActions } from '../src/hooks.js';
+import { useHasRoute, useHeaderActions } from '../src/hooks.js';
 import {
   badgeCount,
   defineAppRoutes,
@@ -48,6 +48,21 @@ async function runtimeWith(
 }
 
 describe('header actions', () => {
+  it('uses the same trimmed name for registering and overriding an action', async () => {
+    const runtime = await runtimeWith({
+      headerActions: [
+        { name: '  assistant  ', order: 10, component: Assistant },
+      ],
+      headerActionOverrides: [{ name: ' assistant ', order: 90 }],
+    });
+    expect(
+      runtime.headerActions?.map(({ name, order }) => [name, order]),
+    ).toEqual([
+      ['inbox', 20],
+      ['assistant', 90],
+    ]);
+  });
+
   it('orders the application and plugin actions by order, ties in registration order', async () => {
     const runtime = await runtimeWith({
       headerActions: [
@@ -225,4 +240,43 @@ describe('navigation badges', () => {
     expect(badgeCount({ count: Number.NaN })).toBe(0);
     expect(badgeCount(undefined)).toBe(0);
   });
+});
+
+it('checks for a retained page by ID while ignoring excluded and group routes', async () => {
+  const componentLoader = async () => ({ default: Assistant });
+  const runtime = await runtimeWith({
+    routes: defineAppRoutes([
+      {
+        name: 'group',
+        navigation: { title: 'Group' },
+        children: [
+          {
+            name: 'included',
+            path: '/included',
+            authz: 'skip',
+            componentLoader,
+          },
+          { name: 'removed', path: '/removed', authz: 'skip', componentLoader },
+        ],
+      },
+    ]),
+    excludedRouteIds: ['@example/app:removed'],
+  });
+  const app = { runtime } as unknown as ClientApplication;
+  const { result } = renderHook(
+    () => [
+      useHasRoute('@example/app:included'),
+      useHasRoute('@example/app:removed'),
+      useHasRoute('@example/app:group'),
+      useHasRoute('@example/app:missing'),
+    ],
+    {
+      wrapper: ({ children }) => (
+        <ClientApplicationContext value={app}>
+          {children}
+        </ClientApplicationContext>
+      ),
+    },
+  );
+  expect(result.current).toEqual([true, false, false, false]);
 });

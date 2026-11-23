@@ -479,7 +479,12 @@ export interface AppClientContributions {
 
 export type AppClientPluginContributions = AppClientContributions;
 
+export interface ResolveAppClientContributionsOptions {
+  readonly excludedRouteIds?: readonly string[];
+}
+
 export interface ResolvedAppClientContributions {
+  readonly excludedRoutes?: ReadonlyMap<string, 'page' | 'group'>;
   readonly routes: readonly AppClientRegisteredRoute[];
   readonly reactProviders: readonly AppClientRegisteredReactProvider[];
 }
@@ -795,6 +800,7 @@ export function defineClientReactProviders(
 
 export function resolveAppClientContributions(
   contributions: readonly AppClientContributions[],
+  options: ResolveAppClientContributionsOptions = {},
 ): ResolvedAppClientContributions {
   const routeIds = new Map<string, string>();
   const claimedPaths = new Map<string, ClaimedPath>();
@@ -848,7 +854,31 @@ export function resolveAppClientContributions(
     }
   }
 
-  const roots = assembleRoutes(inputs);
+  const excludedRouteIds = options.excludedRouteIds?.length
+    ? new Set(options.excludedRouteIds.map((id) => id.trim()).filter(Boolean))
+    : undefined;
+  const tree = assembleRoutes(inputs, excludedRouteIds);
+  const excludedRoutes = excludedRouteIds
+    ? new Map<string, 'page' | 'group'>()
+    : undefined;
+  const roots =
+    excludedRoutes && excludedRouteIds
+      ? excludeRoutes(tree, excludedRouteIds, excludedRoutes)
+      : tree;
+  if (excludedRouteIds && isDevelopment()) {
+    const packages = new Set(
+      contributions.map(({ packageName }) => packageName.trim()),
+    );
+    for (const id of excludedRouteIds) {
+      const separator = id.indexOf(':');
+      if (separator < 1) continue;
+      const packageName = id.slice(0, separator);
+      if (packages.has(packageName) && !excludedRoutes?.has(id))
+        console.warn(
+          `excludedRouteIds references missing route "${id}" from registered package "${packageName}".`,
+        );
+    }
+  }
   const routes = Object.freeze([
     ...resolveRouteTree(
       roots.filter((node) => node.surface === 'app'),
@@ -869,6 +899,7 @@ export function resolveAppClientContributions(
 
   return Object.freeze({
     routes,
+    ...(excludedRoutes ? { excludedRoutes } : {}),
     reactProviders: sortReactProviders(reactProviders),
   });
 }
@@ -893,13 +924,14 @@ interface RouteNode {
   hidden?: boolean;
 }
 
-function assembleRoutes(inputs: readonly RouteInput[]): RouteNode[] {
+function assembleRoutes(
+  inputs: readonly RouteInput[],
+  excludedRouteIds: ReadonlySet<string> | undefined,
+): RouteNode[] {
   const roots: RouteNode[] = [];
   const groups = new Map<string, RouteNode>();
   const pending: { node: RouteNode; parent: string; category?: string }[] = [];
   const all: RouteNode[] = [];
-  const groupId = (name: string, packageName: string): string =>
-    `${packageName}:${normalizeContributionName(name, packageName, 'route')}`;
   const categoryKey = (
     surface: AppClientSettingsRouteSurface,
     id: string,
@@ -1004,7 +1036,7 @@ function assembleRoutes(inputs: readonly RouteInput[]): RouteNode[] {
                   'route',
                 ),
               )
-            : groupId(definition.name, input.packageName);
+            : routeIdFor(definition.name, input.packageName);
         const previous = groups.get(id);
         if (previous)
           throw new Error(
@@ -1043,10 +1075,20 @@ function assembleRoutes(inputs: readonly RouteInput[]): RouteNode[] {
             ? parent
             : settings
               ? categoryKey(settings, parent)
-              : groupId(parent, input.packageName),
+              : routeIdFor(parent, input.packageName),
           category: !parent.includes(':') && settings ? parent : undefined,
         });
       }
+    }
+  }
+  if (excludedRouteIds?.size) {
+    for (const { category, definition, packageName } of roots) {
+      if (category === undefined) continue;
+      const id = routeIdFor(definition.name, packageName);
+      if (excludedRouteIds.has(id))
+        throw new Error(
+          `excludedRouteIds cannot exclude shared settings category "${id}". Exclude its pages or modules by ID, or use defineSettingsCategories() to hide the category and move its pages to the fallback category.`,
+        );
     }
   }
   // The application's overrides: a category keeps its id and stays registered, only how it shows changes.
@@ -1148,6 +1190,37 @@ function assembleRoutes(inputs: readonly RouteInput[]): RouteNode[] {
   };
   sort(roots);
   return roots;
+}
+
+/**
+ * Prune assembled subtrees before claiming their paths. The configured IDs are read-only, and excludedRoutes records
+ * the routes actually removed, including descendants, so callers can distinguish exclusion from a missing route.
+ */
+function excludeRoutes(
+  nodes: readonly RouteNode[],
+  excludedIds: ReadonlySet<string>,
+  excludedRoutes: Map<string, 'page' | 'group'>,
+  excludeParent = false,
+): RouteNode[] {
+  return nodes.flatMap((node) => {
+    const { definition, packageName } = node;
+    const id = routeIdFor(definition.name, packageName);
+    const excluded = excludeParent || excludedIds.has(id);
+    const children =
+      node.children &&
+      excludeRoutes(node.children, excludedIds, excludedRoutes, excluded);
+    const isPage = typeof definition.componentLoader === 'function';
+    const emptiedGroup = !isPage && node.children?.length && !children?.length;
+    if (excluded || emptiedGroup) {
+      excludedRoutes.set(id, isPage ? 'page' : 'group');
+      return [];
+    }
+    return [{ ...node, children }];
+  });
+}
+
+function routeIdFor(name: string, packageName: string): string {
+  return `${packageName}:${normalizeContributionName(name, packageName, 'route')}`;
 }
 
 function normalizeRouteContributions(

@@ -489,6 +489,19 @@ const appRuntime = defineAppRuntime({
 - **A route can be overridden only once across all sources**, including plugin options and any explicitly configured source extensions; a second override raises an error that names the route id.
 - Sign-in, registration, forgot password and reset password are the application's own routes, not the plugin's: edit the matching page in `client/pages/auth/` directly, and do not add another mechanism.
 
+To remove a plugin page or group, set `excludedRouteIds` in the same `defineAppRuntime()` declaration. Excluding a parent removes descendants, their navigation entries, and component overrides over them. The removed routes free their paths for application-owned declarations. For example:
+
+```ts
+const appRuntime = defineAppRuntime({
+  ...runtimeDefinition,
+  excludedRouteIds: ['@example/app-plugin-orders:orders'],
+});
+```
+
+In system and personal settings, exclude pages or modules by ID. Passing a shared settings category ID to `excludedRouteIds` fails runtime setup. A category emptied by exclusions disappears from navigation. To hide only the category and move its pages to the fallback category, use `defineSettingsCategories()`.
+
+To hide a plugin toolbar shortcut while keeping its page, add `{ name, hidden: true }` to `headerActionOverrides` using the name documented by the plugin. A shortcut that declares its target's `routeId` is hidden automatically when that page is excluded or inaccessible to the viewer. A missing target or a group ID fails runtime setup.
+
 ## 11. Where rendering happens
 
 - `client/routing/` renders routes, checks access, and handles loading and error states. For a route with a declared `presentation` it renders them inside the child page, dialog or drawer it opens first; Retry loads only that route's module again, and offers a full page reload only after that retry fails too.

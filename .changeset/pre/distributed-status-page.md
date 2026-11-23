@@ -1,5 +1,4 @@
 ---
-'@nocobase/app-plugin-distributed': minor
 '@nocobase/caching': minor
 '@nocobase/jobs': minor
 '@nocobase/queue': minor
