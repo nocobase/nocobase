@@ -31,74 +31,78 @@ function Wrapper({ children }: PropsWithChildren): ReactElement {
 }
 
 describe('app runtime', () => {
+  const settingsPage = {
+    name: 'example',
+    path: '/example',
+    authz: 'skip' as const,
+    componentLoader: async () => ({ default: () => null }),
+  };
+  const settingsPlugin = defineClientPlugin({
+    packageName: '@example/plugin',
+    routes: [
+      defineSystemSettingsRoutes([settingsPage]),
+      definePersonalSettingsRoutes([{ ...settingsPage, name: 'personal' }]),
+    ],
+  });
+
   it.each([
     [{}, ['systemSettings', 'personalSettings']],
     [{ personalSettingsRoutes: false }, ['systemSettings']],
     [{ systemSettingsRoutes: false }, ['personalSettings']],
     [{ personalSettingsRoutes: false, systemSettingsRoutes: false }, []],
   ] as const)(
-    'selects settings contributions independently: %j',
+    'selects settings surfaces independently: %j',
     async (options, expected) => {
-      const page = {
-        name: 'example',
-        path: '/example',
-        authz: 'skip' as const,
-        componentLoader: async () => ({ default: () => null }),
-      };
-      const plugin = defineClientPlugin({
-        packageName: '@example/plugin',
-        routes: [
-          defineSystemSettingsRoutes([page]),
-          definePersonalSettingsRoutes([{ ...page, name: 'personal' }]),
-        ],
-      });
       const runtime = await resolveAppRuntime(
         defineAppRuntime({
           packageName: '@example/app',
           createAppConfig: createAppClientConfig,
-          plugins: defineClientPlugins([plugin()]),
+          plugins: defineClientPlugins([settingsPlugin()]),
           ...options,
-          excludedRouteIds: ['@example/app:unlisted'],
-          headerActions: [
-            {
-              name: 'personalShortcut',
-              routeId: '@example/plugin:personal',
-              component: () => null,
-            },
-          ],
-          routeComponentOverrides: [
-            {
-              routeId: '@example/plugin:personal',
-              componentLoader: page.componentLoader,
-            },
-          ],
-          routes: defineAppRoutes([
-            { ...page, name: 'unlisted', path: '/unlisted' },
-            {
-              ...page,
-              path:
-                'systemSettingsRoutes' in options
-                  ? '/settings/example'
-                  : '/custom',
-              authz: 'skip',
-            },
-          ]),
         }),
         { rawConfig: {} },
       );
-      expect(runtime.routes.some((route) => route.path === '/unlisted')).toBe(
-        false,
-      );
-      expect(runtime.headerActions?.map((action) => action.name)).toEqual(
-        expected.some((surface) => surface === 'personalSettings')
-          ? ['personalShortcut']
-          : [],
-      );
       expect(new Set(runtime.routes.map((route) => route.surface))).toEqual(
-        new Set([undefined, ...expected]),
+        new Set(expected),
       );
     },
   );
+
+  it('treats routes of a disabled settings surface like excluded routes', async () => {
+    const runtime = await resolveAppRuntime(
+      defineAppRuntime({
+        packageName: '@example/app',
+        createAppConfig: createAppClientConfig,
+        plugins: defineClientPlugins([settingsPlugin()]),
+        systemSettingsRoutes: false,
+        personalSettingsRoutes: false,
+        excludedRouteIds: ['@example/app:unlisted'],
+        headerActions: [
+          {
+            name: 'personalShortcut',
+            routeId: '@example/plugin:personal',
+            component: () => null,
+          },
+        ],
+        routeComponentOverrides: [
+          {
+            routeId: '@example/plugin:personal',
+            componentLoader: settingsPage.componentLoader,
+          },
+        ],
+        routes: defineAppRoutes([
+          { ...settingsPage, name: 'unlisted', path: '/unlisted' },
+          // The application owns a path the disabled system settings page would have claimed.
+          { ...settingsPage, path: '/settings/example' },
+        ]),
+      }),
+      { rawConfig: {} },
+    );
+    expect(runtime.routes.map((route) => route.path)).toEqual([
+      '/settings/example',
+    ]);
+    expect(runtime.headerActions).toEqual([]);
+  });
 
   it.each(['option', 'excludedRouteIds'] as const)(
     'treats routes a plugin disables like excluded routes: %s',

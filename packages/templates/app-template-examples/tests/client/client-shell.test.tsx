@@ -321,7 +321,7 @@ function renderApplication(
   ]);
   const app = {
     config: createAppClientConfig({ rawConfig: {} }),
-    runtime: { headerActions: [] },
+    runtime: { headerActions: [], routes: clientRoutes },
     services: {
       has: (token: unknown) => registered.has(token),
       resolveIfCreated: (token: unknown) => registered.get(token),

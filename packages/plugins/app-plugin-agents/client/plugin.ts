@@ -1,8 +1,10 @@
 /**
- * The plugin's client registration, `agents()` in an application's `client/plugins.ts`. With chatRoutes and both runtime settings surfaces enabled, it
+ * The plugin's client registration, `agents()` in an application's `client/plugins.ts`. Registered with no options, it
  * brings everything: the ✦ button in the header (`agent`, its badge the conversations waiting for the viewer), the
  * panel beside the content, the conversation page (`/chat/:conversationId`, route `agentChat`), the five System
  * settings pages under AI (Agent, Model services, Runtimes, Skills, Usage) and Personal settings › Preferences › Agent.
+ * `chatRoutes: false` leaves the conversation pages to the application, and the settings pages follow the application's
+ * `systemSettingsRoutes` and `personalSettingsRoutes`.
  *
  * Customizing, from least to most:
  *
