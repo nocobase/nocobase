@@ -84,6 +84,30 @@ describe('FormDraftRepository', () => {
     expect(db.createObjectStore).toHaveBeenCalledWith('drafts', { keyPath: 'uid' });
   });
 
+  it('only cleans up a disabled repository after submission if it observed an existing draft', async () => {
+    const repository = new FormDraftRepository(createContext(123));
+    const draft = { uid: repository.uid, values: { title: 'Previously saved' } };
+    store.set(repository.uid, draft);
+    await repository.connect();
+    db.get.mockRejectedValueOnce(new Error('Read failed'));
+    await expect(repository.get()).rejects.toThrow('Read failed');
+    repository.disable();
+    await repository.delete({ afterSubmit: true });
+    expect(store.get(repository.uid)).toEqual(draft);
+    expect(db.delete).not.toHaveBeenCalled();
+
+    const reopened = new FormDraftRepository(createContext(123));
+    await reopened.connect();
+    expect(await reopened.get()).toEqual(draft);
+    reopened.disable();
+    await reopened.delete();
+    expect(store.get(repository.uid)).toEqual(draft);
+    await reopened.delete({ afterSubmit: true });
+    expect(store.has(repository.uid)).toBe(false);
+    await reopened.delete({ afterSubmit: true });
+    expect(db.delete).toHaveBeenCalledTimes(1);
+  });
+
   it('does nothing when disabled', async () => {
     const repository = new FormDraftRepository(createContext(123));
 
