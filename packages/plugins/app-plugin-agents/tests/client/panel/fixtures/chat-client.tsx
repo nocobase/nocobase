@@ -10,7 +10,6 @@ import {
 } from 'ai';
 import { appUIMessageText } from '../../../../shared/ui-message.js';
 export { appUIMessageText };
-export { useSetting } from '../../../../client/hooks/use-access.js';
 import {
   AIToolRendererProvider as ToolRendererProvider,
   useAIToolRenderer as useToolRenderer,
