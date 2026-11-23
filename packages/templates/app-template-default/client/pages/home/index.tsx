@@ -1,23 +1,76 @@
 import { useTranslation } from '@nocobase/i18n/client';
 import {
+  ArrowRightIcon,
   CheckIcon,
   CopyIcon,
   MessageSquareTextIcon,
   SparklesIcon,
 } from 'lucide-react';
-import { type ReactElement } from 'react';
+import { type ReactElement, useState } from 'react';
 
 import { PageContainer } from '#components/page-container';
 import { Button } from '#components/ui/button';
+import {
+  Card,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from '#components/ui/card';
 
+import { CAPABILITIES, type Capability } from './capabilities.js';
+import { PromptDialog } from './prompt-dialog.js';
 import { useCopy } from './use-copy.js';
 
 const STEPS = ['describe', 'build', 'review'] as const;
 
 export default function HomePage(): ReactElement {
+  const { t } = useTranslation();
+  const [selected, setSelected] = useState<Capability>();
+  const [open, setOpen] = useState(false);
+  // Changes on every opening, so the dialog remounts and drops the edits of the previous one.
+  const [openCount, setOpenCount] = useState(0);
+
+  const openCapability = (capability: Capability): void => {
+    setSelected(capability);
+    setOpenCount((count) => count + 1);
+    setOpen(true);
+  };
+
   return (
     <PageContainer>
       <AgentIntro />
+      <section
+        aria-labelledby='home-capabilities'
+        className='flex flex-col gap-4'
+      >
+        <div className='flex flex-col gap-1'>
+          <h2 id='home-capabilities' className='text-base font-medium'>
+            {t('home.capabilitiesTitle')}
+          </h2>
+          <p className='text-sm text-muted-foreground'>
+            {t('home.capabilitiesDescription')}
+          </p>
+        </div>
+        <ul className='grid gap-4 sm:grid-cols-2 xl:grid-cols-3'>
+          {CAPABILITIES.map((capability) => (
+            <li key={capability.id} className='flex'>
+              <CapabilityCard
+                capability={capability}
+                onOpen={() => openCapability(capability)}
+              />
+            </li>
+          ))}
+        </ul>
+      </section>
+      {selected ? (
+        <PromptDialog
+          key={openCount}
+          capability={selected}
+          open={open}
+          onOpenChange={setOpen}
+        />
+      ) : null}
     </PageContainer>
   );
 }
@@ -70,7 +123,13 @@ function AgentIntro(): ReactElement {
             />
             {t('home.example.title')}
           </span>
-          <Button variant='ghost' size='sm' onClick={() => void copy(example)}>
+          <Button
+            variant='ghost'
+            size='sm'
+            onClick={() => {
+              copy(example);
+            }}
+          >
             {copied ? (
               <CheckIcon data-icon='inline-start' />
             ) : (
@@ -87,5 +146,51 @@ function AgentIntro(): ReactElement {
         </p>
       </figure>
     </section>
+  );
+}
+
+function CapabilityCard({
+  capability,
+  onOpen,
+}: {
+  readonly capability: Capability;
+  readonly onOpen: () => void;
+}): ReactElement {
+  const { t } = useTranslation();
+  const prefix = `home.capabilities.${capability.id}`;
+  const Icon = capability.icon;
+
+  return (
+    <button
+      type='button'
+      onClick={onOpen}
+      className='group flex w-full cursor-pointer rounded-xl text-left outline-none focus-visible:ring-3 focus-visible:ring-ring/50'
+    >
+      <Card className='w-full transition-[translate,box-shadow,background-color] duration-200 ease-out group-hover:-translate-y-0.5 group-hover:bg-hover group-hover:shadow-md motion-reduce:transition-none motion-reduce:group-hover:translate-y-0'>
+        <CardHeader className='gap-3'>
+          {/* The chip only deepens its tint on hover rather than inverting: swapping a light background and a dark icon
+              passes both through the same color halfway, where the icon vanishes for a moment and reads as a flicker. */}
+          <span className='flex size-9 items-center justify-center rounded-lg bg-primary/5 text-primary ring-1 ring-transparent transition-[background-color,box-shadow] duration-200 ease-out group-hover:bg-primary/10 group-hover:ring-border motion-reduce:transition-none'>
+            <Icon
+              className='size-4 transition-transform duration-200 ease-out group-hover:scale-110 motion-reduce:transition-none'
+              aria-hidden
+            />
+          </span>
+          <div className='flex flex-col gap-1'>
+            <CardTitle>{t(`${prefix}.title`)}</CardTitle>
+            <CardDescription className='leading-6'>
+              {t(`${prefix}.description`)}
+            </CardDescription>
+          </div>
+        </CardHeader>
+        <CardFooter className='mt-auto justify-between text-sm text-muted-foreground transition-colors duration-200 ease-out group-hover:text-foreground'>
+          {t('home.viewPrompts', { count: capability.prompts.length })}
+          <ArrowRightIcon
+            className='size-4 transition-transform duration-200 ease-out group-hover:translate-x-1 motion-reduce:transition-none'
+            aria-hidden
+          />
+        </CardFooter>
+      </Card>
+    </button>
   );
 }
