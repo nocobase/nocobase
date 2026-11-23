@@ -57,15 +57,10 @@ describe('Mail pages', () => {
   });
 
   it('keeps settings pages when the application owns the workspace paths', () => {
-    for (const plugin of [mail(), mail({ workspaceRoutes: false })]) {
-      expect([...routesByName(plugin.routes).keys()]).toEqual([
-        'mailAccounts',
-        'mailSettings',
-      ]);
-    }
-    expect(
-      routesByName(mail({ workspaceRoutes: true }).routes).has('mailTeam'),
-    ).toBe(true);
+    expect([
+      ...routesByName(mail({ workspaceRoutes: false }).routes).keys(),
+    ]).toEqual(['mailAccounts', 'mailSettings']);
+    expect(routesByName(mail().routes).has('mailTeam')).toBe(true);
   });
 
   it('moves or hides a navigation entry while keeping its page', () => {

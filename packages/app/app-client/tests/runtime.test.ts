@@ -32,13 +32,10 @@ function Wrapper({ children }: PropsWithChildren): ReactElement {
 
 describe('app runtime', () => {
   it.each([
-    [{}, []],
-    [{ systemSettingsRoutes: true }, ['systemSettings']],
-    [{ personalSettingsRoutes: true }, ['personalSettings']],
-    [
-      { personalSettingsRoutes: true, systemSettingsRoutes: true },
-      ['systemSettings', 'personalSettings'],
-    ],
+    [{}, ['systemSettings', 'personalSettings']],
+    [{ personalSettingsRoutes: false }, ['systemSettings']],
+    [{ systemSettingsRoutes: false }, ['personalSettings']],
+    [{ personalSettingsRoutes: false, systemSettingsRoutes: false }, []],
   ] as const)(
     'selects settings contributions independently: %j',
     async (options, expected) => {
@@ -61,6 +58,14 @@ describe('app runtime', () => {
           createAppConfig: createAppClientConfig,
           plugins: defineClientPlugins([plugin()]),
           ...options,
+          excludedRouteIds: ['@example/app:unlisted'],
+          headerActions: [
+            {
+              name: 'personalShortcut',
+              routeId: '@example/plugin:personal',
+              component: () => null,
+            },
+          ],
           routeComponentOverrides: [
             {
               routeId: '@example/plugin:personal',
@@ -68,23 +73,200 @@ describe('app runtime', () => {
             },
           ],
           routes: defineAppRoutes([
+            { ...page, name: 'unlisted', path: '/unlisted' },
             {
               ...page,
               path:
                 'systemSettingsRoutes' in options
-                  ? '/custom'
-                  : '/settings/example',
+                  ? '/settings/example'
+                  : '/custom',
               authz: 'skip',
             },
           ]),
         }),
         { rawConfig: {} },
       );
+      expect(runtime.routes.some((route) => route.path === '/unlisted')).toBe(
+        false,
+      );
+      expect(runtime.headerActions?.map((action) => action.name)).toEqual(
+        expected.some((surface) => surface === 'personalSettings')
+          ? ['personalShortcut']
+          : [],
+      );
       expect(new Set(runtime.routes.map((route) => route.surface))).toEqual(
         new Set([undefined, ...expected]),
       );
     },
   );
+
+  it('excludes route groups and their cross-plugin children before claiming paths and applying overrides', async () => {
+    const defaultLoader = vi.fn(async () => ({ default: () => null }));
+    const applicationLoader = vi.fn(async () => ({ default: () => null }));
+    const owner = defineClientPlugin({
+      packageName: '@example/orders',
+      routes: defineAppRoutes([
+        {
+          name: 'work',
+          navigation: { title: 'work' },
+          children: [
+            {
+              name: 'list',
+              path: '/work',
+              authz: 'skip',
+              componentLoader: defaultLoader,
+            },
+          ],
+        },
+      ]),
+    });
+    const extra = defineClientPlugin({
+      packageName: '@example/extra',
+      headerActions: [
+        {
+          name: 'extra.link',
+          component: () => null,
+          routeId: '@example/extra:extra',
+        },
+      ],
+      routes: defineAppRoutes([
+        {
+          name: 'extra',
+          parent: '@example/orders:work',
+          path: '/extra',
+          authz: 'skip',
+          componentLoader: defaultLoader,
+        },
+      ]),
+      routeComponentOverrides: () => [
+        { routeId: '@example/orders:list', componentLoader: defaultLoader },
+      ],
+    });
+    const runtime = await resolveAppRuntime(
+      defineAppRuntime({
+        packageName: '@example/app',
+        createAppConfig: createAppClientConfig,
+        plugins: defineClientPlugins([extra(), owner()]),
+        excludedRouteIds: ['@example/orders:work'],
+        routes: defineAppRoutes([
+          {
+            name: 'my-work',
+            path: '/work',
+            authz: 'skip',
+            componentLoader: applicationLoader,
+          },
+        ]),
+      }),
+      { rawConfig: {} },
+    );
+
+    expect(runtime.routes.map(({ id, path }) => [id, path])).toEqual([
+      ['@example/app:my-work', '/work'],
+    ]);
+    expect(runtime.headerActions).toEqual([]);
+    expect(defaultLoader).not.toHaveBeenCalled();
+    expect(applicationLoader).not.toHaveBeenCalled();
+  });
+
+  it('omits individually excluded toolbar actions and shortcuts whose pages are excluded', async () => {
+    const component = () => null;
+    const componentLoader = async () => ({ default: component });
+    const plugin = defineClientPlugin({
+      packageName: '@example/tools',
+      headerActions: [
+        { name: 'tools.hidden', component },
+        {
+          name: 'tools.removed-link',
+          component,
+          routeId: '@example/tools:removed',
+        },
+        { name: 'tools.link', component, routeId: '@example/tools:kept' },
+      ],
+      routes: defineAppRoutes([
+        { name: 'kept', path: '/kept', authz: 'skip', componentLoader },
+        { name: 'removed', path: '/removed', authz: 'skip', componentLoader },
+      ]),
+    });
+    const runtime = await resolveAppRuntime(
+      defineAppRuntime({
+        packageName: '@example/app',
+        createAppConfig: createAppClientConfig,
+        plugins: defineClientPlugins([plugin()]),
+        excludedRouteIds: ['@example/tools:removed'],
+        headerActionOverrides: [{ name: 'tools.hidden', hidden: true }],
+      }),
+      { rawConfig: {} },
+    );
+    expect(runtime.headerActions?.map(({ name }) => name)).toEqual([
+      'tools.link',
+    ]);
+  });
+
+  it.each([
+    ['typo', [], 'references missing route'],
+    ['typo', ['@example/tools:typo'], 'references missing route'],
+    ['group', [], 'cannot target route group'],
+    ['group', ['@example/tools:group'], 'cannot target route group'],
+  ] as const)(
+    'reports invalid shortcut targets %s with exclusions %j',
+    async (target, excludedRouteIds, error) => {
+      const component = () => null;
+      const routeId = `@example/tools:${target}`;
+      const plugin = defineClientPlugin({
+        packageName: '@example/tools',
+        headerActions: [{ name: 'tools.link', component, routeId }],
+        routes: defineAppRoutes([
+          {
+            name: 'group',
+            navigation: { title: 'Tools' },
+            children: [
+              {
+                name: 'page',
+                path: '/tools',
+                authz: 'skip',
+                componentLoader: async () => ({ default: component }),
+              },
+            ],
+          },
+        ]),
+      });
+      const definition = defineAppRuntime({
+        packageName: '@example/app',
+        createAppConfig: createAppClientConfig,
+        plugins: defineClientPlugins([plugin()]),
+        excludedRouteIds,
+      });
+      await expect(
+        resolveAppRuntime(definition, { rawConfig: {} }),
+      ).rejects.toThrow(`Header action "tools.link" ${error} "${routeId}".`);
+    },
+  );
+
+  it('warns once about missing exclusion IDs from registered packages only', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+    try {
+      await resolveAppRuntime(
+        defineAppRuntime({
+          packageName: '@example/app',
+          createAppConfig: createAppClientConfig,
+          plugins: defineClientPlugins([
+            defineClientPlugin({ packageName: '@example/tools' })(),
+          ]),
+          excludedRouteIds: [
+            ' @example/tools:missing ',
+            '@example/tools:missing',
+            '@example/absent:page',
+          ],
+        }),
+        { rawConfig: {} },
+      );
+      expect(warn).toHaveBeenCalledExactlyOnceWith(
+        'excludedRouteIds references missing route "@example/tools:missing" from registered package "@example/tools".',
+      );
+    } finally {
+      warn.mockRestore();
+    }
+  });
 
   it('assembles complete configuration before the application is created', async () => {
     const callback = vi.fn();

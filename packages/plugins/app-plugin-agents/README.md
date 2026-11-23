@@ -321,7 +321,9 @@ Model services are not configured here: they are added on the application's page
 
 ## Web UI
 
-With both runtime settings surfaces enabled, `agents({ chatRoutes: true })` in the application's `client/plugins.ts` (with the server and CLI entries registered too) brings, with no page code in the application:
+Set `chatRoutes: false` to leave both chat paths to the application. The panel and header action have independent options.
+
+Registering the plugin is enough: `agents()` in the application's `client/plugins.ts` (with the server and CLI entries registered too) brings, with no page code in the application:
 
 - the ✦ button in the header (header action `agent`), its badge the conversations waiting for the viewer (a reply, a confirmation, a failure; `GET /api/agents/conversationAttention`, refreshed by `conversation.changed` on `agents:conversations`, never polled);
 - the panel beside the content (a layout extension: the layout renders `AppLayoutProviders` and `AppAsideOutlet` from `@nocobase/app-client`), which narrows the content on a wide screen and fills the screen on a phone. The panel's code is a separate chunk (`client/panel/`), downloaded the first time it opens or a conversation page renders; the first screen loads only the button, the badge and the panel's state (`client/shell/`). Its composer chooses the agent, the model and its thinking level. Its header opens the conversation list (Waiting for you, In progress, Recent; searchable; only the viewer's own conversations), a new conversation, or the current conversation in My conversations, carrying any unsent text, selected agent, files and page context. A conversation shows the page context chips, the steps the agent takes, tool cards and the confirmations it asks for;

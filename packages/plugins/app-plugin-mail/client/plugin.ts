@@ -8,7 +8,7 @@ import { mailRoutes, type MailRouteOptions } from './routes.js';
 import serviceProviders from './service-provider.js';
 
 export interface MailClientOptions {
-  /** Register both mail workspace pages. Defaults to false. */
+  /** Register both mail workspace pages. Defaults to true. */
   readonly workspaceRoutes?: boolean;
   /** Where the Mail and Team mail pages appear in the navigation, or `false` to leave one out of it. */
   readonly routes?: MailRouteOptions;
@@ -19,8 +19,7 @@ const mail: AppClientPluginFactory<MailClientOptions> =
     packageName: '@nocobase/app-plugin-mail',
     locales,
     serviceProviders,
-    routes: (options) =>
-      mailRoutes(options?.routes, options?.workspaceRoutes === true),
+    routes: (options) => mailRoutes(options?.routes, options?.workspaceRoutes),
   });
 
 export default mail;

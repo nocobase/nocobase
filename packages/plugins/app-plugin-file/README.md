@@ -107,4 +107,4 @@ if (this.app.container.has(serverFileRepositoryManagerToken))
 
 ## Local disk usage
 
-`manager.localDiskUsage()` reports, read-only, whether the Drive's default disk uses the `fs` driver and which file Collections, on every configured database connection, hold at least one record on an `fs` disk, as `{ connection, collection }` pairs; connections it cannot read are listed in `uncheckedConnections`. It reads disk names and drivers only, never locations or credentials, and runs one schema scan per connection and one existence query per file Collection, only when called. `@nocobase/app-plugin-distributed` uses it for its file storage check.
+`manager.localDiskUsage()` reports, read-only, whether the Drive's default disk uses the `fs` driver and which file Collections, on every configured database connection, hold at least one record on an `fs` disk, as `{ connection, collection }` pairs; connections it cannot read are listed in `uncheckedConnections`. It reads disk names and drivers only, never locations or credentials, and runs one schema scan per connection and one existence query per file Collection, only when called.

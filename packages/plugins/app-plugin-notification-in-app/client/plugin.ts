@@ -11,7 +11,7 @@ import locales from './locales/index.js';
 import serviceProviders from './service-provider.js';
 
 export interface InAppNotificationClientOptions {
-  /** Register the inbox page at inboxPath. Defaults to false. */
+  /** Register the inbox page at inboxPath. Defaults to true. */
   readonly inboxRoute?: boolean;
   /** `false` leaves the header's inbox button out; the `/inbox` page is controlled separately. Defaults to `true`. */
   readonly headerButton?: boolean;
@@ -40,7 +40,7 @@ const notificationInApp: AppClientPluginFactory<InAppNotificationClientOptions> 
     locales,
     serviceProviders,
     routes: (options): readonly AppClientRouteContribution[] =>
-      options.inboxRoute
+      options.inboxRoute !== false
         ? [
             defineAppRoutes([
               {

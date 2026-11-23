@@ -53,10 +53,12 @@ describe('what registering the plugin brings', () => {
   });
 
   it('adds Personal settings › Preferences › Agent and the conversation page, for anyone signed in', () => {
-    const names = pages(resolve(agents())).map((page) => page.name);
+    const names = pages(resolve(agents({ chatRoutes: false }))).map(
+      (page) => page.name,
+    );
     expect(names).not.toContain('agentChat');
     expect(names).not.toContain('agentConversations');
-    const routes = pages(resolve(agents({ chatRoutes: true })));
+    const routes = pages(resolve(agents()));
     const conversations = routes.find(
       (route) => route.name === 'agentConversations',
     );
@@ -75,7 +77,7 @@ describe('what registering the plugin brings', () => {
       authz: 'skip',
     });
     expect(
-      pages(resolve(agents({ chatRoutes: true, chatPath: 'assistant/' }))).find(
+      pages(resolve(agents({ chatPath: 'assistant/' }))).find(
         (route) => route.name === 'agentChat',
       )?.path,
     ).toBe('/assistant/:conversationId');

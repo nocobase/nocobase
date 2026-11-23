@@ -12,6 +12,7 @@
  * see. Below the runs, the same reader also sees the other model use of the range (`GET agents/usage/models`):
  * embeddings, reranking and utility texts the application asked for outside runs, by use, caller and model.
  */
+import { useHasRoute } from '@nocobase/app-client';
 import { useCan } from '@nocobase/app-plugin-authorization/client';
 import { useLocale, useTranslation } from '@nocobase/i18n/client';
 import {
@@ -442,12 +443,15 @@ function UsageTable({
   const { t } = useTranslation();
   const { locale } = useLocale();
   const { subjects } = useVocabulary();
-  const { agentLink } = useAgentsMount();
+  const { agentLink, agentRouteId } = useAgentsMount();
+  const hasAgentPage = useHasRoute(agentRouteId);
+  const linkToAgent =
+    agentRouteId === undefined || hasAgentPage ? agentLink : () => null;
   const rowText = useRowText(groupBy);
   const tokens = (value: number) => formatTokens(value, locale);
   const label = (row: UsageRow): ReactElement | string => {
     const text = rowText(row);
-    const link = rowLink(groupBy, row.key, subjects, agentLink);
+    const link = rowLink(groupBy, row.key, subjects, linkToAgent);
     return link ? (
       <Link to={link} className='hover:underline'>
         {text}

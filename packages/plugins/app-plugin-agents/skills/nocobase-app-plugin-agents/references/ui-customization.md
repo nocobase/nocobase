@@ -1,5 +1,7 @@
 # UI customization
 
+Set `chatRoutes: false` to omit the chat pages.
+
 The plugin brings its UI when it is registered; customize it in layers, choosing the least that does the job. Each layer keeps what later versions of the plugin bring, except the last.
 
 ## 1. Register the plugin
@@ -10,7 +12,7 @@ import agents from '@nocobase/app-plugin-agents/client';
 
 export default defineClientPlugins([
   // …
-  agents({ chatRoutes: true }),
+  agents(),
 ]);
 ```
 
@@ -22,7 +24,6 @@ Register `@nocobase/app-plugin-agents/server` and `/cli` too, and give the serve
 agents({
   headerAction: false, // no ✦; the panel still opens from AskAgentButton, ⌘J / Ctrl+J and ?chat= links
   panel: { width: 480, defaultOpen: true },
-  chatRoutes: true,
   chatPath: '/assistant', // the conversation page at /assistant/:conversationId
 });
 ```

@@ -78,7 +78,7 @@ const factory = defineClientPlugin<AgentsClientOptions>({
   locales,
   routes: (options) => {
     const routes = [agentsSettingsRoutes, preferencesRoutes];
-    if (!options.chatRoutes) return routes;
+    if (options.chatRoutes === false) return routes;
     const { chatPath } = resolveAgentsOptions(options);
     return [
       ...routes,

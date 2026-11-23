@@ -16,7 +16,6 @@ import authorizationExample from '@nocobase/app-plugin-authorization-example/cli
 import templatePrintExample from '@nocobase/app-plugin-template-print-example/client';
 import users from '@nocobase/app-plugin-users/client';
 import databaseExplorer from '@nocobase/app-plugin-database-explorer/client';
-import distributed from '@nocobase/app-plugin-distributed/client';
 import notificationInApp from '@nocobase/app-plugin-notification-in-app/client';
 import notificationExample from '@nocobase/app-plugin-notification-example/client';
 import jobsExample from '@nocobase/app-plugin-jobs-example/client';
@@ -63,7 +62,7 @@ const clientPlugins: AppClientPlugins = defineClientPlugins([
   databaseExplorer(),
   apiKeys(),
   i18n(),
-  notificationInApp({ inboxRoute: true }),
+  notificationInApp(),
   notificationExample(),
   jobsExample(),
   realtimeExample(),
@@ -74,13 +73,12 @@ const clientPlugins: AppClientPlugins = defineClientPlugins([
   notificationWebPush(),
   repositoryExample(),
   file(),
-  distributed(),
   fileExample(),
   scheduler(),
-  mail({ workspaceRoutes: true }),
+  mail(),
   mailExample(),
   // The Agent panel and ✦ in the header, the conversation page, System settings › AI and Personal settings › Agent.
-  agents({ chatRoutes: true }),
+  agents(),
   foundation(),
   knowledge({ routes: false }),
 ]);

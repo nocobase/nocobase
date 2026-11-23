@@ -49,6 +49,11 @@ export interface AppClientHeaderActionDefinition {
    * component never runs, and no action's badge hook does.
    */
   readonly auth?: 'required' | 'optional';
+  /**
+   * Package-qualified ID of the target page. Excluding that page hides the action. The application's shell also
+   * checks page access before rendering a linked action. Unknown IDs and route groups fail during runtime setup.
+   */
+  readonly routeId?: string;
   /** The count on the button's corner. */
   readonly badge?: AppClientBadgeHook;
 }
@@ -59,6 +64,7 @@ export interface AppClientRegisteredHeaderAction {
   readonly component: ComponentType;
   readonly auth: 'required' | 'optional';
   readonly badge?: AppClientBadgeHook;
+  readonly routeId?: string;
   readonly packageName: string;
   readonly source: AppClientContributionSource;
 }
@@ -104,7 +110,14 @@ export function defineHeaderActions(
         );
       assertOrder(action.order, name);
       assertBadge(action.badge, name);
-      return Object.freeze({ ...action, name });
+      const routeId = action.routeId?.trim();
+      if (action.routeId !== undefined && !routeId)
+        throw new Error(`Header action "${name}" routeId must not be empty.`);
+      return Object.freeze({
+        ...action,
+        name,
+        ...(routeId ? { routeId } : {}),
+      });
     }),
   );
 }
@@ -171,6 +184,7 @@ export function resolveHeaderActions(
           order: action.order ?? 0,
           component: action.component,
           auth: action.auth ?? 'required',
+          ...(action.routeId ? { routeId: action.routeId } : {}),
           ...(action.badge ? { badge: action.badge } : {}),
           packageName: contribution.packageName,
           source: contribution.source,

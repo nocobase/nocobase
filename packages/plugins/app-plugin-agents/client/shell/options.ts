@@ -2,7 +2,7 @@ import { createContext, type Context } from 'react';
 
 /** What an application sets on the plugin (`agents({ ... })`). */
 export interface AgentsClientOptions {
-  /** Register the conversation list and detail pages at chatPath. Defaults to false. */
+  /** Register the conversation list and detail pages at chatPath. Defaults to true. */
   readonly chatRoutes?: boolean;
   /** The ✦ button in the header, which opens the panel; `false` leaves it out. Defaults to `true`. */
   readonly headerAction?: boolean;

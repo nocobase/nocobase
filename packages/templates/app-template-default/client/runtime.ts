@@ -18,8 +18,6 @@ const appRuntime = defineAppRuntime({
   reactProviders,
   routes: () => createApplicationRoutes(),
   plugins,
-  systemSettingsRoutes: true,
-  personalSettingsRoutes: true,
   headerActions,
   headerActionOverrides,
 });

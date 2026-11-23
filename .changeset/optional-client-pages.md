@@ -9,4 +9,4 @@
 '@nocobase/app-template-examples': patch
 ---
 
-Applications opt into system and personal settings with `systemSettingsRoutes` and `personalSettingsRoutes` in the client runtime. Enable `agents({ chatRoutes: true })`, `notificationInApp({ inboxRoute: true })` and `mail({ workspaceRoutes: true })` to register the built-in business pages. Existing applications using those pages should enable the corresponding options when upgrading. Both templates enable all five options.
+Applications can disable system settings, personal settings, chat, inbox and mail workspace routes independently. All five are enabled by default, so existing applications keep their pages when upgrading.

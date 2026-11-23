@@ -48,7 +48,9 @@ Within a major version, existing public exports, required props, request fields,
 
 ## Pages
 
-With workspaceRoutes and both runtime settings surfaces enabled, the client plugin registers four pages, each replaceable as a whole by route name with the application's `routeComponentOverrides`:
+Set `workspaceRoutes: false` to omit both business pages. The existing mail navigation options continue to control their menu entries.
+
+The client plugin registers four pages, each replaceable as a whole by route name with the application's `routeComponentOverrides`:
 
 | Route name     | Path             | Where                                            | Requires                                  |
 | -------------- | ---------------- | ------------------------------------------------ | ----------------------------------------- |
@@ -57,7 +59,7 @@ With workspaceRoutes and both runtime settings surfaces enabled, the client plug
 | `mailAccounts` | `/me/mail`       | Personal settings › Integrations › Mail accounts | signed in; its APIs need `mail.workspace` |
 | `mailSettings` | `/settings/mail` | System settings › Messages › Mail                | `settings` `mail.admin` `read`            |
 
-`mail({ workspaceRoutes: true, routes: { mail: { order, parent }, mailTeam: false } })` moves a navigation entry or leaves it out of the menu; the page and its permission remain. The workspace links to the personal Mail accounts page to connect or reconnect an account, and marks accounts whose authorization has lapsed. Team mail lists every member's synchronized mail by member, account, address or `@domain` and keyword; opening a message never marks it read and offers no reply. The Mail settings page shows Providers and their capabilities, every account's status, every sync and send log, and the runtime configuration with where each value comes from; it never shows a subject, body or secret.
+`mail({ routes: { mail: { order, parent }, mailTeam: false } })` moves a navigation entry or leaves it out of the menu; the page and its permission remain. The workspace links to the personal Mail accounts page to connect or reconnect an account, and marks accounts whose authorization has lapsed. Team mail lists every member's synchronized mail by member, account, address or `@domain` and keyword; opening a message never marks it read and offers no reply. The Mail settings page shows Providers and their capabilities, every account's status, every sync and send log, and the runtime configuration with where each value comes from; it never shows a subject, body or secret.
 
 `mail.oauthReturnUrl` defaults to the personal Mail accounts page (`/me/mail`), so a person returns there after connecting Gmail or Microsoft 365. An application that leaves out or moves that page configures `mail.oauthReturnUrl` to its own. `MailWorkspacePage` and `MailAccountsPage` remain exported for applications composing their own pages; their props, including `accountsHref`, `headerActions` and `templateVariables`, still work and are combined with what is registered through the extension points below. Production startup warns once when the effective return URL targets the legacy `/dev/mail/accounts` destination.
 
