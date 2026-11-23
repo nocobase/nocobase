@@ -592,9 +592,11 @@ describe('shared app host', () => {
       '/release-environments#shared-host-in-process',
     );
     expect(calls).toContain('releases/hosts');
-    expect(scrolled.mock.results.map((result) => result.value)).toEqual([
-      'shared-host-in-process',
-    ]);
+    await waitFor(() =>
+      expect(scrolled.mock.results.map((result) => result.value)).toEqual([
+        'shared-host-in-process',
+      ]),
+    );
   });
 
   it('gives the reason without the link to someone who may not read environments', async () => {
