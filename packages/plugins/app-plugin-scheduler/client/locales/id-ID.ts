@@ -291,7 +291,7 @@ const idID: SchedulerResource = {
       full: 'Jalankan hanya pada build lengkap yang menyertakan semua plugin; jika tidak, tugas dari plugin yang tidak dimuat juga akan ditandai sebagai dihapus.',
     },
     readOnly:
-      'Halaman ini hanya-baca: pengaturan ini berada di konfigurasi aplikasi dan berlaku saat penerapan ulang. Cache, antrean, dan layanan lain dibahas di pengaturan klaster dan terdistribusi.',
+      'Halaman ini hanya-baca: pengaturan ini berada di konfigurasi aplikasi dan berlaku saat penerapan ulang.',
   },
   cron: {
     everyMinute: 'Setiap menit',

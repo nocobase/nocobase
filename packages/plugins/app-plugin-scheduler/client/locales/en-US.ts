@@ -278,7 +278,7 @@ const enUS = {
       full: 'Run it only on a complete build that includes every plugin; otherwise the schedules of plugins it did not load are marked removed too.',
     },
     readOnly:
-      'This page is read-only: these settings live in the application’s configuration and take effect on redeployment. Caches, queues and other services are covered by Cluster and distributed settings.',
+      'This page is read-only: these settings live in the application’s configuration and take effect on redeployment.',
   },
   cron: {
     everyMinute: 'Every minute',

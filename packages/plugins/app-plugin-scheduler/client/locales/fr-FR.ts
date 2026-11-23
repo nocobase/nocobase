@@ -302,7 +302,7 @@ const frFR: SchedulerResource = {
       full: 'Lancez-le uniquement sur un build complet incluant tous les plugins ; sinon, les tâches des plugins non chargés seront aussi marquées comme retirées.',
     },
     readOnly:
-      'Cette page est en lecture seule : ces paramètres résident dans la configuration de l’application et prennent effet au redéploiement. Les caches, files d’attente et autres services relèvent des paramètres de cluster et de distribution.',
+      'Cette page est en lecture seule : ces paramètres résident dans la configuration de l’application et prennent effet au redéploiement.',
   },
   cron: {
     everyMinute: 'Toutes les minutes',

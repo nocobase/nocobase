@@ -10,7 +10,6 @@
 '@nocobase/app-plugin-concurrency': patch
 '@nocobase/app-plugin-database-explorer': patch
 '@nocobase/app-plugin-demo-mode': patch
-'@nocobase/app-plugin-distributed': patch
 '@nocobase/app-plugin-file': patch
 '@nocobase/app-plugin-i18n': patch
 '@nocobase/app-plugin-knowledge': patch
