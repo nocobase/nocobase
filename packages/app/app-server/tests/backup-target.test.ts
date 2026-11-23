@@ -1,4 +1,4 @@
-// db-test-portability: sqlite-only — an on-disk SQLite snapshot lets this test replace the live record during capture.
+// db-test-portability: sqlite-only — backup and restore need a file-backed SQLite database.
 import { execFile } from 'node:child_process';
 import {
   access,
@@ -9,22 +9,33 @@ import {
   rm,
   writeFile,
 } from 'node:fs/promises';
-import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { promisify } from 'node:util';
-import { createBackup, restoreBackup } from '@nocobase/backup';
+import { createBackup, restoreBackup, verifyBackup } from '@nocobase/backup';
 import sqlite from '@nocobase/db-sqlite';
 import { createDriveManager, type AppDriveConfig } from '@nocobase/drive';
 import { afterEach, beforeEach, expect, it } from 'vitest';
 import { Application } from '../src/application/index.js';
 import { resolveAppBackupTarget } from '../src/backup/target.js';
 import { AppConfig, createAppPaths } from '../src/config/index.js';
-import { createAppDatabaseManager } from '../src/database/index.js';
+import {
+  createAppDatabaseManager,
+  DatabaseProvider,
+} from '../src/database/index.js';
+import { resolveStandaloneAppRuntime } from '../src/node/index.js';
+import { defineServerPlugins } from '../src/plugins/index.js';
+import {
+  createAppFromRuntime,
+  defineAppRuntime,
+  resolveAppRuntime,
+} from '../src/runtime/index.js';
 
 let root: string;
 beforeEach(async () => {
-  root = await mkdtemp(join(tmpdir(), 'app-backup-target-'));
+  const directory = fileURLToPath(new URL('./.tmp', import.meta.url));
+  await mkdir(directory, { recursive: true });
+  root = await mkdtemp(join(directory, 'app-backup-target-'));
   await writeFile(
     join(root, 'package.json'),
     JSON.stringify({ name: 'backup-test', version: '1.0.0' }),
@@ -33,6 +44,110 @@ beforeEach(async () => {
 afterEach(async () => {
   await rm(root, { recursive: true, force: true });
 });
+
+it.each(['embedded', 'standalone'] as const)(
+  'verifies and restores a backup made after %s startup from a built release',
+  async (mode) => {
+    const revision = join(root, 'revision');
+    const dist = join(revision, 'dist');
+    const storageDir = join(root, 'volume');
+    const migrations = join(dist, 'database/main/migrations');
+    const packageName = '@example/built-app';
+    await mkdir(migrations, { recursive: true });
+    await writeFile(
+      join(dist, 'package.json'),
+      JSON.stringify({ name: packageName, version: '1.0.0', type: 'module' }),
+    );
+    const migration = join(migrations, '001_rows.js');
+    const source = `import { defineMigration } from '@nocobase/db';
+export default defineMigration({
+  name: '001_rows',
+  async up({ builder }) {
+    await builder.createCollection('rows', (table) => table.increments('id'));
+  },
+  async down({ builder }) { await builder.dropCollection('rows'); }
+});`;
+    await writeFile(migration, source);
+    const definition = defineAppRuntime({
+      deploymentRootDir: '..',
+      plugins: defineServerPlugins([]),
+      routes: [],
+      serviceProviders: [DatabaseProvider],
+      createAppConfig: () =>
+        new AppConfig().load({
+          name: 'test',
+          read: async () => ({
+            kind: 'map',
+            value: {
+              app: { name: 'backup-test', publicBasePath: '' },
+              database: {
+                default: 'main',
+                drivers: { sqlite },
+                connections: {
+                  main: {
+                    dialect: 'sqlite',
+                    filename: join(storageDir, 'data.sqlite'),
+                  },
+                },
+              },
+            },
+          }),
+        }),
+    });
+    const cliRuntime = await resolveStandaloneAppRuntime(definition, {
+      rootDir: dist,
+      env: { APP_STORAGE_DIR: storageDir },
+    });
+    try {
+      const runtime =
+        mode === 'embedded'
+          ? await resolveAppRuntime(definition, {
+              mode,
+              id: 'backup-test',
+              basePath: '',
+              rootDir: revision,
+              dataDir: storageDir,
+              registerDisposer() {},
+            })
+          : cliRuntime;
+      const app = createAppFromRuntime(runtime);
+      app.addRuntimeContributions(runtime);
+      const cli = createAppFromRuntime(cliRuntime);
+      cli.addRuntimeContributions(cliRuntime);
+      const target = await resolveAppBackupTarget(cli);
+      const file = join(root, 'backup.tgz');
+      try {
+        await app.start();
+        const saved = await createBackup(target, { output: file });
+        expect(saved.manifest.connections[0]).toMatchObject({
+          migrations: {
+            history: [
+              {
+                name: '001_rows',
+                packageName: mode === 'embedded' ? 'app' : packageName,
+              },
+            ],
+          },
+        });
+        expect(await verifyBackup(file, { target })).toMatchObject({
+          ok: true,
+        });
+      } finally {
+        await app.shutdown();
+      }
+      expect(await restoreBackup(file, target)).toMatchObject({
+        connections: [{ name: 'main', status: 'restored' }],
+      });
+      await writeFile(migration, source + '\n// Changed migration.');
+      expect(await verifyBackup(file, { target })).toMatchObject({
+        ok: false,
+        problems: [{ code: 'RESTORE_MIGRATION_MISMATCH' }],
+      });
+    } finally {
+      await cliRuntime.scope.destroy();
+    }
+  },
+);
 
 async function application(disks?: AppDriveConfig['disks']) {
   const paths = createAppPaths({ rootDir: root });
