@@ -301,7 +301,7 @@ const ptBR: SchedulerResource = {
       full: 'Execute apenas em uma build completa que inclua todos os plugins; caso contrário, as tarefas dos plugins que ela não carregou também serão marcadas como removidas.',
     },
     readOnly:
-      'Esta página é somente leitura: estas configurações ficam na configuração da aplicação e entram em vigor na próxima implantação. Caches, filas e outros serviços são tratados nas configurações de cluster e distribuição.',
+      'Esta página é somente leitura: estas configurações ficam na configuração da aplicação e entram em vigor na próxima implantação.',
   },
   cron: {
     everyMinute: 'A cada minuto',
