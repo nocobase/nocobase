@@ -16,6 +16,7 @@ import {
   FlowModelContext,
   FormItem,
   formItemStyle,
+  untracked,
 } from '@nocobase/flow-engine';
 import { get, castArray } from 'lodash';
 import React from 'react';
@@ -267,8 +268,12 @@ export class DetailsItemModel extends DisplayItemModel<{
         ? mobileSpacingByBlock.get(this.context.blockModel.use)
         : undefined;
     const isPlainText =
+      spacing &&
       modelForRender?.use === 'DisplayTextFieldModel' &&
-      (mergedProps.displayStyle ?? modelForRender.props.displayStyle) !== 'tag';
+      (mergedProps.displayStyle ??
+        fieldModel.getStepParams('displayFieldSettings', 'displayStyle')?.displayStyle ??
+        // FieldModelRenderer writes back fork props after rendering. Subscribing here would render the item again.
+        untracked(() => modelForRender.props.displayStyle)) !== 'tag';
     return (
       <FormItem
         {...mergedProps}

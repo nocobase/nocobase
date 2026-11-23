@@ -7,10 +7,10 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { FlowEngine, FlowModel } from '@nocobase/flow-engine';
+import { FlowEngine, FlowModel, Tracker } from '@nocobase/flow-engine';
 import { render } from '@testing-library/react';
 import React from 'react';
-import { expect, it } from 'vitest';
+import { expect, it, vi } from 'vitest';
 import { DetailsItemModel } from '../DetailsItemModel';
 
 it.each([
@@ -55,3 +55,23 @@ it.each([
     expect(declarations(value, 'line-height')).toEqual(plainText ? ['max(20px, 1.4em)'] : []);
   },
 );
+
+it('does not subscribe the grid card item to field renderer prop writes', () => {
+  const engine = new FlowEngine();
+  engine.registerModels({ DisplayTextFieldModel: FlowModel });
+  const item = new DetailsItemModel({ uid: 'card-field', flowEngine: engine });
+  item.context.defineProperty('blockModel', { value: { use: 'GridCardBlockModel', props: { layout: 'horizontal' } } });
+  item.context.defineProperty('isMobileLayout', { value: true });
+  item.context.defineProperty('fieldIndex', { value: 0 });
+  item.setStepParams('fieldSettings', 'init', { fieldPath: 'name' });
+  const field = item.setSubModel('field', { use: 'DisplayTextFieldModel' });
+  const invalidate = vi.fn();
+  const tracker = new Tracker(invalidate);
+  try {
+    tracker.track(() => item.renderItem());
+    field.getFork('0').setProps({ value: 'First row' });
+    expect(invalidate).not.toHaveBeenCalled();
+  } finally {
+    tracker.dispose();
+  }
+});
