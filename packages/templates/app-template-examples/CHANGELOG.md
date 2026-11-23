@@ -1,5 +1,7 @@
 # @nocobase/app-template-examples
 
+## 2.0.0-beta
+
 ## 1.0.0-beta.84
 
 ### Minor Changes

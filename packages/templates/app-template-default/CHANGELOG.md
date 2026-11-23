@@ -1,5 +1,7 @@
 # @nocobase/app-template-default
 
+## 2.0.0-beta
+
 ## 1.0.0-beta.99
 
 ### Patch Changes
