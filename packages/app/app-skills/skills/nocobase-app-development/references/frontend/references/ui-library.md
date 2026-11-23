@@ -57,7 +57,7 @@ The agents plugin's own conversation panel, generated from @nocobase/app-plugin-
 - Kind: block
 - Install: `yes n | pnpm exec shadcn add @nocobase/agent-chat`
 - Installs to: `client/extensions/nocobase-agent-chat/`
-- Plugin dependencies: `@nocobase/app-plugin-agents`, `@nocobase/app-plugin-file`
+- Plugin dependencies: `@nocobase/app-plugin-agents`, `@nocobase/app-plugin-authorization`, `@nocobase/app-plugin-file`
 - Also installs: `@nocobase/markdown-view`, `@nocobase/agent-run-history`, `@nocobase/agent-composer`, `@nocobase/agent-picker`, `@nocobase/attachment-list`
 - Example: `@nocobase/agent-chat-demo` (`pnpm exec shadcn view @nocobase/agent-chat-demo`)
 - After installing: Generated from the agents plugin's panel (ui-library/scripts/sync-agent-chat.mjs); the plugin already renders this panel, so install the copy only to replace it entirely, with agents({ headerAction: false, panel: false }): the plugin keeps providing ChatProvider (from @nocobase/app-plugin-agents/client/chat) around the signed-in layout, so do not add another; optionally add ChatExtensionsContext for cards among the messages. Render ChatPanel as a sibling of <main> inside a `relative flex` row, ChatHeaderButton in the header and ChatFloatingButton anywhere; add the plugin's chatLinkRoutes(base) for links that open the panel; spread locales/ into client/locales/.
