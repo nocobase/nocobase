@@ -47,7 +47,7 @@ export class MailTemplatesStore {
     } catch (error) {
       if (
         isUniqueConstraintViolation(error) &&
-        (await this.hasNameConflict(row))
+        (await this.hasNameConflict(row, existing !== undefined))
       )
         throw mailTemplateNameConflict(error);
       throw error;
@@ -83,10 +83,14 @@ export class MailTemplatesStore {
   }
 
   /**
-   * Whether another template of the same owner holds the name, which is what the `(ownerId, name)` unique index
-   * rejects. Any other unique violation, such as an id collision, is not a name conflict and stays unexpected.
+   * Whether the name alone caused the violation: another template of the same owner holds it, and, for a new row, no
+   * other record holds the id. A violation the id could have raised, such as an id that collides with another
+   * template while the name also does, is not a name conflict and stays unexpected.
    */
-  private async hasNameConflict(row: TemplateRow): Promise<boolean> {
+  private async hasNameConflict(
+    row: TemplateRow,
+    exists: boolean,
+  ): Promise<boolean> {
     const conflicting = await this.database
       .query()
       .selectFrom<TemplateRow>('mailTemplates')
@@ -95,7 +99,15 @@ export class MailTemplatesStore {
       .where('name', '=', row.name)
       .where('id', '!=', row.id)
       .executeTakeFirst<Pick<TemplateRow, 'id'>>();
-    return conflicting !== undefined;
+    if (conflicting === undefined) return false;
+    if (exists) return true;
+    const idHolder = await this.database
+      .query()
+      .selectFrom<TemplateRow>('mailTemplates')
+      .select('id')
+      .where('id', '=', row.id)
+      .executeTakeFirst<Pick<TemplateRow, 'id'>>();
+    return idHolder === undefined;
   }
 
   public async deleteTemplate(
