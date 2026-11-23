@@ -7,33 +7,48 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { FlowModel, FlowModelRenderer, observable, type ParamObject, tExpr } from '@nocobase/flow-engine';
+import { observer } from '@formily/reactive-react';
+import { loadRouteContentForEditing } from '../../../FlowModelRepository';
+import {
+  type CreateModelOptions,
+  FlowModel,
+  FlowModelRenderer,
+  observable,
+  type ParamObject,
+  tExpr,
+} from '@nocobase/flow-engine';
 import { Icon, type NocoBaseDesktopRoute } from '../../../../flow-compat';
 import type { RouteRepository } from '../../../../RouteRepository';
-import { useRequest } from 'ahooks';
+import { RouteContent, useRouteContentRequest } from '../../../useRouteContentRequest';
 import _ from 'lodash';
 import React from 'react';
 import { SkeletonFallback } from '../../../components/SkeletonFallback';
 import { TextAreaWithContextSelector } from '../../../components/TextAreaWithContextSelector';
 import { BlockGridModel } from '../BlockGridModel';
 
-function PageTabChildrenRenderer({ ctx, options }) {
-  const { data, loading } = useRequest(
-    async () => {
-      const model: FlowModel = await ctx.engine.loadOrCreateModel(options, { skipSave: !ctx.flowSettingsEnabled });
+const PageTabChildrenRenderer = observer(({ ctx, options }: PageTabChildrenProps) => {
+  const isRoute = ctx.model instanceof RootPageTabModel && ctx.model.props.route?.id != null;
+  const { model, loading, error, needsConfirmation } = useRouteContentRequest(
+    async (forEditing) => {
+      const model = forEditing
+        ? await loadRouteContentForEditing(ctx.engine, options)
+        : await ctx.engine.loadOrCreateModel(options, { skipSave: isRoute || !ctx.flowSettingsEnabled });
       model.context.addDelegate(ctx);
       return model;
     },
-    {
-      refreshDeps: [ctx.model.uid],
-    },
+    isRoute && ctx.flowSettingsEnabled,
+    [ctx.model.uid],
   );
+  if (error && isRoute) throw error;
   const margin = ctx?.isMobileLayout ? 8 : ctx?.themeToken.marginBlock;
-  if (loading || !data?.uid) {
+  if (!model?.uid || (loading && !isRoute)) {
     return <SkeletonFallback style={{ margin }} />;
   }
-  return <FlowModelRenderer model={data} fallback={<SkeletonFallback style={{ margin }} />} />;
-}
+  const grid = <FlowModelRenderer model={model} fallback={<SkeletonFallback style={{ margin }} />} />;
+  return isRoute ? <RouteContent pending={needsConfirmation}>{grid}</RouteContent> : grid;
+});
+
+type PageTabChildrenProps = { ctx: FlowModel['context']; options: CreateModelOptions };
 
 /**
  * 统一归一化 `desktopRoutes:updateOrCreate` 的返回值。
