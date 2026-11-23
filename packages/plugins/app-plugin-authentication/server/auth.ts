@@ -7,6 +7,7 @@ import type { AuthEmailConfig } from './email-config.js';
 import {
   PasswordResetPolicy,
   type PasswordResetConfig,
+  type PasswordResetDiagnosis,
   type PasswordResetServices,
 } from './password-reset.js';
 import type { DatabaseConnection } from '@nocobase/db';
@@ -539,6 +540,11 @@ export class Auth {
 
   passwordResetAvailable(): boolean {
     return this.resetPolicy.available;
+  }
+
+  /** Why password reset is or is not available, for the settings page; never any sender or secret. */
+  passwordResetDiagnosis(): PasswordResetDiagnosis {
+    return this.resetPolicy.diagnosis;
   }
 
   close(): Promise<void> {

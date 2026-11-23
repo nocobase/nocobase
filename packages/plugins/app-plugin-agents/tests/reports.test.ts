@@ -622,22 +622,33 @@ describe('reporting service', () => {
       onlineCost: null,
       runnerCost: { USD: 5.8 },
     });
-    // The usage page's API: behind its page grant, every run for a reader of agents.
-    const usage = (can: string) =>
+    // Anyone signed in reads usage: every run for a reader of usage (`agents.prices`), else their own; reading agents
+    // alone does not show other people's runs.
+    const usage = (can: string, user = 'carol') =>
       h.app.request('/agents/usage?groupBy=type', {
-        headers: { 'x-test-user': 'carol', 'x-test-can': can },
+        headers: { 'x-test-user': user, 'x-test-can': can },
       });
-    expect((await usage('agents.agents/read')).status).toBe(403);
-    const served = await usage('page/usage,agents.agents/read');
+    const served = await usage('agents.prices/read');
     expect(served.status).toBe(200);
     expect(await served.json()).toMatchObject({
       data: { groupBy: 'type', totals: { runs: 2, cost: { USD: 5.8 } } },
     });
-    expect((await usage('page/usage')).status).toBe(200);
+    for (const can of ['', 'agents.agents/read', 'agents.agents/manage']) {
+      const own = await usage(can);
+      expect(own.status).toBe(200);
+      expect(await own.json()).toMatchObject({
+        data: { groupBy: 'type', totals: { runs: 0 } },
+      });
+    }
+    // Alice, who started one of the two, sees hers alone.
+    const alice = await usage('agents.agents/read', 'alice');
+    expect(await alice.json()).toMatchObject({
+      data: { groupBy: 'type', totals: { runs: 1 } },
+    });
     expect(
       (
         await h.app.request('/agents/usage?groupBy=nope', {
-          headers: { 'x-test-user': 'carol', 'x-test-can': 'page/usage' },
+          headers: { 'x-test-user': 'carol' },
         })
       ).status,
     ).toBe(400);

@@ -8,6 +8,16 @@
   "engines": {
     "node": ">=24.0.0"
   },
+  "nocobase": {
+    "title": {
+      "en-US": "Demo mode",
+      "zh-CN": "演示模式"
+    },
+    "description": {
+      "en-US": "Sample data and a guided demo of the application",
+      "zh-CN": "示例数据和应用演示"
+    }
+  },
   "sideEffects": false,
   "exports": {
     "./cli": {

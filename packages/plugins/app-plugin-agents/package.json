@@ -8,6 +8,16 @@
   "engines": {
     "node": ">=24.0.0"
   },
+  "nocobase": {
+    "title": {
+      "en-US": "Agents",
+      "zh-CN": "Agents"
+    },
+    "description": {
+      "en-US": "Agents, model services, runtimes and sessions",
+      "zh-CN": "Agent、模型服务、运行环境和会话"
+    }
+  },
   "sideEffects": false,
   "exports": {
     "./server": {
@@ -325,6 +335,7 @@
     "lucide-react": "catalog:",
     "react": "^19.0.0",
     "react-day-picker": "catalog:",
+    "react-dom": "catalog:",
     "react-markdown": "catalog:",
     "react-router": "catalog:",
     "react-virtuoso": "catalog:",
@@ -343,12 +354,12 @@
     "@testing-library/user-event": "catalog:",
     "@types/node": "catalog:",
     "@types/react": "catalog:",
+    "@types/react-dom": "catalog:",
     "esbuild": "catalog:",
     "eslint": "catalog:",
     "jsdom": "catalog:",
     "just-bash": "3.6.0",
     "prettier": "catalog:",
-    "react-dom": "catalog:",
     "typescript": "catalog:",
     "vitest": "catalog:",
     "knex": "catalog:",

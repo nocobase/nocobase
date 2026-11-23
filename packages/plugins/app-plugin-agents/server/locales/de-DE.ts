@@ -33,11 +33,16 @@ const deDE: LocaleResource<typeof enUS> = {
         runners: 'Laufzeitumgebungen',
         prices: 'Modellpreise',
         services: 'Musterdienste',
+        skills: 'Fähigkeiten',
       },
     },
     actions: {
       read: 'Anzeigen',
       manage: 'Verwalten',
+    },
+    humanOnly: {
+      servicesManage:
+        'Das Verwalten von Modelldiensten schreibt Anbieterschlüssel; nur eine Person darf das tun.',
     },
     keyScopes: {
       agents: {

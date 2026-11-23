@@ -1,5 +1,8 @@
 import accessZhCN from '../../shared/locales/access.zh-CN.js';
 import chatZhCN from './chat.zh-CN.js';
+import { mergeLocale } from './merge.js';
+import shellZhCN from './shell.zh-CN.js';
+import panelZhCN from './panel.zh-CN.js';
 import pricesZhCN from './prices.zh-CN.js';
 import skillsZhCN from './skills.zh-CN.js';
 import servicesZhCN from './services.zh-CN.js';
@@ -8,6 +11,9 @@ import runWaitZhCN from './runWait.zh-CN.js';
 import type { AgentsResource } from './en-US.js';
 
 const zhCN: AgentsResource = {
+  openAgentSettings: panelZhCN.openAgentSettings,
+  myConversations: '我的会话',
+  fileUsage: '会话附件',
   modelSuggestions: {
     design:
       '推理最强：方案设计、架构、疑难排查、重要改动的代码评审；也能做常规实现、跨包改动、写方案',
@@ -112,8 +118,8 @@ const zhCN: AgentsResource = {
     unavailableNow: '当前不可用',
     title: 'Agent',
     description:
-      '从执行机上报的模型中添加 agent。Lead Agent按「擅长什么」把任务的每一步派给它们。',
-    fromRunners: '来自执行机的 agent',
+      '从运行环境上报的模型中添加 Agent。Lead Agent按「擅长什么」把任务的每一步派给它们。',
+    fromRunners: '来自运行环境的 Agent',
     display: {
       search: '搜索模型或服务商',
       select: '选择 {{name}}',
@@ -124,16 +130,16 @@ const zhCN: AgentsResource = {
     filters: {
       all: '全部 {{count}}',
       enabled: '已启用 {{count}}',
-      unreported: '暂无执行机 {{count}}',
+      unreported: '暂无运行环境 {{count}}',
     },
-    loadFailed: '无法加载 agent',
+    loadFailed: '无法加载 Agent',
     loadMore: '加载更多',
-    emptyTitle: '还没有 agent',
+    emptyTitle: '还没有 Agent',
     emptyDescription:
-      '连接一台登录了编码工具的执行机，再从「可用模型」添加 agent。',
-    noneInFilter: '这里没有 agent。',
+      '连接一台登录了编码工具的运行环境，再从「可用模型」添加 Agent。',
+    noneInFilter: '这里没有 Agent。',
     howToAdd:
-      '想加一个 agent：在某台执行机上装好工具、登录可用的模型，执行机上报后，从「可用模型」写好「擅长什么」即可添加并启用。只有个人执行机能跑的 agent，只有执行机的主人自己发起的任务能用。',
+      '想加一个 Agent：在某个运行环境上装好工具、登录可用的模型，运行环境上报后，从「可用模型」写好「擅长什么」即可添加并启用。只有个人运行环境能跑的 Agent，只有运行环境的主人自己发起的任务能用。',
     goodAtMissing: '还没写',
     columns: {
       agent: 'Agent',
@@ -143,21 +149,21 @@ const zhCN: AgentsResource = {
       state: '状态',
     },
     where: {
-      none: '暂无执行机',
+      none: '暂无运行环境',
       team_one: '共享 {{count}} 台',
       team_other: '共享 {{count}} 台',
       personal_one: '个人 {{count}} 台在线',
       personal_other: '个人 {{count}} 台在线',
       both: '共享 {{team}} · 个人 {{personal}}',
       names: '{{names}}',
-      noneOnline: '现在没有执行机在线',
-      personalOnly: '仅个人执行机',
+      noneOnline: '现在没有运行环境在线',
+      personalOnly: '仅个人运行环境',
       lastReported: '最后上报 {{when}}',
     },
     state: {
       enabled: '已启用',
       disabled: '已停用',
-      unreported: '暂无执行机',
+      unreported: '暂无运行环境',
     },
     effort: {
       default: '工具默认',
@@ -171,15 +177,15 @@ const zhCN: AgentsResource = {
       ultra: '极高',
     },
     enable: {
-      reportedBy_one: '由 {{count}} 台在线执行机上报：{{names}}。',
-      reportedBy_other: '由 {{count}} 台在线执行机上报：{{names}}。',
-      noRunnerNow: '现在没有在线的执行机有它。',
+      reportedBy_one: '由 {{count}} 个在线运行环境上报：{{names}}。',
+      reportedBy_other: '由 {{count}} 个在线运行环境上报：{{names}}。',
+      noRunnerNow: '现在没有在线的运行环境有它。',
       goodAtHint:
         'Lead Agent靠这段话决定派什么活给它。写清楚适合做什么、不适合做什么。',
       goodAtRequired: '先写好擅长什么，再启用。',
       effortHint: 'Lead Agent派活时不能调。',
       personalOnly:
-        '只有个人执行机能跑：只有这些执行机的主人自己发起的任务，Lead Agent才会派给它。',
+        '只有个人运行环境能跑：只有这些运行环境的主人自己发起的任务，Lead Agent才会派给它。',
     },
     edit: {
       button: '编辑',
@@ -193,7 +199,7 @@ const zhCN: AgentsResource = {
       open: '添加 Agent',
       title: '可用模型',
       description:
-        '只检测、上报执行机勾选的工具，未勾选的工具不会出现在这里。应用常用清单里的组合在上报时自动创建并启用；其余的可以从这里选中添加。',
+        '只检测、上报运行环境勾选的工具，未勾选的工具不会出现在这里。应用常用清单里的组合在上报时自动创建并启用；其余的可以从这里选中添加。',
       recommended: '上报后自动启用',
       added: '已添加',
       add: '添加',
@@ -204,10 +210,10 @@ const zhCN: AgentsResource = {
         failed: '检测失败',
       },
       details: '工具详情',
-      setupCommand: '需要设置：在执行机上运行 {{command}}。',
+      setupCommand: '需要设置：在运行环境上运行 {{command}}。',
       setupUnknown: '这个工具需要设置，但我们不知道对应的命令。',
       upgradeAdvice:
-        '在执行机上将工具及其 ACP 适配器升级至最新版，然后刷新检测。',
+        '在运行环境上将工具及其 ACP 适配器升级至最新版，然后刷新检测。',
       minimumVersionUnknown:
         '最低支持的工具发布版本未知，请查阅工具的兼容性文档。',
       noDetail: '工具没有提供更多信息。',
@@ -216,8 +222,8 @@ const zhCN: AgentsResource = {
       groupSearchPlaceholder: '搜索这个工具的模型',
       group_one: '{{tool}} · {{count}} 个模型 · {{runners}}',
       group_other: '{{tool}} · {{count}} 个模型 · {{runners}}',
-      runners_one: '{{count}} 台执行机',
-      runners_other: '{{count}} 台执行机',
+      runners_one: '{{count}} 个运行环境',
+      runners_other: '{{count}} 个运行环境',
       noModels: '没有匹配的模型。',
       selectedCount_one: '已选 {{count}} 个',
       selectedCount_other: '已选 {{count}} 个',
@@ -294,7 +300,7 @@ const zhCN: AgentsResource = {
     actionsHead: '操作',
     title: '环境变量',
     description:
-      '每次运行都会传给编码工具，并在运行记录中脱敏；保存后不再显示值。共享 agent 的使用者可以在自己的电脑上拿到这些值；高风险的密钥请勾选「仅限共享运行环境」。',
+      '每次运行都会传给编码工具，并在运行记录中脱敏；保存后不再显示值。共享 Agent 的使用者可以在自己的电脑上拿到这些值；高风险的密钥请勾选「仅限共享运行环境」。',
     add: '添加变量',
     addTitle: '添加环境变量',
     editTitle: '替换 {{name}}',
@@ -306,7 +312,7 @@ const zhCN: AgentsResource = {
     keepValueHint: '留空则保留原来的值。',
     teamRunnersOnly: '仅限共享运行环境',
     teamRunnersOnlyHint:
-      '不勾选时，运行会把这个值发给接活的运行环境，包括能使用这个 agent 的人自己的个人运行环境。勾选后，带有这个变量的运行只由共享运行环境接。',
+      '不勾选时，运行会把这个值发给接活的运行环境，包括能使用这个 Agent 的人自己的个人运行环境。勾选后，带有这个变量的运行只由共享运行环境接。',
     teamRunnersOnlyBadge: '仅限共享运行环境',
     fromRunner: '从运行环境取',
     fromRunnerHint:
@@ -532,8 +538,8 @@ const zhCN: AgentsResource = {
     },
   },
   failures: {
-    runnerUpgrade: '因执行机升级中断，运行将继续。',
-    runnerDiskFull: '执行机磁盘空间不足。',
+    runnerUpgrade: '因运行环境升级中断，运行将继续。',
+    runnerDiskFull: '运行环境磁盘空间不足。',
     runnerOfflineBeforeStart: '运行环境在启动前离线。',
     runnerOffline: '运行环境已离线。',
     leaseExpired: '运行环境停止了上报。',
@@ -563,6 +569,7 @@ const zhCN: AgentsResource = {
   },
   ...runtimesZhCN,
   ...chatZhCN,
+  chat: mergeLocale(chatZhCN.chat, panelZhCN.chat),
   ...servicesZhCN,
   ...pricesZhCN,
   ...skillsZhCN,
@@ -570,4 +577,13 @@ const zhCN: AgentsResource = {
   access: accessZhCN.access,
 };
 
-export default zhCN;
+// What the plugin brings on its own (`shell.zh-CN.ts`), outside the typed shape: the other languages fall back to
+// English for these keys.
+const withShell: typeof zhCN = {
+  ...zhCN,
+  agents: mergeLocale(zhCN.agents, shellZhCN.agents),
+  usage: mergeLocale(zhCN.usage, shellZhCN.usage),
+  ...{ me: shellZhCN.me },
+};
+
+export default withShell;

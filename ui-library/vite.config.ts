@@ -17,6 +17,14 @@ export default defineConfig({
           './website/demo/auth/authentication-client.ts',
         ),
       },
+      // The static demo has no signed-in user or settings pages.
+      {
+        find: /^@nocobase\/app-plugin-authorization\/client$/,
+        replacement: path.resolve(
+          __dirname,
+          './website/demo/auth/authorization-client.ts',
+        ),
+      },
       // The agent-chat block reads the agents plugin's chat hooks, which need a server; the demo keeps the
       // conversations in memory in their place.
       {
@@ -33,6 +41,13 @@ export default defineConfig({
         replacement: path.resolve(
           __dirname,
           './website/demo/inbox/notification-in-app-inbox.ts',
+        ),
+      },
+      {
+        find: /^@nocobase\/app-plugin-notification-in-app\/client$/,
+        replacement: path.resolve(
+          __dirname,
+          './website/demo/inbox/notification-in-app-client.ts',
         ),
       },
       {

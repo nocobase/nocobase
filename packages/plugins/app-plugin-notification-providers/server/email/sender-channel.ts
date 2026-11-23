@@ -1,12 +1,15 @@
 import type { MailSender } from '@nocobase/app-server/mailers';
+import type { ServiceContainer } from '@nocobase/service-provider';
 import type {
   ChannelCapabilities,
   ChannelInstance,
+  NotificationContent,
   ChannelPreparationInput,
   ChannelSendInput,
   ProviderSendResult,
   ValidatedChannelMessage,
 } from '@nocobase/app-plugin-notification';
+import { composeEmail, resolveAccountAddresses } from './audience.js';
 import { prepareEmailMessage, validateEmailMessage } from './channel.js';
 import type {
   EmailMessage,
@@ -32,8 +35,24 @@ export class MailSenderChannel implements ChannelInstance<
   public constructor(
     private readonly sender: MailSender,
     capabilities: ChannelCapabilities | undefined,
+    /** Where `notify()` finds each user's account address. */
+    private readonly container?: ServiceContainer | undefined,
   ) {
     if (capabilities) this.capabilities = capabilities;
+  }
+  /** Each enabled person's account email address. */
+  resolveUsers(
+    userIds: readonly string[],
+  ): Promise<ReadonlyMap<string, readonly EmailRecipient[]>> {
+    return this.container
+      ? resolveAccountAddresses(this.container, userIds)
+      : Promise.resolve(new Map());
+  }
+  compose(
+    content: NotificationContent,
+    recipients: readonly EmailRecipient[],
+  ): EmailMessage {
+    return composeEmail(content, recipients);
   }
   validateMessage(
     input: unknown,

@@ -2,6 +2,7 @@ import { resolveChannelType } from '@nocobase/app-server/config';
 import type { ChannelRuntime } from './channel-manager.js';
 import type {
   ChannelConfig,
+  ChannelConfigSummaryItem,
   ChannelContext,
   ChannelTypeClass,
 } from './channel-type.js';
@@ -15,6 +16,10 @@ export interface RegisteredChannelType {
   readonly type: string;
   readonly label?: string | NotificationI18nText;
   readonly messageType: string;
+  readonly contributor?: string;
+  summarize(
+    config: NotificationChannelConfigInput,
+  ): readonly ChannelConfigSummaryItem[];
   validateConfig(config: NotificationChannelConfigInput): void;
   create(
     context: ChannelContext,
@@ -63,6 +68,18 @@ export function adaptChannelType<
     type: Channel.type,
     label: Channel.label,
     messageType,
+    ...(Channel.contributor ? { contributor: Channel.contributor } : {}),
+    summarize(config) {
+      if (!Channel.summarize) return [];
+      // A summary is display only: a type that cannot describe a configuration shows none rather than failing the page.
+      try {
+        return Channel.summarize(channelConfig(config) as TConfig).map(
+          ({ label, value }) => ({ label, value: String(value) }),
+        );
+      } catch {
+        return [];
+      }
+    },
     validateConfig(config) {
       Channel.validateConfig?.(channelConfig(config) as TConfig);
     },
@@ -83,6 +100,38 @@ export function adaptChannelType<
         throw error;
       }
       return {
+        ...(instance.resolveUsers || instance.compose || instance.recipientKey
+          ? {
+              audience: {
+                ...(instance.recipientKey
+                  ? {
+                      recipientKey: (recipient: object) =>
+                        instance.recipientKey!(recipient as TRecipient),
+                    }
+                  : {}),
+                ...(instance.resolveUsers
+                  ? {
+                      resolveUsers: (userIds: readonly string[]) =>
+                        instance.resolveUsers!(userIds),
+                    }
+                  : {}),
+                ...(instance.compose
+                  ? {
+                      compose: (
+                        content: Parameters<
+                          NonNullable<typeof instance.compose>
+                        >[0],
+                        recipients: readonly object[],
+                      ) =>
+                        instance.compose!(
+                          content,
+                          recipients as readonly TRecipient[],
+                        ),
+                    }
+                  : {}),
+              },
+            }
+          : {}),
         channel: {
           type: messageType,
           validateMessage: (input) => instance.validateMessage(input),

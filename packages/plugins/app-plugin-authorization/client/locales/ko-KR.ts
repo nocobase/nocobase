@@ -1,8 +1,13 @@
 import type { LocaleResource } from '@nocobase/i18n';
 
 import type enUS from './en-US.js';
+import components from './components-en-US.js';
+import settings from './settings-en-US.js';
 
 const koKR: LocaleResource<typeof enUS> = {
+  // The Roles and permissions pages are not translated into this language yet and show in English.
+  ...components,
+  settings,
   permissionSets: {
     builtIn: {
       root: '시스템 관리자',
@@ -37,6 +42,7 @@ const koKR: LocaleResource<typeof enUS> = {
     },
     settings: {
       'permission-sets': '권한 세트',
+      'authentication-settings': '로그인 및 인증',
     },
     subjectTypes: {
       authenticated: '로그인한 모든 사용자',

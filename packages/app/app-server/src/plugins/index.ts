@@ -17,6 +17,21 @@ export {
   resolveAppServerPlugins,
   type ResolveAppServerPluginsOptions,
 } from './resolve.js';
+export {
+  classifyPluginRegistration,
+  type PluginRegistrationFacts,
+  type PluginRegistrationIssue,
+  type PluginRegistrationIssueCode,
+  type PluginRegistrationState,
+  type PluginRegistrationStateName,
+  type PluginRegistrationSurfaces,
+} from './registration-state.js';
+export {
+  CLI_PLUGIN_REGISTRATIONS_FILE,
+  listCliPluginRegistrations,
+  readCliPluginRegistrations,
+  type CliPluginRegistrationsManifest,
+} from './cli-registrations.js';
 export type * from './types.js';
 
 import type { Hono } from 'hono';

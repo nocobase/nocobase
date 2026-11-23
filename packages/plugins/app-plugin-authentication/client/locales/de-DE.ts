@@ -1,6 +1,7 @@
 import type { LocaleResource } from '@nocobase/i18n';
 
-import type enUS from './en-US.js';
+import { withPluralForms } from '../plural-forms.js';
+import enUS from './en-US.js';
 
 const deDE: LocaleResource<typeof enUS> = {
   errors: {
@@ -39,9 +40,16 @@ const deDE: LocaleResource<typeof enUS> = {
       'Dieser Ursprung ist nicht vertrauenswürdig. Setzen Sie app.publicOrigin in config.yml auf {{origin}}, starten Sie die Anwendung neu und versuchen Sie es erneut.',
     INVALID_ORIGIN:
       'Dieser Ursprung ist nicht vertrauenswürdig. Überprüfen Sie app.publicOrigin in config.yml, starten Sie die Anwendung neu und versuchen Sie es erneut.',
+    FAILED_TO_UNLINK_LAST_ACCOUNT: enUS.errors.FAILED_TO_UNLINK_LAST_ACCOUNT,
     INVALID_CSRF_ORIGIN:
       'Diese Anfrage kam von einer anderen Website und wurde abgelehnt. Laden Sie die Seite neu und versuchen Sie es erneut.',
   },
+  // The settings pages are not translated into this language yet; English is shown.
+  settings: withPluralForms(enUS.settings, 'de-DE'),
+  guide: enUS.guide,
+  prompt: enUS.prompt,
+  sso: enUS.sso,
+  account: withPluralForms(enUS.account, 'de-DE'),
 };
 
 export default deDE;

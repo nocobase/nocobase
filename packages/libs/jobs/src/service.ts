@@ -5,7 +5,11 @@ import {
 } from './config.js';
 import { JobsBackendRegistry, type JobsImplementation } from './adapters.js';
 import type { ScheduleExecutor } from './schedule/types.js';
-import type { JobExecutorService, JobsLogger } from './types.js';
+import type {
+  JobExecutorService,
+  JobsDescription,
+  JobsLogger,
+} from './types.js';
 import { assertValidScope } from './validation.js';
 import type { JobExecutor } from './job/types.js';
 import { jobStateFilePath } from './job/memory/state-file.js';
@@ -35,6 +39,7 @@ export interface JobExecutorServiceDependencies {
 
 /** The service as its owner holds it: consumers see `JobExecutorService`. */
 export interface ManagedJobExecutorService extends JobExecutorService {
+  describe(): JobsDescription;
   /** Shuts every executor down. Safe to call more than once. */
   shutdown(): Promise<void>;
 }
@@ -124,6 +129,38 @@ export function createJobExecutorServiceWith(
           ...(name !== undefined ? { name } : {}),
         });
       return executor;
+    },
+
+    describe(): JobsDescription {
+      const defaultKey = selectJobsConfig(config, undefined).key;
+      const backends = Object.entries(config?.backends ?? {}).map(
+        ([name, entry]) => {
+          const adapter =
+            typeof entry?.adapter === 'string' ? entry.adapter : '';
+          return { name, adapter, ...registry.describe(adapter) };
+        },
+      );
+      const configured = config?.default;
+      const adapter =
+        configured === undefined
+          ? 'memory'
+          : (backends.find(({ name }) => name === configured)?.adapter ?? '');
+      const selections = new Map<
+        string,
+        { consumer: string; backend: string }
+      >();
+      for (const identity of [...executors.keys(), ...jobs.keys()]) {
+        const [key, scope] = JSON.parse(identity) as [string, string];
+        if (key !== defaultKey)
+          selections.set(identity, { consumer: scope, backend: key });
+      }
+      return {
+        default: configured ?? null,
+        adapter,
+        ...registry.describe(adapter),
+        backends,
+        selections: [...selections.values()],
+      };
     },
 
     shutdown(): Promise<void> {

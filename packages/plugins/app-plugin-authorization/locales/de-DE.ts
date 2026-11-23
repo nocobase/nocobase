@@ -31,6 +31,7 @@ const deDE: LocaleResource<typeof enUS> = {
     },
     settings: {
       'permission-sets': 'Berechtigungssätze',
+      'authentication-settings': 'Anmeldung und Authentifizierung',
     },
     subjectTypes: {
       authenticated: 'Alle angemeldeten Benutzer',

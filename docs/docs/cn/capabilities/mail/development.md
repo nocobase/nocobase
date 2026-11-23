@@ -5,23 +5,33 @@ description: '接入邮件页面、权限和后台任务。'
 
 # 开发参考
 
-邮件页面可以独立作为工作台，也可以结合客户、项目等业务页面。应用负责页面入口、服务商配置和业务关联；Mail 提供账号、收发和同步能力。
+Mail 自带邮件页面，也可以在客户、项目等业务页面中扩展。应用负责服务商配置、角色授权和业务关联；Mail 提供页面、账号、收发和同步能力。
 
-## 接入页面
+## 邮件页面
 
-`@nocobase/app-plugin-mail/client` 提供两个完整页面组件：
+注册插件后应用不写页面代码，就有四个页面：
 
-| 组件                | 用途                               |
-| ------------------- | ---------------------------------- |
-| `MailWorkspacePage` | 邮件列表、阅读、写信和回复工作台。 |
-| `MailAccountsPage`  | 关联邮箱，管理账号、签名和模板。   |
+| 页面                       | 路径             | 用途                                             |
+| -------------------------- | ---------------- | ------------------------------------------------ |
+| 邮件                       | `/mail`          | 邮件列表、阅读、写信和回复，导航显示未读数。     |
+| 团队邮件                   | `/mail/team`     | 只读查看成员已同步的邮件，可选批量处理。         |
+| 个人设置 › 消息 › 邮箱账号 | `/me/mail`       | 连接邮箱，管理签名、模板、标签，查看收发记录。   |
+| 系统设置 › 消息 › 邮箱     | `/settings/mail` | 服务商、所有账号状态、同步和发送记录、运行配置。 |
 
-应用在自己的路由中挂载页面，并添加导航入口。需要组合邮件阅读、账号关联或编辑器时，可使用 `@nocobase/app-plugin-mail/client/components` 的公开组件。
+每个页面都可以按路由名（`mail`、`mailTeam`、`mailAccounts`、`mailSettings`）用 `routeComponentOverrides` 整页替换。自己组合页面时仍可使用 `MailWorkspacePage`、`MailAccountsPage` 和 `@nocobase/app-plugin-mail/client/components` 的公开组件。
 
-例如，邮件中心页面可以直接复用工作台：
+## 扩展邮件页面
 
-```tsx
-export { MailWorkspacePage as default } from '@nocobase/app-plugin-mail/client';
+客户端插件取出 `mailExtensionsToken`，登记服务商标题、邮件侧栏、写信工具、工作台按钮、模板变量和发送后回调：
+
+```ts
+const mail = this.app.container.resolve(mailExtensionsToken);
+mail.slots.messageAside.add({ name: 'customer', component: CustomerPanel });
+mail.templateVariables.add({
+  key: 'customer',
+  label: '客户',
+  resolve: ({ to }) => findCustomer(to),
+});
 ```
 
 ## 结合业务数据
@@ -32,13 +42,13 @@ export { MailWorkspacePage as default } from '@nocobase/app-plugin-mail/client';
 
 ## 配置访问权限
 
-| 资源              | 用途                                 |
-| ----------------- | ------------------------------------ |
-| `mail.workspace`  | 使用个人邮件工作台。                 |
-| `mail.admin`      | 查看管理员账号概览和发送、同步记录。 |
-| `mail.management` | 使用跨用户邮件管理能力。             |
+| 权限                     | 级别       | 用途                                           |
+| ------------------------ | ---------- | ---------------------------------------------- |
+| 邮件（`mail.workspace`） | 使用       | 个人邮件和邮箱账号。                           |
+| 团队邮件                 | 查看、处理 | 查看成员邮件；处理可批量标已读、星标、归档。   |
+| 邮箱设置                 | 查看、管理 | 账号状态和收发记录；管理可重试、取消成员任务。 |
 
-个人账号和邮件操作按账号所有者限制。应用为对应角色授予所需权限，并另行声明业务页面的访问规则。
+在角色权限页勾选。「处理」「管理」不包含「查看」。个人账号和邮件操作按账号所有者限制。已结束的同步和发送记录默认保留 90 天（`mail.logRetentionDays`）。
 
 ## 服务商与后台任务
 

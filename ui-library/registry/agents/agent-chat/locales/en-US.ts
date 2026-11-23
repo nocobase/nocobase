@@ -1,4 +1,5 @@
 export interface AgentChatLocale {
+  readonly openAgentSettings: string;
   readonly chat: {
     readonly sharing: {
       readonly related: string;
@@ -94,6 +95,9 @@ export interface AgentChatLocale {
     readonly refreshHistory: string;
     readonly title: string;
     readonly ask: string;
+    /** The header button that opens and closes the panel. */
+    readonly launcher: string;
+    readonly closeLauncher: string;
     readonly close: string;
     readonly expand: string;
     readonly restoreSize: string;
@@ -269,10 +273,10 @@ export interface AgentChatLocale {
       readonly noResults: string;
       readonly switch: string;
       readonly withStatus: string;
-      readonly chooseFor: string;
+      readonly chatWith: string;
       readonly startWith: string;
       readonly boundHint: string;
-      readonly empty: string;
+      readonly noneToChat: string;
       readonly none: string;
       readonly field: string;
       readonly unknown: string;
@@ -281,7 +285,7 @@ export interface AgentChatLocale {
       readonly systemDefault: string;
       readonly personal: string;
       readonly temporary: string;
-      readonly hint: string;
+      readonly chatHint: string;
     };
     readonly history: {
       readonly title: string;
@@ -302,6 +306,10 @@ export interface AgentChatLocale {
       readonly more: string;
       readonly unread: string;
       readonly actions: string;
+      readonly waiting: string;
+      readonly running: string;
+      readonly recent: string;
+      readonly ownOnly: string;
     };
     readonly list: {
       readonly label: string;
@@ -391,6 +399,7 @@ export interface AgentChatLocale {
   };
 }
 const agentChatEnUS: AgentChatLocale = {
+  openAgentSettings: 'Open agent settings',
   chat: {
     sharing: {
       related: 'Related records',
@@ -503,7 +512,9 @@ const agentChatEnUS: AgentChatLocale = {
     allowAnother: 'Allow another send (may duplicate)',
     refreshHistory: 'Refresh history',
     title: 'Agent chat',
-    ask: 'Ask agent',
+    ask: 'Ask Agent',
+    launcher: 'Open Agent',
+    closeLauncher: 'Close Agent',
     close: 'Close',
     expand: 'Full width',
     restoreSize: 'Back to side panel',
@@ -527,7 +538,7 @@ const agentChatEnUS: AgentChatLocale = {
     emptyDescription:
       'Ask anything, or describe the work to organize. What this page shows goes along as context.',
     noAgent:
-      'There is no agent you may chat with. Ask an administrator to enable one, or connect a runner.',
+      'There is no agent you may chat with. Ask an administrator to enable one, or connect a runtime.',
     chooseAgent:
       'Choose who to chat with below. To start with an agent every time, set your default in your profile.',
     messages: 'Messages',
@@ -541,8 +552,8 @@ const agentChatEnUS: AgentChatLocale = {
       agentArchived: 'Not enabled',
       forbidden: 'Not available to you',
       noModel: 'Configure a chat model first',
-      noRunner: 'No runner online, cannot be chosen',
-      othersPersonal: "Only others' personal runners have it",
+      noRunner: 'No runtime online, cannot be chosen',
+      othersPersonal: "Only others' personal runtimes have it",
       modelUnavailable: 'Model unavailable',
     },
     reasoning: {
@@ -558,9 +569,9 @@ const agentChatEnUS: AgentChatLocale = {
       agentArchived: '{{name}} is not enabled',
       forbidden: 'You may no longer use {{name}}',
       noModel: 'Configure a chat model first',
-      noRunner: '{{name}} has no runner online right now',
+      noRunner: '{{name}} has no runtime online right now',
       othersPersonal:
-        "Only others' personal runners have {{name}}; connect a runner of your own",
+        "Only others' personal runtimes have {{name}}; connect a runtime of your own",
       modelUnavailable:
         'The model of {{name}} is not available; ask an administrator',
       kept: 'Your messages are kept and answered once it can answer.',
@@ -603,9 +614,9 @@ const agentChatEnUS: AgentChatLocale = {
       switchedToDefault:
         'Switched to {{name}}, the system default, until {{own}} is back.',
       switchedToOnline:
-        '{{own}} has no runner for you now, so {{name}} answers until {{own}} is back.',
+        '{{own}} has no runtime for you now, so {{name}} answers until {{own}} is back.',
       onlineFallbackUnavailable:
-        'The online fallback agent cannot answer ({{reason}}). This conversation stays with {{own}} while it waits for a runner.',
+        'The online fallback agent cannot answer ({{reason}}). This conversation stays with {{own}} while it waits for a runtime.',
       switchedBack: 'Back with {{name}}.',
       runFailed: 'The agent stopped before answering.',
       runFailedReason: 'The agent stopped before answering: {{reason}}',
@@ -626,7 +637,7 @@ const agentChatEnUS: AgentChatLocale = {
     },
     steps: {
       title: 'Steps',
-      waiting: 'Waiting for a runner to pick this up…',
+      waiting: 'Waiting for a runtime to pick this up…',
       starting: 'Starting…',
       thinking: 'Thinking…',
       reading: 'Looking at {{subject}}',
@@ -682,9 +693,9 @@ const agentChatEnUS: AgentChatLocale = {
     },
     modes: {
       online: 'Online agent',
-      runner: 'Runner agents',
+      runner: 'Runtime agents',
       switchToOnline: 'Switch to the online agent',
-      switchToRunner: 'Switch to runner agents',
+      switchToRunner: 'Switch to runtime agents',
     },
     agents: {
       models: 'Models',
@@ -698,25 +709,27 @@ const agentChatEnUS: AgentChatLocale = {
       modelSearch: 'Search models',
       noMatchingModels: 'No matching models',
       modelHint: 'Choose an online model to chat with.',
-      mixedHint: 'Choose an online model or an Agent on a runner to chat with.',
+      mixedHint:
+        'Choose an online model or an Agent on a runtime to chat with.',
       search: 'Search models or agents',
       noResults: 'No matching models or agents',
       switch: 'Agent: {{name}}; choose another',
       withStatus: '{{name}}, {{status}}',
-      chooseFor: 'Chat with',
+      chatWith: 'Chat with',
       startWith: 'Start a new conversation with',
       boundHint:
         'A conversation stays with its agent; choosing another starts a new conversation.',
-      empty: 'No agent you may chat with',
+      noneToChat: 'No agent you may chat with',
       none: 'No agent',
       field: 'Agent: {{name}}',
       unknown: 'Unknown agent',
       placeholder: 'Choose an agent',
       myDefault: 'My default',
       systemDefault: 'System default',
-      personal: 'Personal runners only',
+      personal: 'Personal runtimes only',
       temporary: 'Temporary',
-      hint: 'Lists the enabled agents and says why one cannot answer you now. Native replies use an application model; Runner replies wait for an available execution machine.',
+      chatHint:
+        'Lists the enabled agents and says why one cannot answer you now. Online replies use an application model; other agents wait for an available runtime.',
     },
     history: {
       title: 'Conversations',
@@ -737,6 +750,11 @@ const agentChatEnUS: AgentChatLocale = {
       more: 'Load more',
       unread: 'New reply',
       actions: 'Actions for {{title}}',
+      waiting: 'Waiting for you',
+      running: 'In progress',
+      recent: 'Recent',
+      ownOnly:
+        'Only your conversations are listed. A conversation shared with someone is read-only for them.',
     },
     list: {
       label: 'Conversations',

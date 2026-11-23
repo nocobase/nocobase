@@ -1,41 +1,36 @@
-import type { LocaleResource } from '@nocobase/i18n';
+import type { PartialLocaleResource } from '@nocobase/i18n';
 
 import type enUS from './en-US.js';
 
-const deDE: LocaleResource<typeof enUS> = {
+/** The inbox's main words; the rest falls back to English. */
+const deDE: PartialLocaleResource<typeof enUS> = {
   inbox: {
-    eyebrow: 'Persönlicher Posteingang',
-    title: 'Nachrichtenzentrum',
-    unreadCount: '{{count}} ungelesen',
-    description:
-      'Aktualisierungen der von Ihnen verwendeten Anwendungen und Arbeitsabläufe.',
-    markAllRead: 'Alle als gelesen markieren',
-    messagesTitle: 'Nachrichten',
-    messagesDescription:
-      'In-App-Nachrichten behalten einen unabhängigen Lesestatus für den aktuellen Benutzer.',
-    unreadFilter: 'Ungelesen',
-    unavailable: 'Posteingang nicht verfügbar',
-    retry: 'Erneut versuchen',
-    loading: 'Benachrichtigungen werden geladen…',
-    emptyTitle: 'Ihr seid alle beschäftigt',
-    emptyDescription: 'Hier werden neue Benachrichtigungen angezeigt.',
-    loadingMore: 'Wird geladen…',
-    loadMore: 'Mehr laden',
-    scrollMore: 'Scrollen Sie nach unten, um mehr zu laden',
-    noMore: 'Keine Nachrichten mehr',
-    expand: 'Mehr anzeigen',
-    collapse: 'Weniger anzeigen',
-    channel: 'In-App',
-    open: 'Öffnen',
-    markUnread: 'Als ungelesen markieren',
-    markRead: 'Mark las',
-    delete: 'Benachrichtigung löschen',
-    errors: {
-      update: 'Die Aktualisierung des Posteingangs ist fehlgeschlagen.',
-      loadMore: 'Es konnten keine weiteren Benachrichtigungen geladen werden.',
-      markAllRead:
-        'Benachrichtigungen konnten nicht als gelesen markiert werden.',
+    title: 'Posteingang',
+    views: {
+      all: 'Alle',
+      unread: 'Ungelesen',
+      todo: 'Ausstehend',
     },
+    categories: 'Kategorien',
+    readAll: 'Alle als gelesen markieren',
+    open: 'Öffnen',
+    actions: {
+      read: 'Als gelesen markieren',
+      unread: 'Als ungelesen markieren',
+      delete: 'Löschen',
+    },
+    tabs: {
+      today: 'Heute',
+      info: 'Früher',
+      decision: 'Ausstehend',
+    },
+  },
+  inboxButton: {
+    title: 'Posteingang',
+    viewAll: 'Posteingang öffnen',
+  },
+  nav: {
+    inbox: 'Posteingang',
   },
 };
 

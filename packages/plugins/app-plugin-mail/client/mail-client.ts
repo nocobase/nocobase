@@ -14,11 +14,14 @@ import type {
   MailSignature,
   MailSaveSignatureInput,
   MailListMessagesInput,
-  MailManagedAccountView,
+  MailAdminAccountView,
+  MailManagedSubmissionView,
   MailManagementMessageActionInput,
   MailManagementMessageActionResult,
   MailMessage,
   MailMessageSummary,
+  MailSettingsOverview,
+  MailTeamAccountView,
   MailUpdateMessageInput,
   MailMoveMessageInput,
   MailUpdateMessageLabelsInput,
@@ -40,6 +43,13 @@ import type {
 } from '../shared/mail.js';
 
 export type {
+  MailAdminAccountView,
+  MailManagedSubmissionView,
+  MailSettingSource,
+  MailSettingValue,
+  MailSettingsOverview,
+  MailSettingsProviderView,
+  MailTeamAccountView,
   MailAccountStatus,
   KnownMailAccountStatus,
   MailAccountView,
@@ -168,7 +178,34 @@ export interface MailMessagesQuery
   readonly starred?: boolean;
 }
 
+/** Every member's sync runs or submissions on the Mail settings page; every condition given must match. */
+/** A settings log page: newest first, continuing after `pageToken`, the `nextCursor` of the page before. */
+export interface MailManagedLogsRequest {
+  readonly pageSize?: number;
+  readonly pageToken?: string;
+  readonly userId?: string;
+  readonly accountId?: string;
+  /** Any of these statuses. */
+  readonly statuses?: readonly string[];
+  /** Created at or after this RFC 3339 time. */
+  readonly from?: string;
+  /** Created before this RFC 3339 time. */
+  readonly to?: string;
+}
+
+/** Every member's accounts on the Mail settings page; every condition given must match. */
+export interface MailAdminAccountsRequest {
+  readonly statuses?: readonly string[];
+  /** The configured Provider name. */
+  readonly provider?: string;
+  readonly userId?: string;
+  /** Part of the address, the display name or the owner's name. */
+  readonly q?: string;
+}
+
 export interface MailManagedMessagesQuery extends MailPageRequest {
+  /** Only this member's accounts. */
+  readonly userId?: string;
   readonly accountId?: string;
   readonly folderId?: string;
   readonly q?: string;
@@ -237,18 +274,39 @@ export class MailClient {
       .then((response) => response?.data);
   }
 
-  public listManagedAccounts(): Promise<readonly MailManagedAccountView[]> {
+  /** Every member's accounts for the Mail settings page (`settings:mail.admin/read`). */
+  public listManagedAccounts(
+    request: MailAdminAccountsRequest = {},
+  ): Promise<readonly MailAdminAccountView[]> {
     return this.client
-      .request<DataResponse<readonly MailManagedAccountView[]>>({
+      .request<DataResponse<readonly MailAdminAccountView[]>>({
         path: 'mail/settings/accounts',
+        query: {
+          status: request.statuses?.length
+            ? request.statuses.join(',')
+            : undefined,
+          provider: request.provider,
+          userId: request.userId,
+          q: request.q,
+        },
       })
       .then((response) => response.data);
   }
 
-  public listManagementAccounts(): Promise<readonly MailManagedAccountView[]> {
+  /** Every member's accounts for Team mail's filters (`mail:mail.management/view`). */
+  public listManagementAccounts(): Promise<readonly MailTeamAccountView[]> {
     return this.client
-      .request<DataResponse<readonly MailManagedAccountView[]>>({
+      .request<DataResponse<readonly MailTeamAccountView[]>>({
         path: 'mail/management/accounts',
+      })
+      .then((response) => response.data);
+  }
+
+  /** Providers, account totals and the runtime configuration for the Mail settings page. */
+  public getSettingsOverview(): Promise<MailSettingsOverview> {
+    return this.client
+      .request<DataResponse<MailSettingsOverview>>({
+        path: 'mail/settings/overview',
       })
       .then((response) => response.data);
   }
@@ -261,28 +319,64 @@ export class MailClient {
       .then((response) => response.data);
   }
 
-  /** Every user's sync runs, for administrators, paged by page number. */
+  /** Every member's sync runs, for administrators, paged by `pageToken`. */
   public listManagedSyncRunsPage(
-    request: MailPageRequest = {},
-  ): Promise<MailOffsetPage<MailSyncRunView>> {
+    request: MailManagedLogsRequest = {},
+  ): Promise<MailPage<MailSyncRunView>> {
     return this.client
-      .request<ListResponse<MailSyncRunView, PageMeta>>({
+      .request<ListResponse<MailSyncRunView, CursorMeta>>({
         path: 'mail/settings/syncRuns',
-        query: { page: request.page, pageSize: request.pageSize },
+        query: managedLogsQuery(request),
       })
-      .then(toOffsetPage);
+      .then(toCursorPage);
   }
 
-  /** Every user's submissions, for administrators, paged by page number. */
+  /** Every member's submissions, for administrators, without their content. */
   public listManagedSubmissionsPage(
-    request: MailPageRequest = {},
-  ): Promise<MailOffsetPage<MailSubmissionLogView>> {
+    request: MailManagedLogsRequest = {},
+  ): Promise<MailPage<MailManagedSubmissionView>> {
     return this.client
-      .request<ListResponse<MailSubmissionLogView, PageMeta>>({
+      .request<ListResponse<MailManagedSubmissionView, CursorMeta>>({
         path: 'mail/settings/submissions',
-        query: { page: request.page, pageSize: request.pageSize },
+        query: managedLogsQuery(request),
       })
-      .then(toOffsetPage);
+      .then(toCursorPage);
+  }
+
+  /** Retry any member's run; needs `settings:mail.admin/manage`. */
+  public retryManagedSyncRun(syncRunId: string): Promise<MailSyncRunView> {
+    return this.post<MailSyncRunView>(
+      `mail/settings/syncRuns/${encodeURIComponent(syncRunId)}/retry`,
+      {},
+    );
+  }
+
+  /** Cancel any member's run; needs `settings:mail.admin/manage`. */
+  public cancelManagedSyncRun(syncRunId: string): Promise<MailSyncRunView> {
+    return this.post<MailSyncRunView>(
+      `mail/settings/syncRuns/${encodeURIComponent(syncRunId)}/cancel`,
+      {},
+    );
+  }
+
+  /** Retry any member's submission; needs `settings:mail.admin/manage`. */
+  public retryManagedSubmission(
+    submissionId: string,
+  ): Promise<MailManagedSubmissionView> {
+    return this.post<MailManagedSubmissionView>(
+      `mail/settings/submissions/${encodeURIComponent(submissionId)}/retry`,
+      {},
+    );
+  }
+
+  /** Cancel any member's submission; needs `settings:mail.admin/manage`. */
+  public cancelManagedSubmission(
+    submissionId: string,
+  ): Promise<MailManagedSubmissionView> {
+    return this.post<MailManagedSubmissionView>(
+      `mail/settings/submissions/${encodeURIComponent(submissionId)}/cancel`,
+      {},
+    );
   }
 
   public getUnreadCount(): Promise<number> {
@@ -769,6 +863,20 @@ function readLocalizedMessage(payload: unknown): string | undefined {
   if (!localized || typeof localized !== 'object') return undefined;
   const message = (localized as { readonly message?: unknown }).message;
   return typeof message === 'string' ? message : undefined;
+}
+
+function managedLogsQuery(
+  request: MailManagedLogsRequest,
+): Record<string, string | number | undefined> {
+  return {
+    pageSize: request.pageSize,
+    pageToken: request.pageToken,
+    userId: request.userId,
+    accountId: request.accountId,
+    status: request.statuses?.length ? request.statuses.join(',') : undefined,
+    from: request.from,
+    to: request.to,
+  };
 }
 
 function toOffsetPage<T>(

@@ -2,7 +2,10 @@ import type { LocaleResource } from '@nocobase/i18n';
 
 import type enUS from './en-US.js';
 
+import pagesJaJP from '../../shared/locales/pages.ja-JP.js';
+
 const jaJP: LocaleResource<typeof enUS> = {
+  ...pagesJaJP,
   content: {
     tooLarge:
       '本文が16 MiBの閲覧制限を超えています。元のメールボックスで開きます。添付ファイルは引き続きダウンロードできます。',
@@ -595,6 +598,7 @@ const jaJP: LocaleResource<typeof enUS> = {
     drafts: '下書き',
     moveMessage: 'メッセージの移動',
     aliases: '別名',
+    downloadOriginal: '元のメールをダウンロード',
   },
   status: {
     account: {

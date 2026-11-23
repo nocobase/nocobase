@@ -1,19 +1,8 @@
 import databaseExplorerRoutes from './pages/settings/database-explorer/routes.js';
-import { includeNotificationTemplateRoutes } from './pages/settings/notification-routes.js';
-import systemSettingsRoutes from './pages/settings/routes.js';
+import personalSettingsRoutes from './pages/me/routes.js';
 import { knowledgeDefinition } from '@nocobase/app-plugin-knowledge/client/routes';
 import {
-  agentsRoute,
-  modelsRoute,
-  runtimesRoute,
-  skillsRoute,
-} from '@nocobase/app-plugin-agents/client/routes';
-import {
   ShoppingCart,
-  BrainCircuit,
-  BotMessageSquare,
-  Bot,
-  Server,
   Sparkles,
   ScanText,
   FileText,
@@ -24,25 +13,18 @@ import {
   PanelsTopLeft,
   Plug,
   Workflow,
-  Settings,
   BookOpen,
   DatabaseZap,
   UsersRound,
 } from 'lucide-react';
 import {
   defineAppRoutes,
+  defineSystemSettingsRoutes,
+  SYSTEM_SETTINGS_CATEGORIES,
   type AppClientRouteContribution,
 } from '@nocobase/app-client/plugins';
 
 const appRoutes: AppClientRouteContribution = defineAppRoutes([
-  {
-    name: 'conversation',
-    path: '/chat/:conversationId',
-    auth: 'required',
-    // The API checks ownership or an explicit snapshot grant on every read.
-    authz: 'skip',
-    componentLoader: () => import('./pages/chat/index.js'),
-  },
   {
     name: 'onboarding',
     path: '/onboarding',
@@ -180,126 +162,11 @@ const appRoutes: AppClientRouteContribution = defineAppRoutes([
     ],
   },
   {
-    // System settings: one sidebar entry opening a home of cards. Its child groups are the home's categories; an
-    // administration module joins one with `parent`. The group keeps its original name, so its pages keep their ids.
-    name: 'systemManagement',
-    navigation: { title: 'settings.title', icon: Settings, order: 100 },
-    breadcrumb: { title: 'settings.title' },
-    children: [
-      {
-        // Lists only modules the viewer may open, so it needs no grant of its own.
-        name: 'settingsHome',
-        path: '/settings',
-        auth: 'required',
-        authz: 'skip',
-        componentLoader: () => import('./pages/settings/settings-home.js'),
-      },
-      {
-        name: 'settingsAccount',
-        navigation: { title: 'settings.categories.account', order: 10 },
-        children: [],
-      },
-      {
-        name: 'settingsBusiness',
-        navigation: { title: 'settings.categories.business', order: 20 },
-        children: [],
-      },
-      {
-        name: 'settingsAi',
-        navigation: { title: 'settings.categories.ai', order: 30 },
-        children: [],
-      },
-      {
-        name: 'settingsSystem',
-        navigation: { title: 'settings.categories.system', order: 40 },
-        children: [],
-      },
-    ],
-  },
-  {
     ...knowledgeDefinition(),
     componentLoader: () => import('./pages/knowledge/index.js'),
     // Reading and asking the knowledge base is everyday work, so it stays in the business navigation.
     navigation: { title: 'knowledge.title', icon: BookOpen },
     breadcrumb: { title: 'knowledge.title' },
-  },
-  {
-    name: 'knowledgeIndexing',
-    path: '/knowledge/indexing',
-    parent: 'settingsAi',
-    auth: 'required',
-    authz: {
-      resource: { type: 'settings', id: 'kb.indexing' },
-      action: 'read',
-    },
-    navigation: {
-      title: 'knowledge.indexing',
-      description: 'knowledge.indexingDescription',
-      icon: DatabaseZap,
-    },
-    breadcrumb: { title: 'knowledge.indexing' },
-    componentLoader: () => import('./pages/knowledge/indexing.js'),
-  },
-  {
-    name: 'workflows',
-    parent: 'settingsBusiness',
-    path: '/workflows',
-    auth: 'required',
-    authz: {
-      resource: { type: 'settings', id: 'workflow-management' },
-      action: 'read',
-    },
-    navigation: {
-      title: 'workflows.title',
-      description: 'workflows.description',
-      icon: Workflow,
-    },
-    breadcrumb: { title: 'workflows.title' },
-    componentLoader: () => import('./pages/workflows/index.js'),
-    children: [
-      {
-        name: 'workflowDefinitions',
-        path: 'definitions',
-        breadcrumb: { title: 'workflows.definitions' },
-        componentLoader: () => import('./pages/workflows/definitions.js'),
-        children: [
-          {
-            name: 'workflowDefinition',
-            path: ':workflowId',
-            componentLoader: () => import('./pages/workflows/definition.js'),
-            children: [
-              {
-                name: 'workflowParameters',
-                path: 'parameters',
-                authz: {
-                  resource: { type: 'settings', id: 'workflow-management' },
-                  action: 'update',
-                },
-                presentation: {
-                  kind: 'dialog',
-                  title: 'workflows.workflowParameters',
-                },
-                componentLoader: () =>
-                  import('./pages/workflows/parameters.js'),
-              },
-            ],
-          },
-        ],
-      },
-      {
-        name: 'workflowExecutions',
-        path: 'executions',
-        breadcrumb: { title: 'workflows.executions' },
-        componentLoader: () => import('./pages/workflows/executions.js'),
-        children: [
-          {
-            name: 'workflowExecution',
-            path: ':workflowId/:recordId',
-            componentLoader: () => import('./pages/workflows/execution.js'),
-          },
-        ],
-      },
-    ],
   },
   {
     // Every signed-in user reaches the landing page. `authz: 'skip'` takes it out of page authorization entirely, so
@@ -310,16 +177,6 @@ const appRoutes: AppClientRouteContribution = defineAppRoutes([
     name: 'home',
     navigation: { title: 'navigation.home', icon: Home },
     path: '/',
-  },
-  {
-    // Declares no navigation, so the application decides where its entry goes (for example a sidebar item with an
-    // unread badge). The plugin's API answers each person's own messages only, so the page needs no authorization of
-    // its own.
-    authz: 'skip',
-    auth: 'required',
-    componentLoader: () => import('./pages/inbox.js'),
-    name: 'inbox',
-    path: '/inbox',
   },
   {
     auth: 'required',
@@ -467,30 +324,12 @@ const appRoutes: AppClientRouteContribution = defineAppRoutes([
     path: '/external-crm',
   },
   {
-    name: 'agentsNavigation',
+    // The AI demonstrations, which ask the Agent from a page. The Agent panel, its settings pages and the conversation
+    // page come from `@nocobase/app-plugin-agents`, registered in `client/plugins.ts`.
+    name: 'aiExamples',
     auth: 'required',
-    navigation: { title: 'onlineAgent.group', icon: BotMessageSquare },
+    navigation: { title: 'aiExamples.group', icon: Sparkles },
     children: [
-      {
-        ...agentsRoute,
-        navigation: { title: 'onlineAgent.agents', icon: Bot },
-        breadcrumb: { title: 'onlineAgent.agents' },
-      },
-      {
-        ...runtimesRoute,
-        navigation: { title: 'onlineAgent.runtimes', icon: Server },
-        breadcrumb: { title: 'onlineAgent.runtimes' },
-      },
-      {
-        ...skillsRoute,
-        navigation: { title: 'onlineAgent.skills', icon: Sparkles },
-        breadcrumb: { title: 'onlineAgent.skills' },
-      },
-      {
-        ...modelsRoute,
-        navigation: { title: 'onlineAgent.models', icon: BrainCircuit },
-        breadcrumb: { title: 'onlineAgent.models' },
-      },
       {
         name: 'ai-translation',
         path: '/ai-translation',
@@ -560,12 +399,113 @@ const appRoutes: AppClientRouteContribution = defineAppRoutes([
   },
 ]);
 
-// Users and Permission management join the Accounts and permissions category with their original URLs and ids;
-// Notifications joins the System category.
-const routes: readonly AppClientRouteContribution[] =
-  includeNotificationTemplateRoutes(
-    [appRoutes, systemSettingsRoutes, databaseExplorerRoutes],
-    true,
-  );
+// System settings, mounted under `/settings`: the home and the application's own administration modules. A module joins
+// one of the categories `@nocobase/app-client` builds in with `parent`; its path is relative to `/settings`.
+const settingsRoutes: AppClientRouteContribution = defineSystemSettingsRoutes([
+  {
+    // Opens the first page the viewer may open, so it needs no grant of its own.
+    name: 'settingsHome',
+    path: '/',
+    auth: 'required',
+    authz: 'skip',
+    componentLoader: () => import('./pages/settings/settings-home.js'),
+  },
+  {
+    // The application's own business settings, a category ahead of the built-in ones. Its pages join it with
+    // `parent: 'crm'`; like every category, it stays hidden until it holds a page the viewer may open.
+    name: 'crm',
+    category: true,
+    navigation: { title: 'settings.categories.crm', order: 50 },
+    children: [],
+  },
+  {
+    name: 'knowledgeIndexing',
+    parent: SYSTEM_SETTINGS_CATEGORIES.ai,
+    path: '/knowledge/indexing',
+    auth: 'required',
+    authz: {
+      resource: { type: 'settings', id: 'kb.indexing' },
+      action: 'read',
+    },
+    navigation: {
+      title: 'knowledge.indexing',
+      description: 'knowledge.indexingDescription',
+      icon: DatabaseZap,
+    },
+    breadcrumb: { title: 'knowledge.indexing' },
+    componentLoader: () => import('./pages/knowledge/indexing.js'),
+  },
+  {
+    name: 'workflows',
+    parent: SYSTEM_SETTINGS_CATEGORIES.automation,
+    path: '/workflows',
+    auth: 'required',
+    authz: {
+      resource: { type: 'settings', id: 'workflow-management' },
+      action: 'read',
+    },
+    navigation: {
+      title: 'workflows.title',
+      description: 'workflows.description',
+      icon: Workflow,
+    },
+    breadcrumb: { title: 'workflows.title' },
+    componentLoader: () => import('./pages/workflows/index.js'),
+    children: [
+      {
+        name: 'workflowDefinitions',
+        path: 'definitions',
+        breadcrumb: { title: 'workflows.definitions' },
+        componentLoader: () => import('./pages/workflows/definitions.js'),
+        children: [
+          {
+            name: 'workflowDefinition',
+            path: ':workflowId',
+            componentLoader: () => import('./pages/workflows/definition.js'),
+            children: [
+              {
+                name: 'workflowParameters',
+                path: 'parameters',
+                authz: {
+                  resource: { type: 'settings', id: 'workflow-management' },
+                  action: 'update',
+                },
+                presentation: {
+                  kind: 'dialog',
+                  title: 'workflows.workflowParameters',
+                },
+                componentLoader: () =>
+                  import('./pages/workflows/parameters.js'),
+              },
+            ],
+          },
+        ],
+      },
+      {
+        name: 'workflowExecutions',
+        path: 'executions',
+        breadcrumb: { title: 'workflows.executions' },
+        componentLoader: () => import('./pages/workflows/executions.js'),
+        children: [
+          {
+            name: 'workflowExecution',
+            path: ':workflowId/:recordId',
+            componentLoader: () => import('./pages/workflows/execution.js'),
+          },
+        ],
+      },
+    ],
+  },
+]);
+
+// The Users and Authorization plugins register Users and Roles and permissions under Accounts and permissions, and
+// `@nocobase/app-plugin-notification` registers Messages › Notifications.
+// Their former URLs outside `/settings` redirect through `lib/settings-redirects.ts`.
+const routes: readonly AppClientRouteContribution[] = [
+  appRoutes,
+  settingsRoutes,
+  personalSettingsRoutes,
+  databaseExplorerRoutes,
+];
 
 export default routes;

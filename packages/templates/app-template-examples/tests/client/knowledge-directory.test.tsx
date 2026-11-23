@@ -34,7 +34,6 @@ import {
 
 const host = vi.hoisted(() => ({
   available: true,
-  active: true,
   canSend: true,
   phase: 'ready' as 'ready' | 'loading' | 'error',
   openChat: vi.fn(),
@@ -54,9 +53,6 @@ vi.mock('@nocobase/app-plugin-agents/client/chat', async (original) => ({
     return controller;
   },
 }));
-vi.mock('../../client/components/online-agent/identity-context.js', () => ({
-  useOnlineAgentIdentityActive: () => () => host.active,
-}));
 vi.mock('../../client/components/online-agent/use-model-catalog.js', () => ({
   useModelCatalog: () => ({
     canSend: host.canSend,
@@ -65,7 +61,7 @@ vi.mock('../../client/components/online-agent/use-model-catalog.js', () => ({
   }),
 }));
 vi.mock('../../client/components/online-agent/models-link.js', () => ({
-  ModelsLink: () => <a href='/models'>Models</a>,
+  ModelsLink: () => <a href='/settings/models'>Model services</a>,
 }));
 // Only the adapter is under test here; Knowledge's own view tests cover its unchanged rendering/CRUD.
 vi.mock('@nocobase/app-plugin-knowledge/client/pages', () => ({
@@ -136,7 +132,7 @@ async function openDialog() {
 }
 beforeEach(() => {
   agentsQueryClient().clear();
-  host.available = host.active = host.canSend = true;
+  host.available = host.canSend = true;
   host.phase = 'ready';
   host.openChat.mockReset();
   host.refresh.mockReset();
@@ -329,24 +325,21 @@ it.each(['loading', 'error', 'empty'] as const)(
   },
 );
 
-it.each(['unmount', 'identity'] as const)(
-  'does not open a late-created chat after %s',
-  async (change) => {
-    response = new Promise((resolve) => {
-      resolveCreate = resolve;
-    });
-    const tree = await renderPage();
-    await openDialog();
-    await userEvent.click(
-      screen.getByRole('button', { name: enUS.knowledge.chat.start }),
-    );
-    await waitFor(() => expect(calls).toHaveLength(1));
-    if (change === 'unmount') tree.unmount();
-    else host.active = false;
-    await act(async () => resolveCreate!({ data: { id: 'obsolete' } }));
-    expect(host.openChat).not.toHaveBeenCalled();
-  },
-);
+// A change of person remounts the signed-in tree (the agents plugin's layout provider), so it is an unmount here.
+it('does not open a late-created chat after unmount', async () => {
+  response = new Promise((resolve) => {
+    resolveCreate = resolve;
+  });
+  const tree = await renderPage();
+  await openDialog();
+  await userEvent.click(
+    screen.getByRole('button', { name: enUS.knowledge.chat.start }),
+  );
+  await waitFor(() => expect(calls).toHaveLength(1));
+  tree.unmount();
+  await act(async () => resolveCreate!({ data: { id: 'obsolete' } }));
+  expect(host.openChat).not.toHaveBeenCalled();
+});
 
 it('hides the action when the shared panel is unavailable', async () => {
   host.available = false;

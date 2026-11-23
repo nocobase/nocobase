@@ -8,6 +8,16 @@
   "engines": {
     "node": ">=24.0.0"
   },
+  "nocobase": {
+    "title": {
+      "en-US": "Users",
+      "zh-CN": "用户"
+    },
+    "description": {
+      "en-US": "Members, profiles and invitations",
+      "zh-CN": "成员、资料和邀请"
+    }
+  },
   "sideEffects": false,
   "exports": {
     "./server": {
@@ -116,28 +126,31 @@
     "@nocobase/db": "workspace:^",
     "@nocobase/i18n": "workspace:^",
     "@nocobase/service-provider": "workspace:^",
+    "@tanstack/react-table": "catalog:",
     "class-variance-authority": "catalog:",
     "cn": "catalog:",
     "lucide-react": "catalog:",
     "react": "^19.0.0",
+    "react-dom": "^19.0.0",
     "react-router": "catalog:"
   },
   "devDependencies": {
+    "@nocobase/app-plugin-notification-providers": "workspace:*",
     "@nocobase/app-testing": "workspace:*",
     "@nocobase/dev-config": "workspace:*",
     "@testing-library/react": "catalog:",
+    "@testing-library/user-event": "catalog:",
     "@types/node": "catalog:",
     "@types/react": "catalog:",
+    "@types/react-dom": "catalog:",
     "eslint": "catalog:",
     "jsdom": "catalog:",
     "prettier": "catalog:",
-    "react-dom": "catalog:",
     "shadcn": "catalog:",
     "tailwindcss": "catalog:",
     "tw-animate-css": "catalog:",
     "typescript": "catalog:",
-    "vitest": "catalog:",
-    "@nocobase/app-plugin-notification-providers": "workspace:*"
+    "vitest": "catalog:"
   },
   "peerDependenciesMeta": {
     "@nocobase/app-plugin-notification": {

@@ -1,6 +1,9 @@
 import type {
   NotificationAttemptRecord,
+  NotificationDeliveryCount,
+  NotificationDeliveryFilter,
   NotificationDeliveryRecord,
+  NotificationDeliveryStatus,
   NotificationLogCursor,
   NotificationLogRecord,
   NotificationRetryAuditRecord,
@@ -9,7 +12,7 @@ import type {
 import { summarizeNotificationDeliveries } from './store.js';
 
 export interface NotificationLogDetails {
-  readonly log: Omit<NotificationLogRecord, 'messageSnapshot'>;
+  readonly log: Omit<NotificationLogRecord, 'messageSnapshot' | 'skipped'>;
   readonly deliveries: readonly {
     readonly delivery: Omit<
       NotificationDeliveryRecord,
@@ -20,12 +23,31 @@ export interface NotificationLogDetails {
   }[];
 }
 
+/** A delivery as the delivery log lists it: no message, recipient snapshot or lease. */
+export type NotificationSafeDelivery =
+  NotificationLogDetails['deliveries'][number]['delivery'];
+
+export interface NotificationDeliveryLogEntry {
+  readonly delivery: NotificationSafeDelivery;
+  readonly kind?: string;
+  readonly sourceType: string;
+  readonly sourceReferenceId?: string;
+  readonly idempotencyKey?: string;
+}
+
+export interface NotificationDeliveryLogDetails extends NotificationDeliveryLogEntry {
+  readonly attempts: readonly NotificationAttemptRecord[];
+  readonly retryAudits: readonly NotificationRetryAuditRecord[];
+}
+
 export class NotificationLogs {
   constructor(private readonly store: NotificationStore) {}
 
   async list(
     limit?: number,
-  ): Promise<readonly Omit<NotificationLogRecord, 'messageSnapshot'>[]> {
+  ): Promise<
+    readonly Omit<NotificationLogRecord, 'messageSnapshot' | 'skipped'>[]
+  > {
     return (await this.store.listLogs(limit)).map(redactLog);
   }
 
@@ -40,6 +62,54 @@ export class NotificationLogs {
     return details.filter(
       (item): item is NotificationLogDetails => item !== undefined,
     );
+  }
+
+  /** One page of the delivery log, newest first, starting after `before`. */
+  async listDeliveryLog(
+    filter: NotificationDeliveryFilter,
+    limit: number,
+    before?: NotificationLogCursor,
+  ): Promise<readonly NotificationDeliveryLogEntry[]> {
+    if (!this.store.listDeliveryLog) return [];
+    return (await this.store.listDeliveryLog(filter, limit, before)).map(
+      // The store lists no snapshot or lease already.
+      (entry) => entry,
+    );
+  }
+
+  /** How many deliveries match `filter` per status, ignoring its status filter. */
+  async countDeliveryStatuses(
+    filter: NotificationDeliveryFilter,
+  ): Promise<Partial<Record<NotificationDeliveryStatus, number>>> {
+    const counts: readonly NotificationDeliveryCount[] =
+      (await this.store.countDeliveryStatuses?.(filter)) ?? [];
+    return Object.fromEntries(
+      counts.map(({ status, count }) => [status, count]),
+    );
+  }
+
+  /** One delivery with what its send was about, its attempts and retry audits. */
+  async getDelivery(
+    id: string,
+  ): Promise<NotificationDeliveryLogDetails | undefined> {
+    const delivery = await this.store.getDelivery(id);
+    if (!delivery) return undefined;
+    const [log, attempts, retryAudits] = await Promise.all([
+      this.store.getLog(delivery.notificationId),
+      this.store.listAttempts(id),
+      this.store.listRetryAudits(id),
+    ]);
+    return {
+      delivery: redactDelivery(delivery),
+      ...(log?.kind ? { kind: log.kind } : {}),
+      sourceType: log?.sourceType ?? 'application',
+      ...(log?.sourceReferenceId
+        ? { sourceReferenceId: log.sourceReferenceId }
+        : {}),
+      ...(log?.idempotencyKey ? { idempotencyKey: log.idempotencyKey } : {}),
+      attempts,
+      retryAudits,
+    };
   }
 
   async get(id: string): Promise<NotificationLogDetails | undefined> {
@@ -78,8 +148,12 @@ export class NotificationLogs {
 
 function redactLog(
   record: NotificationLogRecord,
-): Omit<NotificationLogRecord, 'messageSnapshot'> {
-  const { messageSnapshot: _messageSnapshot, ...safe } = record;
+): Omit<NotificationLogRecord, 'messageSnapshot' | 'skipped'> {
+  const {
+    messageSnapshot: _messageSnapshot,
+    skipped: _skipped,
+    ...safe
+  } = record;
   return safe;
 }
 

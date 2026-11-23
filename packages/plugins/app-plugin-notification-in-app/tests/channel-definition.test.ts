@@ -14,6 +14,7 @@ import {
   InAppChannel,
   createDatabaseProviderDefinition,
   createInAppChannelDefinition,
+  validateInAppMessage,
 } from '../server/definition.js';
 import { MemoryInAppStore } from '../server/store.js';
 
@@ -184,4 +185,42 @@ it('resolves class dependencies through the container and stores one item per de
   expect(await channel.send(input)).toEqual({ status: 'accepted' });
   expect(await store.countUnread('user')).toBe(1);
   expect(users.get).toHaveBeenCalledWith('user');
+});
+
+describe('InAppChannel for notify()', () => {
+  it('reaches every user by id and composes a message carrying the kind, category and source', async () => {
+    const channel = Object.create(InAppChannel.prototype) as InAppChannel;
+    const resolved = await channel.resolveUsers(['user-1', 'user-2']);
+    expect([...resolved]).toEqual([
+      ['user-1', [{ userId: 'user-1' }]],
+      ['user-2', [{ userId: 'user-2' }]],
+    ]);
+    const message = channel.compose(
+      {
+        kind: 'approval.requested',
+        category: 'approvals',
+        title: 'Approve the budget',
+        body: '',
+        target: { type: 'route', path: '/approvals/42' },
+        source: { type: 'approval', referenceId: '42' },
+        key: 'k',
+      },
+      [{ userId: 'user-1' }, { userId: 'user-2' }],
+    );
+    expect(validateInAppMessage(message)).toEqual({
+      message: {
+        to: ['user-1', 'user-2'],
+        title: 'Approve the budget',
+        body: 'Approve the budget',
+        target: { type: 'route', path: '/approvals/42' },
+        kind: 'approval.requested',
+        category: 'approvals',
+        source: { type: 'approval', id: '42' },
+      },
+      recipients: [{ userId: 'user-1' }, { userId: 'user-2' }],
+    });
+    expect(() =>
+      validateInAppMessage({ ...message, source: { id: '42' } }),
+    ).toThrow('In-app source');
+  });
 });

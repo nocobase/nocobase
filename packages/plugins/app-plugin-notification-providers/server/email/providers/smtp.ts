@@ -1,8 +1,10 @@
 import { loggingToken } from '@nocobase/app-server/logging';
 import type {
+  ChannelConfigSummaryItem,
   ChannelContext,
   NotificationI18nText,
 } from '@nocobase/app-plugin-notification';
+import { maskedSecret, PROVIDERS_CONTRIBUTOR } from '../../summary.js';
 import {
   type NotificationProviderDefinition,
   type ProviderSendResult,
@@ -65,6 +67,19 @@ export interface SmtpChannelConfig extends Omit<
 /** Legacy inline channel. It creates its own sender from the application factory and closes it with itself. */
 export class SmtpChannel extends MailSenderChannel {
   static readonly type = 'smtp';
+  static readonly contributor: string = PROVIDERS_CONTRIBUTOR;
+  /** Connection settings with the secret masked. */
+  static summarize(
+    config: SmtpChannelConfig,
+  ): readonly ChannelConfigSummaryItem[] {
+    return [
+      { label: 'host', value: `${config.host}:${config.port}` },
+      { label: 'secure', value: String(config.secure ?? false) },
+      { label: 'auth.user', value: config.auth?.user ?? 'not set' },
+      { label: 'auth.pass', value: maskedSecret(config.auth?.pass) },
+      { label: 'from', value: config.from ?? 'not set' },
+    ];
+  }
   static readonly label: NotificationI18nText = notificationProviderText(
     'providers.smtp',
     'SMTP',
@@ -80,6 +95,7 @@ export class SmtpChannel extends MailSenderChannel {
         provider: 'smtp',
       }),
       undefined,
+      context.container,
     );
     if (context.container.has(loggingToken))
       context.container

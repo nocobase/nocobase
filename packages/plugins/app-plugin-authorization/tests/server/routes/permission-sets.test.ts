@@ -372,6 +372,29 @@ describe('protected Permission Sets', () => {
     ) => router.request(`${PATH}/${key}`, json('PATCH', input));
     const grants = [settings('authorization.permission-sets', ['read'])];
 
+    const rootTitle = await router.request(
+      `${PATH}/root`,
+      json('PATCH', { title: 'Administrators' }),
+    );
+    expect(rootTitle.status).toBe(200);
+    for (const input of [
+      { grants: [] },
+      { key: 'other' },
+      { title: 'Other', grants: [] },
+    ]) {
+      expect(
+        (await router.request(`${PATH}/root`, json('PATCH', input))).status,
+      ).toBe(400);
+    }
+    expect((await router.request(`${PATH}/root`, json('DELETE'))).status).toBe(
+      400,
+    );
+    expect(await api.get('root')).toMatchObject({
+      key: 'root',
+      title: 'Administrators',
+      grants: [],
+    });
+
     const edited = await update('member', {
       key: 'member',
       title: 'Members',

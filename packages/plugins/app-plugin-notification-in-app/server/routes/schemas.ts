@@ -9,6 +9,7 @@ export const InboxListQuery: z.ZodObject<{
   pageSize: z.ZodDefault<z.ZodCoercedNumber<unknown>>;
   pageToken: z.ZodOptional<z.ZodString>;
   unreadOnly: z.ZodOptional<z.ZodEnum<{ true: 'true'; false: 'false' }>>;
+  category: z.ZodOptional<z.ZodString>;
 }> = z.object({
   pageSize: z.coerce
     .number()
@@ -24,8 +25,24 @@ export const InboxListQuery: z.ZodObject<{
     .optional()
     .describe('The continuation token returned by the previous page.'),
   unreadOnly: z.enum(['true', 'false']).optional(),
+  category: z
+    .string()
+    .min(1)
+    .max(100)
+    .optional()
+    .describe('Only messages of this notification category key.'),
 });
 export type InboxListQuery = z.infer<typeof InboxListQuery>;
+
+/** The query of `GET /notificationInApp/messages/unreadCount`. */
+export const InboxUnreadCountQuery: z.ZodObject<{
+  byCategory: z.ZodOptional<z.ZodEnum<{ true: 'true'; false: 'false' }>>;
+}> = z.object({
+  byCategory: z
+    .enum(['true', 'false'])
+    .optional()
+    .describe('Also count the unread messages of each category.'),
+});
 
 export const InboxMessageParams: z.ZodObject<{ messageId: z.ZodString }> =
   z.object({
@@ -63,6 +80,21 @@ export const InboxMessageSchema: z.ZodType = z
       ])
       .optional()
       .meta({ description: 'Where opening the message leads.' }),
+    kind: z.string().optional().meta({
+      description:
+        'The notification kind the message was sent for; absent on messages sent without one.',
+    }),
+    category: z.string().optional().meta({
+      description: "The kind's category key, which the inbox filters by.",
+    }),
+    sourceType: z
+      .string()
+      .optional()
+      .meta({ description: 'What kind of record the message is about.' }),
+    sourceId: z
+      .string()
+      .optional()
+      .meta({ description: 'The record the message is about.' }),
     readAt: z.iso.datetime().optional().meta({
       description: 'When the message was read; absent while it is unread.',
     }),
@@ -77,6 +109,17 @@ export const InboxUnreadCountSchema: z.ZodType = z.object({
     .int()
     .min(0)
     .meta({ description: 'The number of unread messages in the inbox.' }),
+  categories: z
+    .array(
+      z.object({
+        category: z.string().optional().meta({
+          description: 'The category key; absent for messages without one.',
+        }),
+        count: z.number().int().min(1),
+      }),
+    )
+    .optional()
+    .meta({ description: 'Per category, with `byCategory=true` only.' }),
 });
 
 export const InboxMarkAllReadSchema: z.ZodType = z.object({

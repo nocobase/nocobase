@@ -2,7 +2,10 @@ import type { LocaleResource } from '@nocobase/i18n';
 
 import type enUS from './en-US.js';
 
+import pagesEsES from '../../shared/locales/pages.es-ES.js';
+
 const esES: LocaleResource<typeof enUS> = {
+  access: pagesEsES.access,
   errors: {
     originalNotFound:
       'El mensaje original ya no está disponible en el proveedor de correo.',

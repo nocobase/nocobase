@@ -12,7 +12,7 @@ import type {
   MailListMessagesInput,
   MailMessage,
   MailMessageSummary,
-  MailOffsetPage,
+  MailManagedLogFilter,
   MailOutboundAttachment,
   MailPage,
   MailProviderError,
@@ -141,6 +141,13 @@ export interface MailCreateSyncRunInput {
   readonly requestedBy: string;
   readonly mode: MailSyncMode;
   readonly policy: MailInitialSyncPolicy;
+}
+
+export interface MailProviderAccountCount {
+  readonly providerType: string;
+  readonly providerName: string;
+  readonly status: string;
+  readonly count: number;
 }
 
 export interface MailStoredSubmission extends MailSubmission {
@@ -409,10 +416,12 @@ export interface MailStore {
   ): Promise<readonly MailSyncRun[]>;
   recoverSyncRuns(now: string): Promise<number>;
   /** Every user's sync runs, newest first, one page at a time. */
+  /** Newest first, continuing after `pageToken`, the `nextCursor` of the previous page. */
   listAllSyncRuns(
-    offset: number,
+    pageToken: string | undefined,
     limit: number,
-  ): Promise<MailOffsetPage<MailSyncRun>>;
+    filter?: MailManagedLogFilter,
+  ): Promise<MailPage<MailSyncRun>>;
   cancelSyncRun(syncRunId: string): Promise<MailSyncRun | undefined>;
   claimSyncRun(
     syncRunId: string,
@@ -449,10 +458,16 @@ export interface MailStore {
     action: 'retry' | 'cancel',
   ): Promise<MailStoredSubmission>;
   /** Every user's submissions, newest first, one page at a time. */
+  /** Newest first, continuing after `pageToken`, the `nextCursor` of the previous page. */
   listAllSubmissions(
-    offset: number,
+    pageToken: string | undefined,
     limit: number,
-  ): Promise<MailOffsetPage<MailStoredSubmission>>;
+    filter?: MailManagedLogFilter,
+  ): Promise<MailPage<MailStoredSubmission>>;
+  /** When each account last finished a synchronization, by account id, in one query. */
+  listLastSyncedAt?(): Promise<ReadonlyMap<string, string>>;
+  /** How many accounts each configured Provider has in each status, for the Mail settings overview. */
+  countAccountsByProvider?(): Promise<readonly MailProviderAccountCount[]>;
   createSubmission(
     submission: MailSubmission,
     idempotencyKey: string,
@@ -498,6 +513,19 @@ export interface MailStore {
     publishedAt: string,
   ): Promise<boolean>;
   deletePublishedOutboxBefore?(before: string): Promise<number>;
+  /**
+   * Delete up to `limit` sync runs created before `before` that have finished (`completed`, `partial`, `failed`,
+   * `cancelled`), oldest first, with their tombstones; answers how many were deleted.
+   */
+  deleteFinishedSyncRunsBefore?(before: string, limit: number): Promise<number>;
+  /**
+   * Delete up to `limit` submissions created before `before` that have finished (`accepted`, `failed`, `unknown`,
+   * `cancelled`), oldest first; answers how many were deleted. Pending, scheduled and submitting ones stay.
+   */
+  deleteFinishedSubmissionsBefore?(
+    before: string,
+    limit: number,
+  ): Promise<number>;
   releaseOutbox(
     outboxId: string,
     leaseToken: string,

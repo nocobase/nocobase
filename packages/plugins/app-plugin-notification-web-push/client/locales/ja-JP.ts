@@ -3,6 +3,11 @@ import type { LocaleResource } from '@nocobase/i18n';
 import type enUS from './en-US.js';
 
 const jaJP: LocaleResource<typeof enUS> = {
+  'push.deviceCount': '登録済み {{total}} 台 · 有効 {{active}} 台',
+  'push.active': '有効',
+  'push.paused': '一時停止中',
+  'push.pause': '一時停止',
+  'push.resume': '再開',
   'push.title': 'プッシュ通知',
   'push.description':
     'アプリを閉じている場合でも、各デバイスでリマインダーを受信します。',
@@ -33,6 +38,9 @@ const jaJP: LocaleResource<typeof enUS> = {
   'push.failed': 'プッシュ通知を更新できません。もう一度試してください。',
   'push.loadingFailed': 'デバイスをロードできません。もう一度試してください。',
   'push.retry': '再試行',
+  'channelType.title': 'ブラウザープッシュ',
+  'channelType.testHint':
+    'プッシュをオンにしたブラウザーにテスト通知を送ります。先に個人設定 › 通知でオンにしてください。',
 };
 
 export default jaJP;

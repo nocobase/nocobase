@@ -15,8 +15,9 @@ export interface UsersClientOptions {
 }
 
 /**
- * Registers the invitation page an invitation email links to. The plugin contributes no user management page: an
- * application that manages users builds that page on `UsersClient` and declares it among its own routes.
+ * Registers User management under System settings (`/settings/users`, with its New user dialog and Edit user drawer)
+ * and the invitation page an invitation email links to. An application replaces any of the management pages through
+ * `routeComponentOverrides` with `USERS_ROUTE_ID`, `USER_CREATE_ROUTE_ID` or `USER_EDIT_ROUTE_ID`.
  */
 const users: AppClientPluginFactory<UsersClientOptions> = defineClientPlugin({
   packageName: '@nocobase/app-plugin-users',

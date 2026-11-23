@@ -13,7 +13,6 @@ import { BotMessageSquare, Check, Info } from 'lucide-react';
 import { PageContainer } from '#components/page-container';
 import { PageHeader } from '#components/page-header';
 import { useModelCatalog } from '#components/online-agent/use-model-catalog';
-import { useOnlineAgentIdentityActive } from '#components/online-agent/identity-context';
 import { FormValuesEditor } from '#components/online-agent/form-values-editor';
 import {
   parseEditorValues,
@@ -54,7 +53,6 @@ export default function AIFormFillPage(): ReactElement {
   const panel = useChatPanel();
   const api = useChatApi();
   const catalog = useModelCatalog(true);
-  const identityActive = useOnlineAgentIdentityActive();
   const [values, setValues] = useState<FormEditorValues>({});
   const draftRef = useRef(values);
   const revisionRef = useRef(0);
@@ -173,7 +171,7 @@ export default function AIFormFillPage(): ReactElement {
   useChatUIContextSource(source);
 
   const ask = async () => {
-    if (busy || !catalog.canSend || !panel.available || !identityActive())
+    if (busy || !catalog.canSend || !panel.available || !mountedRef.current)
       return;
     setBusy(true);
     setFailure(false);
@@ -188,16 +186,16 @@ export default function AIFormFillPage(): ReactElement {
         config: { scope: [EXAMPLES_FORM_SCOPE] },
         selectedModel: { modelService: service.name, model: model.value },
       });
-      if (!mountedRef.current || !identityActive()) return;
+      if (!mountedRef.current) return;
       panel.openChat({
         conversationId: conversation.id,
         draft: t('aiFormFill.prompt'),
         uiSources: [sourceRef],
       });
     } catch {
-      if (mountedRef.current && identityActive()) setFailure(true);
+      if (mountedRef.current) setFailure(true);
     } finally {
-      if (mountedRef.current && identityActive()) setBusy(false);
+      if (mountedRef.current) setBusy(false);
     }
   };
   const unavailable = !catalog.canSend || !panel.available;
@@ -272,7 +270,7 @@ export default function AIFormFillPage(): ReactElement {
                 <TooltipContent>
                   {t(
                     catalog.phase === 'loading'
-                      ? 'onlineAgent.checkingModels'
+                      ? 'aiExamples.checkingModels'
                       : unavailable
                         ? 'aiFormFill.unavailable'
                         : 'aiFormFill.chatHint',

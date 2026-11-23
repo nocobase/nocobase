@@ -4,7 +4,7 @@ import {
 } from '@nocobase/app-plugin-notification';
 import { randomUUID } from 'node:crypto';
 import type { DatabaseManager, Row } from '@nocobase/db';
-import type { InAppItem, InAppMessage } from './types.js';
+import type { InAppCategoryCount, InAppItem, InAppMessage } from './types.js';
 
 export interface InAppPageCursor {
   readonly createdAt: string;
@@ -22,10 +22,14 @@ export interface InAppStore {
   list(input: {
     readonly userId: string;
     readonly unreadOnly?: boolean;
+    /** Only messages of this category key. */
+    readonly category?: string;
     readonly limit?: number;
     readonly before?: InAppPageCursor;
   }): Promise<readonly InAppItem[]>;
   countUnread(userId: string): Promise<number>;
+  /** Unread messages per category, in one query. */
+  countUnreadByCategory(userId: string): Promise<readonly InAppCategoryCount[]>;
   update(input: {
     readonly id: string;
     readonly userId: string;
@@ -55,6 +59,7 @@ export class MemoryInAppStore implements InAppStore {
       title: input.message.title,
       body: input.message.body,
       target: validateNotificationTarget(input.message.target),
+      ...about(input.message),
       createdAt: input.createdAt,
       updatedAt: input.createdAt,
     };
@@ -64,6 +69,7 @@ export class MemoryInAppStore implements InAppStore {
   async list(input: {
     readonly userId: string;
     readonly unreadOnly?: boolean;
+    readonly category?: string;
     readonly limit?: number;
     readonly before?: InAppPageCursor;
   }): Promise<readonly InAppItem[]> {
@@ -72,6 +78,7 @@ export class MemoryInAppStore implements InAppStore {
         (item) =>
           item.userId === input.userId &&
           (!input.unreadOnly || !item.readAt) &&
+          (input.category === undefined || item.category === input.category) &&
           (!input.before || isBefore(item, input.before)),
       )
       .sort(compareItemsDescending)
@@ -85,6 +92,17 @@ export class MemoryInAppStore implements InAppStore {
         limit: Number.MAX_SAFE_INTEGER,
       })
     ).length;
+  }
+  async countUnreadByCategory(
+    userId: string,
+  ): Promise<readonly InAppCategoryCount[]> {
+    const counts = new Map<string | undefined, number>();
+    for (const item of this.items.values())
+      if (item.userId === userId && !item.readAt)
+        counts.set(item.category, (counts.get(item.category) ?? 0) + 1);
+    return [...counts].map(([category, count]) =>
+      category === undefined ? { count } : { category, count },
+    );
   }
   async update(input: {
     readonly id: string;
@@ -130,6 +148,10 @@ interface ItemRow extends Row {
   title?: string;
   body: string;
   target?: NotificationTarget | null;
+  kind?: string | null;
+  category?: string | null;
+  sourceType?: string | null;
+  sourceId?: string | null;
   readAt?: string | null;
   createdAt: string;
   updatedAt: string;
@@ -152,6 +174,7 @@ export class DatabaseInAppStore implements InAppStore {
       title: input.message.title,
       body: input.message.body,
       target: validateNotificationTarget(input.message.target),
+      ...about(input.message),
       createdAt: input.createdAt,
       updatedAt: input.createdAt,
     };
@@ -176,6 +199,7 @@ export class DatabaseInAppStore implements InAppStore {
   async list(input: {
     readonly userId: string;
     readonly unreadOnly?: boolean;
+    readonly category?: string;
     readonly limit?: number;
     readonly before?: InAppPageCursor;
   }): Promise<readonly InAppItem[]> {
@@ -188,6 +212,8 @@ export class DatabaseInAppStore implements InAppStore {
       .orderBy('id', 'desc')
       .limit(input.limit ?? 25);
     if (input.unreadOnly) query = query.where('readAt', 'is', null);
+    if (input.category !== undefined)
+      query = query.where('category', '=', input.category);
     if (input.before)
       query = query.where((builder) =>
         builder.or([
@@ -209,6 +235,23 @@ export class DatabaseInAppStore implements InAppStore {
       .where('readAt', 'is', null)
       .executeTakeFirst<{ count: number | string }>();
     return Number(rows?.count ?? 0);
+  }
+  async countUnreadByCategory(
+    userId: string,
+  ): Promise<readonly InAppCategoryCount[]> {
+    const rows = await this.database
+      .query()
+      .selectFrom<ItemRow>('notificationInAppItems')
+      .select(({ fn }) => ['category', fn.countAll<number>().as('count')])
+      .where('userId', '=', userId)
+      .where('readAt', 'is', null)
+      .groupBy('category')
+      .execute<{ category: string | null; count: number | string }>();
+    return rows.map(({ category, count }) =>
+      category === null
+        ? { count: Number(count) }
+        : { category, count: Number(count) },
+    );
   }
   async update(input: {
     readonly id: string;
@@ -282,6 +325,10 @@ function fromRow(row: ItemRow): InAppItem {
     title: row.title,
     body: row.body,
     target: validateNotificationTarget(row.target),
+    ...(row.kind ? { kind: row.kind } : {}),
+    ...(row.category ? { category: row.category } : {}),
+    ...(row.sourceType ? { sourceType: row.sourceType } : {}),
+    ...(row.sourceId ? { sourceId: row.sourceId } : {}),
     readAt: row.readAt ?? undefined,
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,
@@ -296,9 +343,26 @@ function toRow(item: InAppItem): ItemRow {
     title: item.title,
     body: item.body,
     target: item.target ?? null,
+    // Written only when set, so a message without them also fits a table migrated before they existed.
+    ...(item.kind ? { kind: item.kind } : {}),
+    ...(item.category ? { category: item.category } : {}),
+    ...(item.sourceType ? { sourceType: item.sourceType } : {}),
+    ...(item.sourceId ? { sourceId: item.sourceId } : {}),
     readAt: item.readAt,
     createdAt: item.createdAt,
     updatedAt: item.updatedAt,
+  };
+}
+
+/** What a message is about, as the item stores it. */
+function about(
+  message: InAppMessage,
+): Pick<InAppItem, 'kind' | 'category' | 'sourceType' | 'sourceId'> {
+  return {
+    ...(message.kind ? { kind: message.kind } : {}),
+    ...(message.category ? { category: message.category } : {}),
+    ...(message.source?.type ? { sourceType: message.source.type } : {}),
+    ...(message.source?.id ? { sourceId: message.source.id } : {}),
   };
 }
 

@@ -16,3 +16,6 @@ export * from './types.js';
 export * from '../shared/target.js';
 
 export type * from './channel-type.js';
+export * from './preferences.js';
+export * from '../shared/access.js';
+export type * from '../shared/preferences.js';

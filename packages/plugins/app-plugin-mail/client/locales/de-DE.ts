@@ -2,7 +2,10 @@ import type { LocaleResource } from '@nocobase/i18n';
 
 import type enUS from './en-US.js';
 
+import pagesDeDE from '../../shared/locales/pages.de-DE.js';
+
 const deDE: LocaleResource<typeof enUS> = {
+  ...pagesDeDE,
   content: {
     tooLarge:
       'Der Text überschreitet die Anzeigebeschränkung von 16 MiB. Öffnen Sie es in Ihrem ursprünglichen Postfach. Anhänge können weiterhin heruntergeladen werden.',
@@ -603,6 +606,7 @@ const deDE: LocaleResource<typeof enUS> = {
     drafts: 'Entwürfe',
     moveMessage: 'Nachrichten verschieben',
     aliases: 'Aliase',
+    downloadOriginal: 'Original herunterladen',
   },
   status: {
     account: {

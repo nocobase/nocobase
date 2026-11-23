@@ -3,6 +3,11 @@ import type { LocaleResource } from '@nocobase/i18n';
 import type enUS from './en-US.js';
 
 const ruRU: LocaleResource<typeof enUS> = {
+  'push.deviceCount': 'Зарегистрировано: {{total}} · Включено: {{active}}',
+  'push.active': 'Enabled',
+  'push.paused': 'Paused',
+  'push.pause': 'Pause',
+  'push.resume': 'Resume',
   'push.title': 'Push-уведомления',
   'push.description':
     'Получайте напоминания на каждом устройстве, даже когда приложение закрыто.',
@@ -32,6 +37,9 @@ const ruRU: LocaleResource<typeof enUS> = {
   'push.failed': 'Не удалось обновить push-уведомления. Повторите попытку.',
   'push.loadingFailed': 'Не удалось загрузить устройства. Повторите попытку.',
   'push.retry': 'Повторить',
+  'channelType.title': 'Push в браузере',
+  'channelType.testHint':
+    'Отправляет тестовое уведомление в браузеры, где вы включили push. Сначала включите его в Личных настройках › Уведомления.',
 };
 
 export default ruRU;

@@ -15,6 +15,11 @@ const ptBR: LocaleResource<typeof enUS> = {
   plugin: 'Plug-in',
   scope: 'Escopo',
   message: 'Mensagem',
+  settingsTitle: 'Configurações do exemplo de rotas',
+  settingsDescription:
+    'Declarado pelo plugin de exemplo de rotas com defineSystemSettingsRoutes().',
+  settingsBody:
+    'Esta página de configurações vem de um plugin. Ela é declarada com defineSystemSettingsRoutes(), entra na categoria Sistema e fica em /settings.',
 };
 
 export default ptBR;

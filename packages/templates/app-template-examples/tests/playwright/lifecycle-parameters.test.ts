@@ -25,7 +25,9 @@ test('opens workflow-owned configuration and preserves conflicting drafts', asyn
     .fill(process.env.E2E_PASSWORD!);
   await page.getByRole('button', { name: 'Sign in', exact: true }).click();
   await page.waitForURL((url) => !url.pathname.endsWith('/login'));
-  await page.goto(app + '/workflows/definitions/lifecycle.expenses?version=1');
+  await page.goto(
+    app + '/settings/workflows/definitions/lifecycle.expenses?version=1',
+  );
   await expect(
     page.getByRole('heading', { name: 'Draft', exact: true }),
   ).toBeVisible();
@@ -122,7 +124,7 @@ test('protects unsaved version parameters and saves only the original definition
   const original = [await read(1), await read(2)];
   try {
     await page.goto(
-      app + '/workflows/definitions/lifecycle.expenses?version=1',
+      app + '/settings/workflows/definitions/lifecycle.expenses?version=1',
     );
     const input = page.getByLabel('Automatic approval limit (yuan)', {
       exact: true,
@@ -285,7 +287,7 @@ test('ignores a previous version configuration response arriving after version n
       ).json()
     ).data;
     await page.goto(
-      app + '/workflows/definitions/lifecycle.expenses?version=1',
+      app + '/settings/workflows/definitions/lifecycle.expenses?version=1',
     );
     await waiting;
     await page

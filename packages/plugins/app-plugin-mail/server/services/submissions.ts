@@ -3,12 +3,18 @@ import { recipientIssues } from '../../shared/addresses.js';
 import { createHash } from 'node:crypto';
 import { SendMailOperation } from '../operations/send-mail.js';
 import {
+  type MailManagedSubmissionView,
   type MailOperationContext,
   type MailOffsetPage,
   type MailSubmissionLogView,
   type MailSubmissionView,
 } from '../../shared/mail.js';
-import { toSubmissionLogView, toSubmissionView } from '../views.js';
+import { type MailStoredSubmission } from '../contracts/persistence.js';
+import {
+  toManagedSubmissionView,
+  toSubmissionLogView,
+  toSubmissionView,
+} from '../views.js';
 import { type MailServiceDependencies } from './dependencies.js';
 import { mailInvalidArgument, mailNotFound } from './errors.js';
 
@@ -69,6 +75,32 @@ export class MailSubmissionsService {
     submissionId: string,
     action: 'retry' | 'cancel',
   ): Promise<MailSubmissionLogView> {
+    return toSubmissionLogView(
+      await this.transition(context, submissionId, action, true),
+    );
+  }
+
+  /**
+   * Retry or cancel any member's submission, for a caller with `settings:mail.admin/manage`. The submission is sent,
+   * or not, exactly as its owner's own retry or cancellation would; the answer is the settings view, without content.
+   */
+  public async transitionManagedSubmission(
+    context: MailOperationContext,
+    submissionId: string,
+    action: 'retry' | 'cancel',
+  ): Promise<MailManagedSubmissionView> {
+    return toManagedSubmissionView(
+      await this.transition(context, submissionId, action, false),
+      true,
+    );
+  }
+
+  private async transition(
+    context: MailOperationContext,
+    submissionId: string,
+    action: 'retry' | 'cancel',
+    ownOnly: boolean,
+  ): Promise<MailStoredSubmission> {
     const scheduled =
       await this.dependencies.store.getScheduledSubmission(submissionId);
     const account = scheduled
@@ -77,8 +109,9 @@ export class MailSubmissionsService {
     if (
       !scheduled ||
       !account ||
-      account.userId !== context.actorId ||
-      scheduled.actorId !== context.actorId
+      (ownOnly &&
+        (account.userId !== context.actorId ||
+          scheduled.actorId !== context.actorId))
     ) {
       throw mailNotFound(
         'MAIL_SUBMISSION_NOT_FOUND',
@@ -93,10 +126,10 @@ export class MailSubmissionsService {
     if (action === 'retry') this.dependencies.outbox?.kick();
     notifyMailMessageChange(
       this.dependencies.messageChangeNotifier,
-      context.actorId,
+      account.userId,
       this.dependencies.logger,
     );
-    return toSubmissionLogView(submission);
+    return submission;
   }
 
   public async sendMessage(

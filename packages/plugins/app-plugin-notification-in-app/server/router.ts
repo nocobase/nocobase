@@ -19,6 +19,7 @@ import {
   InboxMarkAllReadSchema,
   InboxMessageParams,
   InboxMessageSchema,
+  InboxUnreadCountQuery,
   InboxUnreadCountSchema,
 } from './routes/schemas.js';
 import type { InAppStore } from './store.js';
@@ -85,7 +86,7 @@ export function createInAppRouter(
         columns: ['id', 'title', 'readAt', 'createdAt'],
       }),
       description:
-        "The signed-in user's messages, newest first. `unreadOnly=true` lists only unread ones. Pages by `pageToken`: pass `meta.nextPageToken` back unchanged; it is absent on the last page, and a token this list did not issue answers 400 `IN_APP_NOTIFICATION_INVALID_PAGE_TOKEN`.",
+        "The signed-in user's messages, newest first. `unreadOnly=true` lists only unread ones, `category` only those of a notification category. Pages by `pageToken`: pass `meta.nextPageToken` back unchanged; it is absent on the last page, and a token this list did not issue answers 400 `IN_APP_NOTIFICATION_INVALID_PAGE_TOKEN`.",
       responses: {
         200: listResponse(InboxMessageSchema),
         ...inboxErrorResponses,
@@ -97,7 +98,8 @@ export function createInAppRouter(
     }),
     apiValidator('query', InboxListQuery),
     async (context) => {
-      const { pageSize, pageToken, unreadOnly } = context.req.valid('query');
+      const { pageSize, pageToken, unreadOnly, category } =
+        context.req.valid('query');
       const before =
         pageToken === undefined ? undefined : parsePageToken(pageToken);
       if (pageToken !== undefined && !before)
@@ -110,6 +112,7 @@ export function createInAppRouter(
       const rows = await store.list({
         userId: context.var.notificationUserId,
         unreadOnly: unreadOnly === 'true',
+        ...(category ? { category } : {}),
         limit: pageSize + 1,
         before,
       });
@@ -131,18 +134,27 @@ export function createInAppRouter(
       summary: 'Count the unread messages in the inbox',
       operationId: 'notificationInAppCountUnreadMessages',
       ...cliRoute({ command: 'inbox unread-count' }),
-      description: inboxDescription,
+      description: `${inboxDescription} \`byCategory=true\` also counts each category.`,
       responses: {
         200: dataResponse(InboxUnreadCountSchema),
         ...inboxErrorResponses,
       },
     }),
-    async (context) =>
-      context.json({
+    apiValidator('query', InboxUnreadCountQuery),
+    async (context) => {
+      const userId = context.var.notificationUserId;
+      if (context.req.valid('query').byCategory !== 'true')
+        return context.json({
+          data: { count: await store.countUnread(userId) },
+        });
+      const categories = await store.countUnreadByCategory(userId);
+      return context.json({
         data: {
-          count: await store.countUnread(context.var.notificationUserId),
+          count: categories.reduce((total, item) => total + item.count, 0),
+          categories,
         },
-      }),
+      });
+    },
   );
   router.post(
     '/messages/markAllRead',

@@ -31,6 +31,7 @@ const idID: LocaleResource<typeof enUS> = {
     },
     settings: {
       'permission-sets': 'Kumpulan izin',
+      'authentication-settings': 'Masuk dan autentikasi',
     },
     subjectTypes: {
       authenticated: 'Semua pengguna yang masuk',

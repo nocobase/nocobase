@@ -17,3 +17,7 @@ Agents run on runners and do not use model services. The plugin keeps model serv
 Agents 2 removes the legacy vector collection service. Use the model gateway for Embedding; Knowledge owns its independent document indexing and storage. Before upgrading an existing integration, read `@nocobase/app-plugin-agents/docs/vectors-migration.md`. There is no automatic conversion of legacy collections.
 
 Native OnlineAgent web search supports DeepSeek's official Search API through the existing configured model service. Enable the existing `webSearch` tool; do not add a separate search tool or business gateway contract. Retrieval returns bounded findings and safe title/URL sources, without page bodies. The official root and `/v1` endpoints are admitted, and queries above 128 Unicode code points fail individually under the existing result contract. Read `docs/native-web-search.md` in this package for the shared timeout, cancellation and failure behavior, key protection and vendor billing.
+
+## Registering a provider
+
+A plugin adds a model service provider on the server with `agentsToken`'s `models.providers.register({ type, title, kinds, defaultBaseUrl?, keyRequired?, create })`, in a service provider's `boot`. `create(connection)` returns AI SDK models (`language`, `embedding`, `rerank`) and `listModels(signal)`; the provider appears in "Add service" (`GET /api/agents/modelProviders`) and its services are tested and called through it. The README's "Model services" section has an example.
