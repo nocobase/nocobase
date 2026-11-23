@@ -214,4 +214,57 @@ describe('skill metadata and the application skill policy', () => {
     expect(kept.status).toBe(200);
     expect(kept.body.data.skillIds).toEqual([flow.id, plain.id]);
   });
+  it('says who wrote the current version: null for the application, the person after a save', async () => {
+    h = await createHarness();
+    const installed = await h.services.skills.create(null, {
+      content: skillMd('installed', 'By the application.'),
+    });
+    expect(installed.createdById).toBeNull();
+    expect(installed.updatedById).toBeNull();
+    const saved = await h.services.skills.save(installed.id, 'alice', {
+      content: skillMd('installed', 'Edited by a person.'),
+      files: [],
+      expectedRevision: installed.version,
+    });
+    expect(saved.createdById).toBeNull();
+    expect(saved.updatedById).toBe('alice');
+    const [listed] = await h.services.skills.list([installed.id]);
+    expect(listed?.updatedById).toBe('alice');
+  });
+
+  it('lists only the given skills, and asks the policy only about the newly attached ones', async () => {
+    const asked: string[] = [];
+    h = await createHarness({
+      skillPolicy: {
+        canAttach: (skill) => {
+          asked.push(skill.slug);
+          return true;
+        },
+      },
+    });
+    const created = [];
+    for (const name of ['one', 'two', 'three', 'four'])
+      created.push(
+        await h.services.skills.create('alice', {
+          content: skillMd(name, name),
+        }),
+      );
+    const [one, two, three] = created;
+    expect(
+      (await h.services.skills.list([three!.id, one!.id, 'missing'])).map(
+        (s) => s.slug,
+      ),
+    ).toEqual(['one', 'three']);
+    expect(await h.services.skills.list([])).toEqual([]);
+    await h.services.skills.attach({ scope: 'global', scopeId: 'default' }, [
+      one!.id,
+    ]);
+    const response = await h.request(
+      'PUT',
+      '/agents/skillAttachments/global/default',
+      { user: 'alice', can: ADMIN, body: { skillIds: [one!.id, two!.id] } },
+    );
+    expect(response.status).toBe(200);
+    expect(asked).toEqual(['two']);
+  });
 });

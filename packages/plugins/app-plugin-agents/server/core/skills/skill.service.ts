@@ -171,7 +171,8 @@ export interface SkillTarget {
 }
 
 export interface SkillService {
-  list(): Promise<Skill[]>;
+  /** Every skill, or only those with these ids (unknown ids are left out): two queries whatever their number. */
+  list(ids?: readonly string[]): Promise<Skill[]>;
   get(id: string): Promise<SkillDetail>;
   create(userId: string | null, input: SkillInput): Promise<SkillDetail>;
   /**
@@ -500,6 +501,7 @@ export function createSkillService(deps: SkillServiceDeps): SkillService {
       scriptCount: scripts.length,
       scripts,
       createdById: skill.createdById,
+      updatedById: current?.createdById ?? null,
       createdAt: skill.createdAt,
       updatedAt: skill.updatedAt,
     };
@@ -708,19 +710,31 @@ export function createSkillService(deps: SkillServiceDeps): SkillService {
   };
 
   return {
-    async list() {
+    async list(ids) {
       const conn = tx.read();
+      const unique = ids ? [...new Set(ids)] : undefined;
+      if (unique?.length === 0) return [];
       const skills = await skillsRepo(conn).findMany({
+        ...(unique
+          ? { filter: (f) => f.or(unique.map((id) => f.string('id').eq(id))) }
+          : {}),
         sort: (sort) => [sort.field('name').asc(), sort.field('id').asc()],
       });
-      const result: Skill[] = [];
-      for (const skill of skills) {
-        const current = await versionsRepo(conn).findOne({
-          filter: { skillId: skill.id, version: skill.currentVersion },
-        });
-        result.push(summary(skill, current));
-      }
-      return result;
+      if (skills.length === 0) return [];
+      // Every current version at once, rather than one query per skill.
+      const currents = await versionsRepo(conn).findMany({
+        filter: (f) =>
+          f.or(
+            skills.map((skill) =>
+              f.and([
+                f.string('skillId').eq(skill.id),
+                f.number('version').eq(Number(skill.currentVersion)),
+              ]),
+            ),
+          ),
+      });
+      const byId = new Map(currents.map((row) => [row.skillId, row]));
+      return skills.map((skill) => summary(skill, byId.get(skill.id)));
     },
 
     get: (id) => detail(tx.read(), id),

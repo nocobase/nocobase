@@ -1085,6 +1085,10 @@ const skillObject = z.object({
     .array(z.string())
     .meta({ description: 'The paths of those scripts.' }),
   createdById: z.string().nullable(),
+  updatedById: z.string().nullable().meta({
+    description:
+      'Who wrote the current version: null when the application did (a seed or a plugin).',
+  }),
   createdAt: dateTime,
   updatedAt: dateTime,
 });
