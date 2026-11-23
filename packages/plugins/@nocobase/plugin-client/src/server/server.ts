@@ -8,6 +8,7 @@
  */
 
 import { Model, MultipleRelationRepository, Transaction } from '@nocobase/database';
+import type { FlowModelRepository } from '@nocobase/plugin-flow-engine';
 import { Plugin } from '@nocobase/server';
 import { tval } from '@nocobase/utils';
 import _ from 'lodash';
@@ -274,7 +275,7 @@ export class PluginClientServer extends Plugin {
       }
     });
     this.db.on('desktopRoutes.afterCreate', async (instance: Model, { transaction }) => {
-      const r = this.db.getRepository('flowModels');
+      const r = this.db.getRepository<FlowModelRepository>('flowModels');
       if (r) {
         await r.create({
           transaction,
@@ -286,6 +287,36 @@ export class PluginClientServer extends Plugin {
             },
           },
         });
+        if (instance.get('type') === 'flowPage') {
+          await r.upsertModel(
+            {
+              use: 'RootPageModel',
+              parentId: instance.get('schemaUid'),
+              subKey: 'page',
+              subType: 'object',
+              async: true,
+            },
+            { transaction },
+          );
+        }
+        if (instance.get('type') === 'tabs' && instance.get('parentId')) {
+          const parent = await this.db.getRepository('desktopRoutes').findOne({
+            filterByTk: instance.get('parentId'),
+            transaction,
+          });
+          if (parent?.get('type') === 'flowPage') {
+            await r.upsertModel(
+              {
+                use: 'BlockGridModel',
+                parentId: instance.get('schemaUid'),
+                subKey: 'grid',
+                subType: 'object',
+                async: true,
+              },
+              { transaction },
+            );
+          }
+        }
       }
       const addNewMenuRoles = await this.app.db.getRepository('roles').find({
         filter: {
