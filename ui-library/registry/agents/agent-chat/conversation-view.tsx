@@ -42,6 +42,7 @@ import type {
 } from '@nocobase/app-plugin-agents/shared/models';
 import { BotMessageSquareIcon, GlobeIcon, PaperclipIcon } from 'lucide-react';
 import { Link } from 'react-router';
+import { ClientApplicationContext } from '@nocobase/app-client';
 import { useCan } from '@nocobase/app-plugin-authorization/client';
 import { createPortal } from 'react-dom';
 import {
@@ -1109,6 +1110,10 @@ function ConversationBody({
 
 function NoAgentNotice(): ReactElement {
   const { t } = useChatTranslation();
+  const app = useContext(ClientApplicationContext);
+  const hasSettings =
+    !app ||
+    app.runtime.routes.some((route) => route.surface === 'systemSettings');
   const { can: canReadSettings } = useCan({
     resource: { type: 'settings', id: 'agents.agents' },
     action: 'read',
@@ -1116,7 +1121,7 @@ function NoAgentNotice(): ReactElement {
   return (
     <p className='text-xs text-destructive' data-testid='chat-no-agent'>
       {t('chat.noAgent')}
-      {canReadSettings ? (
+      {hasSettings && canReadSettings ? (
         <Link
           className='ms-1 font-medium text-destructive underline underline-offset-2'
           to='/settings/agents'

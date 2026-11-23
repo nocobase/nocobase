@@ -11,7 +11,9 @@ import locales from './locales/index.js';
 import serviceProviders from './service-provider.js';
 
 export interface InAppNotificationClientOptions {
-  /** `false` leaves the header's inbox button out; the `/inbox` page stays. Defaults to `true`. */
+  /** Register the inbox page at inboxPath. Defaults to false. */
+  readonly inboxRoute?: boolean;
+  /** `false` leaves the header's inbox button out; the `/inbox` page is controlled separately. Defaults to `true`. */
   readonly headerButton?: boolean;
   /** Where the inbox page lives, the route named `inbox`. Defaults to `/inbox`. */
   readonly inboxPath?: string;
@@ -37,17 +39,21 @@ const notificationInApp: AppClientPluginFactory<InAppNotificationClientOptions> 
     packageName: '@nocobase/app-plugin-notification-in-app',
     locales,
     serviceProviders,
-    routes: (options): AppClientRouteContribution =>
-      defineAppRoutes([
-        {
-          // Each person's own messages only: the API answers nobody else's, so the page needs no grant of its own.
-          auth: 'required',
-          authz: 'skip',
-          name: INBOX_ROUTE_NAME,
-          path: inboxPath(options),
-          componentLoader: () => import('./pages/inbox.js'),
-        },
-      ]),
+    routes: (options): readonly AppClientRouteContribution[] =>
+      options.inboxRoute
+        ? [
+            defineAppRoutes([
+              {
+                // Each person's own messages only: the API answers nobody else's, so the page needs no grant of its own.
+                auth: 'required',
+                authz: 'skip',
+                name: INBOX_ROUTE_NAME,
+                path: inboxPath(options),
+                componentLoader: () => import('./pages/inbox.js'),
+              },
+            ]),
+          ]
+        : [],
     headerActions: (options): readonly AppClientHeaderActionDefinition[] =>
       options.headerButton === false
         ? []

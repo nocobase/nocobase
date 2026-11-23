@@ -44,6 +44,9 @@ export interface TestClientServer {
 }
 
 export interface RenderWithAppOptions {
+  /** Test applications enable both settings surfaces by default, like the templates. */
+  readonly systemSettingsRoutes?: boolean;
+  readonly personalSettingsRoutes?: boolean;
   /** Application-owned routes, composed with plugin contributions. */
   readonly routes?: AppClientRoutes;
   /** The client plugins the application registers, as its `client/plugins.ts` lists them, such as `users()`. */
@@ -176,6 +179,8 @@ export async function renderWithApp(
         packageName: '@nocobase/app-testing',
         createAppConfig: createAppClientConfig,
         serviceProviders: [TestServiceProvider],
+        systemSettingsRoutes: options.systemSettingsRoutes ?? true,
+        personalSettingsRoutes: options.personalSettingsRoutes ?? true,
         routes: options.routes,
         plugins: defineClientPlugins(plugins),
       }),

@@ -1,5 +1,5 @@
 /**
- * The plugin's client registration, `agents()` in an application's `client/plugins.ts`. Registered with no options, it
+ * The plugin's client registration, `agents()` in an application's `client/plugins.ts`. With chatRoutes and both runtime settings surfaces enabled, it
  * brings everything: the ✦ button in the header (`agent`, its badge the conversations waiting for the viewer), the
  * panel beside the content, the conversation page (`/chat/:conversationId`, route `agentChat`), the five System
  * settings pages under AI (Agent, Model services, Runtimes, Skills, Usage) and Personal settings › Preferences › Agent.
@@ -76,27 +76,31 @@ const preferencesRoutes = definePersonalSettingsRoutes([
 const factory = defineClientPlugin<AgentsClientOptions>({
   packageName: '@nocobase/app-plugin-agents',
   locales,
-  routes: (options) => [
-    agentsSettingsRoutes,
-    preferencesRoutes,
-    defineAppRoutes([
-      {
-        name: 'agentConversations',
-        path: resolveAgentsOptions(options).chatPath,
-        auth: 'required',
-        authz: 'skip',
-        breadcrumb: { title: 'myConversations' },
-        componentLoader: async () => {
-          const [{ default: Page }, { withAgents }] = await Promise.all([
-            import('./pages/chat/sessions.js'),
-            import('./query.js'),
-          ]);
-          return { default: withAgents(Page) };
+  routes: (options) => {
+    const routes = [agentsSettingsRoutes, preferencesRoutes];
+    if (!options.chatRoutes) return routes;
+    const { chatPath } = resolveAgentsOptions(options);
+    return [
+      ...routes,
+      defineAppRoutes([
+        {
+          name: 'agentConversations',
+          path: chatPath,
+          auth: 'required',
+          authz: 'skip',
+          breadcrumb: { title: 'myConversations' },
+          componentLoader: async () => {
+            const [{ default: Page }, { withAgents }] = await Promise.all([
+              import('./pages/chat/sessions.js'),
+              import('./query.js'),
+            ]);
+            return { default: withAgents(Page) };
+          },
         },
-      },
-      chatRoute(resolveAgentsOptions(options).chatPath),
-    ]),
-  ],
+        chatRoute(chatPath),
+      ]),
+    ];
+  },
   headerActions: (options) =>
     resolveAgentsOptions(options).headerAction
       ? [

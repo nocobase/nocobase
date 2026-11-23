@@ -1,5 +1,5 @@
 import { useSyncServerLocale } from '@nocobase/app-plugin-i18n/client';
-import { useMemo, type ReactElement } from 'react';
+import { Fragment, useMemo, type ReactElement } from 'react';
 import type { AppClientRegisteredRoute } from '@nocobase/app-client/plugins';
 import { Outlet, useLocation } from 'react-router';
 
@@ -61,8 +61,18 @@ export function AppLayout({
   // System and personal settings pages replace the application's menu with their own, the way back first; elsewhere
   // the single System settings entry stands apart at the bottom of the menu, and personal settings open from the
   // account menu.
-  const inPersonalSettings = isPersonalSettingsPath(pathname);
-  const inSettings = isSettingsPath(pathname) || inPersonalSettings;
+  const hasPersonalSettings = routes.some(
+    (route) => route.surface === 'personalSettings',
+  );
+  const Background = hasPersonalSettings
+    ? PersonalSettingsBackground
+    : Fragment;
+  const inPersonalSettings =
+    hasPersonalSettings && isPersonalSettingsPath(pathname);
+  const inSettings =
+    (routes.some((route) => route.surface === 'systemSettings') &&
+      isSettingsPath(pathname)) ||
+    inPersonalSettings;
   const settingsItems = useMemo(
     () =>
       !inSettings || loading
@@ -141,18 +151,18 @@ export function AppLayout({
                   {/* main only positions; the page scrolls in here, so a child page layer laid over main is neither
             moved by the page's scrolling nor stretched by its height. */}
                   <div className='h-full overflow-y-auto'>
-                    <PersonalSettingsBackground>
+                    <Background>
                       <RememberSettingsReturn />
                       <RouteLeaveBoundary hidden={loading}>
                         <Outlet />
                       </RouteLeaveBoundary>
-                    </PersonalSettingsBackground>
+                    </Background>
                   </div>
                 </main>
                 <AppAsideOutlet />
               </div>
             </div>
-            <PersonalSettingsDialog />
+            {hasPersonalSettings && <PersonalSettingsDialog />}
           </AppSidebarProvider>
         </PageBreadcrumbProvider>
       </RouteTreeProvider>

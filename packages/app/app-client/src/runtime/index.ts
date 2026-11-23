@@ -69,6 +69,10 @@ export interface AppRuntimeDefinition {
   readonly defaultConfigs?: AppConfigFactory<AppClientConfigMap>;
   readonly serviceProviders?: AppClientServiceProviders;
   readonly reactProviders?: AppClientReactProviders;
+  /** Mount system settings contributions under /settings. Defaults to false. */
+  readonly systemSettingsRoutes?: boolean;
+  /** Mount personal settings contributions under /me. Defaults to false. */
+  readonly personalSettingsRoutes?: boolean;
   readonly routes?: AppClientRoutes;
   readonly locales?: AppClientLocales;
   readonly plugins: AppClientPlugins;
@@ -153,10 +157,13 @@ export async function resolveAppRuntime(
     routes: plugin.routes,
     reactProviders: plugin.reactProviders,
   }));
-  const contributions = resolveAppClientContributions([
-    applicationContribution,
-    ...pluginContributions,
-  ]);
+  const contributions = resolveAppClientContributions(
+    [applicationContribution, ...pluginContributions],
+    {
+      systemSettingsRoutes: definition.systemSettingsRoutes === true,
+      personalSettingsRoutes: definition.personalSettingsRoutes === true,
+    },
+  );
   const i18n = options.i18n ?? (await createI18nRuntime(definition, config));
   const extensionOverrides = collectSourceExtensionRouteOverrides(
     definition.sourceExtensions ?? [],
@@ -189,11 +196,15 @@ export async function resolveAppRuntime(
       ),
     ]),
     reactProviders: contributions.reactProviders,
-    routes: applyClientRouteComponentOverrides(contributions.routes, [
-      ...definition.plugins.routeComponentOverrides,
-      ...(definition.routeComponentOverrides ?? []),
-      ...extensionOverrides,
-    ]),
+    routes: applyClientRouteComponentOverrides(
+      contributions.routes,
+      [
+        ...definition.plugins.routeComponentOverrides,
+        ...(definition.routeComponentOverrides ?? []),
+        ...extensionOverrides,
+      ],
+      contributions.disabledRouteIds,
+    ),
     headerActions: applyHeaderActionOverrides(
       resolveHeaderActions([
         {

@@ -10,7 +10,7 @@ import agents from '@nocobase/app-plugin-agents/client';
 
 export default defineClientPlugins([
   // …
-  agents(),
+  agents({ chatRoutes: true }),
 ]);
 ```
 
@@ -22,6 +22,7 @@ Register `@nocobase/app-plugin-agents/server` and `/cli` too, and give the serve
 agents({
   headerAction: false, // no ✦; the panel still opens from AskAgentButton, ⌘J / Ctrl+J and ?chat= links
   panel: { width: 480, defaultOpen: true },
+  chatRoutes: true,
   chatPath: '/assistant', // the conversation page at /assistant/:conversationId
 });
 ```

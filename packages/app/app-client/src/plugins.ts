@@ -480,6 +480,7 @@ export interface AppClientContributions {
 export type AppClientPluginContributions = AppClientContributions;
 
 export interface ResolvedAppClientContributions {
+  readonly disabledRouteIds?: ReadonlySet<string>;
   readonly routes: readonly AppClientRegisteredRoute[];
   readonly reactProviders: readonly AppClientRegisteredReactProvider[];
 }
@@ -795,12 +796,26 @@ export function defineClientReactProviders(
 
 export function resolveAppClientContributions(
   contributions: readonly AppClientContributions[],
+  settings?: {
+    readonly systemSettingsRoutes: boolean;
+    readonly personalSettingsRoutes: boolean;
+  },
 ): ResolvedAppClientContributions {
   const routeIds = new Map<string, string>();
   const claimedPaths = new Map<string, ClaimedPath>();
   const reactProviders: AppClientRegisteredReactProvider[] = [];
   const reactProviderIds = new Set<string>();
   const inputs: RouteInput[] = [];
+  const disabledRouteIds = new Set<string>();
+  function rememberDisabled(
+    packageName: string,
+    routes: readonly AppClientRouteDefinition[],
+  ): void {
+    for (const route of routes) {
+      disabledRouteIds.add(packageName + ':' + route.name.trim());
+      if (route.children) rememberDisabled(packageName, route.children);
+    }
+  }
 
   for (const contribution of contributions) {
     const packageName = normalizePackageName(contribution.packageName);
@@ -813,6 +828,15 @@ export function resolveAppClientContributions(
         throw new Error(
           `Plugin "${packageName}" contributed routes to unsupported parent "${String(surface)}"; declare them with defineAppRoutes(), defineSystemSettingsRoutes() or definePersonalSettingsRoutes().`,
         );
+      }
+      if (
+        (surface === 'systemSettings' &&
+          settings?.systemSettingsRoutes === false) ||
+        (surface === 'personalSettings' &&
+          settings?.personalSettingsRoutes === false)
+      ) {
+        rememberDisabled(packageName, routeContribution.routes);
+        continue;
       }
       const categories =
         'categories' in routeContribution
@@ -869,6 +893,7 @@ export function resolveAppClientContributions(
 
   return Object.freeze({
     routes,
+    ...(disabledRouteIds.size ? { disabledRouteIds } : {}),
     reactProviders: sortReactProviders(reactProviders),
   });
 }
@@ -1165,6 +1190,7 @@ function normalizeRouteContributions(
 export function applyClientRouteComponentOverrides(
   routes: readonly AppClientRegisteredRoute[],
   overrides: readonly AppClientRouteComponentOverrideDefinition[],
+  disabledRouteIds?: ReadonlySet<string>,
 ): readonly AppClientRegisteredRoute[] {
   const flatten = (
     nodes: readonly AppClientRegisteredRoute[],
@@ -1190,6 +1216,7 @@ export function applyClientRouteComponentOverrides(
       );
     }
     if (!routesById.has(routeId)) {
+      if (disabledRouteIds?.has(routeId)) continue;
       throw new Error(
         `Client route component override references missing route "${routeId}".`,
       );

@@ -63,7 +63,7 @@ const clientPlugins: AppClientPlugins = defineClientPlugins([
   databaseExplorer(),
   apiKeys(),
   i18n(),
-  notificationInApp(),
+  notificationInApp({ inboxRoute: true }),
   notificationExample(),
   jobsExample(),
   realtimeExample(),
@@ -77,10 +77,10 @@ const clientPlugins: AppClientPlugins = defineClientPlugins([
   distributed(),
   fileExample(),
   scheduler(),
-  mail(),
+  mail({ workspaceRoutes: true }),
   mailExample(),
   // The Agent panel and ✦ in the header, the conversation page, System settings › AI and Personal settings › Agent.
-  agents(),
+  agents({ chatRoutes: true }),
   foundation(),
   knowledge({ routes: false }),
 ]);

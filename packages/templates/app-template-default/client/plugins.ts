@@ -40,14 +40,14 @@ const clientPlugins: AppClientPlugins = defineClientPlugins([
   users(),
   apiKeys(),
   i18n(),
-  notificationInApp(),
+  notificationInApp({ inboxRoute: true }),
   notification(),
   file(),
   distributed(),
   scheduler(),
-  mail({ routes: { mail: false, mailTeam: false } }),
+  mail({ workspaceRoutes: true, routes: { mail: false, mailTeam: false } }),
   // The Agent panel and ✦ in the header, the conversation page, System settings › AI and Personal settings › Agent.
-  agents(),
+  agents({ chatRoutes: true }),
   foundation(),
 ]);
 

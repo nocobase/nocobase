@@ -213,6 +213,8 @@ Provide English and Chinese text without unresolved interpolation placeholders. 
 
 ## 5. Settings pages
 
+Enable each built-in settings surface in the application’s client runtime with `systemSettingsRoutes: true` or `personalSettingsRoutes: true`. Both default to false.
+
 A page that configures something for the whole application is a System settings page, declared with `defineSystemSettingsRoutes()` by the application or a plugin; a page where each person configures their own account is a personal settings page, declared with `definePersonalSettingsRoutes()`. Place a System settings page in the application's System settings structure — one sidebar entry opening the first page the viewer may open, a settings menu by category, with tabs inside a module — by naming its category with `parent`, as [System settings navigation](../../settings-navigation.md) describes. Add the icons to the `lucide-react` import at the top of the file (here `SlidersHorizontal`):
 
 Both templates use the same registered personal settings routes for pages and dialogs. Set `client.personalSettings.openMode: dialog` in the application configuration to open the avatar menu entry over the current page. The default is `page`. Link to `/me/preferences` for a page or set `personalSettings=preferences` in the current URL's search parameters for a dialog. Relative React Router links and nested routes work inside either container.

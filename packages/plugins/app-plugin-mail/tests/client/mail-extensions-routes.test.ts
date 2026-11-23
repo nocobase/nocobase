@@ -4,6 +4,7 @@ import {
   MailExtensions,
   resolveMailTemplateVariables,
 } from '../../client/extensions.js';
+import mail from '../../client/plugin.js';
 import { mailRoutes } from '../../client/routes.js';
 import { MAIL_ACCESS } from '../../shared/access.js';
 
@@ -53,6 +54,18 @@ describe('Mail pages', () => {
       path: '/mail',
     });
     expect(routes.get('mail')?.navigation).toBeDefined();
+  });
+
+  it('keeps settings pages when the application owns the workspace paths', () => {
+    for (const plugin of [mail(), mail({ workspaceRoutes: false })]) {
+      expect([...routesByName(plugin.routes).keys()]).toEqual([
+        'mailAccounts',
+        'mailSettings',
+      ]);
+    }
+    expect(
+      routesByName(mail({ workspaceRoutes: true }).routes).has('mailTeam'),
+    ).toBe(true);
   });
 
   it('moves or hides a navigation entry while keeping its page', () => {

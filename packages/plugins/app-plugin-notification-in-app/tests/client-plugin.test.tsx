@@ -87,7 +87,11 @@ function wrapper({ children }: PropsWithChildren): ReactElement {
 
 describe('in-app notification client plugin', () => {
   it('registers the inbox route, the header button and the extension lists', () => {
-    const registration = notificationInApp();
+    expect(notificationInApp().routes).toEqual([]);
+    expect(
+      notificationInApp({ inboxRoute: false }).serviceProviders,
+    ).toHaveLength(1);
+    const registration = notificationInApp({ inboxRoute: true });
     expect(JSON.stringify(routesOf(registration))).toContain(
       '"name":"inbox","path":"/inbox"',
     );
@@ -100,6 +104,7 @@ describe('in-app notification client plugin', () => {
 
   it('moves the page and leaves out the button on request', () => {
     const registration = notificationInApp({
+      inboxRoute: true,
       inboxPath: '/messages',
       headerButton: false,
     });

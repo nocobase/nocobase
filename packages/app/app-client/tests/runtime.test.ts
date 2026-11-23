@@ -17,6 +17,8 @@ import {
 } from '../src/config.js';
 import {
   defineAppRoutes,
+  definePersonalSettingsRoutes,
+  defineSystemSettingsRoutes,
   defineClientPlugin,
   defineClientPlugins,
   defineClientReactProviders,
@@ -29,6 +31,61 @@ function Wrapper({ children }: PropsWithChildren): ReactElement {
 }
 
 describe('app runtime', () => {
+  it.each([
+    [{}, []],
+    [{ systemSettingsRoutes: true }, ['systemSettings']],
+    [{ personalSettingsRoutes: true }, ['personalSettings']],
+    [
+      { personalSettingsRoutes: true, systemSettingsRoutes: true },
+      ['systemSettings', 'personalSettings'],
+    ],
+  ] as const)(
+    'selects settings contributions independently: %j',
+    async (options, expected) => {
+      const page = {
+        name: 'example',
+        path: '/example',
+        authz: 'skip' as const,
+        componentLoader: async () => ({ default: () => null }),
+      };
+      const plugin = defineClientPlugin({
+        packageName: '@example/plugin',
+        routes: [
+          defineSystemSettingsRoutes([page]),
+          definePersonalSettingsRoutes([{ ...page, name: 'personal' }]),
+        ],
+      });
+      const runtime = await resolveAppRuntime(
+        defineAppRuntime({
+          packageName: '@example/app',
+          createAppConfig: createAppClientConfig,
+          plugins: defineClientPlugins([plugin()]),
+          ...options,
+          routeComponentOverrides: [
+            {
+              routeId: '@example/plugin:personal',
+              componentLoader: page.componentLoader,
+            },
+          ],
+          routes: defineAppRoutes([
+            {
+              ...page,
+              path:
+                'systemSettingsRoutes' in options
+                  ? '/custom'
+                  : '/settings/example',
+              authz: 'skip',
+            },
+          ]),
+        }),
+        { rawConfig: {} },
+      );
+      expect(new Set(runtime.routes.map((route) => route.surface))).toEqual(
+        new Set([undefined, ...expected]),
+      );
+    },
+  );
+
   it('assembles complete configuration before the application is created', async () => {
     const callback = vi.fn();
     const configure = vi.fn((context: AppRuntimeContext) => ({

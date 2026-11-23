@@ -64,6 +64,8 @@ export default defineAppRuntime({
 
 `plugins` is the complete value returned by `defineClientPlugins()`. Runtime resolution collects its route component overrides automatically. An application can explicitly pass `routeComponentOverrides` when it needs to replace an existing route's component; omit the option when no replacements are needed. The templates do not include empty route-override or source-extension entry files. UI Library source assets under `client/extensions/` are imported by the application where needed, without automatic extension discovery.
 
+Set `systemSettingsRoutes: true` or `personalSettingsRoutes: true` in `defineAppRuntime()` to mount that settings surface. Both are opt-in. The runtime filters disabled surfaces before checking for duplicate paths, allowing the application to register its own pages at those addresses. Ordinary plugin routes and providers remain available.
+
 Static import makes the composition plan available to runtime resolution. It does not register a service, execute lifecycle hooks, render a React component, load a route page, or load locale messages. Declaration modules must therefore remain side-effect-free.
 
 ## Client entry

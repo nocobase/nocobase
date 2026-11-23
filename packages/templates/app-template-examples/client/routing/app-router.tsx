@@ -63,10 +63,11 @@ export function AppRouter({ clientRoutes }: AppRouterProps): ReactElement {
       </Route>
 
       {/* Settings pages moved under `/settings` keep their former URLs (`#lib/settings-redirects`). */}
-      {SETTINGS_REDIRECTS.map(([from]) => (
-        // `/users/*` also matches `/users` itself.
-        <Route key={from} path={`${from}/*`} element={<SettingsRedirect />} />
-      ))}
+      {clientRoutes.some((route) => route.surface === 'systemSettings') &&
+        SETTINGS_REDIRECTS.map(([from]) => (
+          // `/users/*` also matches `/users` itself.
+          <Route key={from} path={`${from}/*`} element={<SettingsRedirect />} />
+        ))}
 
       <Route path='*' element={<Navigate to='/' replace />} />
     </Routes>
