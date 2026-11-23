@@ -128,6 +128,8 @@ function useTestSkillList(): SkillListExtension {
       { key: 'none', label: t('None'), match: () => false },
     ],
     column: { header: t('Purpose'), Cell: PurposeCell },
+    title: (shown) =>
+      shown.name === 'pr-etiquette' ? 'Pull request etiquette' : undefined,
   };
 }
 
@@ -262,6 +264,11 @@ describe('skill pages', () => {
     expect(
       within(row).getByText('purpose of pr-etiquette'),
     ).toBeInTheDocument();
+    // The application's title leads, with the name under it.
+    expect(
+      within(row).getByRole('link', { name: 'Pull request etiquette' }),
+    ).toBeInTheDocument();
+    expect(within(row).getByText('pr-etiquette')).toBeInTheDocument();
     expect(
       screen.getByRole('columnheader', { name: 'Purpose' }),
     ).toBeInTheDocument();

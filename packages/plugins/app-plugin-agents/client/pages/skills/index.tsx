@@ -11,6 +11,7 @@ import { PlusIcon, PuzzleIcon } from 'lucide-react';
 import { useContext, useState, type ReactElement } from 'react';
 import { Link, Outlet, useNavigate } from 'react-router';
 
+import type { Skill } from '../../../shared/skills.js';
 import { agentsKeys } from '../../api/keys.js';
 import {
   AgEmpty,
@@ -142,15 +143,7 @@ export default function SkillsPage(): ReactElement {
                   onClick={() => void navigate(encodeURIComponent(skill.id))}
                 >
                   <TableCell>
-                    <div className='flex min-w-0 flex-col items-start gap-1'>
-                      <Link
-                        to={encodeURIComponent(skill.id)}
-                        onClick={(event) => event.stopPropagation()}
-                        className='block max-w-full truncate font-mono font-medium hover:underline'
-                      >
-                        {skill.name}
-                      </Link>
-                    </div>
+                    <SkillName skill={skill} title={list.title?.(skill)} />
                   </TableCell>
                   {Column ? (
                     <TableCell>
@@ -202,5 +195,36 @@ export default function SkillsPage(): ReactElement {
       {content}
       <Outlet />
     </PageContainer>
+  );
+}
+
+/** A skill's name, under the title the application gives it when that says more than the name. */
+function SkillName({
+  skill,
+  title,
+}: {
+  readonly skill: Skill;
+  readonly title: string | undefined;
+}): ReactElement {
+  const shown = title && title !== skill.name ? title : undefined;
+  return (
+    <div className='flex min-w-0 flex-col items-start gap-0.5'>
+      <Link
+        to={encodeURIComponent(skill.id)}
+        onClick={(event) => event.stopPropagation()}
+        className={
+          shown
+            ? 'block max-w-full truncate font-medium hover:underline'
+            : 'block max-w-full truncate font-mono font-medium hover:underline'
+        }
+      >
+        {shown ?? skill.name}
+      </Link>
+      {shown ? (
+        <span className='max-w-full truncate font-mono text-xs text-muted-foreground'>
+          {skill.name}
+        </span>
+      ) : null}
+    </div>
   );
 }
