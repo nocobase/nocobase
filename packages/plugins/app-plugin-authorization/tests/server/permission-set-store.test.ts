@@ -93,18 +93,42 @@ describe('authorization plugin database stores', () => {
       .catch((error: unknown) => error);
     expect(collision).toBeInstanceOf(Error);
     expect(collision).not.toBeInstanceOf(PermissionSetConflictError);
-    // With the grant also held, the database may report either index, so another grant's id keeps it unexpected.
+    // With the grant also held, the error follows the key the database reports for the failed write: PostgreSQL
+    // reports the primary key, SQLite the grant. It holds when the grant holding the id is revoked right after the
+    // failure, before the error is classified.
+    const reportsGrant = conn.dialect === 'sqlite';
     const daves = {
       ...held,
       id: 'user:dave:duplicate-check',
       subject: { type: 'user', id: 'dave' },
     };
     await store.assign(daves);
-    const both = await store
-      .assign({ ...held, id: daves.id })
-      .catch((error: unknown) => error);
-    expect(both).toBeInstanceOf(Error);
-    expect(both).not.toBeInstanceOf(PermissionSetConflictError);
+    let revokeIdHolder = false;
+    const hooked = new Proxy(conn, {
+      get(target, key) {
+        if (key === 'transaction')
+          return async (...args: Parameters<typeof conn.transaction>) => {
+            try {
+              return await target.transaction(...args);
+            } catch (error) {
+              if (revokeIdHolder) await store.revoke(daves.id);
+              throw error;
+            }
+          };
+        const value: unknown = Reflect.get(target, key, target);
+        return typeof value === 'function' ? value.bind(target) : value;
+      },
+    });
+    const hookedStore = new DatabasePermissionSetStore(() => hooked);
+    for (const revoked of [false, true]) {
+      revokeIdHolder = revoked;
+      const both = await hookedStore
+        .assign({ ...held, id: daves.id })
+        .catch((error: unknown) => error);
+      expect(both).toBeInstanceOf(Error);
+      if (reportsGrant) expect(both).toBeInstanceOf(PermissionSetConflictError);
+      else expect(both).not.toBeInstanceOf(PermissionSetConflictError);
+    }
     const notNull = await store
       .assign({
         id: 'broken',
@@ -114,10 +138,7 @@ describe('authorization plugin database stores', () => {
       .catch((error: unknown) => error);
     expect(notNull).toBeInstanceOf(Error);
     expect(notNull).not.toBeInstanceOf(PermissionSetConflictError);
-    expect(await store.listAssignments('duplicate-check')).toEqual([
-      held,
-      daves,
-    ]);
+    expect(await store.listAssignments('duplicate-check')).toEqual([held]);
   });
 
   it('rejects a stale role revision atomically without losing a saved grant', async () => {
