@@ -41,4 +41,4 @@ Return to the [overview](./index.md) to choose another scenario and adapt its pr
 
 ## Development references
 
-Read the [capability package documentation](https://github.com/nocobase/nocobase/blob/v3-develop/packages/plugins/app-plugin-template-print/README.md) and the [runnable example plugin](https://github.com/nocobase/nocobase/blob/v3-develop/packages/examples/app-plugin-template-print-example/README.md). The example owns its demonstration data and routes; it is not a general-purpose printing service for every application.
+Read the [capability package documentation](https://github.com/nocobase/nocobase/blob/v3/packages/plugins/app-plugin-template-print/README.md) and the [runnable example plugin](https://github.com/nocobase/nocobase/blob/v3/packages/examples/app-plugin-template-print-example/README.md). The example owns its demonstration data and routes; it is not a general-purpose printing service for every application.

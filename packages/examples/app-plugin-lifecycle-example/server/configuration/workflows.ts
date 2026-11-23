@@ -4,16 +4,27 @@ import { invoiceLifecycle } from '../lifecycles/invoice.js';
 import { exportLifecycle } from '../lifecycles/export.js';
 import { subscriptionLifecycle } from '../lifecycles/subscription.js';
 import { expenseLifecycle } from '../lifecycles/expense.js';
+import { expenseV2Lifecycle } from '../lifecycles/expense-v2.js';
 import { ticketLifecycle } from '../lifecycles/ticket.js';
-export const parameterWorkflows: readonly {
-  name: string;
-  parameters?: object;
-  parameterConfiguration?: { groups: readonly ParameterGroup[] };
-}[] = [
+
+interface ParameterDefinition {
+  readonly name: string;
+  readonly key: string;
+  readonly parameters?: object;
+  readonly parameterConfiguration?: { groups: readonly ParameterGroup[] };
+}
+
+/** Every definition that declares adjustable parameters, every version. */
+export const parameterDefinitions: readonly ParameterDefinition[] = [
   orderLifecycle,
   invoiceLifecycle,
   exportLifecycle,
   subscriptionLifecycle,
   expenseLifecycle,
+  expenseV2Lifecycle,
   ticketLifecycle,
-] as const;
+];
+
+/** Every definition version owns a separate configuration and contract. */
+export const parameterWorkflows: readonly ParameterDefinition[] =
+  parameterDefinitions;

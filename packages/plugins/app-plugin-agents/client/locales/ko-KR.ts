@@ -3,6 +3,9 @@ import type { LocaleResource } from '@nocobase/i18n';
 import type enUS from './en-US.js';
 
 const koKR: LocaleResource<typeof enUS> = {
+  openAgentSettings: '에이전트 설정 열기',
+  myConversations: '내 대화',
+  fileUsage: '채팅 첨부 파일',
   modelSuggestions: {
     design:
       '가장 강력한 추론: 제안, 아키텍처, 어려운 조사, 중요한 변경 검토. 일반 구현, 여러 패키지에 걸친 변경, 제안 작성도 가능.',
@@ -88,6 +91,7 @@ const koKR: LocaleResource<typeof enUS> = {
     codex: 'Codex',
     opencode: 'OpenCode',
     pi: 'Pi',
+    antigravity: 'Antigravity CLI',
     gemini: 'Gemini CLI',
     copilot: 'GitHub Copilot',
     cursor: 'Cursor',
@@ -183,6 +187,7 @@ const koKR: LocaleResource<typeof enUS> = {
       title: '{{name}} 편집',
       enabled: '사용',
       done: '{{name}}을(를) 저장했습니다',
+      model: '모델',
     },
     available: {
       open: 'Agent 추가',
@@ -255,10 +260,6 @@ const koKR: LocaleResource<typeof enUS> = {
     save: '스킬 저장',
     descriptionOnline:
       '작업이 설명과 맞을 때 Agent가 서버의 읽기 전용 샌드박스에서 읽는 매뉴얼입니다.',
-    onlineScripts:
-      '온라인 Agent는 스크립트를 실행하지 않습니다. 읽을 수는 있지만 실행할 수는 없습니다.',
-    skippedScripts: ': {{paths}}',
-    pathSeparator: ', ',
   },
   brief: {
     preview: '전체 프롬프트 미리 보기',
@@ -940,6 +941,23 @@ const koKR: LocaleResource<typeof enUS> = {
     },
   },
   chat: {
+    thinking: {
+      levels: {
+        'provider-default': '기본값',
+        none: '끄기',
+        minimal: '최소',
+        low: '낮음',
+        medium: '중간',
+        high: '높음',
+        xhigh: '매우 높음',
+      },
+      adjusted:
+        '이 모델은 사고 수준 "{{requested}}"을(를) 지원하지 않아 이번 답변에는 "{{used}}"을(를) 사용했습니다.',
+      adjustedToDefault:
+        '이 모델은 사고 수준 "{{requested}}"을(를) 지원하지 않아 이번 답변에는 제공업체 기본값을 사용했습니다.',
+      warning:
+        '모델이 이번 답변에 사고 수준 "{{level}}"을(를) 적용하지 않았을 수 있습니다.',
+    },
     executionFailed:
       '실행에 실패했습니다. 다시 시도하기 전에 저장된 대화를 확인하세요.',
     untitled: '제목 없는 대화',
@@ -1015,6 +1033,19 @@ const koKR: LocaleResource<typeof enUS> = {
       thinking: '생각하는 중…',
       reading: '{{subject}} 살펴보는 중',
       working: '{{subject}} 작업 중',
+      ...{
+        count_one: '{{count}}단계',
+        count_other: '{{count}}단계',
+      },
+    },
+    // Plural forms of the panel wording, outside the typed shape (the rest falls back to English).
+    ...{
+      list: {
+        waiting_one: '확인 필요 {{count}}',
+        waiting_other: '확인 필요 {{count}}',
+        active_one: '진행 중 {{count}}',
+        active_other: '진행 중 {{count}}',
+      },
     },
     agents: {
       personalOnly: '개인 실행 환경만',
@@ -1261,8 +1292,6 @@ const koKR: LocaleResource<typeof enUS> = {
     binaryFile: '바이너리 파일, {{size}}. 여기서 편집할 수 없습니다.',
     executable: '실행 가능',
     scriptBadge: '스크립트',
-    scriptsNote:
-      '스크립트 포함: 온라인 Agent는 읽을 수 있지만 실행하지 않습니다',
     compatibility: '호환성: {{value}}',
     fileContent: '{{path}}의 내용',
     export: '내보내기',
@@ -1294,8 +1323,7 @@ const koKR: LocaleResource<typeof enUS> = {
       name: '이름',
       renameTitle: '"{{name}}" 이름 바꾸기',
       conventional: {
-        scripts:
-          'Agent가 실행할 수 있는 코드입니다. 온라인 Agent는 읽기만 합니다.',
+        scripts: 'Agent가 실행할 수 있는 코드입니다.',
         references: 'Agent가 필요할 때 읽는 문서입니다.',
         assets: '템플릿, 이미지 및 기타 리소스입니다.',
       },
@@ -1426,11 +1454,16 @@ const koKR: LocaleResource<typeof enUS> = {
         runners: '실행 환경',
         prices: '모델 가격',
         services: '모델 서비스',
+        skills: '스킬',
       },
     },
     actions: {
       read: '보기',
       manage: '관리',
+    },
+    humanOnly: {
+      servicesManage:
+        '모델 서비스 관리는 공급자 키를 기록합니다. 사람만 할 수 있습니다.',
     },
     keyScopes: {
       agents: {

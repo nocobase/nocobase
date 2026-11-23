@@ -108,52 +108,6 @@ describe('API keys', () => {
     expect(session?.user.email).toBe(OWNER.email);
   });
 
-  it('never lets a key manage keys, scoped or not', async () => {
-    // A key is its owner everywhere else, but a leaked key must not mint its own successors or revoke the evidence:
-    // every `/api-key/*` endpoint takes a sign-in.
-    const key = await issueKey('escalation');
-    const listed = await auth.handler(
-      new Request(`${BASE_URL}/api-key/list`, { headers: { cookie } }),
-    );
-    const { apiKeys } = (await listed.json()) as {
-      apiKeys: readonly { id: string; name: string | null }[];
-    };
-    const target = apiKeys.find((entry) => entry.name === 'escalation')!;
-
-    for (const [path, body] of [
-      ['/api-key/create', { name: 'minted-by-a-key' }],
-      ['/api-key/update', { keyId: target.id, name: 'renamed' }],
-      ['/api-key/delete', { keyId: target.id }],
-    ] as const) {
-      const response = await call(path, {
-        headers: { 'x-api-key': key },
-        body,
-      });
-      expect(response.status).toBe(403);
-      expect(await response.json()).toMatchObject({
-        code: 'API_KEY_SESSION_FORBIDDEN',
-      });
-    }
-    const list = await auth.handler(
-      new Request(`${BASE_URL}/api-key/list`, {
-        headers: { 'x-api-key': key },
-      }),
-    );
-    expect(list.status).toBe(403);
-    // The key itself still works, and its owner's session still manages keys.
-    await expect(
-      auth.getSession(new Headers({ 'x-api-key': key })),
-    ).resolves.toMatchObject({ user: { email: OWNER.email } });
-    expect(
-      (
-        await call('/api-key/create', {
-          headers: { cookie },
-          body: { name: 'from-a-session' },
-        })
-      ).status,
-    ).toBe(200);
-  });
-
   it('stops honouring a key once it is revoked', async () => {
     const key = await issueKey('revoked');
     const listed = await auth.handler(

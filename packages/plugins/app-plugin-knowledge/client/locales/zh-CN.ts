@@ -1,6 +1,7 @@
 import type { KnowledgeClientResource } from './en-US.js';
 
 const zhCN: KnowledgeClientResource = {
+  fileUsage: '知识库文件',
   indexing: {
     failedDocumentCount: '失败文档：{{count}}',
     enabled: '启用索引',
@@ -196,7 +197,6 @@ const zhCN: KnowledgeClientResource = {
       count_other: '{{count}} 篇文档',
       archivedCount_one: '{{count}} 篇已归档文档',
       archivedCount_other: '{{count}} 篇已归档文档',
-      selectTarget: '打开 {{title}}',
       target: '创建至 {{title}}',
       chooseTarget: '选择要创建至的项目或系统知识',
       expandAll: '全部展开',
@@ -292,6 +292,14 @@ const zhCN: KnowledgeClientResource = {
       uploaded_one: '已上传 {{count}} 个文件，正在提取文字。',
       uploaded_other: '已上传 {{count}} 个文件，正在提取文字。',
       download: '下载',
+      fullscreen: '全屏',
+      close: '关闭',
+      olderVersion: '版本 {{version}}（历史版本）',
+      textHint_one: 'AI 检索和回答用的就是这些文字，共 {{count}} 行',
+      textHint_other: 'AI 检索和回答用的就是这些文字，共 {{count}} 行',
+      copy: '复制',
+      copied: '已复制。',
+      copyFailed: '此处无法自动复制，请选中文字后手动复制。',
       version: '版本 {{version}}',
       statusHint: {
         parsing: '正在提取文字，提取完成后即可被搜索到。',
@@ -368,6 +376,7 @@ const zhCN: KnowledgeClientResource = {
       contents: '目录',
       edit: '编辑',
       rename: '重命名',
+      properties: '属性与摘要',
       history: '历史',
       verify: '标记已核对',
       verifiedToast: '已标记为已核对。',

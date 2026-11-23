@@ -46,6 +46,8 @@ const MIGRATIONS = [
   '202609260001_add_mail_sync_retry_attempts',
   '202610090001_mail_create_message_participants',
   '202610250001_mail_imap_message_locations',
+  '202611180001_mail_account_sync_folders',
+  '202611210001_mail_log_created_indexes',
 ] as const;
 const sources = [
   {
@@ -90,7 +92,11 @@ describe('mail database migration', () => {
     expect(accounts?.fields).toMatchObject({
       initialSyncReceivedAfter: { type: 'datetimeTz' },
       automaticSyncIntervalMinutes: { type: 'integer', nullable: false },
+      syncFolderIds: { type: 'json' },
     });
+    expect(
+      (await inspectCollection(connection, 'mailAuthorizationStates'))?.fields,
+    ).toMatchObject({ syncFolderIds: { type: 'json' } });
     expect(accounts?.fields.defaultForUserId).toBeUndefined();
     expect(
       (await metadataStore.get('mailAccounts'))?.document.fields
@@ -377,6 +383,59 @@ describe('mail database migration', () => {
       ).toBeDefined();
     expect((await migrateUp(database)).executed).toEqual([]);
   });
+
+  it('drops account sync folders on rollback while accounts exist', async () => {
+    const migrator = database.createMigrator(sources[0]);
+    const name = '202611180001_mail_account_sync_folders';
+    await migrator.upTo(MIGRATIONS[MIGRATIONS.indexOf(name) - 1]);
+    await migrator.upTo(name);
+    const connection = database.connection();
+    const accountId = randomUUID();
+    const now = '2026-11-18T00:00:00.000Z';
+    await connection.query
+      .insertInto('mailAccounts')
+      .values({
+        id: accountId,
+        userId: accountId,
+        providerType: 'imap-smtp',
+        providerName: 'imap',
+        authorizationSubject: accountId,
+        address: `${accountId}@example.com`,
+        credentialReference: 'unused',
+        scopes: '[]',
+        status: 'active',
+        syncFolderIds: JSON.stringify(['INBOX']),
+        createdAt: now,
+        updatedAt: now,
+      })
+      .execute();
+    await connection.query
+      .insertInto('mailFolders')
+      .values({
+        id: randomUUID(),
+        accountId,
+        providerFolderId: 'INBOX',
+        name: 'Inbox',
+        type: 'inbox',
+        kind: 'folder',
+      })
+      .execute();
+    expect((await migrator.rollback()).rolledBack).toEqual([name]);
+    expect(
+      (await inspectCollection(connection, 'mailAccounts'))?.fields,
+    ).not.toHaveProperty('syncFolderIds');
+    expect(
+      (await inspectCollection(connection, 'mailAuthorizationStates'))?.fields,
+    ).not.toHaveProperty('syncFolderIds');
+  });
+});
+
+describeMigration('202611210001_mail_log_created_indexes', {
+  sources,
+  up: async ({ expectCollection }) => {
+    await expectCollection('mailSyncRuns').toHaveIndex(['createdAt', 'id']);
+    await expectCollection('mailSubmissions').toHaveIndex(['createdAt', 'id']);
+  },
 });
 
 async function migrateUp(database: DatabaseManager) {

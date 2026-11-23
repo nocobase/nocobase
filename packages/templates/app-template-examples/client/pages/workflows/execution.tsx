@@ -1,5 +1,5 @@
 import type { ReactElement } from 'react';
-import { useLocation, useParams } from 'react-router';
+import { Link, useLocation, useParams } from 'react-router';
 import { useTranslation } from '@nocobase/i18n/client';
 import { ProcessDiagram } from '@nocobase/app-plugin-lifecycle-example/client';
 import { WorkflowDetailPage } from './detail-page.js';
@@ -51,9 +51,29 @@ export function ExecutionDiagram({
       }
       parameters={
         detail.view.parameterValues ? (
-          <pre className='overflow-x-auto text-sm'>
-            {JSON.stringify(detail.view.parameterValues, null, 2)}
-          </pre>
+          <>
+            {detail.view.parameterSnapshot && (
+              <ul className='space-y-1 text-sm text-muted-foreground'>
+                {Object.entries(detail.view.parameterSnapshot.sources)
+                  .filter(([, source]) => source.origin === 'upgrade')
+                  .map(([field, source]) => (
+                    <li key={field}>
+                      {field}:{' '}
+                      {t('workflows.upgradeSource', {
+                        revision: source.revision,
+                      })}
+                    </li>
+                  ))}
+              </ul>
+            )}
+            <pre className='overflow-x-auto text-sm'>
+              {JSON.stringify(
+                detail.view.parameterSnapshot ?? detail.view.parameterValues,
+                null,
+                2,
+              )}
+            </pre>
+          </>
         ) : undefined
       }
       renderDiagram={({ current, history }) => (
@@ -90,9 +110,30 @@ export default function ExecutionPage(): ReactElement {
           ? `${labels.title(request.data.data.workflow)} · #${recordId}`
           : t('workflows.execution')
       }
+      titleSuffix={
+        request.data && request.data.data.workflow.versions.length > 1 ? (
+          // The record runs the version it is bound to, whichever is latest.
+          <Link
+            to={{
+              pathname: `/settings/workflows/definitions/${request.data.data.workflow.id}`,
+              search: new URLSearchParams({
+                version: String(request.data.data.definition.version),
+              }).toString(),
+            }}
+            className='text-sm font-normal tracking-normal text-muted-foreground underline-offset-4 hover:text-foreground hover:underline focus-visible:rounded-sm focus-visible:outline-2 focus-visible:outline-ring'
+          >
+            {t('workflows.versionLabel', {
+              version: request.data.data.definition.version,
+            })}
+          </Link>
+        ) : undefined
+      }
       description={t('workflows.executionDescription')}
       listTitle={t('workflows.executions')}
-      closeTo={{ pathname: '/workflows/executions', search: location.search }}
+      closeTo={{
+        pathname: '/settings/workflows/executions',
+        search: location.search,
+      }}
     >
       <DataState {...request} retry={request.reload} />
       {request.data && (

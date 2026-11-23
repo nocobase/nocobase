@@ -3,6 +3,9 @@ import type { LocaleResource } from '@nocobase/i18n';
 import type enUS from './en-US.js';
 
 const viVN: LocaleResource<typeof enUS> = {
+  openAgentSettings: 'Mở cài đặt Agent',
+  myConversations: 'Cuộc trò chuyện của tôi',
+  fileUsage: 'Tệp đính kèm trò chuyện',
   modelSuggestions: {
     design:
       'Suy luận mạnh nhất: đề xuất, kiến trúc, điều tra vấn đề khó và đánh giá thay đổi quan trọng; cũng triển khai thông thường và thay đổi nhiều gói.',
@@ -90,6 +93,7 @@ const viVN: LocaleResource<typeof enUS> = {
     codex: 'Codex',
     opencode: 'OpenCode',
     pi: 'Pi',
+    antigravity: 'Antigravity CLI',
     gemini: 'Gemini CLI',
     copilot: 'GitHub Copilot',
     cursor: 'Cursor',
@@ -186,6 +190,7 @@ const viVN: LocaleResource<typeof enUS> = {
       title: 'Chỉnh sửa {{name}}',
       enabled: 'Đã bật',
       done: '{{name}} đã lưu',
+      model: 'Mô hình',
     },
     available: {
       open: 'Thêm agent',
@@ -259,10 +264,6 @@ const viVN: LocaleResource<typeof enUS> = {
     save: 'Lưu kỹ năng',
     descriptionOnline:
       'Hướng dẫn Agent đọc khi tác vụ khớp với mô tả của họ, trong hộp cát chỉ đọc trên máy chủ.',
-    onlineScripts:
-      'Các tập lệnh không được thực thi cho các Agents trực tuyến: Agent có thể đọc chúng chứ không thể chạy chúng.',
-    skippedScripts: ': {{paths}}',
-    pathSeparator: ', ',
   },
   brief: {
     preview: 'Xem trước lời nhắc đầy đủ',
@@ -962,6 +963,23 @@ const viVN: LocaleResource<typeof enUS> = {
     },
   },
   chat: {
+    thinking: {
+      levels: {
+        'provider-default': 'Mặc định',
+        none: 'Tắt',
+        minimal: 'Tối thiểu',
+        low: 'Thấp',
+        medium: 'Trung bình',
+        high: 'Cao',
+        xhigh: 'Rất cao',
+      },
+      adjusted:
+        'Mô hình này không hỗ trợ mức suy nghĩ "{{requested}}"; câu trả lời này đã dùng "{{used}}".',
+      adjustedToDefault:
+        'Mô hình này không hỗ trợ mức suy nghĩ "{{requested}}"; câu trả lời này đã dùng mặc định của nhà cung cấp.',
+      warning:
+        'Mô hình có thể chưa áp dụng mức suy nghĩ "{{level}}" cho câu trả lời này.',
+    },
     // Keep new guidance available in English until this locale is translated.
     executionFailed:
       'Thực thi thất bại. Hãy xem lại cuộc trò chuyện đã lưu trước khi thử lại.',
@@ -1040,6 +1058,19 @@ const viVN: LocaleResource<typeof enUS> = {
       thinking: 'Đang suy nghĩ…',
       reading: 'Nhìn vào {{subject}}',
       working: 'Đang làm việc trên {{subject}}',
+      ...{
+        count_one: '{{count}} bước',
+        count_other: '{{count}} bước',
+      },
+    },
+    // Plural forms of the panel wording, outside the typed shape (the rest falls back to English).
+    ...{
+      list: {
+        waiting_one: 'Cần tôi {{count}}',
+        waiting_other: 'Cần tôi {{count}}',
+        active_one: 'Đang tiến hành {{count}}',
+        active_other: 'Đang tiến hành {{count}}',
+      },
     },
     agents: {
       personalOnly: 'Chỉ dành cho vận động viên chạy bộ cá nhân',
@@ -1287,8 +1318,6 @@ const viVN: LocaleResource<typeof enUS> = {
     binaryFile: 'Tệp nhị phân, {{size}}. Nó không thể được chỉnh sửa ở đây.',
     executable: 'Có thể thực thi được',
     scriptBadge: 'Kịch bản',
-    scriptsNote:
-      'Có tập lệnh: Agents trực tuyến có thể đọc chúng nhưng không bao giờ chạy chúng',
     compatibility: 'Khả năng tương thích: {{value}}',
     fileContent: 'Nội dung của {{path}}',
     export: 'Xuất khẩu',
@@ -1320,7 +1349,7 @@ const viVN: LocaleResource<typeof enUS> = {
       name: 'Tên',
       renameTitle: 'Đổi tên "{{name}}"',
       conventional: {
-        scripts: 'Agents mã có thể chạy. Agents trực tuyến chỉ đọc nó.',
+        scripts: 'Mã mà Agents có thể chạy.',
         references: 'Agents tài liệu đọc khi họ cần.',
         assets: 'Mẫu, hình ảnh và các tài nguyên khác.',
       },
@@ -1458,11 +1487,16 @@ const viVN: LocaleResource<typeof enUS> = {
         runners: 'Môi trường chạy',
         prices: 'Giá mẫu',
         services: 'Dịch vụ kiểu mẫu',
+        skills: 'Kỹ năng',
       },
     },
     actions: {
       read: 'Xem',
       manage: 'Quản lý',
+    },
+    humanOnly: {
+      servicesManage:
+        'Quản lý dịch vụ mô hình sẽ ghi khóa của nhà cung cấp; chỉ người mới được làm.',
     },
     keyScopes: {
       agents: {

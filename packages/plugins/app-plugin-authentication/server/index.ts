@@ -23,3 +23,17 @@ export * from './tokens.js';
 export * from './user-administration.js';
 
 export type { AuthConfig, AuthEmailConfig } from './config.js';
+export type { PasswordResetDiagnosis } from './password-reset.js';
+export * from './sign-in-methods.js';
+export type {
+  AuthenticationSettings,
+  AuthenticationSettingsIssue,
+  AuthenticationSignInMethod,
+  PasswordResetSenderDescription,
+  SettingValue,
+} from './settings.js';
+export {
+  authenticationSettingsServiceToken,
+  type AuthenticationProviderSummary,
+  type AuthenticationSettingsService,
+} from './settings-service.js';

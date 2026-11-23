@@ -16,6 +16,7 @@ import sqliteDriver from '@nocobase/db-sqlite';
 import AppConfigCheck from '../src/commands/config/check.ts';
 import { CommandError } from '../src/command/errors.ts';
 import type { AppCommandRuntime } from '../src/context.ts';
+import { inspectDatabaseDrivers } from '../src/lib/database-driver-dependencies.ts';
 import { runConfigCheck } from '../src/lib/config-check.ts';
 import { bindAppCommand } from './app-command.ts';
 import { runAppCommand } from './command-output.ts';
@@ -64,6 +65,13 @@ async function createRuntime(setup: Setup): Promise<{
     path.join(os.tmpdir(), 'nocobase-config-check-'),
   );
   directories.push(rootDir);
+  await writeFile(
+    path.join(rootDir, 'package.json'),
+    JSON.stringify({ dependencies: { '@nocobase/db-sqlite': '*' } }),
+  );
+  await mkdir(path.join(rootDir, 'node_modules/@nocobase/db-sqlite'), {
+    recursive: true,
+  });
   await mkdir(path.join(rootDir, 'server'), { recursive: true });
   await writeFile(path.join(rootDir, 'server', 'runtime.ts'), 'export {};\n');
   await writeFile(path.join(rootDir, 'config.example.yml'), EXAMPLE);
@@ -148,6 +156,87 @@ describe('runConfigCheck', () => {
       fix: 'Set billing.trialDays to 0 or more.',
     });
     expect(result.public).toEqual({ billing: { currency: 'USD' } });
+  });
+
+  it('checks every effective connection offline and keeps the declared range in the repair', async () => {
+    const { rootDir, runtime } = await createRuntime({
+      file:
+        SECRETS +
+        'database:\n  connections:\n    reporting:\n      dialect: mysql\n    archive:\n      dialect: mysql\n',
+    });
+    await writeFile(
+      path.join(rootDir, 'config.example.yml'),
+      'database:\n  connections:\n    main:\n      dialect: oracle\n',
+    );
+    await writeFile(
+      path.join(rootDir, 'package.json'),
+      JSON.stringify({
+        dependencies: { '@nocobase/db-sqlite': '*' },
+        devDependencies: { '@nocobase/db-mysql': '~1.2.3' },
+      }),
+    );
+    const result = await runConfigCheck({
+      rootDir,
+      loadRuntime: async () => runtime,
+      connect: 'never',
+    });
+    expect(result.connections).toEqual([]);
+    expect(
+      result.findings.filter((f) => f.code === 'driver-dependency'),
+    ).toEqual([
+      expect.objectContaining({
+        dialect: 'mysql',
+        state: 'development',
+        connections: ['reporting', 'archive'],
+        fix: expect.stringContaining('@nocobase/db-mysql@~1.2.3'),
+        retry: 'pnpm nocobase config check',
+      }),
+    ]);
+  });
+
+  it('distinguishes indirect, missing and uninstalled drivers and points a deployment to its sources', async () => {
+    const { rootDir, runtime } = await createRuntime({
+      file:
+        SECRETS +
+        'database:\n  connections:\n    reports:\n      dialect: mysql\n    archive:\n      dialect: postgres\n',
+    });
+    await writeFile(
+      path.join(rootDir, 'package.json'),
+      JSON.stringify({ dependencies: { '@nocobase/db-postgres': '1.2.3' } }),
+    );
+    const { findings } = inspectDatabaseDrivers(
+      runtime,
+      'deployment',
+      'node dist/cli/index.js config check',
+    );
+    expect(findings).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ dialect: 'sqlite', state: 'indirect' }),
+        expect.objectContaining({ dialect: 'mysql', state: 'missing' }),
+        expect.objectContaining({
+          dialect: 'postgres',
+          state: 'not-installed',
+        }),
+      ]),
+    );
+    for (const finding of findings) {
+      expect(finding.fix).toContain('application sources');
+      expect(finding.fix).toContain('rebuild and redeploy');
+      expect(finding.retry).toBe('node dist/cli/index.js config check');
+    }
+  });
+
+  it('accepts an explicitly disabled database without production drivers', async () => {
+    const { rootDir, runtime } = await createRuntime({
+      file: SECRETS + 'database:\n  default: none\n',
+    });
+    await writeFile(path.join(rootDir, 'package.json'), '{}');
+    const result = await runConfigCheck({
+      rootDir,
+      loadRuntime: async () => runtime,
+      connect: 'always',
+    });
+    expect(result).toMatchObject({ ok: true, findings: [], connections: [] });
   });
 
   it('passes a complete configuration and releases the runtime', async () => {

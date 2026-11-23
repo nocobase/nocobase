@@ -1,6 +1,6 @@
 # Backend configuration
 
-These shapes were checked against the NocoBase `v3-develop` source at `dca7088f7e88a75e22147f4c4fa8ddd1853836a4`. Verify the application's installed versions before applying them. Redis implementation options and compatibility belong to each installed commercial package; this public Skill does not bundle those implementations.
+These shapes were checked against the NocoBase `v3` source at `dca7088f7e88a75e22147f4c4fa8ddd1853836a4`. Verify the application's installed versions before applying them. Redis implementation options and compatibility belong to each installed commercial package; this public Skill does not bundle those implementations.
 
 | Service     | Application configuration                                    | Redis runtime package                    | Local behavior                                                                        |
 | ----------- | ------------------------------------------------------------ | ---------------------------------------- | ------------------------------------------------------------------------------------- |
@@ -12,7 +12,7 @@ These shapes were checked against the NocoBase `v3-develop` source at `dca7088f7
 
 ## Install before selecting
 
-Use compatible versions of the required packages and explicitly register their documented Server contributions in the application's existing `server/plugins.ts`. Do not add Client or CLI registration unless those packages actually export a required contribution. Installing this Skills-only package does not install any of these runtime packages.
+Use compatible versions of the required packages and explicitly register their documented Server contributions in the application's existing `server/plugins.ts`. Do not add Client or CLI registration unless those packages actually export a required contribution. Installing `@nocobase/app-plugin-distributed` does not install any of these runtime packages.
 
 Commercial packages are obtained through the application's documented `https://pkg-v3.nocobase.com/` access workflow. Read their installed Skills, README and exported declarations for connection, authentication, TLS, namespace and lifecycle options. Never invent a universal Redis environment variable or copy one service's connection schema into another. Preserve the target application's existing registry configuration and keep credentials out of source and logs.
 

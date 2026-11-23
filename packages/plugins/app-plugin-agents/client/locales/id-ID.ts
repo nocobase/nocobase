@@ -3,6 +3,9 @@ import type { LocaleResource } from '@nocobase/i18n';
 import type enUS from './en-US.js';
 
 const idID: LocaleResource<typeof enUS> = {
+  openAgentSettings: 'Buka pengaturan agen',
+  myConversations: 'Percakapan saya',
+  fileUsage: 'Lampiran obrolan',
   modelSuggestions: {
     design:
       'Penalaran terkuat: usulan, arsitektur, penyelidikan rumit dan peninjauan perubahan penting; juga implementasi rutin dan perubahan lintas paket.',
@@ -91,6 +94,7 @@ const idID: LocaleResource<typeof enUS> = {
     codex: 'Codex',
     opencode: 'OpenCode',
     pi: 'Pi',
+    antigravity: 'Antigravity CLI',
     gemini: 'Gemini CLI',
     copilot: 'GitHub Copilot',
     cursor: 'Cursor',
@@ -187,6 +191,7 @@ const idID: LocaleResource<typeof enUS> = {
       title: 'Sunting {{name}}',
       enabled: 'Aktif',
       done: '{{name}} disimpan',
+      model: 'Model',
     },
     available: {
       open: 'Tambahkan Agent',
@@ -260,10 +265,6 @@ const idID: LocaleResource<typeof enUS> = {
     save: 'Simpan keterampilan',
     descriptionOnline:
       'Manual yang dibaca Agent ketika tugas cocok dengan deskripsinya, dalam kotak pasir hanya-baca di server.',
-    onlineScripts:
-      'Skrip tidak dijalankan untuk Agent online: Agent dapat membacanya, bukan menjalankannya.',
-    skippedScripts: ': {{paths}}',
-    pathSeparator: ', ',
   },
   brief: {
     preview: 'Pratinjau perintah lengkap',
@@ -964,6 +965,23 @@ const idID: LocaleResource<typeof enUS> = {
     },
   },
   chat: {
+    thinking: {
+      levels: {
+        'provider-default': 'Bawaan',
+        none: 'Mati',
+        minimal: 'Minimal',
+        low: 'Rendah',
+        medium: 'Sedang',
+        high: 'Tinggi',
+        xhigh: 'Sangat tinggi',
+      },
+      adjusted:
+        'Model ini tidak mendukung tingkat berpikir "{{requested}}"; jawaban ini menggunakan "{{used}}".',
+      adjustedToDefault:
+        'Model ini tidak mendukung tingkat berpikir "{{requested}}"; jawaban ini menggunakan bawaan penyedia.',
+      warning:
+        'Model mungkin tidak menerapkan tingkat berpikir "{{level}}" pada jawaban ini.',
+    },
     // Keep new guidance available in English until this locale is translated.
     executionFailed:
       'Eksekusi gagal. Tinjau percakapan yang tersimpan sebelum mencoba lagi.',
@@ -1041,6 +1059,19 @@ const idID: LocaleResource<typeof enUS> = {
       thinking: 'Berpikir…',
       reading: 'Melihat {{subject}}',
       working: 'Sedang mengerjakan {{subject}}',
+      ...{
+        count_one: '{{count}} langkah',
+        count_other: '{{count}} langkah',
+      },
+    },
+    // Plural forms of the panel wording, outside the typed shape (the rest falls back to English).
+    ...{
+      list: {
+        waiting_one: 'Perlu saya {{count}}',
+        waiting_other: 'Perlu saya {{count}}',
+        active_one: 'Sedang berjalan {{count}}',
+        active_other: 'Sedang berjalan {{count}}',
+      },
     },
     agents: {
       personalOnly: 'Hanya runner pribadi',
@@ -1289,8 +1320,6 @@ const idID: LocaleResource<typeof enUS> = {
     binaryFile: 'File biner, {{size}}. Itu tidak dapat diedit di sini.',
     executable: 'Dapat dieksekusi',
     scriptBadge: 'Naskah',
-    scriptsNote:
-      'Memiliki skrip: Agent online dapat membacanya tetapi tidak pernah menjalankannya',
     compatibility: 'Kompatibilitas: {{value}}',
     fileContent: 'Konten {{path}}',
     export: 'Ekspor',
@@ -1323,7 +1352,7 @@ const idID: LocaleResource<typeof enUS> = {
       name: 'Nama',
       renameTitle: 'Ganti nama "{{name}}"',
       conventional: {
-        scripts: 'Agent kode dapat berjalan. Agent online hanya membacanya.',
+        scripts: 'Kode yang dapat dijalankan Agent.',
         references: 'Agent dokumentasi membaca saat mereka membutuhkannya.',
         assets: 'Templat, gambar, dan sumber daya lainnya.',
       },
@@ -1461,11 +1490,16 @@ const idID: LocaleResource<typeof enUS> = {
         runners: 'Lingkungan runtime',
         prices: 'Harga model',
         services: 'Layanan model',
+        skills: 'Keterampilan',
       },
     },
     actions: {
       read: 'Lihat',
       manage: 'Kelola',
+    },
+    humanOnly: {
+      servicesManage:
+        'Mengelola layanan model menulis kunci penyedia; hanya orang yang boleh melakukannya.',
     },
     keyScopes: {
       agents: {

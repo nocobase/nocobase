@@ -1873,10 +1873,11 @@ export function createRunService(deps: RunServiceDeps): RunService {
             });
           }
         }
-        for (const input of await pendingInputs(unit.conn, run.id))
+        for (const input of await pendingInputs(unit.conn, run.id)) {
+          const { type, actor } = toInput(input);
           await insertInput(unit, newId, {
-            type: input.type as RunInputType,
-            actor: toInput(input).actor,
+            type,
+            actor,
             text: input.text,
             ...(input.payload === null
               ? {}
@@ -1887,6 +1888,7 @@ export function createRunService(deps: RunServiceDeps): RunService {
                   },
                 }),
           });
+        }
         await insertInput(unit, newId, {
           type: 'retry',
           actor: {

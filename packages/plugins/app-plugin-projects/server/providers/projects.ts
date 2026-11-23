@@ -1,3 +1,4 @@
+import { notificationTemplateRegistryToken } from '@nocobase/app-plugin-notification/server';
 import { serverFileRepositoryManagerToken } from '@nocobase/app-plugin-file/server';
 import { userManagementServiceToken } from '@nocobase/app-plugin-users/server/tokens';
 import { driveManagerToken } from '@nocobase/app-server/drive';
@@ -19,15 +20,14 @@ import { createKindRegistry } from '../kernel/kinds.js';
 import { createUserDirectory } from '../kernel/users.js';
 import {
   projectsAccessToken,
-  projectsIntakeOrganizerToken,
   projectsKindsToken,
   projectsNoticeRulesToken,
-  projectsPlanHooksToken,
   projectsStatusEventsToken,
   projectsToken,
   projectsTriggersToken,
 } from '../tokens.js';
 import { NAMESPACE } from './authorization.js';
+import { registerNoticeKinds } from './notice-kinds.js';
 import { createVisibilityFilter, startNotifications } from './notifications.js';
 
 const PURGE_DELAY_MS = 60_000;
@@ -65,15 +65,6 @@ export class ProjectsProvider extends ServiceProvider<AppPluginApplication> {
           this.app.container.has(projectsTriggersToken)
             ? this.app.container.resolve(projectsTriggersToken)
             : undefined,
-        planHooks: () =>
-          this.app.container.has(projectsPlanHooksToken)
-            ? this.app.container.resolve(projectsPlanHooksToken)
-            : undefined,
-        intakeOrganizer: () =>
-          this.app.container.has(projectsIntakeOrganizerToken)
-            ? this.app.container.resolve(projectsIntakeOrganizerToken)
-            : undefined,
-        // Asked on each use: the application's default Drive disk, through the file plugin when it is registered.
         storage: createAttachmentStorage({
           uploader: () =>
             this.app.container.has(serverFileRepositoryManagerToken)
@@ -101,6 +92,22 @@ export class ProjectsProvider extends ServiceProvider<AppPluginApplication> {
   }
 
   public override boot(): Promise<void> {
+    // Listed on the file storage settings page, with the disk its files go to and how many it holds.
+    if (this.app.container.has(serverFileRepositoryManagerToken))
+      this.app.container
+        .resolve(serverFileRepositoryManagerToken)
+        .registerUsage({
+          id: 'projects.attachments',
+          title: {
+            key: 'fileUsage',
+            ns: '@nocobase/app-plugin-projects',
+            defaultValue: 'Issue attachments',
+          },
+          plugin: '@nocobase/app-plugin-projects',
+          collection: 'pmAttachments',
+          disk: { default: true },
+          download: 'authenticated',
+        });
     if (this.releases.length > 0) return Promise.resolve();
     const { container } = this.app;
     const { invitations, events, tx } = container.resolve(projectsToken);
@@ -108,6 +115,13 @@ export class ProjectsProvider extends ServiceProvider<AppPluginApplication> {
       container
         .resolve(userManagementServiceToken)
         .onInvitationAccepted((context) => invitations.accepted(context)),
+      ...(container.has(notificationTemplateRegistryToken)
+        ? [
+            registerNoticeKinds(
+              container.resolve(notificationTemplateRegistryToken),
+            ),
+          ]
+        : []),
       startNotifications(
         this.app,
         events,

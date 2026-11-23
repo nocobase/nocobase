@@ -1,5 +1,57 @@
 # @nocobase/app-plugin-lifecycle-example
 
+## 0.1.0-beta.20
+
+### Minor Changes
+
+- 51453de: Let administrators suspend, resume, reset, or restart a lifecycle instance and review the audit history in the ticket example.
+
+### Patch Changes
+
+- Updated dependencies [51453de]
+  - @nocobase/lifecycle@0.1.0-beta.6
+
+## 0.1.0-beta.19
+
+### Minor Changes
+
+- 2bef6a7: Lifecycle definitions can now have several versions. A definition declares `key` (the process it is a version of), `version` (a positive integer, unique within the key) and `definitionField` (the record field naming the definition that created the record). A definition without `key` or `version` is registered as its name and 1 with a warning; the next minor release requires them. Registration refuses a version already taken, a key that is another definition's name, versions of one key that differ in collection or record fields, two versions without a `definitionField`.
+
+  `runtime.create()` writes the definition field in the same statement as the record, and no `set`, `accept` or creation value may write it. Every record operation, effect and continuation refuses a record bound to another definition, or to none, with the new `DEFINITION_MISMATCH` code (`FAILED_PRECONDITION`, with `metadata.bound`). Trigger sweeps only take their own definition's records through the new `IdleRecordQuery.match`. `boundLifecycle()` and `recordLifecycle()` find a record's definition from the process key or any version name, and `groups()`, `group()` and `groupStates()` list the versions and the union of their states. `RecordView` gains `lifecycle` and `definitionVersion`, descriptions gain `key`, `version` and `definitionField`, and `ParameterReadContext` gains `key`, while each concrete definition version owns its parameter contract and stored configuration. `LifecycleTestKit.create()` binds the record it inserts.
+
+  The lifecycle and office flow examples and the procurement and onboarding examples declare `key`, `version` and `definitionField: 'lifecycleDefinition'` on every definition, and their record routes and services act through the definition the record is bound to. The lifecycle example's description route takes an optional `definition` to describe one version. Office flow extractions and dispatch tasks also use runtime creation so their binding, applicable snapshot and creation history share the business transaction. This adds the migrations `202611130002_lifecycle_example_definition_binding`, `202611130003_office_flows_definition_binding`, `202611130004_procurement_definition_binding` and `202611130005_onboarding_definition_binding`, which add a nullable `lifecycleDefinition` column to each lifecycle table and bind existing records to the only definition that table has had. The Skill's procurement and onboarding business examples carry the same changes.
+
+- 2bef6a7: `useLifecycle()` and the hooks `createLifecycleHook()` returns draw a record with the definition it is bound to rather than the latest version: with a record id they read the record first and describe `view.lifecycle`. `LifecycleClient.describe()` takes an optional definition name, sent as the `definition` query parameter.
+
+  The lifecycle example adds a second expense version, `expenses-v2`, on the same table: reports above a new audit limit wait for an audit step. It reuses the first version's parameter groups and keeps its new `auditLimit` in a new `expenseAudit` group, so first-version reports resolve the same values as before. New reports start the second version; the sample data keeps reports of both. The expense list filters by the union of both versions' states (`GET /expenses?status=`), its metadata lists those states, and each report's page draws the version it runs.
+
+  Workflow management in the Examples template lists each process once, by key, described by its latest version, with execution counts over every version. `GET /workflows/definitions/{workflowId}` takes `version`, and an id naming a version by its own definition name, as older links do, describes that version. `GET /workflows/executions` takes `version` with `workflowId`, and every execution carries its `definition` and `version`; records of several versions on one table are counted and paged by their binding. An execution detail describes the record's own version. The pages add a version switch kept in the URL, a version column and filter for executions, and a link from an execution to its version. A key registered by two workflow sources is refused at startup.
+
+  The application development Skill explains when a change becomes a new version, how to copy a definition, the frozen parameter groups versions share, which entry points move and what to list at delivery, and how management pages show versions. The upgrade Skill adds the checklist for giving existing definitions a key, a version and a backfilled binding field, with a conflict list for records whose definition cannot be determined.
+
+### Patch Changes
+
+- 2bef6a7: Freeze complete, version-specific lifecycle parameters atomically with record creation, including business drafts. Keep instance parameters unchanged during edits, submissions, retries, continuations and worker restarts, and calculate state deadlines from state entry using the creation snapshot.
+
+  Remove the deferred snapshot boundary and independent startup-proof mechanism while retaining creation request idempotency. Reject missing or invalid instance snapshots without reading current configuration. Preflight complete historical payloads before configuration or schema writes, prefer reliable creation evidence, and supplement formerly live historical parameters once from their bound version's upgrade-time configuration. Preserve submitted thresholds and actual historical times; reject lost fixed snapshots or malformed evidence.
+
+  Update examples, parameter history, protected version editors and upgrade guidance. Custom LifecycleStore adapters must implement findRecords for bounded primary-key batch reads.
+
+  Recognize released per-source parameter revisions when recovering verified creation usage, preserve original group revisions and remove obsolete read modes from the recovered payload. Complete released partial submission snapshots only with their missing live fields, marking only upgrade-time additions as upgrade origin.
+
+  Expose default, configuration and upgrade parameter origins in schemas and instance details. Keep old definitions available and explicitly route new records to new behavior versions; old records can continue without waiting for completion.
+
+  Preserve the released default-based behavior of early expenses when supplementing missing parameters, keeping their approval limits and waiting duration independent of administrator configuration.
+
+- Updated dependencies [38854ec]
+- Updated dependencies [2bef6a7]
+- Updated dependencies [2bef6a7]
+- Updated dependencies [2bef6a7]
+- Updated dependencies [8339722]
+  - @nocobase/app-server@5.0.0-beta.7
+  - @nocobase/lifecycle@0.1.0-beta.5
+  - @nocobase/app-plugin-authentication@2.0.0-beta.22
+
 ## 0.1.0-beta.18
 
 ### Patch Changes

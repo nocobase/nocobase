@@ -243,7 +243,8 @@ it.each(['codex', 'claude'] as const)(
         });
     }
     const f = await fixture(createAdapter);
-    const chunks: { type: string; delta?: string }[] = [];
+    const textBlocks = new Map<string, string>();
+    const endedBlocks: string[] = [];
     let previewSeen!: () => void;
     const preview = new Promise<void>((resolve) => {
       previewSeen = resolve;
@@ -253,15 +254,16 @@ it.each(['codex', 'claude'] as const)(
       for (;;) {
         const next = await reader.read();
         if (next.done) return;
-        chunks.push(next.value as never);
-        if (
-          chunks
-            .filter((c) => c.type === 'text-delta')
-            .map((c) => c.delta)
-            .join('')
-            .includes(body)
-        )
-          previewSeen();
+        const chunk = next.value;
+        if (chunk.type === 'text-start') {
+          textBlocks.set(chunk.id, '');
+        } else if (chunk.type === 'text-delta') {
+          const text = (textBlocks.get(chunk.id) ?? '') + chunk.delta;
+          textBlocks.set(chunk.id, text);
+          if (text === body) previewSeen();
+        } else if (chunk.type === 'text-end') {
+          endedBlocks.push(chunk.id);
+        }
       }
     })();
     running = worker!.run();
@@ -270,13 +272,8 @@ it.each(['codex', 'claude'] as const)(
     await worker!.pollStatus();
     expect(await running).toBe('cancelled');
     await reading;
-    expect(
-      chunks
-        .filter((c) => c.type === 'text-delta')
-        .map((c) => c.delta)
-        .join(''),
-    ).toBe(completed + body);
-    expect(chunks.filter((c) => c.type === 'text-end')).toHaveLength(2);
+    expect([...textBlocks.values()]).toEqual([completed, body]);
+    expect(endedBlocks.sort()).toEqual([...textBlocks.keys()].sort());
     const events = (
       await h.services.runs.events(f.payload.run.id, 0, 100)
     ).events.filter((e) => e.type === 'text');

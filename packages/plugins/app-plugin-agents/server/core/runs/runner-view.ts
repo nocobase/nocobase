@@ -18,7 +18,8 @@ import {
   type RunnerWorkTarget,
 } from '../../../shared/runners.js';
 import { CONVERSATION_SUBJECT } from '../../../shared/conversations.js';
-import type { Run } from '../../../shared/runs.js';
+import { agentModelOf } from '../../../shared/model-catalog.js';
+import { failureDetailText, type Run } from '../../../shared/runs.js';
 import type { AgentService } from '../agents/agent.service.js';
 import type { TxRunner } from '../../kernel/tx.js';
 import type { SubjectRegistry } from './ports.js';
@@ -220,6 +221,21 @@ export function createRunnerView(deps: {
       path: pathOf(run, viewerUserId),
     };
   };
+  /**
+   * A failed run's detail, only for a viewer the subject itself says may read it (an owned conversation, a subject
+   * `reports.describe` calls visible): the text can quote the task or conversation. A link is not permission, and a
+   * kind that cannot say leaves the detail out.
+   */
+  const failureDetailOf = (
+    run: Run,
+    labels: Map<string, string>,
+  ): { failureDetail?: string | null } =>
+    run.status === 'failed' &&
+    labels.has(`${run.subject.kind}:${run.subject.id}`)
+      ? // Only the one-line summary leaves the server (redacted as the run was read): an older record's later
+        // diagnostic lines and anything past 300 characters stay in the record.
+        { failureDetail: failureDetailText(run.failureDetail) }
+      : {};
   const recentCount = (runnerId: string): Promise<number> =>
     runsRepo(deps.tx.read()).count({ filter: { runnerId } });
   return {
@@ -325,18 +341,33 @@ export function createRunnerView(deps: {
       const names = await agentNames(records);
       const runs = records.map(toRun);
       const labels = await subjectLabels(runs, viewerUserId);
+      const nameOf = (run: Run) => names.get(run.agentId) ?? null;
       return {
         meta: { nextCursor, total: await recentCount(runner.id) },
-        data: runs.map((run) => ({
-          ...subjectView(run, viewerUserId, labels, conversationLabel),
-          failureReason: run.failureReason,
-          id: run.id,
-          title: names.get(run.agentId) ?? run.agentId,
-          status: run.status,
-          startedAt: run.startedAt ?? run.dispatchedAt,
-          finishedAt: run.finishedAt,
-          createdAt: run.createdAt,
-        })),
+        data: runs.map((run) => {
+          const view = subjectView(
+            run,
+            viewerUserId,
+            labels,
+            conversationLabel,
+          );
+          return {
+            ...view,
+            ...failureDetailOf(run, labels),
+            failureReason: run.failureReason,
+            id: run.id,
+            title: nameOf(run) ?? run.agentId,
+            ...agentModelOf({
+              name: nameOf(run),
+              tool: run.tool,
+              model: run.model,
+            }),
+            status: run.status,
+            startedAt: run.startedAt ?? run.dispatchedAt,
+            finishedAt: run.finishedAt,
+            createdAt: run.createdAt,
+          };
+        }),
       };
     },
   };

@@ -40,11 +40,11 @@ import {
 } from 'ai';
 
 import {
-  providerOf,
   type ModelCatalog,
   type ModelCheck,
   type ModelKind,
   type ModelRef,
+  type ReasoningLevel,
 } from '../../shared/models.js';
 import type {
   WebSearchItem,
@@ -58,6 +58,7 @@ import {
 } from './search/results.js';
 import { WEB_SEARCH_LIMITS } from '../../shared/web-search.js';
 import type { ModelUsageRecorder } from '../core/reports/model-usage.js';
+import { modelProviderOf } from './provider-registry.js';
 import {
   embeddingModel,
   languageModel,
@@ -127,8 +128,8 @@ export type ModelEvent =
     };
 
 export interface ModelRequest {
-  /** With the entry's reasoning effort (`ONLINE_EFFORTS`); the provider's default when absent. */
-  readonly model: ModelRef & { readonly reasoning?: string | null };
+  /** With the thinking level, passed to the SDK's `reasoning` unchanged; `provider-default` when absent. */
+  readonly model: ModelRef & { readonly reasoning?: ReasoningLevel };
   readonly messages: readonly ModelMessage[];
   readonly tools?: readonly ModelToolSpec[];
   readonly signal?: AbortSignal;
@@ -314,22 +315,6 @@ const isRecord = (value: unknown): value is Record<string, unknown> =>
 
 const text = (value: unknown): string =>
   typeof value === 'string' ? value : '';
-
-/** An entry's reasoning effort (`ONLINE_EFFORTS`) as the SDK names it; the provider's default otherwise. */
-export function reasoningOf(
-  effort: string | null | undefined,
-): 'minimal' | 'low' | 'medium' | 'high' | 'xhigh' | 'provider-default' {
-  switch (effort) {
-    case 'minimal':
-    case 'low':
-    case 'medium':
-    case 'high':
-    case 'xhigh':
-      return effort;
-    default:
-      return 'provider-default';
-  }
-}
 
 /** The error's code and type as the provider's JSON body names them. */
 function bodyCodes(body: string | undefined): {
@@ -524,7 +509,7 @@ export async function checkModel(
 ): Promise<CheckResult> {
   const signal = AbortSignal.timeout(CHECK_TIMEOUT_MS);
   try {
-    if (!connection.apiKey && providerOf(connection.provider)?.keyRequired)
+    if (!connection.apiKey && modelProviderOf(connection.provider)?.keyRequired)
       throw new ModelError('auth', 'The service has no API key.');
     await generateText({
       model: languageModel(connection, model),
@@ -593,7 +578,7 @@ async function checked(
 ): Promise<CheckResult> {
   const signal = AbortSignal.timeout(CHECK_TIMEOUT_MS);
   try {
-    if (!connection.apiKey && providerOf(connection.provider)?.keyRequired)
+    if (!connection.apiKey && modelProviderOf(connection.provider)?.keyRequired)
       throw new ModelError('auth', 'The service has no API key.');
     await attempt(signal);
     return { ok: true, message: null };
@@ -646,6 +631,7 @@ export function createModelGateway(
   async function* stream(
     request: ModelRequest,
   ): AsyncGenerator<ModelEvent, void, undefined> {
+    const { reasoning = 'provider-default' } = request.model;
     const connection = await source.connectionFor(request.model);
     const { signal } = request;
     const calls: ModelToolCall[] = [];
@@ -657,7 +643,7 @@ export function createModelGateway(
         model: languageModel(connection, request.model.model),
         ...toPrompt(request.messages),
         tools: toolsOf(request.tools),
-        reasoning: reasoningOf(request.model.reasoning),
+        reasoning,
         maxRetries,
         ...(signal ? { abortSignal: signal } : {}),
         // Failures arrive as `error` parts below; the SDK would also log them.

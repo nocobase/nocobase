@@ -87,48 +87,65 @@ export async function readRawSource(
   signal?: AbortSignal,
 ): Promise<Buffer | undefined> {
   const chunks: Buffer[] = [];
-  let offset = 0;
-  while (offset < size) {
-    throwIfAborted(signal);
-    const length = Math.min(RAW_WINDOW_BYTES, size - offset);
-    const fetched = await client.fetchOne(
-      uid,
-      { uid: true, source: { start: offset, maxLength: length } },
-      { uid: true },
-    );
-    const chunk = fetched ? fetched.source : undefined;
-    // ImapFlow retains the server's literal origin as a non-enumerable property.
-    const origins = fetched
-      ? (
-          fetched as FetchMessageObject & {
-            partialOrigins?: ReadonlyMap<string, number>;
-          }
-        ).partialOrigins
-      : undefined;
-    if (!fetched || fetched.uid !== uid || origins?.get('') !== offset)
-      return undefined;
-    if (!chunk || chunk.byteLength !== length) return undefined;
-    chunks.push(chunk);
-    offset += chunk.byteLength;
+  const windows = rawSourceWindows(client, uid, size, signal);
+  for (;;) {
+    const window = await windows.next();
+    if (window.done)
+      return window.value ? Buffer.concat(chunks, size) : undefined;
+    chunks.push(window.value);
   }
+}
+
+/** Yield the final window only after verifying EOF at RFC822.SIZE. */
+export async function* rawSourceWindows(
+  client: ImapFlow,
+  uid: number,
+  size: number,
+  signal?: AbortSignal,
+): AsyncGenerator<Buffer, boolean> {
+  if (size === 0)
+    return (
+      (await fetchSourceWindow(client, uid, 0, 1, signal))?.byteLength === 0
+    );
+  for (let offset = 0; offset < size;) {
+    const length = Math.min(RAW_WINDOW_BYTES, size - offset);
+    const chunk = await fetchSourceWindow(client, uid, offset, length, signal);
+    if (!chunk || chunk.byteLength !== length) return false;
+    offset += length;
+    if (offset === size) {
+      const end = await fetchSourceWindow(client, uid, size, 1, signal);
+      if (!end || end.byteLength !== 0) return false;
+    }
+    yield chunk;
+  }
+  return true;
+}
+
+async function fetchSourceWindow(
+  client: ImapFlow,
+  uid: number,
+  offset: number,
+  length: number,
+  signal?: AbortSignal,
+): Promise<Buffer | undefined> {
   throwIfAborted(signal);
-  const end = await client.fetchOne(
+  const fetched = await client.fetchOne(
     uid,
-    { uid: true, source: { start: size, maxLength: 1 } },
+    { uid: true, source: { start: offset, maxLength: length } },
     { uid: true },
   );
-  if (!end || !Buffer.isBuffer(end.source) || end.source.byteLength !== 0)
-    return undefined;
-  if (
-    end.uid !== uid ||
+  throwIfAborted(signal);
+  // ImapFlow retains the server's literal origin as a non-enumerable property.
+  return fetched &&
+    fetched.uid === uid &&
     (
-      end as FetchMessageObject & {
+      fetched as FetchMessageObject & {
         partialOrigins?: ReadonlyMap<string, number>;
       }
-    ).partialOrigins?.get('') !== size
-  )
-    return undefined;
-  return Buffer.concat(chunks, size);
+    ).partialOrigins?.get('') === offset &&
+    Buffer.isBuffer(fetched.source)
+    ? fetched.source
+    : undefined;
 }
 
 function isAttachment(part: MessageStructureObject): boolean {

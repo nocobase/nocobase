@@ -38,15 +38,10 @@ import { type MiddlewareHandler, Hono } from 'hono';
 import type {
   BusinessKey,
   Scope,
-  Page,
   SettingsAction,
   SettingsItem,
 } from '../shared/access.js';
-import type {
-  AgentStatus,
-  ConfirmChanges,
-  RunnerModelEntry,
-} from '../shared/agents.js';
+import type { AgentStatus, RunnerModelEntry } from '../shared/agents.js';
 import { agentsRepo } from '../server/core/agents/agent.store.js';
 import { replaceAttachments } from '../server/core/skills/skill.store.js';
 
@@ -58,7 +53,6 @@ export interface TestAgentInput {
   readonly modelEntries?: readonly RunnerModelEntry[];
   readonly instructions?: string | null;
   readonly actions?: readonly string[];
-  readonly confirmChanges?: ConfirmChanges;
   readonly skillIds?: readonly string[];
   readonly maxConcurrentRuns?: number;
   readonly maxAttempts?: number;
@@ -472,13 +466,23 @@ export async function createHarness(
           grants.includes(`${item}/${action}`) ||
             (action === 'read' && grants.includes(`${item}/manage`)),
         ),
-      opens: (page: Page) => Promise.resolve(grants.includes(`page/${page}`)),
       scope: (key: BusinessKey) => {
         const level = levels.get(key) ?? 'none';
         return Promise.resolve(
           (level === 'related' ? { users: [user] } : level) as Scope,
         );
       },
+      // `x-test-roles`: the caller's permission sets; `x-test-unrestricted: yes` (root) chats with every agent.
+      chatAudience: () =>
+        Promise.resolve(
+          context.req.header('x-test-unrestricted') === 'yes'
+            ? ('all' as const)
+            : new Set(
+                (context.req.header('x-test-roles') ?? '')
+                  .split(',')
+                  .filter(Boolean),
+              ),
+        ),
     });
     await next();
   };
@@ -490,8 +494,8 @@ export async function createHarness(
     context.set('caller', {
       userId: run.actorUserId,
       can: () => Promise.resolve(false),
-      opens: () => Promise.resolve(false),
       scope: () => Promise.resolve('none' as Scope),
+      chatAudience: () => Promise.resolve(new Set<string>()),
       run: {
         id: run.id,
         subjectKind: run.subjectKind,
@@ -629,7 +633,6 @@ export async function createHarness(
             maxConcurrentRuns: input.maxConcurrentRuns ?? 2,
             maxAttempts: input.maxAttempts ?? 3,
             toolPolicy: input.toolPolicy ?? null,
-            confirmChanges: input.confirmChanges ?? 'larger',
             ...(input.status ? { status: input.status } : {}),
             ...(input.source === 'runner'
               ? {

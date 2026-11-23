@@ -1,5 +1,40 @@
 # @nocobase/app-cli-client
 
+## 0.1.0-beta.25
+
+### Patch Changes
+
+- Updated dependencies [188e419]
+  - @nocobase/agent-protocol@0.1.0-beta.22
+
+## 0.1.0-beta.24
+
+### Patch Changes
+
+- b6d6ca0: Remove the `--issue` flag from `logs export`; log exports no longer filter runner logs by issue.
+- a1cfe45: Retire operation plans, intake uploads and text extraction, and their commands. Issue and sub-issue creation use their manual forms. Issue history still identifies changes made through a retired plan, and old run inputs remain readable.
+- Updated dependencies [848e4db]
+- Updated dependencies [18636df]
+- Updated dependencies [a1cfe45]
+  - @nocobase/agent-protocol@0.1.0-beta.21
+
+## 0.1.0-beta.23
+
+### Minor Changes
+
+- 761fb01: Collect bounded, sanitized runner diagnostics through heartbeat requests, retain UTC-dated runner journals with configurable cleanup, merge downloaded archives into local timelines, and propagate request IDs to application error toasts.
+
+  Apply one credential-key rule in structured and text logs, hiding numeric credentials while preserving token-count field names.
+
+  Stream runner diagnostics one temporary file at a time with abort cleanup, per-runner export queues, progress and file-consumption callbacks. Intersect up to 500 selected runs with the requested dates, remove selected-run priority and file-count preferences, and provide `logs export` plus local `logs timeline` commands.
+
+### Patch Changes
+
+- 761fb01: Let the application server enforce log export retention while validating date format, order and future dates locally.
+- Updated dependencies [761fb01]
+  - @nocobase/logging@0.1.0-beta.8
+  - @nocobase/agent-protocol@0.1.0-beta.20
+
 ## 0.1.0-beta.22
 
 ### Minor Changes

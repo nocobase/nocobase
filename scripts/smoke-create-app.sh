@@ -145,14 +145,14 @@ fi
 cd "$APP_DIR"
 
 echo "::group::Configure the application with pnpm nocobase config init"
-# Which dialects an application can run on is decided by the driver it depends on, so a non-SQLite run installs one
-# first — exactly the two commands the documentation gives a user switching databases.
+# config init promotes preinstalled dialects. Install only a dialect absent from the template.
 if [ -n "$DIALECT" ] && [ "$DIALECT" != "sqlite" ]; then
-  pnpm add "@nocobase/db-$DIALECT"
+  DRIVER="@nocobase/db-$DIALECT"
+  if ! node -e 'const p=require("./package.json"), n=process.argv[1]; process.exit(p.dependencies?.[n] || p.devDependencies?.[n] ? 0 : 1)' "$DRIVER"; then
+    pnpm add --save-prod "$DRIVER"
+  fi
 fi
-CONFIG_INIT_ARGS=("--json")
-if [ -n "$DIALECT" ]; then CONFIG_INIT_ARGS+=("--dialect=$DIALECT"); fi
-pnpm nocobase config init "${CONFIG_INIT_ARGS[@]}" > "$WORKDIR/config-init.json"
+pnpm nocobase config init --json --dialect "${DIALECT:-sqlite}" > "$WORKDIR/config-init.json"
 node -e 'const r=JSON.parse(require("node:fs").readFileSync(process.argv[1], "utf8")); if(!r.ok) process.exit(1)' "$WORKDIR/config-init.json"
 if [ ! -f "$APP_DIR/config.yml" ]; then
   echo "::error::pnpm nocobase config init reported success without writing config.yml"

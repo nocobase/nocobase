@@ -107,6 +107,14 @@ const idID: LocaleResource<typeof enUS> = {
         environments: 'Menyebarkan lingkungan',
       },
     },
+    humanOnly: {
+      deployProtected:
+        'Deploy ke lingkungan terlindungi perlu disetujui seseorang; kunci hanya dapat memintanya.',
+      delete:
+        'Menghapus aplikasi menghapus datanya; hanya orang yang boleh melakukannya.',
+      configure:
+        'Mengonfigurasi aplikasi mengubah pengaturan dan rahasianya; hanya orang yang boleh melakukannya.',
+    },
     keyScopes: {
       apps: {
         title: 'Aplikasi dan penerapan',

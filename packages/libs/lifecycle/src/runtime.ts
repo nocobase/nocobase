@@ -1,9 +1,25 @@
+import { findStayExit } from './store.js';
+import {
+  currentRound,
+  managementState,
+  type ManagementAuthorization,
+  type ManagementDetails,
+  InstanceLockConflict,
+  LifecycleManagement,
+  type ManagementOptions,
+  type ManagementReentryContext,
+  type ManagementResult,
+} from './management.js';
 import {
   normalizeParameterValues,
+  parameterIdentity,
+  canonical,
+  isUniqueConflict,
   ParameterConfigurationError,
   type LifecycleParameterStore,
   type ParameterResolution,
   type ParameterSource,
+  type ParameterSnapshot,
 } from './parameter-configuration.js';
 import { AsyncLocalStorage } from 'node:async_hooks';
 
@@ -14,6 +30,7 @@ import {
   type EnterStateHookContext,
   type Lifecycle,
   type LifecycleDescription,
+  type LifecycleState,
   type StateHookContext,
   type TransitionContext,
 } from './definition.js';
@@ -25,9 +42,14 @@ import {
   type LifecycleErrorCode,
 } from './errors.js';
 import {
+  boundDefinitionOf,
+  recordCondition,
+  triggerDueAt,
+  checkBinding,
   checkCreation,
   guardBlockers,
   inputProblems,
+  ownedFields,
   planTransition,
   stateOf,
   transitionsFrom,
@@ -78,6 +100,8 @@ export interface LifecycleLogger {
 
 export interface LifecycleRuntimeOptions {
   readonly store: LifecycleStore;
+  /** Owned receipt table; required for creation request IDs and configured draft start proofs. */
+  readonly creationRequestsCollection?: string;
   /** Defaults to running each effect in process before `fire()` returns. */
   readonly dispatcher?: EffectDispatcher;
   readonly clock?: () => Date;
@@ -130,7 +154,10 @@ export type ServicesSource<T extends LifecycleTypes> =
 
 /** Server-owned context supplied to an asynchronous parameter reader. */
 export interface ParameterReadContext<T extends LifecycleTypes> {
+  /** The definition's name; snapshots and usage facts are kept under it. */
   readonly lifecycle: string;
+  /** Stable process grouping key; configuration is stored by lifecycle name. */
+  readonly key: string;
   readonly record: T['record'] | null;
   /** Creation values before a record has an identity. */
   readonly values?: Readonly<Record<string, unknown>>;
@@ -148,10 +175,6 @@ export type ParameterProvider<T extends LifecycleTypes> = (
 export interface ParameterConfigurationRegistration<T extends LifecycleTypes> {
   readonly store: LifecycleParameterStore;
   readonly scope: (context: ParameterReadContext<T>) => string;
-  /** Explicitly routes existing records through their original contract. */
-  readonly legacyRecord?: (record: T['record']) => boolean;
-  /** Refuses a submitted record whose historical snapshot cannot be recovered. */
-  readonly snapshotRequired?: (record: T['record']) => boolean;
 }
 export interface RegisterOptions<T extends LifecycleTypes> {
   readonly services?: ServicesSource<T>;
@@ -283,6 +306,10 @@ export interface CanOptions {
 }
 
 export interface CreateOptions {
+  /** Stable server-normalized input, excluding generated timestamps, for request deduplication. */
+  readonly requestInput?: JsonObject;
+  /** Reuse for retries of one creation, scoped to the definition, tenant and actor. */
+  readonly requestId?: string;
   readonly actor: LifecycleActor;
   /** One of the lifecycle's initial states; the default one when absent. */
   readonly state?: string;
@@ -305,6 +332,9 @@ export interface LifecycleTransaction {
   readonly now: Date;
   /** The record as this transaction sees it. */
   read(lifecycle: string, id: RecordId): Promise<LifecycleRecord | undefined>;
+  /** For domain writes that do not fire a transition. Check the stay after taking this lock. */
+  requireActive(lifecycle: string, id: RecordId): Promise<LifecycleRecord>;
+
   fire(
     lifecycle: string,
     id: RecordId,
@@ -346,7 +376,7 @@ export interface LifecycleEvent {
 export interface LifecycleRecordChange {
   readonly lifecycle: string;
   readonly recordId: RecordId;
-  readonly kind: 'transition' | 'effect';
+  readonly kind: 'transition' | 'effect' | 'management';
   readonly runId?: string;
 }
 
@@ -384,6 +414,19 @@ interface Subscription {
   readonly listener: LifecycleListener<LifecycleEvent>;
 }
 
+/** One process and its registered versions; see `runtime.groups()`. */
+export interface LifecycleGroup {
+  readonly key: string;
+  /** Oldest first. */
+  readonly versions: readonly {
+    readonly name: string;
+    readonly version: number;
+  }[];
+  /** The name of the largest version: the latest, not necessarily the one in use. */
+  readonly latest: string;
+  readonly definitionField?: string;
+}
+
 /** The log entry `runtime.create()` writes, so a record's history starts at its creation. */
 export const CREATE_TRANSITION: string = '$create';
 
@@ -394,12 +437,21 @@ export const CREATE_TRANSITION: string = '$create';
 export interface RecordView {
   /** Effective values for this authoritative record preview, including its snapshot. */
   readonly parameterValues?: Readonly<object>;
+  /** The validated persisted snapshot, including revision, sources and actual freeze time. */
+  readonly parameterSnapshot?: ParameterSnapshot;
+  /** The definition the record belongs to: draw its diagram, not the latest. */
+  readonly lifecycle: string;
+  /** Which version of its process that definition is. */
+  readonly definitionVersion: number;
   readonly record: LifecycleRecord;
   readonly state: string;
   /** Pass it back as `expect.version` so a stale screen is refused. */
   readonly version: number | null;
   readonly available: readonly AvailableTransition[];
   readonly history: RecordHistory;
+  readonly suspended?: boolean;
+  /** Business version at the start of the current execution round. */
+  readonly roundStartedVersion?: number;
 }
 
 export interface RecordHistory {
@@ -418,6 +470,7 @@ interface Registered {
 }
 
 interface ParameterExecution {
+  readonly store: LifecycleStore;
   readonly handle: unknown;
   readonly values: Map<string, Promise<Readonly<object>>>;
   readonly resolutions: Map<string, ParameterResolution>;
@@ -473,6 +526,29 @@ class EntryWork {
 }
 
 const silent: LifecycleLogger = { warn: () => {}, error: () => {} };
+
+const suspensionBlocker: Blocker = {
+  source: 'state',
+  kind: 'precondition',
+  code: 'SUSPENDED',
+  message: 'This lifecycle instance is suspended.',
+};
+
+function suspendedInstance(): LifecycleError {
+  return new LifecycleError('SUSPENDED', suspensionBlocker.message, {
+    blockers: [suspensionBlocker],
+  });
+}
+
+function effectiveChangedAt(
+  lifecycle: Lifecycle<LifecycleTypes>,
+  record: LifecycleRecord,
+): number {
+  return (
+    Date.parse(String(record[lifecycle.changedAtField])) +
+    managementState(lifecycle.management?.field, record).pausedMs
+  );
+}
 
 function errorText(error: unknown): string {
   return error instanceof Error ? error.message : String(error);
@@ -541,6 +617,7 @@ function triggerKey(lifecycle: string, trigger: string, id: RecordId): string {
 /** What a sweep expects when another sweep or a person got there first. */
 const RACED: ReadonlySet<LifecycleErrorCode> = new Set<LifecycleErrorCode>([
   ...MOVED_ON,
+  'SUSPENDED',
   'CONFLICT',
 ]);
 
@@ -641,6 +718,7 @@ class InlineDispatcher implements EffectDispatcher {
  */
 export class LifecycleRuntime {
   private readonly store: LifecycleStore;
+  private readonly creationRequestsCollection: string;
   private readonly dispatcher: EffectDispatcher;
   private readonly clock: () => Date;
   private readonly logger: LifecycleLogger;
@@ -663,6 +741,7 @@ export class LifecycleRuntime {
    * lifecycle call inside its transition, and with which code, so the log
    * says so on the 1st, 2nd, 4th… sweep. Bounded: the oldest are forgotten.
    */
+  private readonly triggerCursors = new Map<string, IdleRecordCursor>();
   private readonly triggerRefusals = new Map<
     string,
     { readonly code: string; readonly count: number }
@@ -671,10 +750,26 @@ export class LifecycleRuntime {
   private readonly parameterExecution =
     new AsyncLocalStorage<ParameterExecution>();
 
+  private readonly management: LifecycleManagement<Registered>;
+
   public constructor(options: LifecycleRuntimeOptions) {
     this.store = options.store;
-    this.dispatcher = options.dispatcher ?? new InlineDispatcher(this);
     this.clock = options.clock ?? ((): Date => new Date());
+    this.management = new LifecycleManagement<Registered>({
+      store: options.store,
+      clock: this.clock,
+      scope: (store, now) => this.scope(store, now),
+      managedRecord: (...args) => this.managedRecord(...args),
+      reentryContext: (...args) => this.reentryContext(...args),
+      owe: (...args) => this.owe(...args),
+      handOver: (...args) => this.handOver(...args),
+      changed: (...args) => this.changed(...args),
+      tryContinuation: (...args) => this.tryContinuation(...args),
+      checkRequestId,
+    });
+    this.creationRequestsCollection =
+      options.creationRequestsCollection ?? 'lifecycleCreationRequests';
+    this.dispatcher = options.dispatcher ?? new InlineDispatcher(this);
     this.logger = options.logger ?? silent;
     this.leaseMs = options.leaseMs ?? 5 * 60_000;
     this.beforeEffect = options.beforeEffect;
@@ -719,6 +814,8 @@ export class LifecycleRuntime {
     if (
       options.parameterConfiguration &&
       [
+        'readConfiguration',
+        'snapshots',
         'read',
         'save',
         'snapshot',
@@ -735,6 +832,21 @@ export class LifecycleRuntime {
       throw new LifecycleError(
         'INVALID_DEFINITION',
         'The parameter storage adapter is missing a required capability.',
+      );
+    if (options.parameters || options.parameterProvider)
+      this.logger.warn(
+        'Parameter override readers are deprecated. New configurable definitions must declare a start contract and use instance snapshots.',
+      );
+    this.checkVersion(lifecycle as unknown as Lifecycle<LifecycleTypes>);
+    if (lifecycle.defaulted.length)
+      this.logger.warn(
+        `Lifecycle "${lifecycle.name}" declares no ${lifecycle.defaulted.join(' or ')}; it is registered as key "${lifecycle.key}", version ${lifecycle.version}. Declare both: the next minor release requires them.`,
+        { lifecycle: lifecycle.name, defaulted: lifecycle.defaulted },
+      );
+    if (lifecycle.definitionField === undefined)
+      this.logger.warn(
+        `Lifecycle "${lifecycle.name}" declares no definitionField, so its records do not say which version created them; add one before registering a second version of "${lifecycle.key}".`,
+        { lifecycle: lifecycle.name },
       );
     const source = options.services;
     this.lifecycles.set(lifecycle.name, {
@@ -800,6 +912,181 @@ export class LifecycleRuntime {
     };
   }
 
+  /**
+   * Refuses a definition that cannot be one more version of its key: a
+   * version taken, a key that is another definition's name, or a different
+   * collection or record fields, which would split one process's records
+   * or let one version read another's. Every version of a key needs a
+   * definition field once there are two. Each version owns its parameter contract.
+   */
+  private checkVersion(lifecycle: Lifecycle<LifecycleTypes>): void {
+    const refuse = (message: string): never => {
+      throw new LifecycleError(
+        'INVALID_DEFINITION',
+        `Lifecycle "${lifecycle.name}": ${message}`,
+      );
+    };
+    const named = this.lifecycles.get(lifecycle.key);
+    if (named && named.lifecycle.key !== lifecycle.key)
+      refuse(
+        `its key "${lifecycle.key}" is the name of a definition of "${named.lifecycle.key}".`,
+      );
+    for (const { lifecycle: other } of this.lifecycles.values())
+      if (other.key === lifecycle.name && lifecycle.key !== lifecycle.name)
+        refuse(`its name is the key of "${other.name}".`);
+    const versions = this.versionsOf(lifecycle.key);
+    if (!versions.length) return;
+    for (const other of versions) {
+      if (
+        other.management &&
+        lifecycle.management &&
+        other.management.field !== lifecycle.management.field
+      )
+        refuse('managed versions must share a management field.');
+      if (other.version === lifecycle.version)
+        refuse(
+          `version ${lifecycle.version} of "${lifecycle.key}" is already "${other.name}".`,
+        );
+      for (const field of [
+        'collection',
+        'stateField',
+        'changedAtField',
+        'versionField',
+        'definitionField',
+      ] as const)
+        if (other[field] !== lifecycle[field])
+          refuse(
+            `its ${field} "${String(lifecycle[field])}" differs from "${String(other[field])}" of "${other.name}", another version of "${lifecycle.key}".`,
+          );
+    }
+    if (lifecycle.definitionField === undefined)
+      refuse(
+        `"${lifecycle.key}" has several versions, so they need a definitionField naming each record's version.`,
+      );
+  }
+
+  /** The registered versions of a key, oldest first. */
+  private versionsOf(key: string): Lifecycle<LifecycleTypes>[] {
+    return [...this.lifecycles.values()]
+      .map((registered) => registered.lifecycle)
+      .filter((lifecycle) => lifecycle.key === key)
+      .sort((a, b) => a.version - b.version);
+  }
+
+  /**
+   * The registered processes, each with its versions, oldest first. The
+   * latest is the largest version: nothing says which one new records use;
+   * the code that creates them names a definition.
+   */
+  public groups(): LifecycleGroup[] {
+    const keys = new Set(
+      [...this.lifecycles.values()].map(({ lifecycle }) => lifecycle.key),
+    );
+    return [...keys].map((key) => this.group(key));
+  }
+
+  /**
+   * One process by its key or by the name of any of its versions. Throws
+   * `UNKNOWN_LIFECYCLE` when neither is registered.
+   */
+  public group(keyOrName: string): LifecycleGroup {
+    const key = this.keyOf(keyOrName);
+    const versions = this.versionsOf(key);
+    return {
+      key,
+      versions: versions.map((lifecycle) => ({
+        name: lifecycle.name,
+        version: lifecycle.version,
+      })),
+      latest: versions.at(-1)!.name,
+      ...(versions[0].definitionField === undefined
+        ? {}
+        : { definitionField: versions[0].definitionField }),
+    };
+  }
+
+  /**
+   * Every state any version of a process declares, for a list of its
+   * records: a filter or a status column over records of several versions.
+   * A state several versions declare takes its title from the latest.
+   */
+  public groupStates(keyOrName: string): LifecycleState<string>[] {
+    const states = new Map<string, LifecycleState<string>>();
+    for (const lifecycle of this.versionsOf(this.keyOf(keyOrName)).reverse())
+      for (const [state, info] of lifecycle.stateInfo)
+        if (!states.has(state)) states.set(state, info);
+    return [...states.values()];
+  }
+
+  private keyOf(keyOrName: string): string {
+    const named = this.lifecycles.get(keyOrName);
+    if (named) return named.lifecycle.key;
+    if (this.versionsOf(keyOrName).length) return keyOrName;
+    throw new LifecycleError(
+      'UNKNOWN_LIFECYCLE',
+      `No lifecycle "${keyOrName}" is registered.`,
+    );
+  }
+
+  /**
+   * The definition a record of a process belongs to, for a route that
+   * names the process, not the version: `keyOrName` is its key or the name
+   * of any of its versions, and the answer is the name the record's
+   * definition field holds. A record of another process, or one no
+   * definition has started, is refused with `DEFINITION_MISMATCH`, and a
+   * missing one with `RECORD_NOT_FOUND`. Pass the answer to `view()`,
+   * `fire()` and the other record operations, which refuse any other.
+   * Reads the record once, whatever the number of versions. Only a legacy
+   * process that declares no definition field at all (accepted, with a
+   * warning, until the next minor release) has no binding to read: it has a
+   * single version, which is answered as before.
+   */
+  public async boundLifecycle(
+    keyOrName: string,
+    id: RecordId,
+  ): Promise<string> {
+    const [first] = this.versionsOf(this.keyOf(keyOrName));
+    // Legacy only: registration refuses a second version without the field.
+    if (first.definitionField === undefined) return first.name;
+    const record = await this.store.findRecord(first.collection, id);
+    if (!record)
+      throw new LifecycleError(
+        'RECORD_NOT_FOUND',
+        `No ${first.collection} record "${String(id)}".`,
+      );
+    return this.recordLifecycle(keyOrName, record);
+  }
+
+  /**
+   * As `boundLifecycle()`, for a record the caller has already read, such
+   * as inside its own transaction: answers from the record's definition
+   * field without reading anything.
+   */
+  public recordLifecycle(keyOrName: string, record: LifecycleRecord): string {
+    const versions = this.versionsOf(this.keyOf(keyOrName));
+    const [first] = versions;
+    const bound = boundDefinitionOf(first, record);
+    // Legacy only: a definition without a definition field.
+    if (bound === undefined) return first.name;
+    if (
+      bound !== null &&
+      versions.some((lifecycle) => lifecycle.name === bound)
+    )
+      return bound;
+    throw new LifecycleError(
+      'DEFINITION_MISMATCH',
+      bound === null
+        ? `${first.collection} record "${String(record.id)}" has not been started by any definition of "${first.key}".`
+        : `${first.collection} record "${String(record.id)}" belongs to "${bound}", which is not a registered version of "${first.key}".`,
+      { bound },
+    );
+  }
+
+  /** The definition `name` names; see `describe()` for a plain description. */
+  public definition(name: string): Lifecycle<LifecycleTypes> {
+    return this.get(name).lifecycle;
+  }
+
   public describe(name: string): LifecycleDescription {
     return describeLifecycle(this.get(name).lifecycle);
   }
@@ -813,7 +1100,7 @@ export class LifecycleRuntime {
   /** Resolves current overrides. This does not persist snapshots or usage facts. */
   public async resolveParameters(
     name: string,
-    context: Omit<ParameterReadContext<LifecycleTypes>, 'lifecycle'>,
+    context: Omit<ParameterReadContext<LifecycleTypes>, 'lifecycle' | 'key'>,
   ): Promise<Readonly<object>> {
     const registered = this.get(name);
     const execution = this.parameterExecution.getStore();
@@ -830,29 +1117,25 @@ export class LifecycleRuntime {
     const cached = scoped && key ? execution.values.get(key) : undefined;
     if (cached) {
       const parameters = await cached;
-      await this.bindParameterSnapshot(registered, context);
       return parameters;
     }
     const pending = (async (): Promise<Readonly<object>> => {
-      if (
-        registered.parameterConfiguration &&
-        !(
-          context.record &&
-          registered.parameterConfiguration.legacyRecord?.(context.record)
-        )
-      ) {
+      if (registered.parameterConfiguration) {
         const resolution = await this.readConfiguredParameters(
           registered,
           context,
         );
         if (scoped && key) execution.resolutions.set(key, resolution);
         const parameters = freezeParameters(resolution.values);
-        await this.bindParameterSnapshot(registered, context, resolution);
         return parameters;
       }
       const overrides = registered.parameterProvider
         ? await registered.parameterProvider(
-            Object.freeze({ ...context, lifecycle: name }),
+            Object.freeze({
+              ...context,
+              lifecycle: name,
+              key: registered.lifecycle.key,
+            }),
           )
         : registered.parameters();
       const values = { ...registered.lifecycle.parameters, ...overrides };
@@ -890,6 +1173,7 @@ export class LifecycleRuntime {
       (store) =>
         this.parameterExecution.run(
           {
+            store,
             handle: store.transactionHandle,
             values: new Map(),
             resolutions: new Map(),
@@ -904,6 +1188,7 @@ export class LifecycleRuntime {
                 'RECORD_NOT_FOUND',
                 `No ${registered.lifecycle.collection} record "${String(id)}".`,
               );
+            checkBinding(registered.lifecycle, record);
             const parameters = await this.resolveParameters(name, {
               record,
               transactionHandle: store.transactionHandle,
@@ -950,7 +1235,7 @@ export class LifecycleRuntime {
         ? new Map(parent.resolutions)
         : new Map<string, ParameterResolution>();
     return this.parameterExecution.run(
-      { handle: store.transactionHandle, values, resolutions },
+      { store, handle: store.transactionHandle, values, resolutions },
       async () => {
         const result = await work();
         if (parentHandle !== undefined && parent?.handle === parentHandle)
@@ -967,138 +1252,183 @@ export class LifecycleRuntime {
 
   private async readConfiguredParameters(
     registered: Registered,
-    context: Omit<ParameterReadContext<LifecycleTypes>, 'lifecycle'>,
+    context: Omit<ParameterReadContext<LifecycleTypes>, 'lifecycle' | 'key'>,
+    suppliedSnapshot?: ParameterSnapshot | null,
   ): Promise<ParameterResolution> {
     const config = registered.parameterConfiguration!;
     const definition = registered.lifecycle.parameterConfiguration!;
     const scope = config.scope({
       ...context,
       lifecycle: registered.lifecycle.name,
+      key: registered.lifecycle.key,
     });
     if (!scope)
       throw new ParameterConfigurationError(
         'CONFIGURATION_INVALID',
         'The authoritative configuration scope is empty.',
       );
-    const snapshot = context.record
-      ? await config.store.snapshot(
-          scope,
-          registered.lifecycle.name,
-          String(context.record.id),
-          context.transactionHandle,
+    const snapshot =
+      suppliedSnapshot !== undefined
+        ? (suppliedSnapshot ?? undefined)
+        : context.record
+          ? await config.store.snapshot(
+              scope,
+              registered.lifecycle.name,
+              String(context.record.id),
+              context.transactionHandle,
+            )
+          : undefined;
+    if (snapshot) {
+      try {
+        if (
+          snapshot.scope !== scope ||
+          snapshot.lifecycle !== registered.lifecycle.name ||
+          snapshot.recordId !== String(context.record!.id) ||
+          !Number.isSafeInteger(snapshot.revision) ||
+          snapshot.revision < 0 ||
+          !validSnapshotTime(snapshot.at)
         )
-      : undefined;
+          throw new Error('Invalid snapshot identity or provenance.');
+        if (
+          !snapshot.values ||
+          typeof snapshot.values !== 'object' ||
+          Array.isArray(snapshot.values) ||
+          !snapshot.sources ||
+          typeof snapshot.sources !== 'object' ||
+          Array.isArray(snapshot.sources) ||
+          Object.keys(snapshot.values).some(
+            (key) => !Object.hasOwn(registered.lifecycle.parameters, key),
+          )
+        )
+          throw new Error('Unknown snapshot parameter.');
+        const values: JsonObject = {};
+        for (const group of definition.groups) {
+          const normalized = normalizeParameterValues(
+            group,
+            Object.fromEntries(
+              Object.keys(group.fields).map((key) => {
+                const source = snapshot.sources[key];
+                if (
+                  !Object.hasOwn(snapshot.values, key) ||
+                  !source ||
+                  source.schemaVersion !== group.schemaVersion ||
+                  source.group !== group.key ||
+                  !Number.isSafeInteger(source.revision) ||
+                  source.revision < 0 ||
+                  !['default', 'configuration', 'upgrade'].includes(
+                    source.origin,
+                  )
+                )
+                  throw new Error(
+                    `Missing or incompatible snapshot parameter "${key}".`,
+                  );
+                return [key, snapshot.values[key]];
+              }),
+            ),
+          );
+          Object.assign(values, normalized);
+        }
+        const configuredFields = new Set(
+          definition.groups.flatMap((group) => Object.keys(group.fields)),
+        );
+        if (
+          Object.keys(snapshot.sources).some(
+            (key) => !configuredFields.has(key),
+          )
+        )
+          throw new Error('Unknown snapshot parameter source.');
+        if (snapshot.recoveredFrom !== undefined) {
+          const provenance = snapshot.recoveredFrom;
+          if (
+            !provenance ||
+            typeof provenance !== 'object' ||
+            Array.isArray(provenance) ||
+            typeof provenance.transitionId !== 'string' ||
+            !provenance.transitionId ||
+            (provenance.usageId !== undefined &&
+              (typeof provenance.usageId !== 'string' ||
+                !provenance.usageId)) ||
+            (provenance.groupRevisions !== undefined &&
+              (typeof provenance.groupRevisions !== 'object' ||
+                provenance.groupRevisions === null ||
+                Array.isArray(provenance.groupRevisions) ||
+                Object.values(provenance.groupRevisions).some(
+                  (revision) => !Number.isSafeInteger(revision) || revision < 0,
+                )))
+          )
+            throw new Error('Invalid snapshot recovery provenance.');
+        }
+        // Non-configurable defaults are also part of the complete frozen values.
+        for (const key of Object.keys(registered.lifecycle.parameters))
+          if (!Object.hasOwn(snapshot.values, key))
+            throw new Error(`Missing snapshot parameter "${key}".`);
+        return {
+          scope,
+          revision: snapshot.revision,
+          values: { ...snapshot.values, ...values },
+          sources: snapshot.sources,
+        };
+      } catch (error) {
+        throw new ParameterConfigurationError(
+          'PARAMETER_SNAPSHOT_INVALID',
+          `Invalid instance parameter snapshot: ${error instanceof Error ? error.message : String(error)}`,
+        );
+      }
+    }
+    if (context.record)
+      throw new ParameterConfigurationError(
+        'PARAMETER_SNAPSHOT_MISSING',
+        'Every configured instance requires its persisted parameter snapshot, including draft records.',
+      );
+    const current = await config.store.readConfiguration(
+      scope,
+      registered.lifecycle.name,
+      context.transactionHandle,
+    );
     if (
-      !snapshot &&
-      context.record &&
-      config.snapshotRequired?.(context.record)
+      current &&
+      (!Number.isSafeInteger(current.revision) || current.revision < 0)
     )
       throw new ParameterConfigurationError(
-        'PARAMETER_SNAPSHOT_REQUIRED',
-        'This record needs a verified historical snapshot or an explicit legacy route.',
+        'CONFIGURATION_INVALID',
+        'Invalid configuration revision.',
       );
     const values = { ...registered.lifecycle.parameters } as JsonObject;
     const sources: Record<string, ParameterSource> = {};
     for (const group of definition.groups) {
-      const current = await config.store.read(
-        scope,
-        group.key,
-        context.transactionHandle,
-      );
-      if (current && current.schemaVersion !== group.schemaVersion)
-        throw new ParameterConfigurationError(
-          'CONFIGURATION_INCOMPATIBLE',
-          `Configuration group "${group.key}" has an incompatible schema version.`,
-        );
-      const defaults = Object.fromEntries(
-        Object.keys(group.fields).map((key) => [key, values[key]!]),
-      ) as JsonObject;
       const complete = normalizeParameterValues(
         group,
-        current?.values ?? defaults,
+        Object.fromEntries(
+          Object.keys(group.fields).map((key) => [
+            key,
+            current && Object.hasOwn(current.values, key)
+              ? current.values[key]
+              : values[key],
+          ]),
+        ),
       );
-      for (const [key, field] of Object.entries(group.fields)) {
-        const mode = field.readMode ?? definition.readMode ?? 'live';
-        if (mode === 'snapshot' && snapshot) {
-          const source = snapshot.sources[key];
-          if (
-            !(key in snapshot.values) ||
-            !source ||
-            source.schemaVersion !== group.schemaVersion
-          )
-            throw new ParameterConfigurationError(
-              'CONFIGURATION_INCOMPATIBLE',
-              `Snapshot parameter "${key}" requires an explicit contract migration.`,
-            );
-          values[key] = field.parse(snapshot.values[key]);
-          sources[key] = source;
-        } else {
-          values[key] = complete[key]!;
-          sources[key] = {
-            group: group.key,
-            schemaVersion: group.schemaVersion,
-            revision: current?.revision ?? 0,
-            origin: current ? 'configuration' : 'default',
-            readMode: mode,
-          };
-        }
+      for (const key of Object.keys(group.fields)) {
+        values[key] = complete[key];
+        sources[key] = {
+          group: group.key,
+          schemaVersion: group.schemaVersion,
+          revision: current?.revision ?? 0,
+          origin:
+            current && Object.hasOwn(current.values, key)
+              ? 'configuration'
+              : 'default',
+        };
       }
     }
-    return { scope, values, sources };
-  }
-
-  private async bindParameterSnapshot(
-    registered: Registered,
-    context: Omit<ParameterReadContext<LifecycleTypes>, 'lifecycle'>,
-    supplied?: ParameterResolution,
-  ): Promise<void> {
-    const config = registered.parameterConfiguration;
     if (
-      !config ||
-      !registered.lifecycle.parameterConfiguration?.snapshotTransition ||
-      context.purpose !== 'transition' ||
-      !context.record ||
-      context.transition !==
-        registered.lifecycle.parameterConfiguration?.snapshotTransition ||
-      config.legacyRecord?.(context.record)
+      current &&
+      Object.keys(current.values).some((key) => !Object.hasOwn(values, key))
     )
-      return;
-    const resolution =
-      supplied ??
-      this.parameterExecution
-        .getStore()
-        ?.resolutions.get(
-          moveKey(registered.lifecycle.name, context.record.id),
-        );
-    if (!resolution)
-      throw new Error('The parameter execution has no resolution to bind.');
-    if (
-      await config.store.snapshot(
-        resolution.scope,
-        registered.lifecycle.name,
-        String(context.record.id),
-        context.transactionHandle,
-      )
-    )
-      return;
-    const values: JsonObject = {};
-    const sources: Record<string, ParameterSource> = {};
-    for (const [key, source] of Object.entries(resolution.sources))
-      if (source.readMode === 'snapshot') {
-        values[key] = resolution.values[key]!;
-        sources[key] = source;
-      }
-    await config.store.saveSnapshot(
-      {
-        scope: resolution.scope,
-        lifecycle: registered.lifecycle.name,
-        recordId: String(context.record.id),
-        values,
-        sources,
-        at: this.clock().toISOString(),
-      },
-      context.transactionHandle,
-    );
+      throw new ParameterConfigurationError(
+        'CONFIGURATION_INCOMPATIBLE',
+        'Stored configuration contains unknown parameters.',
+      );
+    return { scope, revision: current?.revision ?? 0, values, sources };
   }
 
   private async recordParameterUsage(
@@ -1189,8 +1519,29 @@ export class LifecycleRuntime {
     return Object.freeze({
       handle: store.transactionHandle,
       now,
-      read: (name: string, id: RecordId) =>
-        store.findRecord(this.get(name).lifecycle.collection, id),
+      read: async (name: string, id: RecordId) => {
+        const { lifecycle } = this.get(name);
+        const record = await store.findRecord(lifecycle.collection, id);
+        if (record) checkBinding(lifecycle, record);
+        return record;
+      },
+      requireActive: async (
+        name: string,
+        id: RecordId,
+      ): Promise<LifecycleRecord> => {
+        const { lifecycle } = this.get(name);
+        await this.lockInstance(store, lifecycle, id);
+        const record = await store.findRecord(lifecycle.collection, id);
+        if (!record)
+          throw new LifecycleError(
+            'RECORD_NOT_FOUND',
+            `No ${lifecycle.collection} record "${String(id)}".`,
+          );
+        checkBinding(lifecycle, record);
+        if (managementState(lifecycle.management?.field, record).suspendedAt)
+          throw suspendedInstance();
+        return record;
+      },
       fire: (
         name: string,
         id: RecordId,
@@ -1353,16 +1704,20 @@ export class LifecycleRuntime {
   ): Promise<AvailableTransition[]> {
     const { lifecycle } = registered;
     const result: AvailableTransition[] = [];
+    const suspended =
+      managementState(lifecycle.management?.field, record).suspendedAt !== null;
     for (const transition of transitionsFrom(
       lifecycle,
       stateOf(lifecycle, record),
     )) {
       if (!transition.manual) continue;
-      const blockers = await guardBlockers(
-        transition,
-        context,
-        registered.guards.get(transition.name),
-      );
+      const blockers = suspended
+        ? [suspensionBlocker]
+        : await guardBlockers(
+            transition,
+            context,
+            registered.guards.get(transition.name),
+          );
       result.push({
         name: transition.name,
         title: transition.title,
@@ -1411,6 +1766,8 @@ export class LifecycleRuntime {
         problems: [],
       };
     const record = await this.require(registered, id);
+    if (managementState(lifecycle.management?.field, record).suspendedAt)
+      return { allowed: false, blockers: [suspensionBlocker], problems: [] };
     const state = stateOf(lifecycle, record);
     if (!declared.from.includes(state))
       return {
@@ -1460,16 +1817,20 @@ export class LifecycleRuntime {
         'INVALID_STATE',
         `"${state}" is not an initial state of "${name}".`,
       );
-    for (const field of [
-      lifecycle.stateField,
-      lifecycle.changedAtField,
-      lifecycle.versionField,
-    ])
+    for (const field of ownedFields(lifecycle).slice(1))
       if (field in values)
         throw new LifecycleError(
           'INVALID_SET',
           `Creating a ${name} record may not set "${field}"; the lifecycle owns it.`,
         );
+    if (
+      options.requestId !== undefined &&
+      (!options.requestId.trim() || options.requestId.startsWith('$'))
+    )
+      throw new LifecycleError(
+        'INVALID_REQUEST_ID',
+        'Creation requires a nonempty, non-reserved request ID.',
+      );
     const now = this.clock();
     const at = now.toISOString();
     const inner: { handle?: unknown } = {};
@@ -1477,6 +1838,85 @@ export class LifecycleRuntime {
       (store) =>
         this.inParameterExecution(store, options.transaction, async () => {
           inner.handle = store.transactionHandle;
+          let creationKey: string | undefined;
+          if (options.requestId !== undefined) {
+            const scope =
+              registered.parameterConfiguration?.scope({
+                lifecycle: name,
+                key: lifecycle.key,
+                record: null,
+                values,
+                transactionHandle: store.transactionHandle,
+                purpose: 'create',
+              }) ?? '$default';
+            creationKey = parameterIdentity(
+              scope,
+              name,
+              options.actor.id,
+              options.requestId,
+            );
+            const fingerprint = canonical({
+              values: options.requestInput ?? values,
+              state,
+              input: options.input ?? {},
+            } as JsonObject);
+            try {
+              await store.transaction(
+                async (nested) => {
+                  await nested.createRecord(this.creationRequestsCollection, {
+                    id: creationKey,
+                    status: 'claimed',
+                    revision: 0,
+                    actorId: options.actor.id,
+                    fingerprint,
+                    recordId: null,
+                    entryId: null,
+                    at,
+                  });
+                },
+                { within: store.transactionHandle },
+              );
+            } catch (error) {
+              if (!isUniqueConflict(error)) throw error;
+              const previous = await store.findRecord(
+                this.creationRequestsCollection,
+                creationKey,
+              );
+              if (
+                !previous ||
+                previous.fingerprint !== fingerprint ||
+                previous.actorId !== options.actor.id
+              )
+                throw new LifecycleError(
+                  'REQUEST_REUSED',
+                  'The creation request was already used with different input.',
+                );
+              const record =
+                typeof previous.recordId === 'string'
+                  ? await store.findRecord(
+                      lifecycle.collection,
+                      previous.recordId,
+                    )
+                  : undefined;
+              const entry =
+                typeof previous.entryId === 'string'
+                  ? await store.findTransition(previous.entryId)
+                  : undefined;
+              if (!record || !entry)
+                throw new LifecycleError(
+                  'CONFLICT',
+                  'The creation request has not committed yet; retry it with the same request ID.',
+                );
+              if (registered.parameterConfiguration)
+                await this.readConfiguredParameters(registered, {
+                  record,
+                  purpose: 'preview',
+                  transactionHandle: store.transactionHandle,
+                });
+              return { record, entry, effectRuns: [], replayed: true };
+            }
+          }
+
           this.parameterExecution
             .getStore()
             ?.values.delete(moveKey(name, '$create'));
@@ -1505,6 +1945,21 @@ export class LifecycleRuntime {
             [lifecycle.stateField]: state,
             [lifecycle.changedAtField]: at,
             [lifecycle.versionField]: 1,
+            ...(lifecycle.dueAtField
+              ? {
+                  [lifecycle.dueAtField]: triggerDueAt(
+                    lifecycle,
+                    state,
+                    parameters,
+                    now,
+                  ),
+                }
+              : {}),
+            // Bound in the same write: the record is this definition's from
+            // its first instant, and nothing else may change that.
+            ...(lifecycle.definitionField === undefined
+              ? {}
+              : { [lifecycle.definitionField]: lifecycle.name }),
           });
           this.parameterExecution
             .getStore()
@@ -1516,6 +1971,21 @@ export class LifecycleRuntime {
             this.parameterExecution
               .getStore()
               ?.resolutions.set(moveKey(name, record.id), creationResolution);
+          if (registered.parameterConfiguration) {
+            if (!creationResolution)
+              throw new Error(
+                'Creation requires an authoritative parameter resolution.',
+              );
+            await registered.parameterConfiguration.store.saveSnapshot(
+              {
+                ...creationResolution,
+                lifecycle: name,
+                recordId: String(record.id),
+                at,
+              },
+              store.transactionHandle,
+            );
+          }
           const entry = await store.appendTransition({
             lifecycle: lifecycle.name,
             recordId: String(record.id),
@@ -1595,6 +2065,23 @@ export class LifecycleRuntime {
                 ),
                 entryWork,
               );
+          if (creationKey)
+            await store.updateRecordIf(
+              this.creationRequestsCollection,
+              creationKey,
+              {
+                stateField: 'status',
+                state: 'claimed',
+                versionField: 'revision',
+                version: 0,
+              },
+              {
+                recordId: String(record.id),
+                entryId: entry.id,
+                status: 'complete',
+                revision: 1,
+              },
+            );
           outcome.created = created;
           return created.result;
         }),
@@ -1603,6 +2090,152 @@ export class LifecycleRuntime {
     // A creation moves no record that existed, but its hooks may have.
     this.noteMoves(options.transaction, inner.handle, undefined);
     return result;
+  }
+
+  public suspend(
+    key: string,
+    id: RecordId,
+    options: ManagementOptions,
+  ): Promise<ManagementResult> {
+    return this.management.manage(key, id, 'suspend', options);
+  }
+
+  public resume(
+    key: string,
+    id: RecordId,
+    options: ManagementOptions,
+  ): Promise<ManagementResult> {
+    return this.management.manage(key, id, 'resume', options);
+  }
+
+  public reset(
+    key: string,
+    id: RecordId,
+    options: ManagementOptions,
+  ): Promise<ManagementResult> {
+    return this.management.manage(key, id, 'reset', options);
+  }
+
+  public restartAt(
+    key: string,
+    id: RecordId,
+    target: string,
+    options: ManagementOptions,
+  ): Promise<ManagementResult> {
+    return this.management.manage(key, id, 'restartAt', options, target);
+  }
+
+  /** A preview. Each command repeats authorization and the entry checks under the record lock. */
+  public managementDetails(
+    key: string,
+    id: RecordId,
+    actor: LifecycleActor,
+    authorize: ManagementAuthorization,
+  ): Promise<ManagementDetails | undefined> {
+    return this.management.managementDetails(key, id, actor, authorize);
+  }
+
+  private async managedRecord(
+    store: LifecycleStore,
+    key: string,
+    id: RecordId,
+    lock = false,
+  ): Promise<{
+    registered: Registered;
+    record: LifecycleRecord;
+  }> {
+    const versions = this.versionsOf(this.keyOf(key));
+    const [first] = versions;
+    const locking = versions.find((definition) => definition.management);
+    let record = await store.findRecord(first.collection, id);
+    if (!record)
+      throw new LifecycleError(
+        'RECORD_NOT_FOUND',
+        `No ${first.collection} record "${String(id)}".`,
+      );
+    const registered = this.get(this.recordLifecycle(key, record));
+    if (lock && locking) {
+      await registered.lifecycle.management?.prepare?.(
+        this.scope(store, this.clock()),
+      );
+      await this.lockInstance(store, locking, id);
+      const current = await store.findRecord(first.collection, id);
+      if (!current)
+        throw new LifecycleError(
+          'RECORD_NOT_FOUND',
+          `No ${first.collection} record "${String(id)}".`,
+        );
+      record = current;
+      checkBinding(registered.lifecycle, record);
+    }
+    return { registered, record };
+  }
+
+  private async reentryContext(
+    store: LifecycleStore,
+    registered: Registered,
+    record: LifecycleRecord,
+    command: 'reset' | 'restartAt',
+    to: string,
+    actor: LifecycleActor,
+    reason: string,
+    now: Date,
+  ): Promise<ManagementReentryContext<LifecycleTypes>> {
+    const { lifecycle } = registered;
+    return {
+      previous: record,
+      from: stateOf(lifecycle, record),
+      to,
+      actor,
+      command,
+      reason,
+      parameters: (await this.resolveParameters(lifecycle.name, {
+        record,
+        transactionHandle: store.transactionHandle,
+        purpose: 'action',
+      })) as ParametersOf<LifecycleTypes>,
+      services: registered.services(
+        store.transactionHandle,
+      ) as ServicesOf<LifecycleTypes>,
+      tx: this.scope(store, now),
+      now,
+    };
+  }
+
+  /** Lock the business row before touching its Effect runs, in the caller's transaction. */
+  private async lockInstance(
+    store: LifecycleStore,
+    lifecycle: Lifecycle<LifecycleTypes>,
+    id: RecordId,
+  ): Promise<void> {
+    const record = await store.findRecord(lifecycle.collection, id);
+    if (
+      record &&
+      !(await store.updateRecordIf(
+        lifecycle.collection,
+        id,
+        recordCondition(lifecycle, record),
+        {
+          [lifecycle.versionField]: versionOf(lifecycle, record),
+        },
+      ))
+    )
+      throw new InstanceLockConflict();
+  }
+
+  private async lockRunInstance(
+    store: LifecycleStore,
+    lifecycle: Lifecycle<LifecycleTypes>,
+    run: EffectRun,
+  ): Promise<'active' | 'suspended' | 'obsolete'> {
+    if (!lifecycle.management) return 'active';
+    await lifecycle.management.prepare?.(this.scope(store, this.clock()));
+    await this.lockInstance(store, lifecycle, run.recordId);
+    const record = await store.findRecord(lifecycle.collection, run.recordId);
+    if (!record) return 'obsolete';
+    const state = managementState(lifecycle.management.field, record);
+    if (!(await currentRound(store, state, run))) return 'obsolete';
+    return state.suspendedAt ? 'suspended' : 'active';
   }
 
   /** The names of the registered lifecycles. */
@@ -1619,8 +2252,45 @@ export class LifecycleRuntime {
     const registered = this.get(name);
     const { lifecycle } = registered;
     const record = await this.require(registered, id);
-    const context = await this.guardContext(registered, record, actor);
+    let snapshot: ParameterSnapshot | undefined;
+    let values: Readonly<object> | undefined;
+    if (registered.parameterConfiguration) {
+      const readContext = {
+        record,
+        transactionHandle: undefined,
+        purpose: 'preview' as const,
+      };
+      const scope = registered.parameterConfiguration.scope({
+        ...readContext,
+        lifecycle: name,
+        key: lifecycle.key,
+      });
+      snapshot = await registered.parameterConfiguration.store.snapshot(
+        scope,
+        name,
+        String(record.id),
+      );
+      values = (
+        await this.readConfiguredParameters(
+          registered,
+          readContext,
+          snapshot ?? null,
+        )
+      ).values;
+    }
+    const context = await this.guardContext(
+      registered,
+      record,
+      actor,
+      {},
+      values,
+    );
+    const management = lifecycle.management
+      ? managementState(lifecycle.management.field, record)
+      : undefined;
     return {
+      lifecycle: lifecycle.name,
+      definitionVersion: lifecycle.version,
       record,
       state: stateOf(lifecycle, record),
       version: versionOf(lifecycle, record),
@@ -1628,7 +2298,14 @@ export class LifecycleRuntime {
       ...(registered.parameterConfiguration || registered.parameterProvider
         ? { parameterValues: context.parameters }
         : {}),
+      ...(snapshot ? { parameterSnapshot: structuredClone(snapshot) } : {}),
       history: await this.history(name, id),
+      ...(management
+        ? {
+            suspended: management.suspendedAt !== null,
+            roundStartedVersion: management.roundStartedVersion,
+          }
+        : {}),
     };
   }
 
@@ -1636,7 +2313,9 @@ export class LifecycleRuntime {
     const { lifecycle } = this.get(name);
     const recordId = String(id);
     return {
-      transitions: await this.store.listTransitions(lifecycle.name, recordId),
+      transitions: (
+        await this.store.listTransitions(lifecycle.name, recordId)
+      ).filter((entry) => !entry.management),
       effectRuns: await this.store.listEffectRuns({
         lifecycle: lifecycle.name,
         recordId,
@@ -1665,33 +2344,30 @@ export class LifecycleRuntime {
       return run;
     }
     const startedAt = this.clock().toISOString();
-    // Every attempt was claimed and none came back: the process running it
-    // stopped each time. Running it again could stop this one too.
-    if (run.attempts >= run.maxAttempts) {
-      await this.updateRun(
-        run,
-        { status: 'queued', attempts: run.attempts },
-        {
-          status: 'dead',
-          error: `None of its ${run.attempts} attempt(s) recorded an outcome; it needs a person to retry it.`,
-          claimedAt: null,
-          updatedAt: startedAt,
-        },
-      );
+    const attempt = run.attempts + 1;
+    const exhausted = run.attempts >= run.maxAttempts;
+    const claimed = await this.updateRunnable(
+      run,
+      { status: 'queued', attempts: run.attempts },
+      exhausted
+        ? {
+            status: 'dead',
+            error: `None of its ${run.attempts} attempt(s) recorded an outcome; it needs a person to retry it.`,
+            claimedAt: null,
+            updatedAt: startedAt,
+          }
+        : {
+            status: 'running',
+            attempts: attempt,
+            claimedAt: startedAt,
+            updatedAt: startedAt,
+          },
+      { notify: exhausted },
+    );
+    if (claimed && exhausted) {
       this.logger.error(`Effect "${effect.name}" is dead`, { runId });
       return this.store.findEffectRun(runId);
     }
-    const attempt = run.attempts + 1;
-    const claimed = await this.store.updateEffectRun(
-      runId,
-      { status: 'queued', attempts: run.attempts },
-      {
-        status: 'running',
-        attempts: attempt,
-        claimedAt: startedAt,
-        updatedAt: startedAt,
-      },
-    );
     if (!claimed) return this.store.findEffectRun(runId);
 
     const { lifecycle } = registered;
@@ -1718,10 +2394,11 @@ export class LifecycleRuntime {
       );
       if (!entry || !record)
         throw new Error('Its transition or record no longer exists.');
+      checkBinding(lifecycle, record);
       await this.beforeEffect?.(effect.name, attempt);
       const parameterContext: Omit<
         ParameterReadContext<LifecycleTypes>,
-        'lifecycle'
+        'lifecycle' | 'key'
       > = {
         record,
         transactionHandle: undefined,
@@ -1730,11 +2407,9 @@ export class LifecycleRuntime {
         runId,
         attempt,
       };
-      const resolution =
-        registered.parameterConfiguration &&
-        !registered.parameterConfiguration.legacyRecord?.(record)
-          ? await this.readConfiguredParameters(registered, parameterContext)
-          : undefined;
+      const resolution = registered.parameterConfiguration
+        ? await this.readConfiguredParameters(registered, parameterContext)
+        : undefined;
       const parameters = resolution
         ? freezeParameters(resolution.values)
         : await this.resolveParameters(lifecycle.name, parameterContext);
@@ -1760,10 +2435,17 @@ export class LifecycleRuntime {
       )
         return current;
       controller.signal.throwIfAborted();
+      if (
+        lifecycle.management &&
+        !(await this.readyToSend(run, lifecycle, attempt, startedAt))
+      )
+        return this.store.findEffectRun(runId);
+      controller.signal.throwIfAborted();
       const work = Promise.resolve(
         effect.run({
           record,
           input: entry.input,
+          ...(entry.management ? { management: entry.management } : {}),
           transition: entry.transition,
           from: entry.from,
           to: entry.to,
@@ -1815,7 +2497,7 @@ export class LifecycleRuntime {
       const runAfter = new Date(
         this.clock().getTime() + backoffMs(effect.retry, attempt),
       ).toISOString();
-      const requeued = await this.updateRun(
+      const requeued = await this.updateRunnable(
         run,
         { status: 'running', attempts: attempt },
         {
@@ -1826,9 +2508,14 @@ export class LifecycleRuntime {
           updatedAt: finishedAt,
         },
       );
-      if (requeued) await this.handOver(runId, runAfter);
-      else this.discarded(effect.name, runId, attempt);
-      return this.store.findEffectRun(runId);
+      if (requeued) {
+        await this.handOver(run, runAfter);
+        return this.store.findEffectRun(runId);
+      }
+      if (!lifecycle.management) {
+        this.discarded(effect.name, runId, attempt);
+        return this.store.findEffectRun(runId);
+      }
     }
 
     const status: PendingContinuation['outcome'] = outcome.ok
@@ -1865,9 +2552,9 @@ export class LifecycleRuntime {
     // Recording the outcome and firing what follows it commit together: a
     // stop between the two would otherwise leave a succeeded run whose
     // record never moves on.
-    let finished: FireResult | null | undefined;
-    try {
-      finished = await this.store.transaction(async (store) => {
+    const recordOutcome = (): Promise<FireResult | null | undefined> =>
+      this.store.transaction(async (store) => {
+        const activity = await this.lockRunInstance(store, lifecycle, run);
         const recorded = await store.updateEffectRun(
           runId,
           { status: 'running', attempts: attempt },
@@ -1875,7 +2562,28 @@ export class LifecycleRuntime {
         );
         if (!recorded) return undefined;
         store.afterCommit(() => this.effectChanged(run));
-        if (next === undefined) return null;
+        if (next === undefined || activity === 'obsolete') return null;
+        if (activity === 'suspended') {
+          await store.updateEffectRun(
+            runId,
+            { status, attempts: attempt },
+            {
+              continuation: {
+                transition: next,
+                outcome: status,
+                input,
+                code: 'SUSPENDED',
+                error: suspensionBlocker.message,
+                attempts: 0,
+                errorTries: 0,
+                failedAt: finishedAt,
+                dueAt: finishedAt,
+                abandonedAt: null,
+              },
+            },
+          );
+          return null;
+        }
         const continued: { decided?: Decision } = {};
         // Registered before deciding, as fire() does, so after the commit
         // the continuation is told about before anything its onTransition
@@ -1909,16 +2617,14 @@ export class LifecycleRuntime {
           );
           return continued.decided.result;
         } catch (error) {
-          // A conflict, or anything that is not a refusal, may go away: roll
-          // the outcome back too, so the attempt runs again rather than
-          // losing what should follow. Any other refusal would be the same
-          // on every attempt, so the effect does not run again: the outcome
-          // is recorded either way.
-          if (!(error instanceof LifecycleError) || error.code === 'CONFLICT')
-            throw error;
-          const message = `Effect "${run.effect}" could not continue with "${next}": ${error.message}`;
+          // Managed instances keep the real outcome even if the follow-up
+          // encounters a conflict or a transient error in another record.
+          const refusal = error instanceof LifecycleError;
+          const conflict = isRefusal(error, CONFLICTS);
+          if (!lifecycle.management && (!refusal || conflict)) throw error;
+          const message = `Effect "${run.effect}" could not continue with "${next}": ${errorText(error)}`;
           // The record moved on, or its guard refuses: nothing follows.
-          if (recordMovedOn(error)) {
+          if (refusal && recordMovedOn(error)) {
             this.logger.warn(message, { runId, code: error.code });
             return null;
           }
@@ -1927,10 +2633,15 @@ export class LifecycleRuntime {
           // process defines it — an old definition in a rolling deploy, a
           // bug in `set` or `route` — which time or a deploy can change: it
           // waits on the run for reclaim() or continueRun() to try again.
-          const nested = raisedInStep.has(error);
+          const nested = refusal && raisedInStep.has(error);
           const waits = `${message}. The outcome is recorded and the continuation is tried again by the sweep.`;
           if (nested) this.logger.warn(waits, { runId, code: error.code });
-          else this.logger.error(waits, { runId, code: error.code, error });
+          else
+            this.logger.error(waits, {
+              runId,
+              code: refusal ? error.code : CONTINUATION_ERROR,
+              error,
+            });
           const waiting = this.refusedContinuation(
             {
               transition: next,
@@ -1946,7 +2657,7 @@ export class LifecycleRuntime {
             },
             error,
             finishedAt,
-            'refusal',
+            conflict ? 'conflict' : refusal ? 'refusal' : 'error',
           );
           await store.updateEffectRun(
             runId,
@@ -1957,6 +2668,16 @@ export class LifecycleRuntime {
           return null;
         }
       });
+    let finished: FireResult | null | undefined;
+    try {
+      try {
+        finished = await recordOutcome();
+      } catch (error) {
+        if (!(error instanceof InstanceLockConflict)) throw error;
+        // A suspension or restart committed while the outcome tried to
+        // lock the record. Reread the new state before recording the result.
+        finished = await recordOutcome();
+      }
     } catch (error) {
       // Nothing of the outcome stuck. Put the attempt back in the queue now,
       // after a backoff, rather than leaving it claimed until a lease expires
@@ -1965,7 +2686,7 @@ export class LifecycleRuntime {
       const runAfter = new Date(
         this.clock().getTime() + backoffMs(effect.retry, attempt),
       ).toISOString();
-      const requeued = await this.updateRun(
+      const requeued = await this.updateRunnable(
         run,
         { status: 'running', attempts: attempt },
         {
@@ -1981,7 +2702,7 @@ export class LifecycleRuntime {
         `Effect "${effect.name}" ran, but its outcome could not be recorded; attempt ${attempt} is queued again.`,
         { runId, error },
       );
-      await this.handOver(runId, runAfter);
+      await this.handOver(run, runAfter);
       return this.store.findEffectRun(runId);
     }
     // The continuation, if any, was settled when the transaction committed.
@@ -2084,7 +2805,7 @@ export class LifecycleRuntime {
         `Effect run "${runId}" is retried by force; the continuation "${continuation.transition}" it owed had not run and is dropped.`,
         { runId, reason: options.reason ?? null },
       );
-    const reset = await this.updateRun(
+    const reset = await this.updateRunnable(
       run,
       {
         status: run.status,
@@ -2101,8 +2822,9 @@ export class LifecycleRuntime {
         continuation: null,
         updatedAt: this.clock().toISOString(),
       },
+      { reject: true },
     );
-    if (reset) await this.handOver(runId, null);
+    if (reset) await this.handOver(run, null);
     return this.store.findEffectRun(runId);
   }
 
@@ -2223,30 +2945,115 @@ export class LifecycleRuntime {
       ) as ParametersOf<LifecycleTypes>;
       for (const trigger of lifecycle.triggers.values()) {
         const changedBefore = new Date(
-          this.clock().getTime() - trigger.definition.after(parameters),
+          this.clock().getTime() -
+            (lifecycle.parameterConfiguration
+              ? 0
+              : trigger.definition.after(parameters)),
         ).toISOString();
-        let after: IdleRecordCursor | undefined;
+        const cursorKey = `${lifecycle.name}:${trigger.name}`;
+        let after = this.triggerCursors.get(cursorKey);
+        let scanned = 0;
+        let exhausted = false;
         let firedHere = 0;
-        while (firedHere < trigger.batchSize) {
+        while (
+          firedHere < trigger.batchSize &&
+          scanned < trigger.batchSize * 10
+        ) {
           const records = await this.store.findIdleRecords(
             lifecycle.collection,
             {
               stateField: lifecycle.stateField,
               states: trigger.when,
-              changedAtField: lifecycle.changedAtField,
-              changedBefore,
+              changedAtField: lifecycle.parameterConfiguration
+                ? lifecycle.dueAtField!
+                : lifecycle.changedAtField,
+              changedBefore: lifecycle.parameterConfiguration
+                ? new Date(this.clock().getTime() + 1).toISOString()
+                : changedBefore,
               limit: trigger.batchSize,
               ...(after ? { after } : {}),
+              // Only this version's records: another version of the
+              // process may wait in a state of the same name.
+              ...(lifecycle.definitionField === undefined
+                ? {}
+                : {
+                    match: {
+                      field: lifecycle.definitionField,
+                      value: lifecycle.name,
+                    },
+                  }),
             },
           );
+          scanned += records.length;
+          const snapshots = new Map<string, ParameterSnapshot>();
+          const registration = this.get(lifecycle.name).parameterConfiguration;
+          if (registration) {
+            const scopes = new Map<string, string[]>();
+            for (const record of records) {
+              const scope = registration.scope({
+                lifecycle: lifecycle.name,
+                key: lifecycle.key,
+                record,
+                purpose: 'preview',
+                transactionHandle: undefined,
+              });
+              scopes.set(scope, [
+                ...(scopes.get(scope) ?? []),
+                String(record.id),
+              ]);
+            }
+            for (const [scope, ids] of scopes)
+              for (const [id, snapshot] of await registration.store.snapshots(
+                scope,
+                lifecycle.name,
+                ids,
+              ))
+                snapshots.set(id, snapshot);
+          }
           for (const record of records) {
             if (firedHere >= trigger.batchSize) break;
+            // A store that ignores `match` still never hands one version
+            // another's record.
+            const bound = boundDefinitionOf(lifecycle, record);
+            if (bound !== undefined && bound !== lifecycle.name) continue;
+            if (
+              managementState(lifecycle.management?.field, record).suspendedAt
+            )
+              continue;
             try {
               // The record must still be idle when the transition is
               // decided: another sweep may have moved it since this one read it.
+              const instanceParameters = lifecycle.parameterConfiguration
+                ? (
+                    await this.readConfiguredParameters(
+                      this.get(lifecycle.name),
+                      {
+                        record,
+                        transactionHandle: undefined,
+                        purpose: 'preview',
+                      },
+                      snapshots.get(String(record.id)) ?? null,
+                    )
+                  ).values
+                : parameters;
+              const instanceChangedBefore = new Date(
+                this.clock().getTime() -
+                  trigger.definition.after(
+                    instanceParameters as ParametersOf<LifecycleTypes>,
+                  ) +
+                  1,
+              ).toISOString();
+              if (
+                effectiveChangedAt(lifecycle, record) >=
+                Date.parse(instanceChangedBefore)
+              )
+                continue;
               await this.fire(lifecycle.name, record.id, trigger.transition, {
                 actor: SYSTEM_ACTOR,
-                expect: { changedBefore },
+                expect: {
+                  changedBefore: instanceChangedBefore,
+                  version: versionOf(lifecycle, record),
+                },
               });
               this.triggerRefusals.delete(
                 triggerKey(lifecycle.name, trigger.name, record.id),
@@ -2286,13 +3093,22 @@ export class LifecycleRuntime {
                 `Trigger "${trigger.name}" could not fire "${trigger.transition}" on ${lifecycle.collection} record "${String(record.id)}"`,
                 { error },
               );
-              failures.push(error);
+              if (!lifecycle.parameterConfiguration) failures.push(error);
             }
           }
           const last = records.at(-1);
-          if (records.length < trigger.batchSize || !last) break;
+          if (records.length < trigger.batchSize || !last) {
+            exhausted = true;
+            break;
+          }
           const next: IdleRecordCursor = {
-            changedAt: String(last[lifecycle.changedAtField]),
+            changedAt: String(
+              last[
+                lifecycle.parameterConfiguration
+                  ? lifecycle.dueAtField!
+                  : lifecycle.changedAtField
+              ],
+            ),
             id: last.id,
           };
           // A store that ignores the cursor would hand back the same page forever.
@@ -2304,6 +3120,9 @@ export class LifecycleRuntime {
             break;
           after = next;
         }
+        if (!exhausted && after && scanned >= trigger.batchSize * 10)
+          this.triggerCursors.set(cursorKey, after);
+        else this.triggerCursors.delete(cursorKey);
         fired += firedHere;
       }
     }
@@ -2328,11 +3147,11 @@ export class LifecycleRuntime {
    */
   public async reclaim(): Promise<number> {
     const taken = await this.takeBackStale();
-    for (const run of taken) await this.handOver(run.id, null);
     const stranded = await this.strandedRuns();
-    for (const run of stranded) await this.handOver(run.id, null);
-    const continued = await this.continuePending();
-    return taken.length + stranded.length + continued;
+    let dispatched = 0;
+    for (const run of [...taken, ...stranded])
+      if (await this.handOver(run, run.runAfter)) dispatched += 1;
+    return dispatched + (await this.continuePending());
   }
 
   /**
@@ -2347,38 +3166,58 @@ export class LifecycleRuntime {
    * it leaves the batch to the runs behind it.
    */
   private async continuePending(): Promise<number> {
-    const pending = await this.store.listEffectRuns({
-      continuationDueBy: this.clock().toISOString(),
-      limit: this.continuations.batchSize,
-    });
+    const dueBy = this.clock().toISOString();
+    const batchSize = this.continuations.batchSize;
     let continued = 0;
-    for (const run of pending) {
-      const { continuation } = run;
-      if (!continuation) continue;
-      const registered = this.lifecycles.get(run.lifecycle);
-      if (!registered) {
-        await this.putOff(run, continuation);
-        continue;
+    let attempted = 0;
+    let after: EffectRunQuery['continuationAfter'];
+    while (attempted < batchSize) {
+      const pending = await this.store.listEffectRuns({
+        continuationDueBy: dueBy,
+        continuationAfter: after,
+        limit: batchSize,
+      });
+      if (!pending.length) break;
+      const last = pending.at(-1)!;
+      const dueAt = waitingDueAt(last.continuation);
+      if (!dueAt || after?.id === last.id) break;
+      after = { id: last.id, dueAt };
+      for (const run of pending) {
+        if (attempted >= batchSize) break;
+        attempted += 1;
+        const { continuation } = run;
+        if (!continuation) continue;
+        const registered = this.lifecycles.get(run.lifecycle);
+        if (!registered) {
+          await this.putOff(run, continuation);
+          continue;
+        }
+        let tried: ContinuationTry;
+        try {
+          tried = await this.tryContinuation(run, registered);
+        } catch (error) {
+          // The store failed even to record the failure: the next sweep tries again.
+          this.logger.warn(
+            `Effect run "${run.id}" could not continue with "${continuation.transition}" on this sweep; it is tried again.`,
+            { runId: run.id, error },
+          );
+          continue;
+        }
+        if (
+          tried.kind === 'refused' &&
+          tried.error instanceof LifecycleError &&
+          tried.error.code === 'SUSPENDED'
+        )
+          attempted -= 1;
+        if (tried.kind === 'continued') continued += 1;
+        else if (tried.kind === 'movedOn')
+          this.logger.warn(
+            `Effect run "${run.id}" no longer continues with "${continuation.transition}": ${tried.error.message}`,
+            { runId: run.id, code: tried.error.code },
+          );
+        else if (tried.kind === 'refused' && tried.recorded)
+          this.reportRefusal(run.id, tried);
       }
-      let tried: ContinuationTry;
-      try {
-        tried = await this.tryContinuation(run, registered);
-      } catch (error) {
-        // The store failed even to record the failure: the next sweep tries again.
-        this.logger.warn(
-          `Effect run "${run.id}" could not continue with "${continuation.transition}" on this sweep; it is tried again.`,
-          { runId: run.id, error },
-        );
-        continue;
-      }
-      if (tried.kind === 'continued') continued += 1;
-      else if (tried.kind === 'movedOn')
-        this.logger.warn(
-          `Effect run "${run.id}" no longer continues with "${continuation.transition}": ${tried.error.message}`,
-          { runId: run.id, code: tried.error.code },
-        );
-      else if (tried.kind === 'refused' && tried.recorded)
-        this.reportRefusal(run.id, tried);
     }
     return continued;
   }
@@ -2489,12 +3328,33 @@ export class LifecycleRuntime {
     try {
       return await this.store.transaction(
         async (store): Promise<ContinuationTry> => {
+          const activity = await this.lockRunInstance(
+            store,
+            registered.lifecycle,
+            run,
+          );
+          if (activity === 'suspended')
+            return {
+              kind: 'refused',
+              error: suspendedInstance(),
+              previous: pending,
+              continuation: pending,
+              recorded: false,
+            };
           const cleared = await store.updateEffectRun(run.id, read, {
             continuation: null,
             updatedAt: at,
           });
           if (!cleared) return { kind: 'changed' };
           store.afterCommit(() => this.effectChanged(run));
+          if (activity === 'obsolete')
+            return {
+              kind: 'movedOn',
+              error: new LifecycleError(
+                'INVALID_STATE',
+                'The lifecycle execution restarted.',
+              ),
+            };
           if (
             await store.findTransitionByRequest(
               run.lifecycle,
@@ -2652,19 +3512,15 @@ export class LifecycleRuntime {
     const { lifecycle } = registered;
     if (!run.stayBound) return undefined;
     const entry = await store.findTransition(run.transitionId);
-    const own = `$run:${run.id}:`;
-    // Any later transition ends the stay, a self-transition included: it
-    // leaves and enters the state again and queues its onEnter effects anew.
-    // Only this run's own continuation does not. The version check keeps a
-    // store that ignores `after` from counting the entry that queued the run.
-    const left = (
-      await store.listTransitions(run.lifecycle, run.recordId, {
-        after: run.transitionId,
-      })
-    ).find(
-      (later) =>
-        (entry === undefined || later.version > entry.version) &&
-        later.requestId?.startsWith(own) !== true,
+    const left = await findStayExit(
+      store,
+      {
+        lifecycle: run.lifecycle,
+        recordId: run.recordId,
+        entryId: run.transitionId,
+        version: entry?.version,
+      },
+      `$run:${run.id}:`,
     );
     if (!left) return undefined;
     return new LifecycleError(
@@ -2700,8 +3556,10 @@ export class LifecycleRuntime {
   public async recover(): Promise<number> {
     await this.takeBackStale();
     const queued = await this.store.listEffectRuns({ status: 'queued' });
-    for (const run of queued) await this.handOver(run.id, run.runAfter);
-    return queued.length;
+    let dispatched = 0;
+    for (const run of queued)
+      if (await this.handOver(run, run.runAfter)) dispatched += 1;
+    return dispatched;
   }
 
   /**
@@ -2741,7 +3599,7 @@ export class LifecycleRuntime {
     const taken: EffectRun[] = [];
     for (const run of stale)
       if (
-        await this.updateRun(
+        await this.updateRunnable(
           run,
           { status: 'running', attempts: run.attempts },
           {
@@ -2750,6 +3608,7 @@ export class LifecycleRuntime {
             claimedAt: null,
             updatedAt: now.toISOString(),
           },
+          { expire: true },
         )
       )
         taken.push(run);
@@ -2767,17 +3626,30 @@ export class LifecycleRuntime {
   }
 
   private async handOver(
-    runId: string,
+    run: EffectRun,
     runAfter: string | null,
-  ): Promise<void> {
+  ): Promise<boolean> {
     try {
-      await this.dispatcher.dispatch(runId, { runAfter });
+      const lifecycle = this.lifecycles.get(run.lifecycle)?.lifecycle;
+      if (lifecycle?.management) {
+        const record = await this.store.findRecord(
+          lifecycle.collection,
+          run.recordId,
+        );
+        if (
+          !record ||
+          managementState(lifecycle.management.field, record).suspendedAt
+        )
+          return false;
+      }
+      await this.dispatcher.dispatch(run.id, { runAfter });
     } catch (error) {
       this.logger.error(
-        `Effect run "${runId}" could not be dispatched; reclaim() hands it over once it has waited a lease, and recover() at the next start.`,
+        `Effect run "${run.id}" could not be dispatched; reclaim() hands it over once it has waited a lease, and recover() at the next start.`,
         { error },
       );
     }
+    return true;
   }
 
   /**
@@ -2825,12 +3697,17 @@ export class LifecycleRuntime {
         'NOT_MANUAL',
         `"${transition}" is fired by the system, not by a person.`,
       );
+    if (lifecycle.management) {
+      await lifecycle.management.prepare?.(this.scope(store, now));
+      await this.lockInstance(store, lifecycle, id);
+    }
     const current = await store.findRecord(lifecycle.collection, id);
     if (!current)
       throw new LifecycleError(
         'RECORD_NOT_FOUND',
         `No ${lifecycle.collection} record "${String(id)}".`,
       );
+    checkBinding(lifecycle, current);
     if (options.requestId !== undefined) {
       const earlier = await store.findTransitionByRequest(
         lifecycle.name,
@@ -2852,7 +3729,14 @@ export class LifecycleRuntime {
           'REQUEST_REUSED',
           `Request "${options.requestId}" was already used by another actor on this ${lifecycle.collection} record; send "${transition}" under a new request id.`,
         );
-      if (earlier)
+      if (earlier) {
+        if (registered.parameterConfiguration)
+          await this.resolveParameters(lifecycle.name, {
+            record: current,
+            transactionHandle: store.transactionHandle,
+            purpose: 'transition',
+            transition,
+          });
         return {
           result: {
             record: current,
@@ -2863,6 +3747,7 @@ export class LifecycleRuntime {
           written: current,
           movedOn: false,
         };
+      }
     }
     // Read the record before checking its stay. The conditional update below
     // uses this same version, so a transition committed during or after the
@@ -2871,6 +3756,8 @@ export class LifecycleRuntime {
       const ended = await this.stayEnded(store, registered, continuing);
       if (ended) throw ended;
     }
+    const managed = managementState(lifecycle.management?.field, current);
+    if (managed.suspendedAt) throw suspendedInstance();
     const expected = options.expect;
     if (
       expected?.version !== undefined &&
@@ -2882,7 +3769,10 @@ export class LifecycleRuntime {
       );
     if (
       expected?.changedBefore !== undefined &&
-      !(String(current[lifecycle.changedAtField]) < expected.changedBefore)
+      !(
+        effectiveChangedAt(lifecycle, current) <
+        Date.parse(expected.changedBefore)
+      )
     )
       throw new LifecycleError(
         'CONFLICT',
@@ -2907,13 +3797,23 @@ export class LifecycleRuntime {
     const written = await store.updateRecordIf(
       lifecycle.collection,
       id,
+      recordCondition(lifecycle, current),
       {
-        stateField: lifecycle.stateField,
-        state: plan.from,
-        versionField: lifecycle.versionField,
-        version: plan.version,
+        ...plan.values,
+        ...(lifecycle.management && managed.pausedMs
+          ? { [lifecycle.management.field]: { ...managed, pausedMs: 0 } }
+          : {}),
+        ...(lifecycle.dueAtField
+          ? {
+              [lifecycle.dueAtField]: triggerDueAt(
+                lifecycle,
+                plan.to,
+                parameters,
+                now,
+              ),
+            }
+          : {}),
       },
-      plan.values,
     );
     if (!written)
       throw new LifecycleError(
@@ -2936,6 +3836,16 @@ export class LifecycleRuntime {
     const record = Object.freeze({
       ...current,
       ...plan.values,
+      ...(lifecycle.dueAtField
+        ? {
+            [lifecycle.dueAtField]: triggerDueAt(
+              lifecycle,
+              plan.to,
+              parameters,
+              now,
+            ),
+          }
+        : {}),
     }) as LifecycleRecord;
     await this.recordParameterUsage(
       registered,
@@ -3088,7 +3998,7 @@ export class LifecycleRuntime {
       kind: 'transition',
     });
     for (const run of committed.result.effectRuns)
-      await this.handOver(run.id, null);
+      await this.handOver(run, null);
   }
 
   /**
@@ -3152,6 +4062,96 @@ export class LifecycleRuntime {
           );
         }
       }
+  }
+
+  private async readyToSend(
+    run: EffectRun,
+    lifecycle: Lifecycle<LifecycleTypes>,
+    attempt: number,
+    startedAt: string,
+  ): Promise<boolean> {
+    return this.store.transaction(async (store) => {
+      const activity = await this.lockRunInstance(store, lifecycle, run);
+      const claimed = await store.findEffectRun(run.id);
+      if (
+        claimed?.status !== 'running' ||
+        claimed.attempts !== attempt ||
+        claimed.claimedAt !== startedAt ||
+        Date.parse(startedAt) < this.clock().getTime() - this.leaseMs
+      )
+        return false;
+      if (activity === 'active') return true;
+      await store.updateEffectRun(
+        run.id,
+        { status: 'running', attempts: attempt },
+        {
+          status: activity === 'suspended' ? 'queued' : 'cancelled',
+          attempts: run.attempts,
+          claimedAt: null,
+          updatedAt: this.clock().toISOString(),
+          ...(activity === 'obsolete'
+            ? { error: 'The lifecycle execution restarted.' }
+            : {}),
+        },
+      );
+      store.afterCommit(() => this.effectChanged(run));
+      return false;
+    });
+  }
+
+  private async updateRunnable(
+    run: EffectRun,
+    condition: EffectRunCondition,
+    changes: EffectRunChanges,
+    options: {
+      readonly notify?: boolean;
+      readonly reject?: boolean;
+      readonly expire?: boolean;
+    } = {},
+  ): Promise<boolean> {
+    const lifecycle = this.lifecycles.get(run.lifecycle)?.lifecycle;
+    if (!lifecycle?.management)
+      return options.notify === false
+        ? this.store.updateEffectRun(run.id, condition, changes)
+        : this.updateRun(run, condition, changes);
+    return this.store.transaction(async (store) => {
+      const activity = await this.lockRunInstance(store, lifecycle, run);
+      if (activity === 'suspended') {
+        if (options.reject) throw suspendedInstance();
+        // A running attempt may record a retryable failure. It stays queued
+        // until resume without claiming another attempt.
+        if (condition.status !== 'running' || options.expire) return false;
+      }
+      if (activity === 'obsolete') {
+        if (options.reject)
+          throw new LifecycleError(
+            'RUN_SETTLED',
+            'The lifecycle execution restarted.',
+          );
+        if (
+          condition.status === 'queued' &&
+          (await store.updateEffectRun(run.id, condition, {
+            status: 'cancelled',
+            error: 'The lifecycle execution restarted.',
+            claimedAt: null,
+            updatedAt: this.clock().toISOString(),
+          }))
+        )
+          store.afterCommit(() => this.effectChanged(run));
+        return false;
+      }
+      if (
+        condition.status === 'queued' &&
+        changes.status === 'running' &&
+        run.runAfter !== null &&
+        run.runAfter > this.clock().toISOString()
+      )
+        return false;
+      const updated = await store.updateEffectRun(run.id, condition, changes);
+      if (updated && options.notify !== false)
+        store.afterCommit(() => this.effectChanged(run));
+      return updated;
+    });
   }
 
   /** A root-store conditional write has committed when it resolves. */
@@ -3241,6 +4241,7 @@ export class LifecycleRuntime {
         'RECORD_NOT_FOUND',
         `No ${lifecycle.collection} record "${String(id)}".`,
       );
+    checkBinding(lifecycle, record);
     return record;
   }
 
@@ -3250,16 +4251,19 @@ export class LifecycleRuntime {
     record: LifecycleRecord,
     actor: LifecycleActor,
     input: JsonObject = {},
+    providedParameters?: Readonly<object>,
   ): Promise<TransitionContext<LifecycleTypes>> {
     return Object.freeze({
       record,
       actor,
       input,
-      parameters: (await this.resolveParameters(registered.lifecycle.name, {
-        record,
-        transactionHandle: undefined,
-        purpose: 'preview',
-      })) as ParametersOf<LifecycleTypes>,
+      parameters: (providedParameters
+        ? freezeParameters(providedParameters)
+        : await this.resolveParameters(registered.lifecycle.name, {
+            record,
+            transactionHandle: undefined,
+            purpose: 'preview',
+          })) as ParametersOf<LifecycleTypes>,
       services: registered.services(undefined) as ServicesOf<LifecycleTypes>,
       now: this.clock(),
     });
@@ -3314,4 +4318,36 @@ function freezeParameters(values: object): Readonly<object> {
   };
   freeze(copy);
   return copy;
+}
+
+function validSnapshotTime(value: unknown): value is string {
+  if (typeof value !== 'string') return false;
+  const parts =
+    /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})(?:\.\d+)?(?:Z|[+-](\d{2}):(\d{2}))$/.exec(
+      value,
+    );
+  if (!parts || !Number.isFinite(Date.parse(value))) return false;
+  const [
+    ,
+    year,
+    month,
+    day,
+    hour,
+    minute,
+    second,
+    offsetHour = '0',
+    offsetMinute = '0',
+  ] = parts;
+  return (
+    Number(month) >= 1 &&
+    Number(month) <= 12 &&
+    Number(day) >= 1 &&
+    Number(day) <=
+      new Date(Date.UTC(Number(year), Number(month), 0)).getUTCDate() &&
+    Number(hour) < 24 &&
+    Number(minute) < 60 &&
+    Number(second) < 60 &&
+    Number(offsetHour) < 24 &&
+    Number(offsetMinute) < 60
+  );
 }

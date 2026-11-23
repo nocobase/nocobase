@@ -31,11 +31,16 @@ const viVN: LocaleResource<typeof enUS> = {
         runners: 'Môi trường chạy',
         prices: 'Giá mẫu',
         services: 'Dịch vụ kiểu mẫu',
+        skills: 'Kỹ năng',
       },
     },
     actions: {
       read: 'Xem',
       manage: 'Quản lý',
+    },
+    humanOnly: {
+      servicesManage:
+        'Quản lý dịch vụ mô hình sẽ ghi khóa của nhà cung cấp; chỉ người mới được làm.',
     },
     keyScopes: {
       agents: {

@@ -15,6 +15,8 @@
 // - its timeout passes: stop the command, `fail(jobTimeout)`;
 // - lease lost: stop the command; the job is no longer this runner's, so nothing is reported;
 // - SIGTERM (the runner is stopping): stop the command and `fail(runnerOffline)` so the server can requeue it.
+import { isGitSshUrl } from './git-ssh.ts';
+import { GitSshError, gitSshFailureOf } from './git.ts';
 import { rm } from 'node:fs/promises';
 import path from 'node:path';
 
@@ -287,6 +289,14 @@ export class JobWorker {
           'policyRefused',
           `The runner cannot isolate the build: ${check.problem}`,
         );
+      if (
+        job.requires.includes('gitSsh') &&
+        isGitSshUrl(job.spec.repo.url) &&
+        job.spec.repo.ssh === undefined
+      ) {
+        const error = new GitSshError('authFailed');
+        throw new JobFailure('checkoutFailed', error.message, { cause: error });
+      }
       const result: JobResult = await runBuild(
         { ...context, isolation: check.isolation },
         job.spec,
@@ -356,7 +366,12 @@ export class JobWorker {
                       )
                       .slice(0, 10_000),
                   };
-        push({ type: 'error', content: failure.detail ?? failure.reason });
+        const gitSshFailure = gitSshFailureOf(caught);
+        push({
+          type: 'error',
+          content: failure.detail ?? failure.reason,
+          ...(gitSshFailure === undefined ? {} : { meta: { gitSshFailure } }),
+        });
         await drain();
         await this.report(
           routePath(RUNNER_ROUTES.jobFail, { jobId: job.id }),

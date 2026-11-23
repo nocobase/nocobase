@@ -14,17 +14,19 @@ export interface PackageManagerInvocation {
   readonly packageManager: PackageManager;
 }
 
-/** Plugins are deployment dependencies, including those that only contribute client code. */
+/** Install enabled plugins for deployment and preinstalled plugins for development. */
 export function addDependencyCommand(
   packageManager: PackageManager,
   specifier: string,
+  development = false,
 ): PackageManagerInvocation {
+  const save = development ? '--save-dev' : '--save-prod';
   const args =
     packageManager === 'npm'
-      ? ['install', '--save-prod', specifier]
+      ? ['install', save, specifier]
       : packageManager === 'pnpm'
-        ? ['add', '--save-prod', specifier]
-        : ['add', specifier];
+        ? ['add', save, specifier]
+        : ['add', ...(development ? ['--dev'] : []), specifier];
   return { args, packageManager };
 }
 

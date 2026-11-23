@@ -9,7 +9,9 @@
  * for `version`, `attempts` and `maxAttempts`; and `datetimeTz` for every
  * instant; and a non-null boolean `stayBound` on effect runs recording whether
  * they belong to the entered state. The transitions collection also takes a unique index on
- * `(lifecycle, recordId, version)`. The effect runs also take a nullable
+ * `(lifecycle, recordId, version)`. Managed lifecycles add a journal revision
+ * to that index and store events in a nullable JSON `management` column.
+ * The effect runs also take a nullable
  * `json` `continuation` and two nullable `datetimeTz` columns:
  * `continuationDueAt`, when that continuation may be tried next, null
  * exactly when none waits, and `continuationAbandonedAt`, when the sweep

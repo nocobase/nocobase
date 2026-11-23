@@ -1,910 +1,1011 @@
-import { useState } from 'react';
-import { fireEvent, render, screen, within } from '@testing-library/react';
+import { useState, type ReactElement } from 'react';
+import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 import {
   PermissionEditor,
-  type PermissionEditorSection,
+  type PermissionMenuNode,
+  type PermissionObject,
+  type PermissionSettingsPage,
+  type PermissionValue,
 } from '../../registry/authorization/permission-editor.js';
 
-const sections = [
+const RECORDS = [
+  { value: 'all', label: 'All records' },
+  { value: 'department', label: 'Their department' },
+  { value: 'own', label: 'Their own records' },
+];
+
+const objects: readonly PermissionObject[] = [
   {
-    id: 'business',
-    title: 'Business actions',
-    description: 'Choose what staff can do.',
-    groups: [
+    id: 'contracts',
+    label: 'Contracts',
+    group: 'Sales',
+    actions: [
       {
-        id: 'orders',
-        title: 'Orders',
-        hint: 'Order processing.',
-        rows: [
+        id: 'contracts.view',
+        label: 'View contracts',
+        view: true,
+        scopes: [{ id: 'records', options: RECORDS }],
+      },
+      {
+        id: 'contracts.update',
+        label: 'Edit contracts',
+        scopes: [{ id: 'records', followsView: true }],
+      },
+      { id: 'contracts.export', label: 'Export contracts', risk: 'sensitive' },
+      {
+        id: 'contracts.approve',
+        label: 'Approve contracts',
+        business: true,
+        scopes: [
           {
-            id: 'approve',
-            label: 'Approve order',
-            actionKey: 'approve',
-            hint: 'Confirm the order and reserve stock.',
-            enabled: true,
+            id: 'amount',
+            label: 'Amount up to',
+            options: [
+              { value: 'any', label: 'No limit' },
+              { value: '100k', label: '$100,000' },
+            ],
           },
+          { id: 'customers', label: 'Customers', options: RECORDS },
+        ],
+      },
+    ],
+  },
+  {
+    id: 'payments',
+    label: 'Payments',
+    group: 'Sales',
+    actions: [
+      { id: 'payments.view', label: 'View payments', view: true },
+      { id: 'payments.sync', label: 'Sync payments', managed: true },
+      {
+        id: 'payments.export',
+        label: 'Export payments',
+        requires: ['payments.sync'],
+      },
+    ],
+  },
+  {
+    id: 'roles',
+    label: 'Roles',
+    group: 'System',
+    notice: 'Anyone who can edit roles can grant any permission.',
+    actions: [
+      { id: 'roles.view', label: 'View roles', view: true },
+      { id: 'roles.update', label: 'Edit roles', risk: 'high' },
+    ],
+  },
+];
+
+const menus: readonly PermissionMenuNode[] = [
+  { id: 'home', label: 'Home', public: true },
+  {
+    id: 'sales',
+    label: 'Sales',
+    children: [
+      {
+        id: 'contracts-page',
+        label: 'Contracts',
+        uses: { primary: ['contracts'], related: ['payments'] },
+      },
+      {
+        id: 'dashboard',
+        label: 'Sales dashboard',
+        uses: { related: ['contracts'] },
+      },
+      {
+        id: 'payments-page',
+        label: 'Payments',
+        uses: { primary: ['payments'] },
+      },
+    ],
+  },
+  {
+    id: 'admin',
+    label: 'Administration',
+    children: [
+      { id: 'roles-page', label: 'Permissions', opensWith: 'roles.view' },
+    ],
+  },
+];
+
+function Host({
+  initial,
+  onChange,
+  tab,
+  items = objects,
+}: {
+  readonly initial: PermissionValue;
+  readonly onChange?: (next: PermissionValue) => void;
+  readonly tab?: 'menus' | 'objects';
+  readonly items?: readonly PermissionObject[];
+}): ReactElement {
+  const [value, setValue] = useState(initial);
+  return (
+    <PermissionEditor
+      menus={menus}
+      objects={items}
+      value={value}
+      defaultTab={tab}
+      onChange={(next) => {
+        setValue(next);
+        onChange?.(next);
+      }}
+    />
+  );
+}
+
+const trigger = (name: string): HTMLElement =>
+  screen.getByRole('combobox', { name });
+
+describe('permission editor tabs', () => {
+  it('checks menus independently of object permissions and warns about empty pages', async () => {
+    const user = userEvent.setup();
+    const onChange = vi.fn();
+    render(
+      <Host
+        initial={{ menus: [], grants: { 'contracts.view': {} } }}
+        onChange={onChange}
+      />,
+    );
+    expect(
+      screen.getByRole('tab', { name: /Menus\s*1 \/ 5/ }),
+    ).toBeInTheDocument();
+    // On narrow containers each tab wraps its name above its count instead of running off the edge.
+    for (const tab of screen.getAllByRole('tab'))
+      expect(tab).toHaveClass('min-w-0', 'whitespace-normal');
+    // No intro or column headings above the menu tree.
+    expect(screen.queryByText(/Business objects the page uses/)).toBeNull();
+    // Public menus are checked for everyone and cannot be changed.
+    expect(screen.getByRole('checkbox', { name: /Home/ })).toBeChecked();
+    // The public menu carries no extra caption after its name.
+    expect(screen.getByRole('checkbox', { name: 'Home' })).toBeChecked();
+    expect(screen.queryByText(/Visible to everyone/)).toBeNull();
+    expect(screen.getByRole('checkbox', { name: /Home/ })).toHaveAttribute(
+      'aria-disabled',
+      'true',
+    );
+    await user.click(screen.getByRole('checkbox', { name: 'Payments' }));
+    expect(onChange).toHaveBeenLastCalledWith({
+      menus: ['payments-page'],
+      grants: { 'contracts.view': {} },
+    });
+    expect(
+      screen.getByText(
+        '“Payments” is checked, but this role cannot view Payments yet, so the page opens empty.',
+      ),
+    ).toBeInTheDocument();
+    expect(screen.getByText('1 menu needs attention')).toBeInTheDocument();
+    // The group is half-checked; checking it checks every child.
+    const group = screen.getByRole('checkbox', { name: 'Sales' });
+    expect(group).toHaveAttribute('aria-checked', 'mixed');
+    await user.click(group);
+    expect(onChange).toHaveBeenLastCalledWith({
+      menus: ['payments-page', 'contracts-page', 'dashboard'],
+      grants: { 'contracts.view': {} },
+    });
+    // Unchecking a menu leaves the object's permission alone.
+    await user.click(screen.getByRole('checkbox', { name: 'Contracts' }));
+    expect(onChange).toHaveBeenLastCalledWith({
+      menus: ['payments-page', 'dashboard'],
+      grants: { 'contracts.view': {} },
+    });
+  });
+
+  it('jumps from a warning to the object that needs View', async () => {
+    const user = userEvent.setup();
+    render(<Host initial={{ menus: ['payments-page'], grants: {} }} />);
+    await user.click(
+      screen.getByRole('button', { name: 'Turn on “View payments”' }),
+    );
+    expect(
+      screen.getByRole('tab', { name: /Business objects/ }),
+    ).toHaveAttribute('aria-selected', 'true');
+    expect(
+      screen.getByRole('heading', { name: 'Payments' }),
+    ).toBeInTheDocument();
+    await user.click(screen.getByRole('switch', { name: 'View payments' }));
+    await user.click(screen.getByRole('tab', { name: /Menus/ }));
+    expect(screen.queryByText(/opens empty/)).toBeNull();
+  });
+
+  it('shows a menu opened by an action as read-only and points to its object', async () => {
+    const user = userEvent.setup();
+    const onChange = vi.fn();
+    render(<Host initial={{ menus: [], grants: {} }} onChange={onChange} />);
+    const entry = screen.getByRole('checkbox', { name: 'Permissions' });
+    expect(entry).toHaveAttribute('aria-disabled', 'true');
+    await user.click(entry);
+    expect(onChange).not.toHaveBeenCalled();
+    await user.click(
+      screen.getByRole('button', { name: 'Shown with “View roles”' }),
+    );
+    expect(
+      screen.getByRole('tab', { name: /Business objects/ }),
+    ).toHaveAttribute('aria-selected', 'true');
+    expect(screen.getByRole('heading', { name: 'Roles' })).toBeInTheDocument();
+    expect(onChange).not.toHaveBeenCalled();
+  });
+});
+
+const crossObjectItems: readonly PermissionObject[] = [
+  {
+    id: 'contracts',
+    label: 'Contracts',
+    actions: [
+      {
+        id: 'contracts.view',
+        label: 'View contracts',
+        view: true,
+        scopes: [{ id: 'records', options: RECORDS }],
+      },
+      {
+        id: 'contracts.approve',
+        label: 'Approve contracts',
+        scopes: [
+          { id: 'records', label: 'Contracts', followsView: true },
           {
-            id: 'withdraw',
-            label: 'Withdraw order',
-            actionKey: 'withdraw',
-            hint: 'Withdraw an unprocessed order.',
-            enabled: false,
+            id: 'customers',
+            label: 'Customers',
+            options: RECORDS,
+            followsView: 'customers.view',
           },
         ],
       },
     ],
   },
   {
-    id: 'configuration',
-    title: 'Application configuration',
-    groups: [
+    id: 'customers',
+    label: 'Customers',
+    actions: [
       {
-        id: 'numbering',
-        title: 'Order numbering',
-        rows: [
-          { id: 'configure', label: 'Configure numbering', enabled: false },
-        ],
+        id: 'customers.view',
+        label: 'View customers',
+        view: true,
+        scopes: [{ id: 'records', options: RECORDS }],
       },
     ],
   },
 ];
 
-describe('application-owned permission workspace', () => {
-  it('renders caller order and custom actions without a built-in catalog or CRUD controls', () => {
+describe('business objects tab', () => {
+  it('reads a stored scope equal to View as following View', () => {
     render(
-      <PermissionEditor
-        sections={sections}
-        onEnabledChange={vi.fn()}
-        onLevelChange={vi.fn()}
+      <Host
+        tab='objects'
+        initial={{
+          menus: [],
+          grants: {
+            'contracts.view': { scopes: { records: 'department' } },
+            'contracts.update': { scopes: { records: 'department' } },
+          },
+        }}
       />,
     );
-    const checkboxes = screen.getAllByRole('checkbox');
-    expect(checkboxes.map((item) => item.textContent)).toHaveLength(2);
-    expect(checkboxes[0]).toHaveAccessibleName('Approve order');
-    expect(checkboxes[1]).toHaveAccessibleName('Withdraw order');
-    expect(
-      screen.queryByRole('checkbox', { name: 'Configure numbering' }),
-    ).not.toBeInTheDocument();
-    expect(
-      screen.getByRole('tablist', { name: 'Permission categories' }),
-    ).toBeVisible();
-    expect(
-      screen.getByText('Confirm the order and reserve stock.'),
-    ).toBeVisible();
-    expect(screen.getByText('Order processing.')).toBeVisible();
-    expect(screen.queryByRole('switch')).not.toBeInTheDocument();
-    expect(screen.queryByText('System and tools')).not.toBeInTheDocument();
-    expect(screen.queryByRole('combobox')).not.toBeInTheDocument();
+    expect(trigger('Data scope of Edit contracts')).toHaveTextContent(
+      'Same as view (Their department)',
+    );
+    expect(trigger('Data scope of Edit contracts')).toHaveAttribute(
+      'data-following',
+    );
   });
 
-  it('renders a meaningful empty state without adding permissions', () => {
+  it.each([
+    ['wider than View', 'department', 'all', 'All records'],
+    ['unknown to View', 'department', 'plugin.active', 'plugin.active'],
+    ['wider with no narrower option', 'own', 'all', 'All records'],
+  ])(
+    'shows a stored scope %s as stored when a role opens',
+    (_case, view, stored, shown) => {
+      const onChange = vi.fn();
+      render(
+        <Host
+          tab='objects'
+          onChange={onChange}
+          initial={{
+            menus: [],
+            grants: {
+              'contracts.view': { scopes: { records: view } },
+              'contracts.update': { scopes: { records: stored } },
+            },
+          }}
+        />,
+      );
+      const select = trigger('Data scope of Edit contracts');
+      expect(select).toHaveTextContent(shown);
+      expect(select).not.toHaveAttribute('data-following');
+      expect(onChange).not.toHaveBeenCalled();
+    },
+  );
+
+  it('shows no group title when every object is in the same group', () => {
     render(
-      <PermissionEditor
-        sections={[]}
-        onEnabledChange={vi.fn()}
-        onLevelChange={vi.fn()}
+      <Host
+        tab='objects'
+        items={objects.filter((object) => object.group === 'Sales')}
+        initial={{ menus: [], grants: {} }}
       />,
     );
-    expect(screen.getByRole('status')).toHaveTextContent(
-      'No permissions to configure',
-    );
-    expect(screen.getByRole('status')).toHaveTextContent(
-      'Ask the application developer',
-    );
-    expect(screen.queryAllByRole('checkbox')).toHaveLength(0);
-    expect(screen.queryByRole('heading', { level: 2 })).not.toBeInTheDocument();
+    const list = screen.getByRole('navigation', { name: 'Business objects' });
+    expect(within(list).queryByText('Sales')).toBeNull();
+    expect(
+      within(list).getByRole('button', { name: /^Contracts/ }),
+    ).toBeInTheDocument();
   });
 
-  it('filters globally by descriptions and parent names without changing the draft', async () => {
+  it('lists objects with counts and scopes and shows the menus that use the object', () => {
+    render(
+      <Host
+        tab='objects'
+        initial={{
+          menus: [],
+          grants: { 'contracts.view': { scopes: { records: 'department' } } },
+        }}
+      />,
+    );
+    const list = screen.getByRole('navigation', { name: 'Business objects' });
+    expect(
+      within(list).getByRole('button', {
+        // Only the name and how many actions are on; the View scope is set in the detail.
+        name: /^Contracts\s*1 of 4 on$/,
+      }),
+    ).toHaveAttribute('aria-current', 'true');
+    expect(within(list).getByText('System')).toBeInTheDocument();
+    // Long scope names wrap instead of ending in an ellipsis.
+    expect(trigger('Data scope of Edit contracts')).toHaveClass(
+      'whitespace-normal',
+      '*:data-[slot=select-value]:line-clamp-none',
+    );
+    expect(
+      screen.getByRole('heading', { name: 'Contracts' }),
+    ).toBeInTheDocument();
+    // No explanatory lines: no list of the menus using the object, no rule below the actions, no footer note.
+    expect(screen.queryByText('Used by menus')).toBeNull();
+    expect(screen.queryByText(/follow the view scope/)).toBeNull();
+    expect(screen.queryByText(/Changes apply to every menu/)).toBeNull();
+    const switches = screen.getAllByRole('switch');
+    expect(switches[0]).toHaveAccessibleName('View contracts');
+    expect(trigger('Data scope of Edit contracts')).toHaveTextContent(
+      'Same as view (Their department)',
+    );
+    expect(trigger('Data scope of Edit contracts')).toBeDisabled();
+    // No risk tags; the second scope slot shows its object's title.
+    expect(screen.queryByText('Sensitive')).toBeNull();
+    expect(screen.getByText('Customers')).toBeInTheDocument();
+  });
+
+  it('turns on View with an action', async () => {
     const user = userEvent.setup();
-    const change = vi.fn();
-    render(
-      <PermissionEditor
-        sections={sections}
-        onEnabledChange={change}
-        onLevelChange={vi.fn()}
-      />,
-    );
-    await user.type(screen.getByRole('textbox'), 'reserve stock');
+    render(<Host tab='objects' initial={{ menus: [], grants: {} }} />);
+    await user.click(screen.getByRole('switch', { name: 'Edit contracts' }));
     expect(
-      screen.getByRole('checkbox', { name: 'Approve order' }),
+      screen.getByRole('switch', { name: 'View contracts' }),
     ).toBeChecked();
     expect(
-      screen.queryByRole('checkbox', { name: 'Withdraw order' }),
-    ).not.toBeInTheDocument();
-    expect(change).not.toHaveBeenCalled();
-    await user.clear(screen.getByRole('textbox'));
-    await user.type(screen.getByRole('textbox'), 'Order processing');
-    expect(
-      screen.getByRole('checkbox', { name: 'Withdraw order' }),
-    ).toBeVisible();
-    await user.clear(screen.getByRole('textbox'));
-    await user.type(screen.getByRole('textbox'), 'missing');
-    expect(screen.getByRole('status')).toHaveTextContent(
-      'No matching permissions',
-    );
-    await user.click(screen.getByRole('button', { name: 'Clear filters' }));
-    expect(screen.getByRole('textbox')).toHaveFocus();
-    expect(
-      screen.getByRole('checkbox', { name: 'Withdraw order' }),
-    ).not.toBeChecked();
-    expect(change).not.toHaveBeenCalled();
+      screen.getByText('Also turned on View contracts, which this needs.'),
+    ).toBeInTheDocument();
   });
 
-  it('keeps the original category navigation and restores the selected category after global search', async () => {
+  it('asks before turning off View that other actions need', async () => {
     const user = userEvent.setup();
-    const change = vi.fn();
+    const onChange = vi.fn();
     render(
-      <PermissionEditor
-        sections={sections}
-        onEnabledChange={change}
-        onLevelChange={vi.fn()}
+      <Host
+        tab='objects'
+        initial={{
+          menus: ['contracts-page'],
+          grants: { 'contracts.view': {}, 'contracts.update': {} },
+        }}
+        onChange={onChange}
       />,
     );
-    const category = screen.getByRole('tab', {
-      name: 'Application configuration',
+    await user.click(screen.getByRole('switch', { name: 'View contracts' }));
+    expect(onChange).not.toHaveBeenCalled();
+    expect(screen.getByRole('alert')).toHaveTextContent(
+      'Turning off View contracts also turns off Edit contracts, which needs it.',
+    );
+    await user.click(screen.getByRole('button', { name: 'Turn off' }));
+    expect(onChange).toHaveBeenLastCalledWith({
+      menus: ['contracts-page'],
+      grants: {},
     });
-    await user.click(category);
-    expect(category).toHaveAttribute('aria-selected', 'true');
-    expect(
-      screen.getByRole('checkbox', { name: 'Configure numbering' }),
-    ).toBeVisible();
-    expect(
-      screen.queryByRole('checkbox', { name: 'Approve order' }),
-    ).not.toBeInTheDocument();
-    await user.type(screen.getByRole('textbox'), 'reserve stock');
-    expect(
-      screen.getByRole('checkbox', { name: 'Approve order' }),
-    ).toBeVisible();
-    await user.click(screen.getByRole('button', { name: 'Clear filters' }));
-    expect(
-      screen.getByRole('checkbox', { name: 'Configure numbering' }),
-    ).toBeVisible();
-    expect(category).toHaveAttribute('aria-selected', 'true');
-    await user.type(screen.getByRole('textbox'), 'missing');
-    await user.click(screen.getByRole('tab', { name: 'Business actions' }));
-    expect(screen.getByRole('textbox')).toHaveValue('');
-    expect(
-      screen.getByRole('checkbox', { name: 'Approve order' }),
-    ).toBeVisible();
-    expect(change).not.toHaveBeenCalled();
   });
 
-  it('supports normal typing, middle edits and Chinese composition', async () => {
+  it('cancels an open confirmation when the host turns read-only', async () => {
     const user = userEvent.setup();
+    const onChange = vi.fn();
+    const value = {
+      menus: [],
+      grants: { 'contracts.view': {}, 'contracts.update': {} },
+    };
+    const props = {
+      menus,
+      objects,
+      value,
+      onChange,
+      defaultTab: 'objects' as const,
+    };
+    const { rerender } = render(<PermissionEditor {...props} />);
+    await user.click(screen.getByRole('switch', { name: 'View contracts' }));
+    expect(screen.getByRole('alert')).toBeInTheDocument();
+    rerender(<PermissionEditor {...props} readOnly />);
+    expect(screen.queryByRole('alert')).toBeNull();
+    rerender(<PermissionEditor {...props} />);
+    expect(screen.queryByRole('alert')).toBeNull();
+    expect(onChange).not.toHaveBeenCalled();
+  });
+
+  it('says a managed requirement cannot be turned on here', async () => {
+    const user = userEvent.setup();
+    const onChange = vi.fn();
     render(
-      <PermissionEditor
-        sections={[
-          {
-            id: 'cn',
-            title: '审批',
-            groups: [
-              {
-                id: 'g',
-                rows: [{ id: 'a', label: '审批借用', enabled: true }],
-              },
-            ],
-          },
-        ]}
-        onEnabledChange={vi.fn()}
-        onLevelChange={vi.fn()}
+      <Host
+        tab='objects'
+        initial={{ menus: [], grants: {} }}
+        onChange={onChange}
       />,
     );
-    const input = screen.getByRole('textbox');
-    fireEvent.compositionStart(input);
-    fireEvent.change(input, { target: { value: '审批' } });
-    fireEvent.compositionEnd(input, { data: '审批' });
-    expect(input).toHaveValue('审批');
-    expect(screen.getByRole('checkbox', { name: '审批借用' })).toBeVisible();
-    await user.clear(input);
-    await user.type(input, '借用');
-    await user.keyboard('{Home}审批');
-    expect(input).toHaveValue('审批借用');
+    const list = screen.getByRole('navigation', { name: 'Business objects' });
+    await user.click(within(list).getByRole('button', { name: /^Payments/ }));
+    await user.click(screen.getByRole('switch', { name: 'Export payments' }));
+    expect(
+      screen.getByRole('switch', { name: 'Export payments' }),
+    ).not.toBeChecked();
+    expect(onChange).not.toHaveBeenCalledWith(
+      expect.objectContaining({
+        grants: expect.objectContaining({
+          'payments.export': expect.anything(),
+        }),
+      }),
+    );
+    expect(
+      screen.getByText(
+        'Export payments stays off. It needs Sync payments, which is managed by the application and cannot be turned on here.',
+      ),
+    ).toBeInTheDocument();
   });
 
-  it('emits only explicit changes and restores focus when an enabled-only result disappears', async () => {
+  it('narrows Edit and resets it when View becomes narrower', async () => {
     const user = userEvent.setup();
-    const batch = vi.fn();
-    function Draft() {
-      const [enabled, setEnabled] = useState(true);
+    const onChange = vi.fn();
+    render(
+      <Host
+        tab='objects'
+        initial={{
+          menus: [],
+          grants: {
+            'contracts.view': { scopes: { records: 'all' } },
+            'contracts.update': {},
+          },
+        }}
+        onChange={onChange}
+      />,
+    );
+    await user.click(trigger('Data scope of Edit contracts'));
+    await user.click(
+      await screen.findByRole('option', { name: 'Their department' }),
+    );
+    expect(onChange).toHaveBeenLastCalledWith({
+      menus: [],
+      grants: {
+        'contracts.view': { scopes: { records: 'all' } },
+        'contracts.update': { scopes: { records: 'department' } },
+      },
+    });
+    await user.click(trigger('Data scope of View contracts'));
+    await user.click(
+      await screen.findByRole('option', { name: 'Their own records' }),
+    );
+    expect(onChange).toHaveBeenLastCalledWith({
+      menus: [],
+      grants: {
+        'contracts.view': { scopes: { records: 'own' } },
+        'contracts.update': { scopes: {} },
+      },
+    });
+    expect(
+      screen.getByText(
+        'Edit contracts now follows the view scope (Their own records) again.',
+      ),
+    ).toBeInTheDocument();
+  });
+
+  it('keeps an Edit scope View does not list, shown and saved as stored, when View widens', async () => {
+    const user = userEvent.setup();
+    const onChange = vi.fn();
+    render(
+      <Host
+        tab='objects'
+        initial={{
+          menus: [],
+          grants: {
+            'contracts.view': { scopes: { records: 'department' } },
+            'contracts.update': { scopes: { records: 'plugin.active' } },
+          },
+        }}
+        onChange={onChange}
+      />,
+    );
+    expect(trigger('Data scope of Edit contracts')).toHaveTextContent(
+      'plugin.active',
+    );
+    await user.click(trigger('Data scope of View contracts'));
+    await user.click(
+      await screen.findByRole('option', { name: 'All records' }),
+    );
+    expect(onChange).toHaveBeenLastCalledWith({
+      menus: [],
+      grants: {
+        'contracts.view': { scopes: { records: 'all' } },
+        'contracts.update': { scopes: { records: 'plugin.active' } },
+      },
+    });
+    expect(trigger('Data scope of Edit contracts')).toHaveTextContent(
+      'plugin.active',
+    );
+    expect(screen.queryByText(/now follows the view scope/)).toBeNull();
+    // Narrowing it afterwards caps the value and says so.
+    await user.click(trigger('Data scope of View contracts'));
+    await user.click(
+      await screen.findByRole('option', { name: 'Their own records' }),
+    );
+    expect(onChange).toHaveBeenLastCalledWith({
+      menus: [],
+      grants: {
+        'contracts.view': { scopes: { records: 'own' } },
+        'contracts.update': { scopes: {} },
+      },
+    });
+    expect(
+      screen.getByText(
+        'Edit contracts now follows the view scope (Their own records) again.',
+      ),
+    ).toBeInTheDocument();
+  });
+
+  it('keeps the notice when a select only repeats the value it shows', async () => {
+    const user = userEvent.setup();
+    const onChange = vi.fn();
+    render(
+      <Host
+        tab='objects'
+        initial={{
+          menus: [],
+          grants: {
+            'contracts.view': { scopes: { records: 'all' } },
+            'contracts.update': { scopes: { records: 'department' } },
+          },
+        }}
+        onChange={onChange}
+      />,
+    );
+    await user.click(trigger('Data scope of View contracts'));
+    await user.click(
+      await screen.findByRole('option', { name: 'Their department' }),
+    );
+    const notice =
+      'Edit contracts now follows the view scope (Their department) again.';
+    expect(screen.getByText(notice)).toBeInTheDocument();
+    const calls = onChange.mock.calls.length;
+    await user.click(trigger('Data scope of Edit contracts'));
+    await user.click(
+      await screen.findByRole('option', {
+        name: 'Same as view (Their department)',
+      }),
+    );
+    expect(onChange).toHaveBeenCalledTimes(calls);
+    expect(screen.getByText(notice)).toBeInTheDocument();
+  });
+
+  it('drops its notices when the host replaces the draft, such as discarding changes', async () => {
+    const user = userEvent.setup();
+    const saved: PermissionValue = {
+      menus: [],
+      grants: {
+        'contracts.view': { scopes: { records: 'all' } },
+        'contracts.update': { scopes: { records: 'department' } },
+      },
+    };
+    function Discarding(): ReactElement {
+      const [value, setValue] = useState(saved);
       return (
         <PermissionEditor
-          sections={[
-            {
-              id: 's',
-              title: 'Section',
-              groups: [
-                { id: 'g', rows: [{ id: 'a', label: 'Approve', enabled }] },
-              ],
-            },
-          ]}
-          onEnabledChange={(_, value) => setEnabled(value)}
-          onEnabledBatchChange={batch}
-          onLevelChange={vi.fn()}
+          menus={menus}
+          objects={objects}
+          value={value}
+          onChange={setValue}
+          defaultTab='objects'
+          dirty={value !== saved}
+          footer={
+            <button type='button' onClick={() => setValue(saved)}>
+              Discard
+            </button>
+          }
         />
       );
     }
-    render(<Draft />);
-    await user.click(screen.getByRole('tab', { name: 'Granted' }));
-    await user.click(screen.getByRole('checkbox', { name: 'Approve' }));
-    expect(screen.getByRole('textbox')).toHaveFocus();
-    expect(screen.getByRole('status')).toHaveTextContent(
-      'No matching permissions',
+    render(<Discarding />);
+    await user.click(trigger('Data scope of View contracts'));
+    await user.click(
+      await screen.findByRole('option', { name: 'Their own records' }),
     );
-    expect(batch).not.toHaveBeenCalled();
+    const notice =
+      'Edit contracts now follows the view scope (Their own records) again.';
+    expect(screen.getByText(notice)).toBeInTheDocument();
+    expect(screen.getByText('Unsaved changes')).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Discard' }));
+    expect(screen.queryByText('Unsaved changes')).not.toBeInTheDocument();
+    expect(screen.queryByText(notice)).not.toBeInTheDocument();
+    expect(trigger('Data scope of Edit contracts')).toHaveTextContent(
+      'Their department',
+    );
   });
 
-  it('keeps readonly and application-managed checkboxes disabled with visible explanations', async () => {
-    const change = vi.fn();
-    const view = render(
-      <PermissionEditor
-        sections={sections}
-        readOnly
-        onEnabledChange={change}
-        onLevelChange={vi.fn()}
+  it('shows every scope of a multi-scope action and leaves risky actions off with Enable all', async () => {
+    const user = userEvent.setup();
+    render(<Host tab='objects' initial={{ menus: [], grants: {} }} />);
+    await user.click(screen.getByRole('button', { name: 'Enable all' }));
+    expect(
+      screen.getByRole('switch', { name: 'Approve contracts' }),
+    ).toBeChecked();
+    expect(
+      screen.getByRole('switch', { name: 'Export contracts' }),
+    ).not.toBeChecked();
+    expect(trigger('Approve contracts: Amount up to')).toHaveTextContent(
+      'No limit',
+    );
+    expect(trigger('Approve contracts: Customers')).toHaveTextContent(
+      'All records',
+    );
+    const list = screen.getByRole('navigation', { name: 'Business objects' });
+    await user.click(screen.getByRole('button', { name: 'View only' }));
+    expect(within(list).getByText('1 of 4 on')).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Disable all' }));
+    expect(within(list).getAllByText('Off').length).toBeGreaterThan(0);
+  });
+
+  it('shows a slot reading another object as following that object’s View', async () => {
+    const user = userEvent.setup();
+    const items = crossObjectItems;
+    render(
+      <Host
+        tab='objects'
+        items={items}
+        initial={{
+          menus: [],
+          grants: {
+            'contracts.view': { scopes: { records: 'all' } },
+            'contracts.approve': {},
+            'customers.view': { scopes: { records: 'department' } },
+          },
+        }}
       />,
     );
-    const action = screen.getByRole('checkbox', { name: 'Approve order' });
-    expect(action).toHaveAttribute('aria-disabled', 'true');
-    expect(action).toHaveAccessibleDescription(
-      /These permissions are read-only/,
+    expect(trigger('Approve contracts: Customers')).toHaveTextContent(
+      'Same as Customers view (Their department)',
     );
-    await userEvent.click(action);
-    expect(change).not.toHaveBeenCalled();
-    await userEvent.type(screen.getByRole('textbox'), 'numbering');
+    await user.click(trigger('Approve contracts: Customers'));
     expect(
-      screen.getByRole('checkbox', { name: 'Configure numbering' }),
-    ).toBeVisible();
-    view.unmount();
+      (await screen.findAllByRole('option')).map((option) =>
+        option.textContent?.trim(),
+      ),
+    ).toEqual([
+      'Same as Customers view (Their department)',
+      'Their own records',
+    ]);
+  });
+
+  it('shows the stored scope, read-only, while the View it follows is off', () => {
+    const onChange = vi.fn();
     render(
-      <PermissionEditor
-        sections={[
-          {
-            id: 's',
-            title: 'Section',
-            groups: [
+      <Host
+        tab='objects'
+        items={crossObjectItems}
+        onChange={onChange}
+        initial={{
+          menus: [],
+          grants: {
+            'contracts.view': { scopes: { records: 'all' } },
+            // Stored by a seed: approving reads customers while Customers' View is off.
+            'contracts.approve': { scopes: { customers: 'own' } },
+          },
+        }}
+      />,
+    );
+    const customers = trigger('Approve contracts: Customers');
+    expect(customers).toHaveTextContent('Their own records');
+    expect(customers).toBeDisabled();
+    expect(screen.getByText('Needs Customers view')).toBeInTheDocument();
+    expect(onChange).not.toHaveBeenCalled();
+  });
+
+  it('locks the configuration of a follower slot, inline or stacked, while its summary stays visible', async () => {
+    const user = userEvent.setup();
+    const configure = vi.fn();
+    const button = (name: string) => (
+      <button type='button' onClick={() => configure(name)}>
+        {name}
+      </button>
+    );
+    // View's own filter can be configured; Edit's stored filter follows View, and Customers' follows a View that is off.
+    const items: readonly PermissionObject[] = crossObjectItems.map((object) =>
+      object.id === 'contracts'
+        ? {
+            ...object,
+            actions: [
               {
-                id: 'g',
-                rows: [
+                ...object.actions[0]!,
+                scopes: [
                   {
-                    id: 'fixed',
-                    label: 'Fixed action',
-                    enabled: true,
-                    toggleable: false,
+                    id: 'records',
+                    options: RECORDS,
+                    configuration: button('Configure view filter'),
                   },
                 ],
               },
-            ],
-          },
-        ]}
-        onEnabledChange={change}
-        onLevelChange={vi.fn()}
-      />,
-    );
-    expect(
-      screen.getByRole('checkbox', { name: 'Fixed action' }),
-    ).toHaveAttribute('aria-disabled', 'true');
-    expect(
-      screen.getByText('This permission is managed by the application.'),
-    ).toBeVisible();
-  });
-
-  it('uses instance-local control ids and does not submit the enclosing form', async () => {
-    const user = userEvent.setup();
-    const submit = vi.fn((event) => event.preventDefault());
-    const change = vi.fn();
-    render(
-      <form onSubmit={submit}>
-        {[1, 2].map((key) => (
-          <PermissionEditor
-            key={key}
-            sections={sections}
-            onEnabledChange={change}
-            onLevelChange={vi.fn()}
-          />
-        ))}
-      </form>,
-    );
-    const actions = screen.getAllByRole('checkbox', { name: 'Withdraw order' });
-    expect(actions[0]!.id).not.toBe(actions[1]!.id);
-    await user.click(actions[0]!);
-    expect(change).toHaveBeenCalledExactlyOnceWith('withdraw', true);
-    actions[1]!.focus();
-    await user.keyboard(' ');
-    expect(change).toHaveBeenCalledTimes(2);
-    expect(change).toHaveBeenLastCalledWith('withdraw', true);
-    screen.getAllByRole('tab', { name: 'Granted' })[0]!.focus();
-    await user.keyboard(' ');
-    expect(change).toHaveBeenCalledTimes(2);
-    await user.type(screen.getAllByRole('textbox')[0]!, 'missing');
-    await user.click(screen.getByRole('button', { name: 'Clear filters' }));
-    await user.click(
-      screen.getAllByRole('tab', { name: 'Application configuration' })[0]!,
-    );
-    screen.getByRole('checkbox', { name: 'Configure numbering' }).focus();
-    await user.keyboard(' ');
-    expect(change).toHaveBeenLastCalledWith('configure', true);
-    expect(submit).not.toHaveBeenCalled();
-  });
-
-  it('uses a page title once for a single access action', () => {
-    render(
-      <PermissionEditor
-        sections={[
-          {
-            id: 'pages',
-            title: 'Pages',
-            groups: [
               {
-                id: 'p',
-                title: 'Borrowing',
-                accessOnly: true,
-                rows: [{ id: 'page-access', label: 'Access', enabled: true }],
+                id: 'contracts.update',
+                label: 'Edit contracts',
+                scopes: [
+                  {
+                    id: 'records',
+                    followsView: true,
+                    configuration: button('Configure edit filter'),
+                  },
+                ],
+              },
+              {
+                ...object.actions[1]!,
+                scopes: object.actions[1]!.scopes!.map((slot) =>
+                  slot.id === 'customers'
+                    ? {
+                        ...slot,
+                        configuration: button('Configure customers filter'),
+                      }
+                    : slot,
+                ),
               },
             ],
+          }
+        : object,
+    );
+    render(
+      <Host
+        tab='objects'
+        items={items}
+        initial={{
+          menus: [],
+          grants: {
+            'contracts.view': { scopes: { records: 'all' } },
+            'contracts.update': { scopes: { records: 'own' } },
+            'contracts.approve': { scopes: { customers: 'own' } },
           },
-        ]}
-        onEnabledChange={vi.fn()}
-        onLevelChange={vi.fn()}
+        }}
       />,
     );
-    expect(screen.getByRole('checkbox', { name: 'Borrowing' })).toBeChecked();
-    expect(screen.queryByText('Access')).not.toBeInTheDocument();
+    expect(screen.getByText('Needs Customers view')).toBeInTheDocument();
+    for (const name of [
+      'Configure edit filter',
+      'Configure customers filter',
+    ]) {
+      const locked = screen.getByRole('button', { name });
+      expect(locked).toBeDisabled();
+      await user.click(locked);
+      locked.focus();
+      expect(locked).not.toHaveFocus();
+      await user.keyboard('{Enter} ');
+    }
+    expect(configure).not.toHaveBeenCalled();
+    const open = screen.getByRole('button', { name: 'Configure view filter' });
+    expect(open).toBeEnabled();
+    open.focus();
+    await user.keyboard('{Enter}');
+    expect(configure).toHaveBeenCalledWith('Configure view filter');
+  });
+
+  it('filters objects by action name', async () => {
+    const user = userEvent.setup();
+    render(<Host tab='objects' initial={{ menus: [], grants: {} }} />);
+    await user.type(
+      screen.getByRole('textbox', { name: 'Search objects or actions' }),
+      'edit roles',
+    );
+    const list = screen.getByRole('navigation', { name: 'Business objects' });
+    expect(
+      within(list).queryByRole('button', { name: /^Contracts/ }),
+    ).toBeNull();
+    await user.click(within(list).getByRole('button', { name: /^Roles/ }));
+    expect(
+      screen.getByText('Anyone who can edit roles can grant any permission.'),
+    ).toBeInTheDocument();
+    expect(screen.queryByText('High risk')).toBeNull();
   });
 });
 
-describe('action-owned data ranges', () => {
-  const scoped = [
+describe('small screens and reference tags', () => {
+  it('warns about an object only beside a checked menu', async () => {
+    const user = userEvent.setup();
+    render(<Host initial={{ menus: [], grants: {} }} />);
+    const row = (name: string) =>
+      screen
+        .getByRole('checkbox', { name })
+        .closest('[data-slot="permission-menu"]') as HTMLElement;
+    const tag = () =>
+      row('Payments').querySelector('[data-slot="permission-object-tag"]');
+    // Unchecked, the tag is plain even though the role cannot view payments.
+    expect(tag()).toHaveAttribute('data-viewable');
+    await user.click(screen.getByRole('checkbox', { name: 'Payments' }));
+    expect(tag()).not.toHaveAttribute('data-viewable');
+  });
+
+  it('shows each object’s count, without its view scope, in the select used on phones', async () => {
+    const user = userEvent.setup();
+    render(
+      <Host
+        tab='objects'
+        initial={{
+          menus: [],
+          grants: { 'contracts.view': { scopes: { records: 'department' } } },
+        }}
+      />,
+    );
+    await user.click(
+      screen.getByRole('combobox', { name: 'Business objects' }),
+    );
+    const option = await screen.findByRole('option', { name: /^Contracts/ });
+    expect(option).toHaveTextContent(/^Contracts\s*1 of 4 on$/);
+    // An object with nothing on still shows its count.
+    expect(
+      await screen.findByRole('option', { name: /^Payments/ }),
+    ).toHaveTextContent(/0 of \d+ on/);
+  });
+});
+
+describe('system settings tab', () => {
+  const settings: readonly PermissionSettingsPage[] = [
     {
-      id: 's',
-      title: 'Business',
-      groups: [
+      id: 'user-management',
+      label: 'User management',
+      group: 'Account and permissions',
+      objects: [
         {
-          id: 'g',
-          title: 'Borrowing',
-          rows: [
+          id: 'users',
+          label: 'Users',
+          actions: [
             {
-              id: 'approve',
-              label: 'Approve request',
-              enabled: true,
-              scopes: ['Requests', 'Devices'].map((label) => ({
-                id: label.toLowerCase(),
-                label,
-                level: 'own',
-                hint: 'This role adds no records; other roles and rules also apply.',
-                levels: [
-                  { value: 'own', label: 'Own' },
-                  { value: 'all', label: 'All' },
-                ],
-              })),
+              id: 'users.view',
+              label: 'View users',
+              view: true,
+              // A scope on a settings action is never shown: settings have no data scope.
+              scopes: [{ id: 'records', options: RECORDS }],
+            },
+            { id: 'users.create', label: 'Invite users' },
+            {
+              id: 'users.assign',
+              label: 'Assign roles',
+              risk: 'high',
             },
           ],
+        },
+      ],
+    },
+    {
+      id: 'database',
+      label: 'Database explorer',
+      group: 'System',
+      objects: [
+        {
+          id: 'page:database',
+          label: 'Database explorer',
+          actions: [{ id: 'database.open', label: 'Open page', view: true }],
         },
       ],
     },
   ];
 
-  it('shows every named range directly and changes only its independently keyed value', async () => {
-    const change = vi.fn();
-    const enabled = vi.fn();
-    const view = render(
-      <PermissionEditor
-        sections={scoped}
-        onEnabledChange={enabled}
-        onLevelChange={change}
-      />,
-    );
-    expect(screen.getByText('Requests')).toBeVisible();
-    expect(screen.getByText('Devices')).toBeVisible();
-    expect(screen.getAllByRole('combobox')).toHaveLength(2);
-    expect(
-      screen.getByText(
-        'This role adds no records; other roles and rules also apply.',
-      ),
-    ).toBeVisible();
-    const row = view.container.querySelector('[data-slot=permission-row]')!;
-    expect(
-      within(row as HTMLElement).getByRole('checkbox'),
-    ).toHaveAccessibleName('Approve request');
-    await userEvent.click(
-      screen.getByRole('combobox', {
-        name: 'How far Approve request · Devices reaches',
-      }),
-    );
-    await userEvent.click(await screen.findByRole('option', { name: 'All' }));
-    expect(change).toHaveBeenCalledExactlyOnceWith('devices', 'all');
-    expect(enabled).not.toHaveBeenCalled();
-  });
-
-  it('disables range controls in readonly mode and hides them only when the action is disabled', () => {
-    const view = render(
-      <PermissionEditor
-        sections={scoped}
-        readOnly
-        onEnabledChange={vi.fn()}
-        onLevelChange={vi.fn()}
-      />,
-    );
-    expect(
-      screen
-        .getAllByRole('combobox')
-        .every((node) => node.hasAttribute('disabled')),
-    ).toBe(true);
-    view.rerender(
-      <PermissionEditor
-        sections={[
-          {
-            ...scoped[0]!,
-            groups: [
-              {
-                ...scoped[0]!.groups[0]!,
-                rows: [{ ...scoped[0]!.groups[0]!.rows[0]!, enabled: false }],
-              },
-            ],
-          },
-        ]}
-        onEnabledChange={vi.fn()}
-        onLevelChange={vi.fn()}
-      />,
-    );
-    expect(screen.queryByRole('combobox')).not.toBeInTheDocument();
-  });
-
-  it('keeps help and parameter configuration separate from authorization toggles', async () => {
-    const enabled = vi.fn();
-    const changed = vi.fn();
-    const view = render(
-      <PermissionEditor
-        sections={[
-          {
-            id: 's',
-            title: 'Business',
-            groups: [
-              {
-                id: 'g',
-                rows: [
-                  {
-                    id: 'view',
-                    label: 'View requests',
-                    enabled: true,
-                    scopes: [
-                      {
-                        id: 'records',
-                        label: 'Requests',
-                        level: '',
-                        hint: 'Default access and sharing still apply.',
-                        levels: [
-                          { value: '', label: 'No additional record access' },
-                          { value: 'all', label: 'All records' },
-                        ],
-                        configuration: (
-                          <button type='button'>Configure filter</button>
-                        ),
-                      },
-                    ],
-                  },
-                ],
-              },
-            ],
-          },
-        ]}
-        onEnabledChange={enabled}
-        onLevelChange={changed}
-      />,
-    );
-    const help = screen.getByRole('button', {
-      name: 'About the data range for View requests · Requests',
+  function SettingsHost({
+    onChange,
+  }: {
+    readonly onChange: (next: PermissionValue) => void;
+  }): ReactElement {
+    const [value, setValue] = useState<PermissionValue>({
+      menus: [],
+      grants: {},
     });
-    await userEvent.click(help);
-    expect(await screen.findByRole('tooltip')).toHaveTextContent(
-      'Default access and sharing still apply.',
+    return (
+      <PermissionEditor
+        menus={menus}
+        objects={objects}
+        settings={settings}
+        value={value}
+        defaultTab='settings'
+        onChange={(next) => {
+          setValue(next);
+          onChange(next);
+        }}
+      />
     );
-    await userEvent.keyboard('{Escape}');
-    await userEvent.click(
-      screen.getByRole('button', { name: 'Configure filter' }),
-    );
-    expect(enabled).not.toHaveBeenCalled();
-    expect(changed).not.toHaveBeenCalled();
+  }
+
+  it('sets settings pages in their own tab, without scopes or menus', async () => {
+    const user = userEvent.setup();
+    const onChange = vi.fn();
+    render(<SettingsHost onChange={onChange} />);
     expect(
-      view.container.querySelectorAll('[data-slot=permission-row]'),
-    ).toHaveLength(1);
+      screen.getByRole('tab', { name: /System settings\s*0 \/ 2/ }),
+    ).toHaveAttribute('aria-selected', 'true');
+    expect(
+      screen.getByRole('heading', { name: 'User management' }),
+    ).toBeInTheDocument();
+    expect(screen.getByText('Account and permissions')).toBeInTheDocument();
+    expect(screen.queryAllByRole('combobox')).toEqual([]);
+    expect(screen.queryByText('All records')).toBeNull();
+    // Enable all for one page turns on its actions except risky ones; no menu is checked.
+    await user.click(
+      screen.getByRole('button', { name: 'Enable all · User management' }),
+    );
+    expect(onChange).toHaveBeenLastCalledWith({
+      menus: [],
+      grants: { 'users.view': {}, 'users.create': {} },
+    });
+    expect(
+      screen.getByRole('tab', { name: /System settings\s*1 \/ 2/ }),
+    ).toBeInTheDocument();
+    await user.click(screen.getByRole('switch', { name: 'Open page' }));
+    await user.click(
+      screen.getByRole('button', { name: 'Disable all · User management' }),
+    );
+    expect(onChange).toHaveBeenLastCalledWith({
+      menus: [],
+      grants: { 'database.open': {} },
+    });
+  });
+
+  it('hides the tab when there are no settings pages', () => {
+    render(<Host initial={{ menus: [], grants: {} }} />);
+    expect(screen.queryByRole('tab', { name: /System settings/ })).toBeNull();
   });
 });
 
-const treeSection: PermissionEditorSection = {
-  id: 'pages',
-  title: 'Page access',
-  groups: [
-    {
-      id: 'page-rows',
-      rows: [
-        { id: 'catalog', label: 'Catalog', enabled: true },
-        { id: 'books', label: 'Books', enabled: true },
-        { id: 'review', label: 'Review loans', enabled: false },
-        { id: 'outside', label: 'Independent page', enabled: false },
-      ],
-    },
-  ],
-  navigation: [
-    {
-      id: 'library-group',
-      label: 'Library',
-      children: [
-        {
-          id: 'catalog-node',
-          label: 'Catalog',
-          rowId: 'catalog',
-          children: [
-            {
-              id: 'books-node',
-              label: 'Books',
-              rowId: 'books',
-              path: '/library/books',
-            },
-            {
-              id: 'review-group',
-              label: 'Approvals',
-              children: [
-                { id: 'review-node', label: 'Review loans', rowId: 'review' },
-              ],
-            },
-          ],
-        },
-      ],
-    },
-    { id: 'empty', label: 'Unused group', children: [] },
-    { id: 'missing', label: 'Unknown page', rowId: 'unknown' },
-    { id: 'alias', label: 'Duplicate books', rowId: 'books' },
-  ],
-};
-
-describe('application-owned page navigation', () => {
-  it('renders nested groups and independent parent/page grants without duplicates or invented checkboxes', () => {
-    const change = vi.fn();
+describe('restricted modes', () => {
+  it('explains unrestricted roles without controls', () => {
     render(
       <PermissionEditor
-        sections={[treeSection]}
-        onEnabledChange={change}
-        onLevelChange={vi.fn()}
+        menus={menus}
+        objects={objects}
+        value={{ menus: [], grants: {} }}
+        onChange={vi.fn()}
+        unrestricted
+        header={<span>Administrator</span>}
       />,
     );
     expect(
-      screen.getByRole('button', { name: 'Collapse Library' }),
-    ).toHaveAttribute('aria-expanded', 'true');
-    expect(screen.getByRole('checkbox', { name: 'Catalog' })).toBeChecked();
-    expect(screen.getByRole('checkbox', { name: 'Books' })).toBeChecked();
-    expect(
-      screen.getByRole('checkbox', { name: 'Review loans' }),
-    ).not.toBeChecked();
-    expect(
-      screen.getByRole('checkbox', { name: 'Independent page' }),
-    ).toBeVisible();
-    expect(
-      screen.queryByRole('checkbox', { name: 'Library' }),
-    ).not.toBeInTheDocument();
-    expect(screen.queryByText('Unused group')).not.toBeInTheDocument();
-    expect(screen.queryByText('Unknown page')).not.toBeInTheDocument();
-    expect(screen.queryByText('Duplicate books')).not.toBeInTheDocument();
-    expect(screen.getAllByRole('checkbox', { name: 'Books' })).toHaveLength(1);
-    expect(change).not.toHaveBeenCalled();
+      screen.getByRole('heading', { name: 'All permissions (unrestricted)' }),
+    ).toBeInTheDocument();
+    expect(screen.queryByRole('switch')).toBeNull();
+    expect(screen.queryByRole('checkbox')).toBeNull();
   });
 
-  it('separates keyboard disclosure, individual grants and the host form submit', async () => {
+  it('disables every control when read-only', async () => {
     const user = userEvent.setup();
-    const change = vi.fn();
-    const submit = vi.fn((event: React.FormEvent) => event.preventDefault());
-    render(
-      <form onSubmit={submit}>
-        <PermissionEditor
-          sections={[treeSection]}
-          onEnabledChange={change}
-          onLevelChange={vi.fn()}
-        />
-      </form>,
-    );
-    const collapse = screen.getByRole('button', { name: 'Collapse Catalog' });
-    collapse.focus();
-    await user.keyboard('{Enter}');
-    expect(
-      screen.queryByRole('checkbox', { name: 'Books' }),
-    ).not.toBeInTheDocument();
-    expect(screen.getByRole('checkbox', { name: 'Catalog' })).toBeChecked();
-    expect(change).not.toHaveBeenCalled();
-    await user.keyboard(' ');
-    expect(screen.getByRole('checkbox', { name: 'Books' })).toBeChecked();
-    await user.click(screen.getByRole('checkbox', { name: 'Catalog' }));
-    expect(change).toHaveBeenCalledExactlyOnceWith('catalog', false);
-    expect(screen.getByRole('checkbox', { name: 'Books' })).toBeChecked();
-    expect(submit).not.toHaveBeenCalled();
-  });
-
-  it('searches ancestor names, preserves paths and restores collapse state after Clear', async () => {
-    const user = userEvent.setup();
-    const change = vi.fn();
     render(
       <PermissionEditor
-        sections={[treeSection]}
-        onEnabledChange={change}
-        onLevelChange={vi.fn()}
-      />,
-    );
-    await user.click(screen.getByRole('button', { name: 'Collapse Catalog' }));
-    await user.type(screen.getByRole('textbox'), 'Library');
-    expect(screen.getByRole('checkbox', { name: 'Books' })).toBeVisible();
-    expect(
-      screen.getByRole('checkbox', { name: 'Review loans' }),
-    ).toBeVisible();
-    expect(
-      screen.queryByRole('checkbox', { name: 'Independent page' }),
-    ).not.toBeInTheDocument();
-    await user.clear(screen.getByRole('textbox'));
-    await user.type(screen.getByRole('textbox'), 'Review loans');
-    expect(screen.getByText('Library')).toBeVisible();
-    expect(screen.getByText('Approvals')).toBeVisible();
-    expect(
-      screen.queryByRole('checkbox', { name: 'Books' }),
-    ).not.toBeInTheDocument();
-    expect(
-      screen.queryByRole('checkbox', { name: 'Catalog' }),
-    ).not.toBeInTheDocument();
-    await user.click(screen.getByRole('button', { name: 'Clear filters' }));
-    expect(screen.getByRole('textbox')).toHaveFocus();
-    expect(
-      screen.queryByRole('checkbox', { name: 'Review loans' }),
-    ).not.toBeInTheDocument();
-    expect(
-      screen.getByRole('button', { name: 'Expand Catalog' }),
-    ).toHaveAttribute('aria-expanded', 'false');
-    expect(change).not.toHaveBeenCalled();
-  });
-
-  it('retains enabled-only ancestor context and moves focus before a disabled row disappears', async () => {
-    const user = userEvent.setup();
-    function ControlledTree() {
-      const [enabled, setEnabled] = useState(true);
-      return (
-        <PermissionEditor
-          sections={[
-            {
-              ...treeSection,
-              groups: [
-                {
-                  id: 'books',
-                  rows: [{ id: 'books', label: 'Books', enabled }],
-                },
-              ],
-            },
-          ]}
-          onEnabledChange={(_, value) => setEnabled(value)}
-          onLevelChange={vi.fn()}
-        />
-      );
-    }
-    render(<ControlledTree />);
-    await user.click(screen.getByRole('tab', { name: 'Granted' }));
-    expect(screen.getByText('Library')).toBeVisible();
-    expect(screen.getByText('Catalog')).toBeVisible();
-    expect(screen.queryByText('Approvals')).not.toBeInTheDocument();
-    await user.click(screen.getByRole('checkbox', { name: 'Books' }));
-    expect(screen.getByRole('textbox')).toHaveFocus();
-    expect(screen.getByRole('status')).toHaveTextContent(
-      'No matching permissions',
-    );
-  });
-
-  it('keeps a single-level menu flat and allows read-only disclosure without editing grants', async () => {
-    const user = userEvent.setup();
-    const change = vi.fn();
-    const { rerender } = render(
-      <PermissionEditor
-        sections={[
-          {
-            ...treeSection,
-            navigation: [{ id: 'books', label: 'Books', rowId: 'books' }],
-          },
-        ]}
-        onEnabledChange={change}
-        onLevelChange={vi.fn()}
-      />,
-    );
-    expect(screen.getAllByRole('list')).toHaveLength(1);
-    expect(screen.getByRole('button', { name: 'Collapse all' })).toBeDisabled();
-    rerender(
-      <PermissionEditor
-        sections={[treeSection]}
+        menus={menus}
+        objects={objects}
+        value={{ menus: ['contracts-page'], grants: { 'contracts.view': {} } }}
+        onChange={vi.fn()}
         readOnly
-        onEnabledChange={change}
-        onLevelChange={vi.fn()}
       />,
     );
-    expect(screen.getByRole('checkbox', { name: 'Books' })).toHaveAttribute(
-      'aria-disabled',
-      'true',
-    );
-    await user.click(screen.getByRole('checkbox', { name: 'Books' }));
-    expect(change).not.toHaveBeenCalled();
+    for (const control of screen.getAllByRole('checkbox'))
+      expect(control).toHaveAttribute('aria-disabled', 'true');
+    await user.click(screen.getByRole('tab', { name: /Business objects/ }));
+    for (const control of screen.getAllByRole('switch'))
+      expect(control).toHaveAttribute('aria-disabled', 'true');
+    expect(screen.queryByRole('button', { name: 'Enable all' })).toBeNull();
     expect(
-      screen.getByRole('checkbox', { name: 'Books' }),
-    ).toHaveAccessibleDescription('These permissions are read-only.');
-    await user.click(screen.getByRole('button', { name: 'Collapse Library' }));
-    expect(
-      screen.getByRole('button', { name: 'Expand Library' }),
-    ).toBeEnabled();
-    expect(change).not.toHaveBeenCalled();
-  });
-});
-
-describe('compact permission controls', () => {
-  const leaves: PermissionEditorSection = {
-    id: 'pages',
-    title: 'Pages',
-    groups: [
-      {
-        id: 'borrowing',
-        title: 'Borrowing',
-        accessOnly: true,
-        rows: [{ id: 'borrow', label: 'Access', enabled: true }],
-      },
-      {
-        id: 'catalog',
-        title: 'Catalog',
-        accessOnly: true,
-        rows: [{ id: 'browse', label: 'Access', enabled: false }],
-      },
-    ],
-  };
-
-  it('keeps an all-leaf section visible and excludes its rows from bulk disclosure', async () => {
-    const user = userEvent.setup();
-    const change = vi.fn();
-    render(
-      <PermissionEditor
-        sections={[leaves]}
-        onEnabledChange={change}
-        onLevelChange={vi.fn()}
-      />,
-    );
-    const collapse = screen.getByRole('button', { name: 'Collapse all' });
-    expect(collapse).toBeDisabled();
-    await user.click(collapse);
-    expect(screen.getByRole('checkbox', { name: 'Borrowing' })).toBeVisible();
-    expect(screen.getByRole('checkbox', { name: 'Borrowing' })).toBeChecked();
-    expect(screen.getByRole('checkbox', { name: 'Catalog' })).not.toBeChecked();
-    expect(
-      screen.queryByRole('button', { name: 'Expand all' }),
-    ).not.toBeInTheDocument();
-    expect(change).not.toHaveBeenCalled();
-  });
-
-  it('collapses only titled groups in a mixed section while leaves stay reachable and unchanged', async () => {
-    const user = userEvent.setup();
-    const change = vi.fn();
-    render(
-      <PermissionEditor
-        sections={[
-          { ...leaves, groups: [...leaves.groups, ...sections[0]!.groups] },
-        ]}
-        onEnabledChange={change}
-        onLevelChange={vi.fn()}
-      />,
-    );
-    for (const action of ['Collapse all', 'Expand all']) {
-      await user.click(screen.getByRole('button', { name: action }));
-      for (const name of ['Borrowing', 'Catalog']) {
-        const checkbox = screen.getByRole('checkbox', { name });
-        expect(checkbox).toBeVisible();
-        checkbox.focus();
-        expect(checkbox).toHaveFocus();
-      }
-      expect(screen.getByRole('checkbox', { name: 'Borrowing' })).toBeChecked();
-      expect(
-        screen.getByRole('checkbox', { name: 'Catalog' }),
-      ).not.toBeChecked();
-      if (action === 'Collapse all') {
-        expect(
-          screen.getByRole('button', { name: 'Expand Orders' }),
-        ).toBeVisible();
-        expect(
-          screen.queryByRole('checkbox', { name: 'Approve order' }),
-        ).not.toBeInTheDocument();
-      } else {
-        expect(
-          screen.getByRole('checkbox', { name: 'Approve order' }),
-        ).toBeChecked();
-        expect(
-          screen.getByRole('checkbox', { name: 'Withdraw order' }),
-        ).not.toBeChecked();
-      }
-    }
-    expect(change).not.toHaveBeenCalled();
-  });
-
-  it('ignores an existing collapsed key when a group becomes an access-only leaf', async () => {
-    const user = userEvent.setup();
-    const change = vi.fn();
-    const props = { onEnabledChange: change, onLevelChange: vi.fn() };
-    const { rerender } = render(
-      <PermissionEditor
-        {...props}
-        sections={[
-          {
-            ...leaves,
-            groups: leaves.groups.map((group) => ({
-              ...group,
-              accessOnly: false,
-            })),
-          },
-        ]}
-      />,
-    );
-    await user.click(screen.getByRole('button', { name: 'Collapse all' }));
-    expect(screen.queryByRole('checkbox')).not.toBeInTheDocument();
-    rerender(<PermissionEditor {...props} sections={[leaves]} />);
-    expect(screen.getByRole('checkbox', { name: 'Borrowing' })).toBeVisible();
-    expect(screen.getByRole('checkbox', { name: 'Borrowing' })).toBeChecked();
-    expect(screen.getByRole('checkbox', { name: 'Catalog' })).not.toBeChecked();
-    expect(screen.getByRole('button', { name: 'Collapse all' })).toBeDisabled();
-    expect(change).not.toHaveBeenCalled();
-  });
-
-  it('filters ungranted rows globally, resets without editing, and searches actual routes', async () => {
-    const user = userEvent.setup();
-    const change = vi.fn();
-    render(
-      <PermissionEditor
-        sections={[treeSection, ...sections]}
-        onEnabledChange={change}
-        onLevelChange={vi.fn()}
-      />,
-    );
-    await user.click(screen.getByRole('tab', { name: 'Ungranted' }));
-    expect(
-      screen.getByRole('checkbox', { name: 'Review loans' }),
-    ).not.toBeChecked();
-    expect(
-      screen.getByRole('checkbox', { name: 'Configure numbering' }),
-    ).not.toBeChecked();
-    expect(
-      screen.queryByRole('checkbox', { name: 'Books' }),
-    ).not.toBeInTheDocument();
-    expect(screen.getByText('2 of 4 enabled')).toBeVisible();
-    await user.click(screen.getByRole('button', { name: 'Clear filters' }));
-    await user.type(screen.getByRole('textbox'), '/library/books');
-    expect(screen.getByRole('checkbox', { name: 'Books' })).toBeChecked();
-    expect(screen.getByText('/library/books')).toBeVisible();
-    expect(
-      screen.queryByRole('checkbox', { name: 'Review loans' }),
-    ).not.toBeInTheDocument();
-    expect(change).not.toHaveBeenCalled();
-  });
-  it('collapses resources without mutating grants and restores disclosure after search', async () => {
-    const user = userEvent.setup();
-    const change = vi.fn();
-    render(
-      <PermissionEditor
-        sections={sections}
-        onEnabledChange={change}
-        onLevelChange={vi.fn()}
-      />,
-    );
-    await user.click(screen.getByRole('button', { name: 'Collapse all' }));
-    expect(
-      screen.queryByRole('checkbox', { name: 'Approve order' }),
-    ).not.toBeInTheDocument();
-    await user.type(screen.getByRole('textbox'), 'reserve');
-    expect(
-      screen.getByRole('checkbox', { name: 'Approve order' }),
-    ).toBeChecked();
-    await user.click(screen.getByRole('button', { name: 'Clear filters' }));
-    expect(
-      screen.queryByRole('checkbox', { name: 'Approve order' }),
-    ).not.toBeInTheDocument();
-    await user.click(screen.getByRole('button', { name: 'Expand all' }));
-    expect(
-      screen.getByRole('checkbox', { name: 'Approve order' }),
-    ).toBeChecked();
-    expect(change).not.toHaveBeenCalled();
+      screen.getByText('These permissions are read-only.'),
+    ).toBeInTheDocument();
   });
 });

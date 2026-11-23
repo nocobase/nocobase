@@ -3,6 +3,9 @@ import type { LocaleResource } from '@nocobase/i18n';
 import type enUS from './en-US.js';
 
 const jaJP: LocaleResource<typeof enUS> = {
+  openAgentSettings: 'エージェント設定を開く',
+  myConversations: '自分の会話',
+  fileUsage: 'チャットの添付ファイル',
   modelSuggestions: {
     design:
       '最も高度な推論：提案、アーキテクチャ、難しい問題の調査、重要な変更のコードレビュー。通常の実装、パッケージ間の変更、提案書の作成にも対応。',
@@ -91,6 +94,7 @@ const jaJP: LocaleResource<typeof enUS> = {
     codex: 'Codex',
     opencode: 'OpenCode',
     pi: 'Pi',
+    antigravity: 'Antigravity CLI',
     gemini: 'Gemini CLI',
     copilot: 'GitHub Copilot',
     cursor: 'Cursor',
@@ -189,6 +193,7 @@ const jaJP: LocaleResource<typeof enUS> = {
       title: '{{name}}を編集',
       enabled: '有効',
       done: '{{name}} が保存されました',
+      model: 'モデル',
     },
     available: {
       open: 'Agentを追加',
@@ -261,10 +266,6 @@ const jaJP: LocaleResource<typeof enUS> = {
     save: 'スキルを保存',
     descriptionOnline:
       'サーバー上の読み取り専用サンドボックスで、タスクがその説明に一致したときにAgentが読むマニュアル。',
-    onlineScripts:
-      'オンライン Agentsに対してスクリプトは実行されません。Agentはスクリプトを読み取ることができますが、実行することはできません。',
-    skippedScripts: ': {{paths}}',
-    pathSeparator: ', ',
   },
   brief: {
     preview: 'プロンプト全体をプレビューする',
@@ -963,6 +964,23 @@ const jaJP: LocaleResource<typeof enUS> = {
     },
   },
   chat: {
+    thinking: {
+      levels: {
+        'provider-default': 'デフォルト',
+        none: 'オフ',
+        minimal: '最小',
+        low: '低',
+        medium: '中',
+        high: '高',
+        xhigh: '超高',
+      },
+      adjusted:
+        'このモデルは思考レベル「{{requested}}」に対応していないため、この返信では「{{used}}」を使用しました。',
+      adjustedToDefault:
+        'このモデルは思考レベル「{{requested}}」に対応していないため、この返信ではプロバイダーの既定値を使用しました。',
+      warning:
+        'モデルがこの返信に思考レベル「{{level}}」を適用していない可能性があります。',
+    },
     // Keep new guidance available in English until this locale is translated.
     executionFailed:
       '実行に失敗しました。再試行する前に保存された会話を確認してください。',
@@ -1040,6 +1058,19 @@ const jaJP: LocaleResource<typeof enUS> = {
       thinking: '考え中…',
       reading: '{{subject}}を見て',
       working: '{{subject}}作業中',
+      ...{
+        count_one: '{{count}} ステップ',
+        count_other: '{{count}} ステップ',
+      },
+    },
+    // Plural forms of the panel wording, outside the typed shape (the rest falls back to English).
+    ...{
+      list: {
+        waiting_one: '要対応 {{count}}',
+        waiting_other: '要対応 {{count}}',
+        active_one: '進行中 {{count}}',
+        active_other: '進行中 {{count}}',
+      },
     },
     agents: {
       personalOnly: '個人実行環境限定',
@@ -1288,8 +1319,6 @@ const jaJP: LocaleResource<typeof enUS> = {
     binaryFile: 'バイナリ ファイル、{{size}}。ここでは編集できません。',
     executable: '実行可能ファイル',
     scriptBadge: 'スクリプト',
-    scriptsNote:
-      'スクリプトがあります: オンライン Agentsはスクリプトを読み取ることはできますが、実行することはできません',
     compatibility: '互換性: {{value}}',
     fileContent: '{{path}}の内容',
     export: '輸出',
@@ -1322,8 +1351,7 @@ const jaJP: LocaleResource<typeof enUS> = {
       name: '名前',
       renameTitle: '「{{name}}」の名前を変更',
       conventional: {
-        scripts:
-          'コードAgentsを実行できます。オンライン Agentsは読むだけです。',
+        scripts: 'Agent が実行できるコードです。',
         references: '文書Agentsは必要なときに読みます。',
         assets: 'テンプレート、画像、その他のリソース。',
       },
@@ -1460,11 +1488,16 @@ const jaJP: LocaleResource<typeof enUS> = {
         runners: '実行環境',
         prices: 'モデルの価格',
         services: 'モデルサービス',
+        skills: 'スキル',
       },
     },
     actions: {
       read: '表示',
       manage: '管理する',
+    },
+    humanOnly: {
+      servicesManage:
+        'モデルサービスの管理ではプロバイダーのキーを書き込みます。人のみが実行できます。',
     },
     keyScopes: {
       agents: {

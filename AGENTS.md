@@ -30,22 +30,22 @@ Name a branch `<type>/v3-<name>` after its Conventional Commits type, such as `f
 
 ## Pull Request Descriptions and the Changelog
 
-Every pull request into `v3-develop`, `v3-main` or a branch based on them (`*/v3-*`) follows `.github/pull_request_template.md` on `v3-develop`, whichever tool opens it; GitHub's web form offers the v2 template from `main`, whose type list and Changelog table, Japanese row included, parse the same way. Check exactly one type. New feature, Improvement and Bug fix need one user-facing sentence each in English, Chinese and Japanese in the Changelog table; Others (tests, CI, scripts, documentation, refactors nobody notices) leaves it empty. The title's scope names the module through `scripts/changelog-scopes.json`. The `PR description` check enforces this, and the release workflows build the root `CHANGELOG.md`, `CHANGELOG.zh-CN.md`, `CHANGELOG.ja-JP.md` and the GitHub Release from these sections. Details: [.agents/rules/pull-requests-and-changesets.md](.agents/rules/pull-requests-and-changesets.md#pull-request-descriptions-and-the-changelog).
+Every pull request into `v3` (the default branch, formerly `v3-develop`), `v3-main` or a branch based on them (`*/v3-*`) follows `.github/pull_request_template.md` on `v3`, whichever tool opens it; GitHub's web form offers it because it reads templates from the default branch. Check exactly one type. New feature, Improvement and Bug fix need one user-facing sentence each in English, Chinese and Japanese in the Changelog table; Others (tests, CI, scripts, documentation, refactors nobody notices) leaves it empty. The title's scope names the module through `scripts/changelog-scopes.json`. The `PR description` check enforces this, and the release workflows build the root `CHANGELOG.md`, `CHANGELOG.zh-CN.md`, `CHANGELOG.ja-JP.md` and the GitHub Release from these sections. Details: [.agents/rules/pull-requests-and-changesets.md](.agents/rules/pull-requests-and-changesets.md#pull-request-descriptions-and-the-changelog).
 
 ## Before Creating or Updating a Pull Request
 
 Read [.changeset/README.md](.changeset/README.md) first. A pull request that changes a publishable package's published output includes a changeset covering every affected package; `AGENTS.md`, `CLAUDE.md` and `skills/` inside a package count as published output. Run `node scripts/validate-changesets.mjs` before pushing, and run the CI check locally:
 
 ```bash
-BASE_SHA=$(git merge-base origin/v3-develop HEAD) HEAD_SHA=$(git rev-parse HEAD) \
+BASE_SHA=$(git merge-base origin/v3 HEAD) HEAD_SHA=$(git rev-parse HEAD) \
   node scripts/require-changesets.mjs
 ```
 
-A new changeset goes in `.changeset/`, never in `.changeset/pre/`, which the changesets tool owns; a file written there is silently ignored. A change that genuinely should not be released takes the `release:skip` label with the reason in the description. While `v3-develop` is in prerelease mode a `major` changeset cannot move an `X.0.0-beta.N` package; see [.agents/rules/pull-requests-and-changesets.md](.agents/rules/pull-requests-and-changesets.md) for what to do instead.
+A new changeset goes in `.changeset/`, never in `.changeset/pre/`, which the changesets tool owns; a file written there is silently ignored. A change that genuinely should not be released takes the `release:skip` label with the reason in the description. While `v3` is in prerelease mode a `major` changeset cannot move an `X.0.0-beta.N` package; see [.agents/rules/pull-requests-and-changesets.md](.agents/rules/pull-requests-and-changesets.md) for what to do instead.
 
 ## V3 Workflow Synchronization
 
-Executable workflow YAML stays directly in `.github/workflows/`, and every v3 workflow filename starts with `v3-`. Every v3 workflow change includes a synchronization check of its corresponding entry on `main`; additions, deletions, renames, dispatch input changes and trigger changes update that entry in the same delivery. The Quality checks have no workflow here: they are defined in `chenos/nocobase-ci`. Details: [.agents/rules/workflows-and-release.md](.agents/rules/workflows-and-release.md).
+Executable workflow YAML stays directly in `.github/workflows/`, and every v3 workflow filename starts with `v3-`. v3 workflows are dispatched directly from `v3`, the default branch, so they have no entry on `main`. Outside branch filters, which list both `v3` and `v3-develop`, a workflow never names the default branch; it uses `github.event.repository.default_branch`, in commands through `DEFAULT_BRANCH`. The thin v1/v2 entries on `v3` dispatch their implementation on `main`: when a v1/v2 manual workflow on `main` is added, removed or renamed, or changes its `name` or inputs, update its entry on `v3` first, then `main`. The Quality checks have no workflow here: they are defined in `chenos/nocobase-ci`. Details: [.agents/rules/workflows-and-release.md](.agents/rules/workflows-and-release.md).
 
 ## Validation
 
@@ -88,6 +88,7 @@ The workflow files under `.github/workflows/` still carry Chinese comments writt
 | -------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
 | [.agents/rules/pull-requests-and-changesets.md](.agents/rules/pull-requests-and-changesets.md)     | Naming a branch, committing, creating or updating a pull request, writing its description or a changeset                                    |
 | [.agents/rules/workflows-and-release.md](.agents/rules/workflows-and-release.md)                   | Changing anything under `.github/workflows/`, or release routing                                                                            |
+| [.agents/rules/release-channels.md](.agents/rules/release-channels.md)                             | Changing how a release is named, tagged or published, `.changeset/pre.json`, or publishing the first stable release                         |
 | [.agents/rules/repository-layout-and-skills.md](.agents/rules/repository-layout-and-skills.md)     | Adding a package, choosing its directory, or adding or editing a Skill under `skills/`                                                      |
 | [.agents/rules/dev-config.md](.agents/rules/dev-config.md)                                         | Creating a package, changing its tsconfig, ESLint, Prettier, Vitest or Vite configuration, dependencies and runtime, or publishing metadata |
 | [.agents/rules/testing.md](.agents/rules/testing.md)                                               | Writing or moving a test, testing against a database, choosing what to validate                                                             |

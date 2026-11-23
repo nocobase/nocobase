@@ -2,7 +2,7 @@
 
 Use `@nocobase/lifecycle` when a business record moves through stages that developers define in source: an expense report, a ticket, a contract, an order, a leave request. The record keeps its state in one of its own fields, every change is a transition declared in a definition, and the work a transition owes outside the database — mail, payments, calls to other systems — runs as effects after the transaction commits. There is no separate process instance, so the state is never kept in two places.
 
-Administrators can adjust code-declared business parameters without editing workflow structure. Proactively declare suitable approval departments, reviewer choices and thresholds as business parameters, even without an explicit configurability request. For declarations, snapshot/live reads and shared configuration editors, read [configurable lifecycle parameters](lifecycle-parameters.md).
+Administrators can adjust code-declared business parameters without editing workflow structure. Proactively declare suitable approval departments, reviewer choices and thresholds as business parameters, even without an explicit configurability request. For declarations, atomic creation snapshots and version-specific configuration editors, read [configurable lifecycle parameters](lifecycle-parameters.md).
 
 ## Approval requests: check the Pro plugin first
 
@@ -38,20 +38,21 @@ The business record's page may show a diagram, state/actions/history, or a compa
 ## Rules that are never broken
 
 1. **The state lives only in the record's own field.** Query, filter and count on it like any other column; keep no copy elsewhere.
-2. **Only the runtime changes the state.** Create with `runtime.create()`, change with `runtime.fire()`. Forms, imports, generic data endpoints, seeds of live data and SQL never write the state field, `statusChangedAt` or `lifecycleVersion`; doing so bypasses guards, the log, effects and the version check and leaves no trace. A data fix is a transition only the system may fire.
+2. **Only the runtime changes the state.** Create with `runtime.create()` and run business transitions with `runtime.fire()`. For administrator suspension, resumption, reset, or restart, use the opt-in [lifecycle management commands](lifecycle-management.md). Forms, imports, generic data endpoints, seeds of live data and SQL never write the state field, `statusChangedAt` or `lifecycleVersion`; doing so bypasses guards, the log, effects and the version check and leaves no trace. A data fix outside the management policy is a transition only the system may fire.
 3. **Anything that leaves the database is an effect.** Never send mail or call an API from a guard, `route`, `set`, `onTransition` or a state hook.
 4. **Fields that must change atomically with the state go in `accept` or `set`,** never in an effect, which runs after commit.
 5. **Pass the effect's `idempotencyKey` to the external system.** An effect runs at least once; the key is what makes it take effect once. The key covers one run: a call that must happen once per business fact is keyed by that fact.
 6. **Guards are business rules, not permissions.** Routes still authenticate and authorize: at least `read`, `fire` and `operate`, ahead of the validators.
 7. **Inside a transaction, go through `tx`.** In `onTransition`, `onEnterState`, `onLeaveState` or `runtime.transaction()`, call `tx.fire()` / `tx.create()` or pass `transaction: context.transactionHandle`. A bare `runtime.fire()` there hangs forever on SQLite and commits separately on PostgreSQL or MySQL.
 8. **Services that read other tables are a factory bound to the transaction:** `services: (handle) => ({ … })`. Reading through the database manager from a guard deadlocks on SQLite.
+9. **A record runs the definition that created it.** Every definition declares `key`, `version` and `definitionField`; `runtime.create()` writes the definition's name into that field, and nothing else ever writes it. Before editing behavior, compare `key`, `version` and `name` with the target main branch: versions there are frozen, while versions newly added on this branch can continue to be edited until merged. Follow [versions of a process](lifecycle-versions.md) for the full decision and retirement confirmation before deletion.
 
 ## Where the files go
 
 ```text
 server/lifecycles/<name>.ts          types, effects and defineLifecycle()
 server/providers/lifecycles.ts       the runtime, the store, the jobs dispatcher
-database/main/migrations/            the record table and the two log tables
+database/main/migrations/            the record table, log tables and creation requests
 server/routes/<name>.ts              the record routes the page calls
 client/lib/lifecycle.ts              createLifecycleHook(), configured once
 client/pages/                        pages that call the hook
@@ -119,6 +120,9 @@ const approverOnly = ({ record, actor }: TransitionContext<LeaveTypes>) =>
 export const leaveLifecycle: Lifecycle<LeaveTypes> =
   defineLifecycle<LeaveTypes>({
     name: 'leaves', // also the default collection name; stored in the log: never rename
+    key: 'leaves', // the process all versions of this definition belong to
+    version: 1, // the next version of this key is a new definition with version 2
+    definitionField: 'lifecycleDefinition', // the record field runtime.create() binds
     initial: 'draft',
     states: [
       'draft',
@@ -202,15 +206,33 @@ The record table needs, besides its business fields:
 
 - the state field, `status` by default, `string` not null;
 - `statusChangedAt`, `datetimeTz` not null;
-- `lifecycleVersion`, `integer` not null, default `0`;
+- `lifecycleVersion`, `integer` not null, default `0`; it orders concurrent changes of one record and is not the definition's version;
+- the definition field, `lifecycleDefinition` here, `string` and nullable: `runtime.create()` writes the definition's name, and a record no process has started leaves it empty. A record carrying two lifecycles, say an approval and a payment, has one such field per lifecycle (`approvalDefinition`, `paymentDefinition`);
 - an index on `(status, statusChangedAt)`, which the trigger sweep reads.
 
 The two log tables, created once for every lifecycle in the application:
 
-- `lifecycleTransitions`: `id`, `lifecycle`, `recordId` (string), `transition`, `from` (nullable), `to`, `actorId`, `input` (json), `at` (`datetimeTz`), `version` (integer), `requestId` (nullable), `requestKey` (not null); unique indexes on `(lifecycle, recordId, version)` and `(lifecycle, recordId, requestKey)`, and an index on `(lifecycle, recordId, id)`.
-- `lifecycleEffectRuns`: `id`, `transitionId`, `lifecycle`, `recordId` (string), `effect`, `stayBound` (boolean not null), `status`, `attempts` (default 0), `maxAttempts` (default 1), `result` (json), `error` (text), `createdAt`, `updatedAt`, `claimedAt`, `runAfter`, `continuation` (json, nullable), `continuationDueAt` and `continuationAbandonedAt` (`datetimeTz`, nullable); indexes on `(status, id)`, `(lifecycle, recordId, id)`, `continuationDueAt` and `continuationAbandonedAt`.
+- `lifecycleTransitions`: `id` (`bigInt`, primary key, `autoIncrement`: the store lets the database number entries and reads history in that order, so a string key fails the first time a record is created, on SQLite with `NOT NULL constraint failed: lifecycle_transitions.id`), `lifecycle`, `recordId` (string), `transition`, `from` (nullable), `to`, `actorId`, `input` (json), `at` (`datetimeTz`), `version` (integer), `requestId` (nullable), `requestKey` (not null); unique indexes on `(lifecycle, recordId, version)` and `(lifecycle, recordId, requestKey)`, and an index on `(lifecycle, recordId, id)`.
+- `lifecycleEffectRuns`: `id` (`bigInt`, primary key, `autoIncrement`), `transitionId` (`bigInt`, not null, the id of the transition that queued it), `lifecycle`, `recordId` (string), `effect`, `stayBound` (boolean not null), `status`, `attempts` (default 0), `maxAttempts` (default 1), `result` (json), `error` (text), `createdAt`, `updatedAt`, `claimedAt`, `runAfter`, `continuation` (json, nullable), `continuationDueAt` and `continuationAbandonedAt` (`datetimeTz`, nullable); indexes on `(status, id)`, `(lifecycle, recordId, id)`, `continuationDueAt` and `continuationAbandonedAt`.
 
-Different table names are passed to `createRepositoryLifecycleStore(db, { collections: { transitions, effectRuns } })`. Copy the column list from the installed package's README or the lifecycle example's migration (`packages/examples/app-plugin-lifecycle-example/database/migrations/` in the NocoBase repository) rather than guessing, and test it with `describeMigration()` as [testing](testing.md) describes.
+Different log table names are passed to `createRepositoryLifecycleStore(db, { collections: { transitions, effectRuns } })`.
+
+When any caller uses `runtime.create(name, values, { actor, requestId })`, including an importer or a sample seed, add the creation-request table before calling it. The Runtime uses `lifecycleCreationRequests` by default. A custom name is set with the Runtime's `creationRequestsCollection` option. Add this to the self-contained migration's `up`, and drop the same table in its `down`:
+
+```ts
+await builder.createCollection('lifecycleCreationRequests', (table) => {
+  table.string('id', { length: 64 }).primary().notNull();
+  table.string('status').notNull();
+  table.integer('revision').notNull();
+  table.string('actorId').notNull();
+  table.text('fingerprint').notNull();
+  table.string('recordId').nullable();
+  table.string('entryId').nullable();
+  table.datetimeTz('at').notNull();
+});
+```
+
+The primary key backs the unique claim for creation retries. Check this table and the two log tables using `describeMigration()` as [testing](testing.md) describes. Retry the same creation with the same request ID and normalized inputs, and verify that only one record and one creation entry exist. Creation without a Runtime request ID, such as creation already deduplicated by the application's operation receipt, uses the two log tables. Transition request IDs are stored on `lifecycleTransitions`.
 
 ## 3. The provider
 
@@ -253,8 +275,22 @@ export default class LifecycleProvider extends ServiceProvider<Application> {
   }
 
   public override async start(): Promise<void> {
-    // Registers the effect job, opens the executors, schedules the sweep
-    // (reclaim, triggers, onSweep) and recovers runs an earlier process left.
+    const { container } = this.app;
+    if (
+      !container.has(databaseManagerToken) ||
+      !container.has(jobExecutorServiceToken)
+    )
+      return;
+    const collections = container.resolve(databaseManagerToken).collections();
+    if (!(await collections.get('lifecycleEffectRuns'))) {
+      container
+        .resolve(loggingToken)
+        .getLogger('lifecycle')
+        .warn(
+          'Lifecycle recovery is idle because its log collections are not installed.',
+        );
+      return;
+    }
     await this.effectJobs().start(this.lifecycleRuntime());
   }
 
@@ -303,7 +339,7 @@ export default class LifecycleProvider extends ServiceProvider<Application> {
 }
 ```
 
-Add the provider to `server/providers/index.ts`. Business services that create or move records take the runtime from `lifecycleRuntimeToken` rather than writing the table. Without a dispatcher, effects run in process before `fire()` returns; that is acceptable in a unit test, not in an application. A deployment with more than one instance sets `jobs.default` to `redis`, as [services and jobs](services-and-jobs.md) explains, so workers coordinate effect and sweep claims; recovery can replay work, so effects must be idempotent. Install and register the commercial `@nocobase/app-plugin-jobs-redis` Server plugin on every instance before selecting Redis; define the named `jobs` configuration with `adapter: redis`. Queue Redis is a separate capability and is unchanged.
+Add the provider to `server/providers/index.ts`. Keep runtime and dispatcher resolution lazy. The template's [minimal server composition](testing.md#minimal-template-composition) can start application providers without the installed workflow collections or jobs service. The check in `start()` keeps recovery and sweep registration idle in that composition and uses the logical collection name from the store configuration. Let schema inspection and dispatcher errors propagate. Verify the real application through a migrated standalone fixture, including worker startup and execution history. Business services that create or move records take the runtime from `lifecycleRuntimeToken` and use it to maintain state. Without a dispatcher, effects run in process before `fire()` returns; that is acceptable in a unit test, not in an application. A deployment with more than one instance sets `jobs.default` to `redis`, as [services and jobs](services-and-jobs.md) explains, so workers coordinate effect and sweep claims; recovery can replay work, so effects must be idempotent. Install and register the commercial `@nocobase/app-plugin-jobs-redis` Server plugin on every instance before selecting Redis; define the named `jobs` configuration with `adapter: redis`. Queue Redis is a separate capability and is unchanged.
 
 To react to changes elsewhere — refresh a page through realtime, keep a to-do list — subscribe with `runtime.on('completed' | 'entered' | 'announce', filter, listener)`. Delivery is best effort: work that must happen is an effect.
 
@@ -320,7 +356,9 @@ The library ships no routes. Write them in `server/routes/` like every other `/a
 | `POST <lifecycle>/{id}/effectRuns/{runId}/continue`                                  | the record view                           |
 | `POST <lifecycle>/{id}/effectRuns/{runId}/cancel`                                    | the record view                           |
 
-Lists and creation are ordinary routes of the application; creation calls `runtime.create(name, values, { actor })`. The fire route passes `manual: true`, so a transition marked `manual: false` is refused with `NOT_MANUAL`:
+When a list or detail obtains a record through `repository.withPolicy(policy)`, include the definition's `definitionField` (here `lifecycleDefinition`) in that action's server-side read fields and any explicit Repository projection. Also include `id`, the configured state field, `statusChangedAt`, and `lifecycleVersion` when the lifecycle view uses them. For example, the Leave View policy reads `['id', 'applicantId', 'approverId', 'days', 'status', 'statusChangedAt', 'lifecycleVersion', 'lifecycleDefinition']`. `runtime.recordLifecycle(key, row)` reads the stored definition from that row. Select the intended response fields separately if the client does not need the definition field.
+
+Lists and creation are ordinary routes of the application; creation calls `runtime.create(name, values, { actor })` with the definition this entry starts. `<lifecycle>` in these paths is the process's key: the page never names a version. Each record route first asks `runtime.boundLifecycle(key, id)` which definition the record is bound to and calls the runtime with that name, so one page serves the records of every version; a list or a route that has read the record already uses `runtime.recordLifecycle(key, record)`. The description route takes an optional `?definition=<name>` and describes the latest version without one. A record no version started is refused with `DEFINITION_MISMATCH`, which `lifecycleErrorFields()` maps to `400 FAILED_PRECONDITION`; never fall back to the latest version. The fire route passes `manual: true`, so a transition marked `manual: false` is refused with `NOT_MANUAL`:
 
 ```ts
 import { ApiError, apiErrorHandler } from '@nocobase/app-server/router';
@@ -338,7 +376,9 @@ router.onError((error, c) => apiErrorHandler(toApiError(error), c));
 // inside the POST /leaves/:leaveId/fire handler, after auth, authorization and validators:
 const actor = { id: String(signedInUserId) };
 try {
-  const result = await runtime.fire('leaves', leaveId, body.transition, {
+  // The version this record runs, whichever is the latest.
+  const name = await runtime.boundLifecycle('leaves', leaveId);
+  const result = await runtime.fire(name, leaveId, body.transition, {
     actor,
     manual: true,
     input: body.input,
@@ -347,7 +387,7 @@ try {
       ? {}
       : { expect: { version: body.expectVersion } }),
   });
-  const view = await runtime.view('leaves', leaveId, actor);
+  const view = await runtime.view(name, leaveId, actor);
   return c.json({ data: { ...view, replayed: result.replayed === true } });
 } catch (error) {
   throw toApiError(error, 'input'); // field problems are reported under `input`
@@ -432,12 +472,15 @@ it('expires a request nobody handles', async () => {
 - Every external call receives `idempotencyKey`, or the business fact's own key.
 - `prune()` runs in `onSweep`.
 - Routes authorize read, fire and operate separately; guards are not the only check.
-- No code outside the runtime writes the state, `statusChangedAt` or `lifecycleVersion`. An edit that a transition must not race, such as changing an amount a guard reads, may only increment `lifecycleVersion` conditionally on the version it read.
+- Every definition declares `key`, `version` and `definitionField`, the record table has the definition field, and record routes resolve the definition through `boundLifecycle()`.
+- No code outside the runtime writes the state, `statusChangedAt`, `lifecycleVersion` or the definition field. An edit that a transition must not race, such as changing an amount a guard reads, may only increment `lifecycleVersion` conditionally on the version it read.
 - Effect runs that are `failed`, `dead`, or hold a waiting or abandoned continuation are visible to an operator: `listEffectRuns({ status: 'failed' })`, `listEffectRuns({ continuationPending: true })`, `listEffectRuns({ continuationAbandoned: true })`.
 
-## Changing a definition in production
+## Changing a definition
 
-States, transition, lifecycle and effect names are stored in the database. Adding states, transitions, triggers or effects and changing guard or `set` logic is safe. Renaming or removing a state takes three releases: add the new state and a system-only transition from the old one, fire it on every record in the old state, then remove the old state. Keep a removed or renamed effect registered until no run under its name is queued or running. Never rename a lifecycle. Renaming the state, timestamp or version field needs a migration in the same release.
+Before changing execution behavior or a parameter contract, follow the [Git freezing decision](lifecycle-versions.md#before-changing-behavior). A version present in the target main branch needs a new definition with the same `key` and the next `version`, preserving the old behavior; a version newly added on the current branch can continue to be edited until it merges. Shared dependencies follow the same rule. Titles, descriptions, translations and pure display metadata may change in place. Parameter configuration value edits follow [configuration and instance snapshots](lifecycle-parameters.md), independently of contract changes. The version guide also covers registrations, explicit entry point switches and validation of both versions.
+
+States, transition, lifecycle and effect names are stored in the database. Never rename a definition. A merged definition's `name` and `key` + `version` remain reserved after deletion, and a removed process's `key` cannot identify a different process. Choose a new version above the maximum in both current definitions and the target main branch's history, including deleted definitions; see [Creating a version](lifecycle-versions.md#creating-a-version). Retain definitions and their dependencies for bound records, history, recovery and pending work until the user confirms retirement under [Deleting versions](lifecycle-versions.md#deleting-versions). That confirmation permits deleting definition code; it does not permit deleting historical data or merged migrations. Keep a removed or renamed effect registered for any queued, running or pending continuation work that still needs it. Renaming the state, timestamp, version or definition field needs a migration in the same release.
 
 ## Troubleshooting
 
@@ -475,4 +518,4 @@ Adapt the translation key prefix to the feature.
 
 Preserve the component’s application theme tokens: `--primary` for current, visited and available highlights, subdued neutral strokes for other edges, and card/foreground/border tokens for the canvas and labels. Current nodes use an accent border and ring, visited nodes a subtler accent border, and both retain the upstream textual status and icon so execution state does not rely on color alone. Labels stay on the routes; automatic transitions remain solid and may show `⚙` through `transitionLabel`. Do not introduce a separate palette or hard-coded accent color. Check light/dark themes and a changed application primary color when customizing the rendering.
 
-For narrow layouts, use `initialMinZoom={0.8}` to preserve readable node content, with pan and a full-graph Fit control. Do not add a minimap to standard process pages by default; `showMiniMap` remains opt-in for consumers that need it. `configuration` on LifecycleDiagram automatically exposes declared, authorized bindings through the real editor; `stateActions` (or `nodeActions` on FlowDiagram) adds custom controls; `nodeDescription` adds real policy summaries. Supply enough fixed node height for the content. Definition views show the latest configured policy, while record views identify their submission snapshot. Never invent reviewer names, policy values or execution highlights. Standard business process pages omit system-only technical edit paths without adding a technical display toggle; retain every business approval, rejection, withdrawal and resubmission path. Technical diagnostic views may expose the complete source description separately when explicitly needed.
+For narrow layouts, use `initialMinZoom={0.8}` to preserve readable node content, with pan and a full-graph Fit control. Do not add a minimap to standard process pages by default; `showMiniMap` remains opt-in for consumers that need it. `configuration` on LifecycleDiagram automatically exposes declared, authorized bindings through the real editor; `stateActions` (or `nodeActions` on FlowDiagram) adds custom controls; `nodeDescription` adds real policy summaries. Supply enough fixed node height for the content. Definition views show the latest configured policy, while record views identify their creation snapshot. Never invent reviewer names, policy values or execution highlights. Standard business process pages omit system-only technical edit paths without adding a technical display toggle; retain every business approval, rejection, withdrawal and resubmission path. Technical diagnostic views may expose the complete source description separately when explicitly needed.

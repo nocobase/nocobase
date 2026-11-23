@@ -2,7 +2,10 @@ import type { LocaleResource } from '@nocobase/i18n';
 
 import type enUS from './en-US.js';
 
+import pagesJaJP from '../../shared/locales/pages.ja-JP.js';
+
 const jaJP: LocaleResource<typeof enUS> = {
+  ...pagesJaJP,
   content: {
     tooLarge:
       '本文が16 MiBの閲覧制限を超えています。元のメールボックスで開きます。添付ファイルは引き続きダウンロードできます。',
@@ -156,6 +159,8 @@ const jaJP: LocaleResource<typeof enUS> = {
     permanentlyDeleteConfirm:
       'このメッセージを完全に削除しますか?この操作は元に戻すことができません。',
     download: 'ダウンロード',
+    downloadOriginal: '元のメッセージをダウンロード',
+    downloadOriginalFailed: '元のメッセージをダウンロードできませんでした。',
     downloadFailed: '添付ファイルをダウンロードできません。',
     markRead: '既読マーク',
     markUnread: '未読としてマークする',
@@ -330,7 +335,7 @@ const jaJP: LocaleResource<typeof enUS> = {
     eyebrow: 'コミュニケーション',
     loading: 'メール設定を読み込み中…',
     authorizationSuccess:
-      'アカウントが正常に接続されました。新しく接続されたメールボックスはバックグラウンドで自動的に同期されます。初期同期には時間がかかる場合があります。同期ログで進行状況を確認します。別の同期を開始する必要はありません。',
+      'アカウントを接続しました。同期するフォルダーを選択すると、メールの取り込みが始まります。初回同期には時間がかかる場合があります。進捗は同期ログで確認できます。',
     authorizationFailure:
       'メールアカウントに接続できませんでした。もう一度やり直してください。',
     initialSync: {
@@ -340,10 +345,47 @@ const jaJP: LocaleResource<typeof enUS> = {
       receivedAfter: '後に受信したインポートメッセージ',
       pickDate: '日付を選択してください',
     },
+    syncFolders: {
+      title: '同期範囲の確認',
+      descriptionFirst:
+        'アカウントが接続されました。範囲を確認すると最初の同期を開始します。',
+      description:
+        '同期するフォルダーを確認してください。以降の自動同期も同じ範囲を使用します。',
+      scope: '同期範囲',
+      allFolders: 'メールボックス全体',
+      allFoldersHint:
+        'すべてのフォルダーを同期します。今後作成されるフォルダーも含みます。',
+      someFolders: '指定したフォルダー',
+      someFoldersHint:
+        'チェックしたフォルダーのみ同期します。新しいフォルダーは手動で追加します。',
+      loading: 'フォルダーを読み込んでいます…',
+      listingFailed: 'メールサーバーからフォルダー一覧を読み取れませんでした。',
+      retry: '再試行',
+      waiting: 'メールサーバーからフォルダー一覧を取得しています…',
+      selectedCount: '{{total}} 個中 {{count}} 個のフォルダーを選択',
+      selectAll: 'すべて選択',
+      clearAll: 'すべて選択解除',
+      emptySelection: 'フォルダーを1つ以上選択してください。',
+      sentHint:
+        '「送信済み」が選択されていないため、会話に自分の返信が表示されないことがあります。メールの送信には影響しません。',
+      removeTitle: '範囲外のローカルメールを削除しますか？',
+      removeDescription:
+        'この変更により、ローカルメール {{count}} 件とそのローカルデータが削除されます。メールサーバー上のメールは削除されず、選択したフォルダーに残るメールは保持されます。',
+      back: '戻る',
+      confirm: 'ローカルメールを削除して同期',
+      saving: '保存中…',
+      cancel: 'キャンセル',
+      submit: '確認して同期',
+      outcomeInitial: '{{date}} 以降のメールを同期します。',
+      outcomeIncremental: '前回の同期以降の新着と変更を同期します。',
+      outcomeRescan:
+        '新しい範囲で再同期します。既存のメールが重複して追加されることはありません。',
+      pending: 'フォルダーを選択して同期を開始',
+    },
     providers: {
       title: 'メールアカウントの追加',
       description:
-        'アカウントの種類を選択し、それを承認するか、メールボックスの資格情報を入力します。新しく接続されたメールボックスは自動的に同期を開始します。メッセージの数やネットワークの状況によっては、最初の同期に時間がかかる場合があります。同期ログで進行状況を確認します。別の同期を開始する必要はありません。',
+        'アカウントの種類を選択し、認証するかメールボックスの認証情報を入力します。接続後に同期するフォルダーを選択すると、初回同期の開始日以降のメールが取り込まれます。初回同期はメール数やネットワーク状況により時間がかかる場合があります。進捗は同期ログで確認できます。',
       accountType: 'メールアカウントの種類',
       chooseAccountType: 'アカウントの種類を選択してください',
       emptyTitle: 'メールプロバイダーが設定されていません',
@@ -556,6 +598,7 @@ const jaJP: LocaleResource<typeof enUS> = {
     drafts: '下書き',
     moveMessage: 'メッセージの移動',
     aliases: '別名',
+    downloadOriginal: '元のメールをダウンロード',
   },
   status: {
     account: {

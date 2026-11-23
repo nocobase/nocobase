@@ -1,3 +1,4 @@
+// Generated from packages/plugins/app-plugin-notification-in-app/client/inbox-page/frame.ts: edit it there, then run `node scripts/sync-ui-library-inbox.mjs`.
 /**
  * The inbox's own wording (the frame around each contributor's parts). It is taken outside a contributor's namespace
  * (`ContributorScope`) and passed in, so the frame reads the same whichever namespace the contributor's parts use.

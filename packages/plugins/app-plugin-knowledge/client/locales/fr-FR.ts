@@ -3,6 +3,7 @@ import type { LocaleResource } from '@nocobase/i18n';
 import type enUS from './en-US.js';
 
 const frFR: LocaleResource<typeof enUS> = {
+  fileUsage: 'Fichiers de la base de connaissances',
   indexing: {
     failedDocumentCount: 'Documents en échec : {{count}}',
     enabled: 'Activer l’indexation',
@@ -223,7 +224,6 @@ const frFR: LocaleResource<typeof enUS> = {
       count_other: 'Documents {{count}}',
       archivedCount_one: 'Document archivé {{count}}',
       archivedCount_other: 'Documents archivés {{count}}',
-      selectTarget: 'Ouvrir {{title}}',
       target: 'Créer dans {{title}}',
       chooseTarget:
         'Choisir un projet ou une connaissance système à créer dans',
@@ -338,6 +338,19 @@ const frFR: LocaleResource<typeof enUS> = {
       uploaded_other:
         "Fichiers {{count}} téléchargés ; leur texte est en cours d'extraction.",
       download: 'Télécharger',
+      fullscreen: 'Plein écran',
+      close: 'Fermer',
+      olderVersion: 'Version {{version}} (version antérieure)',
+      textHint_one:
+        "La recherche et les réponses de l'IA utilisent exactement ce texte · {{count}} ligne",
+      textHint_other:
+        "La recherche et les réponses de l'IA utilisent exactement ce texte · {{count}} lignes",
+      textHint_many:
+        "La recherche et les réponses de l'IA utilisent exactement ce texte · {{count}} lignes",
+      copy: 'Copier',
+      copied: 'Copié.',
+      copyFailed:
+        'La copie automatique est indisponible ici ; sélectionnez le texte et copiez-le vous-même.',
       version: 'Version {{version}}',
       statusHint: {
         parsing:
@@ -425,6 +438,7 @@ const frFR: LocaleResource<typeof enUS> = {
       contents: 'Contenu',
       edit: 'Modifier',
       rename: 'Renommer',
+      properties: 'Propriétés et résumé',
       history: 'Histoire',
       verify: 'Marque vérifiée',
       verifiedToast: 'Marqué vérifié.',

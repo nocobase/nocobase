@@ -17,6 +17,7 @@ import type {
 } from '@nocobase/agent-protocol';
 
 import type { I18nText } from './i18n.js';
+import type { ReasoningLevel } from './models.js';
 import type { PageUIContext } from './page-ui-context.js';
 export type { PageUIContext, PageUIItem } from './page-ui-context.js';
 
@@ -191,6 +192,12 @@ export interface ConversationAgent {
   readonly nameText: I18nText | null;
   readonly avatar: string | null;
   readonly archived: boolean;
+  /** Its whole model id, shown beside its name (`AgentModel`). */
+  readonly model?: string;
+  /** Its name without its tool, for a narrow place; OpenCode and Pi only (`AgentModel`). */
+  readonly shortName?: string;
+  /** Its tool and whole model id, shown on hover in a narrow place; OpenCode and Pi only (`AgentModel`). */
+  readonly modelTitle?: string;
 }
 
 /** Why a conversation's agent cannot answer now. */
@@ -498,8 +505,6 @@ export interface ConsultationNotice {
     readonly inputTokens: number;
     readonly outputTokens: number;
   } | null;
-  /** Operation plans it proposed, which the person confirms here. */
-  readonly plans: number;
 }
 
 export type ConversationNoticeCode = ConversationNotice['code'];
@@ -610,6 +615,7 @@ export const CHAT_ROUTES = {
   markRead: 'agents/conversations/:conversationId/markRead',
   markSeen: 'agents/conversations/:conversationId/markSeen',
   switchRunner: 'agents/conversations/:conversationId/switchRunner',
+  runners: 'agents/conversations/:conversationId/runners',
   switchAgent: 'agents/conversations/:conversationId/switchAgent',
   links: 'agents/conversations/:conversationId/links',
   attention: 'agents/conversationAttention',
@@ -704,7 +710,8 @@ export interface CreateConversationRequest {
     agentId?: string;
     context?: { variable?: OnlineChatJson };
     scope?: string[];
-    thinking?: string;
+    /** One of `REASONING_LEVELS`; omitted keeps the Agent's default. */
+    thinking?: ReasoningLevel;
     webSearch?: boolean;
   };
   readonly selectedModel?: { modelService: string; model: string };
@@ -753,6 +760,8 @@ export interface MessagePage {
 export interface SendMessageRequest {
   /** Explicit non-default Runner effort; omission or null uses the Agent default when supported, otherwise the tool default. */
   readonly effort?: string | null;
+  /** Select a runtime atomically with admission of an idle Runner message. */
+  readonly runnerId?: string;
   /** Confirm this Runner agent only if the message is accepted while idle. */
   readonly agentId?: string;
   /** Markdown, at most `MESSAGE_CONTENT_MAX` characters; empty only when files are sent. */
@@ -824,6 +833,12 @@ export interface ChatAgent {
   readonly availability: ChatAvailability;
   /** Only personal runners have it: it takes only their owners' work. */
   readonly personalOnly: boolean;
+  /** Its whole model id, shown beside its name (`AgentModel`). */
+  readonly model?: string;
+  /** Its name without its tool, for a narrow place; OpenCode and Pi only (`AgentModel`). */
+  readonly shortName?: string;
+  /** Its tool and whole model id, shown on hover in a narrow place; OpenCode and Pi only (`AgentModel`). */
+  readonly modelTitle?: string;
 }
 
 /**
@@ -847,6 +862,11 @@ export interface ChatPreferences {
   readonly defaultAgentId: string | null;
   /** Which kind of runner their runs queued from now on go to first. */
   readonly runnerPreference: RunnerPreference;
+  /**
+   * The reasoning effort conversations they start take when they choose none, where the agent's tool offers it; null:
+   * each agent's default.
+   */
+  readonly effort: string | null;
 }
 
 export type ChatPreferencesPatch = Partial<ChatPreferences>;

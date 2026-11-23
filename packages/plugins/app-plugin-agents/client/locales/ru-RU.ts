@@ -3,6 +3,9 @@ import type { LocaleResource } from '@nocobase/i18n';
 import type enUS from './en-US.js';
 
 const ruRU: LocaleResource<typeof enUS> = {
+  openAgentSettings: 'Открыть настройки агентов',
+  myConversations: 'Мои беседы',
+  fileUsage: 'Вложения чата',
   modelSuggestions: {
     design:
       'Самое сильное рассуждение: предложения, архитектура, сложные расследования и проверка важных изменений; также обычная реализация, изменения в нескольких пакетах и написание предложений.',
@@ -91,6 +94,7 @@ const ruRU: LocaleResource<typeof enUS> = {
     codex: 'Codex',
     opencode: 'OpenCode',
     pi: 'Pi',
+    antigravity: 'Antigravity CLI',
     gemini: 'Gemini CLI',
     copilot: 'GitHub Copilot',
     cursor: 'Cursor',
@@ -192,6 +196,7 @@ const ruRU: LocaleResource<typeof enUS> = {
       title: 'Изменить {{name}}',
       enabled: 'Включён',
       done: '{{name}} сохранён',
+      model: 'Модель',
     },
     available: {
       open: 'Добавить Agent',
@@ -278,10 +283,6 @@ const ruRU: LocaleResource<typeof enUS> = {
     save: 'Сохранить навыки',
     descriptionOnline:
       'Руководства, которые Agent читает, когда задача подходит под их описание, в изолированной среде только для чтения на сервере.',
-    onlineScripts:
-      'Онлайн-Agent не выполняют скрипты: Agent может их читать, но не запускать.',
-    skippedScripts: ': {{paths}}',
-    pathSeparator: ', ',
   },
   brief: {
     preview: 'Предпросмотр полного запроса',
@@ -1002,6 +1003,23 @@ const ruRU: LocaleResource<typeof enUS> = {
     },
   },
   chat: {
+    thinking: {
+      levels: {
+        'provider-default': 'По умолчанию',
+        none: 'Выкл.',
+        minimal: 'Минимальный',
+        low: 'Низкий',
+        medium: 'Средний',
+        high: 'Высокий',
+        xhigh: 'Очень высокий',
+      },
+      adjusted:
+        'Эта модель не поддерживает уровень размышления «{{requested}}»; для этого ответа использован уровень «{{used}}».',
+      adjustedToDefault:
+        'Эта модель не поддерживает уровень размышления «{{requested}}»; для этого ответа использованы настройки поставщика по умолчанию.',
+      warning:
+        'Модель могла не применить уровень размышления «{{level}}» к этому ответу.',
+    },
     executionFailed:
       'Выполнение не удалось. Перед повтором просмотрите сохранённый разговор.',
     untitled: 'Разговор без названия',
@@ -1077,6 +1095,25 @@ const ruRU: LocaleResource<typeof enUS> = {
       thinking: 'Размышляет…',
       reading: 'Смотрит {{subject}}',
       working: 'Работает над {{subject}}',
+      ...{
+        count_one: '{{count}} шаг',
+        count_other: '{{count}} шагов',
+        count_few: '{{count}} шага',
+        count_many: '{{count}} шагов',
+      },
+    },
+    // Plural forms of the panel wording, outside the typed shape (the rest falls back to English).
+    ...{
+      list: {
+        waiting_one: 'Ждут меня: {{count}}',
+        waiting_other: 'Ждут меня: {{count}}',
+        waiting_few: 'Ждут меня: {{count}}',
+        waiting_many: 'Ждут меня: {{count}}',
+        active_one: 'В работе: {{count}}',
+        active_other: 'В работе: {{count}}',
+        active_few: 'В работе: {{count}}',
+        active_many: 'В работе: {{count}}',
+      },
     },
     agents: {
       personalOnly: 'Только личные среды',
@@ -1324,8 +1361,6 @@ const ruRU: LocaleResource<typeof enUS> = {
     binaryFile: 'Двоичный файл, {{size}}. Здесь его нельзя редактировать.',
     executable: 'Исполняемый',
     scriptBadge: 'Скрипт',
-    scriptsNote:
-      'Содержит скрипты: онлайн-Agent могут их читать, но никогда не запускают',
     compatibility: 'Совместимость: {{value}}',
     fileContent: 'Содержимое {{path}}',
     export: 'Экспорт',
@@ -1358,8 +1393,7 @@ const ruRU: LocaleResource<typeof enUS> = {
       name: 'Имя',
       renameTitle: 'Переименовать «{{name}}»',
       conventional: {
-        scripts:
-          'Код, который Agent могут запускать. Онлайн-Agent его только читают.',
+        scripts: 'Код, который Agent могут запускать.',
         references: 'Документация, которую Agent читают по необходимости.',
         assets: 'Шаблоны, изображения и другие ресурсы.',
       },
@@ -1498,11 +1532,16 @@ const ruRU: LocaleResource<typeof enUS> = {
         runners: 'Среды выполнения',
         prices: 'Цены моделей',
         services: 'Сервисы моделей',
+        skills: 'Навыки',
       },
     },
     actions: {
       read: 'Просмотр',
       manage: 'Управление',
+    },
+    humanOnly: {
+      servicesManage:
+        'Управление сервисами моделей записывает ключи поставщиков; это может сделать только человек.',
     },
     keyScopes: {
       agents: {

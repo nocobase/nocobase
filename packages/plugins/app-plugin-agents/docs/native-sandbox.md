@@ -38,7 +38,7 @@ The retained limits are 5 MiB Skill text mounting, 7 MiB aggregate filesystem co
 
 Discover the current application's brand and commands using `<brand> --help`, `<brand> <area> --help` and `<brand> docs <command>`. Commands use the public app-cli-client parse/request contracts, method/path/body and JSON envelopes. Parameter JSON `--file` and declared string `--content-file` flags read only VFS, including immutable Skill text; exported Shell variables use the command's existing env definitions. No-file multipart fields and read-binding (one current GET before a write) retain the CLI's declared semantics. The owner-only `conversation update` command supports a whole JSON `--file` body as well as field flags.
 
-Real upload/download/ticket/stream/file transfer remains unavailable. Commands requiring interactive confirmation report CONFIRMATION_REQUIRED, never synthesize --yes. Business 403/409/PLAN_REQUIRED reasons remain errors, not SDK approvals. An application without a plan command gains no plan workflow or old Run plan scanner.
+Real upload/download/ticket/stream/file transfer remains unavailable. Commands requiring interactive confirmation report CONFIRMATION_REQUIRED, never synthesize --yes. Business reasons for refusals remain errors, not SDK approvals.
 
 ## Identity, cancellation and approval
 

@@ -1,5 +1,5 @@
 import { createGitCredentialService } from '../server/core/runs/git-credentials.js';
-import type { RunGit } from '@nocobase/agent-protocol';
+import { REDACTED, type RunGit } from '@nocobase/agent-protocol';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import {
@@ -121,6 +121,79 @@ describe('repository credentials on demand', () => {
       runnerKey: runner.key,
       body,
     });
+
+  it('hands out SSH keys only to capable claimants and redacts them from run events', async () => {
+    h = await createHarness();
+    const url = 'ssh://git@example.test:2222/acme/app.git';
+    const entry = {
+      url,
+      privateKey:
+        'synthetic deployment material from the repository access provider',
+      knownHosts: '[example.test]:2222 ssh-ed25519 public-key',
+    };
+    repos(url);
+    const resolve = vi.fn(async (): Promise<RunGit> => ({
+      ssh: [entry, { ...entry, url: 'git@example.test:other.git' }],
+      onDemand: [url],
+      tools: [
+        { bin: 'gh', url, env: { GH_TOKEN: { credential: 'password' } } },
+      ],
+    }));
+    h.services.repoAccess.register({ key: 'ssh', forRun: resolve });
+    const agentId = await h.createAgent();
+    await h.services.runs.enqueue({
+      agentId,
+      subject: { kind: 'sample', id: '1' },
+      actorUserId: 'owner',
+      requires: ['gitSsh'],
+      input: {
+        type: 'comment',
+        actor: { kind: 'user', id: 'owner', name: 'Owner' },
+        text: 'Work over SSH.',
+      },
+    });
+    const legacy = await h.registerRunner({
+      features: [...FEATURES, 'gitCredentials', 'gitTools'],
+    });
+    expect(await claim(h, legacy)).toEqual([]);
+    expect(resolve).not.toHaveBeenCalled();
+    const runner = await h.registerRunner({
+      features: [...FEATURES, 'gitCredentials', 'gitTools', 'gitSsh'],
+    });
+    const [payload] = await claim(h, runner);
+    expect(payload.run.requires).toContain('gitSsh');
+    expect(payload.workspace.git).toEqual({
+      ssh: [entry],
+      onDemand: [url],
+      tools: [
+        { bin: 'gh', url, env: { GH_TOKEN: { credential: 'password' } } },
+      ],
+    });
+    const { id } = payload.run;
+    const report = (route: string, body: unknown) =>
+      h.request('POST', `/agents/runners/runs/${id}/${route}`, {
+        runnerKey: runner.key,
+        body,
+      });
+    expect((await report('start', start)).status).toBe(200);
+    expect(
+      (
+        await report('events', {
+          events: [
+            {
+              seq: 1,
+              at: h.clock.now().toISOString(),
+              type: 'text',
+              content: entry.privateKey,
+            },
+          ],
+        })
+      ).status,
+    ).toBe(200);
+    expect((await h.services.runs.events(id, 0, 10)).events[0]?.content).toBe(
+      REDACTED,
+    );
+  });
 
   it('lists repositories on demand for a runner with the feature, minting nothing at the claim', async () => {
     h = await createHarness();

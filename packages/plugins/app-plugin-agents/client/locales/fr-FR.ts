@@ -3,6 +3,9 @@ import type { LocaleResource } from '@nocobase/i18n';
 import type enUS from './en-US.js';
 
 const frFR: LocaleResource<typeof enUS> = {
+  openAgentSettings: 'Ouvrir les paramètres des agents',
+  myConversations: 'Mes conversations',
+  fileUsage: 'Pièces jointes du chat',
   modelSuggestions: {
     design:
       'Raisonnement le plus avancé : propositions, architecture, enquêtes difficiles et revue des modifications importantes ; aussi implémentation courante et modifications entre paquets.',
@@ -92,6 +95,7 @@ const frFR: LocaleResource<typeof enUS> = {
     codex: 'Codex',
     opencode: 'OpenCode',
     pi: 'Pi',
+    antigravity: 'Antigravity CLI',
     gemini: 'Gemini CLI',
     copilot: 'GitHub Copilot',
     cursor: 'Cursor',
@@ -195,6 +199,7 @@ const frFR: LocaleResource<typeof enUS> = {
       title: 'Modifier {{name}}',
       enabled: 'Activé',
       done: '{{name}} enregistré',
+      model: 'Modèle',
     },
     available: {
       open: 'Ajouter un Agent',
@@ -274,10 +279,6 @@ const frFR: LocaleResource<typeof enUS> = {
     save: 'Sauvegarder les compétences',
     descriptionOnline:
       "Manuels que l'Agent lit lorsqu'une tâche correspond à sa description, dans un bac à sable en lecture seule sur le serveur.",
-    onlineScripts:
-      "Les scripts ne sont pas exécutés pour les Agents en ligne : l'Agent peut les lire, pas les exécuter.",
-    skippedScripts: ': {{paths}}',
-    pathSeparator: ', ',
   },
   brief: {
     preview: "Aperçu de l'invite complète",
@@ -998,6 +999,23 @@ const frFR: LocaleResource<typeof enUS> = {
     },
   },
   chat: {
+    thinking: {
+      levels: {
+        'provider-default': 'Par défaut',
+        none: 'Désactivé',
+        minimal: 'Minimal',
+        low: 'Faible',
+        medium: 'Moyen',
+        high: 'Élevé',
+        xhigh: 'Très élevé',
+      },
+      adjusted:
+        'Ce modèle ne prend pas en charge le niveau de réflexion « {{requested}} » ; cette réponse a utilisé « {{used}} ».',
+      adjustedToDefault:
+        'Ce modèle ne prend pas en charge le niveau de réflexion « {{requested}} » ; cette réponse a utilisé la valeur par défaut du fournisseur.',
+      warning:
+        'Le modèle n’a peut-être pas appliqué le niveau de réflexion « {{level}} » à cette réponse.',
+    },
     // Keep new guidance available in English until this locale is translated.
     executionFailed:
       'L’exécution a échoué. Relisez la conversation enregistrée avant de réessayer.',
@@ -1077,6 +1095,22 @@ const frFR: LocaleResource<typeof enUS> = {
       thinking: 'Penser…',
       reading: 'En regardant {{subject}}',
       working: 'Travail sur {{subject}}',
+      ...{
+        count_one: '{{count}} étape',
+        count_other: '{{count}} étapes',
+        count_many: '{{count}} étapes',
+      },
+    },
+    // Plural forms of the panel wording, outside the typed shape (the rest falls back to English).
+    ...{
+      list: {
+        waiting_one: 'Besoin de moi {{count}}',
+        waiting_other: 'Besoin de moi {{count}}',
+        waiting_many: 'Besoin de moi {{count}}',
+        active_one: 'En cours {{count}}',
+        active_other: 'En cours {{count}}',
+        active_many: 'En cours {{count}}',
+      },
     },
     agents: {
       personalOnly: 'Exécuteurs personnels uniquement',
@@ -1327,8 +1361,6 @@ const frFR: LocaleResource<typeof enUS> = {
     binaryFile: 'Fichier binaire, {{size}}. Il ne peut pas être modifié ici.',
     executable: 'Exécutable',
     scriptBadge: 'Scénario',
-    scriptsNote:
-      'Possède des scripts : les Agents en ligne peuvent les lire mais ne les exécutent jamais',
     compatibility: 'Compatibilité : {{value}}',
     fileContent: 'Contenu de {{path}}',
     export: 'Exporter',
@@ -1362,8 +1394,7 @@ const frFR: LocaleResource<typeof enUS> = {
       name: 'Nom',
       renameTitle: 'Renommer "{{name}}"',
       conventional: {
-        scripts:
-          "Les Agents de code peuvent s'exécuter. Les Agents en ligne le lisent uniquement.",
+        scripts: 'Du code que les Agents peuvent exécuter.',
         references:
           'Les Agents de documentation lisent quand ils en ont besoin.',
         assets: 'Modèles, images et autres ressources.',
@@ -1511,11 +1542,16 @@ const frFR: LocaleResource<typeof enUS> = {
         runners: 'Environnements d’exécution',
         prices: 'Tarifs des modèles',
         services: 'Services modèles',
+        skills: 'Compétences',
       },
     },
     actions: {
       read: 'Afficher',
       manage: 'Gérer',
+    },
+    humanOnly: {
+      servicesManage:
+        'Gérer les services de modèles écrit des clés de fournisseurs ; seule une personne peut le faire.',
     },
     keyScopes: {
       agents: {

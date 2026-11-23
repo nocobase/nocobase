@@ -3,6 +3,9 @@ import type { LocaleResource } from '@nocobase/i18n';
 import type enUS from './en-US.js';
 
 const zhTW: LocaleResource<typeof enUS> = {
+  openAgentSettings: '前往 Agent 設定',
+  myConversations: '我的會話',
+  fileUsage: '對話附件',
   modelSuggestions: {
     design:
       '最強推理：方案設計、架構、疑難排查、重要修改的程式碼審查；也能進行一般實作、跨套件修改及撰寫方案',
@@ -88,6 +91,7 @@ const zhTW: LocaleResource<typeof enUS> = {
     codex: 'Codex',
     opencode: 'OpenCode',
     pi: 'Pi',
+    antigravity: 'Antigravity CLI',
     gemini: 'Gemini CLI',
     copilot: 'GitHub Copilot',
     cursor: 'Cursor',
@@ -183,6 +187,7 @@ const zhTW: LocaleResource<typeof enUS> = {
       title: '編輯{{name}}',
       enabled: '已啟用',
       done: '{{name}} 已儲存',
+      model: '模型',
     },
     available: {
       open: '新增 Agent',
@@ -253,10 +258,6 @@ const zhTW: LocaleResource<typeof enUS> = {
     save: '儲存技能',
     descriptionOnline:
       '當任務與其描述相符時，Agent在伺服器上的唯讀沙箱中手動讀取。',
-    onlineScripts:
-      '線上Agents不會執行指令碼：Agent可以讀取它們，但不能執行它們。',
-    skippedScripts: ': {{paths}}',
-    pathSeparator: ', ',
   },
   brief: {
     preview: '預覽完整提示',
@@ -921,6 +922,22 @@ const zhTW: LocaleResource<typeof enUS> = {
     },
   },
   chat: {
+    thinking: {
+      levels: {
+        'provider-default': '預設',
+        none: '關閉',
+        minimal: '極低',
+        low: '低',
+        medium: '中',
+        high: '高',
+        xhigh: '超高',
+      },
+      adjusted:
+        '目前模型不支援「{{requested}}」思考等級，本次回覆使用了「{{used}}」。',
+      adjustedToDefault:
+        '目前模型不支援「{{requested}}」思考等級，本次回覆使用了供應商預設設定。',
+      warning: '模型可能未在本次回覆中套用「{{level}}」思考等級。',
+    },
     // Keep new guidance available in English until this locale is translated.
     executionFailed: '執行失敗。重試前請先檢查已儲存的對話。',
     fileInputFailures: {
@@ -986,6 +1003,19 @@ const zhTW: LocaleResource<typeof enUS> = {
       thinking: '思考…',
       reading: '看著{{subject}}',
       working: '正在 {{subject}} 上工作',
+      ...{
+        count_one: '{{count}} 個步驟',
+        count_other: '{{count}} 個步驟',
+      },
+    },
+    // Plural forms of the panel wording, outside the typed shape (the rest falls back to English).
+    ...{
+      list: {
+        waiting_one: '需要我 {{count}}',
+        waiting_other: '需要我 {{count}}',
+        active_one: '進行中 {{count}}',
+        active_other: '進行中 {{count}}',
+      },
     },
     agents: {
       personalOnly: '僅限個人執行環境',
@@ -1219,7 +1249,6 @@ const zhTW: LocaleResource<typeof enUS> = {
     binaryFile: '二進位檔案，{{size}}。此處無法對其進行編輯。',
     executable: '執行檔',
     scriptBadge: '指令碼',
-    scriptsNote: '有指令碼：線上Agents可以讀取它們，但從不執行它們',
     compatibility: '相容性：{{value}}',
     fileContent: '{{path}} 的內容',
     export: '出口',
@@ -1250,7 +1279,7 @@ const zhTW: LocaleResource<typeof enUS> = {
       name: '名稱',
       renameTitle: '重新命名“{{name}}”',
       conventional: {
-        scripts: '程式碼Agents可以執行。線上Agents只能閱讀。',
+        scripts: 'Agent 可以執行的程式碼。',
         references: '檔案Agents在需要時閱讀。',
         assets: '模板、影像和其他資源。',
       },
@@ -1376,11 +1405,15 @@ const zhTW: LocaleResource<typeof enUS> = {
         runners: '執行環境',
         prices: '型號價格',
         services: '模特兒服務',
+        skills: '技能',
       },
     },
     actions: {
       read: '檢視',
       manage: '管理',
+    },
+    humanOnly: {
+      servicesManage: '管理模型服務會寫入服務商金鑰，只能由人操作。',
     },
     keyScopes: {
       agents: {

@@ -91,6 +91,20 @@ export const DecideBody: Strict<{
   action: z.string().min(1),
 });
 
+export const InspectRecordsBody: Strict<{
+  subject: typeof ReferenceInput;
+  resource: typeof ReferenceInput;
+  action: z.ZodString;
+  scope: z.ZodString;
+  ids: z.ZodArray<z.ZodString>;
+}> = z.strictObject({
+  subject: ReferenceInput,
+  resource: ReferenceInput,
+  action: z.string().min(1),
+  scope: z.string().min(1),
+  ids: z.array(z.string().min(1)).max(100),
+});
+
 export const BatchDecideBody: Strict<{
   subject: typeof ReferenceInput;
   checks: z.ZodArray<
@@ -138,6 +152,7 @@ export const PermissionGrantSchema: z.ZodType = z
 const writeOperation = z.enum([
   'create',
   'update',
+  'updateTitle',
   'delete',
   'assign',
   'revoke',
@@ -237,6 +252,48 @@ export const ConfiguredAccessSchema: z.ZodType = z
         }),
       }),
     ),
+    credential: z
+      .object({
+        keyId: z.string(),
+        holder: ReferenceSchema.meta({
+          description:
+            'The subject the credential acts as, whose roles and data rules apply.',
+        }),
+        state: z.enum(['active', 'disabled', 'expired']).meta({
+          description:
+            'A disabled or expired credential allows nothing: every decision for it is a denial with that reason.',
+        }),
+        expiresAt: z.string().nullable(),
+        personless: z.boolean().meta({
+          description:
+            'The credential acts as no person: rules adding records counted from the principal add none for it.',
+        }),
+        permissions: z
+          .array(
+            z.object({
+              resource: ReferenceSchema,
+              actions: z.array(
+                z.object({
+                  action: z.string(),
+                  policy: z.record(z.string(), z.unknown()).optional(),
+                }),
+              ),
+            }),
+          )
+          .nullable()
+          .meta({
+            description:
+              'What the credential covers, with the record scopes it keeps; null when it narrows no action.',
+          }),
+        objects: z
+          .record(z.string(), z.array(z.string()))
+          .meta({ description: 'The records a business is limited to.' }),
+      })
+      .optional()
+      .meta({
+        description:
+          'For a credential subject, such as an API key: what it adds on top of the roles of its holder.',
+      }),
   })
   .meta({ ref: 'AuthorizationConfiguredAccess' });
 

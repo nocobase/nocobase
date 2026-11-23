@@ -132,6 +132,35 @@ describe('user preferences', () => {
     });
   });
 
+  it('reads one key for many people at once, leaving out who has none', async () => {
+    await service.set('ann', 'i18n.locale', 'en-US');
+    await service.set('bob', 'i18n.locale', 'zh-CN');
+    await service.set('bob', 'theme', 'dark');
+    const found = await service.getForUsers(
+      ['ann', 'bob', 'cid', 'ann'],
+      'i18n.locale',
+    );
+    expect(Object.fromEntries(found)).toEqual({ ann: 'en-US', bob: 'zh-CN' });
+  });
+
+  it('tells notify() the language each person chose', async () => {
+    const { ServiceContainer } = await import('@nocobase/service-provider');
+    const { notificationUserLocalesToken } =
+      await import('@nocobase/app-plugin-notification/server');
+    const { registerNotificationUserLocales } =
+      await import('../server/preferences/notification-locales.js');
+    await service.set('ann', 'i18n.locale', 'en-US');
+    await service.set('bob', 'i18n.locale', 42);
+    const container = new ServiceContainer();
+    await expect(
+      registerNotificationUserLocales({ container } as never, () => service),
+    ).resolves.toBe(true);
+    const found = await container
+      .resolve(notificationUserLocalesToken)
+      .resolve(['ann', 'bob', 'cid']);
+    expect(Object.fromEntries(found)).toEqual({ ann: 'en-US' });
+  });
+
   it('resolves durable recipient languages through a fresh service, validating types and supported tags', async () => {
     const runtime = new I18nRuntime({
       defaultLocale: 'zh-CN',

@@ -209,6 +209,50 @@ describe('server package generation', () => {
     });
   });
 
+  it('keeps the application plugins a vendored plugin builds on as peers', () => {
+    const { root, plugin } = createWorkspace();
+    const manifest = readJson(path.join(plugin, 'package.json'));
+    writeJson(path.join(plugin, 'package.json'), {
+      ...manifest,
+      peerDependencies: {
+        ...(manifest.peerDependencies as Record<string, string>),
+        '@nocobase/app-plugin-agents': 'workspace:^',
+        '@nocobase/app-plugin-file': 'workspace:^',
+        // Third-party scopes are application plugins too; a package outside the naming rule is not.
+        '@acme/app-plugin-crm': '^1.0.0',
+        '@acme/app-portal-shop': '^1.0.0',
+        '@acme/app-plugin-': '^1.0.0',
+      },
+      peerDependenciesMeta: {
+        '@nocobase/app-plugin-file': { optional: true },
+        '@acme/app-portal-shop': { optional: true },
+      },
+    });
+
+    expect(generate(root).status).toBe(0);
+
+    const vendored = readJson(
+      path.join(
+        root,
+        'dist',
+        'vendor',
+        '@fixture',
+        'plugin-demo',
+        'package.json',
+      ),
+    );
+    expect(vendored.peerDependencies).toEqual({
+      '@acme/app-plugin-crm': '*',
+      '@acme/app-portal-shop': '*',
+      '@nocobase/app-plugin-agents': '*',
+      '@nocobase/app-plugin-file': '*',
+    });
+    expect(vendored.peerDependenciesMeta).toEqual({
+      '@acme/app-portal-shop': { optional: true },
+      '@nocobase/app-plugin-file': { optional: true },
+    });
+  });
+
   it('vendors every path a workspace package publishes, so an export beside dist does not dangle', () => {
     const { root } = createWorkspace();
 

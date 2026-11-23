@@ -1,7 +1,7 @@
 import type enUS from './en-US.js';
 
 export default {
-  title: '数据库浏览器',
+  title: '数据库',
   description: '查看应用的数据库连接、数据表和字段。',
   connection: '数据库连接',
   chooseConnection: '选择数据库连接',

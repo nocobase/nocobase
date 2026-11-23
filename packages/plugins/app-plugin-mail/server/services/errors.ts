@@ -234,6 +234,27 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
 
+/**
+ * A failure as the Mail settings page shows it: what went wrong, never whom it concerned. A partial SMTP delivery names
+ * the accepted and rejected recipients in `recipients`; the settings page lists every member's sends to people who
+ * may not read their mail, so it keeps only these fields.
+ */
+export function toSettingsError(
+  error: import('../../shared/mail.js').MailPublicError,
+): import('../../shared/mail.js').MailPublicError {
+  return {
+    code: error.code,
+    category: error.category,
+    retryable: error.retryable,
+    ...(error.retryAfterMs !== undefined
+      ? { retryAfterMs: error.retryAfterMs }
+      : {}),
+    ...(PUBLIC_REASON_CODES.has(error.reasonCode ?? '')
+      ? { reasonCode: error.reasonCode }
+      : {}),
+  };
+}
+
 export function toPublicError(
   error: import('../../shared/mail.js').MailProviderError,
 ): import('../../shared/mail.js').MailPublicError {

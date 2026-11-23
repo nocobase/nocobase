@@ -1,4 +1,7 @@
-import { useRealtimeRefresh } from '@nocobase/app-client';
+import {
+  useRealtimeRefresh,
+  NavigationGuardProvider,
+} from '@nocobase/app-client';
 import { RouteTreeProvider } from '../../client/routing/route-context.js';
 import type { AppClientRegisteredRoute } from '@nocobase/app-client/plugins';
 import { BackButton } from '../../client/components/back-button.js';
@@ -32,6 +35,7 @@ import {
   render,
   screen,
   waitFor,
+  within,
 } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { format, parseISO } from 'date-fns';
@@ -68,8 +72,8 @@ vi.mock('@nocobase/app-plugin-authorization/client', () => ({
 const namespace = '@nocobase/app-template-examples';
 // Navigation targets must be registered pages, as they are in the application shell.
 const routes: AppClientRegisteredRoute[] = [
-  '/workflows/definitions',
-  '/workflows/executions',
+  '/settings/workflows/definitions',
+  '/settings/workflows/executions',
 ].map((path) => ({
   id: path,
   name: path,
@@ -93,7 +97,7 @@ async function pickHolidayDate(value: string) {
 async function view(
   children: ReactNode,
   locale = 'en-US',
-  path = '/workflows/executions',
+  path = '/settings/workflows/executions',
 ) {
   const runtime = await createTestI18nRuntime({
     locale,
@@ -119,12 +123,14 @@ async function view(
     <I18nProvider runtime={runtime}>
       <NamespaceScope ns={namespace}>
         <MemoryRouter initialEntries={[path]}>
-          <RouteTreeProvider routes={routes}>
-            <PageBreadcrumbProvider>
-              <Breadcrumbs />
-              {children}
-            </PageBreadcrumbProvider>
-          </RouteTreeProvider>
+          <NavigationGuardProvider>
+            <RouteTreeProvider routes={routes}>
+              <PageBreadcrumbProvider>
+                <Breadcrumbs />
+                {children}
+              </PageBreadcrumbProvider>
+            </RouteTreeProvider>
+          </NavigationGuardProvider>
         </MemoryRouter>
       </NamespaceScope>
     </I18nProvider>,
@@ -191,12 +197,15 @@ const detail: WorkflowExecutionDetail = {
   workflow: {
     id: 'lifecycle.expenses',
     name: 'expenses',
+    version: 1,
+    versions: [{ name: 'expenses', version: 1 }],
     source: 'lifecycle',
     states: 4,
     transitions: 4,
     executionCount: 1,
     lastExecutedAt: null,
   },
+  definition: { name: 'expenses', version: 1, executionCount: 1 },
   description: describeLifecycle(expenseLifecycle),
   parameters: {},
   diagram: '',
@@ -265,12 +274,12 @@ describe('workflow management pages', () => {
     await view(
       <Routes>
         <Route
-          path='/workflows/executions/:workflowId/:recordId'
+          path='/settings/workflows/executions/:workflowId/:recordId'
           element={<ExecutionPage />}
         />
       </Routes>,
       'en-US',
-      '/workflows/executions/lifecycle.expenses/1',
+      '/settings/workflows/executions/lifecycle.expenses/1',
     );
     const firstStep = await screen.findByRole('button', {
       name: 'Show progress at step 1',
@@ -304,6 +313,8 @@ describe('workflow management pages', () => {
         {
           id: 'office.dataRequests',
           name: 'dataRequests',
+          version: 1,
+          versions: [{ name: 'dataRequests', version: 1 }],
           source: 'office',
           states: 4,
           transitions: 5,
@@ -317,18 +328,24 @@ describe('workflow management pages', () => {
       );
       await view(
         <Routes>
-          <Route path='/workflows/definitions' element={<DefinitionsPage />} />
-          <Route path='/workflows/executions' element={<ExecutionsPage />} />
+          <Route
+            path='/settings/workflows/definitions'
+            element={<DefinitionsPage />}
+          />
+          <Route
+            path='/settings/workflows/executions'
+            element={<ExecutionsPage />}
+          />
         </Routes>,
         locale,
-        '/workflows/definitions?page=5&workflowId=old',
+        '/settings/workflows/definitions?page=5&workflowId=old',
       );
       const copy = locale === 'zh-CN' ? zhCN.workflows : enUS.workflows;
       const count = await screen.findByRole('link', { name: /\(105\)$/ });
       expect(count).toHaveTextContent('105');
       expect(count).toHaveAttribute(
         'href',
-        '/workflows/executions?workflowId=lifecycle.expenses',
+        '/settings/workflows/executions?workflowId=lifecycle.expenses',
       );
       expect(
         screen.queryByRole('link', { name: /\(0\)$/ }),
@@ -394,11 +411,11 @@ describe('workflow management pages', () => {
         <Location />
       </>,
       'en-US',
-      '/workflows/executions?workflowId=lifecycle.expenses&page=5',
+      '/settings/workflows/executions?workflowId=lifecycle.expenses&page=5',
     );
     expect(await screen.findByRole('link', { name: '#42' })).toHaveAttribute(
       'href',
-      '/workflows/executions/lifecycle.expenses/42?workflowId=lifecycle.expenses&page=5',
+      '/settings/workflows/executions/lifecycle.expenses/42?workflowId=lifecycle.expenses&page=5',
     );
     expect(
       screen
@@ -453,7 +470,7 @@ describe('workflow management pages', () => {
           <Location />
         </>,
         locale,
-        '/workflows/executions?workflowId=lifecycle.expenses&page=5&order=oldest',
+        '/settings/workflows/executions?workflowId=lifecycle.expenses&page=5&order=oldest',
       );
       const input = screen.getByRole('searchbox', { name: copy.filterByName });
       expect(screen.queryByRole('combobox')).not.toBeInTheDocument();
@@ -540,7 +557,11 @@ describe('workflow management pages', () => {
               finish = resolve;
             }),
       );
-      await view(<ExecutionsPage />, 'en-US', `/workflows/executions${query}`);
+      await view(
+        <ExecutionsPage />,
+        'en-US',
+        `/settings/workflows/executions${query}`,
+      );
       expect(
         screen.getByRole('table').querySelector('[data-slot="loading"]'),
       ).toHaveAttribute('aria-busy', 'true');
@@ -640,7 +661,7 @@ describe('workflow management pages', () => {
       );
       await view(
         <Routes>
-          <Route path='/workflows' element={<WorkflowsPage />}>
+          <Route path='/settings/workflows' element={<WorkflowsPage />}>
             <Route path='definitions' element={<DefinitionsPage />}>
               <Route path=':workflowId' element={<DefinitionPage />}>
                 <Route path='parameters' element={<WorkflowParametersPage />} />
@@ -649,7 +670,7 @@ describe('workflow management pages', () => {
           </Route>
         </Routes>,
         'en-US',
-        `/workflows/definitions/lifecycle.expenses${entry === 'parameters' ? '/parameters' : ''}`,
+        `/settings/workflows/definitions/lifecycle.expenses${entry === 'parameters' ? '/parameters' : ''}`,
       );
       if (entry === 'draft' || entry === 'awaitingManager') {
         fireEvent.click(await screen.findByTestId(`rf__node-${entry}`));
@@ -768,16 +789,16 @@ describe('workflow management pages', () => {
     await view(
       <Routes>
         <Route
-          path='/workflows/definitions/:workflowId'
+          path='/settings/workflows/definitions/:workflowId'
           element={<div>Detail</div>}
         />
         <Route
-          path='/workflows/definitions/:workflowId/parameters'
+          path='/settings/workflows/definitions/:workflowId/parameters'
           element={<WorkflowParametersPage />}
         />
       </Routes>,
       'en-US',
-      '/workflows/definitions/lifecycle.expenses/parameters',
+      '/settings/workflows/definitions/lifecycle.expenses/parameters',
     );
     fireEvent.change(await screen.findByLabelText('first'), {
       target: { value: '2' },
@@ -834,16 +855,16 @@ describe('workflow management pages', () => {
     await view(
       <Routes>
         <Route
-          path='/workflows/definitions/:workflowId'
+          path='/settings/workflows/definitions/:workflowId'
           element={<div>Detail</div>}
         />
         <Route
-          path='/workflows/definitions/:workflowId/parameters'
+          path='/settings/workflows/definitions/:workflowId/parameters'
           element={<WorkflowParametersPage />}
         />
       </Routes>,
       'en-US',
-      '/workflows/definitions/office.dataRequests/parameters',
+      '/settings/workflows/definitions/office.dataRequests/parameters',
     );
     await pickHolidayDate('2026-01-02');
     expect(
@@ -925,12 +946,30 @@ describe('workflow management pages', () => {
   });
 });
 
+it('keeps management guidance out of filtered empty results', async () => {
+  api.request.mockResolvedValue({ data: [] });
+  await view(
+    <DefinitionsPage />,
+    'en-US',
+    '/workflows/definitions?name=missing',
+  );
+  expect(await screen.findByText(enUS.listFeedback.noResults)).toBeVisible();
+  expect(
+    screen.queryByText(enUS.workflows.managementHint),
+  ).not.toBeInTheDocument();
+  expect(
+    screen.queryByRole('link', { name: enUS.workflows.documentation }),
+  ).not.toBeInTheDocument();
+});
+
 it('retains loaded definitions while refreshing and exposes the busy state', async () => {
   api.request.mockResolvedValueOnce({ data: [] }).mockResolvedValueOnce({
     data: [
       {
         id: 'lifecycle.expenses',
         name: 'expenses',
+        version: 1,
+        versions: [{ name: 'expenses', version: 1 }],
         source: 'lifecycle',
         states: 4,
         transitions: 5,
@@ -957,7 +996,16 @@ it('retains loaded definitions while refreshing and exposes the busy state', asy
   ).not.toBeInTheDocument();
   expect(screen.getAllByRole('status').length).toBeGreaterThan(0);
   finish?.({ data: [] });
-  await screen.findByText(enUS.listFeedback.empty);
+  const empty = await screen.findByText(enUS.listFeedback.empty);
+  expect(screen.getByRole('table')).toContainElement(empty);
+  expect(empty.closest('[role=status]')).toBeVisible();
+  expect(screen.getByText(enUS.workflows.managementHint)).toBeVisible();
+  expect(
+    screen.getByRole('link', { name: enUS.workflows.documentation }),
+  ).toHaveAttribute(
+    'href',
+    'https://docs.nocobase.com/core/developing-apps/business-workflows/',
+  );
 });
 
 it('keeps a failed category draft and saves its trimmed name and order', async () => {
@@ -991,14 +1039,14 @@ it('preserves the category filter in definition detail links', async () => {
   await view(
     <DefinitionsPage />,
     'en-US',
-    '/workflows/definitions?category=finance',
+    '/settings/workflows/definitions?category=finance',
   );
   const link = await screen.findByRole('link', {
     name: enUS.workflows.names.expenses,
   });
   expect(link).toHaveAttribute(
     'href',
-    `/workflows/definitions/${detail.workflow.id}?category=finance`,
+    `/settings/workflows/definitions/${detail.workflow.id}?category=finance`,
   );
   expect(
     screen.queryByRole('link', { name: 'Order payment' }),
@@ -1112,7 +1160,7 @@ it.each(['en-US', 'zh-CN'])(
     await view(
       <DefinitionsPage />,
       locale,
-      '/workflows/definitions?category=finance',
+      '/settings/workflows/definitions?category=finance',
     );
     await screen.findByRole('link', { name: copy.names.expenses });
     const input = screen.getByRole('searchbox', { name: copy.filterByName });
@@ -1146,7 +1194,7 @@ it.each(['en-US', 'zh-CN'])(
       screen.getByRole('link', { name: copy.names.orders }),
     ).toHaveAttribute(
       'href',
-      `/workflows/definitions/orders?${new URLSearchParams({ category: 'finance', name: copy.names.orders })}`,
+      `/settings/workflows/definitions/orders?${new URLSearchParams({ category: 'finance', name: copy.names.orders })}`,
     );
     await userEvent.clear(input);
     await userEvent.type(input, '  EXPENSES  ');
@@ -1181,7 +1229,7 @@ it.each(['en-US', 'zh-CN'])(
     const copy = locale === 'zh-CN' ? zhCN.workflows : enUS.workflows;
     await view(
       <Routes>
-        <Route path='/workflows' element={<WorkflowsPage />}>
+        <Route path='/settings/workflows' element={<WorkflowsPage />}>
           <Route
             path='definitions'
             element={
@@ -1195,7 +1243,7 @@ it.each(['en-US', 'zh-CN'])(
         </Route>
       </Routes>,
       locale,
-      '/workflows/definitions/lifecycle.expenses?category=finance&name=expense',
+      '/settings/workflows/definitions/lifecycle.expenses?category=finance&name=expense',
     );
     expect(
       await screen.findByRole('heading', {
@@ -1229,7 +1277,7 @@ it.each(['en-US', 'zh-CN'])(
     expect(executionsLink.closest('header')).toBeInTheDocument();
     expect(executionsLink).toHaveAttribute(
       'href',
-      `/workflows/executions?workflowId=${encodeURIComponent(detail.workflow.id)}`,
+      `/settings/workflows/executions?workflowId=${encodeURIComponent(detail.workflow.id)}`,
     );
     expect(
       screen.queryByRole('button', { name: copy.viewExecutions }),
@@ -1245,10 +1293,78 @@ it.each(['en-US', 'zh-CN'])(
   },
 );
 
+it('names the selected version once in the definition header', async () => {
+  const versioned = {
+    ...detail,
+    workflow: {
+      ...detail.workflow,
+      version: 2,
+      versions: [
+        { name: 'expenses', version: 1 },
+        { name: 'expenses-v2', version: 2 },
+      ],
+      executionCount: 5,
+    },
+    definition: { name: 'expenses-v2', version: 2, executionCount: 3 },
+  };
+  api.request.mockImplementation(async ({ path }) => ({
+    data:
+      path === 'workflows/categories'
+        ? []
+        : path.endsWith('/parameters')
+          ? { kind: 'lifecycle', revision: 0, groups: [], values: {} }
+          : versioned,
+  }));
+  const copy = enUS.workflows;
+  await view(
+    <Routes>
+      <Route path='/settings/workflows' element={<WorkflowsPage />}>
+        <Route path='definitions/:workflowId' element={<DefinitionPage />} />
+      </Route>
+    </Routes>,
+    'en-US',
+    '/settings/workflows/definitions/lifecycle.expenses?version=2',
+  );
+  const header = (
+    await screen.findByRole('heading', {
+      name: (name) => name.startsWith(copy.names.expenses),
+      level: 1,
+    })
+  ).closest('header');
+  if (!header) throw new Error('Definition header is missing.');
+  // The version select is the only place the header names the version.
+  expect(header.textContent?.match(/Version 2/g)).toHaveLength(1);
+  const executionsLink = within(header).getByRole('link', {
+    name: copy.executionCountLink.replace('{{count}}', '3'),
+  });
+  expect(executionsLink).toHaveAttribute(
+    'href',
+    `/settings/workflows/executions?workflowId=${encodeURIComponent(versioned.workflow.id)}&version=2`,
+  );
+  const versionMenu = await within(header).findByRole('button', {
+    name: copy.version,
+    expanded: false,
+  });
+  await userEvent.click(versionMenu);
+  const menu = await screen.findByRole('menu');
+  expect(
+    within(menu).getByRole('menuitemradio', { name: /Version 2/ }),
+  ).toHaveAttribute('aria-checked', 'true');
+  await userEvent.click(
+    within(menu).getByRole('menuitemradio', { name: 'Version 1' }),
+  );
+  await waitFor(() =>
+    expect(api.request).toHaveBeenCalledWith({
+      path: `workflows/definitions/${versioned.workflow.id}`,
+      query: { version: '1' },
+    }),
+  );
+});
+
 it('omits list navigation on execution detail routes', async () => {
   await view(
     <Routes>
-      <Route path='/workflows' element={<WorkflowsPage />}>
+      <Route path='/settings/workflows' element={<WorkflowsPage />}>
         <Route
           path='executions/:workflowId/:recordId'
           element={<div>Execution detail</div>}
@@ -1256,7 +1372,7 @@ it('omits list navigation on execution detail routes', async () => {
       </Route>
     </Routes>,
     'en-US',
-    '/workflows/executions/lifecycle.expenses/1',
+    '/settings/workflows/executions/lifecycle.expenses/1',
   );
   expect(screen.getByText('Execution detail')).toBeInTheDocument();
   expect(screen.queryByRole('tablist')).not.toBeInTheDocument();
@@ -1271,21 +1387,24 @@ it('links execution breadcrumbs to the filtered list on direct entry', async () 
       title='Example · #1'
       listTitle={enUS.workflows.executions}
       closeTo={{
-        pathname: '/workflows/executions',
+        pathname: '/settings/workflows/executions',
         search: '?workflowId=example&page=2',
       }}
     >
       <span>Workflow details</span>
     </WorkflowDetailPage>,
     'en-US',
-    '/workflows/executions/example/1?workflowId=example&page=2',
+    '/settings/workflows/executions/example/1?workflowId=example&page=2',
   );
   expect(
     screen.getByRole('navigation', { name: 'Breadcrumb' }),
   ).toHaveTextContent('Example · #1');
   expect(
     screen.getByRole('link', { name: enUS.workflows.executions }),
-  ).toHaveAttribute('href', '/workflows/executions?workflowId=example&page=2');
+  ).toHaveAttribute(
+    'href',
+    '/settings/workflows/executions?workflowId=example&page=2',
+  );
   expect(
     screen.queryByRole('link', { name: enUS.workflows.back }),
   ).not.toBeInTheDocument();
@@ -1320,12 +1439,12 @@ it('keeps inline drafts after failure and advances the revision for successive s
   await view(
     <Routes>
       <Route
-        path='/workflows/definitions/:workflowId'
+        path='/settings/workflows/definitions/:workflowId'
         element={<WorkflowParametersForm inline />}
       />
     </Routes>,
     'en-US',
-    '/workflows/definitions/lifecycle.expenses',
+    '/settings/workflows/definitions/lifecycle.expenses',
   );
   fireEvent.change(await screen.findByLabelText('Limit'), {
     target: { value: '20' },
@@ -1375,12 +1494,12 @@ it('saves office parameters inline and keeps the next save on the current revisi
   await view(
     <Routes>
       <Route
-        path='/workflows/definitions/:workflowId'
+        path='/settings/workflows/definitions/:workflowId'
         element={<WorkflowParametersForm inline />}
       />
     </Routes>,
     'en-US',
-    '/workflows/definitions/office.dataRequests',
+    '/settings/workflows/definitions/office.dataRequests',
   );
   await pickHolidayDate('2026-01-02');
   await userEvent.click(
@@ -1425,12 +1544,12 @@ it('reloads the complete office snapshot after a conflict before the next inline
   await view(
     <Routes>
       <Route
-        path='/workflows/definitions/:workflowId'
+        path='/settings/workflows/definitions/:workflowId'
         element={<WorkflowParametersForm inline />}
       />
     </Routes>,
     'en-US',
-    '/workflows/definitions/office.dataRequests',
+    '/settings/workflows/definitions/office.dataRequests',
   );
   await pickHolidayDate('2026-01-02');
   await userEvent.click(
@@ -1465,6 +1584,7 @@ it('reloads the complete office snapshot after a conflict before the next inline
         method: 'PUT',
         json: {
           kind: 'office',
+          definition: 'dataRequests',
           expectedRevision: 2,
           values: {
             holidays: [
@@ -1502,12 +1622,12 @@ it('changes and clears the category from workflow details', async () => {
   await view(
     <Routes>
       <Route
-        path='/workflows/definitions/:workflowId'
+        path='/settings/workflows/definitions/:workflowId'
         element={<DefinitionPage />}
       />
     </Routes>,
     'en-US',
-    `/workflows/definitions/${detail.workflow.id}`,
+    `/settings/workflows/definitions/${detail.workflow.id}`,
   );
   await userEvent.click(
     await screen.findByRole('button', {
@@ -1786,12 +1906,15 @@ it('carries definition search and activity ordering into detail and restores the
   }));
   await view(
     <Routes>
-      <Route path='/workflows/definitions' element={<DefinitionsPage />}>
+      <Route
+        path='/settings/workflows/definitions'
+        element={<DefinitionsPage />}
+      >
         <Route path=':workflowId' element={<BackButton />} />
       </Route>
     </Routes>,
     'en-US',
-    '/workflows/definitions?name=expense&activityOrder=desc',
+    '/settings/workflows/definitions?name=expense&activityOrder=desc',
   );
   const workflow = await screen.findByRole('link', {
     name: enUS.workflows.names.expenses,
@@ -1825,7 +1948,7 @@ it('does not repeat a definition name when localization falls back to that name'
             },
           ],
   }));
-  await view(<DefinitionsPage />, 'en-US', '/workflows/definitions');
+  await view(<DefinitionsPage />, 'en-US', '/settings/workflows/definitions');
   expect(
     await screen.findByRole('link', { name: 'Custom workflow' }),
   ).toBeVisible();

@@ -16,17 +16,13 @@ import test from 'node:test';
 import { treeAnnotationTitle } from '../../scripts/wait-for-pro-checks.mjs';
 
 const root = path.resolve(import.meta.dirname, '../..');
-const proWorkflows = [
-  'v3-pro-release-beta.yml',
-  'v3-pro-release-stable.yml',
-  'v3-pro-promote-to-stable.yml',
-];
+const proWorkflows = ['v3-pro-release.yml'];
 
 async function workflow(name) {
   return readFile(path.join(root, '.github/workflows', name), 'utf8');
 }
 
-// The jobs of the open-source beta release that check out and publish Pro.
+// The jobs of the open-source release that check out and publish Pro.
 const jointProJobs = ['pro-wait', 'pro-check', 'pro-candidate', 'pro-release'];
 
 function workflowJob(source, job) {
@@ -38,7 +34,7 @@ function workflowJob(source, job) {
 }
 
 async function jointProJob(job) {
-  return workflowJob(await workflow('v3-release-beta.yml'), job);
+  return workflowJob(await workflow('v3-release.yml'), job);
 }
 
 async function proSources() {
@@ -47,7 +43,7 @@ async function proSources() {
     sources.push([name, await workflow(name)]);
   }
   for (const job of jointProJobs) {
-    sources.push([`v3-release-beta.yml#${job}`, await jointProJob(job)]);
+    sources.push([`v3-release.yml#${job}`, await jointProJob(job)]);
   }
   return sources;
 }
@@ -69,7 +65,7 @@ test('Pro workflows do not export commercial artifacts or caches', async () => {
 });
 
 test('the open-source beta publishes only after Pro passed with its release candidate', async () => {
-  const source = await workflow('v3-release-beta.yml');
+  const source = await workflow('v3-release.yml');
   const release = source
     .split('\n  release:\n')[1]
     .split(/\n  [a-z][\w-]*:\n/u)[0];
@@ -119,7 +115,7 @@ test('the Pro checks wait for a running standalone Pro release before they check
     );
   }
   // A wait cancelled by another queued Pro release publishes nothing and is reported.
-  const source = await workflow('v3-release-beta.yml');
+  const source = await workflow('v3-release.yml');
   const notify = source
     .split('\n  notify-failure:\n')[1]
     .split(/\n  [a-z][\w-]*:\n/u)[0];
@@ -181,7 +177,7 @@ test('Pro publishes the pushed candidate commit without regenerating it', async 
 
 test('pro-candidate writes the Pro changelog into the tested tree as the standalone Pro beta does', async () => {
   const candidate = await jointProJob('pro-candidate');
-  const standalone = await workflow('v3-pro-release-beta.yml');
+  const standalone = await workflow('v3-pro-release.yml');
   assert.equal(
     runBlock(candidate, 'Write the changelog'),
     runBlock(standalone, 'Write the changelog'),
@@ -223,7 +219,7 @@ test('pro-candidate writes the Pro changelog into the tested tree as the standal
 
 // The standalone Pro beta builds Pro in the job that publishes it while two other jobs test and smoke-test the same versioned tree, and writes nothing until both passed on that tree.
 test('the standalone Pro beta builds while Pro is checked, and writes only after both checks passed on its tree', async () => {
-  const source = await workflow('v3-pro-release-beta.yml');
+  const source = await workflow('v3-pro-release.yml');
   assert.doesNotMatch(source, /pnpm build\b|pnpm test\b/u);
   const prepare = workflowJob(source, 'prepare');
   assert.match(
@@ -334,7 +330,7 @@ test('the standalone Pro beta builds while Pro is checked, and writes only after
 
 // "Re-run failed jobs" reuses pro-candidate's outputs and never pushes its candidate again, so the candidate of a failed or cancelled run must survive until a rerun has merged it back.
 test('only the merge back and the candidate prunes delete a release candidate', async () => {
-  const source = await workflow('v3-release-beta.yml');
+  const source = await workflow('v3-release.yml');
   const deletion = /--method DELETE|git push[^\n]*(?:--delete|\s":)/u;
   const steps = source.split(/\n(?=      - name: )/u);
   const deleting = steps
@@ -364,7 +360,7 @@ test('only the merge back and the candidate prunes delete a release candidate', 
   );
   // Earlier candidates are superseded only once this release is published, and never this run's own.
   assert.ok(
-    publish.indexOf('- name: Point beta and latest at this release') <
+    publish.indexOf('- name: Point the release dist-tags at this release') <
       publish.indexOf('- name: Delete the candidates this release superseded'),
   );
   assert.match(
@@ -474,10 +470,7 @@ test('pro-release keeps the write token out of the remote between steps', async 
       step.slice(0, 200),
     );
   }
-  const pointer = runBlock(
-    publish,
-    'Return the submodule pointer to v3-develop',
-  );
+  const pointer = runBlock(publish, 'Return the submodule pointer to v3');
   assert.ok(
     pointer.startsWith('WRITE_TOKEN="$PRO_TOKEN"\nunset PRO_TOKEN GH_TOKEN\n'),
     pointer.slice(0, 200),
@@ -550,7 +543,8 @@ function runStep(job, stepName, cwd, env, extra) {
   writeFileSync(output, '');
   const result = spawnSync('bash', ['-e', '-c', script], {
     cwd,
-    env: { ...env, GITHUB_OUTPUT: output, ...extra },
+    // PRO_BRANCH comes from the workflow's env.
+    env: { PRO_BRANCH: 'develop', ...env, GITHUB_OUTPUT: output, ...extra },
     encoding: 'utf8',
   });
   const outputs = Object.fromEntries(
@@ -723,6 +717,7 @@ test('pro-candidate publishes only the commit and tree the Pro checks tested', a
 function pushCandidate(candidateJob, checkout, env, extra) {
   const named = runStep(candidateJob, 'Name the Pro release', checkout, env, {
     RUN_URL: 'https://github.com/nocobase/nocobase/actions/runs/1',
+    BRANCH_PREFIX: 'release-beta',
     ...extra,
   });
   if (named.status !== 0) return named;
@@ -1083,6 +1078,17 @@ test('a new Pro batch number skips the numbers of candidates still pushed, and c
   });
   assert.equal(result.status, 0, result.stderr);
   assert.equal(result.outputs.name, `release-beta/${day}.4`);
+
+  // A stable release counts the stable release tags of the day too, and takes the release/ prefix.
+  git(seed, 'push', '-q', remote, `${proSha}:refs/tags/release/${day}.7`);
+  const stable = runStep(candidateJob, 'Name the Pro release', checkout, env, {
+    RUN_URL: 'https://github.com/nocobase/nocobase/actions/runs/2',
+    OSS_BATCH: '2026-11-12.2',
+    RELEASE_TAG: 'nocobase-v3/2026-11-12.2',
+    BRANCH_PREFIX: 'release',
+  });
+  assert.equal(stable.status, 0, stable.stderr);
+  assert.equal(stable.outputs.name, `release/${day}.8`);
   assert.equal(git(remote, 'rev-parse', `${result.outputs.sha}^{tree}`), tree);
 });
 
@@ -1142,7 +1148,7 @@ test('pro-release refuses to publish once another Pro beta was released from a n
     };
     const guard = runStep(
       publish,
-      'Refuse to publish over a newer Pro beta',
+      'Refuse to publish over a newer Pro release',
       checkout,
       env,
       inputs,
@@ -1181,7 +1187,23 @@ test('pro-release refuses to publish once another Pro beta was released from a n
   assert.notEqual(refused.status, 0);
   assert.match(
     refused.stdout,
-    /::error::Another Pro beta was released after Pro develop was tested at [0-9a-f]{40}: release-beta\/2026-11-12\.1\. .*V3 Release Pro Beta with oss_sha set to f{40}/u,
+    /::error::Another Pro release was made after Pro develop was tested at [0-9a-f]{40}: release-beta\/2026-11-12\.1\. .*V3 Release Pro with oss_sha set to f{40}/u,
+  );
+
+  // A stable Pro release made meanwhile counts the same way.
+  git(seed, 'push', '-q', remote, ':refs/tags/release-beta/2026-11-12.1');
+  git(
+    seed,
+    'push',
+    '-q',
+    remote,
+    `${commit('stable')}:refs/tags/release/2026-11-12.2`,
+  );
+  const refusedStable = tag();
+  assert.notEqual(refusedStable.status, 0);
+  assert.match(
+    refusedStable.stdout,
+    /::error::Another Pro release was made after Pro develop was tested at [0-9a-f]{40}: release\/2026-11-12\.2\./u,
   );
 });
 
@@ -1206,11 +1228,12 @@ test('the pointer returns to the old commit only when the open-source merge back
     git(directory, 'clone', '-q', remote, checkout);
     return runStep(
       publish,
-      'Return the submodule pointer to v3-develop',
+      'Return the submodule pointer to v3',
       checkout,
       env,
       {
         NAME: name,
+        DEFAULT_BRANCH: 'v3',
         ...extra,
       },
     );
@@ -1221,7 +1244,7 @@ test('the pointer returns to the old commit only when the open-source merge back
     assert.notEqual(waiting.status, 0, merged);
     assert.match(
       waiting.stdout,
-      /::error::The open-source release has not merged back into v3-develop yet .*Re-run failed jobs/u,
+      /::error::The open-source release has not merged back into v3 yet .*Re-run failed jobs/u,
     );
   }
   const done = pointer({
@@ -1269,7 +1292,7 @@ test('pro-release checks the versions with the candidate before reserving their 
 
   // The release tag is pushed only once the check passed, so a candidate that may not be published is never tagged release-beta.
   const order = [
-    '- name: Refuse to publish over a newer Pro beta',
+    '- name: Refuse to publish over a newer Pro release',
     '- name: Verify the Pro versions and reserve their tags',
     '- name: Tag and push the release branch',
     '- name: Publish Pro packages',
@@ -1380,7 +1403,7 @@ server.listen(0, '127.0.0.1', () => {
   });
 }
 
-// A Pro repository whose develop pins the open-source `base`, a release candidate `name` that pins the release commit `source`, and v3-develop at `target`, the merged release commit. Pro develop then changes a Pro-owned catalog entry and adds one a plugin uses. Its sync scripts stand in for Pro's: the upstream block is the `# oss:` line, and the install is a real pnpm install against a local registry.
+// A Pro repository whose develop pins the open-source `base`, a release candidate `name` that pins the release commit `source`, and v3 (the default branch, formerly v3-develop) at `target`, the merged release commit. Pro develop then changes a Pro-owned catalog entry and adds one a plugin uses. Its sync scripts stand in for Pro's: the upstream block is the `# oss:` line, and the install is a real pnpm install against a local registry.
 async function mergeBackFixture(t) {
   const directory = mkdtempSync(path.join(tmpdir(), 'joint-pro-merge-back-'));
   t.after(() => rmSync(directory, { recursive: true, force: true }));
@@ -1424,15 +1447,15 @@ async function mergeBackFixture(t) {
       stdio: 'ignore',
     });
 
-  // The open-source repository: the commit Pro develop pins, the release commit the candidate pins, and the merged release commit on v3-develop.
+  // The open-source repository: the commit Pro develop pins, the release commit the candidate pins, and the merged release commit on v3.
   const oss = path.join(directory, 'oss');
-  git(directory, 'init', '-q', '-b', 'v3-develop', oss);
+  git(directory, 'init', '-q', '-b', 'v3', oss);
   write(oss, 'VERSION', 'base\n');
   write(oss, 'scripts/resolve-sync-conflicts.mjs', '\n');
   const base = commit(oss, 'base');
   write(oss, 'VERSION', 'source\n');
   const source = commit(oss, 'release commit');
-  git(oss, 'checkout', '-q', '-B', 'v3-develop', base);
+  git(oss, 'checkout', '-q', '-B', 'v3', base);
   write(oss, 'VERSION', 'target\n');
   const target = commit(oss, 'merged release');
 
@@ -1551,12 +1574,14 @@ execFileSync('pnpm', ['install', '--no-frozen-lockfile'], { stdio: 'inherit', en
     git(checkout, 'submodule', 'update', '--init', '-q');
     return runStep(
       publish,
-      'Return the submodule pointer to v3-develop',
+      'Return the submodule pointer to v3',
       checkout,
       env,
       {
         RUNNER_TEMP: path.dirname(tools),
         NAME: name,
+        // The workflow sets it from github.event.repository.default_branch.
+        DEFAULT_BRANCH: 'v3',
         MERGED: 'true',
         MERGE_SHA: target,
         PRO_TOKEN: 'write-token',
@@ -1648,8 +1673,8 @@ test("the merge back keeps Pro develop's pointer when develop was bumped past th
     pointer,
   } = await mergeBackFixture(t);
 
-  // After the open-source merge back, v3-develop moves on and Pro develop is bumped to the newer commit.
-  git(oss, 'checkout', '-q', 'v3-develop');
+  // After the open-source merge back, v3 moves on and Pro develop is bumped to the newer commit.
+  git(oss, 'checkout', '-q', 'v3');
   write(oss, 'VERSION', 'newer\n');
   const newer = commit(oss, 'newer');
   git(seed, 'checkout', '-q', 'develop');

@@ -2,11 +2,21 @@
   "name": "@nocobase/app-plugin-notification-web-push",
   "displayName": "Web Push App Plugin",
   "description": "Web Push App Plugin.",
-  "version": "0.1.0-beta.8",
+  "version": "0.1.0-beta.9",
   "type": "module",
   "prettier": "@nocobase/dev-config/prettier",
   "engines": {
     "node": ">=24.0.0"
+  },
+  "nocobase": {
+    "title": {
+      "en-US": "Web push",
+      "zh-CN": "浏览器推送"
+    },
+    "description": {
+      "en-US": "Push notifications to browsers and phones",
+      "zh-CN": "浏览器和手机推送通知"
+    }
   },
   "sideEffects": false,
   "exports": {

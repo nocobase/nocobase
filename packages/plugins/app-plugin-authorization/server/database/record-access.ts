@@ -46,6 +46,7 @@ export const builtInRecordAccess: readonly DatabaseRecordAccessDefinition[] = [
   {
     key: 'recordsIOwn',
     collections: ['*'],
+    personal: true,
     requiredFields: ['ownerId'],
     title: title('options.recordAccessPolicies.recordsIOwn'),
     resolve: ({ principal, params }) =>
@@ -58,6 +59,7 @@ export const builtInRecordAccess: readonly DatabaseRecordAccessDefinition[] = [
   {
     key: 'recordsICreated',
     collections: ['*'],
+    personal: true,
     requiredFields: ['createdById'],
     title: title('options.recordAccessPolicies.recordsICreated'),
     resolve: ({ principal, params }) =>

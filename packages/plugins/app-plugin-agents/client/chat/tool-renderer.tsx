@@ -10,6 +10,7 @@ import {
 
 import type { ResolvedPageContext } from '../../shared/conversations.js';
 import type { AppUIMessage } from '../../shared/ui-message.js';
+import { useRegisteredToolRenderer } from '../ui-registry.js';
 
 /** The existing public SDK tool part, never the provider-private execution result. */
 export type AIToolPart = Extract<
@@ -67,12 +68,16 @@ export function AIToolRendererProvider({
   );
 }
 
-/** Exact SDK tool name lookup; prototype properties never register a renderer. */
+/**
+ * Exact SDK tool name lookup; prototype properties never register a renderer. A renderer given through
+ * `AIToolRendererProvider` wins over one registered with `agents.toolRenderers.add`.
+ */
 export function useAIToolRenderer(
   toolName: string,
 ): ComponentType<AIToolRendererProps> | undefined {
   const renderers = useContext(RendererContext);
-  return Object.hasOwn(renderers, toolName) ? renderers[toolName] : undefined;
+  const registered = useRegisteredToolRenderer(toolName);
+  return Object.hasOwn(renderers, toolName) ? renderers[toolName] : registered;
 }
 
 /** Resolve durable server metadata only, never adjacency or model-supplied tool input. */

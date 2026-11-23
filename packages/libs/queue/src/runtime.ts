@@ -39,6 +39,11 @@ export interface QueueRuntime {
 }
 
 export interface QueueImplementation {
+  /**
+   * Declared by the implementation: `local` keeps jobs in this process, `shared` in a store every instance reaches.
+   * Left out, the backend is reported as `unknown`.
+   */
+  readonly sharing?: 'local' | 'shared';
   /** Checks backend configuration without connecting or acquiring resources. */
   validateConfig(config: ResolvedQueueConfig): void;
   createRuntime(context: QueueRuntimeContext): QueueRuntime;

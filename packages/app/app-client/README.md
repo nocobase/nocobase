@@ -327,7 +327,37 @@ export default {
 };
 ```
 
-Every page is an app route: there is no separate settings or dev surface. A page that configures something is an ordinary route in the application's navigation. Route component overrides replace only a page component loader and keep the plugin-owned route identity, path, authentication, navigation, and access metadata.
+Settings pages come in two kinds, declared mainly by plugins. System settings, declared with `defineSystemSettingsRoutes()`, configure the whole application and are mounted under `/settings` (`SYSTEM_SETTINGS_ROUTE_PATH`, `surface: 'systemSettings'`, `isSystemSettingsRoute()`). Personal settings, declared with `definePersonalSettingsRoutes()`, are where each signed-in person configures their own account and are mounted under `/me` (`PERSONAL_SETTINGS_ROUTE_PATH`, `surface: 'personalSettings'`, `isPersonalSettingsRoute()`). Both take the same definitions as `defineAppRoutes()` and share the one route tree, authorization, breadcrumbs and component loading, so the application can show each in a navigation of its own. A group declared at the root of a settings contribution is a category shared by every package of the same surface: a page names it with a bare `parent`, and the application declares the categories it offers. A category without a path keeps its pages' URLs independent of it. `packageName:name` still names one package's group, such as a module whose pages are tabs, and a route cannot join a group of another surface.
+
+```ts
+import {
+  definePersonalSettingsRoutes,
+  defineSystemSettingsRoutes,
+} from '@nocobase/app-client/plugins';
+
+export const systemSettings = defineSystemSettingsRoutes([
+  {
+    parent: 'system',
+    name: 'audit-settings',
+    path: '/audit',
+    authz: { resource: { type: 'settings', id: 'audit' }, action: 'read' },
+    navigation: { title: 'nav.auditSettings' },
+    componentLoader: () => import('./pages/audit-settings.js'),
+  },
+]);
+
+export const personalSettings = definePersonalSettingsRoutes([
+  {
+    parent: 'preferences',
+    name: 'audit-preferences',
+    path: '/audit',
+    navigation: { title: 'nav.auditPreferences' },
+    componentLoader: () => import('./pages/my-audit-preferences.js'),
+  },
+]);
+```
+
+A settings page's `auth` defaults to `required`. A system settings page's `authz` defaults to `unrestricted`, as on any protected page; declare a grant to open it to other roles. A personal settings page's `authz` defaults to `skip`, so every signed-in person can open it and it stays out of role permissions; its data belongs to the current person, whom the server takes from the session. Route component overrides replace only a page component loader and keep the plugin-owned route identity, path, surface, authentication, navigation, and access metadata.
 
 ## Client plugin declaration
 
@@ -425,3 +455,7 @@ The templates' copied `FeedbackForm` component supplies native field discovery, 
 ## Pending feedback
 
 `usePendingFeedback(busy, identity?)` is presentation only. It returns `{ visible, longWaiting }`: visible after 300ms and longWaiting after 10 seconds of actual continuous busy state. Completion clears both immediately. A changed stable identity (compared with `Object.is`) resets the display age; unmount clears timers. No minimum waiting period is imposed. Set locks, request state and `aria-busy` from the real lifecycle, never from this delayed result. Ten seconds is guidance rather than a timeout. The request owner remains responsible for permission boundaries, cancellation and stale responses. The UI Library Loading and PendingButton recipes and both templates provide the default visual adapters.
+
+## Correlating error notifications
+
+When reporting an API failure, pass `...errorToastOptions(error)` from `@nocobase/app-client` into `toaster.show({ type: 'error', title, ...errorToastOptions(error) })`. The helper preserves `ApiClientError.requestId` for the host toaster to display and copy; ordinary local errors have no request ID. Keep the error's translated title and any existing action unchanged.

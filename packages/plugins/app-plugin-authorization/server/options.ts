@@ -1,6 +1,7 @@
 import {
   dataScopeTarget,
   type AuthorizationTitle,
+  type ResourceActionRisk,
   type ResourceItemAction,
 } from '@nocobase/authorization/core';
 import { databaseHost } from './database/api.js';
@@ -13,6 +14,9 @@ export interface AuthorizationOptionsAction {
   readonly name: string;
   readonly title: OptionText;
   readonly description?: OptionText;
+  readonly risk?: ResourceActionRisk;
+  /** Composites only: page ids whose access a role editor turns this action on with. */
+  readonly defaultFor?: readonly string[];
 }
 
 export interface AuthorizationOptionsDataScope {
@@ -33,6 +37,8 @@ export interface AuthorizationOptionsResource {
   readonly description?: OptionText;
   /** A name from `ui.groups`. */
   readonly group?: string;
+  /** Composites only: page ids the actions are used on. */
+  readonly usedOn?: readonly string[];
   readonly actions: readonly AuthorizationOptionsAction[];
   /** Composites only: the data scopes of each action. */
   readonly dataScopes?: Readonly<
@@ -91,7 +97,12 @@ export interface AuthorizationOptions {
   readonly resourceGroups?: readonly AuthorizationOptionsResourceGroup[];
   readonly subjectTypes: readonly AuthorizationOptionsSubjectType[];
   readonly recordAccess: readonly AuthorizationOptionsRecordAccess[];
-  readonly collections: readonly { name: string; fields: readonly string[] }[];
+  /** The registered collections, with the title they were registered with. */
+  readonly collections: readonly {
+    name: string;
+    title: OptionText;
+    fields: readonly string[];
+  }[];
 }
 
 const title = (value: AuthorizationTitle | undefined, fallback: string) =>
@@ -101,6 +112,7 @@ function actionOption(action: ResourceItemAction): AuthorizationOptionsAction {
   return {
     name: action.name,
     title: title(action.title, action.name),
+    ...(action.risk ? { risk: action.risk } : {}),
     ...(action.description === undefined
       ? {}
       : { description: title(action.description, '') }),
@@ -118,9 +130,15 @@ export async function authorizationOptions(
 ): Promise<AuthorizationOptions> {
   const database = databaseHost(host.database);
   const described = await Promise.all(
-    host.database.collections.list().map(async ({ name }) => {
-      const collection = await database?.describe(name);
-      return collection && { name, fields: collection.fields };
+    host.database.collections.list().map(async (definition) => {
+      const collection = await database?.describe(definition.name);
+      return (
+        collection && {
+          name: definition.name,
+          title: title(definition.title, definition.name),
+          fields: collection.fields,
+        }
+      );
     }),
   );
   const collections = described.filter((item) => item !== undefined);
@@ -147,6 +165,12 @@ export async function authorizationOptions(
           ? undefined
           : host.ui.sections.other(defaultSection));
       if (section === undefined) continue;
+      const composite =
+        type.type === 'composite'
+          ? host.compositeResources
+              .list()
+              .find((entry) => entry.name === item.id)
+          : undefined;
       const dataScopes =
         type.type === 'composite'
           ? compositeDataScopes(host, item.id, fields)
@@ -168,7 +192,17 @@ export async function authorizationOptions(
               ? {}
               : { description: title(item.description, '') }),
             ...(group === undefined ? {} : { group }),
-            actions: item.actions.map(actionOption),
+            ...(composite?.usedOn?.length
+              ? { usedOn: [...composite.usedOn] }
+              : {}),
+            actions: item.actions.map((action) => {
+              const defaultFor = composite?.actions.find(
+                (entry) => entry.name === action.name,
+              )?.defaultFor;
+              return defaultFor?.length
+                ? { ...actionOption(action), defaultFor: [...defaultFor] }
+                : actionOption(action);
+            }),
             ...(dataScopes && Object.keys(dataScopes).length
               ? { dataScopes }
               : {}),
@@ -316,4 +350,122 @@ function compositeDataScopes(
     if (scopes.length) result[action.name] = scopes;
   }
   return result;
+}
+
+/**
+ * The workspace catalogue limited to what a caller holds today (`snapshot`), for an editor of what a credential of
+ * theirs, such as an API key, may do: only resources with an action they hold, with only those actions, and only the
+ * collections those resources read. Who may be assigned anything is not theirs to see, so subject types are left out.
+ */
+export function grantableAuthorizationOptions(
+  options: AuthorizationOptions,
+  snapshot: {
+    readonly unrestricted: boolean;
+    readonly permissions: readonly {
+      readonly resource: { readonly type: string; readonly id: string };
+      readonly actions: readonly string[];
+    }[];
+  },
+  /**
+   * Actions listed as well whatever is held, which the server derives itself, such as those a key of the caller still
+   * names after the caller lost them. Never taken from a request.
+   */
+  also: readonly {
+    readonly resource: { readonly type: string; readonly id: string };
+    readonly actions: readonly string[];
+  }[] = [],
+): AuthorizationOptions {
+  if (snapshot.unrestricted) return { ...options, subjectTypes: [] };
+  const extra = new Map<string, Set<string>>();
+  for (const entry of also) {
+    const key = JSON.stringify([entry.resource.type, entry.resource.id]);
+    extra.set(key, new Set([...(extra.get(key) ?? []), ...entry.actions]));
+  }
+  const held = new Map(
+    snapshot.permissions.map((permission) => [
+      JSON.stringify([permission.resource.type, permission.resource.id]),
+      new Set(permission.actions),
+    ]),
+  );
+  const read = new Set<string>();
+  const sections = options.sections.flatMap((section) => {
+    const subsections = section.subsections.flatMap((subsection) => {
+      if (subsection.recordType) return [subsection];
+      const resources = subsection.resources.flatMap((resource) => {
+        const key = JSON.stringify([resource.type, resource.id]);
+        const actions = held.get(key);
+        const named = extra.get(key);
+        const kept = resource.actions.filter(
+          (action) => actions?.has(action.name) || named?.has(action.name),
+        );
+        if (!kept.length) return [];
+        const dataScopes = resource.dataScopes
+          ? Object.fromEntries(
+              Object.entries(resource.dataScopes).filter(([action]) =>
+                kept.some((entry) => entry.name === action),
+              ),
+            )
+          : undefined;
+        for (const scopes of Object.values(dataScopes ?? {}))
+          for (const scope of scopes) read.add(scope.collection);
+        return [
+          {
+            ...resource,
+            actions: kept,
+            ...(dataScopes ? { dataScopes } : {}),
+          },
+        ];
+      });
+      return resources.length ? [{ ...subsection, resources }] : [];
+    });
+    return subsections.length ? [{ ...section, subsections }] : [];
+  });
+  // Rebuilt from what is kept, so nothing about a resource the caller does not hold shows: the groups the kept
+  // resources name with their ancestors, and the record access keys their data scopes offer, on the collections read.
+  const kept = sections.flatMap((section) =>
+    section.subsections.flatMap((subsection) => subsection.resources),
+  );
+  const offered = new Set(
+    kept.flatMap((resource) =>
+      Object.values(resource.dataScopes ?? {}).flatMap((scopes) =>
+        scopes.flatMap((scope) => scope.recordAccess),
+      ),
+    ),
+  );
+  const groupsByName = new Map(
+    (options.resourceGroups ?? []).map((group) => [group.name, group]),
+  );
+  const wanted = new Set<string>();
+  for (const resource of kept) {
+    let name = resource.group;
+    while (name !== undefined && !wanted.has(name)) {
+      wanted.add(name);
+      name = groupsByName.get(name)?.parent;
+    }
+  }
+  const resourceGroups = (options.resourceGroups ?? []).filter((group) =>
+    wanted.has(group.name),
+  );
+  const { resourceGroups: _all, ...rest } = options;
+  return {
+    ...rest,
+    sections,
+    ...(resourceGroups.length ? { resourceGroups } : {}),
+    subjectTypes: [],
+    recordAccess: options.recordAccess.flatMap((definition) =>
+      offered.has(definition.key)
+        ? [
+            {
+              ...definition,
+              collections: definition.collections.filter((name) =>
+                read.has(name),
+              ),
+            },
+          ]
+        : [],
+    ),
+    collections: options.collections.filter((collection) =>
+      read.has(collection.name),
+    ),
+  };
 }

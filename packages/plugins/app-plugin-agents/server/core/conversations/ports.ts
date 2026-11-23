@@ -14,12 +14,13 @@ import type {
  */
 import type { DatabaseConnection } from '@nocobase/db';
 
-import type { Agent } from '../../../shared/agents.js';
+import type { Agent, ChatAudience } from '../../../shared/agents.js';
 import type { I18nText } from '../../../shared/i18n.js';
 import type {
   ChatAgent,
   ConversationAttentionCounts,
   ConversationUsage,
+  ConversationRunner,
   ConversationLink,
   ConversationLinkView,
   ConversationNotice,
@@ -292,6 +293,8 @@ export interface ConversationService {
    * starting a fresh session with the conversation's history. The old directory is left to the runner's cleanup.
    */
   switchRunner(userId: string, id: string): Promise<ConversationDetail>;
+  /** Online runtimes eligible for the owner's current Runner agent and project. */
+  runners(userId: string, id: string): Promise<ConversationRunner[]>;
   /** Changes the agent of an idle Runner conversation, preserving history and links; its next message starts a fresh session. */
   switchAgent(
     userId: string,
@@ -389,5 +392,12 @@ export interface ConversationService {
   attachFromRun(runId: string, fileId: string): Promise<void>;
 
   /** The enabled agents the person may chat with, with whether each can answer now. */
-  chatAgents(userId: string): Promise<ChatAgent[]>;
+  /**
+   * The agents `userId` may chat with; `audience` is read only when an agent limits who may chat with it
+   * (`Agent.chatRoles`), and those it leaves out are not listed.
+   */
+  chatAgents(
+    userId: string,
+    audience?: () => Promise<ChatAudience>,
+  ): Promise<ChatAgent[]>;
 }

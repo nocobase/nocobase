@@ -1,3 +1,4 @@
+import { officeParameterContract } from '../services/parameter-snapshots.js';
 import {
   defineEffect,
   defineLifecycle,
@@ -27,6 +28,7 @@ export interface Incoming extends LifecycleRecord {
 export interface IncomingTypes {
   record: Incoming;
   state: IncomingState;
+  parameters: import('@nocobase/lifecycle').JsonObject;
   services: OfficeServices;
 }
 
@@ -138,6 +140,10 @@ export const forwardManagement: EffectDefinition<IncomingTypes> =
 export const incomingLifecycle: Lifecycle<IncomingTypes> =
   defineLifecycle<IncomingTypes>({
     name: 'incoming',
+    ...officeParameterContract('incoming'),
+    key: 'incoming',
+    version: 1,
+    definitionField: 'lifecycleDefinition',
     collection: COLLECTIONS.incoming,
     initial: 'draft',
     states: [

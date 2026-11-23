@@ -1,3 +1,4 @@
+import { formatCommandLine } from '@nocobase/cli-envelope';
 import { type Command, Flags } from '@oclif/core';
 import type { Interfaces } from '@oclif/core';
 
@@ -20,7 +21,7 @@ export default class AppConfigCheck extends AppCommand {
   static override summary =
     'Check the configuration the way a start would read it.';
   static override description =
-    'Loads the configuration through the application itself — its files, its environment and its code defaults — without starting it, and reports what would stop it from starting or quietly misbehave: a file that does not parse, a database driver that is not installed, secrets keys that are missing, weak or still the placeholder, a session key that is regenerated on every start, a section name that nothing reads, and a ${NAME} reference that is used as literal text. Databases other than SQLite are also connected to, one connection each, taken from the pool and handed straight back; no SQL runs and nothing is migrated. Use --connect to include SQLite, or --no-connect to stay offline. Exits non-zero when any error is found, and with --strict when any warning is.';
+    'Loads the configuration through the application itself — its files, its environment and its code defaults — without starting it, and reports what would stop it from starting or quietly misbehave: a file that does not parse, a database driver missing from the application’s production dependencies or installation, secrets keys that are missing, weak or still the placeholder, a session key that is regenerated on every start, a section name that nothing reads, and a ${NAME} reference that is used as literal text. Databases other than SQLite are also connected to, one connection each, taken from the pool and handed straight back; no SQL runs and nothing is migrated. Use --connect to include SQLite, or --no-connect to stay offline. Exits non-zero when any error is found, and with --strict when any warning is.';
 
   static override examples: Command.Example[] = [
     '<%= config.bin %> <%= command.id %>',
@@ -48,13 +49,17 @@ export default class AppConfigCheck extends AppCommand {
     const connect: ConfigCheckConnectMode =
       flags.connect === undefined ? 'auto' : flags.connect ? 'always' : 'never';
 
+    const invocation = this.cliCommand(['config', 'check', ...this.argv]);
+    const retry = formatCommandLine(invocation);
     let checked: ConfigCheckResult;
     try {
       // The runtime is loaded here rather than through withAppRuntime, because a load that fails is a finding rather
       // than an error; runConfigCheck destroys the scope of one that loads.
       checked = await runConfigCheck({
         rootDir: this.rootDir,
-        loadRuntime: () => appContextOf(this).loadRuntime(),
+        loadRuntime: () =>
+          appContextOf(this).loadRuntime({ prepareDatabaseDrivers: false }),
+        retry,
         connect,
       });
     } catch (error) {
@@ -79,9 +84,18 @@ export default class AppConfigCheck extends AppCommand {
     const errors = count(result, 'error');
     const warnings = count(result, 'warning');
     if (!ok) {
+      const repairs = result.findings
+        .filter((f) => f.code === 'driver-dependency')
+        .map((f) => f.fix);
       throw new CommandError(
         `The configuration has ${plural(errors, 'error')} that would stop the application from starting.`,
-        { code: 'CONFIG_INVALID', details: result },
+        {
+          code: 'CONFIG_INVALID',
+          details: result,
+          suggestions: repairs.length
+            ? [...new Set(repairs), `Retry: ${retry}`]
+            : [],
+        },
       );
     }
     if (flags.strict && warnings > 0) {

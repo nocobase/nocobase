@@ -1,5 +1,34 @@
 # @nocobase/agent-protocol
 
+## 0.1.0-beta.22
+
+### Minor Changes
+
+- 188e419: Support SSH repository checkouts, pushes and build jobs on capable runners with deployment keys and verified host fingerprints.
+
+  Keep existing work and use the new origin when a task switches between HTTPS and SSH. Include classified SSH checkout and push failures in the run result.
+
+## 0.1.0-beta.21
+
+### Minor Changes
+
+- a1cfe45: Retire operation plans, intake uploads and text extraction, and their commands. Issue and sub-issue creation use their manual forms. Issue history still identifies changes made through a retired plan, and old run inputs remain readable.
+
+### Patch Changes
+
+- 848e4db: Remove retired Codex quota windows from runtime usage and quota thresholds when a fresh account snapshot arrives.
+- 18636df: Retry private registry authorization failures once with the run's token and cover application creation and template downloads. Deploy the application before upgrading runners to protocol 17.
+
+## 0.1.0-beta.20
+
+### Minor Changes
+
+- 761fb01: Collect bounded, sanitized runner diagnostics through heartbeat requests, retain UTC-dated runner journals with configurable cleanup, merge downloaded archives into local timelines, and propagate request IDs to application error toasts.
+
+  Apply one credential-key rule in structured and text logs, hiding numeric credentials while preserving token-count field names.
+
+  Stream runner diagnostics one temporary file at a time with abort cleanup, per-runner export queues, progress and file-consumption callbacks. Intersect up to 500 selected runs with the requested dates, remove selected-run priority and file-count preferences, and provide `logs export` plus local `logs timeline` commands.
+
 ## 0.1.0-beta.19
 
 ### Patch Changes

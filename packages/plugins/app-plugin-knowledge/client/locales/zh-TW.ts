@@ -3,6 +3,7 @@ import type { LocaleResource } from '@nocobase/i18n';
 import type enUS from './en-US.js';
 
 const zhTW: LocaleResource<typeof enUS> = {
+  fileUsage: '知識庫檔案',
   indexing: {
     failedDocumentCount: '失敗文件：{{count}}',
     enabled: '啟用索引',
@@ -196,7 +197,6 @@ const zhTW: LocaleResource<typeof enUS> = {
       count_other: '{{count}} 檔案',
       archivedCount_one: '{{count}} 存檔檔案',
       archivedCount_other: '{{count}} 歸檔檔案',
-      selectTarget: '開啟{{title}}',
       target: '在{{title}}中建立',
       chooseTarget: '選擇要建立的專案或系統知識',
       expandAll: '展開全部',
@@ -297,6 +297,14 @@ const zhTW: LocaleResource<typeof enUS> = {
       uploaded_one: '已上傳{{count}}檔案；正在擷取其文字。',
       uploaded_other: '已上傳{{count}}檔案；他們的文字正在被提取。',
       download: '下載',
+      fullscreen: '全螢幕',
+      close: '關閉',
+      olderVersion: '版本 {{version}}（歷史版本）',
+      textHint_one: 'AI 檢索和回答用的就是這些文字，共 {{count}} 行',
+      textHint_other: 'AI 檢索和回答用的就是這些文字，共 {{count}} 行',
+      copy: '複製',
+      copied: '已複製。',
+      copyFailed: '此處無法自動複製，請選取文字後手動複製。',
       version: '版本 {{version}}',
       statusHint: {
         parsing: '正在提取文字；一旦檔案準備好，搜尋就會找到該檔案。',
@@ -373,6 +381,7 @@ const zhTW: LocaleResource<typeof enUS> = {
       contents: '內容',
       edit: '編輯',
       rename: '重新命名',
+      properties: '屬性與摘要',
       history: '歷史',
       verify: '標記已驗證',
       verifiedToast: '標記為已驗證。',

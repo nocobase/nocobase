@@ -119,64 +119,6 @@ function runtimeDependencies(template) {
   return imported;
 }
 
-// Examples installs Agents; Default deliberately does not. Apply only the documented chat
-// composition slots to Default's expected source, keeping every shared line under comparison.
-function withExamplesChat(source, file) {
-  const replaceOnce = (before, after) => {
-    assert.equal(source.split(before).length - 1, 1, `${file}: chat slot`);
-    source = source.replace(before, after);
-  };
-  if (file === 'client/layouts/app-layout.tsx') {
-    replaceOnce(
-      'import { RouteTreeProvider }',
-      "import { OnlineAgentProvider } from '#components/online-agent/provider';\n" +
-        "import { OnlineAgentPanelHost } from '#components/online-agent/panel-host';\n" +
-        'import { RouteTreeProvider }',
-    );
-    replaceOnce(
-      'export function AppLayout({ routes }: AppLayoutProps): ReactElement {',
-      `export function AppLayout({ routes }: AppLayoutProps): ReactElement {
-  return (
-    <OnlineAgentProvider>
-      <AuthenticatedLayout routes={routes} />
-    </OnlineAgentProvider>
-  );
-}
-
-function AuthenticatedLayout({ routes }: AppLayoutProps): ReactElement {`,
-    );
-    // Retain the route outlet, watermark, scrolling and surrounding shell verbatim.
-    const main = source.match(
-      /^            <main[\s\S]*?^            <\/main>/mu,
-    )?.[0];
-    assert.ok(main, 'shared route outlet');
-    replaceOnce(
-      main,
-      '            {/* Examples-only integration: the temporary chat docks beside any demo without replacing the route. */}\n' +
-        "            <div className='relative flex min-h-0 flex-1'>\n" +
-        main
-          .replace(/^( +)(?=[<{])/gmu, '  $1')
-          .replace(
-            'relative isolate min-w-0',
-            'relative isolate min-h-0 min-w-0',
-          ) +
-        '\n              <OnlineAgentPanelHost />\n            </div>',
-    );
-  }
-  if (file === 'client/layouts/components/header-actions.tsx') {
-    replaceOnce(
-      "import { UserMenu } from './user-menu.js';",
-      "import { UserMenu } from './user-menu.js';\n" +
-        "import { ChatHeaderButton } from '#extensions/nocobase-agent-chat/launchers';",
-    );
-    replaceOnce(
-      '        <UserMenu />',
-      '        <ChatHeaderButton />\n        <UserMenu />',
-    );
-  }
-  return source;
-}
-
 function sharedFrameworkSource(template, file) {
   let source = readFileSync(path.join(template.directory, file), 'utf8');
 
@@ -294,12 +236,8 @@ for (const template of templates) {
         const relative = path.join(directory, file);
         assert.equal(
           sharedFrameworkSource(template, relative),
-          template.kind === 'examples'
-            ? withExamplesChat(
-                sharedFrameworkSource(baseline, relative),
-                relative,
-              )
-            : sharedFrameworkSource(baseline, relative),
+          // Both templates get the Agent panel from the plugin's layout extension, so the layouts are identical.
+          sharedFrameworkSource(baseline, relative),
           `${template.kind}: ${relative}`,
         );
       }
@@ -321,16 +259,20 @@ for (const template of templates) {
     ]) {
       assert.equal(
         sharedFrameworkSource(template, file),
-        template.kind === 'examples'
-          ? withExamplesChat(sharedFrameworkSource(baseline, file), file)
-          : sharedFrameworkSource(baseline, file),
+        sharedFrameworkSource(baseline, file),
         `${template.kind}: ${file}`,
       );
     }
     // The scripts are the shared command contract; compare them in both directions.
     assert.deepEqual(
       template.manifest.scripts,
-      baseline.manifest.scripts,
+      {
+        ...baseline.manifest.scripts,
+        build:
+          template.kind === 'default'
+            ? 'node scripts/build.mjs'
+            : 'nocobase build',
+      },
       `${template.kind}: shared scripts`,
     );
   });
@@ -401,6 +343,16 @@ for (const template of templates) {
     }
   });
 
+  test(`${template.kind} pins direct NocoBase dependencies at pack time`, () => {
+    for (const section of ['dependencies', 'devDependencies']) {
+      for (const [name, range] of Object.entries(template.manifest[section])) {
+        if (name.startsWith('@nocobase/')) {
+          assert.equal(range, 'workspace:*', `${section}.${name}`);
+        }
+      }
+    }
+  });
+
   test(`${template.kind} declares server runtime packages in dependencies only`, () => {
     const { dependencies, devDependencies } = template.manifest;
     const duplicates = Object.keys(dependencies).filter(
@@ -408,31 +360,26 @@ for (const template of templates) {
     );
     assert.deepEqual(duplicates, []);
     assert.ok(dependencies['@nocobase/db']);
-    // The dialect `server/config/database.ts` defaults to. Creation no longer chooses a database, so a template that
-    // did not depend on its own default would scaffold an application unable to start until a driver was installed
-    // by hand. Switching databases means adding another driver and, if nothing else uses SQLite, removing this one.
-    assert.ok(
-      dependencies['@nocobase/db-sqlite'],
-      `${template.kind}: the driver for the default dialect must be a dependency`,
-    );
-    assert.equal(
-      devDependencies['@nocobase/db-sqlite'],
-      undefined,
-      `${template.kind}: the SQLite driver is a runtime dependency, not a development one`,
-    );
-    // And no other. `config init` picks the dialect from the installed drivers when it is not told one, and with
-    // several it refuses rather than guess — which is right for an application that added a driver, and wrong for
-    // one that has just been created. A template shipping extra drivers makes the documented `pnpm nocobase config init`
-    // fail in every non-interactive run, and puts drivers nothing uses into every deployment.
     const drivers = Object.keys(dependencies).filter(
       (name) =>
         /^@nocobase\/db-/u.test(name) && name !== '@nocobase/db-testkit',
     );
     assert.deepEqual(
       drivers,
-      ['@nocobase/db-sqlite'],
-      `${template.kind}: declare only the driver for the default dialect`,
+      template.kind === 'default' ? [] : ['@nocobase/db-sqlite'],
+      `${template.kind}: production dialect drivers before configuration`,
     );
+    if (template.kind === 'default') {
+      for (const dialect of [
+        'mssql',
+        'mysql',
+        'oracle',
+        'postgres',
+        'sqlite',
+      ]) {
+        assert.ok(devDependencies[`@nocobase/db-${dialect}`]);
+      }
+    }
     assert.equal(dependencies.hono, 'catalog:');
     assert.equal(devDependencies.hono, undefined);
     for (const [name, file] of runtimeDependencies(template)) {

@@ -1,16 +1,16 @@
-// Checks that the v1/v2 workflow entries on v3-develop still mirror the manual workflows on main. v3-develop carries
-// one thin entry per v1/v2 `workflow_dispatch` workflow (same filename, same `name`, same inputs) so that the manual
-// workflows stay runnable once v3-develop becomes the default branch; this check catches main adding, removing or
-// renaming such a workflow, or changing its name or inputs, without the entry following. See
-// .agents/rules/workflows-and-release.md ("V2 workflow entries on v3-develop"). It needs the `yaml` package only.
+// Checks that the v1/v2 workflow entries on the default branch v3 (formerly v3-develop) still mirror the manual workflows
+// on main. v3 carries one thin entry per v1/v2 `workflow_dispatch` workflow (same filename, same `name`, same inputs) so
+// that the manual workflows stay runnable from the default branch; this check catches main adding, removing or renaming
+// such a workflow, or changing its name or inputs, without the entry following. See
+// .agents/rules/workflows-and-release.md ("V2 workflow entries on v3"). It needs the `yaml` package only.
 //
 // Usage:
 //   node scripts/check-v2-workflow-entries.mjs --main <dir> --entries <dir> [--mismatch warn|error]
 //
 //   --main     main's .github/workflows directory
-//   --entries  v3-develop's .github/workflows directory
+//   --entries  v3's .github/workflows directory
 //   --mismatch severity of the findings that compare an entry with main (default: error). A pull request on
-//              v3-develop passes `warn`, because an entry may legitimately land before the change on main. Structural
+//              v3 passes `warn`, because an entry may legitimately land before the change on main. Structural
 //              findings about an entry itself are always errors.
 //
 // Exit codes: 0 without errors (warnings allowed), 1 with errors, 2 on bad usage or an unreadable directory.
@@ -29,7 +29,7 @@ import { isDeepStrictEqual } from 'node:util';
 import { parse } from 'yaml';
 
 /**
- * Manual workflows on main that deliberately have no entry on v3-develop because they have never run. Adding an entry
+ * Manual workflows on main that deliberately have no entry on v3 because they have never run. Adding an entry
  * for one of them is reported, so remove it from this set in the same change.
  */
 export const EXCLUDED = new Set([
@@ -40,10 +40,11 @@ export const EXCLUDED = new Set([
   'manual-e2e.yml',
 ]);
 
-const BRANCH_GUARD = "github.ref == 'refs/heads/v3-develop'";
+const BRANCH_GUARD =
+  "github.ref == format('refs/heads/{0}', github.event.repository.default_branch)";
 
 const UPDATE_ORDER =
-  'The entry on v3-develop must match the workflow on main. To change a v2 workflow name or its inputs, update the entry on v3-develop first, then main.';
+  'The entry on v3 must match the workflow on main. To change a v2 workflow name or its inputs, update the entry on v3 first, then main.';
 
 /**
  * Escapes text for a GitHub Actions workflow command, which ends at the first line break.
@@ -140,7 +141,7 @@ export function checkEntries({ main, entries, mismatch = 'error' }) {
     if (EXCLUDED.has(file) || entrySet.has(file)) continue;
     mismatchTarget.push({
       file: relative(file),
-      message: `${file} on main has a workflow_dispatch trigger but v3-develop has no entry for it. Add a thin entry named ${file} on v3-develop (copy an existing one such as manual-release.yml). If the workflow has never run, add it to EXCLUDED in scripts/check-v2-workflow-entries.mjs instead. ${UPDATE_ORDER}`,
+      message: `${file} on main has a workflow_dispatch trigger but v3 has no entry for it. Add a thin entry named ${file} on v3 (copy an existing one such as manual-release.yml). If the workflow has never run, add it to EXCLUDED in scripts/check-v2-workflow-entries.mjs instead. ${UPDATE_ORDER}`,
     });
   }
 
@@ -148,7 +149,7 @@ export function checkEntries({ main, entries, mismatch = 'error' }) {
     if (entrySet.has(file)) {
       mismatchTarget.push({
         file: relative(file),
-        message: `${file} is listed in EXCLUDED in scripts/check-v2-workflow-entries.mjs but v3-develop has an entry for it. Remove it from EXCLUDED, or delete the entry.`,
+        message: `${file} is listed in EXCLUDED in scripts/check-v2-workflow-entries.mjs but v3 has an entry for it. Remove it from EXCLUDED, or delete the entry.`,
       });
     }
     if (!mainFiles.has(file)) {
@@ -189,7 +190,7 @@ export function checkEntries({ main, entries, mismatch = 'error' }) {
     if (!guarded.length) {
       errors.push({
         file: relative(file),
-        message: `Entry ${file} has no job guarded by \`if: \${{ ${BRANCH_GUARD} }}\`. The entry must only run on v3-develop, otherwise a manual run on another branch would dispatch main instead of that branch's own file.`,
+        message: `Entry ${file} has no job guarded by \`if: \${{ ${BRANCH_GUARD} }}\`. The entry must only run on the default branch, otherwise a manual run on another branch would dispatch main instead of that branch's own file.`,
       });
     } else {
       const steps = guarded.flatMap((job) =>

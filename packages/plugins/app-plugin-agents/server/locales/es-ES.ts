@@ -31,11 +31,16 @@ const esES: LocaleResource<typeof enUS> = {
         runners: 'Entornos de ejecución',
         prices: 'Precios de los modelos',
         services: 'Servicios modelo',
+        skills: 'Habilidades',
       },
     },
     actions: {
       read: 'Ver',
       manage: 'Administrar',
+    },
+    humanOnly: {
+      servicesManage:
+        'Gestionar los servicios de modelos escribe claves de proveedores; solo una persona puede hacerlo.',
     },
     keyScopes: {
       agents: {

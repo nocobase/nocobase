@@ -20,6 +20,7 @@ import {
   type CredentialServer,
 } from '../src/agent/git-credentials.ts';
 import type { NpmTokenSource } from '../src/agent/npm-credentials.ts';
+import { launch, writeRunConfig } from '../src/agent/npm-launcher.ts';
 import {
   NPM_DIR_ENV,
   PRIVATE_REGISTRY_ENV,
@@ -28,6 +29,7 @@ import {
   bundledPnpmEntry,
   npmLauncherEntry,
   PINNED_PNPM_ENV,
+  writeRunnerTools,
 } from '../src/agent/runner-tools.ts';
 import { git, removeDir, tempDir } from './helpers.ts';
 import { Registry } from './npm-registry-server.ts';
@@ -123,13 +125,23 @@ function install(
   target: Project,
   server: CredentialServer,
   env: Record<string, string> = {},
+  args: string[] = ['install'],
+  registry = privateRegistry.url,
+  tool: 'pnpm' | 'npm' = 'pnpm',
+  executable: 'npm' | 'npx' = 'npm',
 ): Promise<Result> {
   const pnpm = bundledPnpmEntry();
   if (pnpm === undefined) throw new Error('The runner has no bundled pnpm.');
   return new Promise((resolve) => {
     const child = spawn(
       process.execPath,
-      [...npmLauncherEntry(), 'pnpm', process.execPath, pnpm, '--', 'install'],
+      [
+        ...npmLauncherEntry(),
+        tool,
+        ...(tool === 'pnpm' ? [process.execPath, pnpm] : [executable]),
+        '--',
+        ...args,
+      ],
       {
         cwd: target.dir,
         env: {
@@ -140,7 +152,7 @@ function install(
           ...PINNED_PNPM_ENV,
           pnpm_config_store_dir: path.join(scratch, 'store'),
           [NPM_DIR_ENV]: target.npmDir,
-          [PRIVATE_REGISTRY_ENV]: privateRegistry.url,
+          [PRIVATE_REGISTRY_ENV]: registry,
           NOCOBASE_RUNNER_GIT_CREDENTIAL_SOCKET: server.socket,
           NOCOBASE_RUNNER_GIT_CREDENTIAL_NONCE: server.nonce,
           ...env,
@@ -162,6 +174,237 @@ const leftovers = (target: Project) =>
   existsSync(target.npmDir) ? readdirSync(target.npmDir) : [];
 
 describe('the npm launcher', () => {
+  it.each(['npm pack', 'npx'])(
+    'retries a Bearer challenge for %s without a visible request URL',
+    async (mode) => {
+      const registry = new Registry(
+        scratch,
+        ['@nocobase/fx-private'],
+        TOKEN,
+        401,
+      );
+      await registry.start();
+      const target = project({});
+      const { server, asked } = await worker(TOKEN);
+      try {
+        const result = await install(
+          target,
+          server,
+          {},
+          mode === 'npm pack'
+            ? [
+                'pack',
+                '@nocobase/fx-private',
+                '--loglevel=error',
+                `--@nocobase:registry=${registry.url}`,
+              ]
+            : [
+                '--yes',
+                '--package=@nocobase/fx-private',
+                `--@nocobase:registry=${registry.url}`,
+                '--',
+                'node',
+                '-e',
+                'process.exit(0)',
+              ],
+          registry.url,
+          'npm',
+          mode === 'npx' ? 'npx' : 'npm',
+        );
+        expect(result.code).toBe(0);
+        expect(asked).toEqual([{ reason: 'unauthorized', pkg: undefined }]);
+        expect(
+          registry.seen.filter((request) => request.auth === undefined),
+        ).toHaveLength(1);
+        expect(result.output).not.toContain(TOKEN);
+        expect(result.output).toContain('Unable to authenticate');
+        expect(result.output).not.toMatch(/401 Unauthorized - GET/u);
+        expect(
+          leftovers(target).every((name) => name.startsWith('nocobase-scope-')),
+        ).toBe(true);
+      } finally {
+        await server.close();
+        await registry.stop();
+      }
+    },
+  );
+
+  it.each(['valid', 'invalid'])(
+    'does not retry an outer create after its nested npm handled a %s token',
+    async (mode) => {
+      const registry = new Registry(
+        scratch,
+        ['@nocobase/fx-private'],
+        TOKEN,
+        401,
+      );
+      await registry.start();
+      const target = project({});
+      const bin = path.join(target.dir, 'bin');
+      await writeRunnerTools(
+        bin,
+        undefined,
+        process.execPath,
+        process.env.PATH,
+      );
+      const script = path.join(target.dir, 'create.cjs');
+      writeFileSync(
+        script,
+        `const fs=require('node:fs'); const {spawnSync}=require('node:child_process');
+process.chdir(${JSON.stringify(target.dir)});
+fs.appendFileSync('outer-attempts', '1');
+const result=spawnSync('npm', ['pack', '@nocobase/fx-private', '--loglevel=error', '--@nocobase:registry=${registry.url}'], {stdio:'inherit',env:process.env});
+process.exit(result.status ?? 1);`,
+      );
+      const { server, asked } = await worker(
+        mode === 'valid' ? TOKEN : 'invalid-token',
+      );
+      try {
+        const code = await launch({
+          tool: 'pnpm',
+          command: [process.execPath, script],
+          args: [],
+          cwd: target.dir,
+          env: {
+            PATH: `${bin}${path.delimiter}${process.env.PATH}`,
+            HOME: target.home,
+            NPM_CONFIG_USERCONFIG: path.join(target.home, '.npmrc'),
+            XDG_CONFIG_HOME: path.join(target.home, '.config'),
+            [NPM_DIR_ENV]: target.npmDir,
+            [PRIVATE_REGISTRY_ENV]: registry.url,
+            NOCOBASE_RUNNER_GIT_CREDENTIAL_SOCKET: server.socket,
+            NOCOBASE_RUNNER_GIT_CREDENTIAL_NONCE: server.nonce,
+          },
+        });
+        expect(code === 0).toBe(mode === 'valid');
+        expect(
+          readFileSync(path.join(target.dir, 'outer-attempts'), 'utf8'),
+        ).toBe('1');
+        expect(asked).toHaveLength(1);
+        expect(
+          registry.seen.filter((request) => request.auth === undefined),
+        ).toHaveLength(1);
+        if (mode === 'invalid') expect(registry.seen).toHaveLength(2);
+        expect(
+          leftovers(target).every((name) => name.startsWith('nocobase-scope-')),
+        ).toBe(true);
+      } finally {
+        await server.close();
+        await registry.stop();
+      }
+    },
+  );
+
+  it.each(['reported path', 'symlink'])(
+    'ignores stale and unrelated npm logs reached through a %s',
+    async (mode) => {
+      const target = project({});
+      const stale = path.join(target.dir, 'stale-debug-0.log');
+      writeFileSync(
+        stale,
+        `1 http fetch GET 401 ${privateRegistry.url}@nocobase/x secret-value\n`,
+      );
+      const script = path.join(target.dir, 'error.cjs');
+      writeFileSync(
+        script,
+        `const fs=require('node:fs'); const path=require('node:path');
+if (${JSON.stringify(mode)} === 'symlink') fs.symlinkSync(${JSON.stringify(stale)},path.join(process.env.NPM_CONFIG_LOGS_DIR,'fake-debug-0.log'));
+console.error('npm error code E401'); console.error('A complete log of this run can be found in: '+${JSON.stringify(stale)}); process.exit(8);`,
+      );
+      const { server, asked } = await worker(TOKEN);
+      try {
+        const code = await launch({
+          tool: 'npm',
+          command: [process.execPath, script],
+          args: [],
+          cwd: target.dir,
+          env: {
+            NPM_CONFIG_USERCONFIG: path.join(target.home, '.npmrc'),
+            [NPM_DIR_ENV]: target.npmDir,
+            [PRIVATE_REGISTRY_ENV]: privateRegistry.url,
+            NOCOBASE_RUNNER_GIT_CREDENTIAL_SOCKET: server.socket,
+            NOCOBASE_RUNNER_GIT_CREDENTIAL_NONCE: server.nonce,
+          },
+        });
+        expect(code).toBe(8);
+        expect(asked).toEqual([]);
+        expect(leftovers(target)).toEqual([]);
+      } finally {
+        await server.close();
+      }
+    },
+  );
+  it('keeps credentials only in private temporary config files, never the child environment', () => {
+    const target = project({});
+    const config = writeRunConfig({
+      tool: 'pnpm',
+      dir: target.npmDir,
+      registry: privateRegistry.url,
+      token: TOKEN,
+      scope: true,
+      env: {
+        HOME: target.home,
+        NPM_CONFIG_USERCONFIG: path.join(target.home, '.npmrc'),
+        XDG_CONFIG_HOME: path.join(target.home, '.config'),
+      },
+    });
+    try {
+      expect(JSON.stringify(config.env)).not.toContain(TOKEN);
+      expect(
+        config.files.every((file) =>
+          file.startsWith(`${target.npmDir}${path.sep}`),
+        ),
+      ).toBe(true);
+      const file = config.env.NPM_CONFIG_USERCONFIG!;
+      expect(statSync(file).mode & 0o777).toBe(0o600);
+      expect(readFileSync(file, 'utf8')).toContain(`:_authToken=${TOKEN}`);
+    } finally {
+      for (const file of config.files)
+        rmSync(file, { recursive: true, force: true });
+    }
+    expect(leftovers(target)).toEqual([]);
+  });
+
+  it('returns the second exit code without putting the token on its command line or environment', async () => {
+    const target = project({});
+    const script = path.join(target.dir, 'command.cjs');
+    writeFileSync(
+      script,
+      `const fs = require('node:fs');
+const config = fs.readFileSync(process.env.NPM_CONFIG_USERCONFIG, 'utf8');
+if (JSON.stringify({argv:process.argv,env:process.env}).includes(${JSON.stringify(TOKEN)})) process.exit(99);
+if (!config.includes(':_authToken=')) { console.error('ERR_PNPM_FETCH_401 GET ${privateRegistry.url}@nocobase/x: Unauthorized - 401'); process.exit(8); }
+if (!config.includes('@nocobase:registry=${privateRegistry.url}')) process.exit(98);
+process.exit(23);
+`,
+    );
+    const { server, asked } = await worker(TOKEN);
+    try {
+      const code = await launch({
+        tool: 'pnpm',
+        command: [process.execPath, script],
+        args: [],
+        cwd: target.dir,
+        env: {
+          PATH: process.env.PATH,
+          NPM_CONFIG_USERCONFIG: path.join(target.home, '.npmrc'),
+          XDG_CONFIG_HOME: path.join(target.home, '.config'),
+          [NPM_DIR_ENV]: target.npmDir,
+          [PRIVATE_REGISTRY_ENV]: privateRegistry.url,
+          NOCOBASE_RUNNER_GIT_CREDENTIAL_SOCKET: server.socket,
+          NOCOBASE_RUNNER_GIT_CREDENTIAL_NONCE: server.nonce,
+        },
+      });
+      expect(code).toBe(23);
+      expect(asked).toEqual([{ reason: 'unauthorized', pkg: undefined }]);
+      expect(
+        leftovers(target).filter((file) => !file.startsWith('nocobase-scope-')),
+      ).toEqual([]);
+    } finally {
+      await server.close();
+    }
+  });
+
   beforeAll(async () => {
     await mirror.start();
     await privateRegistry.start();
@@ -170,6 +413,162 @@ describe('the npm launcher', () => {
       await privateRegistry.stop();
     };
   });
+
+  it.each([401, 403])(
+    'retries a private HTTP %i once without a project npmrc, for npm and pnpm',
+    async (status) => {
+      const registry = new Registry(
+        scratch,
+        ['@nocobase/fx-private'],
+        TOKEN,
+        status,
+      );
+      await registry.start();
+      try {
+        for (const tool of ['npm', 'pnpm'] as const) {
+          const target = project({ '@nocobase/fx-private': '1.0.0' });
+          const { server, asked } = await worker(TOKEN);
+          try {
+            const result = await install(
+              target,
+              server,
+              {},
+              ['install', `--@nocobase:registry=${registry.url}`],
+              registry.url,
+              tool,
+            );
+            expect(result).toMatchObject({ code: 0 });
+            expect(asked).toEqual([{ reason: 'unauthorized', pkg: undefined }]);
+            expect(
+              registry.seen.some((request) => request.auth === undefined),
+            ).toBe(true);
+            expect(
+              registry.seen.some(
+                (request) => request.auth === `Bearer ${TOKEN}`,
+              ),
+            ).toBe(true);
+            expect(result.output).not.toContain(TOKEN);
+            expect(leftovers(target)).toHaveLength(1);
+          } finally {
+            await server.close();
+          }
+        }
+      } finally {
+        await registry.stop();
+      }
+    },
+  );
+
+  it.each([401, 403])(
+    'does not request a token for another registry returning HTTP %i',
+    async (status) => {
+      const registry = new Registry(scratch, [], TOKEN, status);
+      await registry.start();
+      const target = project({ '@nocobase/fx-private': '1.0.0' });
+      const { server, asked } = await worker(TOKEN);
+      try {
+        for (const tool of ['pnpm', 'npm'] as const) {
+          const result = await install(
+            target,
+            server,
+            {},
+            ['install', `--@nocobase:registry=${registry.url}`],
+            privateRegistry.url,
+            tool,
+          );
+          expect(result.code).not.toBe(0);
+          expect(asked).toEqual([]);
+          expect(
+            registry.seen.every((request) => request.auth === undefined),
+          ).toBe(true);
+          expect(leftovers(target)).toEqual([]);
+        }
+      } finally {
+        await server.close();
+        await registry.stop();
+      }
+    },
+  );
+
+  it('never requests credentials for another registry behind an npx Bearer challenge', async () => {
+    const registry = new Registry(scratch, [], TOKEN, 401);
+    await registry.start();
+    const target = project({});
+    const { server, asked } = await worker(TOKEN);
+    try {
+      const result = await install(
+        target,
+        server,
+        {},
+        [
+          '--yes',
+          '--package=@nocobase/fx-private',
+          `--@nocobase:registry=${registry.url}`,
+          '--',
+          'node',
+          '-e',
+          'process.exit(0)',
+        ],
+        privateRegistry.url,
+        'npm',
+        'npx',
+      );
+      expect(result.code).not.toBe(0);
+      expect(asked).toEqual([]);
+      expect(registry.seen.every((request) => request.auth === undefined)).toBe(
+        true,
+      );
+      expect(leftovers(target)).toEqual([]);
+    } finally {
+      await server.close();
+      await registry.stop();
+    }
+  });
+
+  it.each([null, 'invalid-token'])(
+    'stops after an unauthorized request with token %s',
+    async (token) => {
+      const registry = new Registry(scratch, [], TOKEN, 401);
+      await registry.start();
+      const target = project({ '@nocobase/fx-private': '1.0.0' });
+      const { server, asked } = await worker(token);
+      try {
+        for (const tool of ['pnpm', 'npm'] as const) {
+          registry.seen.splice(0);
+          for (const name of leftovers(target))
+            rmSync(path.join(target.npmDir, name), {
+              recursive: true,
+              force: true,
+            });
+          const result = await install(
+            target,
+            server,
+            {},
+            ['install', `--@nocobase:registry=${registry.url}`],
+            registry.url,
+            tool,
+          );
+          expect(result.code).not.toBe(0);
+          expect(asked).toEqual([{ reason: 'unauthorized', pkg: undefined }]);
+          expect(registry.seen).toHaveLength(token === null ? 1 : 2);
+          expect(result.output).toContain('Settings › License');
+          expect(result.output).toContain(
+            token === null ? 'no token is configured' : 'refused the token',
+          );
+          expect(result.output).not.toContain('invalid-token');
+          expect(
+            leftovers(target).filter(
+              (file) => !file.startsWith('nocobase-scope-'),
+            ),
+          ).toEqual([]);
+          asked.splice(0);
+        }
+      } finally {
+        await server.close();
+        await registry.stop();
+      }
+    },
+  );
 
   it('installs public packages from the machine’s registry and asks for no token', async () => {
     const target = project({

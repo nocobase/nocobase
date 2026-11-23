@@ -1,5 +1,7 @@
 import {
+  APP_CLIENT_NAMESPACE,
   AppClientProviders,
+  appClientLocales,
   ClientApplication,
   createAppClientConfig,
   defineAppClientRenderConfig,
@@ -10,6 +12,7 @@ import {
 import {
   defineClientPlugins,
   type AppClientPluginRegistration,
+  type AppClientRoutes,
 } from '@nocobase/app-client/plugins';
 import {
   defineAppRuntime,
@@ -41,6 +44,8 @@ export interface TestClientServer {
 }
 
 export interface RenderWithAppOptions {
+  /** Application-owned routes, composed with plugin contributions. */
+  readonly routes?: AppClientRoutes;
   /** The client plugins the application registers, as its `client/plugins.ts` lists them, such as `users()`. */
   readonly plugins?: readonly AppClientPluginRegistration[];
   /**
@@ -159,6 +164,8 @@ export async function renderWithApp(
         ? {}
         : { strict: options.strictTranslations }),
       namespaces: {
+        // As in an application, app-client's own wording (the built-in settings categories) is always there.
+        [APP_CLIENT_NAMESPACE]: appClientLocales,
         ...Object.fromEntries(pluginLocales),
         ...options.namespaces,
       },
@@ -169,6 +176,7 @@ export async function renderWithApp(
         packageName: '@nocobase/app-testing',
         createAppConfig: createAppClientConfig,
         serviceProviders: [TestServiceProvider],
+        routes: options.routes,
         plugins: defineClientPlugins(plugins),
       }),
       { rawConfig, rawPublicConfig: {}, i18n },

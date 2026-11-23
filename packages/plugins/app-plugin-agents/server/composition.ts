@@ -1,3 +1,7 @@
+import {
+  createRunnerDiagnostics,
+  type RunnerDiagnostics,
+} from './runners/diagnostics.js';
 import { OnlineAgentUIStreams } from './online/agent/transport/streams.js';
 import type { OnlineAgentRecoveryConfig } from './online/agent/types.js';
 import { OnlineAgentConfigurator } from './online/agent/configuration.js';
@@ -120,6 +124,10 @@ import {
   type ModelServices,
 } from './online/index.js';
 import {
+  modelProviders,
+  type ModelProviderRegistry,
+} from './online/provider-registry.js';
+import {
   createBriefPreviewer,
   createBriefSectionRegistry,
   createClaimEligibility,
@@ -235,6 +243,7 @@ export interface Agents {
   readonly cli: AgentCli;
   /** The runners people connect (each a runtime): registration, keys, heartbeats, what people change about one. */
   readonly runners: RunnerService;
+  readonly diagnostics: RunnerDiagnostics;
   /** Which agents each runner may run and which runs one holds, for the runtimes pages. */
   readonly runnerView: RunnerView;
   /**
@@ -314,6 +323,8 @@ export interface Agents {
   readonly models: {
     readonly services: ModelServices;
     readonly gateway: ModelGateway;
+    /** The providers a service can use: register one with `providers.register` (`online/provider-registry.ts`). */
+    readonly providers: ModelProviderRegistry;
   };
 }
 
@@ -664,6 +675,9 @@ export function createAgents(deps: AgentsDeps): Agents {
   });
 
   return {
+    diagnostics: createRunnerDiagnostics(() =>
+      runners.list({ workspaceDetails: false }),
+    ),
     purgeRunData: createRunDataPurge({
       tx,
       retentionDays: deps.runRetentionDays ?? (() => 14),
@@ -754,6 +768,7 @@ export function createAgents(deps: AgentsDeps): Agents {
     models: {
       services: modelServices,
       gateway,
+      providers: modelProviders,
     },
   };
 }

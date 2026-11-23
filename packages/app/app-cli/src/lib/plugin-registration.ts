@@ -220,6 +220,7 @@ export async function planPluginRegistration({
   const manifest = parseJson(originalManifest, manifestPath);
 
   const manifestChanged = registerInManifest({
+    enabled,
     dependencyRange,
     manifest,
     manifestPath,
@@ -320,15 +321,26 @@ export async function planPluginRegistration({
 export async function planPluginUnregistration({
   appRoot,
   packageName,
+  retainRange,
 }: {
   appRoot: string;
   packageName: string;
+  retainRange?: string;
 }): Promise<PluginUnregistrationPlan> {
   const manifestPath = path.join(appRoot, 'package.json');
   const originalManifest = await readFile(manifestPath, 'utf8');
   const manifest = parseJson(originalManifest, manifestPath);
 
   const removedFrom = unregisterInManifest(manifest, manifestPath, packageName);
+  if (retainRange !== undefined) {
+    insertSorted(
+      ensureRecord(manifest, 'devDependencies', manifestPath),
+      packageName,
+      retainRange,
+    );
+    const index = removedFrom.indexOf('devDependencies');
+    if (index >= 0) removedFrom.splice(index, 1);
+  }
   const client = await planClientRemoval(appRoot, packageName);
   if (client.changed) {
     removedFrom.push('client/plugins.ts');
@@ -594,6 +606,7 @@ async function planCliRemoval(
 }
 
 function registerInManifest({
+  enabled,
   dependencyRange,
   manifest,
   manifestPath,
@@ -603,12 +616,15 @@ function registerInManifest({
   manifest: Record<string, unknown>;
   manifestPath: string;
   packageName: string;
+  enabled: boolean;
 }): boolean {
-  const dependencies = ensureRecord(manifest, 'dependencies', manifestPath);
+  const target = enabled ? 'dependencies' : 'devDependencies';
+  const other = enabled ? 'devDependencies' : 'dependencies';
+  const dependencies = ensureRecord(manifest, target, manifestPath);
   const devDependencies =
-    manifest.devDependencies === undefined
+    manifest[other] === undefined
       ? undefined
-      : ensureRecord(manifest, 'devDependencies', manifestPath);
+      : ensureRecord(manifest, other, manifestPath);
   // Preserve the declared runtime range when cleaning up a duplicate development declaration.
   const existingDependency =
     dependencies[packageName] ?? devDependencies?.[packageName];

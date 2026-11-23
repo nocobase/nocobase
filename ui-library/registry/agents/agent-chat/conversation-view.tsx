@@ -1,12 +1,14 @@
 import { SnapshotView } from './snapshot-view.js';
 /**
  * One conversation, the panel's main view: the messages as a log (older pages on demand), what an application adds
- * among them (plan cards), the agent at work, notices about who answers, and the composer. Without a conversation
+ * among them, the agent at work, notices about who answers, and the composer. Without a conversation
  * (`conversationId` null) it is a new one: an empty log whose first message creates it on the server, and the
- * composer's toolbar chooses its agent (`NewChatChoice`) among the agents of the panel's mode (`useChatMode`), starting
+ * composer's toolbar chooses its agent (`NewChatChoice`) from either mode, starting
  * with the one last used.
  */
 import {
+  CapturingPageDraftContext,
+  RestoredPageDraftContext,
   ChatExtensionsContext,
   getAIToolSourceMessage,
   appUIMessageText,
@@ -20,6 +22,8 @@ import {
   useChatAgents,
   useChatModels,
   useConversationModel,
+  shownThinking,
+  useThinkingMemory,
   useChatPanel,
   useConversation,
   useConversationActions,
@@ -32,8 +36,14 @@ import {
   type ChatTimelineItem,
 } from '@nocobase/app-plugin-agents/client/chat';
 import type { ConversationDetail } from '@nocobase/app-plugin-agents/shared/conversations';
-import type { ModelRef } from '@nocobase/app-plugin-agents/shared/models';
+import type {
+  ModelRef,
+  ReasoningLevel,
+} from '@nocobase/app-plugin-agents/shared/models';
 import { BotMessageSquareIcon, GlobeIcon, PaperclipIcon } from 'lucide-react';
+import { Link } from 'react-router';
+import { useCan } from '@nocobase/app-plugin-authorization/client';
+import { createPortal } from 'react-dom';
 import {
   useCallback,
   useContext,
@@ -68,6 +78,8 @@ import { Composer } from './composer.js';
 import { LiveSteps, TurnAnnouncer } from './live-steps.js';
 import { MessageItem, PendingItem } from './message-item.js';
 import { MessageActions, MessageEditor } from './message-actions.js';
+import { useHeaderChoiceSlot } from './header-slot.js';
+import { AgentSlotOutlet } from '@nocobase/app-plugin-agents/client/chat';
 
 const NO_ITEMS: readonly ChatTimelineItem[] = [];
 
@@ -225,8 +237,17 @@ function ConversationBody({
     nativeConversation ? conversation.id : null,
     panel.open,
   );
-  const [chosenModel, setChosenModel] = useState<ModelRef | null>(null);
-  const [chosenSearch, setChosenSearch] = useState(false);
+  const restored = useContext(RestoredPageDraftContext);
+  const store = useContext(CapturingPageDraftContext);
+  const [chosenModel, setChosenModel] = useState<ModelRef | null>(
+    restored?.model ?? null,
+  );
+  const [chosenSearch, setChosenSearch] = useState(restored?.search ?? false);
+  // A new conversation's level; undefined leaves the Agent's default.
+  const [chosenThinking, setChosenThinking] = useState<
+    ReasoningLevel | undefined
+  >(restored?.thinking);
+  const thinkingMemory = useThinkingMemory();
   const modelChangeBlocked =
     changingModel ||
     (nativeConversation &&
@@ -306,7 +327,7 @@ function ConversationBody({
     revision,
   );
   const chatMode = useChatMode();
-  // A new conversation goes to an agent of the panel's mode; the online agent is the only one of its mode.
+  // The history mode sets the initial target; the draft picker offers both sources.
   const offered = agents.data ? chatMode.agents : undefined;
   const target = conversation
     ? null
@@ -315,6 +336,16 @@ function ConversationBody({
         panel.newAgentId,
         panel.lastAgentId ?? null,
       ) ?? (chatMode.mode === 'online' ? (offered?.[0] ?? null) : null));
+
+  useEffect(() => {
+    if (!store) return;
+    return store.register('choices', () => ({
+      agent: target?.id ?? null,
+      model: chosenModel,
+      thinking: chosenThinking,
+      search: chosenSearch,
+    }));
+  }, [store, target, chosenModel, chosenThinking, chosenSearch]);
 
   // Leave default resolution on the server until a model is explicitly chosen.
   const model = chosenModel;
@@ -337,6 +368,7 @@ function ConversationBody({
   const searchModel = nativeConversation
     ? configuration.data?.selectedModel
     : model;
+  const thinkingModel = searchModel ?? null;
   const searchSupported = Boolean(
     searchModel &&
     catalog.data
@@ -344,6 +376,16 @@ function ConversationBody({
       ?.models.find((item) => item.value === searchModel.model)?.capabilities
       ?.webSearch,
   );
+  // The conversation's saved level wins; what is remembered per model only applies when switching to one.
+  const thinkingValue = nativeConversation
+    ? shownThinking(configuration.data?.thinking)
+    : chosenThinking;
+  /**
+   * A new conversation starts with the level remembered for its model; only without one does the Agent's own default
+   * apply. A remembered value that is not a standard level reads as none.
+   */
+  const newThinking = (selected: ModelRef): ReasoningLevel | undefined =>
+    thinkingMemory.remembered(selected) ?? undefined;
   const searchEnabled = nativeConversation
     ? configuration.data?.webSearch === true
     : chosenSearch && searchSupported;
@@ -371,6 +413,7 @@ function ConversationBody({
     ...(target?.id === 'online' && model ? { selectedModel: model } : {}),
     webSearch:
       target?.id === 'online' && searchSupported ? searchEnabled : undefined,
+    thinking: target?.id === 'online' && model ? chosenThinking : undefined,
   });
 
   // Viewed: tell the server the agent's latest replies were read.
@@ -493,7 +536,14 @@ function ConversationBody({
                         })
                     : undefined
                 }
-              />
+              >
+                {conversationId ? (
+                  <AgentSlotOutlet
+                    name='messageActions'
+                    props={{ conversationId, message: segment.message }}
+                  />
+                ) : null}
+              </MessageActions>
             ) : null
           }
           segment={segment}
@@ -594,6 +644,19 @@ function ConversationBody({
     !busyFeedback &&
     !running;
   const page = variant === 'page';
+  // The composer's insert, for the empty state's slot.
+  const insertRef = useRef<((text: string) => void) | null>(null);
+  const registerInsert = useCallback((insert: (text: string) => void) => {
+    insertRef.current = insert;
+    return () => {
+      if (insertRef.current === insert) insertRef.current = null;
+    };
+  }, []);
+  const insertText = useCallback((text: string) => {
+    insertRef.current?.(text);
+  }, []);
+  // In the panel the agent, model and thinking choices sit in its header.
+  const headerSlot = useHeaderChoiceSlot();
 
   // Files dropped anywhere on the conversation go to the composer, which uploads them.
   const addFilesRef = useRef<((files: readonly File[]) => void) | null>(null);
@@ -611,6 +674,101 @@ function ConversationBody({
   const carriesFiles = (event: DragEvent<HTMLElement>): boolean =>
     addFilesRef.current !== null && event.dataTransfer.types.includes('Files');
 
+  const thinkingChoice = {
+    value: thinkingValue,
+    disabled:
+      running ||
+      resend.isPending ||
+      stopping ||
+      modelChangeBlocked ||
+      catalog.isFetching ||
+      !catalog.isSuccess ||
+      chatController.submissions.blocked(
+        conversationId,
+        `registry:${source}:${conversationId ?? 'new'}`,
+      ),
+    onChange: (level: ReasoningLevel) => {
+      // The mixed picker also lists Runner agents, but only Online models own thinking.
+      if (!thinkingModel || (!nativeConversation && target?.id !== 'online'))
+        return;
+      if (!nativeConversation) {
+        setChosenThinking(level);
+        thinkingMemory.remember(thinkingModel, level);
+        return;
+      }
+      // Remember the level only after the conversation has saved it.
+      selectModel.mutate(
+        { thinking: level },
+        { onSuccess: () => thinkingMemory.remember(thinkingModel, level) },
+      );
+    },
+  };
+
+  const choice: ReactNode = conversation ? (
+    nativeConversation ? (
+      <ConversationModelChoice
+        services={catalog.data ?? []}
+        model={configuration.data?.selectedModel ?? null}
+        thinking={thinkingChoice}
+        allowedModels={configuration.data?.model}
+        disabled={
+          running ||
+          resend.isPending ||
+          stopping ||
+          modelChangeBlocked ||
+          catalog.isFetching ||
+          !catalog.isSuccess ||
+          chatController.submissions.blocked(
+            conversationId,
+            `registry:${source}:${conversationId ?? 'new'}`,
+          )
+        }
+        onModelChange={(selected) => {
+          const current = configuration.data?.selectedModel;
+          if (
+            current?.modelService === selected.modelService &&
+            current.model === selected.model
+          )
+            return;
+          // The level remembered for the new model comes along in the same change.
+          const thinking = thinkingMemory.remembered(selected) ?? undefined;
+          selectModel.mutate(
+            thinking === undefined
+              ? selected
+              : { selectedModel: selected, thinking },
+          );
+        }}
+      />
+    ) : null
+  ) : (
+    // Before the first message: who the conversation goes to.
+    <NewChatChoice
+      agents={agents.data ?? []}
+      agent={target}
+      services={catalog.data ?? []}
+      model={model}
+      thinking={thinkingChoice}
+      modelsDisabled={
+        catalog.isFetching || !catalog.isSuccess || !hasChatModels
+      }
+      onModelChange={(selected) => {
+        setChosenSearch(false);
+        setChosenThinking(newThinking(selected));
+        setChosenModel(selected);
+        selectConversation(null, 'online', {
+          preserveComposer: true,
+        });
+      }}
+      onAgentChange={(agentId) => {
+        setChosenSearch(false);
+        setChosenThinking(undefined);
+        selectConversation(null, agentId, {
+          preserveComposer: true,
+        });
+        focusComposer();
+      }}
+    />
+  );
   return (
     <section
       className={cn(
@@ -683,6 +841,10 @@ function ConversationBody({
               <p className='text-sm text-muted-foreground'>
                 {t('chat.emptyDescription')}
               </p>
+              <AgentSlotOutlet
+                name='emptyState'
+                props={{ agentId: target?.id ?? null, insertText }}
+              />
             </div>
           ) : (
             <>
@@ -875,6 +1037,9 @@ function ConversationBody({
             return accepted;
           }}
           registerAddFiles={registerAddFiles}
+          registerInsert={registerInsert}
+          conversationId={conversationId}
+          agentId={conversation ? conversation.agent.id : (target?.id ?? null)}
           toolbar={
             <div className='flex min-w-0 flex-wrap items-center gap-1'>
               {nativeConversation || target?.id === 'online' ? (
@@ -916,62 +1081,7 @@ function ConversationBody({
                   <GlobeIcon aria-hidden='true' />
                 </Button>
               ) : null}
-              {conversation ? (
-                nativeConversation ? (
-                  <ConversationModelChoice
-                    services={catalog.data ?? []}
-                    model={configuration.data?.selectedModel ?? null}
-                    allowedModels={configuration.data?.model}
-                    disabled={
-                      running ||
-                      resend.isPending ||
-                      stopping ||
-                      modelChangeBlocked ||
-                      catalog.isFetching ||
-                      !catalog.isSuccess ||
-                      chatController.submissions.blocked(
-                        conversationId,
-                        `registry:${source}:${conversationId ?? 'new'}`,
-                      )
-                    }
-                    onModelChange={(selected) => {
-                      const current = configuration.data?.selectedModel;
-                      if (
-                        current?.modelService === selected.modelService &&
-                        current.model === selected.model
-                      )
-                        return;
-                      selectModel.mutate(selected);
-                    }}
-                  />
-                ) : null
-              ) : (
-                // Before the first message: who the conversation goes to.
-                <NewChatChoice
-                  agents={offered ?? []}
-                  agent={target}
-                  services={catalog.data ?? []}
-                  model={model}
-                  modelsDisabled={
-                    catalog.isFetching || !catalog.isSuccess || !hasChatModels
-                  }
-                  onModelChange={(selected) => {
-                    setChosenSearch(false);
-                    setChosenModel(selected);
-                    selectConversation(null, 'online', {
-                      preserveComposer: true,
-                    });
-                    focusComposer();
-                  }}
-                  onAgentChange={(agentId) => {
-                    setChosenSearch(false);
-                    selectConversation(null, agentId, {
-                      preserveComposer: true,
-                    });
-                    focusComposer();
-                  }}
-                />
-              )}
+              {headerSlot ? null : choice}
             </div>
           }
           notice={
@@ -986,17 +1096,34 @@ function ConversationBody({
                   {t('chat.chooseAgent')}
                 </p>
               ) : (
-                <p
-                  className='text-xs text-destructive'
-                  data-testid='chat-no-agent'
-                >
-                  {t('chat.noAgent')}
-                </p>
+                <NoAgentNotice />
               )
             ) : null
           }
         />
       </div>
+      {headerSlot && choice ? createPortal(choice, headerSlot) : null}
     </section>
+  );
+}
+
+function NoAgentNotice(): ReactElement {
+  const { t } = useChatTranslation();
+  const { can: canReadSettings } = useCan({
+    resource: { type: 'settings', id: 'agents.agents' },
+    action: 'read',
+  });
+  return (
+    <p className='text-xs text-destructive' data-testid='chat-no-agent'>
+      {t('chat.noAgent')}
+      {canReadSettings ? (
+        <Link
+          className='ms-1 font-medium text-destructive underline underline-offset-2'
+          to='/settings/agents'
+        >
+          {t('openAgentSettings')}
+        </Link>
+      ) : null}
+    </p>
   );
 }

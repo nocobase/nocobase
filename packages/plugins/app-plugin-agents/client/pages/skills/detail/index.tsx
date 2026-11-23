@@ -1,19 +1,14 @@
 import { usePageBreadcrumb } from '@nocobase/app-client';
 /**
  * Route `/skills/:skillId`: the skill as a directory (its files in a tree beside the selected one: SKILL.md rendered,
- * other files shown or previewed), what its front matter says (description, compatibility; whether it holds scripts,
- * which online agents read but never run), where it is attached, and its versions. Who may edit it gets "Edit" (the
+ * other files shown or previewed), what its front matter says (description, compatibility), where it is attached,
+ * and its versions. Who may edit it gets "Edit" (the
  * same workbench, editable; saving makes a new version) and "Delete". Agents always get the latest version; an older
  * one can be compared with it and restored.
  */
 import { useTranslation } from '@nocobase/i18n/client';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import {
-  DownloadIcon,
-  PencilIcon,
-  TerminalIcon,
-  Trash2Icon,
-} from 'lucide-react';
+import { DownloadIcon, PencilIcon, Trash2Icon } from 'lucide-react';
 import { useContext, useState, type ReactElement } from 'react';
 import { Link, useNavigate, useParams } from 'react-router';
 
@@ -38,6 +33,7 @@ import {
 import { Badge } from '../../../components/ui/badge.js';
 import { Button } from '../../../components/ui/button.js';
 import { useSetting } from '../../../hooks/use-access.js';
+import { useSkillsListPath } from '../paths.js';
 import {
   scopeOf,
   useText,
@@ -64,13 +60,14 @@ export default function SkillDetailPage(): ReactElement {
 function SkillView({ skillId }: { readonly skillId: string }): ReactElement {
   const { t } = useTranslation();
   const api = useAgentsApi();
-  const canDelete = useSetting('agents.agents', 'manage');
+  const canDelete = useSetting('agents.skills', 'manage');
+  const listPath = useSkillsListPath();
   const detail = useQuery({
     queryKey: agentsKeys.skill(skillId),
     queryFn: () => api.skill(skillId),
   });
   const levels = [
-    { label: t('skills.title'), to: '/skills' },
+    { label: t('skills.title'), to: listPath },
     { label: detail.data?.name ?? t('skills.breadcrumb') },
   ];
   // The header's trail (the shell renders it): the list, then this skill.
@@ -87,7 +84,7 @@ function SkillView({ skillId }: { readonly skillId: string }): ReactElement {
           variant='outline'
           size='sm'
           nativeButton={false}
-          render={<Link to='/skills' />}
+          render={<Link to={listPath} />}
         >
           {t('skills.backToList')}
         </Button>
@@ -125,6 +122,7 @@ function SkillBody({
   const notify = useNotify();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const listPath = useSkillsListPath();
   const [editing, setEditing] = useState(false);
   const [confirmingDelete, setConfirmingDelete] = useState(false);
   const remove = useMutation({
@@ -133,7 +131,7 @@ function SkillBody({
       notify.success(t('skills.deleted', { name: skill.name }));
       void queryClient.invalidateQueries({ queryKey: agentsKeys.skills });
       void queryClient.invalidateQueries({ queryKey: agentsKeys.agents });
-      void navigate('/skills');
+      void navigate(listPath);
     },
     onError: (error) => notify.error(error),
   });
@@ -237,7 +235,7 @@ function SkillBody({
   );
 }
 
-/** What the front matter says beyond the description, and whether the skill holds scripts. */
+/** What the front matter says beyond the description. */
 function SkillFacts({
   skill,
   canEdit,
@@ -246,15 +244,9 @@ function SkillFacts({
   readonly canEdit: boolean;
 }): ReactElement | null {
   const { t } = useTranslation();
-  if (!skill.compatibility && skill.scriptCount === 0 && canEdit) return null;
+  if (!skill.compatibility && canEdit) return null;
   return (
     <div className='flex flex-wrap items-center gap-2 text-sm text-muted-foreground'>
-      {skill.scriptCount > 0 ? (
-        <Badge variant='secondary' data-testid='skill-scripts-note'>
-          <TerminalIcon data-icon='inline-start' />
-          {t('skills.scriptsNote')}
-        </Badge>
-      ) : null}
       {skill.compatibility ? (
         <Badge variant='outline' className='max-w-full truncate'>
           {t('skills.compatibility', { value: skill.compatibility })}

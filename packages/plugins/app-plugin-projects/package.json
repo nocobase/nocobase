@@ -2,11 +2,21 @@
   "name": "@nocobase/app-plugin-projects",
   "displayName": "Projects",
   "description": "Projects, issues and collaboration for a NocoBase application.",
-  "version": "0.1.0-beta.31",
+  "version": "0.1.0-beta.34",
   "type": "module",
   "prettier": "@nocobase/dev-config/prettier",
   "engines": {
     "node": ">=24.0.0"
+  },
+  "nocobase": {
+    "title": {
+      "en-US": "Projects",
+      "zh-CN": "项目"
+    },
+    "description": {
+      "en-US": "Projects, issues and their progress",
+      "zh-CN": "项目、任务及其进展"
+    }
   },
   "sideEffects": false,
   "exports": {
@@ -38,14 +48,6 @@
       "types": "./shared/issues.ts",
       "import": "./shared/issues.ts"
     },
-    "./shared/intake": {
-      "types": "./shared/intake.ts",
-      "import": "./shared/intake.ts"
-    },
-    "./shared/intake-ai": {
-      "types": "./shared/intake-ai.ts",
-      "import": "./shared/intake-ai.ts"
-    },
     "./shared/labels": {
       "types": "./shared/labels.ts",
       "import": "./shared/labels.ts"
@@ -53,10 +55,6 @@
     "./shared/members": {
       "types": "./shared/members.ts",
       "import": "./shared/members.ts"
-    },
-    "./shared/plans": {
-      "types": "./shared/plans.ts",
-      "import": "./shared/plans.ts"
     },
     "./shared/projects": {
       "types": "./shared/projects.ts",
@@ -106,10 +104,6 @@
       "types": "./client/pages.ts",
       "import": "./client/pages.ts"
     },
-    "./client/plan-model": {
-      "types": "./client/plan-model.ts",
-      "import": "./client/plan-model.ts"
-    },
     "./package.json": "./package.json"
   },
   "files": [
@@ -149,14 +143,6 @@
         "types": "./dist/shared/issues.d.ts",
         "import": "./dist/shared/issues.js"
       },
-      "./shared/intake": {
-        "types": "./dist/shared/intake.d.ts",
-        "import": "./dist/shared/intake.js"
-      },
-      "./shared/intake-ai": {
-        "types": "./dist/shared/intake-ai.d.ts",
-        "import": "./dist/shared/intake-ai.js"
-      },
       "./shared/labels": {
         "types": "./dist/shared/labels.d.ts",
         "import": "./dist/shared/labels.js"
@@ -164,10 +150,6 @@
       "./shared/members": {
         "types": "./dist/shared/members.d.ts",
         "import": "./dist/shared/members.js"
-      },
-      "./shared/plans": {
-        "types": "./dist/shared/plans.d.ts",
-        "import": "./dist/shared/plans.js"
       },
       "./shared/projects": {
         "types": "./dist/shared/projects.d.ts",
@@ -217,10 +199,6 @@
         "types": "./dist/client/pages.d.ts",
         "import": "./dist/client/pages.js"
       },
-      "./client/plan-model": {
-        "types": "./dist/client/plan-model.d.ts",
-        "import": "./dist/client/plan-model.js"
-      },
       "./package.json": "./package.json"
     }
   },
@@ -237,7 +215,6 @@
   },
   "dependencies": {
     "hono": "catalog:",
-    "officeparser": "^6.0.4",
     "zod": "catalog:"
   },
   "peerDependencies": {

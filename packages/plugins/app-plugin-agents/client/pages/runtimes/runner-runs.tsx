@@ -1,6 +1,6 @@
 import { useTranslation } from '@nocobase/i18n/client';
 import { useInfiniteQuery } from '@tanstack/react-query';
-import { useState, type ReactElement } from 'react';
+import { Fragment, useState, type ReactElement } from 'react';
 import { Link } from 'react-router';
 import { useChatPanel } from '../../chat/provider.js';
 import { agentsKeys } from '../../api/keys.js';
@@ -11,6 +11,7 @@ import {
   compactDateTime,
 } from '../../lib/format.js';
 import { RUN_STATUS_TONE } from '../../lib/runs.js';
+import { failureDetailText } from '../../../shared/runs.js';
 import { Spinner } from '../../components/ui/spinner.js';
 import { TONE_CLASS } from '../../components/ag-tag-tones.js';
 import { Badge } from '../../components/ui/badge.js';
@@ -72,7 +73,7 @@ export function RunnerRuns({
         <Table className='table-fixed min-w-[600px]'>
           <colgroup>
             <col />
-            <col className='w-40' />
+            <col className='w-56' />
             <col className='w-28' />
             <col className='w-24' />
             <col className='w-20' />
@@ -99,64 +100,100 @@ export function RunnerRuns({
                 </TableCell>
               </TableRow>
             ) : null}
-            {page.data.map((run) => (
-              <TableRow key={run.id}>
-                <TableCell
-                  className='truncate'
-                  title={run.subjectLabel ?? undefined}
-                >
-                  {run.path ? (
-                    <Link
-                      to={
-                        run.path.startsWith('?chat=') && conversationPath
-                          ? conversationPath(
-                              new URLSearchParams(run.path).get('chat')!,
-                            )
-                          : run.path
-                      }
-                      onClick={onNavigate}
-                      className='hover:underline'
+            {page.data.map((run) => {
+              const message = failureDetailText(run.failureDetail);
+              // One line: the classification, then what the tool said ("Not signed in · Reconnect … to continue.").
+              const detail = message
+                ? [
+                    run.failureReason
+                      ? t(`failures.${run.failureReason}`, {
+                          defaultValue: '',
+                        }).replace(/[.。]$/u, '')
+                      : '',
+                    message,
+                  ]
+                    .filter(Boolean)
+                    .join(' · ')
+                : null;
+              return (
+                <Fragment key={run.id}>
+                  <TableRow className={detail ? 'border-b-0' : undefined}>
+                    <TableCell
+                      className='truncate'
+                      title={run.subjectLabel ?? undefined}
                     >
-                      {run.subjectLabel ?? run.title}
-                    </Link>
-                  ) : (
-                    (run.subjectLabel ?? '—')
-                  )}
-                </TableCell>
-                <TableCell className='truncate' title={run.title}>
-                  {run.title}
-                </TableCell>
-                <TableCell>
-                  <div className='flex flex-wrap items-center gap-1.5'>
-                    <Badge
-                      variant='secondary'
-                      className={TONE_CLASS[RUN_STATUS_TONE[run.status]]}
+                      {run.path ? (
+                        <Link
+                          to={
+                            run.path.startsWith('?chat=') && conversationPath
+                              ? conversationPath(
+                                  new URLSearchParams(run.path).get('chat')!,
+                                )
+                              : run.path
+                          }
+                          onClick={onNavigate}
+                          className='hover:underline'
+                        >
+                          {run.subjectLabel ?? run.title}
+                        </Link>
+                      ) : (
+                        (run.subjectLabel ?? '—')
+                      )}
+                    </TableCell>
+                    <TableCell
+                      // OpenCode and Pi agents show their name without the tool; the hover says the whole model id.
+                      className='truncate'
+                      title={run.modelTitle ?? run.title}
                     >
-                      <span
-                        aria-hidden='true'
-                        className='size-1.5 rounded-full bg-current'
-                      />
-                      {t(`runs.status.${run.status}`)}
-                    </Badge>
-                    {run.failureReason === 'toolQuota' ? (
-                      <QuotaLabel usage warning />
-                    ) : null}
-                  </div>
-                </TableCell>
-                <TableCell
-                  className='whitespace-nowrap text-xs text-muted-foreground'
-                  title={format.dateTime(run.startedAt ?? run.createdAt)}
-                >
-                  {compactDateTime(
-                    run.startedAt ?? run.createdAt,
-                    i18n.language,
-                  )}
-                </TableCell>
-                <TableCell className='text-xs tabular-nums'>
-                  {durationText(run.startedAt, run.finishedAt) ?? '—'}
-                </TableCell>
-              </TableRow>
-            ))}
+                      {run.shortName ?? run.title}
+                    </TableCell>
+                    <TableCell>
+                      <div className='flex flex-wrap items-center gap-1.5'>
+                        <Badge
+                          variant='secondary'
+                          className={TONE_CLASS[RUN_STATUS_TONE[run.status]]}
+                        >
+                          <span
+                            aria-hidden='true'
+                            className='size-1.5 rounded-full bg-current'
+                          />
+                          {t(`runs.status.${run.status}`)}
+                        </Badge>
+                        {run.failureReason === 'toolQuota' ? (
+                          <QuotaLabel usage warning />
+                        ) : null}
+                      </div>
+                    </TableCell>
+                    <TableCell
+                      className='whitespace-nowrap text-xs text-muted-foreground'
+                      title={format.dateTime(run.startedAt ?? run.createdAt)}
+                    >
+                      {compactDateTime(
+                        run.startedAt ?? run.createdAt,
+                        i18n.language,
+                      )}
+                    </TableCell>
+                    <TableCell className='text-xs tabular-nums'>
+                      {durationText(run.startedAt, run.finishedAt) ?? '—'}
+                    </TableCell>
+                  </TableRow>
+                  {detail ? (
+                    // What the tool said, so a classification such as "not signed in" shows its real cause.
+                    <TableRow className='hover:bg-transparent'>
+                      <TableCell colSpan={5} className='pt-0 whitespace-normal'>
+                        <p
+                          className='min-w-0 truncate text-xs text-destructive'
+                          title={detail}
+                          data-testid='runner-run-failure-detail'
+                        >
+                          {detail}
+                        </p>
+                      </TableCell>
+                    </TableRow>
+                  ) : null}
+                </Fragment>
+              );
+            })}
           </TableBody>
         </Table>
       </div>

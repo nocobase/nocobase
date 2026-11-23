@@ -1,5 +1,14 @@
 # @nocobase/app-plugin-users
 
+## 2.0.0-beta.21
+
+### Patch Changes
+
+- 761fb01: Preserve API request IDs when reporting failed account, push and demo operations through the application toaster.
+- Updated dependencies [761fb01]
+  - @nocobase/app-client@4.0.0-beta.11
+  - @nocobase/app-plugin-authentication@2.0.0-beta.23
+
 ## 2.0.0-beta.20
 
 ### Minor Changes

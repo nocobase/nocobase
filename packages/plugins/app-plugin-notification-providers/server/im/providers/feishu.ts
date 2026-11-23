@@ -1,6 +1,8 @@
 import type {
+  ChannelConfigSummaryItem,
   ChannelContext,
   ChannelInstance,
+  NotificationContent,
   ChannelPreparationInput,
   ChannelSendInput,
   NotificationI18nText,
@@ -24,6 +26,12 @@ import { postJson, validateHttpUrl } from '../../http.js';
 import type { PreparedImMessage } from '../channel.js';
 import { formatImText } from '../channel.js';
 import { evaluateJsonResult } from '../result.js';
+import {
+  maskedSecret,
+  PROVIDERS_CONTRIBUTOR,
+  webhookOrigin,
+} from '../../summary.js';
+import { composeImMessage } from '../channel.js';
 
 export interface FeishuWebhookProviderConfig {
   readonly provider: 'feishu-webhook';
@@ -113,6 +121,16 @@ export class FeishuWebhookChannel implements ChannelInstance<
   PreparedImMessage
 > {
   static readonly type = 'feishu-webhook';
+  static readonly contributor: string = PROVIDERS_CONTRIBUTOR;
+  /** The webhook's host only: its path and query carry the token. */
+  static summarize(
+    config: FeishuWebhookChannelConfig,
+  ): readonly ChannelConfigSummaryItem[] {
+    return [
+      { label: 'webhookUrl', value: webhookOrigin(config.webhookUrl) },
+      { label: 'secret', value: maskedSecret(config.secret) },
+    ];
+  }
   static readonly label: NotificationI18nText = notificationProviderText(
     'providers.feishuWebhook',
     'Feishu webhook',
@@ -135,6 +153,10 @@ export class FeishuWebhookChannel implements ChannelInstance<
     input: ChannelPreparationInput<ImMessage, ImRecipient>,
   ): Promise<PreparedImMessage> {
     return prepareImMessage(input);
+  }
+  /** A group webhook reaches no user; a test send posts the text to its group. */
+  compose(content: NotificationContent): ImMessage {
+    return composeImMessage(content);
   }
   send(
     input: ChannelSendInput<PreparedImMessage>,

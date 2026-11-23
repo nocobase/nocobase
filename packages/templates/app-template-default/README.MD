@@ -12,7 +12,7 @@ Complete the target’s requirements in that same upgrade: reconcile dependencie
 
 ## Default and Examples
 
-Default provides the application shell and product capabilities without example plugins or business demo pages. Application-owned business API routes start empty, and new databases receive no article sample data. A bare create-app shows Home and, for unrestricted administrators only, System settings with App foundation and Database Explorer; Database Explorer is also shown to anyone granted its `page:database-explorer/access` page permission. Foundation is installed and registered on both Client and Server; its read-only overview is available at `/foundation` under the application base path. As business capabilities are developed, the app development skill reconciles missing core administration on every iteration and registers the prepared Users and Roles and permissions contribution (`client/pages/settings/routes.ts`); each actually used configurable capability includes its administration as part of feature delivery. Its built-in Users integration lists direct Authorization Permission Sets as application roles, while access assigned to all authenticated users remains separate. Use `app-template-examples` for article management and runnable plugin demonstrations.
+Default provides the application shell and product capabilities without example plugins or business demo pages. Application-owned business API routes start empty, and new databases receive no article sample data. A bare create-app shows Home and, for administrators, System settings with Users and Permission management (Accounts and permissions), Workflow management for unrestricted administrators (Workflows and automation), Database Explorer (Data and files) and Plugins (System); each module is shown to those its grant admits, such as anyone granted `page:database-explorer/access` for Database Explorer, or the «Plugins · View» settings item (`foundation.plugins` / `read`) for Plugins. Plugins, from `@nocobase/app-plugin-foundation` registered on both Client and Server, lists the plugins the application uses, their versions and states, at `/settings/plugins` under the application base path, with the commands that enable, update or disable each one. The Users and Authorization plugins register their respective settings pages from the start; as business capabilities are developed, the app development skill reconciles missing administration on every iteration, and each actually used configurable capability includes its administration as part of feature delivery. Its built-in Users integration lists direct Authorization Permission Sets as application roles, while access assigned to all authenticated users remains separate. Use `app-template-examples` for article management and runnable plugin demonstrations.
 
 Existing Default installations retain their data when example plugins are unregistered. If an installation already ran the article migration, retain its original migration sources as described in the [upgrade migration rules](.agents/skills/nocobase-app-upgrade/references/edge-cases.md#migrations) before upgrading. Do not erase migration history or delete existing data to make an upgrade start.
 
@@ -23,7 +23,7 @@ Business lists reuse the template's standard `DataTable` and companions from `#c
 Configure the application, then start the development server:
 
 ```bash
-pnpm nocobase config init
+pnpm nocobase config init --dialect sqlite
 pnpm nocobase config check
 pnpm dev
 ```
@@ -71,7 +71,7 @@ APP_SERVER_PORT=13399 PROXY_TARGET_URL=http://127.0.0.1:13000/main pnpm dev
 
 `pnpm nocobase config init` wrote `config.yml` from `config.example.yml`, with a generated `secrets.keys` key filled in. It gets you running on SQLite; adjust it for your situation:
 
-- **Database.** SQLite needs no server and works as it is. Another one means installing its driver first — `pnpm add @nocobase/db-postgres`, and `pnpm remove @nocobase/db-sqlite` if nothing else uses SQLite — then `pnpm nocobase config init --dialect postgres --force` to rewrite the connection, and `pnpm nocobase config set` for its settings, with `--from-env` for the password so it stays out of the shell history. Which dialects the application can run on is decided by what it depends on, not by this file: a driver it does not have cannot be introduced from here.
+- **Database.** Default preinstalls the SQLite, PostgreSQL, MySQL, SQL Server and Oracle drivers in `devDependencies`. In a fresh application, `pnpm nocobase config init --dialect sqlite` selects SQLite and moves its driver to `dependencies` with its existing range. Choose `--dialect postgres` for PostgreSQL and set the connection with `pnpm nocobase config set`. Include the driver for each additional connection in `dependencies`. Run `pnpm nocobase config check --no-connect` for an offline check. A driver error lists the affected connections, the package to promote and the command to retry.
 - **Change a value** with `pnpm nocobase config set key=value`, which keeps the comments and refuses a section the application does not know. Values that differ per machine — `APP_SERVER_PORT`, `APP_SERVER_HOST`, `APP_PUBLIC_ORIGIN` — are better set in the environment, which is applied over this file; `config set` says when an environment variable overrides what it wrote.
 - **Where the application is served.** `APP_BASE_PATH` is the public mount path, `/main` by default, so the development URL looks like `http://127.0.0.1:13000/main/`. `APP_SERVER_PORT` and `APP_SERVER_HOST` change what the server binds to.
 - **Anything a feature you enable requires** — mail delivery, IM webhooks, storage. Every section is already here, commented out where it is optional.
@@ -179,18 +179,20 @@ Mail (`@nocobase/app-plugin-mail`) is included and registered on the client and 
 
 Plugins add features to your application. Let these commands edit `package.json`, `client/plugins.ts`, and `server/plugins.ts` for you rather than editing those files by hand.
 
-| Command                                  | What it does                                                |
-| ---------------------------------------- | ----------------------------------------------------------- |
-| `pnpm nocobase plugin register <name>`   | Install a plugin and wire it into the client and server     |
-| `pnpm nocobase plugin unregister <name>` | Remove a plugin and its wiring                              |
-| `pnpm nocobase plugin update [name]`     | Upgrade one or all registered plugins and re-sync skills    |
-| `pnpm nocobase plugin inspect <name>`    | Report a plugin's registration state; read-only             |
-| `pnpm nocobase package remove <name>`    | Remove a direct NocoBase package and its synchronized Skill |
-| `pnpm nocobase skills sync`              | Sync direct NocoBase package Skills into `.agents/skills/`  |
+Preinstalled plugins belong in devDependencies and provide Skills. Run `pnpm nocobase plugin register <name>` to enable one. Run `plugin unregister <name>` to retain it for development or `plugin remove <name>` to uninstall it together with its synchronized Skills.
+
+| Command                                | What it does                                                |
+| -------------------------------------- | ----------------------------------------------------------- |
+| `pnpm nocobase plugin register <name>` | Install a plugin and wire it into the client and server     |
+| `pnpm nocobase plugin remove <name>`   | Remove a plugin and its wiring                              |
+| `pnpm nocobase plugin update [name]`   | Upgrade one or all registered plugins and re-sync skills    |
+| `pnpm nocobase plugin inspect <name>`  | Report a plugin's registration state; read-only             |
+| `pnpm nocobase package remove <name>`  | Remove a direct NocoBase package and its synchronized Skill |
+| `pnpm nocobase skills sync`            | Sync direct NocoBase package Skills into `.agents/skills/`  |
 
 `pnpm install` automatically runs `pnpm nocobase skills sync` through the application's `postinstall` hook. Run `pnpm nocobase skills sync` manually when install scripts were disabled or Skills need refreshing.
 
-Use a full package name, as with `plugin register` and `plugin unregister`; short names such as `authentication` also work. The optional name is a positional argument, not `--plugin`.
+Use a full package name, as with `plugin register` and `plugin remove`; short names such as `authentication` also work. The optional name is a positional argument, not `--plugin`.
 
 ```bash
 pnpm nocobase plugin update @nocobase/app-plugin-authentication  # Update one registered plugin
@@ -199,7 +201,7 @@ pnpm nocobase plugin update                                     # Update all reg
 pnpm nocobase plugin update @nocobase/app-plugin-authentication --dry-run  # Preview only
 ```
 
-Without a name, the command collects registered plugins from `client/plugins.ts`, `server/plugins.ts`, and `cli/plugins.ts`. It uses the application's package manager; with pnpm, `update` follows the declared version ranges without `--latest`. An unregistered name is rejected, and an application with no registered plugins is left unchanged. After a successful package update, all registered plugins' agent skills are re-synchronized, even when only one package was selected.
+With no arguments, the command updates every plugin registered in `client/plugins.ts`, `server/plugins.ts` or `cli/plugins.ts`. To update a preinstalled plugin in `devDependencies`, pass its name explicitly. The command uses the application's package manager. With pnpm, it follows the declared version ranges. After a successful update, the application synchronizes its agent Skills.
 
 Ordering in `client/plugins.ts` and `server/plugins.ts` is contribution order, and a plugin is enabled by appearing in the array. Reorder entries or pass a plugin its options by hand; leave adding and removing entries to the commands.
 
@@ -213,7 +215,7 @@ pnpm nocobase package remove @nocobase/example --dry-run
 pnpm nocobase package remove @nocobase/example --json
 ```
 
-For an ordinary package, the command uses the application's package manager to remove the dependency and update both `package.json` and the lockfile, then removes only the Skill directories recorded as owned by that package. For an `@nocobase/app-plugin-*` package, it reuses the `plugin unregister` steps so Client, Server, and CLI registrations are removed together with the dependency and its Skills. `pnpm nocobase plugin unregister <name>` remains available when the task is specifically expressed as unregistering a plugin.
+For an ordinary package, the command uses the application's package manager to remove the dependency and update both `package.json` and the lockfile, then removes only the Skill directories recorded as owned by that package. For an `@nocobase/app-plugin-*` package, it reuses the `plugin remove` steps so Client, Server, and CLI registrations are removed together with the dependency and its Skills. Use `pnpm nocobase plugin unregister <name>` to keep the package and its Skills available for development.
 
 After an interrupted or manual removal, make sure the manifest no longer declares the package and run a full `pnpm nocobase skills sync` to reconcile stale package-owned output. Passing a package already absent from the manifest to `package remove` can clean its recorded historical Skill ownership without uninstalling any other package.
 

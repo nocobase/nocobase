@@ -1,16 +1,9 @@
 import { ACCESS_NAMESPACE } from '../../../../shared/access.js';
 import { useTranslation } from '@nocobase/i18n/client';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { AlertCircleIcon, SparklesIcon } from 'lucide-react';
-import {
-  type FormEvent,
-  type ReactElement,
-  useContext,
-  useRef,
-  useState,
-} from 'react';
-import { IssueCreationModeContext } from '../../../kit/issue-creation.js';
-import { useLocation, useParams, useSearchParams } from 'react-router';
+import { AlertCircleIcon } from 'lucide-react';
+import { type FormEvent, type ReactElement, useRef, useState } from 'react';
+import { useLocation, useParams } from 'react-router';
 
 import { ISSUE_TITLE_MAX, type Executor } from '../../../../shared/issues.js';
 import { STAGE_MAX } from '../../../../shared/subtasks.js';
@@ -34,74 +27,21 @@ import {
 } from '../../../components/ui/field.js';
 import { Input } from '../../../components/ui/input.js';
 import { Spinner } from '../../../components/ui/spinner.js';
-import {
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
-} from '../../../components/ui/tabs.js';
 import { Textarea } from '../../../components/ui/textarea.js';
 import { useRouteOverlay } from '../../../components/use-route-overlay.js';
 import { errorText, useNotify } from '../../../hooks/use-notify.js';
 import { usePmApi } from '../../../hooks/use-pm-api.js';
 import { useExecutorOptions } from '../../../lib/kinds.js';
-import { INTAKE_DRAFT_PARAM, IntakePanel } from '../../intake/intake-panel.js';
-import { useIntakeBreakdown } from '../../intake/use-intake-breakdown.js';
-import { INTAKE_JOB_PARAM } from '../../intake/use-intake-ai.js';
 
 const FORM_ID = 'pm-subtask-new-form';
 const STAGE_PATTERN = /^\d{1,4}$/u;
 
-const TABS = ['ai', 'manual'] as const;
-type SubtaskTab = (typeof TABS)[number];
-
-/**
- * Route `/issues/:issueId/new-subtask`: the "New sub-issue" dialog over the issue's page, with two ways to create.
- * "AI breakdown" (`?tab=ai`): AI reads the issue and drafts its sub-issues (`?job=` follows the request, `?draft=`
- * shows the drafts, `useIntakeBreakdown`), which are reviewed and edited in the draft editor and created together.
- * "Manual" (`?tab=manual`, the default without a request or draft): one sub-issue, with its stage, the siblings it
- * waits for, and an executor, as the old issue page offered. The AI tab shows only when the viewer can ask AI or a
- * request or draft is open. Both tabs stay mounted, so switching keeps what either holds. Closing or creating stays on
- * the issue's page. It cannot close while the sub-issue is being created, and asks before discarding what was typed.
- */
 export default function NewSubtaskPage(): ReactElement {
-  const manualOnly = useContext(IssueCreationModeContext) === 'manual';
   const { t } = useTranslation();
   const location = useLocation();
-  const [params, setParams] = useSearchParams();
-  const { issueId = '' } = useParams();
   const [submitting, setSubmitting] = useState(false);
-  const [wide, setWide] = useState(Boolean(params.get(INTAKE_DRAFT_PARAM)));
   const submittingRef = useRef(false);
   const unsaved = useUnsavedChangesGuard();
-  const api = usePmApi();
-  const parent = useQuery({
-    queryKey: pmKeys.issue(issueId),
-    queryFn: () => api.issue(issueId),
-  });
-  const breakdown = useIntakeBreakdown(parent.data?.id ?? issueId, (jobId) =>
-    setParams(
-      (current) => {
-        const next = new URLSearchParams(current);
-        next.set('tab', 'ai');
-        next.set(INTAKE_JOB_PARAM, jobId);
-        return next;
-      },
-      { replace: true },
-    ),
-  );
-  const following = Boolean(
-    params.get(INTAKE_DRAFT_PARAM) || params.get(INTAKE_JOB_PARAM),
-  );
-  const withAi = !manualOnly && (breakdown.available || following);
-  const asked = params.get('tab');
-  const tab: SubtaskTab = !withAi
-    ? 'manual'
-    : (TABS as readonly string[]).includes(asked ?? '')
-      ? (asked as SubtaskTab)
-      : following
-        ? 'ai'
-        : 'manual';
   const onSubmittingChange = (value: boolean): void => {
     submittingRef.current = value;
     setSubmitting(value);
@@ -110,16 +50,11 @@ export default function NewSubtaskPage(): ReactElement {
   const issueSearch = (() => {
     const next = new URLSearchParams(location.search);
     next.delete('tab');
-    next.delete(INTAKE_DRAFT_PARAM);
-    next.delete(INTAKE_JOB_PARAM);
+    next.delete('draft');
+    next.delete('job');
     const search = next.toString();
     return search ? `?${search}` : '';
   })();
-  const choose = (value: SubtaskTab) => {
-    const next = new URLSearchParams(params);
-    next.set('tab', value);
-    setParams(next, { replace: true });
-  };
   const manual = (
     <UnsavedChangesBoundary guard={unsaved}>
       <Body onSubmittingChange={onSubmittingChange} />
@@ -128,85 +63,14 @@ export default function NewSubtaskPage(): ReactElement {
   return (
     <RouteDialog
       title={t('subtasks.newTitle')}
-      description={
-        tab === 'manual' ? t('subtasks.newDescription') : t('subtasks.aiIntro')
-      }
-      className={
-        tab === 'manual'
-          ? 'sm:max-w-xl'
-          : wide
-            ? 'sm:max-w-5xl'
-            : 'sm:max-w-2xl'
-      }
+      description={t('subtasks.newDescription')}
+      className='sm:max-w-xl'
       closeTo={{ pathname: '..', search: issueSearch }}
       beforeClose={() => !submittingRef.current && unsaved.confirmDiscard()}
-      footer={tab === 'manual' ? <Footer submitting={submitting} /> : null}
+      footer={<Footer submitting={submitting} />}
     >
-      {withAi ? (
-        <Tabs
-          value={tab}
-          onValueChange={(value: SubtaskTab) => choose(value)}
-          className='gap-4'
-        >
-          <TabsList variant='line' aria-label={t('newIssue.tabsLabel')}>
-            {TABS.map((value) => (
-              <TabsTrigger key={value} value={value}>
-                {t(`subtasks.tabs.${value}`)}
-              </TabsTrigger>
-            ))}
-          </TabsList>
-          <TabsContent value='manual' keepMounted>
-            {manual}
-          </TabsContent>
-          <TabsContent value='ai' keepMounted>
-            {following ? (
-              <BreakdownPanel issueId={issueId} onDraftChange={setWide} />
-            ) : (
-              <div className='flex justify-start'>
-                <Button
-                  disabled={
-                    breakdown.starting || !breakdown.available || !parent.data
-                  }
-                  data-testid='subtask-ai-breakdown'
-                  onClick={() => void breakdown.start()}
-                >
-                  {breakdown.starting ? (
-                    <Spinner data-icon='inline-start' />
-                  ) : (
-                    <SparklesIcon data-icon='inline-start' />
-                  )}
-                  {t('intakeAi.breakdown')}
-                </Button>
-              </div>
-            )}
-          </TabsContent>
-        </Tabs>
-      ) : (
-        manual
-      )}
+      {manual}
     </RouteDialog>
-  );
-}
-
-/** The AI tab once a breakdown is asked for: its progress, then its drafts; created, the dialog closes on the issue. */
-function BreakdownPanel({
-  issueId,
-  onDraftChange,
-}: {
-  readonly issueId: string;
-  readonly onDraftChange: (shown: boolean) => void;
-}): ReactElement {
-  const queryClient = useQueryClient();
-  const { close } = useRouteOverlay();
-  return (
-    <IntakePanel
-      onDraftChange={onDraftChange}
-      onCreated={() => {
-        void queryClient.invalidateQueries({ queryKey: pmKeys.issues });
-        void queryClient.invalidateQueries({ queryKey: pmKeys.issue(issueId) });
-        void close();
-      }}
-    />
   );
 }
 

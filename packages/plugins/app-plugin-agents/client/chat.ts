@@ -1,3 +1,4 @@
+export { useSetting } from './hooks/use-access.js';
 export { useResendMessage } from './chat/use-chat.js';
 export type { ResendResult } from './chat/controller.js';
 export type { OnlineAgentResendOptions } from '../shared/resend.js';
@@ -116,6 +117,7 @@ export { ChatApi } from './chat/api.js';
 export {
   useConversationModel,
   type ConversationModel,
+  type ConversationModelChange,
 } from './chat/use-conversation-model.js';
 export {
   useConversationSources,
@@ -161,6 +163,7 @@ export {
   liveStepsView,
   newConversationAgent,
   noticeText,
+  thinkingLevelText,
   stepLineText,
   timelineOrder,
   type LiveStepsView,
@@ -268,3 +271,27 @@ export {
   type ChatNoticeKind,
   type ChatNoticeConditions,
 } from './chat/notices.js';
+export {
+  CHAT_THINKING_STORAGE_KEY,
+  readThinking,
+  rememberThinking,
+  shownThinking,
+  useThinkingMemory,
+} from './chat/thinking.js';
+export { AgentSlotOutlet, replaceable } from './ui-slots.js';
+export {
+  useAgentComponentReplacement,
+  useAgentSlot,
+  usePreferenceSections,
+  useRegisteredToolRenderer,
+  type AgentComponentName,
+  type AgentSlotName,
+  type AgentSlotProps,
+} from './ui-registry.js';
+
+export {
+  CapturingPageDraftContext,
+  PageDraftStoreContext,
+  RestoredPageDraftContext,
+} from './chat/page-draft.js';
+export { AgentsOptionsContext } from './shell/options.js';

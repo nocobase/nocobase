@@ -14,7 +14,7 @@ const digest = (body) =>
 function fixture() {
   const tags = new Map();
   const writes = [];
-  const platforms = ['studio', 'studio-ee'].flatMap((edition) =>
+  const platforms = ['studio', 'studio-ee', 'studio-ce'].flatMap((edition) =>
     ['amd64', 'arm64'].map((architecture) => ({
       edition,
       architecture,
@@ -61,6 +61,7 @@ test('prepares ordinary and EE independently, leaving stable latest untouched', 
     [
       [version, 'beta'],
       [version, 'beta', 'latest'],
+      [version, 'beta', 'latest'],
     ],
   );
   assert.equal(plan.images[1].aliases.latest, digest('beta'));
@@ -81,6 +82,7 @@ test('unknown latest stays unchanged; latest channel explicitly takes it in both
     [
       [version, 'latest'],
       [version, 'latest'],
+      [version, 'latest'],
     ],
   );
 });
@@ -98,12 +100,13 @@ test('credential-free dry runs make no claims about latest and perform no writes
     [
       [version, 'beta'],
       [version, 'beta'],
+      [version, 'beta'],
     ],
   );
   assert.match(plan.images[0].latestReason, /not checked/);
 });
 
-test('publishes two separate multi-architecture indexes, then aliases; an identical retry does nothing', async () => {
+test('publishes three separate multi-architecture indexes, then aliases; an identical retry does nothing', async () => {
   const f = fixture();
   const plan = await f.prepare();
   const bodies = [];
@@ -113,12 +116,13 @@ test('publishes two separate multi-architecture indexes, then aliases; an identi
     await put(...args);
   };
   const result = await publishImages(f.registry, plan, f.platforms);
-  assert.deepEqual(f.writes.slice(0, 2), [
+  assert.deepEqual(f.writes.slice(0, 3), [
     ['nocobase/studio', version],
     ['nocobase/studio-ee', version],
+    ['nocobase/studio-ce', version],
   ]);
-  assert.equal(result.length, 2);
-  for (let i = 0; i < 2; i++) {
+  assert.equal(result.length, 3);
+  for (let i = 0; i < 3; i++) {
     assert.deepEqual(
       bodies[i].manifests.map((item) => item.platform),
       [
@@ -301,10 +305,10 @@ test('resumes interrupted alias updates without republishing version tags', asyn
     publishImages(f.registry, plan, f.platforms),
     /alias interrupted/,
   );
-  assert.equal(f.writes.filter(([, tag]) => tag === version).length, 2);
+  assert.equal(f.writes.filter(([, tag]) => tag === version).length, 3);
   f.registry.put = put;
   await publishImages(f.registry, plan, f.platforms);
-  assert.equal(f.writes.filter(([, tag]) => tag === version).length, 2);
+  assert.equal(f.writes.filter(([, tag]) => tag === version).length, 3);
   assert.equal(
     f.tags.get('nocobase/studio:latest'),
     f.tags.get(`nocobase/studio:${version}`),
@@ -352,4 +356,11 @@ test('registry PUT sends the exact index bytes and verifies the published digest
     client.put('nocobase/studio', version, body),
     /Published digest mismatch/,
   );
+});
+
+test('an existing CE version prevents every image publication', async () => {
+  const f = fixture();
+  f.tags.set(`nocobase/studio-ce:${version}`, digest('existing CE'));
+  await assert.rejects(f.prepare(), /already exists/);
+  assert.equal(f.writes.length, 0);
 });

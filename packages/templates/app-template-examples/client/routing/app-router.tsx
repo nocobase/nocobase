@@ -7,27 +7,28 @@ import { useMemo, type ReactElement } from 'react';
 import { Navigate, Outlet, Route, Routes } from 'react-router';
 
 import { AppLayout } from '../layouts/app-layout.js';
+import { withSettingsShell } from './settings-shell.js';
 import { filterRouteTree } from './route-navigation.js';
 import { renderRouteTree } from './route-tree.js';
 import { StandalonePageLayout } from './standalone-page-layout.js';
 import { SessionPreparation } from './session-preparation.js';
+import { SettingsRedirect } from './settings-redirect.js';
+import { SETTINGS_REDIRECTS } from '#lib/settings-redirects';
 
 export interface AppRouterProps {
   readonly clientRoutes: readonly AppClientRegisteredRoute[];
 }
 
 export function AppRouter({ clientRoutes }: AppRouterProps): ReactElement {
-  const routeGroups = useMemo(
-    () => ({
-      guest: clientRoutes.filter((route) => route.auth === 'guest'),
-      optional: clientRoutes.filter((route) => route.auth === 'optional'),
-      required: filterRouteTree(
-        clientRoutes,
-        (route) => route.auth === 'required',
-      ),
-    }),
-    [clientRoutes],
-  );
+  const routeGroups = useMemo(() => {
+    // Settings pages render in the same shell, under the application's own Settings group.
+    const routes = withSettingsShell(clientRoutes);
+    return {
+      guest: routes.filter((route) => route.auth === 'guest'),
+      optional: routes.filter((route) => route.auth === 'optional'),
+      required: filterRouteTree(routes, (route) => route.auth === 'required'),
+    };
+  }, [clientRoutes]);
 
   return (
     <Routes>
@@ -60,6 +61,12 @@ export function AppRouter({ clientRoutes }: AppRouterProps): ReactElement {
       <Route element={<StandalonePageLayout />}>
         {renderRouteTree(routeGroups.optional)}
       </Route>
+
+      {/* Settings pages moved under `/settings` keep their former URLs (`#lib/settings-redirects`). */}
+      {SETTINGS_REDIRECTS.map(([from]) => (
+        // `/users/*` also matches `/users` itself.
+        <Route key={from} path={`${from}/*`} element={<SettingsRedirect />} />
+      ))}
 
       <Route path='*' element={<Navigate to='/' replace />} />
     </Routes>

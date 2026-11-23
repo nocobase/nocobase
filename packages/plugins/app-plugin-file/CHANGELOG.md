@@ -1,5 +1,17 @@
 # @nocobase/app-plugin-file
 
+## 1.0.0-beta.32
+
+### Minor Changes
+
+- 85d7e34: Support static server-configured storage directories for file repository uploads while preserving existing object keys and content URLs.
+
+### Patch Changes
+
+- Updated dependencies [38854ec]
+- Updated dependencies [8339722]
+  - @nocobase/app-server@5.0.0-beta.7
+
 ## 1.0.0-beta.31
 
 ### Minor Changes

@@ -3,6 +3,9 @@ import type { LocaleResource } from '@nocobase/i18n';
 import type enUS from './en-US.js';
 
 const deDE: LocaleResource<typeof enUS> = {
+  openAgentSettings: 'Agenteneinstellungen öffnen',
+  myConversations: 'Meine Unterhaltungen',
+  fileUsage: 'Chat-Anhänge',
   modelSuggestions: {
     design:
       'Stärkstes Schlussfolgern: Vorschläge, Architektur, schwierige Untersuchungen und Prüfung wichtiger Änderungen; auch Routineumsetzung, paketübergreifende Änderungen und Vorschläge.',
@@ -95,6 +98,7 @@ const deDE: LocaleResource<typeof enUS> = {
     codex: 'Codex',
     opencode: 'OpenCode',
     pi: 'Pi',
+    antigravity: 'Antigravity CLI',
     gemini: 'Gemini CLI',
     copilot: 'GitHub Copilot',
     cursor: 'Cursor',
@@ -192,6 +196,7 @@ const deDE: LocaleResource<typeof enUS> = {
       title: '{{name}} bearbeiten',
       enabled: 'Aktiviert',
       done: '{{name}} gespeichert',
+      model: 'Modell',
     },
     available: {
       open: 'Agent hinzufügen',
@@ -265,10 +270,6 @@ const deDE: LocaleResource<typeof enUS> = {
     save: 'Fähigkeiten speichern',
     descriptionOnline:
       'Handbücher, die der Agent liest, wenn eine Aufgabe mit ihrer Beschreibung übereinstimmt, in einer schreibgeschützten Sandbox auf dem Server.',
-    onlineScripts:
-      'Skripte werden für Online-Agents nicht ausgeführt: Der Agent kann sie lesen, nicht ausführen.',
-    skippedScripts: ': {{paths}}',
-    pathSeparator: ', ',
   },
   brief: {
     preview: 'Vorschau der vollständigen Eingabeaufforderung',
@@ -993,6 +994,23 @@ const deDE: LocaleResource<typeof enUS> = {
     },
   },
   chat: {
+    thinking: {
+      levels: {
+        'provider-default': 'Standard',
+        none: 'Aus',
+        minimal: 'Minimal',
+        low: 'Niedrig',
+        medium: 'Mittel',
+        high: 'Hoch',
+        xhigh: 'Sehr hoch',
+      },
+      adjusted:
+        'Dieses Modell unterstützt die Denkstufe „{{requested}}“ nicht; für diese Antwort wurde „{{used}}“ verwendet.',
+      adjustedToDefault:
+        'Dieses Modell unterstützt die Denkstufe „{{requested}}“ nicht; für diese Antwort wurde die Standardeinstellung des Anbieters verwendet.',
+      warning:
+        'Das Modell hat die Denkstufe „{{level}}“ für diese Antwort möglicherweise nicht angewendet.',
+    },
     // Keep new guidance available in English until this locale is translated.
     executionFailed:
       'Die Ausführung ist fehlgeschlagen. Prüfen Sie die gespeicherte Unterhaltung, bevor Sie es erneut versuchen.',
@@ -1071,6 +1089,19 @@ const deDE: LocaleResource<typeof enUS> = {
       thinking: 'Denken…',
       reading: 'Blick auf {{subject}}',
       working: 'Arbeit an {{subject}}',
+      ...{
+        count_one: '{{count}} Schritt',
+        count_other: '{{count}} Schritte',
+      },
+    },
+    // Plural forms of the panel wording, outside the typed shape (the rest falls back to English).
+    ...{
+      list: {
+        waiting_one: 'Brauchen mich {{count}}',
+        waiting_other: 'Brauchen mich {{count}}',
+        active_one: 'In Bearbeitung {{count}}',
+        active_other: 'In Bearbeitung {{count}}',
+      },
     },
     agents: {
       personalOnly: 'Nur für Privatläufer',
@@ -1324,8 +1355,6 @@ const deDE: LocaleResource<typeof enUS> = {
     binaryFile: 'Binärdatei, {{size}}. Es kann hier nicht bearbeitet werden.',
     executable: 'Ausführbar',
     scriptBadge: 'Skript',
-    scriptsNote:
-      'Verfügt über Skripte: Online-Agents können sie lesen, aber niemals ausführen',
     compatibility: 'Kompatibilität: {{value}}',
     fileContent: 'Inhalt von {{path}}',
     export: 'Exportieren',
@@ -1360,8 +1389,7 @@ const deDE: LocaleResource<typeof enUS> = {
       name: 'Name',
       renameTitle: '„{{name}}“ umbenennen',
       conventional: {
-        scripts:
-          'Code-Agents können ausgeführt werden. Online-Agents lesen es nur.',
+        scripts: 'Code, den Agents ausführen können.',
         references: 'Dokumentationsagenten lesen, wenn sie es brauchen.',
         assets: 'Vorlagen, Bilder und andere Ressourcen.',
       },
@@ -1505,11 +1533,16 @@ const deDE: LocaleResource<typeof enUS> = {
         runners: 'Laufzeitumgebungen',
         prices: 'Modellpreise',
         services: 'Musterdienste',
+        skills: 'Fähigkeiten',
       },
     },
     actions: {
       read: 'Anzeigen',
       manage: 'Verwalten',
+    },
+    humanOnly: {
+      servicesManage:
+        'Das Verwalten von Modelldiensten schreibt Anbieterschlüssel; nur eine Person darf das tun.',
     },
     keyScopes: {
       agents: {

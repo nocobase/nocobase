@@ -3,6 +3,9 @@ import type { LocaleResource } from '@nocobase/i18n';
 import type enUS from './en-US.js';
 
 const esES: LocaleResource<typeof enUS> = {
+  openAgentSettings: 'Abrir la configuración de agentes',
+  myConversations: 'Mis conversaciones',
+  fileUsage: 'Adjuntos del chat',
   modelSuggestions: {
     design:
       'Razonamiento más potente: propuestas, arquitectura, investigaciones difíciles y revisión de cambios importantes; también implementación habitual y cambios entre paquetes.',
@@ -92,6 +95,7 @@ const esES: LocaleResource<typeof enUS> = {
     codex: 'Codex',
     opencode: 'OpenCode',
     pi: 'Pi',
+    antigravity: 'Antigravity CLI',
     gemini: 'Gemini CLI',
     copilot: 'GitHub Copilot',
     cursor: 'Cursor',
@@ -194,6 +198,7 @@ const esES: LocaleResource<typeof enUS> = {
       title: 'Editar {{name}}',
       enabled: 'Habilitado',
       done: '{{name}} guardado',
+      model: 'Modelo',
     },
     available: {
       open: 'Añadir Agent',
@@ -272,10 +277,6 @@ const esES: LocaleResource<typeof enUS> = {
     save: 'Guardar habilidades',
     descriptionOnline:
       'Manuales que el Agent lee cuando una tarea coincide con su descripción, en un entorno limitado de solo lectura en el servidor.',
-    onlineScripts:
-      'Los scripts no se ejecutan para los Agents en línea: el Agent puede leerlos, no ejecutarlos.',
-    skippedScripts: ': {{paths}}',
-    pathSeparator: ', ',
   },
   brief: {
     preview: 'Vista previa del mensaje completo',
@@ -1000,6 +1001,23 @@ const esES: LocaleResource<typeof enUS> = {
     },
   },
   chat: {
+    thinking: {
+      levels: {
+        'provider-default': 'Predeterminado',
+        none: 'Desactivado',
+        minimal: 'Mínimo',
+        low: 'Bajo',
+        medium: 'Medio',
+        high: 'Alto',
+        xhigh: 'Muy alto',
+      },
+      adjusted:
+        'Este modelo no admite el nivel de razonamiento «{{requested}}»; en esta respuesta se usó «{{used}}».',
+      adjustedToDefault:
+        'Este modelo no admite el nivel de razonamiento «{{requested}}»; en esta respuesta se usó el valor predeterminado del proveedor.',
+      warning:
+        'Es posible que el modelo no haya aplicado el nivel de razonamiento «{{level}}» en esta respuesta.',
+    },
     // Keep new guidance available in English until this locale is translated.
     executionFailed:
       'La ejecución falló. Revisa la conversación guardada antes de reintentar.',
@@ -1078,6 +1096,22 @@ const esES: LocaleResource<typeof enUS> = {
       thinking: 'Pensando…',
       reading: 'Mirando a {{subject}}',
       working: 'Trabajando en {{subject}}',
+      ...{
+        count_one: '{{count}} paso',
+        count_other: '{{count}} pasos',
+        count_many: '{{count}} pasos',
+      },
+    },
+    // Plural forms of the panel wording, outside the typed shape (the rest falls back to English).
+    ...{
+      list: {
+        waiting_one: 'Me necesitan {{count}}',
+        waiting_other: 'Me necesitan {{count}}',
+        waiting_many: 'Me necesitan {{count}}',
+        active_one: 'En curso {{count}}',
+        active_other: 'En curso {{count}}',
+        active_many: 'En curso {{count}}',
+      },
     },
     agents: {
       personalOnly: 'Solo entornos de ejecución personales',
@@ -1329,8 +1363,6 @@ const esES: LocaleResource<typeof enUS> = {
     binaryFile: 'Archivo binario, {{size}}. No se puede editar aquí.',
     executable: 'Ejecutable',
     scriptBadge: 'Guión',
-    scriptsNote:
-      'Tiene scripts: los Agents en línea pueden leerlos pero nunca ejecutarlos',
     compatibility: 'Compatibilidad: {{value}}',
     fileContent: 'Contenido de {{path}}',
     export: 'Exportar',
@@ -1362,8 +1394,7 @@ const esES: LocaleResource<typeof enUS> = {
       name: 'Nombre',
       renameTitle: 'Cambiar el nombre de "{{name}}"',
       conventional: {
-        scripts:
-          'Los Agents de código pueden ejecutarse. Los Agents en línea solo lo leen.',
+        scripts: 'Código que los Agents pueden ejecutar.',
         references: 'Los Agents de documentación leen cuando la necesitan.',
         assets: 'Plantillas, imágenes y otros recursos.',
       },
@@ -1505,11 +1536,16 @@ const esES: LocaleResource<typeof enUS> = {
         runners: 'Entornos de ejecución',
         prices: 'Precios de los modelos',
         services: 'Servicios modelo',
+        skills: 'Habilidades',
       },
     },
     actions: {
       read: 'Ver',
       manage: 'Administrar',
+    },
+    humanOnly: {
+      servicesManage:
+        'Gestionar los servicios de modelos escribe claves de proveedores; solo una persona puede hacerlo.',
     },
     keyScopes: {
       agents: {

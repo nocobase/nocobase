@@ -105,6 +105,8 @@ export class NativeRealtimeOnlineAgent
     messages: ModelMessage[],
     input?: OnlineAgentSendOptions,
   ): Promise<number> {
+    if (input?.runnerId !== undefined)
+      throw invalid('Only Runner conversations can select a runtime.');
     if (input?.effort !== undefined)
       throw invalid(
         'Online agents do not support conversation reasoning effort.',

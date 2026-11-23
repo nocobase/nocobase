@@ -77,7 +77,6 @@ export function agent(
     modelEntries: [{ tool: 'claude', model: 'claude-sonnet-5', effort: null }],
     instructions: null,
     actions: [],
-    confirmChanges: 'larger',
     maxConcurrentRuns: 100,
     maxAttempts: 3,
     toolPolicy: null,

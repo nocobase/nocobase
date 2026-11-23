@@ -5,34 +5,19 @@ import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { expect, it } from 'vitest';
-it('keeps the controlled Registry editor and both template administration implementations synchronized', () => {
+// The Roles and permissions pages moved from the templates into the authorization plugin, which renders the same
+// filter and Default access editors the Registry installs into an application that builds its own. The role editor is
+// the plugin's own: its page access, operations, members and review follow the plugin's role detail, so the Registry
+// keeps the general-purpose permission editor.
+it('keeps the Registry authorization editors and the authorization plugin’s copies synchronized', () => {
   const read = (file: string): string =>
     readFileSync(new URL(file, import.meta.url), 'utf8');
-  const canonical = read(
-    '../../registry/authorization/default-access-editor.tsx',
-  );
-  for (const name of ['default', 'examples'])
+  for (const file of ['default-access-editor.tsx', 'permission-filter.tsx'])
     expect(
       read(
-        `../../../packages/templates/app-template-${name}/client/components/default-access-editor.tsx`,
+        `../../../packages/plugins/app-plugin-authorization/client/components/${file}`,
       ),
-    ).toBe(canonical);
-  for (const file of [
-    'default-access.tsx',
-    'default-access-form.tsx',
-    'default-access-model.ts',
-    'permission-management-page.tsx',
-    'permission-filters.tsx',
-  ])
-    expect(
-      read(
-        `../../../packages/templates/app-template-default/client/pages/settings/${file}`,
-      ),
-    ).toBe(
-      read(
-        `../../../packages/templates/app-template-examples/client/pages/settings/${file}`,
-      ),
-    );
+    ).toBe(read(`../../registry/authorization/${file}`));
 });
 
 it('emits isolated plugin declarations for the new editor and its real primitive dependencies', () => {

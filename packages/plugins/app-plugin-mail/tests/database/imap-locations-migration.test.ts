@@ -300,7 +300,7 @@ test('upgrades populated legacy schema offline without changing business data', 
     throw new Error('Migration must not access the network');
   });
   try {
-    await migrator.latest();
+    await migrator.upTo(name);
     expect(network).not.toHaveBeenCalled();
   } finally {
     network.mockRestore();
@@ -399,7 +399,7 @@ for (const value of [
       providerMessageId: value ? locator(value) : 'imap:invalid!',
     });
     const before = await inspectCollection(connection, 'mailMessages');
-    await expect(migrator.latest()).rejects.toThrow(
+    await expect(migrator.upTo(name)).rejects.toThrow(
       `Cannot upgrade legacy IMAP message ${id}:`,
     );
     expect(await inspectCollection(connection, 'mailMessages')).toEqual(before);
@@ -441,7 +441,7 @@ test('refuses competing UUIDs across batches for the same account tuple without 
     .selectAll()
     .orderBy('id')
     .execute();
-  await expect(migrator.latest()).rejects.toThrow(/tuple belongs to message/);
+  await expect(migrator.upTo(name)).rejects.toThrow(/tuple belongs to message/);
   expect(before.some((row) => row.id === id)).toBe(true);
   expect(
     await connection.query
@@ -478,7 +478,7 @@ test('never truncates an identity exceeding the supported capacity', async ({
   const id = await seedMessage(connection, accountId, {
     providerMessageId: identity,
   });
-  await expect(migrator.latest()).rejects.toThrow(
+  await expect(migrator.upTo(name)).rejects.toThrow(
     'locator exceeds identity capacity',
   );
   expect(
@@ -498,7 +498,7 @@ test('refuses to roll back while messages exist', async ({
   connection,
 }) => {
   const migrator = database.createMigrator({ sources });
-  await migrator.latest();
+  await migrator.upTo(name);
   await seedMessage(connection, await seedAccount(connection), {
     internetMessageId: `<${'x'.repeat(1200)}@example.com>`,
   });
@@ -658,7 +658,7 @@ for (const [table, values] of Object.entries(businessRows)) {
     }) => {
       const migrator = database.createMigrator({ sources });
       if (action === 'up') await migrator.upTo(previous);
-      else await migrator.latest();
+      else await migrator.upTo(name);
       await connection.query
         .insertInto(table)
         .values(values(await seedAccount(connection)))
@@ -674,7 +674,7 @@ for (const [table, values] of Object.entries(businessRows)) {
           .selectFrom(table)
           .selectAll()
           .execute();
-        await migrator.latest();
+        await migrator.upTo(name);
         expect(
           await connection.query.selectFrom(table).selectAll().execute(),
         ).toEqual(rows);

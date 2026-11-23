@@ -39,6 +39,11 @@ import type { MailRuntimeService } from './contracts/service.js';
 
 export type MailRuntimeLogger = MailLogger;
 
+/** How often an instance deletes expired sync runs and submissions. */
+const MAIL_LOG_CLEANUP_INTERVAL_MS = 60 * 60_000;
+/** The most rows of each log table one cleanup deletes. */
+const MAIL_LOG_CLEANUP_BATCH = 1000;
+
 export interface MailRuntimeOptions {
   readonly store: MailStore;
   readonly adapters: MailProviderAdapterResolver;
@@ -58,6 +63,8 @@ export interface MailRuntimeOptions {
   ) => ImapSmtpMailProviderConfig;
   readonly pushWebhookUrl?: string;
   readonly pushWebhookSecret?: string;
+  /** Days finished sync runs and submissions are kept; `0` or omitted keeps them. */
+  readonly logRetentionDays?: number;
   readonly messageChangeNotifier?: MailMessageChangeNotifier;
 }
 
@@ -78,6 +85,7 @@ export class MailRuntime implements MailOutboxPublisher, MailRuntimeService {
   private publishPromise?: Promise<void>;
   private automaticSyncPromise?: Promise<void>;
   private closed = false;
+  private lastLogCleanupAt = 0;
 
   public constructor(private readonly options: MailRuntimeOptions) {
     if (options.credentials && options.resolveImapConfig) {
@@ -281,6 +289,40 @@ export class MailRuntime implements MailOutboxPublisher, MailRuntimeService {
         new Date(Date.now() - 7 * 24 * 60 * 60_000).toISOString(),
       ),
     );
+    await this.runMaintenanceTask('deleteExpiredLogs', () =>
+      this.deleteExpiredLogs(),
+    );
+  }
+
+  /**
+   * Deletes finished sync runs and submissions older than `logRetentionDays`, at most once an hour per instance and at
+   * most `MAIL_LOG_CLEANUP_BATCH` rows of each table at a time, so a backlog drains over several hours instead of in
+   * one long statement. Every instance may run it; a row deleted twice is simply not found the second time.
+   */
+  public async deleteExpiredLogs(now: number = Date.now()): Promise<number> {
+    const days = this.options.logRetentionDays ?? 0;
+    if (days <= 0 || now - this.lastLogCleanupAt < MAIL_LOG_CLEANUP_INTERVAL_MS)
+      return 0;
+    this.lastLogCleanupAt = now;
+    const before = new Date(now - days * 24 * 60 * 60_000).toISOString();
+    const runs =
+      (await this.options.store.deleteFinishedSyncRunsBefore?.(
+        before,
+        MAIL_LOG_CLEANUP_BATCH,
+      )) ?? 0;
+    const submissions =
+      (await this.options.store.deleteFinishedSubmissionsBefore?.(
+        before,
+        MAIL_LOG_CLEANUP_BATCH,
+      )) ?? 0;
+    if (runs + submissions > 0)
+      writeMailLog(
+        this.options.logger,
+        'info',
+        { event: 'mail.logs.deleted', syncRuns: runs, submissions, before },
+        'Deleted expired Mail sync runs and submissions.',
+      );
+    return runs + submissions;
   }
 
   private async runMaintenanceTask(
@@ -318,7 +360,8 @@ export class MailRuntime implements MailOutboxPublisher, MailRuntimeService {
   ): Promise<boolean> {
     const startedAt = Date.now();
     const account = await this.options.store.getAccount(accountId);
-    if (!account || account.status !== 'active') return false;
+    if (!account || account.status !== 'active' || waitsForFolders(account))
+      return false;
     const requestToken = randomUUID();
     await this.options.store.markPushSyncPending(accountId, requestToken);
     writeMailLog(
@@ -387,7 +430,11 @@ export class MailRuntime implements MailOutboxPublisher, MailRuntimeService {
           this.kick();
         } else {
           const current = await this.options.store.getAccount(account.id);
-          if (!current || current.status !== 'active') {
+          if (
+            !current ||
+            current.status !== 'active' ||
+            waitsForFolders(current)
+          ) {
             await this.options.store.clearPushSyncPending(
               account.id,
               requestToken,
@@ -412,6 +459,7 @@ export class MailRuntime implements MailOutboxPublisher, MailRuntimeService {
   ): Promise<boolean> {
     const account = await this.options.store.getAccount(accountId);
     if (!account || account.status !== 'active') return false;
+    if (waitsForFolders(account)) return false;
     const cursor = await this.options.store.getSyncCursor(account.id);
     const legacyInitialSyncDate =
       !cursor && !account.initialSyncReceivedAfter
@@ -526,4 +574,9 @@ export function isAutomaticSyncDue(
   const last = Date.parse(lastSyncedAt);
   if (!Number.isFinite(last)) return true;
   return now - last >= intervalMs;
+}
+
+/** An account whose folders are not chosen yet imports nothing until its owner chooses them. */
+function waitsForFolders(account: MailAccount): boolean {
+  return account.syncFolderIds?.length === 0;
 }

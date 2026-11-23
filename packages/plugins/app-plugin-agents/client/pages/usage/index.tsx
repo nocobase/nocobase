@@ -4,13 +4,13 @@
  * names it), its subject, day, model, coding tool or agent type, with a totals row. A cost reads "—" where no price
  * matches. One toolbar holds the range, the group, agent and person filters and the grouping; all live in the URL
  * (`groupBy`, agent by default). A daily chart of tokens or cost sits above the table, stacked by the top agents or
- * models when grouped by them (`series`). Who reads `agents.prices` also has "Set prices" in the header, opening the
- * prices sheet (`?prices=1`, `prices/`), where the prices costs are worked out from are set.
+ * models when grouped by them (`series`). Who reads `agents.prices` (Usage · view) also has the Prices tab
+ * (`?tab=prices`, `prices/`), where the prices costs are worked out from are read and, with manage, set.
  *
- * The usage page's grant opens it, and its API checks the same grant (`GET agents/admin/usage`); a reader of agents
- * counts every run, anyone else the runs they started or own, on subjects they may see. Below the runs, a reader of
- * agents also sees the other model use of the range (`GET agents/admin/usage/models`): embeddings, reranking and
- * utility texts the application asked for outside runs, by use, caller and model.
+ * The page stands behind `agents.prices` read, and its API counts every run only for that reader (`GET
+ * agents/usage`); anyone else, a reader of agents included, sees the runs they started or own, on subjects they may
+ * see. Below the runs, the same reader also sees the other model use of the range (`GET agents/usage/models`):
+ * embeddings, reranking and utility texts the application asked for outside runs, by use, caller and model.
  */
 import { useCan } from '@nocobase/app-plugin-authorization/client';
 import { useLocale, useTranslation } from '@nocobase/i18n/client';
@@ -70,8 +70,14 @@ import {
   TableHeader,
   TableRow,
 } from '../../components/ui/table.js';
-import { Tabs, TabsList, TabsTrigger } from '../../components/ui/tabs.js';
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from '../../components/ui/tabs.js';
 import { useAgentsApi } from '../../hooks/use-agents-api.js';
+import { useAgentsMount } from '../../mount.js';
 import { useText, useVocabulary } from '../../hooks/use-vocabulary.js';
 import {
   STACKED_GROUP_BYS,
@@ -86,7 +92,7 @@ import {
   type ChartMetric,
 } from './model.js';
 import { DateRangePicker } from './date-range-picker.js';
-import { PricesSheet } from './prices/index.js';
+import { PricesPanel } from './prices/index.js';
 
 const ALL = '__all__';
 
@@ -436,11 +442,12 @@ function UsageTable({
   const { t } = useTranslation();
   const { locale } = useLocale();
   const { subjects } = useVocabulary();
+  const { agentLink } = useAgentsMount();
   const rowText = useRowText(groupBy);
   const tokens = (value: number) => formatTokens(value, locale);
   const label = (row: UsageRow): ReactElement | string => {
     const text = rowText(row);
-    const link = rowLink(groupBy, row.key, subjects);
+    const link = rowLink(groupBy, row.key, subjects, agentLink);
     return link ? (
       <Link to={link} className='hover:underline'>
         {text}
@@ -609,7 +616,12 @@ export default function UsagePage(): ReactElement {
     resource: { type: 'settings', id: 'agents.prices' },
     action: 'read',
   }).can;
-  const pricesOpen = readPrices && params.get('prices') === '1';
+  // `?tab=prices` (and the older `?prices=1`) opens the prices tab.
+  const tab =
+    readPrices &&
+    (params.get('tab') === 'prices' || params.get('prices') === '1')
+      ? 'prices'
+      : 'usage';
   const queryClient = useQueryClient();
   // What runs used accrues as they run, and nothing announces it: Refresh reads the report again.
   const refresh = () =>
@@ -622,37 +634,50 @@ export default function UsagePage(): ReactElement {
         queryKey: ['agents', 'usage'],
         type: 'active',
       }),
+      queryClient.refetchQueries({
+        queryKey: agentsKeys.prices,
+        type: 'active',
+      }),
     ]);
-  const openPrices = (open: boolean) => {
-    const next = new URLSearchParams(params);
-    if (open) next.set('prices', '1');
-    else next.delete('prices');
-    setParams(next, { replace: true });
+  const showTab = (next: string) => {
+    const search = new URLSearchParams(params);
+    search.delete('prices');
+    if (next === 'prices') search.set('tab', 'prices');
+    else search.delete('tab');
+    setParams(search, { replace: true });
   };
   return (
     <PageContainer>
       <PageHeader
         title={t('usage.title')}
         description={t('usage.description')}
-        actions={
-          <>
-            {readPrices ? (
-              <Button variant='outline' onClick={() => openPrices(true)}>
-                <CircleDollarSignIcon data-icon='inline-start' />
-                {t('usage.setPrices')}
-              </Button>
-            ) : null}
-            <RefreshButton onRefresh={refresh} />
-          </>
-        }
-      />
-      <UsageView
-        canSetPrices={readPrices}
-        onSetPrices={() => openPrices(true)}
+        actions={<RefreshButton onRefresh={refresh} />}
       />
       {readPrices ? (
-        <PricesSheet open={pricesOpen} onOpenChange={openPrices} />
-      ) : null}
+        <Tabs
+          value={tab}
+          onValueChange={(next: string) => showTab(next)}
+          className='gap-4'
+        >
+          <TabsList variant='line' className='w-max'>
+            <TabsTrigger value='usage' data-testid='usage-tab-usage'>
+              {t('usage.tabs.usage')}
+            </TabsTrigger>
+            <TabsTrigger value='prices' data-testid='usage-tab-prices'>
+              <CircleDollarSignIcon />
+              {t('usage.tabs.prices')}
+            </TabsTrigger>
+          </TabsList>
+          <TabsContent value='usage'>
+            <UsageView canSetPrices onSetPrices={() => showTab('prices')} />
+          </TabsContent>
+          <TabsContent value='prices' data-testid='usage-prices'>
+            {tab === 'prices' ? <PricesPanel /> : null}
+          </TabsContent>
+        </Tabs>
+      ) : (
+        <UsageView canSetPrices={false} onSetPrices={() => undefined} />
+      )}
     </PageContainer>
   );
 }

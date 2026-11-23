@@ -314,6 +314,11 @@ const OptionsActionSchema = z.object({
   name: z.string(),
   title: OptionTextSchema,
   description: OptionTextSchema.optional(),
+  risk: z.enum(['sensitive', 'high']).optional(),
+  defaultFor: z.array(z.string()).optional().meta({
+    description:
+      'Composites only: page ids whose access a role editor turns this action on with. Display only.',
+  }),
 });
 
 /** What every `options` route answers: the workspace catalogue the settings pages render. */
@@ -345,6 +350,10 @@ export const AuthorizationOptionsSchema: z.ZodType = z
                 title: OptionTextSchema,
                 description: OptionTextSchema.optional(),
                 group: z.string().optional(),
+                usedOn: z.array(z.string()).optional().meta({
+                  description:
+                    'Composites only: page ids the actions are used on. Display only.',
+                }),
                 actions: z.array(OptionsActionSchema),
                 dataScopes: z
                   .record(
@@ -400,7 +409,13 @@ export const AuthorizationOptionsSchema: z.ZodType = z
       }),
     ),
     collections: z.array(
-      z.object({ name: z.string(), fields: z.array(z.string()) }),
+      z.object({
+        name: z.string(),
+        title: OptionTextSchema.meta({
+          description: 'The title the collection was registered with.',
+        }),
+        fields: z.array(z.string()),
+      }),
     ),
   })
   .meta({ ref: 'AuthorizationOptions' });

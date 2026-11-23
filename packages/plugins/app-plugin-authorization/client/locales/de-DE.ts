@@ -1,8 +1,13 @@
 import type { LocaleResource } from '@nocobase/i18n';
 
 import type enUS from './en-US.js';
+import components from './components-en-US.js';
+import settings from './settings-en-US.js';
 
 const deDE: LocaleResource<typeof enUS> = {
+  // The Roles and permissions pages are not translated into this language yet and show in English.
+  ...components,
+  settings,
   permissionSets: {
     builtIn: {
       root: 'Systemadministrator',
@@ -21,7 +26,6 @@ const deDE: LocaleResource<typeof enUS> = {
     actions: {
       assign: 'Aufgaben verwalten',
       configure: 'Konfigurieren',
-      inspect: 'Berechtigungen prüfen',
       read: 'Lesen',
       create: 'Erstellen',
       update: 'Aktualisieren',
@@ -37,8 +41,8 @@ const deDE: LocaleResource<typeof enUS> = {
         'Erlauben Sie den Zugriff auf jede Seite, einschließlich später hinzugefügter Seiten.',
     },
     settings: {
-      inspector: 'Berechtigungsinspektor',
       'permission-sets': 'Berechtigungssätze',
+      'authentication-settings': 'Anmeldung und Authentifizierung',
     },
     subjectTypes: {
       authenticated: 'Alle angemeldeten Benutzer',

@@ -2,6 +2,9 @@ import { Args, Flags } from '@oclif/core';
 import type { Command, Interfaces } from '@oclif/core';
 import path from 'node:path';
 
+import type { CommandSuccessStatus } from '@nocobase/cli-envelope';
+
+import { CommandError } from '../../command/errors.ts';
 import { AppCommand } from '../../context.ts';
 import {
   addDependencyCommand,
@@ -16,6 +19,7 @@ import type { ManualServerPluginEdit } from '../../lib/server-plugins.ts';
 import {
   applyPluginRegistration,
   planPluginRegistration,
+  planPluginUnregistration,
   pluginPackageName,
   type PluginRegistrationPlan,
 } from '../../lib/plugin-registration.ts';
@@ -28,12 +32,15 @@ import {
   type PluginCommandIssue,
   type PluginPlanJson,
 } from '../../lib/plugin-json.ts';
+import { checkRetainedPluginReferences } from '../../lib/plugin-references.ts';
 import { runAttached, runCommand } from '../../lib/run-command.ts';
 import { resolveAppRoot } from '../../lib/workspace-app.ts';
 import {
   applySkillsSync,
   formatSkillsSyncSummary,
   planSkillsSync,
+  readAppPackage,
+  resolveRegisteredPluginNames,
   type SkillsSyncPlan,
 } from '../../lib/skills-sync.ts';
 
@@ -74,7 +81,7 @@ export interface PluginRegisterPlanResult {
   readonly plan: PluginPlanJson<PluginRegistrationPlan>;
   /** The Skills copied, or planned in a dry run; absent when copying them failed. */
   readonly skills?: SkillsSyncPlan | PluginRegisterSkillsSkipped;
-  /** Commands a dry run would still run; always empty, because the plugin is already installed. */
+  /** Package manager commands the registration would execute. */
   readonly commands?: readonly PluginCommandInvocation[];
   readonly issues?: readonly PluginCommandIssue[];
 }
@@ -84,17 +91,63 @@ export type PluginRegisterResult =
   | PluginRegisterInstallRequiredResult
   | PluginRegisterPlanResult;
 
+/**
+ * Several plugins registered in one run, in the order given: each one's result as a single registration reports it.
+ * The run is `partial-success` when any of them is, and `success-noop` only when all of them are.
+ */
+export interface PluginRegisterManyResult {
+  readonly plugins: readonly PluginRegisterResult[];
+}
+
+/**
+ * `error.details` when registering several plugins fails part way: the ones before `failed` are registered and stay
+ * so, and the ones after it were not attempted. Running the same command again finishes the rest.
+ */
+export interface PluginRegisterManyFailureDetails {
+  readonly registered: readonly PluginRegisterResult[];
+  readonly failed: string;
+  readonly skipped: readonly string[];
+}
+
+/** The failure of one plugin among several, keeping what was already registered so a caller can tell. */
+function registerManyFailure(
+  error: CommandError,
+  details: PluginRegisterManyFailureDetails,
+): CommandError {
+  if (details.registered.length === 0 && details.skipped.length === 0)
+    return error;
+  const done =
+    details.registered.length > 0
+      ? ` after registering ${details.registered.map(({ packageName }) => packageName).join(', ')}`
+      : '';
+  const rest =
+    details.skipped.length > 0
+      ? `; ${details.skipped.join(', ')} ${details.skipped.length === 1 ? 'was' : 'were'} not attempted`
+      : '';
+  return new CommandError(
+    `${error.message} Registering stopped at ${details.failed}${done}${rest}.`,
+    {
+      code: error.errorCode,
+      suggestions: error.commandSuggestions,
+      exit: error.exitCode,
+      details,
+      cause: error,
+    },
+  );
+}
+
 export default class PluginRegister extends AppCommand {
   static override summary =
     'Install a plugin and wire it into this application.';
   static override description =
-    'Adds the plugin package to dependencies, wires its exported client and server entries into the explicit application composition roots, and copies the skills it ships into .agents/skills.';
+    'Installs a plugin, registers its exported client, server and CLI contributions, and synchronizes its Skills. Use --disabled to preinstall it as a development dependency with its Skills.';
 
   static override examples: Command.Example[] = [
     '<%= config.bin %> <%= command.id %> audit-log',
     '<%= config.bin %> <%= command.id %> @nocobase/app-plugin-audit-log',
     '<%= config.bin %> <%= command.id %> audit-log --version 1.2.0',
     '<%= config.bin %> <%= command.id %> audit-log --dry-run',
+    '<%= config.bin %> <%= command.id %> agents knowledge',
     '<%= config.bin %> <%= command.id %> audit-log --workspace-root . --app app-template-default',
   ];
 
@@ -103,10 +156,15 @@ export default class PluginRegister extends AppCommand {
   } = {
     name: Args.string({
       description:
-        'Plugin to register: a short name such as audit-log, or a full scoped app-plugin-* or app-portal-* package name.',
+        'Plugin to register: a short name such as audit-log, or a full scoped app-plugin-* or app-portal-* package name. Name several to register them in that order, a plugin after the ones it builds on.',
       required: true,
     }),
   };
+
+  // Further names follow the first one.
+  static override strict = false;
+
+  #lastStatus: CommandSuccessStatus = 'success';
 
   static override flags: {
     dir: Interfaces.OptionFlag<string | undefined>;
@@ -136,7 +194,7 @@ export default class PluginRegister extends AppCommand {
     disabled: Flags.boolean({
       default: false,
       description:
-        'Install the plugin without adding client or server entries.',
+        'Preinstall as a development dependency, synchronize Skills and leave all runtime entries unregistered.',
     }),
     'no-install': Flags.boolean({
       default: false,
@@ -153,13 +211,48 @@ export default class PluginRegister extends AppCommand {
     }),
   };
 
-  public async run(): Promise<PluginRegisterResult> {
-    const { args, flags } = await this.parse(PluginRegister);
+  public async run(): Promise<PluginRegisterResult | PluginRegisterManyResult> {
+    const { argv, flags } = await this.parse(PluginRegister);
+    const names = [...new Set(argv as string[])];
     try {
-      return await this.register(args.name, flags);
+      if (names.length === 1) return await this.register(names[0], flags);
+      if (flags.version !== undefined)
+        throw pluginError(
+          '--version applies to one plugin. Register a plugin that needs a version on its own.',
+        );
+      // A misspelt name fails the command before anything is written.
+      const packageNames = names.map((name) => pluginPackageName(name));
+      const plugins: PluginRegisterResult[] = [];
+      const statuses: CommandSuccessStatus[] = [];
+      for (const [index, name] of names.entries()) {
+        this.#lastStatus = 'success';
+        try {
+          plugins.push(await this.register(name, flags));
+        } catch (error) {
+          throw registerManyFailure(classifyPluginError(error), {
+            registered: plugins,
+            failed: packageNames[index],
+            skipped: packageNames.slice(index + 1),
+          });
+        }
+        statuses.push(this.#lastStatus);
+      }
+      super.setStatus(
+        statuses.includes('partial-success')
+          ? 'partial-success'
+          : statuses.every((status) => status === 'success-noop')
+            ? 'success-noop'
+            : 'success',
+      );
+      return { plugins };
     } catch (error) {
       throw classifyPluginError(error);
     }
+  }
+
+  protected override setStatus(status: CommandSuccessStatus): void {
+    this.#lastStatus = status;
+    super.setStatus(status);
   }
 
   private async register(
@@ -183,16 +276,38 @@ export default class PluginRegister extends AppCommand {
     const dryRun = flags['dry-run'];
     const packageName = pluginPackageName(name);
 
+    if (
+      flags.disabled &&
+      (await resolveRegisteredPluginNames(appRoot)).includes(packageName)
+    ) {
+      throw pluginError(
+        `${packageName} is registered. Run plugin unregister to keep it preinstalled.`,
+      );
+    }
+    if (
+      flags.disabled &&
+      Object.hasOwn(
+        (await readAppPackage(appRoot)).dependencies ?? {},
+        packageName,
+      )
+    ) {
+      await checkRetainedPluginReferences(
+        appRoot,
+        await planPluginUnregistration({ appRoot, packageName }),
+      );
+    }
     const installed = await this.install({
+      development: flags.disabled,
       appRoot,
       dryRun,
       packageName,
       skipInstall: flags['no-install'],
       version:
         flags.version ??
+        (await declaredDependencyRange(appRoot, packageName)) ??
         (flags['workspace-root'] === undefined ? undefined : 'workspace:^'),
     });
-    if (typeof installed !== 'string') {
+    if (!('directory' in installed)) {
       // Only a dry run stops here, and a dry run changes nothing.
       this.setStatus('success-noop');
       return installed;
@@ -203,10 +318,10 @@ export default class PluginRegister extends AppCommand {
       dependencyRange: await this.dependencyRange(appRoot, packageName),
       enabled: !flags.disabled,
       packageName,
-      pluginDirectory: installed,
+      pluginDirectory: installed.directory,
     });
 
-    if (!plan.changed) {
+    if (!plan.changed && !flags.disabled) {
       this.setStatus('success-noop');
       this.log(`${packageName} is already registered.`);
       return {
@@ -229,7 +344,7 @@ export default class PluginRegister extends AppCommand {
       : await planSkillsSync({
           appPackageName: packageName,
           appRoot,
-          plugins: [{ packageName, pluginDirectory: installed }],
+          plugins: [{ packageName, pluginDirectory: installed.directory }],
         });
     const skipped: PluginRegisterSkillsSkipped = {
       skipped: true,
@@ -245,7 +360,7 @@ export default class PluginRegister extends AppCommand {
         packageName,
         plan: pluginPlanForJson(plan),
         skills: skillsPlan ?? skipped,
-        commands: [],
+        commands: installed.commands,
       };
     }
 
@@ -304,14 +419,19 @@ export default class PluginRegister extends AppCommand {
     dryRun,
     packageName,
     skipInstall,
+    development,
     version,
   }: {
     appRoot: string;
     dryRun: boolean;
     packageName: string;
     skipInstall: boolean;
+    development: boolean;
     version?: string;
-  }): Promise<string | PluginRegisterInstallRequiredResult> {
+  }): Promise<
+    | { directory: string; commands: PluginCommandInvocation[] }
+    | PluginRegisterInstallRequiredResult
+  > {
     const existing = await installedPluginDirectory(appRoot, packageName);
     if (skipInstall) {
       if (existing === undefined) {
@@ -319,7 +439,7 @@ export default class PluginRegister extends AppCommand {
           `${packageName} is not installed in ${appRoot} and --no-install was given.`,
         );
       }
-      return existing;
+      return { directory: existing, commands: [] };
     }
 
     const range =
@@ -329,6 +449,7 @@ export default class PluginRegister extends AppCommand {
     const { args, packageManager } = addDependencyCommand(
       await appPackageManager(appRoot),
       specifier,
+      development,
     );
 
     if (dryRun) {
@@ -349,7 +470,10 @@ export default class PluginRegister extends AppCommand {
           ],
         };
       }
-      return existing;
+      return {
+        directory: existing,
+        commands: [{ command: packageManager, args, cwd: appRoot }],
+      };
     }
 
     this.log(`${packageManager} ${args.join(' ')}`);
@@ -375,7 +499,7 @@ export default class PluginRegister extends AppCommand {
         `${packageManager} reported success but ${packageName} is not in node_modules.`,
       );
     }
-    return directory;
+    return { directory, commands: [] };
   }
 
   private describe(
