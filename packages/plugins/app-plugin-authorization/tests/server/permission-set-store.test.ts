@@ -4,7 +4,6 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import permissionSetMigration from '../../database/migrations/202608210001_create_permission_set_tables.js';
 import {
   permissionSetsPlugin,
-  PermissionSetConflictError,
   PermissionSetLastAssignmentError,
 } from '@nocobase/authorization/permission-sets';
 import { databasePlugin } from '../../server/database/plugin.js';
@@ -61,48 +60,6 @@ describe('authorization plugin database stores', () => {
         (await bound.getMany(['batch-uncommitted'])).map((set) => set.key),
       ).toEqual(['batch-uncommitted']);
     });
-  });
-
-  it('reports a duplicate assignment as a conflict, also inside a transaction, and lets other failures through', async () => {
-    const conn = database.connection();
-    const store = new DatabasePermissionSetStore(() => conn);
-    await store.create({ key: 'duplicate-check', grants: [] });
-    const held = {
-      id: 'user:carol:duplicate-check',
-      subject: { type: 'user', id: 'carol' },
-      permissionSet: 'duplicate-check',
-    };
-    await store.assign(held);
-    await expect(store.assign(held)).rejects.toBeInstanceOf(
-      PermissionSetConflictError,
-    );
-    await expect(
-      store.assign({ ...held, id: 'carol-again' }),
-    ).rejects.toBeInstanceOf(PermissionSetConflictError);
-    // The insert fails in its own savepoint, so the caller's transaction stays usable.
-    await conn.transaction(async (tx) => {
-      const bound = store.withTransaction(tx);
-      await expect(bound.assign(held)).rejects.toBeInstanceOf(
-        PermissionSetConflictError,
-      );
-      expect(await bound.listAssignments('duplicate-check')).toEqual([held]);
-    });
-    // An id taken by another grant and a NOT NULL failure are not duplicate grants.
-    const collision = await store
-      .assign({ ...held, subject: { type: 'user', id: 'dave' } })
-      .catch((error: unknown) => error);
-    expect(collision).toBeInstanceOf(Error);
-    expect(collision).not.toBeInstanceOf(PermissionSetConflictError);
-    const notNull = await store
-      .assign({
-        id: 'broken',
-        subject: { type: 'user', id: null as unknown as string },
-        permissionSet: 'duplicate-check',
-      })
-      .catch((error: unknown) => error);
-    expect(notNull).toBeInstanceOf(Error);
-    expect(notNull).not.toBeInstanceOf(PermissionSetConflictError);
-    expect(await store.listAssignments('duplicate-check')).toEqual([held]);
   });
 
   it('rejects a stale role revision atomically without losing a saved grant', async () => {

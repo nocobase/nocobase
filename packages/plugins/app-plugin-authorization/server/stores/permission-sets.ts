@@ -3,10 +3,7 @@ import {
   encodeAuthorizationTitle,
   decodeAuthorizationTitle,
 } from '@nocobase/authorization/core';
-import {
-  isUniqueConstraintViolation,
-  type DatabaseConnection,
-} from '@nocobase/db';
+import type { DatabaseConnection } from '@nocobase/db';
 import type { DatabaseConnectionSource } from './connection.js';
 import type { Knex } from 'knex';
 import type { PermissionGrant } from '@nocobase/authorization/core';
@@ -167,44 +164,18 @@ export class DatabasePermissionSetStore implements PermissionSetStore<DatabaseCo
     input: PermissionSetAssignment,
   ): Promise<PermissionSetAssignment> {
     const now = new Date();
-    try {
-      // A savepoint inside a caller's transaction, so the lookup below can still run after the insert fails.
-      await this.connection().transaction(async (connection) => {
-        await connection.query
-          .insertInto('authorizationPermissionSetAssignments')
-          .values({
-            id: input.id,
-            subjectType: input.subject.type,
-            subjectId: input.subject.id,
-            permissionSetKey: input.permissionSet,
-            createdAt: now,
-            updatedAt: now,
-          })
-          .execute();
-      });
-    } catch (error) {
-      if (isUniqueConstraintViolation(error) && (await this.isAssigned(input)))
-        throw new PermissionSetConflictError(
-          `Permission Set ${input.permissionSet} is already assigned to this subject.`,
-        );
-      throw error;
-    }
+    await this.connection()
+      .query.insertInto('authorizationPermissionSetAssignments')
+      .values({
+        id: input.id,
+        subjectType: input.subject.type,
+        subjectId: input.subject.id,
+        permissionSetKey: input.permissionSet,
+        createdAt: now,
+        updatedAt: now,
+      })
+      .execute();
     return input;
-  }
-
-  /**
-   * Whether the subject already holds the set, which is what the assignment's unique index rejects. Any other unique
-   * violation, such as an assignment id taken by another subject or set, is not a duplicate grant and stays unexpected.
-   */
-  private async isAssigned(input: PermissionSetAssignment): Promise<boolean> {
-    const row = await this.connection()
-      .query.selectFrom('authorizationPermissionSetAssignments')
-      .select(['id'])
-      .where('subjectType', '=', input.subject.type)
-      .where('subjectId', '=', input.subject.id)
-      .where('permissionSetKey', '=', input.permissionSet)
-      .executeTakeFirst();
-    return row !== undefined;
   }
 
   async revoke(id: string): Promise<void> {
