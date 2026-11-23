@@ -236,6 +236,13 @@ export class FlowModelRepository implements IFlowModelRepository<FlowModel> {
   }
 }
 
+// A tab renderer can be mounted again when the UI Editor adds or removes its controls.
+const confirmedRouteModels = new WeakSet<FlowModel>();
+
+export function isRouteContentConfirmed(model: FlowModel) {
+  return confirmedRouteModels.has(model);
+}
+
 export async function loadRouteContentForEditing(engine: FlowEngine, options: CreateModelOptions) {
   const repository = engine.modelRepository;
   if (!(repository instanceof FlowModelRepository)) {
@@ -249,11 +256,13 @@ export async function loadRouteContentForEditing(engine: FlowEngine, options: Cr
       if (model.parentId === options.parentId && model.subKey === options.subKey) cached = model;
     });
   }
+  if (cached && isRouteContentConfirmed(cached)) return cached;
   const data = await repository.ensureRouteContent({ ...options, uid: cached?.uid });
   if (cached && cached.uid !== data.uid) engine.removeModelWithSubModels(cached.uid);
   const model = await engine.createModelAsync(data);
   if (model.parent && model.parent.subModels[options.subKey] !== model) {
     model.parent.setSubModel(options.subKey, model);
   }
+  confirmedRouteModels.add(model);
   return model;
 }

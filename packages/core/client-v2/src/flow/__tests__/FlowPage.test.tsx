@@ -8,14 +8,17 @@
  */
 
 import { observable } from '@formily/reactive';
-import { act, render, waitFor } from '@testing-library/react';
+import { act, fireEvent, render, waitFor } from '@testing-library/react';
 import React from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { FlowPage } from '../FlowPage';
 import { RouteModel } from '../models/base/RouteModel';
 import { loadRouteContentForEditing } from '../FlowModelRepository';
 
-vi.mock('../FlowModelRepository', () => ({ loadRouteContentForEditing: vi.fn() }));
+vi.mock('../FlowModelRepository', () => ({
+  loadRouteContentForEditing: vi.fn(),
+  isRouteContentConfirmed: () => false,
+}));
 
 type TestContextProperty = {
   value?: unknown;
@@ -101,7 +104,7 @@ vi.mock('@nocobase/flow-engine', async () => {
       if (typeof props.model?.context.isMobileLayout === 'boolean') {
         mocks.rendererMobileStates.push(props.model.context.isMobileLayout);
       }
-      return ReactModule.createElement('div', { 'data-testid': 'flow-model-renderer' });
+      return ReactModule.createElement('input', { 'data-testid': 'flow-model-renderer' });
     }),
     useFlowEngine: vi.fn(() => ({
       getModel: () => Object.create(RouteModel.prototype),
@@ -132,46 +135,6 @@ vi.mock('@nocobase/flow-engine', async () => {
   };
 });
 
-vi.mock('ahooks', async () => {
-  const actual = await vi.importActual<typeof import('ahooks')>('ahooks');
-  const ReactModule = await import('react');
-  return {
-    ...actual,
-    useRequest: vi.fn((service: () => Promise<unknown>) => {
-      const serviceRef = ReactModule.useRef(service);
-      const [state, setState] = ReactModule.useState<{
-        loading: boolean;
-        data?: unknown;
-        error?: unknown;
-      }>({
-        loading: true,
-      });
-
-      ReactModule.useEffect(() => {
-        let active = true;
-        serviceRef
-          .current()
-          .then((data) => {
-            if (active) {
-              setState({ loading: false, data, error: null });
-            }
-          })
-          .catch((error) => {
-            if (active) {
-              setState({ loading: false, data: undefined, error });
-            }
-          });
-
-        return () => {
-          active = false;
-        };
-      }, []);
-
-      return state;
-    }),
-  };
-});
-
 describe('FlowPage', () => {
   beforeEach(() => {
     mocks.loadModel.mockImplementation(async () => null);
@@ -179,7 +142,10 @@ describe('FlowPage', () => {
   });
 
   afterEach(() => {
-    editor.enabled = false;
+    act(() => {
+      editor.enabled = false;
+    });
+    vi.mocked(loadRouteContentForEditing).mockReset();
     mocks.loadModel.mockReset();
     mocks.loadOrCreateModel.mockReset();
     mocks.rendererMobileStates = [];
@@ -191,7 +157,7 @@ describe('FlowPage', () => {
     mocks.contextMobileLayout = undefined;
   });
 
-  it('waits for the persisted route page before rendering the editor after a browse-first visit', async () => {
+  it('keeps the mounted route page and confirms storage only on the first edit', async () => {
     mocks.model = createPageModel();
     const { queryByTestId } = render(<FlowPage parentId="route" />);
     await waitFor(() => expect(queryByTestId('flow-model-renderer')).toBeTruthy());
@@ -200,6 +166,8 @@ describe('FlowPage', () => {
     });
     expect(loadRouteContentForEditing).not.toHaveBeenCalled();
 
+    const input = queryByTestId('flow-model-renderer') as HTMLInputElement;
+    fireEvent.change(input, { target: { value: 'draft' } });
     let finish: () => void;
     vi.mocked(loadRouteContentForEditing).mockImplementationOnce(
       () =>
@@ -211,9 +179,39 @@ describe('FlowPage', () => {
       editor.enabled = true;
     });
     await waitFor(() => expect(loadRouteContentForEditing).toHaveBeenCalledOnce());
-    expect(queryByTestId('flow-model-renderer')).toBeNull();
-    finish();
-    await waitFor(() => expect(queryByTestId('flow-model-renderer')).toBeTruthy());
+    expect(input.closest('[inert]')).toBeTruthy();
+    expect(queryByTestId('flow-model-renderer')).toBe(input);
+    await act(async () => finish());
+    await waitFor(() => expect(input.closest('[inert]')).toBeNull());
+    act(() => {
+      editor.enabled = false;
+    });
+    act(() => {
+      editor.enabled = true;
+    });
+    expect(queryByTestId('flow-model-renderer')).toBe(input);
+    expect(input.value).toBe('draft');
+    expect(loadRouteContentForEditing).toHaveBeenCalledOnce();
+    expect(mocks.loadOrCreateModel).toHaveBeenCalledOnce();
+  });
+
+  it('opens directly in the editor and keeps the confirmed page on subsequent toggles', async () => {
+    editor.enabled = true;
+    mocks.model = createPageModel();
+    vi.mocked(loadRouteContentForEditing).mockResolvedValue(
+      mocks.model as unknown as Awaited<ReturnType<typeof loadRouteContentForEditing>>,
+    );
+    const { findByTestId, getByTestId } = render(<FlowPage parentId="route" />);
+    const input = await findByTestId('flow-model-renderer');
+    act(() => {
+      editor.enabled = false;
+    });
+    act(() => {
+      editor.enabled = true;
+    });
+    expect(getByTestId('flow-model-renderer')).toBe(input);
+    expect(loadRouteContentForEditing).toHaveBeenCalledOnce();
+    expect(mocks.loadOrCreateModel).not.toHaveBeenCalled();
   });
 
   it('uses showFlowSettings from page model props', async () => {

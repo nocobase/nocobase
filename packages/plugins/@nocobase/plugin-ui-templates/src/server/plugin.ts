@@ -196,6 +196,8 @@ export class PluginBlockReferenceServer extends Plugin {
       const actionName = ctx?.action?.actionName;
 
       if (actionName === 'save') {
+        // Initializing an empty route slot can return an existing model without changing its template references.
+        if (String(ctx.action.params.ensureRouteContent) === 'true') return next();
         const values = ctx?.action?.params?.values;
         if (!values || typeof values !== 'object') {
           ctx.throw(400, {

@@ -19,7 +19,7 @@ import {
 } from '@nocobase/flow-engine';
 import { Icon, type NocoBaseDesktopRoute } from '../../../../flow-compat';
 import type { RouteRepository } from '../../../../RouteRepository';
-import { useRequest } from 'ahooks';
+import { RouteContent, useRouteContentRequest } from '../../../useRouteContentRequest';
 import _ from 'lodash';
 import React from 'react';
 import { SkeletonFallback } from '../../../components/SkeletonFallback';
@@ -27,40 +27,28 @@ import { TextAreaWithContextSelector } from '../../../components/TextAreaWithCon
 import { BlockGridModel } from '../BlockGridModel';
 
 const PageTabChildrenRenderer = observer(({ ctx, options }: PageTabChildrenProps) => {
-  const routeMode =
-    ctx.model instanceof RootPageTabModel && ctx.model.props.route?.id != null
-      ? ctx.flowSettingsEnabled
-        ? 'edit'
-        : 'browse'
-      : undefined;
-  return <PageTabChildren key={routeMode} ctx={ctx} options={options} routeMode={routeMode} />;
-});
-
-type PageTabChildrenProps = { ctx: FlowModel['context']; options: CreateModelOptions };
-
-function PageTabChildren({ ctx, options, routeMode }: PageTabChildrenProps & { routeMode?: 'edit' | 'browse' }) {
-  const { data, loading, error } = useRequest(
-    async () => {
-      const model: FlowModel =
-        routeMode === 'edit'
-          ? await loadRouteContentForEditing(ctx.engine, options)
-          : await ctx.engine.loadOrCreateModel(options, {
-              skipSave: routeMode === 'browse' || !ctx.flowSettingsEnabled,
-            });
+  const isRoute = ctx.model instanceof RootPageTabModel && ctx.model.props.route?.id != null;
+  const { model, loading, error, needsConfirmation } = useRouteContentRequest(
+    async (forEditing) => {
+      const model = forEditing
+        ? await loadRouteContentForEditing(ctx.engine, options)
+        : await ctx.engine.loadOrCreateModel(options, { skipSave: isRoute || !ctx.flowSettingsEnabled });
       model.context.addDelegate(ctx);
       return model;
     },
-    {
-      refreshDeps: [ctx.model.uid],
-    },
+    isRoute && ctx.flowSettingsEnabled,
+    [ctx.model.uid],
   );
-  if (error) throw error;
+  if (error && isRoute) throw error;
   const margin = ctx?.isMobileLayout ? 8 : ctx?.themeToken.marginBlock;
-  if (loading || !data?.uid) {
+  if (!model?.uid || (loading && !isRoute)) {
     return <SkeletonFallback style={{ margin }} />;
   }
-  return <FlowModelRenderer model={data} fallback={<SkeletonFallback style={{ margin }} />} />;
-}
+  const grid = <FlowModelRenderer model={model} fallback={<SkeletonFallback style={{ margin }} />} />;
+  return isRoute ? <RouteContent pending={needsConfirmation}>{grid}</RouteContent> : grid;
+});
+
+type PageTabChildrenProps = { ctx: FlowModel['context']; options: CreateModelOptions };
 
 /**
  * 统一归一化 `desktopRoutes:updateOrCreate` 的返回值。

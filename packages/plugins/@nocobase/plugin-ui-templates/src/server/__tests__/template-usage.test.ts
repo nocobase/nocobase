@@ -323,6 +323,32 @@ describe('ui templates and usages', () => {
     expect(await countUsage({ modelUid: 'grid-sub' })).toBe(0);
   });
 
+  it('preserves template usages when first-edit initialization reuses a configured grid', async () => {
+    const agent = app.agent();
+    await flowRepo.insertModel({ uid: 'tab', use: 'RouteModel' });
+    await agent.resource('flowModelTemplates').create({
+      values: { uid: 'popup-template', name: 'Popup', targetUid: 'target-block' },
+    });
+    const grid = {
+      uid: 'grid',
+      parentId: 'tab',
+      subKey: 'grid',
+      subType: 'object',
+      async: true,
+      use: 'BlockGridModel',
+    };
+    const stepParams = { popupSettings: { openView: { popupTemplateUid: 'popup-template' } } };
+    const saved = await agent.resource('flowModels').save({ values: { ...grid, stepParams } });
+    expect(saved.status).toBe(200);
+    const usage = { modelUid: grid.uid, templateUid: 'popup-template' };
+    expect(await countUsage(usage)).toBe(1);
+
+    const ensured = await agent.resource('flowModels').save({ ensureRouteContent: true, values: grid });
+    expect(ensured.status).toBe(200);
+    expect(await getBlockOptions(grid.uid)).toMatchObject({ stepParams });
+    expect(await countUsage(usage)).toBe(1);
+  });
+
   it('should maintain usages via flowModels:save/destroy actions', async () => {
     const agent = app.agent();
     await agent.resource('flowModelTemplates').create({
