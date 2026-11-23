@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it } from 'vitest';
 
 import { writeZip } from '../server/core/skills/index.js';
+import { skillsRepo, versionsRepo } from '../server/core/skills/skill.store.js';
 import { composeSkillMarkdown } from '../shared/skills.js';
 import type { SkillPolicy } from '../server/tokens.js';
 import { createHarness, skillMd, type Harness } from './harness.js';
@@ -266,5 +267,62 @@ describe('skill metadata and the application skill policy', () => {
     );
     expect(response.status).toBe(200);
     expect(asked).toEqual(['two']);
+  });
+
+  it('lists a library of more than a thousand skills in one join, past the expression depth a per-skill condition reaches', async () => {
+    h = await createHarness();
+    const conn = h.database.connection();
+    const now = new Date().toISOString();
+    const count = 1100;
+    const names = Array.from(
+      { length: count },
+      (_, i) => `bulk-${String(i).padStart(4, '0')}`,
+    );
+    // Inserted in chunks: one multi-row insert has its own compound limit on SQLite.
+    const chunks = Array.from({ length: Math.ceil(count / 200) }, (_, i) =>
+      names.slice(i * 200, i * 200 + 200),
+    );
+    for (const chunk of chunks) {
+      await skillsRepo(conn).createMany({
+        values: chunk.map((name) => ({
+          id: name,
+          slug: name,
+          name,
+          description: name,
+          currentVersion: 2,
+          createdById: null,
+          createdAt: now,
+          updatedAt: now,
+        })),
+      });
+      await versionsRepo(conn).createMany({
+        values: chunk.flatMap((name) =>
+          [1, 2].map((version) => ({
+            id: `${name}-v${version}`,
+            skillId: name,
+            version,
+            name,
+            description: name,
+            content: skillMd(name, `${name} version ${version}`),
+            manifest: [],
+            note: null,
+            contentHash: `${name}-${version}`,
+            createdById: version === 2 ? 'alice' : null,
+            createdAt: now,
+          })),
+        ),
+      });
+    }
+    const listed = await h.services.skills.list();
+    expect(listed).toHaveLength(count);
+    expect(listed[0]?.slug).toBe('bulk-0000');
+    expect(listed[count - 1]).toMatchObject({
+      slug: 'bulk-1099',
+      version: 2,
+      updatedById: 'alice',
+    });
+    expect(listed.every((skill) => skill.size > 0)).toBe(true);
+    const some = await h.services.skills.list(names.slice(0, count));
+    expect(some).toHaveLength(count);
   });
 });
