@@ -502,6 +502,8 @@ const appRuntime = defineAppRuntime({
 
 In system and personal settings, exclude pages or modules by ID. Passing a shared settings category ID to `excludedRouteIds` fails runtime setup. A category emptied by exclusions disappears from navigation. To hide only the category and move its pages to the fallback category, use `defineSettingsCategories()`.
 
+Some plugins offer an option that turns off their own pages, such as `agents({ chatRoutes: false })`, `notificationInApp({ inboxRoute: false })` or `mail({ workspaceRoutes: false })`. Prefer that option when it exists; use `excludedRouteIds` for other pages or finer control. Both behave the same: the paths stay free and overrides or header actions targeting those route IDs are dropped. A plugin implements such an option by passing `{ disabled: true }` to `defineAppRoutes()`, `defineSystemSettingsRoutes()` or `definePersonalSettingsRoutes()`.
+
 To hide a plugin toolbar shortcut while keeping its page, add `{ name, hidden: true }` to `headerActionOverrides` using the name documented by the plugin. A shortcut that declares its target's `routeId` is hidden automatically when that page is excluded or inaccessible to the viewer. A missing target or a group ID fails runtime setup.
 
 ## 11. Where rendering happens

@@ -77,28 +77,31 @@ const factory = defineClientPlugin<AgentsClientOptions>({
   packageName: '@nocobase/app-plugin-agents',
   locales,
   routes: (options) => {
-    const routes = [agentsSettingsRoutes, preferencesRoutes];
-    if (options.chatRoutes === false) return routes;
     const { chatPath } = resolveAgentsOptions(options);
     return [
-      ...routes,
-      defineAppRoutes([
-        {
-          name: 'agentConversations',
-          path: chatPath,
-          auth: 'required',
-          authz: 'skip',
-          breadcrumb: { title: 'myConversations' },
-          componentLoader: async () => {
-            const [{ default: Page }, { withAgents }] = await Promise.all([
-              import('./pages/chat/sessions.js'),
-              import('./query.js'),
-            ]);
-            return { default: withAgents(Page) };
+      agentsSettingsRoutes,
+      preferencesRoutes,
+      defineAppRoutes(
+        [
+          {
+            name: 'agentConversations',
+            path: chatPath,
+            auth: 'required',
+            authz: 'skip',
+            breadcrumb: { title: 'myConversations' },
+            componentLoader: async () => {
+              const [{ default: Page }, { withAgents }] = await Promise.all([
+                import('./pages/chat/sessions.js'),
+                import('./query.js'),
+              ]);
+              return { default: withAgents(Page) };
+            },
           },
-        },
-        chatRoute(chatPath),
-      ]),
+          chatRoute(chatPath),
+        ],
+        // Disabled like excludedRouteIds: the application may own these paths and still target the route IDs.
+        { disabled: options.chatRoutes === false },
+      ),
     ];
   },
   headerActions: (options) =>

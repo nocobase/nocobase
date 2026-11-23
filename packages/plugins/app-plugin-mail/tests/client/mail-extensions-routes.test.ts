@@ -21,6 +21,7 @@ function routesByName(
 ): ReadonlyMap<string, RouteLike> {
   const routes = new Map<string, RouteLike>();
   for (const contribution of contributions) {
+    if (contribution.disabled) continue;
     for (const route of contribution.routes as readonly RouteLike[]) {
       if (route.name) routes.set(route.name, route);
     }

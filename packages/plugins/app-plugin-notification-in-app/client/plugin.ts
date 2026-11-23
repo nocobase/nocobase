@@ -39,21 +39,20 @@ const notificationInApp: AppClientPluginFactory<InAppNotificationClientOptions> 
     packageName: '@nocobase/app-plugin-notification-in-app',
     locales,
     serviceProviders,
-    routes: (options): readonly AppClientRouteContribution[] =>
-      options.inboxRoute !== false
-        ? [
-            defineAppRoutes([
-              {
-                // Each person's own messages only: the API answers nobody else's, so the page needs no grant of its own.
-                auth: 'required',
-                authz: 'skip',
-                name: INBOX_ROUTE_NAME,
-                path: inboxPath(options),
-                componentLoader: () => import('./pages/inbox.js'),
-              },
-            ]),
-          ]
-        : [],
+    routes: (options): AppClientRouteContribution =>
+      defineAppRoutes(
+        [
+          {
+            // Each person's own messages only: the API answers nobody else's, so the page needs no grant of its own.
+            auth: 'required',
+            authz: 'skip',
+            name: INBOX_ROUTE_NAME,
+            path: inboxPath(options),
+            componentLoader: () => import('./pages/inbox.js'),
+          },
+        ],
+        { disabled: options.inboxRoute === false },
+      ),
     headerActions: (options): readonly AppClientHeaderActionDefinition[] =>
       options.headerButton === false
         ? []

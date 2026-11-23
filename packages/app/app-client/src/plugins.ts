@@ -356,11 +356,24 @@ export interface AppClientRouteBreadcrumb {
 export interface AppClientAppRoutesContribution {
   readonly parent: 'app';
   readonly routes: readonly AppClientRouteDefinition[];
+  /** Set by `{ disabled: true }`: the routes are not registered, and references to their IDs are treated as excluded. */
+  readonly disabled?: boolean;
+}
+
+/** How a route contribution is registered. */
+export interface AppClientRouteContributionOptions {
+  /**
+   * Leaves the routes out, the way `excludedRouteIds` does: their paths stay free for the application, and route
+   * component overrides and header actions that target them are dropped instead of failing. A plugin uses it for an
+   * option that turns off its own pages, such as `agents({ chatRoutes: false })`.
+   */
+  readonly disabled?: boolean;
 }
 
 export interface AppClientSystemSettingsRoutesContribution {
   readonly parent: 'systemSettings';
   readonly routes: readonly AppClientRouteDefinition[];
+  readonly disabled?: boolean;
   /** Set by `defineSettingsCategories()`: how the application shows existing categories. */
   readonly categories?: AppClientSettingsCategoryOverrides;
 }
@@ -368,6 +381,7 @@ export interface AppClientSystemSettingsRoutesContribution {
 export interface AppClientPersonalSettingsRoutesContribution {
   readonly parent: 'personalSettings';
   readonly routes: readonly AppClientRouteDefinition[];
+  readonly disabled?: boolean;
   /** Set by `defineSettingsCategories()`: how the application shows existing categories. */
   readonly categories?: AppClientSettingsCategoryOverrides;
 }
@@ -613,10 +627,12 @@ function resolveServiceProviders<TOptions>(
 
 export function defineAppRoutes(
   routes: readonly AppClientRouteDefinition[],
+  options: AppClientRouteContributionOptions = {},
 ): AppClientAppRoutesContribution {
   return Object.freeze({
     parent: 'app',
     routes: freezeNavigationRoutes(routes),
+    ...(options.disabled ? { disabled: true } : {}),
   });
 }
 
@@ -634,10 +650,12 @@ export function defineAppRoutes(
  */
 export function defineSystemSettingsRoutes(
   routes: readonly AppClientRouteDefinition[],
+  options: AppClientRouteContributionOptions = {},
 ): AppClientSystemSettingsRoutesContribution {
   return Object.freeze({
     parent: 'systemSettings',
     routes: freezeNavigationRoutes(routes),
+    ...(options.disabled ? { disabled: true } : {}),
   });
 }
 
@@ -650,10 +668,12 @@ export function defineSystemSettingsRoutes(
  */
 export function definePersonalSettingsRoutes(
   routes: readonly AppClientRouteDefinition[],
+  options: AppClientRouteContributionOptions = {},
 ): AppClientPersonalSettingsRoutesContribution {
   return Object.freeze({
     parent: 'personalSettings',
     routes: freezeNavigationRoutes(routes),
+    ...(options.disabled ? { disabled: true } : {}),
   });
 }
 
@@ -836,6 +856,7 @@ export function resolveAppClientContributions(
         );
       }
       if (
+        routeContribution.disabled ||
         (surface === 'systemSettings' &&
           options.systemSettingsRoutes === false) ||
         (surface === 'personalSettings' &&
@@ -917,7 +938,7 @@ export function resolveAppClientContributions(
     ),
   ]);
 
-  // A visible application page can reuse an ID from a disabled settings surface.
+  // A visible page can reuse the ID of a disabled contribution, such as an application page replacing a disabled one.
   for (const id of routeIds.keys()) excludedRoutes.delete(id);
   return Object.freeze({
     routes,

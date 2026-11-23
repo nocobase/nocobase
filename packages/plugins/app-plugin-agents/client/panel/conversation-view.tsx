@@ -1105,12 +1105,19 @@ function ConversationBody({
   );
 }
 
+const AGENTS_SETTINGS_ROUTE_ID = '@nocobase/app-plugin-agents:agents';
+
 function NoAgentNotice(): ReactElement {
   const { t } = useChatTranslation();
   const app = useContext(ClientApplicationContext);
+  // The link's target can be off with system settings or excluded by the application.
   const hasSettings =
     !app ||
-    app.runtime.routes.some((route) => route.surface === 'systemSettings');
+    app.runtime.routes.some(function visit(route): boolean {
+      return (
+        route.id === AGENTS_SETTINGS_ROUTE_ID || !!route.children?.some(visit)
+      );
+    });
   const { can: canReadSettings } = useCan({
     resource: { type: 'settings', id: 'agents.agents' },
     action: 'read',

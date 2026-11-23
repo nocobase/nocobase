@@ -100,6 +100,54 @@ describe('app runtime', () => {
     },
   );
 
+  it.each(['option', 'excludedRouteIds'] as const)(
+    'treats routes a plugin disables like excluded routes: %s',
+    async (via) => {
+      const page = {
+        name: 'inbox',
+        path: '/inbox',
+        authz: 'skip' as const,
+        componentLoader: async () => ({ default: () => null }),
+      };
+      const plugin = defineClientPlugin<{ inboxRoute?: boolean }>({
+        packageName: '@example/inbox',
+        routes: (options) =>
+          defineAppRoutes([page], { disabled: options.inboxRoute === false }),
+        headerActions: [
+          {
+            name: 'inboxButton',
+            routeId: '@example/inbox:inbox',
+            component: () => null,
+          },
+        ],
+      });
+      const runtime = await resolveAppRuntime(
+        defineAppRuntime({
+          packageName: '@example/app',
+          createAppConfig: createAppClientConfig,
+          plugins: defineClientPlugins([
+            plugin(via === 'option' ? { inboxRoute: false } : {}),
+          ]),
+          ...(via === 'excludedRouteIds'
+            ? { excludedRouteIds: ['@example/inbox:inbox'] }
+            : {}),
+          routeComponentOverrides: [
+            {
+              routeId: '@example/inbox:inbox',
+              componentLoader: page.componentLoader,
+            },
+          ],
+          routes: defineAppRoutes([{ ...page, name: 'ownInbox' }]),
+        }),
+        { rawConfig: {} },
+      );
+      expect(runtime.routes.map((route) => route.id)).toEqual([
+        '@example/app:ownInbox',
+      ]);
+      expect(runtime.headerActions).toEqual([]);
+    },
+  );
+
   it('excludes route groups and their cross-plugin children before claiming paths and applying overrides', async () => {
     const defaultLoader = vi.fn(async () => ({ default: () => null }));
     const applicationLoader = vi.fn(async () => ({ default: () => null }));

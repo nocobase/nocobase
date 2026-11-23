@@ -87,7 +87,9 @@ function wrapper({ children }: PropsWithChildren): ReactElement {
 
 describe('in-app notification client plugin', () => {
   it('registers the inbox route, the header button and the extension lists', () => {
-    expect(notificationInApp({ inboxRoute: false }).routes).toEqual([]);
+    expect(notificationInApp({ inboxRoute: false }).routes).toEqual([
+      expect.objectContaining({ disabled: true }),
+    ]);
     expect(
       notificationInApp({ inboxRoute: false }).serviceProviders,
     ).toHaveLength(1);

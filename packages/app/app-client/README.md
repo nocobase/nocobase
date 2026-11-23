@@ -468,4 +468,6 @@ Set `excludedRouteIds` in `defineAppRuntime()` to remove routes by package-quali
 
 For system and personal settings, exclude individual pages or modules. Excluding a shared settings category ID raises an error. Categories emptied by exclusions disappear from navigation. Use `defineSettingsCategories()` to hide a category and move its pages to the fallback category.
 
+A plugin can offer an option that turns off its own pages, such as `agents({ chatRoutes: false })`, by passing `{ disabled: true }` to `defineAppRoutes()`, `defineSystemSettingsRoutes()` or `definePersonalSettingsRoutes()`. Disabled routes behave exactly like excluded ones: their paths stay free, and component overrides and header actions that target their IDs are dropped instead of failing. Prefer the plugin's option when it has one; use `excludedRouteIds` for any other page or for finer control. Both may name the same route.
+
 Use `useHasRoute(routeId)` before rendering a link to another contributed page. It reports whether the page is registered after exclusions. The route still applies its normal access check. In development, an exclusion whose package is present but whose route is missing produces one warning per ID.
