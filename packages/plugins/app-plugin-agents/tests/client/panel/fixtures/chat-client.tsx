@@ -163,6 +163,7 @@ function configuredAgents(): readonly ChatAgent[] {
     typeof window === 'undefined'
       ? null
       : new URLSearchParams(window.location.search).get('agents');
+  if (only === 'none') return [];
   return only === 'online'
     ? AGENTS.filter((agent) => agent.id === 'online')
     : only === 'runner'

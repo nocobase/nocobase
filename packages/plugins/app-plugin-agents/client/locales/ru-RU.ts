@@ -3,6 +3,7 @@ import type { LocaleResource } from '@nocobase/i18n';
 import type enUS from './en-US.js';
 
 const ruRU: LocaleResource<typeof enUS> = {
+  openAgentSettings: 'Открыть настройки агентов',
   myConversations: 'Мои беседы',
   fileUsage: 'Вложения чата',
   modelSuggestions: {

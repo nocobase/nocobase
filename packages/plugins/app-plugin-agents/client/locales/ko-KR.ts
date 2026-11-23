@@ -3,6 +3,7 @@ import type { LocaleResource } from '@nocobase/i18n';
 import type enUS from './en-US.js';
 
 const koKR: LocaleResource<typeof enUS> = {
+  openAgentSettings: '에이전트 설정 열기',
   myConversations: '내 대화',
   fileUsage: '채팅 첨부 파일',
   modelSuggestions: {

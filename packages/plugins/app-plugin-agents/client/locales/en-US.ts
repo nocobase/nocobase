@@ -12,6 +12,7 @@ import runtimesEnUS from './runtimes.en-US.js';
 import runWaitEnUS from './runWait.en-US.js';
 
 const pages = {
+  openAgentSettings: 'Open agent settings',
   myConversations: 'My conversations',
   fileUsage: 'Chat attachments',
   modelSuggestions: {

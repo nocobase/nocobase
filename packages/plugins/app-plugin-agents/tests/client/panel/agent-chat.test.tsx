@@ -39,6 +39,7 @@ import chatEnUS from '../../../client/locales/chat.en-US.js';
 import chatZhCN from '../../../client/locales/chat.zh-CN.js';
 import panelEnUS from '../../../client/locales/panel.en-US.js';
 import panelZhCN from '../../../client/locales/panel.zh-CN.js';
+import { useSetting } from '../../../client/hooks/use-access.js';
 import { resetChatDemo } from './fixtures/chat-client.js';
 
 // The plugin's chat hooks need a server; the preview's in-memory stand-in answers in their place.
@@ -53,6 +54,7 @@ vi.mock('@nocobase/app-client', async (original) => ({
 vi.mock('../../../client/panel/use-conversation-usage.js', () => ({
   useConversationUsage: () => ({ data: undefined }),
 }));
+vi.mock('../../../client/hooks/use-access.js', () => ({ useSetting: vi.fn() }));
 afterEach(() => resetChatDemo());
 
 const runtime = await createTestI18nRuntime({
@@ -160,6 +162,28 @@ describe('agent-chat locales', () => {
 });
 
 describe('ChatPanel', () => {
+  it.each([true, false])(
+    'offers the empty-state settings link when access is %s',
+    async (canRead) => {
+      const previousUrl = window.location.href;
+      window.history.replaceState(null, '', '?agents=none');
+      vi.mocked(useSetting).mockReturnValue(canRead);
+      try {
+        renderPanel(null);
+        const notice = await screen.findByTestId('chat-no-agent');
+        expect(useSetting).toHaveBeenCalledWith('agents.agents', 'read');
+        const link = within(notice).queryByRole('link', {
+          name: enUS.openAgentSettings,
+        });
+        if (canRead) expect(link).toHaveAttribute('href', '/settings/agents');
+        else expect(link).not.toBeInTheDocument();
+      } finally {
+        window.history.replaceState(null, '', previousUrl);
+        vi.mocked(useSetting).mockReset();
+      }
+    },
+  );
+
   it('shows a conversation: replies as Markdown, the context a message carried and a consultation', async () => {
     renderPanel('release-plan');
     const panel = await screen.findByTestId('chat-panel');

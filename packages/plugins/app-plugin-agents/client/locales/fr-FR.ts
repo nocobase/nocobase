@@ -3,6 +3,7 @@ import type { LocaleResource } from '@nocobase/i18n';
 import type enUS from './en-US.js';
 
 const frFR: LocaleResource<typeof enUS> = {
+  openAgentSettings: 'Ouvrir les paramètres des agents',
   myConversations: 'Mes conversations',
   fileUsage: 'Pièces jointes du chat',
   modelSuggestions: {

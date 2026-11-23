@@ -3,6 +3,7 @@ import type { LocaleResource } from '@nocobase/i18n';
 import type enUS from './en-US.js';
 
 const viVN: LocaleResource<typeof enUS> = {
+  openAgentSettings: 'Mở cài đặt Agent',
   myConversations: 'Cuộc trò chuyện của tôi',
   fileUsage: 'Tệp đính kèm trò chuyện',
   modelSuggestions: {
