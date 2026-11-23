@@ -553,12 +553,14 @@ describe('skill pages', () => {
     expect(screen.getByText('skills.readOnly')).toBeInTheDocument();
   });
 
-  it("says why a skill is read only when the application explains it, and keeps the generic note otherwise", async () => {
+  it('says why a skill is read only when the application explains it, and keeps the generic note otherwise', async () => {
     current = { ...current, canEdit: false };
     renderRoute(
       <SkillSettingsContext.Provider
         value={{
           Settings: ShownSettings,
+          // A stand-in for the application's hook, which translates its note.
+          // eslint-disable-next-line @eslint-react/no-unnecessary-use-prefix
           useReadOnlyNote: (shown) =>
             shown.id === 's1' ? 'Built in: read only.' : undefined,
         }}

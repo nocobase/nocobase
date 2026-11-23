@@ -12,10 +12,7 @@ import { DownloadIcon, PencilIcon, Trash2Icon } from 'lucide-react';
 import { useContext, useState, type ReactElement } from 'react';
 import { Link, useNavigate, useParams } from 'react-router';
 
-import type {
-  SkillDetail,
-  SkillView as SkillViewData,
-} from '../../../../shared/skills.js';
+import type { SkillView as SkillViewData } from '../../../../shared/skills.js';
 import { agentsKeys } from '../../../api/keys.js';
 import { AgSection } from '../../../components/ag-section.js';
 import { AgListSkeleton, AgLoadError } from '../../../components/ag-states.js';
