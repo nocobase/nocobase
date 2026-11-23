@@ -1,3 +1,4 @@
+import { isDeepStrictEqual } from 'node:util';
 import { LifecycleError } from './errors.js';
 import {
   recordCondition,
@@ -77,6 +78,21 @@ export interface ManagementReentryContext<T extends LifecycleTypes> {
   readonly now: Date;
 }
 
+export interface ManagementResumeContext<T extends LifecycleTypes> {
+  readonly previous: T['record'];
+  readonly record: T['record'];
+  /** The stored ISO timestamp at which this suspension began. */
+  readonly suspendedAt: string;
+  readonly now: Date;
+  /** The duration of this suspension, before it is added to pausedMs. */
+  readonly pausedForMs: number;
+  readonly actor: LifecycleActor;
+  readonly event: ManagementEvent;
+  readonly entry: TransitionEntry;
+  readonly services: ServicesOf<T>;
+  readonly tx: LifecycleTransaction;
+}
+
 export interface ManagementPolicy<T extends LifecycleTypes> {
   /** Nullable JSON field, paired with a nullable integer field named `<field>Revision`. */
   readonly field: string;
@@ -97,6 +113,13 @@ export interface ManagementPolicy<T extends LifecycleTypes> {
   ) =>
     | Readonly<Record<string, unknown>>
     | Promise<Readonly<Record<string, unknown>>>;
+  /**
+   * Update domain data in the same transaction as the resume and its journal
+   * entry. The instance being resumed must keep its lifecycle-owned fields.
+   */
+  readonly onResume?: (
+    context: ManagementResumeContext<T>,
+  ) => void | Promise<void>;
   /** Domain changes such as closing old tasks and creating new ones, in this transaction. */
   readonly onReenter?: (
     context: ManagementReentryContext<T> & {
@@ -165,9 +188,15 @@ export class InstanceLockConflict extends LifecycleError {
 
 type Definition = Lifecycle<LifecycleTypes>;
 
-interface ManagementServices<R extends { lifecycle: Definition }> {
+interface ManagedRegistration {
+  readonly lifecycle: Definition;
+  services(transactionHandle: unknown): object;
+}
+
+interface ManagementServices<R extends ManagedRegistration> {
   store: LifecycleStore;
   clock(): Date;
+  scope(store: LifecycleStore, now: Date): LifecycleTransaction;
   checkRequestId(id: string): void;
   managedRecord(
     store: LifecycleStore,
@@ -197,7 +226,7 @@ interface ManagementServices<R extends { lifecycle: Definition }> {
   tryContinuation(run: EffectRun, registered: R): Promise<unknown>;
 }
 
-export class LifecycleManagement<R extends { lifecycle: Definition }> {
+export class LifecycleManagement<R extends ManagedRegistration> {
   public constructor(private readonly services: ManagementServices<R>) {}
 
   public async managementDetails(
@@ -360,6 +389,7 @@ export class LifecycleManagement<R extends { lifecycle: Definition }> {
         'INVALID_INPUT',
         'A reason, request id and expected version are required.',
       );
+    let resumeHookStarted = false;
     const submit = (): Promise<ManagementResult> =>
       this.services.store.transaction(
         async (store) => {
@@ -594,6 +624,57 @@ export class LifecycleManagement<R extends { lifecycle: Definition }> {
                 await this.services.handOver(run, run.runAfter);
             });
           }
+          if (command === 'resume' && policy.onResume) {
+            resumeHookStarted = true;
+            const tx = this.services.scope(store, now);
+            const mutationError = () =>
+              new LifecycleError(
+                'INVALID_SET',
+                'An onResume hook cannot change the lifecycle fields of the instance being resumed.',
+              );
+            let blockedFire: LifecycleError | undefined;
+            const fields = ownedFields(lifecycle);
+            const resumedFields = structuredClone(
+              fields.map((field) => written[field]),
+            );
+            await policy.onResume({
+              previous: record,
+              record: written,
+              suspendedAt: previous.suspendedAt!,
+              now,
+              pausedForMs: pause,
+              actor: options.actor,
+              event,
+              entry,
+              services: registered.services(
+                store.transactionHandle,
+              ) as ServicesOf<LifecycleTypes>,
+              tx: Object.freeze<LifecycleTransaction>({
+                ...tx,
+                fire: async (name, targetId, transition, fireOptions) => {
+                  if (
+                    name === lifecycle.name &&
+                    (String(targetId) === recordId ||
+                      (await store.findRecord(lifecycle.collection, targetId))
+                        ?.id === written.id)
+                  )
+                    throw (blockedFire ??= mutationError());
+                  return tx.fire(name, targetId, transition, fireOptions);
+                },
+              }),
+            });
+            if (blockedFire) throw blockedFire;
+            // Joined runtime calls and direct writes can also change this row.
+            const afterHook = await store.findRecord(lifecycle.collection, id);
+            if (
+              !afterHook ||
+              !isDeepStrictEqual(
+                fields.map((field) => afterHook[field]),
+                resumedFields,
+              )
+            )
+              throw mutationError();
+          }
           store.afterCommit(() =>
             this.services.changed({
               lifecycle: lifecycle.name,
@@ -624,9 +705,11 @@ export class LifecycleManagement<R extends { lifecycle: Definition }> {
       return await submit();
     } catch (error) {
       // A competing command may have spent the request id while this
-      // transaction was waiting for the business row.
+      // transaction was waiting for the business row. Propagate failures
+      // from the resume hook, including conflicts on its own domain writes.
       if (
         !(error instanceof InstanceLockConflict) ||
+        resumeHookStarted ||
         options.transaction !== undefined
       )
         throw error;

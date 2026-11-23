@@ -136,6 +136,12 @@ const claimConcurrency = {
     'tests/claim-concurrency.test.ts tests/active-input.test.ts tests/run-revision-migration.test.ts',
 };
 
+const chatRolesRace = {
+  dialect: 'postgres',
+  filter: '@nocobase/app-plugin-agents',
+  tests: 'tests/chat-roles-race.test.ts',
+};
+
 const claimPagination = {
   dialect: 'postgres',
   filter: '@nocobase/app-plugin-agents',
@@ -201,7 +207,6 @@ test('release migration changes select the SQL Server upgrade regression', () =>
 test('a guarded package path selects its dialect suite, and nothing else does', () => {
   for (const file of [
     'packages/plugins/app-plugin-agents/server/core/runs/comment-consent.ts',
-    'packages/plugins/app-plugin-agents/server/core/agents/agent.store.ts',
     'packages/plugins/app-plugin-agents/tests/claim-concurrency.test.ts',
     'packages/plugins/app-plugin-agents/database/migrations/202610260001_ag_run_revision.ts',
   ]) {
@@ -215,11 +220,27 @@ test('a guarded package path selects its dialect suite, and nothing else does', 
     [claimConcurrency, claimPagination],
   );
   for (const file of [
-    'packages/plugins/app-plugin-agents/server/core/agents/agent.service.ts',
     'packages/plugins/app-plugin-agents/client/index.ts',
     'packages/libs/db-postgres/src/index.ts',
   ])
     assert.deepEqual(selectPackageSuites([file]), [], file);
+});
+
+test('the team default and chat role saves select their PostgreSQL lock race', () => {
+  assert.deepEqual(
+    selectPackageSuites([
+      'packages/plugins/app-plugin-agents/server/core/agents/agent.store.ts',
+    ]),
+    [claimConcurrency, chatRolesRace],
+  );
+  for (const file of [
+    'packages/plugins/app-plugin-agents/server/core/conversations/chat-settings.ts',
+    'packages/plugins/app-plugin-agents/server/core/agents/agent.service.ts',
+    'packages/plugins/app-plugin-agents/tests/chat-roles-race.test.ts',
+  ]) {
+    assert.deepEqual(selectPackageSuites([file]), [chatRolesRace], file);
+    assert.deepEqual(selectDatabases([file]), [], file);
+  }
 });
 
 test('claim pagination changes select the PostgreSQL boundary and competition suite', () => {
@@ -395,6 +416,7 @@ test('missing or unavailable comparison commits conservatively select every data
       ...receiptConcurrency,
       ...withdrawalConcurrency,
       claimConcurrency,
+      chatRolesRace,
       claimPagination,
       ...replacementRace,
       artifactKeyMigration,

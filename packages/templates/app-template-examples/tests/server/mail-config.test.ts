@@ -40,7 +40,7 @@ describe('Examples Mail environment composition', () => {
     expect(runtime.config.get('mail.mail')).toBeUndefined();
     expect(
       Object.keys(runtime.config.sectionEnvironmentVariables()),
-    ).toHaveLength(7);
+    ).toHaveLength(8);
     expect(runtime.config.publicValues()).toEqual({});
   });
 });

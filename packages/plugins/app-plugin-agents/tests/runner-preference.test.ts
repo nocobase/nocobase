@@ -72,6 +72,7 @@ describe('the runner preference', () => {
     });
     expect(read.body.data).toEqual({
       defaultAgentId: null,
+      effort: null,
       runnerPreference: 'auto',
     });
     const saved = await h.request('PATCH', '/agents/chatPreferences', {

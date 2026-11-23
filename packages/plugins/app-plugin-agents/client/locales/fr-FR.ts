@@ -3,6 +3,9 @@ import type { LocaleResource } from '@nocobase/i18n';
 import type enUS from './en-US.js';
 
 const frFR: LocaleResource<typeof enUS> = {
+  openAgentSettings: 'Ouvrir les paramètres des agents',
+  myConversations: 'Mes conversations',
+  fileUsage: 'Pièces jointes du chat',
   modelSuggestions: {
     design:
       'Raisonnement le plus avancé : propositions, architecture, enquêtes difficiles et revue des modifications importantes ; aussi implémentation courante et modifications entre paquets.',
@@ -92,6 +95,7 @@ const frFR: LocaleResource<typeof enUS> = {
     codex: 'Codex',
     opencode: 'OpenCode',
     pi: 'Pi',
+    antigravity: 'Antigravity CLI',
     gemini: 'Gemini CLI',
     copilot: 'GitHub Copilot',
     cursor: 'Cursor',
@@ -1091,6 +1095,22 @@ const frFR: LocaleResource<typeof enUS> = {
       thinking: 'Penser…',
       reading: 'En regardant {{subject}}',
       working: 'Travail sur {{subject}}',
+      ...{
+        count_one: '{{count}} étape',
+        count_other: '{{count}} étapes',
+        count_many: '{{count}} étapes',
+      },
+    },
+    // Plural forms of the panel wording, outside the typed shape (the rest falls back to English).
+    ...{
+      list: {
+        waiting_one: 'Besoin de moi {{count}}',
+        waiting_other: 'Besoin de moi {{count}}',
+        waiting_many: 'Besoin de moi {{count}}',
+        active_one: 'En cours {{count}}',
+        active_other: 'En cours {{count}}',
+        active_many: 'En cours {{count}}',
+      },
     },
     agents: {
       personalOnly: 'Exécuteurs personnels uniquement',
@@ -1522,11 +1542,16 @@ const frFR: LocaleResource<typeof enUS> = {
         runners: 'Environnements d’exécution',
         prices: 'Tarifs des modèles',
         services: 'Services modèles',
+        skills: 'Compétences',
       },
     },
     actions: {
       read: 'Afficher',
       manage: 'Gérer',
+    },
+    humanOnly: {
+      servicesManage:
+        'Gérer les services de modèles écrit des clés de fournisseurs ; seule une personne peut le faire.',
     },
     keyScopes: {
       agents: {

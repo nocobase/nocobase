@@ -4,8 +4,8 @@ description: Use when integrating the NocoBase 3 Mail plugin into an application
 argument-hint: "[action: inspect|configure|integrate|send|diagnose] [target]"
 allowed-tools: Read, Grep, Glob, Bash
 owner: mail-plugin-team
-version: 1.2.0
-last-reviewed: 2026-09-26
+version: 1.3.0
+last-reviewed: 2026-11-22
 risk-level: medium
 ---
 
@@ -53,7 +53,7 @@ When the user says “you decide”, use `provider=auto`, `scope=local`, and `va
 
 1. Inspect the installed package version, public exports and types, application `client/plugins.ts`, `server/plugins.ts`, and relevant configuration before editing.
 2. Select the smallest matching reference from the loading map. Read additional references only when the task crosses their boundary.
-3. Check ownership and permissions. The application owns registration, provider configuration, role grants, business associations, and page composition; Mail owns accounts, authorization, submissions, sync runs, cursors, and background job and outbox orchestration.
+3. Check ownership and permissions. The application owns registration, provider configuration, role grants (`page:mail.workspace/access`, `mail:mail.management/view|process`, `settings:mail.admin/read|manage`) and business associations; Mail owns its four pages (`mail`, `mailTeam`, `mailAccounts`, `mailSettings`), accounts, authorization, submissions, sync runs, cursors, and background job and outbox orchestration. Extend the pages through `mailExtensionsToken` or replace one with `routeComponentOverrides` rather than adding duplicate pages.
 4. Implement through public components, service tokens, and HTTP APIs. Resolve `mailServiceToken` or `mailClientToken` instead of constructing internal stores or runtimes.
 5. Before live account or mailbox operations, restate the target provider, account or mailbox, operation, and authorized scope. Proceed only when the input contract and gate are satisfied.
 6. Validate the result with the checklist below and the relevant reference. Separate static checks, mocked provider checks, and live provider results.
@@ -65,7 +65,7 @@ When the user says “you decide”, use `provider=auto`, `scope=local`, and `va
 | Task                                                                                                                                                | Read                                                                             |
 | --------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------- |
 | Register Mail, configure provider quotas, connect an account, configure OAuth/push, or replace credential storage                                   | [Configuration and accounts](references/configuration-and-accounts.md)           |
-| Embed a production workspace, connect business records, customize reading/composition, or add management and log pages                              | [Client integration](references/client-integration.md)                           |
+| Use or extend the plugin's pages, connect business records, customize reading/composition, or replace a page                                        | [Client integration](references/client-integration.md)                           |
 | Send from business code, manage drafts or attachments, schedule or bulk-send, or handle uncertain delivery                                          | [Sending and drafts](references/sending-and-drafts.md)                           |
 | Upgrade the participant index, set an initial sync boundary, handle Gmail quota errors, recover synchronization, or diagnose stalled tasks and logs | [Synchronization and diagnostics](references/synchronization-and-diagnostics.md) |
 

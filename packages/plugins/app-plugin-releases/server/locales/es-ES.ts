@@ -109,6 +109,14 @@ const esES: LocaleResource<typeof enUS> = {
         environments: 'Implementar entornos',
       },
     },
+    humanOnly: {
+      deployProtected:
+        'Desplegar en un entorno protegido requiere la aprobación de una persona; una clave solo puede solicitarlo.',
+      delete:
+        'Eliminar una app borra sus datos; solo una persona puede hacerlo.',
+      configure:
+        'Configurar una app cambia sus ajustes y secretos; solo una persona puede hacerlo.',
+    },
     keyScopes: {
       apps: {
         title: 'Aplicaciones e implementaciones',

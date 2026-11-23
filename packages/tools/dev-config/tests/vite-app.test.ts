@@ -1,3 +1,5 @@
+import path from 'node:path';
+import { resolveConfig } from 'vite';
 import type { ConfigEnv, UserConfig, UserConfigFn } from 'vite';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
@@ -68,4 +70,21 @@ it('preserves OOXML WASM URLs and consumer dependency exclusions', async () => {
   expect(config.optimizeDeps?.exclude).toEqual(
     expect.arrayContaining(['@silurus/ooxml', 'custom-viewer']),
   );
+});
+
+it('watches the application plugin registry only during development', async () => {
+  vi.stubEnv('APP_BASE_PATH', '/');
+  const root = path.resolve('test-app');
+  for (const env of [serveEnvironment, buildEnvironment]) {
+    const local = await resolveAppConfig({ root }, env);
+    const config = await resolveConfig(
+      { ...local, configFile: false },
+      env.command,
+    );
+    expect(
+      config.configFileDependencies.includes(
+        path.join(root, 'client/plugins.ts'),
+      ),
+    ).toBe(env.command === 'serve');
+  }
 });

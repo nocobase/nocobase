@@ -33,6 +33,7 @@ import {
 import { Badge } from '../../../components/ui/badge.js';
 import { Button } from '../../../components/ui/button.js';
 import { useSetting } from '../../../hooks/use-access.js';
+import { useSkillsListPath } from '../paths.js';
 import {
   scopeOf,
   useText,
@@ -59,13 +60,14 @@ export default function SkillDetailPage(): ReactElement {
 function SkillView({ skillId }: { readonly skillId: string }): ReactElement {
   const { t } = useTranslation();
   const api = useAgentsApi();
-  const canDelete = useSetting('agents.agents', 'manage');
+  const canDelete = useSetting('agents.skills', 'manage');
+  const listPath = useSkillsListPath();
   const detail = useQuery({
     queryKey: agentsKeys.skill(skillId),
     queryFn: () => api.skill(skillId),
   });
   const levels = [
-    { label: t('skills.title'), to: '/skills' },
+    { label: t('skills.title'), to: listPath },
     { label: detail.data?.name ?? t('skills.breadcrumb') },
   ];
   // The header's trail (the shell renders it): the list, then this skill.
@@ -82,7 +84,7 @@ function SkillView({ skillId }: { readonly skillId: string }): ReactElement {
           variant='outline'
           size='sm'
           nativeButton={false}
-          render={<Link to='/skills' />}
+          render={<Link to={listPath} />}
         >
           {t('skills.backToList')}
         </Button>
@@ -120,6 +122,7 @@ function SkillBody({
   const notify = useNotify();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const listPath = useSkillsListPath();
   const [editing, setEditing] = useState(false);
   const [confirmingDelete, setConfirmingDelete] = useState(false);
   const remove = useMutation({
@@ -128,7 +131,7 @@ function SkillBody({
       notify.success(t('skills.deleted', { name: skill.name }));
       void queryClient.invalidateQueries({ queryKey: agentsKeys.skills });
       void queryClient.invalidateQueries({ queryKey: agentsKeys.agents });
-      void navigate('/skills');
+      void navigate(listPath);
     },
     onError: (error) => notify.error(error),
   });

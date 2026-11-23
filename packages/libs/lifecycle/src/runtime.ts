@@ -1,3 +1,4 @@
+import { findStayExit } from './store.js';
 import {
   currentRound,
   managementState,
@@ -757,6 +758,7 @@ export class LifecycleRuntime {
     this.management = new LifecycleManagement<Registered>({
       store: options.store,
       clock: this.clock,
+      scope: (store, now) => this.scope(store, now),
       managedRecord: (...args) => this.managedRecord(...args),
       reentryContext: (...args) => this.reentryContext(...args),
       owe: (...args) => this.owe(...args),
@@ -3510,22 +3512,15 @@ export class LifecycleRuntime {
     const { lifecycle } = registered;
     if (!run.stayBound) return undefined;
     const entry = await store.findTransition(run.transitionId);
-    const own = `$run:${run.id}:`;
-    // Any later transition ends the stay, a self-transition included: it
-    // leaves and enters the state again and queues its onEnter effects anew.
-    // Only this run's own continuation does not. The version check keeps a
-    // store that ignores `after` from counting the entry that queued the run.
-    const left = (
-      await store.listTransitions(run.lifecycle, run.recordId, {
-        after: run.transitionId,
-      })
-    ).find(
-      (later) =>
-        (entry === undefined || later.version > entry.version) &&
-        (!later.management ||
-          later.management.command === 'reset' ||
-          later.management.command === 'restartAt') &&
-        later.requestId?.startsWith(own) !== true,
+    const left = await findStayExit(
+      store,
+      {
+        lifecycle: run.lifecycle,
+        recordId: run.recordId,
+        entryId: run.transitionId,
+        version: entry?.version,
+      },
+      `$run:${run.id}:`,
     );
     if (!left) return undefined;
     return new LifecycleError(

@@ -391,3 +391,30 @@ export interface LifecycleStore {
   /** Removes finished runs that hold no continuation; returns how many. */
   deleteEffectRuns(query: EffectRunPruneQuery): Promise<number>;
 }
+
+/** First subsequent entry that ends a stay. Suspension and resume keep the current stay. */
+export async function findStayExit(
+  store: LifecycleStore,
+  stay: {
+    readonly lifecycle: string;
+    readonly recordId: string;
+    readonly entryId: string;
+    readonly version?: number;
+  },
+  ownContinuationPrefix?: string,
+): Promise<TransitionEntry | undefined> {
+  const entries = await store.listTransitions(stay.lifecycle, stay.recordId, {
+    after: stay.entryId,
+  });
+  return entries.find(
+    (later) =>
+      (stay.version === undefined || later.version > stay.version) &&
+      (!later.management ||
+        later.management.command === 'reset' ||
+        later.management.command === 'restartAt') &&
+      !(
+        ownContinuationPrefix &&
+        later.requestId?.startsWith(ownContinuationPrefix)
+      ),
+  );
+}

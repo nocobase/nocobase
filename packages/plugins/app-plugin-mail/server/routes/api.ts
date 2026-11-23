@@ -44,9 +44,16 @@ import {
   classifyMailProviderError,
   isMailProviderError,
   MailError,
+  mailInvalidArgument,
   toPublicError,
 } from '../services/errors.js';
-import { mailServiceToken } from '../tokens.js';
+import { mailAssemblyInfoToken, mailServiceToken } from '../tokens.js';
+import { buildMailSettingsOverview } from '../settings-overview.js';
+import {
+  MAIL_ACCESS,
+  mailAccessKey,
+  type MailAccessRequirement,
+} from '../../shared/access.js';
 import {
   AccountConversationParams,
   AccountMessageAttachmentParams,
@@ -69,6 +76,7 @@ import {
   ResolveDraftConflictInput,
   SaveDraftInput,
   ManagedLogsQuery,
+  AdminAccountsQuery,
   SaveLabelInput,
   SaveSignatureInput,
   SaveTemplateInput,
@@ -97,11 +105,15 @@ import {
   MailFolderSchema,
   MailIdentitySchema,
   MailLabelSchema,
-  MailManagedAccountSchema,
+  MailAdminAccountSchema,
+  MailManagedSubmissionSchema,
+  MailSettingsOverviewSchema,
+  MailTeamAccountSchema,
   MailManagementActionResultSchema,
   MailMessageSchema,
   MailMessageSummarySchema,
   MailOutboundAttachmentSchema,
+  MailLogCursorListMeta,
   MailPageListMeta,
   MailProviderSchema,
   MailSignatureSchema,
@@ -121,9 +133,6 @@ const MAIL_DOMAIN = 'mail';
 const MAIL_NAMESPACE = '@nocobase/app-plugin-mail';
 const MAX_ATTACHMENT_UPLOAD_BYTES = 27 * 1024 * 1024;
 const MAX_JSON_REQUEST_BYTES = 8 * 1024 * 1024;
-const MAIL_WORKSPACE_RESOURCE = 'mail.workspace';
-const MAIL_ADMIN_RESOURCE = 'mail.admin';
-const MAIL_MANAGEMENT_RESOURCE = 'mail.management';
 
 /** Answered by a route that waits for the mail Provider when the Provider throttles the request. */
 const providerRateLimited =
@@ -143,13 +152,18 @@ interface MailRouteOptions {
   readonly cli?: false;
 }
 
-/** The API document entry of one Mail route. */
+/**
+ * The permission check and the API document entry of one Mail route. Every route names the permission it requires
+ * (`shared/access.ts`), the same one the client page that calls it declares as its `authz`; the check runs before the
+ * route reads the request, and the document says which permission it is.
+ */
 function mailRoute(
+  access: MailAccessRequirement,
   operationId: string,
   summary: string,
   responses: Record<string, ApiResponseObject>,
   options: MailRouteOptions = {},
-): MiddlewareHandler {
+): readonly [MiddlewareHandler<MailRoutesEnv>, MiddlewareHandler] {
   const errors: Record<string, ApiResponseObject> = {};
   for (const [code, description] of Object.entries(options.errors ?? {})) {
     const status = Number(code) as ApiErrorResponseCode;
@@ -158,15 +172,43 @@ function mailRoute(
         ? apiErrorResponse(status)
         : apiErrorResponse(status, description);
   }
-  return describeRoute({
-    tags: ['Mail'],
-    ...(options.cli === false ? cliRoute(false) : {}),
-    operationId,
-    summary,
-    ...(options.description ? { description: options.description } : {}),
-    ...(options.requestBody ? { requestBody: options.requestBody } : {}),
-    responses: { ...responses, ...apiErrorResponses, ...errors },
-  });
+  const requirement = `Requires the \`${mailAccessKey(access)}\` permission.`;
+  return [
+    requireMailAccess(access),
+    describeRoute({
+      tags: ['Mail'],
+      // The command line offers the route only to a caller holding the same permission the route checks.
+      ...cliRoute(
+        options.cli === false ? false : { action: mailAccessKey(access) },
+      ),
+      operationId,
+      summary,
+      description: options.description
+        ? `${options.description} ${requirement}`
+        : requirement,
+      ...(options.requestBody ? { requestBody: options.requestBody } : {}),
+      responses: { ...responses, ...apiErrorResponses, ...errors },
+    }),
+  ];
+}
+
+/** Answers 403 unless the caller holds `access`; the caller is already authenticated. */
+function requireMailAccess(
+  access: MailAccessRequirement,
+): MiddlewareHandler<MailRoutesEnv> {
+  return async (context, next) => {
+    if (await context.get('authz').can(access)) return next();
+    return apiErrorHandler(
+      new ApiError({
+        status: 'PERMISSION_DENIED',
+        reason: 'MAIL_ACCESS_DENIED',
+        domain: MAIL_DOMAIN,
+        message: `The ${mailAccessKey(access)} permission is required.`,
+        ...localized(context, 'errors.accessDenied'),
+      }),
+      context,
+    );
+  };
 }
 
 /** A file answered as it is stored, with the attachment's own media type. */
@@ -203,39 +245,9 @@ export const mailApiRoutes: AppApiRouteContribution<AppPluginApplication> =
     const authorization = container.resolve(authorizationToken);
     const mail = container.resolve(mailServiceToken);
 
-    // Authentication and page access come before anything reads the request, so a caller without access learns
-    // nothing about which accounts, messages, or runs exist.
-    routes.use(
-      '*',
-      authentication.required(),
-      authorization.middleware(),
-      async (context, next) => {
-        const resource = /(?:^|\/)mail\/settings(?:\/|$)/u.test(
-          context.req.path,
-        )
-          ? MAIL_ADMIN_RESOURCE
-          : /(?:^|\/)mail\/management(?:\/|$)/u.test(context.req.path)
-            ? MAIL_MANAGEMENT_RESOURCE
-            : MAIL_WORKSPACE_RESOURCE;
-        const allowed = await context.get('authz').can({
-          resource: { type: 'page', id: resource },
-          action: 'access',
-        });
-        if (!allowed) {
-          return apiErrorHandler(
-            new ApiError({
-              status: 'PERMISSION_DENIED',
-              reason: 'MAIL_ACCESS_DENIED',
-              domain: MAIL_DOMAIN,
-              message: `Access to the ${resource} page is required.`,
-              ...localized(context, 'errors.accessDenied'),
-            }),
-            context,
-          );
-        }
-        await next();
-      },
-    );
+    // Authentication comes before everything; each route then checks its own permission (`mailRoute`) before it reads
+    // the request, so a caller without access learns nothing about which accounts, messages, or runs exist.
+    routes.use('*', authentication.required(), authorization.middleware());
     routes.onError((error, context) => {
       const apiError = toMailApiError(error, context);
       return withRetryAfter(apiErrorHandler(apiError, context), apiError);
@@ -274,16 +286,26 @@ export const mailApiRoutes: AppApiRouteContribution<AppPluginApplication> =
 
     routes.get(
       '/providers',
-      mailRoute('mailListProviders', 'List the configured mail Providers', {
-        '200': listResponse(MailProviderSchema, MailBoundedListMeta),
-      }),
+      ...mailRoute(
+        MAIL_ACCESS.workspace,
+        'mailListProviders',
+        'List the configured mail Providers',
+        {
+          '200': listResponse(MailProviderSchema, MailBoundedListMeta),
+        },
+      ),
       async (context) => context.json(boundedList(await mail.listProviders())),
     );
     routes.get(
       '/accounts',
-      mailRoute('mailListAccounts', "List the caller's mail accounts", {
-        '200': listResponse(MailAccountSchema, MailBoundedListMeta),
-      }),
+      ...mailRoute(
+        MAIL_ACCESS.workspace,
+        'mailListAccounts',
+        "List the caller's mail accounts",
+        {
+          '200': listResponse(MailAccountSchema, MailBoundedListMeta),
+        },
+      ),
       async (context) =>
         context.json(
           boundedList(await mail.listAccounts(operationContext(context))),
@@ -293,7 +315,8 @@ export const mailApiRoutes: AppApiRouteContribution<AppPluginApplication> =
     // the collection rather than a plain create, but it does create the account and answers 201 with it.
     routes.post(
       '/accounts/connect',
-      mailRoute(
+      ...mailRoute(
+        MAIL_ACCESS.workspace,
         'mailConnectAccount',
         'Connect an account with credentials',
         { '201': dataResponse(MailAccountSchema) },
@@ -331,7 +354,8 @@ export const mailApiRoutes: AppApiRouteContribution<AppPluginApplication> =
     );
     routes.patch(
       '/accounts/:accountId',
-      mailRoute(
+      ...mailRoute(
+        MAIL_ACCESS.workspace,
         'mailUpdateAccount',
         'Update an account',
         { '200': dataResponse(MailUpdatedAccountSchema) },
@@ -361,7 +385,8 @@ export const mailApiRoutes: AppApiRouteContribution<AppPluginApplication> =
     // Previewing changes nothing, but the selection can name many long folder IDs, so it is a custom method with a body.
     routes.post(
       '/accounts/:accountId/previewSyncFolders',
-      mailRoute(
+      ...mailRoute(
+        MAIL_ACCESS.workspace,
         'mailPreviewSyncFolders',
         'Preview a change of synchronized folders',
         { '200': dataResponse(MailSyncFolderPreviewSchema) },
@@ -392,7 +417,8 @@ export const mailApiRoutes: AppApiRouteContribution<AppPluginApplication> =
     // body.
     routes.delete(
       '/accounts/:accountId',
-      mailRoute(
+      ...mailRoute(
+        MAIL_ACCESS.workspace,
         'mailDeleteAccount',
         'Remove an account',
         {
@@ -420,7 +446,8 @@ export const mailApiRoutes: AppApiRouteContribution<AppPluginApplication> =
     );
     routes.post(
       '/authorizations',
-      mailRoute(
+      ...mailRoute(
+        MAIL_ACCESS.workspace,
         'mailCreateAuthorization',
         'Start connecting an OAuth account',
         { '201': dataResponse(MailAuthorizationSchema) },
@@ -462,7 +489,8 @@ export const mailApiRoutes: AppApiRouteContribution<AppPluginApplication> =
     );
     routes.get(
       '/accounts/:accountId/identities',
-      mailRoute(
+      ...mailRoute(
+        MAIL_ACCESS.workspace,
         'mailListIdentities',
         'List the addresses an account can send from',
         { '200': listResponse(MailIdentitySchema, MailBoundedListMeta) },
@@ -486,7 +514,8 @@ export const mailApiRoutes: AppApiRouteContribution<AppPluginApplication> =
     );
     routes.patch(
       '/accounts/:accountId/identities/:identityId',
-      mailRoute(
+      ...mailRoute(
+        MAIL_ACCESS.workspace,
         'mailUpdateIdentity',
         'Change the display name of a sending address',
         { '200': dataResponse(MailIdentitySchema) },
@@ -513,7 +542,8 @@ export const mailApiRoutes: AppApiRouteContribution<AppPluginApplication> =
     );
     routes.get(
       '/accounts/:accountId/signatures',
-      mailRoute(
+      ...mailRoute(
+        MAIL_ACCESS.workspace,
         'mailListSignatures',
         "List an account's signatures",
         { '200': listResponse(MailSignatureSchema, MailBoundedListMeta) },
@@ -537,7 +567,8 @@ export const mailApiRoutes: AppApiRouteContribution<AppPluginApplication> =
     );
     routes.post(
       '/accounts/:accountId/signatures',
-      mailRoute(
+      ...mailRoute(
+        MAIL_ACCESS.workspace,
         'mailCreateSignature',
         'Create a signature',
         { '201': dataResponse(MailSignatureSchema) },
@@ -569,7 +600,8 @@ export const mailApiRoutes: AppApiRouteContribution<AppPluginApplication> =
     );
     routes.patch(
       '/accounts/:accountId/signatures/:signatureId',
-      mailRoute(
+      ...mailRoute(
+        MAIL_ACCESS.workspace,
         'mailUpdateSignature',
         'Update a signature',
         { '200': dataResponse(MailSignatureSchema) },
@@ -597,7 +629,8 @@ export const mailApiRoutes: AppApiRouteContribution<AppPluginApplication> =
     );
     routes.delete(
       '/accounts/:accountId/signatures/:signatureId',
-      mailRoute(
+      ...mailRoute(
+        MAIL_ACCESS.workspace,
         'mailDeleteSignature',
         'Delete a signature',
         { '204': emptyResponse() },
@@ -621,7 +654,8 @@ export const mailApiRoutes: AppApiRouteContribution<AppPluginApplication> =
     );
     routes.get(
       '/accounts/:accountId/folders',
-      mailRoute(
+      ...mailRoute(
+        MAIL_ACCESS.workspace,
         'mailListFolders',
         "List an account's folders",
         { '200': listResponse(MailFolderSchema, MailFolderListMeta) },
@@ -657,7 +691,8 @@ export const mailApiRoutes: AppApiRouteContribution<AppPluginApplication> =
     );
     routes.post(
       '/accounts/:accountId/sync',
-      mailRoute(
+      ...mailRoute(
+        MAIL_ACCESS.workspace,
         'mailSyncAccount',
         'Start synchronizing an account',
         {
@@ -698,9 +733,14 @@ export const mailApiRoutes: AppApiRouteContribution<AppPluginApplication> =
 
     routes.get(
       '/templates',
-      mailRoute('mailListTemplates', "List the caller's templates", {
-        '200': listResponse(MailTemplateSchema, MailBoundedListMeta),
-      }),
+      ...mailRoute(
+        MAIL_ACCESS.workspace,
+        'mailListTemplates',
+        "List the caller's templates",
+        {
+          '200': listResponse(MailTemplateSchema, MailBoundedListMeta),
+        },
+      ),
       async (context) =>
         context.json(
           boundedList(await mail.listTemplates(operationContext(context))),
@@ -708,7 +748,8 @@ export const mailApiRoutes: AppApiRouteContribution<AppPluginApplication> =
     );
     routes.post(
       '/templates',
-      mailRoute(
+      ...mailRoute(
+        MAIL_ACCESS.workspace,
         'mailCreateTemplate',
         'Create a template',
         { '201': dataResponse(MailTemplateSchema) },
@@ -732,7 +773,8 @@ export const mailApiRoutes: AppApiRouteContribution<AppPluginApplication> =
     );
     routes.patch(
       '/templates/:templateId',
-      mailRoute(
+      ...mailRoute(
+        MAIL_ACCESS.workspace,
         'mailUpdateTemplate',
         'Update a template',
         { '200': dataResponse(MailTemplateSchema) },
@@ -753,7 +795,8 @@ export const mailApiRoutes: AppApiRouteContribution<AppPluginApplication> =
     );
     routes.delete(
       '/templates/:templateId',
-      mailRoute(
+      ...mailRoute(
+        MAIL_ACCESS.workspace,
         'mailDeleteTemplate',
         'Delete a template',
         { '204': emptyResponse() },
@@ -770,9 +813,14 @@ export const mailApiRoutes: AppApiRouteContribution<AppPluginApplication> =
     );
     routes.get(
       '/labels',
-      mailRoute('mailListLabels', "List the caller's labels", {
-        '200': listResponse(MailLabelSchema, MailBoundedListMeta),
-      }),
+      ...mailRoute(
+        MAIL_ACCESS.workspace,
+        'mailListLabels',
+        "List the caller's labels",
+        {
+          '200': listResponse(MailLabelSchema, MailBoundedListMeta),
+        },
+      ),
       async (context) =>
         context.json(
           boundedList(await mail.listLabels(operationContext(context))),
@@ -780,7 +828,8 @@ export const mailApiRoutes: AppApiRouteContribution<AppPluginApplication> =
     );
     routes.post(
       '/labels',
-      mailRoute(
+      ...mailRoute(
+        MAIL_ACCESS.workspace,
         'mailCreateLabel',
         'Create a label',
         { '201': dataResponse(MailLabelSchema) },
@@ -804,7 +853,8 @@ export const mailApiRoutes: AppApiRouteContribution<AppPluginApplication> =
     );
     routes.patch(
       '/labels/:labelId',
-      mailRoute(
+      ...mailRoute(
+        MAIL_ACCESS.workspace,
         'mailUpdateLabel',
         'Update a label',
         { '200': dataResponse(MailLabelSchema) },
@@ -829,7 +879,8 @@ export const mailApiRoutes: AppApiRouteContribution<AppPluginApplication> =
     );
     routes.delete(
       '/labels/:labelId',
-      mailRoute(
+      ...mailRoute(
+        MAIL_ACCESS.workspace,
         'mailDeleteLabel',
         'Delete a label',
         { '204': emptyResponse() },
@@ -850,7 +901,8 @@ export const mailApiRoutes: AppApiRouteContribution<AppPluginApplication> =
 
     routes.post(
       '/attachments',
-      mailRoute(
+      ...mailRoute(
+        MAIL_ACCESS.workspace,
         'mailUploadAttachment',
         'Upload an attachment for a message being composed',
         {
@@ -927,7 +979,8 @@ export const mailApiRoutes: AppApiRouteContribution<AppPluginApplication> =
     );
     routes.get(
       '/attachments/:attachmentId',
-      mailRoute(
+      ...mailRoute(
+        MAIL_ACCESS.workspace,
         'mailDownloadAttachment',
         'Download an uploaded attachment',
         { '200': attachmentDownloadResponse },
@@ -960,7 +1013,8 @@ export const mailApiRoutes: AppApiRouteContribution<AppPluginApplication> =
 
     routes.get(
       '/messages',
-      mailRoute(
+      ...mailRoute(
+        MAIL_ACCESS.workspace,
         'mailListMessages',
         "List the caller's messages",
         { '200': listResponse(MailMessageSummarySchema, MailCursorListMeta) },
@@ -993,7 +1047,8 @@ export const mailApiRoutes: AppApiRouteContribution<AppPluginApplication> =
     );
     routes.get(
       '/messages/countUnread',
-      mailRoute(
+      ...mailRoute(
+        MAIL_ACCESS.workspace,
         'mailCountUnreadMessages',
         "Count the caller's unread messages",
         { '200': dataResponse(MailUnreadCountSchema) },
@@ -1005,7 +1060,8 @@ export const mailApiRoutes: AppApiRouteContribution<AppPluginApplication> =
     );
     routes.post(
       '/messages/send',
-      mailRoute(
+      ...mailRoute(
+        MAIL_ACCESS.workspace,
         'mailSendMessage',
         'Send a message',
         { '200': dataResponse(MailSubmissionSchema) },
@@ -1034,7 +1090,8 @@ export const mailApiRoutes: AppApiRouteContribution<AppPluginApplication> =
     );
     routes.post(
       '/messages/sendBulk',
-      mailRoute(
+      ...mailRoute(
+        MAIL_ACCESS.workspace,
         'mailSendBulkMessages',
         'Send one message to each recipient separately',
         {
@@ -1071,7 +1128,8 @@ export const mailApiRoutes: AppApiRouteContribution<AppPluginApplication> =
     // rather than a create.
     routes.post(
       '/messages/saveDraft',
-      mailRoute(
+      ...mailRoute(
+        MAIL_ACCESS.workspace,
         'mailSaveDraft',
         'Create or replace a draft',
         { '200': dataResponse(MailMessageSchema) },
@@ -1101,7 +1159,8 @@ export const mailApiRoutes: AppApiRouteContribution<AppPluginApplication> =
     );
     routes.get(
       '/accounts/:accountId/conversations/:conversationId/messages',
-      mailRoute(
+      ...mailRoute(
+        MAIL_ACCESS.workspace,
         'mailListConversationMessages',
         'List the messages of a conversation',
         { '200': listResponse(MailMessageSchema, MailCursorListMeta) },
@@ -1128,7 +1187,8 @@ export const mailApiRoutes: AppApiRouteContribution<AppPluginApplication> =
     );
     routes.get(
       '/accounts/:accountId/messages/:messageId',
-      mailRoute(
+      ...mailRoute(
+        MAIL_ACCESS.workspace,
         'mailGetMessage',
         'Get a message',
         { '200': dataResponse(MailMessageSchema) },
@@ -1148,7 +1208,8 @@ export const mailApiRoutes: AppApiRouteContribution<AppPluginApplication> =
     );
     routes.patch(
       '/accounts/:accountId/messages/:messageId',
-      mailRoute(
+      ...mailRoute(
+        MAIL_ACCESS.workspace,
         'mailUpdateMessage',
         'Mark a message read or starred, or change its note',
         { '200': dataResponse(MailMessageSchema) },
@@ -1183,7 +1244,8 @@ export const mailApiRoutes: AppApiRouteContribution<AppPluginApplication> =
     );
     routes.delete(
       '/accounts/:accountId/messages/:messageId',
-      mailRoute(
+      ...mailRoute(
+        MAIL_ACCESS.workspace,
         'mailDeleteMessage',
         'Delete a message',
         { '204': emptyResponse() },
@@ -1214,7 +1276,8 @@ export const mailApiRoutes: AppApiRouteContribution<AppPluginApplication> =
     );
     routes.get(
       '/accounts/:accountId/messages/:messageId/original',
-      mailRoute(
+      ...mailRoute(
+        MAIL_ACCESS.workspace,
         'mailDownloadOriginalMessage',
         'Download the original MIME of one message',
         {
@@ -1231,7 +1294,7 @@ export const mailApiRoutes: AppApiRouteContribution<AppPluginApplication> =
         {
           cli: false,
           description:
-            'Requires access to the Mail workspace (page / mail.workspace / access) and ownership of the message and account. The MIME may be at most 40 MiB. A failure after streaming begins interrupts the download.',
+            'Requires ownership of the message and account. The MIME may be at most 40 MiB. A failure after streaming begins interrupts the download.',
           errors: {
             400: 'The account is inactive (`MAIL_ACCOUNT_INACTIVE`), requires reauthorization (`MAIL_ACCOUNT_REAUTHORIZATION_REQUIRED`), or the original is unsupported (`MAIL_PROVIDER_OPERATION_UNSUPPORTED`) or too large (`MAIL_ORIGINAL_TOO_LARGE`).',
             404: 'The account or message could not be found, or the original is no longer available at the provider (`MAIL_ORIGINAL_NOT_FOUND`).',
@@ -1256,7 +1319,8 @@ export const mailApiRoutes: AppApiRouteContribution<AppPluginApplication> =
     );
     routes.get(
       '/accounts/:accountId/messages/:messageId/attachments/:attachmentId',
-      mailRoute(
+      ...mailRoute(
+        MAIL_ACCESS.workspace,
         'mailDownloadMessageAttachment',
         'Download an attachment of a message',
         { '200': attachmentDownloadResponse },
@@ -1285,7 +1349,8 @@ export const mailApiRoutes: AppApiRouteContribution<AppPluginApplication> =
     );
     routes.post(
       '/accounts/:accountId/messages/:messageId/modifyLabels',
-      mailRoute(
+      ...mailRoute(
+        MAIL_ACCESS.workspace,
         'mailModifyMessageLabels',
         'Add or remove labels on a message',
         { '200': dataResponse(MailMessageSchema) },
@@ -1314,7 +1379,8 @@ export const mailApiRoutes: AppApiRouteContribution<AppPluginApplication> =
     );
     routes.post(
       '/accounts/:accountId/messages/:messageId/move',
-      mailRoute(
+      ...mailRoute(
+        MAIL_ACCESS.workspace,
         'mailMoveMessage',
         'Move a message to another folder',
         { '200': dataResponse(MailMessageSchema) },
@@ -1347,7 +1413,8 @@ export const mailApiRoutes: AppApiRouteContribution<AppPluginApplication> =
     );
     routes.post(
       '/accounts/:accountId/messages/:messageId/retryContent',
-      mailRoute(
+      ...mailRoute(
+        MAIL_ACCESS.workspace,
         'mailRetryMessageContent',
         'Download the body of a message again',
         { '200': dataResponse(MailMessageSchema) },
@@ -1376,7 +1443,8 @@ export const mailApiRoutes: AppApiRouteContribution<AppPluginApplication> =
     );
     routes.post(
       '/accounts/:accountId/messages/:messageId/resolveDraftConflict',
-      mailRoute(
+      ...mailRoute(
+        MAIL_ACCESS.workspace,
         'mailResolveDraftConflict',
         'Resolve a draft changed both here and at the Provider',
         { '200': dataResponse(MailMessageSchema) },
@@ -1409,9 +1477,14 @@ export const mailApiRoutes: AppApiRouteContribution<AppPluginApplication> =
 
     routes.get(
       '/syncRuns',
-      mailRoute('mailListSyncRuns', "List the caller's synchronization runs", {
-        '200': listResponse(MailSyncRunSchema, MailPageListMeta),
-      }),
+      ...mailRoute(
+        MAIL_ACCESS.workspace,
+        'mailListSyncRuns',
+        "List the caller's synchronization runs",
+        {
+          '200': listResponse(MailSyncRunSchema, MailPageListMeta),
+        },
+      ),
       apiValidator('query', SyncRunsQuery),
       async (context) => {
         const { page, pageSize } = context.req.valid('query');
@@ -1428,7 +1501,8 @@ export const mailApiRoutes: AppApiRouteContribution<AppPluginApplication> =
     );
     routes.get(
       '/syncRuns/:syncRunId',
-      mailRoute(
+      ...mailRoute(
+        MAIL_ACCESS.workspace,
         'mailGetSyncRun',
         'Get a synchronization run',
         { '200': dataResponse(MailSyncRunSchema) },
@@ -1454,7 +1528,8 @@ export const mailApiRoutes: AppApiRouteContribution<AppPluginApplication> =
     );
     routes.post(
       '/syncRuns/:syncRunId/retry',
-      mailRoute(
+      ...mailRoute(
+        MAIL_ACCESS.workspace,
         'mailRetrySyncRun',
         'Retry a synchronization run',
         { '202': dataResponse(MailSyncRunSchema, 'The run was queued again.') },
@@ -1479,7 +1554,8 @@ export const mailApiRoutes: AppApiRouteContribution<AppPluginApplication> =
     );
     routes.post(
       '/syncRuns/:syncRunId/cancel',
-      mailRoute(
+      ...mailRoute(
+        MAIL_ACCESS.workspace,
         'mailCancelSyncRun',
         'Cancel a synchronization run',
         { '200': dataResponse(MailSyncRunSchema) },
@@ -1501,13 +1577,14 @@ export const mailApiRoutes: AppApiRouteContribution<AppPluginApplication> =
     );
     routes.get(
       '/submissions',
-      mailRoute(
+      ...mailRoute(
+        MAIL_ACCESS.workspace,
         'mailListSubmissions',
         "List the caller's sent and scheduled messages",
         { '200': listResponse(MailSubmissionLogSchema, MailPageListMeta) },
         {
           description:
-            'With `groupByBatch`, a bulk send counts as one row and `meta.total` counts batches.',
+            "With `groupByBatch`, `pageSize` and `meta.total` count entries: a single send, scheduled ones included, is one entry, and a bulk send is one entry answered with every recipient's submission. With `bulkOnly` as well, only bulk sends.",
         },
       ),
       apiValidator('query', SubmissionsQuery),
@@ -1529,7 +1606,8 @@ export const mailApiRoutes: AppApiRouteContribution<AppPluginApplication> =
     );
     routes.post(
       '/submissions/:submissionId/retry',
-      mailRoute(
+      ...mailRoute(
+        MAIL_ACCESS.workspace,
         'mailRetrySubmission',
         'Retry a failed submission',
         { '200': dataResponse(MailSubmissionLogSchema) },
@@ -1551,7 +1629,8 @@ export const mailApiRoutes: AppApiRouteContribution<AppPluginApplication> =
     );
     routes.post(
       '/submissions/:submissionId/cancel',
-      mailRoute(
+      ...mailRoute(
+        MAIL_ACCESS.workspace,
         'mailCancelSubmission',
         'Cancel a scheduled or pending submission',
         { '200': dataResponse(MailSubmissionLogSchema) },
@@ -1573,99 +1652,262 @@ export const mailApiRoutes: AppApiRouteContribution<AppPluginApplication> =
     );
 
     // -----------------------------------------------------------------------------------------------------------------
-    // Administration (`mail.admin`): every user's accounts and operation logs. The logs grow without bound, so sync
-    // runs and submissions are separate lists paged by page number, as the caller's own logs are.
-    //
-    // `/settings/accounts` and `/management/accounts` read the same list but are separate operations of separate
-    // pages: each is gated by its own page permission, and merging them would force granting one page to use the
-    // other.
+    // Mail settings (`settings:mail.admin`): Providers, every member's accounts and operation logs, never a message's
+    // content. `read` lists; `manage` retries and cancels other members' runs and submissions. The logs grow until the
+    // retention period deletes finished ones, so they are paged by page number with filters.
 
     routes.get(
-      '/settings/accounts',
-      mailRoute(
-        'mailListAdminAccounts',
-        "List every user's mail accounts for the Mail settings page",
-        { '200': listResponse(MailManagedAccountSchema, MailBoundedListMeta) },
-        { description: 'Requires access to the `mail.admin` page.' },
+      '/settings/overview',
+      ...mailRoute(
+        MAIL_ACCESS.settingsRead,
+        'mailGetSettingsOverview',
+        'Get the Mail settings overview',
+        { '200': dataResponse(MailSettingsOverviewSchema) },
+        {
+          description:
+            'The Providers members can connect with their capabilities and account counts, account totals, and the runtime configuration with where each value comes from. It never carries a secret: the push webhook secret is only reported as configured or not.',
+        },
       ),
-      async (context) =>
-        context.json(
+      async (context) => {
+        const mailConfig = config.get<MailConfig>('mail')!;
+        const identity = config.get<AppIdentityConfig>('app');
+        const [providers, accountCounts] = await Promise.all([
+          mail.listProviders(),
+          mail.countAccountsByProvider(operationContext(context)),
+        ]);
+        return context.json({
+          data: buildMailSettingsOverview({
+            config: mailConfig,
+            providers,
+            accountCounts,
+            origin: resolveMailOAuthOrigin(
+              identity?.publicOrigin,
+              new URL(context.req.url).origin,
+            ),
+            publicBasePath,
+            credentialVault: container.has(mailAssemblyInfoToken)
+              ? container.resolve(mailAssemblyInfoToken).credentialVault
+              : 'builtin',
+            env: process.env,
+            layers: configLayers(config),
+          }),
+        });
+      },
+    );
+    routes.get(
+      '/settings/accounts',
+      ...mailRoute(
+        MAIL_ACCESS.settingsRead,
+        'mailListAdminAccounts',
+        "List every member's mail accounts for the Mail settings page",
+        { '200': listResponse(MailAdminAccountSchema, MailBoundedListMeta) },
+        {
+          description:
+            'Owner, Provider, status and last synchronization of each account, without scopes, folders or messages.',
+        },
+      ),
+      apiValidator('query', AdminAccountsQuery),
+      async (context) => {
+        const query = context.req.valid('query');
+        return context.json(
           boundedList(
-            await mail.listManagedAccounts(operationContext(context)),
+            await mail.listAdminAccounts(operationContext(context), {
+              ...(query.status ? { statuses: query.status.split(',') } : {}),
+              ...(query.provider ? { providerName: query.provider } : {}),
+              ...(query.userId ? { userId: query.userId } : {}),
+              ...(query.q ? { q: query.q } : {}),
+            }),
           ),
-        ),
+        );
+      },
     );
     routes.get(
       '/settings/syncRuns',
-      mailRoute(
+      ...mailRoute(
+        MAIL_ACCESS.settingsRead,
         'mailListAdminSyncRuns',
-        "List every user's synchronization runs",
-        { '200': listResponse(MailSyncRunSchema, MailPageListMeta) },
-        { description: 'Requires access to the `mail.admin` page.' },
+        "List every member's synchronization runs",
+        { '200': listResponse(MailSyncRunSchema, MailLogCursorListMeta) },
+        {
+          description:
+            'Newest first, paged by `pageToken`. `canManage` is true for a caller who also holds `settings:mail.admin/manage`. A failure carries its code and category only.',
+          errors: {
+            400: '`pageToken` is not a token this list answered, or the request pages by `page`, which this list replaced with `pageToken` (`INVALID_MAIL_REQUEST`).',
+          },
+        },
       ),
+      rejectPageNumber,
       apiValidator('query', ManagedLogsQuery),
       async (context) => {
-        const { page, pageSize } = context.req.valid('query');
+        const query = context.req.valid('query');
         const result = await mail.listManagedSyncRunsPage(
           operationContext(context),
-          (page - 1) * pageSize,
-          pageSize,
+          query.pageToken,
+          query.pageSize,
+          managedLogFilter(query),
+          await context.get('authz').can(MAIL_ACCESS.settingsManage),
         );
-        return context.json({
-          data: result.items,
-          meta: { page, pageSize, total: result.total },
-        });
+        return context.json(logPage(query.pageSize, result));
       },
+    );
+    routes.post(
+      '/settings/syncRuns/:syncRunId/retry',
+      ...mailRoute(
+        MAIL_ACCESS.settingsManage,
+        'mailRetryAdminSyncRun',
+        "Retry any member's synchronization run",
+        { '200': dataResponse(MailSyncRunSchema) },
+        {
+          description:
+            "Starts a new run for a failed or cancelled one, as its owner's own retry would.",
+          errors: {
+            400: 'The run is not failed or cancelled (`MAIL_SYNC_RUN_STATE_INVALID`) or its account is not active (`MAIL_ACCOUNT_INACTIVE`).',
+            404: true,
+          },
+        },
+      ),
+      apiValidator('param', SyncRunParams),
+      async (context) =>
+        context.json({
+          data: await mail.retryManagedSyncRun(
+            operationContext(context),
+            context.req.valid('param').syncRunId,
+          ),
+        }),
+    );
+    routes.post(
+      '/settings/syncRuns/:syncRunId/cancel',
+      ...mailRoute(
+        MAIL_ACCESS.settingsManage,
+        'mailCancelAdminSyncRun',
+        "Cancel any member's synchronization run",
+        { '200': dataResponse(MailSyncRunSchema) },
+        {
+          errors: {
+            400: 'The run is not pending or running (`MAIL_SYNC_RUN_STATE_INVALID`).',
+            404: true,
+          },
+        },
+      ),
+      apiValidator('param', SyncRunParams),
+      async (context) =>
+        context.json({
+          data: await mail.cancelManagedSyncRun(
+            operationContext(context),
+            context.req.valid('param').syncRunId,
+          ),
+        }),
     );
     routes.get(
       '/settings/submissions',
-      mailRoute(
+      ...mailRoute(
+        MAIL_ACCESS.settingsRead,
         'mailListAdminSubmissions',
-        "List every user's submissions",
-        { '200': listResponse(MailSubmissionLogSchema, MailPageListMeta) },
-        { description: 'Requires access to the `mail.admin` page.' },
+        "List every member's submissions",
+        {
+          '200': listResponse(
+            MailManagedSubmissionSchema,
+            MailLogCursorListMeta,
+          ),
+        },
+        {
+          description:
+            'Newest first, paged by `pageToken`: account, recipient count, result and failure code, never the subject, body, addresses or attachments.',
+          errors: {
+            400: '`pageToken` is not a token this list answered, or the request pages by `page`, which this list replaced with `pageToken` (`INVALID_MAIL_REQUEST`).',
+          },
+        },
       ),
+      rejectPageNumber,
       apiValidator('query', ManagedLogsQuery),
       async (context) => {
-        const { page, pageSize } = context.req.valid('query');
+        const query = context.req.valid('query');
         const result = await mail.listManagedSubmissionsPage(
           operationContext(context),
-          (page - 1) * pageSize,
-          pageSize,
+          query.pageToken,
+          query.pageSize,
+          managedLogFilter(query),
+          await context.get('authz').can(MAIL_ACCESS.settingsManage),
         );
-        return context.json({
-          data: result.items,
-          meta: { page, pageSize, total: result.total },
-        });
+        return context.json(logPage(query.pageSize, result));
       },
+    );
+    routes.post(
+      '/settings/submissions/:submissionId/retry',
+      ...mailRoute(
+        MAIL_ACCESS.settingsManage,
+        'mailRetryAdminSubmission',
+        "Retry any member's failed submission",
+        { '200': dataResponse(MailManagedSubmissionSchema) },
+        {
+          description:
+            "Queues the failed submission again, as its owner's own retry would.",
+          errors: {
+            400: 'The submission cannot be retried in its current state (`MAIL_SUBMISSION_STATE_INVALID`).',
+            404: true,
+          },
+        },
+      ),
+      apiValidator('param', SubmissionParams),
+      async (context) =>
+        context.json({
+          data: await mail.retryManagedSubmission(
+            operationContext(context),
+            context.req.valid('param').submissionId,
+          ),
+        }),
+    );
+    routes.post(
+      '/settings/submissions/:submissionId/cancel',
+      ...mailRoute(
+        MAIL_ACCESS.settingsManage,
+        'mailCancelAdminSubmission',
+        "Cancel any member's pending or failed submission",
+        { '200': dataResponse(MailManagedSubmissionSchema) },
+        {
+          errors: {
+            400: 'The submission cannot be cancelled in its current state (`MAIL_SUBMISSION_STATE_INVALID`).',
+            404: true,
+          },
+        },
+      ),
+      apiValidator('param', SubmissionParams),
+      async (context) =>
+        context.json({
+          data: await mail.cancelManagedSubmission(
+            operationContext(context),
+            context.req.valid('param').submissionId,
+          ),
+        }),
     );
 
     // -----------------------------------------------------------------------------------------------------------------
-    // Management (`mail.management`): every user's mailboxes, as an administrative table paged by page number.
+    // Team mail (`mail:mail.management`): every member's synchronized mail, read only with `view`; `process` applies
+    // batch actions. Reading a message here never marks it read.
 
     routes.get(
       '/management/accounts',
-      mailRoute(
+      ...mailRoute(
+        MAIL_ACCESS.teamView,
         'mailListManagedAccounts',
-        "List every user's mail accounts for mailbox management",
-        { '200': listResponse(MailManagedAccountSchema, MailBoundedListMeta) },
-        { description: 'Requires access to the `mail.management` page.' },
+        "List every member's mail accounts for Team mail",
+        { '200': listResponse(MailTeamAccountSchema, MailBoundedListMeta) },
+        { description: 'Owner and address of each account, for filtering.' },
       ),
       async (context) =>
         context.json(
-          boundedList(
-            await mail.listManagedAccounts(operationContext(context)),
-          ),
+          boundedList(await mail.listTeamAccounts(operationContext(context))),
         ),
     );
     routes.get(
       '/management/accounts/:accountId/folders',
-      mailRoute(
+      ...mailRoute(
+        MAIL_ACCESS.teamView,
         'mailListManagedFolders',
         "List the folders of any user's account",
         { '200': listResponse(MailFolderSchema, MailBoundedListMeta) },
         {
-          description: 'Requires access to the `mail.management` page.',
+          description: "Reading a member's message here does not mark it read.",
           errors: { 404: true },
         },
       ),
@@ -1682,11 +1924,15 @@ export const mailApiRoutes: AppApiRouteContribution<AppPluginApplication> =
     );
     routes.get(
       '/management/messages',
-      mailRoute(
+      ...mailRoute(
+        MAIL_ACCESS.teamView,
         'mailListManagedMessages',
-        "List messages across every user's accounts",
+        "List messages across every member's accounts",
         { '200': listResponse(MailMessageSummarySchema, MailPageListMeta) },
-        { description: 'Requires access to the `mail.management` page.' },
+        {
+          description:
+            '`userId` narrows the list to one member, `participant` to an address or `@domain`.',
+        },
       ),
       apiValidator('query', ManagementMessagesQuery),
       async (context) => {
@@ -1704,6 +1950,7 @@ export const mailApiRoutes: AppApiRouteContribution<AppPluginApplication> =
             unread: query.unread,
             starred: query.starred,
           },
+          query.userId,
         );
         return context.json({
           data: result.items,
@@ -1717,13 +1964,14 @@ export const mailApiRoutes: AppApiRouteContribution<AppPluginApplication> =
     );
     routes.post(
       '/management/messages/batchApply',
-      mailRoute(
+      ...mailRoute(
+        MAIL_ACCESS.teamProcess,
         'mailBatchApplyManagedMessages',
         'Apply one action to several messages of any user',
         { '200': dataResponse(MailManagementActionResultSchema) },
         {
           description:
-            'Requires access to the `mail.management` page. Each message succeeds or fails on its own; the result reports both.',
+            'Each message succeeds or fails on its own; the result reports both. Viewing alone (`mail:mail.management/view`) is not enough.',
           errors: { 413: true },
         },
       ),
@@ -1738,12 +1986,13 @@ export const mailApiRoutes: AppApiRouteContribution<AppPluginApplication> =
     );
     routes.get(
       '/management/accounts/:accountId/messages/:messageId',
-      mailRoute(
+      ...mailRoute(
+        MAIL_ACCESS.teamView,
         'mailGetManagedMessage',
         "Get a message of any user's account",
         { '200': dataResponse(MailMessageSchema) },
         {
-          description: 'Requires access to the `mail.management` page.',
+          description: "Reading a member's message here does not mark it read.",
           errors: { 404: true },
         },
       ),
@@ -1761,12 +2010,12 @@ export const mailApiRoutes: AppApiRouteContribution<AppPluginApplication> =
     );
     routes.get(
       '/management/accounts/:accountId/messages/:messageId/attachments/:attachmentId',
-      mailRoute(
+      ...mailRoute(
+        MAIL_ACCESS.teamView,
         'mailDownloadManagedMessageAttachment',
         "Download an attachment of any user's message",
         { '200': attachmentDownloadResponse },
         {
-          description: 'Requires access to the `mail.management` page.',
           errors: {
             400: 'The attachment is not available at the Provider (`MAIL_ATTACHMENT_UNAVAILABLE`), attachment storage is not configured (`MAIL_ATTACHMENT_STORAGE_NOT_CONFIGURED`), the account must be reconnected because the mail Provider no longer accepts its authorization (`MAIL_ACCOUNT_REAUTHORIZATION_REQUIRED`), or the mail Provider is not configured (`MAIL_PROVIDER_UNAVAILABLE`), cannot download attachments (`MAIL_PROVIDER_OPERATION_UNSUPPORTED`) or rejected the request (`MAIL_PROVIDER_REQUEST_FAILED`).',
             404: true,
@@ -1793,6 +2042,64 @@ export const mailApiRoutes: AppApiRouteContribution<AppPluginApplication> =
     router.route('/mail', routes);
     return router;
   });
+
+/** The configuration's layers, when the application's configuration keeps them apart (`AppConfig.layers()`). */
+function configLayers(
+  config: object,
+): import('../settings-overview.js').MailSettingsOverviewInput['layers'] {
+  const layers = (config as { layers?: unknown }).layers;
+  return typeof layers === 'function'
+    ? (layers.call(config) as ReturnType<typeof configLayers>)
+    : undefined;
+}
+
+/**
+ * The settings logs page by `pageToken`; they took `page` before. A request still sending `page` would otherwise be
+ * answered the first page whatever page it asked for, so it is refused with a hint instead.
+ */
+const rejectPageNumber: MiddlewareHandler = async (context, next) => {
+  if (context.req.query('page') !== undefined)
+    throw mailInvalidArgument(
+      'This list pages by pageToken: send the meta.nextPageToken of the previous page instead of page.',
+      'page',
+    );
+  await next();
+};
+
+/** The body of a settings log page. */
+function logPage<T>(
+  pageSize: number,
+  page: import('../../shared/mail.js').MailPage<T>,
+): {
+  data: readonly T[];
+  meta: { pageSize: number; nextPageToken?: string; total: number };
+} {
+  return {
+    data: page.items,
+    meta: {
+      pageSize,
+      ...(page.nextCursor ? { nextPageToken: page.nextCursor } : {}),
+      total: page.total ?? page.items.length,
+    },
+  };
+}
+
+/** The filter of a settings log list, from its query. */
+function managedLogFilter(query: {
+  readonly userId?: string;
+  readonly accountId?: string;
+  readonly status?: string;
+  readonly from?: string;
+  readonly to?: string;
+}): import('../../shared/mail.js').MailManagedLogFilter {
+  return {
+    ...(query.userId ? { userId: query.userId } : {}),
+    ...(query.accountId ? { accountId: query.accountId } : {}),
+    ...(query.status ? { statuses: query.status.split(',') } : {}),
+    ...(query.from ? { createdFrom: query.from } : {}),
+    ...(query.to ? { createdBefore: query.to } : {}),
+  };
+}
 
 /** Connecting accepts only an empty selection, meaning the folders are chosen after connecting. */
 function connectSyncFolders(

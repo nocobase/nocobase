@@ -95,7 +95,7 @@ describeMigration('202609220001_create_notification_example_tasks', {
 
 it('sends task summaries to the related people', async () => {
   const database = await createFixture();
-  const sent = vi.fn(async () => undefined);
+  const sent = vi.fn(async (_kind: string, _input: unknown) => undefined);
   const router = await createRouter(database, sent);
 
   const createdResponse = await request(router, 'POST', 'u1', '/tasks', {
@@ -117,16 +117,13 @@ it('sends task summaries to the related people', async () => {
   for (const time of [created.data.createdAt, created.data.updatedAt])
     expect(time).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/u);
   expect(sent).toHaveBeenCalledWith(
+    'notification-example.task-assigned',
     expect.objectContaining({
-      messages: {
-        inbox: expect.objectContaining({
-          to: 'u2',
-          body: expect.stringContaining('Review the release notes'),
-          target: {
-            type: 'route',
-            path: `/notification-example/tasks/${created.data.id}`,
-          },
-        }),
+      to: ['u2'],
+      data: expect.objectContaining({ title: 'Review the release notes' }),
+      target: {
+        type: 'route',
+        path: `/notification-example/tasks/${created.data.id}`,
       },
     }),
   );
@@ -145,13 +142,12 @@ it('sends task summaries to the related people', async () => {
   );
   expect(updatedResponse.status).toBe(200);
   expect(sent).toHaveBeenLastCalledWith(
+    'notification-example.task-updated',
     expect.objectContaining({
-      messages: {
-        inbox: expect.objectContaining({
-          to: 'u1',
-          body: expect.stringContaining('Review and publish the release notes'),
-        }),
-      },
+      to: ['u1'],
+      data: expect.objectContaining({
+        title: 'Review and publish the release notes',
+      }),
     }),
   );
 
@@ -224,10 +220,8 @@ it('sends task summaries to the related people', async () => {
   );
   expect(reassignedResponse.status).toBe(200);
   const reassignmentRecipients = sent.mock.calls.slice(-2).map((call) => {
-    const input = call[0] as {
-      messages: { inbox: { to: string } };
-    };
-    return input.messages.inbox.to;
+    const input = call[1] as { to: string[] };
+    return input.to[0];
   });
   expect(reassignmentRecipients).toEqual(expect.arrayContaining(['u2', 'u3']));
 });
@@ -423,14 +417,14 @@ async function createFixture(): Promise<DatabaseManager> {
 
 async function createRouter(
   database: DatabaseManager,
-  send: (input: unknown) => Promise<unknown>,
+  notify: (kind: string, input: unknown) => Promise<unknown>,
   publishFor = vi.fn(async (_id: string, _payload: unknown) => ({
     eventId: 'test',
   })),
 ): Promise<Hono> {
   const container = new ServiceContainer();
   container.instance(databaseManagerToken, database);
-  container.instance(notificationServiceToken, { send });
+  container.instance(notificationServiceToken, { notify } as never);
   container.instance(taskInvalidationToken, {
     publishFor,
     close() {},

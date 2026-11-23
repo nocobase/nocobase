@@ -13,6 +13,10 @@ export interface SettingsItemDefinition {
   readonly actions: readonly {
     readonly name: string;
     readonly title?: AuthorizationTitle;
+    /** Why no credential such as an API key may hold this action: only a person may take it. */
+    readonly humanOnly?: AuthorizationTitle;
+    /** Turned on only after a confirmation. */
+    readonly risk?: 'sensitive' | 'high';
   }[];
 }
 

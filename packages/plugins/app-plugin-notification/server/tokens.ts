@@ -6,6 +6,7 @@ import {
 import type {
   NotificationExtensionRegistry,
   NotificationService,
+  NotificationUserLocales,
 } from './types.js';
 
 export const notificationServiceToken: ServiceToken<NotificationService> =
@@ -16,4 +17,13 @@ export const notificationServiceToken: ServiceToken<NotificationService> =
 export const notificationExtensionRegistryToken: ServiceToken<NotificationExtensionRegistry> =
   createServiceToken<NotificationExtensionRegistry>(
     '@nocobase/app-plugin-notification/extension-registry',
+  );
+
+/**
+ * Where `notify()` reads each person's language. The users plugin provides it; without it everyone receives the
+ * application's default language.
+ */
+export const notificationUserLocalesToken: ServiceToken<NotificationUserLocales> =
+  createServiceToken<NotificationUserLocales>(
+    '@nocobase/app-plugin-notification/user-locales',
   );

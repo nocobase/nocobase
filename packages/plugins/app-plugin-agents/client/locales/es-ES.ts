@@ -3,6 +3,9 @@ import type { LocaleResource } from '@nocobase/i18n';
 import type enUS from './en-US.js';
 
 const esES: LocaleResource<typeof enUS> = {
+  openAgentSettings: 'Abrir la configuración de agentes',
+  myConversations: 'Mis conversaciones',
+  fileUsage: 'Adjuntos del chat',
   modelSuggestions: {
     design:
       'Razonamiento más potente: propuestas, arquitectura, investigaciones difíciles y revisión de cambios importantes; también implementación habitual y cambios entre paquetes.',
@@ -92,6 +95,7 @@ const esES: LocaleResource<typeof enUS> = {
     codex: 'Codex',
     opencode: 'OpenCode',
     pi: 'Pi',
+    antigravity: 'Antigravity CLI',
     gemini: 'Gemini CLI',
     copilot: 'GitHub Copilot',
     cursor: 'Cursor',
@@ -1092,6 +1096,22 @@ const esES: LocaleResource<typeof enUS> = {
       thinking: 'Pensando…',
       reading: 'Mirando a {{subject}}',
       working: 'Trabajando en {{subject}}',
+      ...{
+        count_one: '{{count}} paso',
+        count_other: '{{count}} pasos',
+        count_many: '{{count}} pasos',
+      },
+    },
+    // Plural forms of the panel wording, outside the typed shape (the rest falls back to English).
+    ...{
+      list: {
+        waiting_one: 'Me necesitan {{count}}',
+        waiting_other: 'Me necesitan {{count}}',
+        waiting_many: 'Me necesitan {{count}}',
+        active_one: 'En curso {{count}}',
+        active_other: 'En curso {{count}}',
+        active_many: 'En curso {{count}}',
+      },
     },
     agents: {
       personalOnly: 'Solo entornos de ejecución personales',
@@ -1516,11 +1536,16 @@ const esES: LocaleResource<typeof enUS> = {
         runners: 'Entornos de ejecución',
         prices: 'Precios de los modelos',
         services: 'Servicios modelo',
+        skills: 'Habilidades',
       },
     },
     actions: {
       read: 'Ver',
       manage: 'Administrar',
+    },
+    humanOnly: {
+      servicesManage:
+        'Gestionar los servicios de modelos escribe claves de proveedores; solo una persona puede hacerlo.',
     },
     keyScopes: {
       agents: {

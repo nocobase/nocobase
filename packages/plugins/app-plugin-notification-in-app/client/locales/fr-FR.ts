@@ -1,40 +1,36 @@
-import type { LocaleResource } from '@nocobase/i18n';
+import type { PartialLocaleResource } from '@nocobase/i18n';
 
 import type enUS from './en-US.js';
 
-const frFR: LocaleResource<typeof enUS> = {
+/** The inbox's main words; the rest falls back to English. */
+const frFR: PartialLocaleResource<typeof enUS> = {
   inbox: {
-    eyebrow: 'Boîte de réception personnelle',
-    title: 'Centre de messagerie',
-    unreadCount: '{{count}} non lu',
-    description:
-      'Mises à jour des applications et des flux de travail que vous utilisez.',
-    markAllRead: 'Marquer tout comme lu',
-    messagesTitle: 'Messages',
-    messagesDescription:
-      "Les messages intégrés à l'application conservent un état de lecture indépendant pour l'utilisateur actuel.",
-    unreadFilter: 'Non lu',
-    unavailable: 'Boîte de réception indisponible',
-    retry: 'Réessayer',
-    loading: 'Chargement des notifications…',
-    emptyTitle: 'Vous êtes tous rattrapés',
-    emptyDescription: 'De nouvelles notifications apparaîtront ici.',
-    loadingMore: 'Chargement…',
-    loadMore: 'Charger plus',
-    scrollMore: 'Faites défiler vers le bas pour en charger davantage',
-    noMore: 'Plus de messages',
-    expand: 'Afficher plus',
-    collapse: 'Afficher moins',
-    channel: "Dans l'application",
-    open: 'Ouvrir',
-    markUnread: 'Marquer comme non lu',
-    markRead: 'Marc a lu',
-    delete: 'Supprimer la notification',
-    errors: {
-      update: 'La mise à jour de la boîte de réception a échoué.',
-      loadMore: 'Impossible de charger davantage de notifications.',
-      markAllRead: 'Impossible de marquer les notifications comme lues.',
+    title: 'Boîte de réception',
+    views: {
+      all: 'Tout',
+      unread: 'Non lus',
+      todo: 'En attente',
     },
+    categories: 'Catégories',
+    readAll: 'Tout marquer comme lu',
+    open: 'Ouvrir',
+    actions: {
+      read: 'Marquer comme lu',
+      unread: 'Marquer comme non lu',
+      delete: 'Supprimer',
+    },
+    tabs: {
+      today: "Aujourd'hui",
+      info: 'Plus tôt',
+      decision: 'En attente',
+    },
+  },
+  inboxButton: {
+    title: 'Boîte de réception',
+    viewAll: 'Ouvrir la boîte',
+  },
+  nav: {
+    inbox: 'Boîte de réception',
   },
 };
 

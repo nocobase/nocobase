@@ -119,6 +119,35 @@ describe('navigation destinations', () => {
 });
 
 describe('parent navigation', () => {
+  it('keeps the list reachable when a child page has no record title', () => {
+    const child: AppClientRegisteredRoute = {
+      ...page('record', '/orders/:id'),
+      presentation: { kind: 'child-page' },
+    };
+    const tree = [
+      { ...parent, breadcrumb: { title: 'Orders' }, children: [child] },
+    ];
+    const { container } = render(
+      <TestI18nProvider runtime={runtime}>
+        <MemoryRouter initialEntries={['/orders/42']}>
+          <RouteTreeProvider routes={tree} access={allowed}>
+            <PageBreadcrumbProvider>
+              <Breadcrumbs />
+            </PageBreadcrumbProvider>
+          </RouteTreeProvider>
+        </MemoryRouter>
+      </TestI18nProvider>,
+    );
+    expect(container.querySelector('[aria-current="page"]')).toBeNull();
+    expect(screen.getByRole('link', { name: 'Orders' })).toHaveAttribute(
+      'href',
+      '/orders',
+    );
+    expect(
+      screen.getByRole('link', { name: 'Back to Orders' }),
+    ).toHaveAttribute('href', '/orders');
+  });
+
   it('uses the same source and state for the desktop breadcrumb and mobile parent link', () => {
     renderTrail();
     const desktop = screen.getByRole('link', { name: 'Completed' });

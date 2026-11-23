@@ -1,3 +1,4 @@
+// Generated from packages/plugins/app-plugin-notification-in-app/client/inbox-page/decision-actions-bar.tsx: edit it there, then run `node scripts/sync-ui-library-inbox.mjs`.
 import { useTranslation } from '@nocobase/i18n/client';
 import { SendIcon } from 'lucide-react';
 import { type KeyboardEvent, type ReactElement, useState } from 'react';

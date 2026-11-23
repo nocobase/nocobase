@@ -2,11 +2,21 @@
   "name": "@nocobase/app-plugin-scheduler",
   "displayName": "Scheduler App Plugin",
   "description": "Scheduler App Plugin.",
-  "version": "1.0.0-beta.25",
+  "version": "1.0.0-beta.26",
   "type": "module",
   "prettier": "@nocobase/dev-config/prettier",
   "engines": {
     "node": ">=24.0.0"
+  },
+  "nocobase": {
+    "title": {
+      "en-US": "Scheduled jobs",
+      "zh-CN": "定时任务"
+    },
+    "description": {
+      "en-US": "Jobs that run on a schedule",
+      "zh-CN": "按时间运行的任务"
+    }
   },
   "sideEffects": false,
   "exports": {
@@ -74,6 +84,7 @@
     "zod": "catalog:"
   },
   "peerDependencies": {
+    "@base-ui/react": "catalog:",
     "@nocobase/app-cli": "workspace:^",
     "@nocobase/app-client": "workspace:^",
     "@nocobase/app-plugin-authentication": "workspace:^",
@@ -84,23 +95,35 @@
     "@nocobase/jobs": "workspace:^",
     "@nocobase/service-provider": "workspace:^",
     "@oclif/core": "catalog:",
-    "cronstrue": "^3.24.0"
+    "class-variance-authority": "catalog:",
+    "cn": "catalog:",
+    "cronstrue": "^3.24.0",
+    "lucide-react": "catalog:",
+    "react": "^19.0.0",
+    "react-router": "catalog:"
   },
   "devDependencies": {
+    "@base-ui/react": "catalog:",
     "@nocobase/app-client": "workspace:*",
     "@nocobase/app-plugin-authentication": "workspace:*",
     "@nocobase/app-plugin-authorization": "workspace:*",
     "@nocobase/app-server": "workspace:*",
-    "@nocobase/db": "workspace:*",
     "@nocobase/app-testing": "workspace:*",
+    "@nocobase/db": "workspace:*",
     "@nocobase/dev-config": "workspace:*",
     "@nocobase/i18n": "workspace:*",
     "@nocobase/service-provider": "workspace:*",
     "@types/node": "catalog:",
     "@types/react": "catalog:",
+    "class-variance-authority": "catalog:",
+    "cn": "catalog:",
     "eslint": "catalog:",
     "jsdom": "catalog:",
+    "lucide-react": "catalog:",
     "prettier": "catalog:",
+    "react": "catalog:",
+    "react-dom": "catalog:",
+    "react-router": "catalog:",
     "typescript": "catalog:",
     "vitest": "catalog:"
   }

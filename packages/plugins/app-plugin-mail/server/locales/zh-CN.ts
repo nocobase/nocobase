@@ -1,6 +1,9 @@
 import type { MailServerResource } from './en-US.js';
 
+import pagesZhCN from '../../shared/locales/pages.zh-CN.js';
+
 const zhCN: MailServerResource = {
+  access: pagesZhCN.access,
   errors: {
     originalNotFound: '邮件服务商已无法提供该原始邮件。',
     originalTooLarge: '原始邮件超出 40 MiB 的下载上限。',

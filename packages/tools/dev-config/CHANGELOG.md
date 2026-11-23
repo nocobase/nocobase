@@ -1,5 +1,11 @@
 # @nocobase/dev-config
 
+## 0.1.0-beta.26
+
+### Patch Changes
+
+- a6b9b74: Refresh plugin styles when registering a client plugin during development, keep parent links available on untitled detail pages, and preserve navigation state across settings redirects.
+
 ## 0.1.0-beta.25
 
 ### Patch Changes

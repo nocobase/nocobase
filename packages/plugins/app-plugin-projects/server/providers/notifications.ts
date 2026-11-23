@@ -11,14 +11,10 @@
  * Every notice goes only to those who may see its issue, when the application tells (`visibleTo`).
  *
  * Where notices go is `projectsNoticesToken` when the application binds it (the assembling application keeps an inbox); otherwise they go
- * straight to the notification plugin's in-app channel `projects.inboxChannel` (`inbox` by default). Without either,
- * nothing is sent: the activity log still records what happened.
+ * to the notification plugin's `notify()` as the kinds of `notice-kinds.ts`, which reach the in-app inbox and, by each
+ * person's settings, push and email. Without either, nothing is sent: the activity log still records what happened.
  */
-import {
-  notificationServiceToken,
-  type NotificationConfig,
-} from '@nocobase/app-plugin-notification/server';
-import { resolveChannelType } from '@nocobase/app-server/config';
+import { notificationServiceToken } from '@nocobase/app-plugin-notification/server';
 import type { AppPluginApplication } from '@nocobase/app-server/plugins';
 import { i18nToken } from '@nocobase/app-server/i18n';
 
@@ -42,42 +38,26 @@ import {
   type ProjectsNotices,
 } from '../tokens.js';
 import { NAMESPACE } from './authorization.js';
-
-const DEFAULT_CHANNEL = 'inbox';
+import { noticeKindOf } from './notice-kinds.js';
 
 type Translate = (key: string, options?: Record<string, unknown>) => string;
 
-/** The notification plugin's in-app channel, or null when the application does not configure one. */
+/** The notification plugin's `notify()`, or null when the application does not install it. */
 function directNotices(app: AppPluginApplication): ProjectsNotices | null {
-  const channel =
-    app.config.get<{ inboxChannel?: string }>('projects')?.inboxChannel ??
-    DEFAULT_CHANNEL;
-  const config =
-    app.config.get<NotificationConfig>('notification')?.channels[channel];
   const { container } = app;
-  if (
-    !config ||
-    config.enabled === false ||
-    resolveChannelType(config) !== 'in-app' ||
-    !container.has(notificationServiceToken)
-  )
-    return null;
+  if (!container.has(notificationServiceToken)) return null;
   return {
     async send(notice) {
-      const [first, ...rest] = notice.userIds;
-      if (!first) return;
-      await container.resolve(notificationServiceToken).send({
-        idempotencyKey: notice.key,
-        source: { type: 'pm', referenceId: notice.type },
-        messages: {
-          [channel]: {
-            to: [first, ...rest],
-            title: notice.title,
-            body: notice.body,
-            target: { type: 'route', path: notice.path },
-          },
-        },
-      });
+      // The kind decides the channels; each person's notification settings decide push and email.
+      await container
+        .resolve(notificationServiceToken)
+        .notify(noticeKindOf(notice.type), {
+          to: notice.userIds,
+          data: { title: notice.title, body: notice.body },
+          target: { type: 'route', path: notice.path },
+          source: { type: 'projects.issue', referenceId: notice.issue.id },
+          idempotencyKey: notice.key,
+        });
     },
   };
 }

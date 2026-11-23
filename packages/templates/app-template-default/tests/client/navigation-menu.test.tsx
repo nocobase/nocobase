@@ -272,12 +272,199 @@ describe('entry counts', () => {
     ).toBeNull();
   });
 
+  it('shows the count a route declares, nothing at zero or none, and lets the layout replace it', () => {
+    const declared = (
+      name: string,
+      badge: { count: number; tone?: 'attention' } | undefined,
+    ): RouteNavigationItem => ({
+      route: {
+        ...page(name),
+        navigation: { title: name, badge: () => badge },
+      },
+      children: [],
+    });
+    const items = [
+      declared('mail', { count: 3, tone: 'attention' }),
+      declared('tasks', { count: 0 }),
+      declared('drafts', undefined),
+      declared('alerts', { count: 7 }),
+    ];
+    const badgeOf = (name: string) =>
+      screen
+        .getByRole('link', { name })
+        .parentElement?.querySelector('[data-slot="sidebar-menu-badge"]');
+    const { unmount } = render(shell(items), { wrapper: I18n });
+    expect(badgeOf('mail · 3')).toHaveTextContent('3');
+    expect(badgeOf('mail · 3')).toHaveClass('bg-primary');
+    expect(badgeOf('tasks')).toBeNull();
+    expect(badgeOf('drafts')).toBeNull();
+    expect(badgeOf('alerts · 7')).not.toHaveClass('bg-primary');
+    unmount();
+    render(shell(items, undefined, true, { alerts: 2, mail: 0 }), {
+      wrapper: I18n,
+    });
+    expect(badgeOf('alerts · 2')).toHaveTextContent('2');
+    expect(badgeOf('mail')).toBeNull();
+  });
+
   it('names work under way by its hint', () => {
     render(shell(entries, undefined, true, badges), { wrapper: I18n });
     const runs = screen.getByRole('link', { name: 'runs · 2 running' });
     expect(
       runs.parentElement?.querySelector('[data-slot="sidebar-menu-badge"]'),
     ).toHaveAttribute('title', '2 running');
+  });
+
+  describe('in sub-menus', () => {
+    const counted = (name: string, count: number): RouteNavigationItem => ({
+      route: {
+        ...page(name),
+        navigation: { title: name, badge: () => ({ count }) },
+      },
+      children: [],
+    });
+    const group = (
+      name: string,
+      children: RouteNavigationItem[],
+      section = false,
+    ): RouteNavigationItem => ({
+      route: { ...page(name), componentLoader: undefined },
+      children,
+      ...(section ? { section: true } : {}),
+    });
+    const mail = group('Mail', [
+      counted('unread', 7),
+      counted('flagged', 0),
+      group('Folders', [counted('starred', 3)]),
+    ]);
+    const work = group('Work', [
+      group('Queue', [counted('assigned', 4)], true),
+    ]);
+    const subBadgeOf = (name: string) =>
+      screen
+        .getByRole('link', { name })
+        .querySelector('[data-slot="navigation-sub-badge"]');
+
+    it('shows the counts of a section and a nested menu once expanded, nothing at zero', async () => {
+      const user = userEvent.setup();
+      // With sections on, Mail is a heading over its entries and Work a menu holding a section.
+      render(shell([mail, work], routeKey(counted('assigned', 4).route)), {
+        wrapper: I18n,
+      });
+      expect(subBadgeOf('assigned · 4')).toHaveTextContent('4');
+      expect(
+        screen
+          .getByRole('link', { name: 'unread · 7' })
+          .parentElement?.querySelector('[data-slot="sidebar-menu-badge"]'),
+      ).toHaveTextContent('7');
+      expect(screen.queryByRole('link', { name: /starred/ })).toBeNull();
+      await user.click(screen.getByRole('button', { name: 'Folders' }));
+      expect(subBadgeOf('starred · 3')).toHaveTextContent('3');
+      expect(subBadgeOf('starred · 3')).toHaveAttribute('aria-hidden', 'true');
+    });
+
+    it('shows the counts of a collapsible menu once expanded, and lets the layout replace them, with 0 hiding one', async () => {
+      const user = userEvent.setup();
+      render(shell([mail], undefined, false, { unread: 0, flagged: 2 }), {
+        wrapper: I18n,
+      });
+      expect(screen.queryByRole('link', { name: /unread/ })).toBeNull();
+      await user.click(screen.getByRole('button', { name: 'Mail' }));
+      expect(subBadgeOf('unread')).toBeNull();
+      expect(subBadgeOf('flagged · 2')).toHaveTextContent('2');
+    });
+
+    // A page that also has a sub-menu: Inbox at the top level, holding Threads, itself a page with its own entries.
+    const parentPages: RouteNavigationItem = {
+      route: {
+        ...page('Inbox'),
+        navigation: { title: 'Inbox', badge: () => ({ count: 5 }) },
+      },
+      children: [
+        {
+          route: {
+            ...page('Threads'),
+            navigation: {
+              title: 'Threads',
+              badge: () => ({ count: 3, tone: 'attention' }),
+            },
+          },
+          children: [counted('mentions', 1)],
+        },
+      ],
+    };
+
+    it('shows the count of a page that has a sub-menu, at the top level and nested', async () => {
+      const user = userEvent.setup();
+      render(shell([parentPages], undefined, false), { wrapper: I18n });
+      const inbox = screen.getByRole('link', { name: 'Inbox · 5' });
+      expect(inbox).toHaveAttribute('href', '/Inbox');
+      expect(
+        inbox.parentElement?.querySelector('[data-slot="sidebar-menu-badge"]'),
+      ).toHaveTextContent('5');
+      await user.click(screen.getByRole('button', { name: 'Inbox' }));
+      const threads = screen.getByRole('link', { name: 'Threads · 3' });
+      expect(threads).toHaveAttribute('href', '/Threads');
+      expect(subBadgeOf('Threads · 3')).toHaveTextContent('3');
+      await user.click(screen.getByRole('button', { name: 'Threads' }));
+      expect(subBadgeOf('mentions · 1')).toHaveTextContent('1');
+    });
+
+    it('lets the layout hide a parent page count with 0', async () => {
+      const user = userEvent.setup();
+      render(shell([parentPages], undefined, false, { Inbox: 0, Threads: 0 }), {
+        wrapper: I18n,
+      });
+      const inbox = screen.getByRole('link', { name: 'Inbox' });
+      expect(
+        inbox.parentElement?.querySelector('[data-slot="sidebar-menu-badge"]'),
+      ).toBeNull();
+      await user.click(screen.getByRole('button', { name: 'Inbox' }));
+      expect(subBadgeOf('Threads')).toBeNull();
+    });
+
+    it('marks a parent page with a dot and names it with its count in the collapsed sidebar', async () => {
+      setCollapsed(true);
+      const user = userEvent.setup();
+      render(shell([parentPages], undefined, false), { wrapper: I18n });
+      const inbox = screen.getByRole('link', { name: 'Inbox · 5' });
+      expect(
+        inbox.parentElement?.querySelector(
+          '[data-slot="navigation-badge-dot"]',
+        ),
+      ).not.toBeNull();
+      fireEvent.mouseEnter(inbox);
+      const popup = screen.getByRole('dialog', { name: 'Inbox' });
+      fireEvent.mouseLeave(inbox, { relatedTarget: popup });
+      await user.hover(popup);
+      expect(
+        within(popup)
+          .getByRole('link', { name: 'Threads · 3' })
+          .parentElement?.querySelector('[data-slot="sidebar-menu-badge"]'),
+      ).toHaveTextContent('3');
+    });
+
+    it('shows the counts in the collapsed sidebar popup, nested ones included', async () => {
+      setCollapsed(true);
+      const user = userEvent.setup();
+      render(shell([mail], undefined, false), { wrapper: I18n });
+      const trigger = screen.getByRole('button', { name: 'Mail' });
+      fireEvent.mouseEnter(trigger);
+      const popup = screen.getByRole('dialog', { name: 'Mail' });
+      fireEvent.mouseLeave(trigger, { relatedTarget: popup });
+      await user.hover(popup);
+      expect(
+        within(popup)
+          .getByRole('link', { name: 'unread · 7' })
+          .parentElement?.querySelector('[data-slot="sidebar-menu-badge"]'),
+      ).toHaveTextContent('7');
+      await user.click(within(popup).getByText('Folders'));
+      expect(
+        within(popup)
+          .getByRole('link', { name: 'starred · 3' })
+          .querySelector('[data-slot="navigation-sub-badge"]'),
+      ).toHaveTextContent('3');
+    });
   });
 
   it('marks a counted entry with a dot and its count in the tooltip when collapsed', async () => {

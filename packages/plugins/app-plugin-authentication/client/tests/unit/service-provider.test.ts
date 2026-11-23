@@ -1,7 +1,10 @@
 import type { ClientApplication } from '@nocobase/app-client';
 import { describe, expect, it, vi } from 'vitest';
 import { AuthenticationServiceProvider } from '../../service-provider.js';
-import { authenticationClientToken } from '../../tokens.js';
+import {
+  authenticationClientSettingsToken,
+  authenticationClientToken,
+} from '../../tokens.js';
 
 const createAuthClient = vi.hoisted(() =>
   vi.fn(() => ({ kind: 'auth-client' })),
@@ -10,10 +13,9 @@ vi.mock('../../auth-client.js', () => ({ createAuthClient }));
 
 describe('AuthenticationServiceProvider', () => {
   it('registers a client using the configured API URL', async () => {
-    let clientFactory: (() => unknown) | undefined;
+    const factories = new Map<unknown, () => unknown>();
     const singleton = vi.fn((token: unknown, factory: () => unknown) => {
-      expect(token).toBe(authenticationClientToken);
-      clientFactory = factory;
+      factories.set(token, factory);
     });
     const app = {
       config: {
@@ -22,11 +24,23 @@ describe('AuthenticationServiceProvider', () => {
       },
       container: { singleton },
     } as unknown as ClientApplication;
-    await new AuthenticationServiceProvider(app).boot();
-    expect(singleton).toHaveBeenCalledOnce();
+    await new AuthenticationServiceProvider(app, {
+      packageName: '@nocobase/app-plugin-authentication',
+      source: 'plugin',
+      options: { signInButtons: ['github'] },
+    }).boot();
+    expect([...factories.keys()]).toEqual([
+      authenticationClientSettingsToken,
+      authenticationClientToken,
+    ]);
+    expect(factories.get(authenticationClientSettingsToken)?.()).toEqual({
+      signInButtons: ['github'],
+    });
     expect(createAuthClient).toHaveBeenCalledWith({
       baseURL: 'https://example.com/main/api/auth',
     });
-    expect(clientFactory?.()).toEqual({ kind: 'auth-client' });
+    expect(factories.get(authenticationClientToken)?.()).toEqual({
+      kind: 'auth-client',
+    });
   });
 });

@@ -9,6 +9,7 @@ const jaJP: LocaleResource<typeof enUS> = {
   authorization: {
     title: 'スケジュール',
     read: '読み取り',
+    manage: '管理',
   },
 };
 

@@ -19,6 +19,7 @@ export function createSalesRecordAccess(
     defineRecordAccess('example.sales.prepared', (access) =>
       access
         .title(label('sales.scope.prepared'))
+        .personal()
         .collections(QUOTES)
         .resolver(({ principal }) =>
           buildFilter((filter) =>
@@ -29,12 +30,14 @@ export function createSalesRecordAccess(
     defineRecordAccess('example.sales.own', (access) =>
       access
         .title(label('sales.scope.own'))
+        .personal()
         .collections(QUOTES, ORDERS)
         .resolver((context) => resolveOwnedSalesRecords(database, context)),
     ),
     defineRecordAccess('example.sales.region', (access) =>
       access
         .title(label('sales.scope.region'))
+        .personal()
         .collections(PROJECTS, QUOTES, ORDERS)
         .resolver((context) => resolveRegionalSalesRecords(database, context)),
     ),

@@ -3,6 +3,7 @@ import type { LocaleResource } from '@nocobase/i18n';
 import type enUS from './en-US.js';
 
 const zhTW: LocaleResource<typeof enUS> = {
+  fileUsage: '對話圖片',
   navigation: {
     agentSessions: 'My Agents',
   },

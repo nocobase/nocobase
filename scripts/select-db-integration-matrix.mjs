@@ -93,6 +93,19 @@ export const packageSuites = [
     ],
   },
   {
+    // Making an agent the team default and limiting who may chat with it lock the same agent row, so concurrent saves
+    // never leave a limited team default.
+    paths: [
+      'packages/plugins/app-plugin-agents/server/core/conversations/chat-settings.ts',
+      'packages/plugins/app-plugin-agents/server/core/agents/agent.service.ts',
+      'packages/plugins/app-plugin-agents/server/core/agents/agent.store.ts',
+      'packages/plugins/app-plugin-agents/tests/chat-roles-race.test.ts',
+    ],
+    dialect: 'postgres',
+    filter: '@nocobase/app-plugin-agents',
+    tests: ['tests/chat-roles-race.test.ts'],
+  },
+  {
     // Candidate pagination must preserve cursor order and avoid duplicate claims on PostgreSQL.
     paths: [
       'packages/plugins/app-plugin-agents/server/core/runs/claim.ts',

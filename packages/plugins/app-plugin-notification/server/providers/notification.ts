@@ -2,6 +2,7 @@ import {
   jobExecutorServiceToken,
   type AppJobsConfig,
 } from '@nocobase/app-server/jobs';
+import { i18nToken } from '@nocobase/app-server/i18n';
 import { loggingToken } from '@nocobase/app-server/logging';
 import type { AppPluginApplication } from '@nocobase/app-server/plugins';
 import { databaseManagerToken } from '@nocobase/db';
@@ -54,10 +55,27 @@ export class NotificationProvider<
     // Keep the startup snapshot; third-party channel configuration may contain functions.
     const config = this.app.config.get<NotificationConfig>('notification')!;
     const registry = createNotificationRegistry();
-    this.app.container.instance(
-      notificationTemplateRegistryToken,
-      new NotificationTemplateRegistry(),
-    );
+    const kinds = new NotificationTemplateRegistry({
+      // A kind lists the configured channels of its channel types, so the settings page shows where it goes.
+      channelsOfTypes: (types) =>
+        Object.entries(config.channels).flatMap(([name, channel]) => {
+          const described = registry.describe(channel);
+          return described && types.includes(described.messageType)
+            ? [
+                {
+                  name,
+                  type: described.type,
+                  ...(described.label === undefined
+                    ? {}
+                    : { typeLabel: described.label }),
+                  configured: true,
+                  enabled: channel.enabled !== false,
+                },
+              ]
+            : [];
+        }),
+    });
+    this.app.container.instance(notificationTemplateRegistryToken, kinds);
     this.app.container.instance(notificationExtensionRegistryToken, registry);
     this.app.container.singleton(notificationRuntimeToken, (container) =>
       createNotificationManager<NotificationChannelMap>({
@@ -73,6 +91,13 @@ export class NotificationProvider<
           }),
         config,
         registry,
+        kinds,
+        ...(container.has(i18nToken)
+          ? {
+              defaultLocale: () =>
+                container.resolve(i18nToken).getDefaultLocale(),
+            }
+          : {}),
         container: this.app.container,
       }),
     );

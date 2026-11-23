@@ -10,13 +10,17 @@ import {
 import os from 'node:os';
 import path from 'node:path';
 import { afterEach, expect, it } from 'vitest';
-import { createAcpAdapter } from '../../src/agent/adapters/acp.ts';
+import { acpSpec, createAcpAdapter } from '../../src/agent/adapters/acp.ts';
 import { loadAdapters } from '../../src/agent/adapters/registry.ts';
 import type {
   AdapterEvent,
   AdapterSession,
 } from '../../src/agent/adapters/types.ts';
-import { AGENT_TOOLS } from '../../src/protocol/index.ts';
+import {
+  AGENT_TOOLS,
+  DEFAULT_AGENT_TOOLS,
+  NATIVE_AGENT_TOOLS,
+} from '../../src/protocol/index.ts';
 
 const roots: string[] = [];
 afterEach(async () => {
@@ -134,6 +138,78 @@ it('resolves native adapters first, deduplicates catalog identities and refuses 
     'Unknown coding tool',
   );
   expect(loadAdapters({}, [], {}, [])).toEqual(new Map());
+});
+
+it('orders the tool list without adding Antigravity to any default selection', () => {
+  expect(AGENT_TOOLS).toEqual([
+    'claude',
+    'codex',
+    'opencode',
+    'pi',
+    'antigravity',
+    'dsh',
+    'copilot',
+    'cursor',
+    'qwen',
+    'kimi',
+    'codebuddy',
+    'qoder',
+    'goose',
+    'auggie',
+    'droid',
+    'kilo',
+    'cline',
+    'amp',
+    'vibe',
+    'gemini',
+  ]);
+  expect(DEFAULT_AGENT_TOOLS).toEqual(['codex', 'claude']);
+  expect(NATIVE_AGENT_TOOLS).toEqual(['claude', 'codex', 'opencode', 'pi']);
+});
+
+it('distinguishes a missing Antigravity CLI from an installed one that needs login', async () => {
+  const spec = acpSpec('antigravity')!;
+  const f = await fixture('auth');
+  const env = { ...f.env, PATH: '' };
+  await expect(createAcpAdapter(spec, env).detect()).resolves.toEqual({
+    installed: false,
+    authenticated: false,
+    status: 'notInstalled',
+  });
+  const bin = path.join(f.root, '.local', 'bin');
+  await mkdir(bin, { recursive: true });
+  const executable = path.join(bin, 'agy');
+  const acpFixture = path.resolve(
+    import.meta.dirname,
+    '../fixtures/acp-agent.mjs',
+  );
+  await writeFile(
+    executable,
+    `#!${process.execPath}
+if (process.argv[2] !== 'acp') process.exit(1);
+void import(${JSON.stringify(acpFixture)});
+`,
+    { mode: 0o755 },
+  );
+  const adapter = createAcpAdapter(spec, env);
+  await expect(adapter.detect()).resolves.toMatchObject({
+    installed: true,
+    authenticated: false,
+    status: 'needsLogin',
+    statusReason: 'notLoggedIn',
+    statusDetail:
+      'Run agy acp --login on the runtime as the account that runs the Runner, then detect again.',
+  });
+  env.ACP_FIXTURE_VARIANT = '';
+  await expect(adapter.detect()).resolves.toMatchObject({
+    installed: true,
+    authenticated: true,
+    status: 'ready',
+    models: [
+      { id: 'one', name: 'Model One' },
+      { id: 'two', name: 'Model Two' },
+    ],
+  });
 });
 
 it.each(['', 'legacy', 'unsupported', 'auth', 'initializeAuth', 'permission'])(

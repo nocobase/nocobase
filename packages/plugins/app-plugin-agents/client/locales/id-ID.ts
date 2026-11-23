@@ -3,6 +3,9 @@ import type { LocaleResource } from '@nocobase/i18n';
 import type enUS from './en-US.js';
 
 const idID: LocaleResource<typeof enUS> = {
+  openAgentSettings: 'Buka pengaturan agen',
+  myConversations: 'Percakapan saya',
+  fileUsage: 'Lampiran obrolan',
   modelSuggestions: {
     design:
       'Penalaran terkuat: usulan, arsitektur, penyelidikan rumit dan peninjauan perubahan penting; juga implementasi rutin dan perubahan lintas paket.',
@@ -91,6 +94,7 @@ const idID: LocaleResource<typeof enUS> = {
     codex: 'Codex',
     opencode: 'OpenCode',
     pi: 'Pi',
+    antigravity: 'Antigravity CLI',
     gemini: 'Gemini CLI',
     copilot: 'GitHub Copilot',
     cursor: 'Cursor',
@@ -1055,6 +1059,19 @@ const idID: LocaleResource<typeof enUS> = {
       thinking: 'Berpikir…',
       reading: 'Melihat {{subject}}',
       working: 'Sedang mengerjakan {{subject}}',
+      ...{
+        count_one: '{{count}} langkah',
+        count_other: '{{count}} langkah',
+      },
+    },
+    // Plural forms of the panel wording, outside the typed shape (the rest falls back to English).
+    ...{
+      list: {
+        waiting_one: 'Perlu saya {{count}}',
+        waiting_other: 'Perlu saya {{count}}',
+        active_one: 'Sedang berjalan {{count}}',
+        active_other: 'Sedang berjalan {{count}}',
+      },
     },
     agents: {
       personalOnly: 'Hanya runner pribadi',
@@ -1473,11 +1490,16 @@ const idID: LocaleResource<typeof enUS> = {
         runners: 'Lingkungan runtime',
         prices: 'Harga model',
         services: 'Layanan model',
+        skills: 'Keterampilan',
       },
     },
     actions: {
       read: 'Lihat',
       manage: 'Kelola',
+    },
+    humanOnly: {
+      servicesManage:
+        'Mengelola layanan model menulis kunci penyedia; hanya orang yang boleh melakukannya.',
     },
     keyScopes: {
       agents: {

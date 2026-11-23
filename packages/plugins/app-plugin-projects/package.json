@@ -2,11 +2,21 @@
   "name": "@nocobase/app-plugin-projects",
   "displayName": "Projects",
   "description": "Projects, issues and collaboration for a NocoBase application.",
-  "version": "0.1.0-beta.34",
+  "version": "0.1.0-beta.35",
   "type": "module",
   "prettier": "@nocobase/dev-config/prettier",
   "engines": {
     "node": ">=24.0.0"
+  },
+  "nocobase": {
+    "title": {
+      "en-US": "Projects",
+      "zh-CN": "项目"
+    },
+    "description": {
+      "en-US": "Projects, issues and their progress",
+      "zh-CN": "项目、任务及其进展"
+    }
   },
   "sideEffects": false,
   "exports": {

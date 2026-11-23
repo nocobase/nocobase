@@ -95,6 +95,11 @@ const zhTW: LocaleResource<typeof enUS> = {
         environments: '部署環境',
       },
     },
+    humanOnly: {
+      deployProtected: '部署到受保護環境需要有人審批，金鑰只能發起部署請求。',
+      delete: '刪除應用會刪除其資料，只能由人操作。',
+      configure: '設定應用會修改其設定和金鑰，只能由人操作。',
+    },
     keyScopes: {
       apps: {
         title: '應用程式和部署',

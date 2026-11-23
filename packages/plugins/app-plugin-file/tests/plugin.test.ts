@@ -3,13 +3,13 @@ import { expect, it } from 'vitest';
 import client from '../client/index.js';
 import server, { FILE_COLUMNS } from '../server/index.js';
 
-it('provides services and public disk limits without owning collections or pages', () => {
-  expect(server.serviceProviders).toHaveLength(1);
-  expect(server.routes ?? []).toHaveLength(0);
+it('provides services, public disk limits and the file storage settings page without owning collections', () => {
+  expect(server.serviceProviders).toHaveLength(2);
+  expect(server.routes ?? []).toHaveLength(1);
   expect(server.database).toBeUndefined();
   const registration = client();
   expect(registration.serviceProviders).toHaveLength(1);
-  expect(registration.routes).toEqual([]);
+  expect(registration.routes).toHaveLength(1);
   expect(Object.keys(registration.locales ?? {})).toEqual([
     'en-US',
     'zh-CN',

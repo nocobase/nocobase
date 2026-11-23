@@ -16,10 +16,4 @@ describe('preinstalled process components', () => {
       });
     });
   }
-  it('keeps Default business and settings routes unregistered', () => {
-    const routes = read(
-      '../packages/templates/app-template-default/client/routes.ts',
-    );
-    expect(routes).not.toMatch(/workflows|processes|settingsRoutes/);
-  });
 });

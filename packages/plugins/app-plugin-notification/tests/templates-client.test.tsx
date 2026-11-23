@@ -2,7 +2,7 @@ import { useState, type ReactElement } from 'react';
 import { screen, fireEvent, waitFor, within } from '@testing-library/react';
 import { answerApi, renderWithApp } from '@nocobase/app-testing/client';
 import { describe, expect, it } from 'vitest';
-import { NotificationTemplates } from '../client/components/templates.js';
+import { NotificationKinds } from '../client/components/templates.js';
 import {
   languageName,
   pickPreviewLocale,
@@ -62,7 +62,7 @@ const templates = [item, invitation];
 
 function Page({ initial = null }: { initial?: string | null }): ReactElement {
   const [id, setId] = useState<string | null>(initial);
-  return <NotificationTemplates selectedId={id} onSelect={setId} />;
+  return <NotificationKinds selectedId={id} onSelect={setId} />;
 }
 
 async function renderPage({
@@ -100,11 +100,11 @@ async function renderPage({
           ? `${method} ${path} ${(json as { locale: string }).locale}`
           : `${method} ${path}`,
       );
-      if (path === 'notifications/templates') return list;
+      if (path === 'notifications/kinds') return list;
       for (const template of templates) {
-        if (path === `notifications/templates/${template.id}`)
+        if (path === `notifications/kinds/${template.id}`)
           return { data: template };
-        if (path === `notifications/templates/${template.id}/preview`)
+        if (path === `notifications/kinds/${template.id}/preview`)
           return {
             data: {
               synthetic: true,
@@ -126,12 +126,14 @@ async function renderPage({
 }
 
 describe('notification template directory', () => {
-  it('groups clickable cards by category and opens details in a drawer with inert HTML', async () => {
+  it('groups notifications by category and opens details in a drawer with inert HTML', async () => {
     const calls = await renderPage();
-    const group = await screen.findByRole('region', { name: 'Tasks' });
-    expect(screen.getByRole('region', { name: 'Accounts' })).toBeVisible();
+    const group = await screen.findByRole('rowgroup', { name: 'Tasks' });
+    expect(screen.getByRole('rowgroup', { name: 'Accounts' })).toBeVisible();
     const card = within(group).getByRole('button', { name: /Task assigned/u });
-    expect(card).toHaveTextContent('In-app message');
+    expect(
+      screen.getByRole('columnheader', { name: /In-app message/u }),
+    ).toBeVisible();
     expect(card).not.toHaveTextContent('in-app');
     fireEvent.click(card);
     const drawer = await screen.findByRole('dialog');
@@ -148,9 +150,9 @@ describe('notification template directory', () => {
     ).toHaveTextContent('<script>alert(1)</script>');
     expect(drawer.querySelector('img, iframe, script')).toBeNull();
     expect(calls).toEqual([
-      'GET notifications/templates',
-      'GET notifications/templates/task.assigned',
-      'POST notifications/templates/task.assigned/preview en-US',
+      'GET notifications/kinds',
+      'GET notifications/kinds/task.assigned',
+      'POST notifications/kinds/task.assigned/preview en-US',
     ]);
     fireEvent.click(within(drawer).getByRole('button', { name: 'Close' }));
     await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
@@ -158,11 +160,11 @@ describe('notification template directory', () => {
 
   it('searches translated text', async () => {
     await renderPage();
-    const search = await screen.findByLabelText('Search templates');
+    const search = await screen.findByLabelText('Search notification kinds');
     fireEvent.change(search, { target: { value: 'missing' } });
     expect(screen.getByText('No templates match these filters.')).toBeVisible();
     fireEvent.change(search, { target: { value: 'invitation' } });
-    expect(screen.queryByRole('region', { name: 'Tasks' })).toBeNull();
+    expect(screen.queryByRole('rowgroup', { name: 'Tasks' })).toBeNull();
     expect(
       screen.getByRole('button', { name: /User invitation/u }),
     ).toBeVisible();
@@ -181,10 +183,10 @@ describe('notification template directory', () => {
       await within(drawer).findByRole('combobox', { name: /语言/u }),
     ).toHaveTextContent(languageName('zh-CN', 'zh-CN'));
     expect(calls).toContain(
-      'POST notifications/templates/task.assigned/preview zh-CN',
+      'POST notifications/kinds/task.assigned/preview zh-CN',
     );
     expect(
-      screen.getByRole('region', { name: '任务', hidden: true }),
+      screen.getByRole('rowgroup', { name: '任务', hidden: true }),
     ).toBeInTheDocument();
   });
 

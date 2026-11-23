@@ -3,6 +3,9 @@ import type { LocaleResource } from '@nocobase/i18n';
 import type enUS from './en-US.js';
 
 const zhTW: LocaleResource<typeof enUS> = {
+  openAgentSettings: '前往 Agent 設定',
+  myConversations: '我的會話',
+  fileUsage: '對話附件',
   modelSuggestions: {
     design:
       '最強推理：方案設計、架構、疑難排查、重要修改的程式碼審查；也能進行一般實作、跨套件修改及撰寫方案',
@@ -88,6 +91,7 @@ const zhTW: LocaleResource<typeof enUS> = {
     codex: 'Codex',
     opencode: 'OpenCode',
     pi: 'Pi',
+    antigravity: 'Antigravity CLI',
     gemini: 'Gemini CLI',
     copilot: 'GitHub Copilot',
     cursor: 'Cursor',
@@ -999,6 +1003,19 @@ const zhTW: LocaleResource<typeof enUS> = {
       thinking: '思考…',
       reading: '看著{{subject}}',
       working: '正在 {{subject}} 上工作',
+      ...{
+        count_one: '{{count}} 個步驟',
+        count_other: '{{count}} 個步驟',
+      },
+    },
+    // Plural forms of the panel wording, outside the typed shape (the rest falls back to English).
+    ...{
+      list: {
+        waiting_one: '需要我 {{count}}',
+        waiting_other: '需要我 {{count}}',
+        active_one: '進行中 {{count}}',
+        active_other: '進行中 {{count}}',
+      },
     },
     agents: {
       personalOnly: '僅限個人執行環境',
@@ -1388,11 +1405,15 @@ const zhTW: LocaleResource<typeof enUS> = {
         runners: '執行環境',
         prices: '型號價格',
         services: '模特兒服務',
+        skills: '技能',
       },
     },
     actions: {
       read: '檢視',
       manage: '管理',
+    },
+    humanOnly: {
+      servicesManage: '管理模型服務會寫入服務商金鑰，只能由人操作。',
     },
     keyScopes: {
       agents: {

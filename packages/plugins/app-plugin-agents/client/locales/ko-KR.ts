@@ -3,6 +3,9 @@ import type { LocaleResource } from '@nocobase/i18n';
 import type enUS from './en-US.js';
 
 const koKR: LocaleResource<typeof enUS> = {
+  openAgentSettings: '에이전트 설정 열기',
+  myConversations: '내 대화',
+  fileUsage: '채팅 첨부 파일',
   modelSuggestions: {
     design:
       '가장 강력한 추론: 제안, 아키텍처, 어려운 조사, 중요한 변경 검토. 일반 구현, 여러 패키지에 걸친 변경, 제안 작성도 가능.',
@@ -88,6 +91,7 @@ const koKR: LocaleResource<typeof enUS> = {
     codex: 'Codex',
     opencode: 'OpenCode',
     pi: 'Pi',
+    antigravity: 'Antigravity CLI',
     gemini: 'Gemini CLI',
     copilot: 'GitHub Copilot',
     cursor: 'Cursor',
@@ -1029,6 +1033,19 @@ const koKR: LocaleResource<typeof enUS> = {
       thinking: '생각하는 중…',
       reading: '{{subject}} 살펴보는 중',
       working: '{{subject}} 작업 중',
+      ...{
+        count_one: '{{count}}단계',
+        count_other: '{{count}}단계',
+      },
+    },
+    // Plural forms of the panel wording, outside the typed shape (the rest falls back to English).
+    ...{
+      list: {
+        waiting_one: '확인 필요 {{count}}',
+        waiting_other: '확인 필요 {{count}}',
+        active_one: '진행 중 {{count}}',
+        active_other: '진행 중 {{count}}',
+      },
     },
     agents: {
       personalOnly: '개인 실행 환경만',
@@ -1437,11 +1454,16 @@ const koKR: LocaleResource<typeof enUS> = {
         runners: '실행 환경',
         prices: '모델 가격',
         services: '모델 서비스',
+        skills: '스킬',
       },
     },
     actions: {
       read: '보기',
       manage: '관리',
+    },
+    humanOnly: {
+      servicesManage:
+        '모델 서비스 관리는 공급자 키를 기록합니다. 사람만 할 수 있습니다.',
     },
     keyScopes: {
       agents: {

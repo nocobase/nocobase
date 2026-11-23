@@ -102,6 +102,13 @@ const accessEnUS = {
     settings: {
       rel: { environments: 'Deploy environments' },
     },
+    humanOnly: {
+      deployProtected:
+        'Deploying to a protected environment needs a person to approve it; a key may only request it.',
+      delete: 'Deleting an app removes its data; only a person may do it.',
+      configure:
+        'Configuring an app changes its settings and secrets; only a person may do it.',
+    },
     keyScopes: {
       apps: {
         title: 'Apps and deployments',

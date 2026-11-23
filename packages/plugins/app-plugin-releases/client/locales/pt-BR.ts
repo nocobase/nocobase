@@ -107,6 +107,13 @@ const ptBR: LocaleResource<typeof enUS> = {
         environments: 'Implantar ambientes',
       },
     },
+    humanOnly: {
+      deployProtected:
+        'Implantar em um ambiente protegido exige a aprovação de uma pessoa; uma chave só pode solicitar.',
+      delete: 'Excluir um app apaga seus dados; só uma pessoa pode fazer isso.',
+      configure:
+        'Configurar um app altera suas configurações e segredos; só uma pessoa pode fazer isso.',
+    },
     keyScopes: {
       apps: {
         title: 'Aplicativos e implantações',

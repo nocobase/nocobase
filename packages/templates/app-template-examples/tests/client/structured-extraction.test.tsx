@@ -21,7 +21,6 @@ import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { z } from 'zod';
 
-import { OnlineAgentIdentityScope } from '../../client/components/online-agent/identity-scope.js';
 import locales from '../../client/locales/index.js';
 import enUS from '../../client/locales/en-US.js';
 import zhCN from '../../client/locales/zh-CN.js';
@@ -129,27 +128,22 @@ async function mount(
     }
     throw new Error(`Unexpected API call: ${call.method} ${call.path}`);
   });
-  const view = await renderWithApp(
-    <OnlineAgentIdentityScope>
-      <StructuredExtractionPage />
-    </OnlineAgentIdentityScope>,
-    {
-      namespace: packageMetadata.name,
-      namespaces: { [packageMetadata.name]: locales },
-      locale: options.locale ?? 'en-US',
-      fetch: (request) => {
-        if (new URL(request.url).pathname.endsWith('/aiStructuredExtraction'))
-          signals.push(request.signal);
-        return answer(request);
-      },
-      services: (app) => {
-        app.container.singleton(
-          authorizationClientToken,
-          () => new AuthorizationClient(app.container.resolve(apiClientToken)),
-        );
-      },
+  const view = await renderWithApp(<StructuredExtractionPage />, {
+    namespace: packageMetadata.name,
+    namespaces: { [packageMetadata.name]: locales },
+    locale: options.locale ?? 'en-US',
+    fetch: (request) => {
+      if (new URL(request.url).pathname.endsWith('/aiStructuredExtraction'))
+        signals.push(request.signal);
+      return answer(request);
     },
-  );
+    services: (app) => {
+      app.container.singleton(
+        authorizationClientToken,
+        () => new AuthorizationClient(app.container.resolve(apiClientToken)),
+      );
+    },
+  });
   // Assert emitted notifications independently of the five-second visible toast lifetime.
   const reported = vi.spyOn(view.app.services.resolve(toasterToken), 'show');
   return {
@@ -886,7 +880,7 @@ describe('structured extraction page', () => {
       ).not.toBeInTheDocument();
       expect(
         within(region).queryByRole('button', {
-          name: enUS.onlineAgent.openModels,
+          name: enUS.aiExamples.openModels,
         }),
       ).not.toBeInTheDocument();
     }

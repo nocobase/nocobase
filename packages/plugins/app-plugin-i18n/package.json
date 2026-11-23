@@ -2,12 +2,22 @@
   "name": "@nocobase/app-plugin-i18n",
   "displayName": "Internationalization",
   "description": "Adds language switching to a NocoBase app, on top of @nocobase/i18n.",
-  "version": "1.0.0-beta.23",
+  "version": "1.0.0-beta.24",
   "type": "module",
   "prettier": "@nocobase/dev-config/prettier",
   "sideEffects": false,
   "engines": {
     "node": ">=24.0.0"
+  },
+  "nocobase": {
+    "title": {
+      "en-US": "Languages",
+      "zh-CN": "多语言"
+    },
+    "description": {
+      "en-US": "Switch the interface language",
+      "zh-CN": "切换界面语言"
+    }
   },
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",

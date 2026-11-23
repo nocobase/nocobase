@@ -87,7 +87,7 @@ for (const width of [1440, 375, 412]) {
           page.locator(
             `[data-model-service="${serviceName}"][data-model="${model}"]`,
           );
-        // The service API and the Models page carry no thinking setting.
+        // The service API and the Model services page carry no thinking setting.
         const refused = await page.request.patch(
           app + '/api/agents/services/' + serviceName,
           {
@@ -99,7 +99,7 @@ for (const width of [1440, 375, 412]) {
         );
         expect(refused.status()).toBe(400);
         if (width === 1440) {
-          await page.goto(app + '/models');
+          await page.goto(app + '/settings/models');
           await page
             .getByRole('button', {
               name: `Edit Thinking fixture ${width}`,

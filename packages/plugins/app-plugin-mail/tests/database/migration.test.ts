@@ -47,6 +47,7 @@ const MIGRATIONS = [
   '202610090001_mail_create_message_participants',
   '202610250001_mail_imap_message_locations',
   '202611180001_mail_account_sync_folders',
+  '202611210001_mail_log_created_indexes',
 ] as const;
 const sources = [
   {
@@ -427,6 +428,14 @@ describe('mail database migration', () => {
       (await inspectCollection(connection, 'mailAuthorizationStates'))?.fields,
     ).not.toHaveProperty('syncFolderIds');
   });
+});
+
+describeMigration('202611210001_mail_log_created_indexes', {
+  sources,
+  up: async ({ expectCollection }) => {
+    await expectCollection('mailSyncRuns').toHaveIndex(['createdAt', 'id']);
+    await expectCollection('mailSubmissions').toHaveIndex(['createdAt', 'id']);
+  },
 });
 
 async function migrateUp(database: DatabaseManager) {

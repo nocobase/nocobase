@@ -31,3 +31,24 @@ export {
   MAIL_LABEL_COLORS,
   MAIL_VIRTUAL_FOLDER_IDS,
 } from '../shared/mail.js';
+export {
+  MailCompletionHandlers,
+  MailExtensionRegistry,
+  MailExtensions,
+  mailExtensionsToken,
+  useMailExtensions,
+} from './extensions.js';
+export type {
+  MailComposeToolbarProps,
+  MailMessageAsideProps,
+  MailProviderConnectProps,
+  MailProviderTypeDefinition,
+  MailSlotDefinition,
+  MailTemplateVariableContext,
+  MailTemplateVariableDefinition,
+  MailWorkspaceActionProps,
+} from './extensions.js';
+export { mailRoutes } from './routes.js';
+export type { MailNavigationOptions, MailRouteOptions } from './routes.js';
+export type { MailClientOptions } from './plugin.js';
+export { MAIL_ACCESS } from '../shared/access.js';

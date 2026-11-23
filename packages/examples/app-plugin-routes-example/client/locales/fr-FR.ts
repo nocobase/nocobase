@@ -15,6 +15,11 @@ const frFR: LocaleResource<typeof enUS> = {
   plugin: 'Plugin',
   scope: 'Périmètre',
   message: 'Message',
+  settingsTitle: 'Paramètres de l’exemple de routes',
+  settingsDescription:
+    'Déclaré par le plugin d’exemple de routes avec defineSystemSettingsRoutes().',
+  settingsBody:
+    'Cette page de paramètres provient d’un plugin. Elle est déclarée avec defineSystemSettingsRoutes(), rejoint la catégorie Système et est montée sous /settings.',
 };
 
 export default frFR;

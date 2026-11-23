@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto';
 
 import type { Logger } from '@nocobase/logging';
+import type { NotificationContent } from './channel-type.js';
 import { NOTIFICATION_PROVIDER_ERROR_CATEGORIES } from './types.js';
 
 import type {
@@ -17,9 +18,19 @@ import type {
   ProviderSendResult,
 } from './types.js';
 
+/** What `notify()` and test sends use of a channel: see `ChannelInstance.resolveUsers()` and `compose()`. */
+export interface ChannelAudience {
+  resolveUsers?(
+    userIds: readonly string[],
+  ): Promise<ReadonlyMap<string, readonly object[]>>;
+  compose?(content: NotificationContent, recipients: readonly object[]): object;
+  recipientKey?(recipient: object): string;
+}
+
 export interface ChannelRuntime {
   readonly channel: NotificationChannel;
   readonly provider: NotificationProvider;
+  readonly audience?: ChannelAudience;
 }
 
 export interface ChannelManagerOptions {
@@ -37,8 +48,10 @@ export interface ChannelManagerOptions {
 
 const DEFAULT_LEASE_MS = 30_000;
 const DEFAULT_PROVIDER_TIMEOUT_MS = 20_000;
-const DEFAULT_MAX_ATTEMPTS = 1;
-const DEFAULT_RETRY_INTERVAL_MS = 5_000;
+/** Attempts per delivery when `notification.retry.maxAttempts` is not set. */
+export const DEFAULT_MAX_ATTEMPTS = 1;
+/** Wait between attempts when `notification.retry.intervalMs` is not set. */
+export const DEFAULT_RETRY_INTERVAL_MS = 5_000;
 
 export class ChannelManager {
   private readonly runtimes = new Map<string, ChannelRuntime>();
@@ -70,6 +83,15 @@ export class ChannelManager {
     if (!runtime)
       throw new Error(`Notification Channel "${name}" is unavailable.`);
     return runtime.channel.validateMessage(message);
+  }
+
+  audience(name: string): ChannelAudience | undefined {
+    return this.runtimes.get(name)?.audience;
+  }
+
+  /** The channel's own log key for `recipient`, when it names one. */
+  recipientKey(name: string, recipient: object): string | undefined {
+    return this.runtimes.get(name)?.audience?.recipientKey?.(recipient);
   }
 
   providerIdentities(name: string): readonly NotificationProviderIdentity[] {

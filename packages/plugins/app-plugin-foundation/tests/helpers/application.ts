@@ -1,132 +1,131 @@
+import { mkdir, mkdtemp, rm, symlink, writeFile } from 'node:fs/promises';
 import { createRequire } from 'node:module';
+import os from 'node:os';
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
-
-import {
-  createTestDatabase,
-  type TestDatabase,
-} from '@nocobase/app-testing/server';
-import { databaseManagerToken } from '@nocobase/db';
-import { ServiceContainer } from '@nocobase/service-provider';
-
-import type {
-  FoundationCapability,
-  FoundationCapabilityKey,
-  FoundationOverview,
-} from '../../shared/foundation.js';
-import {
-  DefaultFoundationService,
-  type FoundationServiceOptions,
-} from '../../server/services/foundation.js';
 
 const require = createRequire(import.meta.url);
 
-/** The package root this test runs in, which stands in for an application's root. */
-export const PACKAGE_ROOT: string = fileURLToPath(
-  new URL('../..', import.meta.url),
-);
-
-export const APPLICATION_NAME = '@nocobase/app-plugin-foundation';
-
-/** The NocoBase plugins whose real migrations the tests install, by package name. */
-export type PluginPackage =
-  | '@nocobase/app-plugin-authentication'
-  | '@nocobase/app-plugin-authorization'
-  | '@nocobase/app-plugin-api-keys'
-  | '@nocobase/app-plugin-notification'
-  | '@nocobase/app-plugin-notification-in-app'
-  | '@nocobase/app-plugin-scheduler'
-  | '@nocobase/app-plugin-mail';
-
-function pluginMigrations(packageName: PluginPackage): {
-  readonly packageName: string;
-  readonly directory: string;
-} {
-  return {
-    packageName,
-    directory: path.join(
-      path.dirname(require.resolve(`${packageName}/package.json`)),
-      'database/migrations',
-    ),
-  };
+export interface FixturePlugin {
+  readonly name: string;
+  readonly version?: string;
+  readonly entries?: readonly ('client' | 'server' | 'cli')[];
+  readonly peers?: readonly string[];
+  readonly optionalPeers?: readonly string[];
+  readonly nocobase?: Record<string, unknown>;
 }
 
 /**
- * An application being built: a test database to which the tests add what an application would — a plugin's
- * migrations, the application's own Collections, records — between two looks at the overview.
+ * An application directory on disk: its `package.json` and the plugin packages installed under `node_modules`, the
+ * way the catalog finds them in a real application.
  */
-export class ApplicationUnderConstruction {
-  public readonly container: ServiceContainer = new ServiceContainer();
-  private readonly config = new Map<string, unknown>();
-
-  private constructor(public readonly testDatabase: TestDatabase) {
-    this.container.instance(databaseManagerToken, testDatabase.database);
+export async function createApplicationFixture(options: {
+  readonly dependencies?: readonly string[];
+  readonly devDependencies?: readonly string[];
+  readonly installed: readonly FixturePlugin[];
+  readonly builtAt?: string;
+  /**
+   * The CLI registrations to write: a source checkout's `cli/plugins.ts`, parsed with the TypeScript this package
+   * resolves, or, `deployed`, the `cli/plugins.json` a build writes in its place.
+   */
+  readonly cli?: {
+    readonly deployed?: boolean;
+    /** A deployment from a build that predates `cli/plugins.json`: only the compiled `cli/plugins.js`. */
+    readonly legacyBuild?: boolean;
+    /** The packages it registers, each imported and listed. */
+    readonly plugins?: readonly string[];
+    /** The `cli/plugins.ts` text as written, instead of `plugins`. */
+    readonly source?: string;
+  };
+}): Promise<{
+  readonly rootDir: string;
+  readonly cleanup: () => Promise<void>;
+}> {
+  const rootDir = await mkdtemp(path.join(os.tmpdir(), 'foundation-app-'));
+  const ranges = (names: readonly string[] = []) =>
+    Object.fromEntries(names.map((name) => [name, '*']));
+  await writeFile(
+    path.join(rootDir, 'package.json'),
+    JSON.stringify({
+      name: 'fixture-app',
+      ...(options.builtAt ? { nocobase: { builtAt: options.builtAt } } : {}),
+      dependencies: ranges(options.dependencies),
+      devDependencies: ranges(options.devDependencies),
+    }),
+  );
+  if (options.cli) {
+    const plugins = options.cli.plugins ?? [];
+    const locals = plugins.map((_, index) => `plugin${index}`);
+    await mkdir(path.join(rootDir, 'cli'), { recursive: true });
+    if (options.cli.legacyBuild) {
+      await writeFile(
+        path.join(rootDir, 'cli', 'plugins.js'),
+        [
+          "import { defineCliPlugins } from '@nocobase/app-cli';",
+          ...plugins.map(
+            (name, index) => `import ${locals[index]} from '${name}/cli';`,
+          ),
+          `export default defineCliPlugins([${locals.join(', ')}]);`,
+          '',
+        ].join('\n'),
+      );
+    } else if (options.cli.deployed) {
+      await writeFile(
+        path.join(rootDir, 'cli', 'plugins.json'),
+        JSON.stringify({ plugins }),
+      );
+    } else {
+      await writeFile(
+        path.join(rootDir, 'cli', 'plugins.ts'),
+        options.cli.source ??
+          [
+            "import { defineCliPlugins } from '@nocobase/app-cli';",
+            ...plugins.map(
+              (name, index) => `import ${locals[index]} from '${name}/cli';`,
+            ),
+            `export default defineCliPlugins([${locals.join(', ')}]);`,
+            '',
+          ].join('\n'),
+      );
+      // A source checkout has the TypeScript it builds with; link this package's own.
+      await mkdir(path.join(rootDir, 'node_modules'), { recursive: true });
+      await symlink(
+        path.dirname(require.resolve('typescript/package.json')),
+        path.join(rootDir, 'node_modules', 'typescript'),
+        'dir',
+      );
+    }
   }
-
-  public static async create(): Promise<ApplicationUnderConstruction> {
-    return new ApplicationUnderConstruction(await createTestDatabase());
-  }
-
-  public get database(): TestDatabase['database'] {
-    return this.testDatabase.database;
-  }
-
-  public async install(...packages: readonly PluginPackage[]): Promise<void> {
-    await this.testDatabase.migrate(packages.map(pluginMigrations));
-  }
-
-  /** Runs the application's own migrations, recorded under its package name. */
-  public async migrateApplication(): Promise<void> {
-    await this.testDatabase.migrate([
-      {
-        packageName: APPLICATION_NAME,
-        directory: fileURLToPath(
-          new URL('../fixtures/application/migrations', import.meta.url),
+  for (const plugin of options.installed) {
+    const directory = path.join(rootDir, 'node_modules', plugin.name);
+    await mkdir(directory, { recursive: true });
+    await writeFile(
+      path.join(directory, 'package.json'),
+      JSON.stringify({
+        name: plugin.name,
+        version: plugin.version ?? '1.0.0',
+        exports: Object.fromEntries(
+          (plugin.entries ?? ['client', 'server']).map((entry) => [
+            `./${entry}`,
+            `./${entry}/index.js`,
+          ]),
         ),
-      },
-    ]);
+        peerDependencies: Object.fromEntries(
+          [...(plugin.peers ?? []), ...(plugin.optionalPeers ?? [])].map(
+            (name) => [name, 'workspace:^'],
+          ),
+        ),
+        peerDependenciesMeta: Object.fromEntries(
+          (plugin.optionalPeers ?? []).map((name) => [
+            name,
+            { optional: true },
+          ]),
+        ),
+        ...(plugin.nocobase ? { nocobase: plugin.nocobase } : {}),
+      }),
+    );
   }
-
-  public configure(key: string, value: unknown): void {
-    this.config.set(key, value);
-  }
-
-  public service(
-    options: Partial<FoundationServiceOptions> = {},
-  ): DefaultFoundationService {
-    return new DefaultFoundationService({
-      container: this.container,
-      config: {
-        get: <T>(key: string) => this.config.get(key) as T | undefined,
-      },
-      rootDir: PACKAGE_ROOT,
-      hasClient: true,
-      // Every look collects anew, so a test sees what it just built.
-      cacheTtlMs: 0,
-      ...options,
-    });
-  }
-
-  public async destroy(): Promise<void> {
-    await this.testDatabase.destroy();
-  }
-}
-
-export function capability(
-  overview: FoundationOverview,
-  key: FoundationCapabilityKey,
-): FoundationCapability {
-  const found = overview.capabilities.find((entry) => entry.key === key);
-  if (!found) throw new Error(`The overview has no capability "${key}".`);
-  return found;
-}
-
-export function metricValue(
-  overview: FoundationOverview,
-  key: FoundationCapabilityKey,
-  metricKey: string,
-): number | null | undefined {
-  return capability(overview, key).metrics.find(
-    (entry) => entry.key === metricKey,
-  )?.value;
+  return {
+    rootDir,
+    cleanup: () => rm(rootDir, { recursive: true, force: true }),
+  };
 }

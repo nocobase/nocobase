@@ -86,7 +86,7 @@ const runtimesZhCN: RuntimesLocale = {
       observed: '上次报告 {{time}}',
       usedPercent: '已用 {{percent}}%',
       noUsage: '暂无额度数据',
-      hint: '已知恢复时间到点或工具上报额度未用完时自动解除；手动清除前请确认额度已恢复。只有执行机主人和管理员可以清除。',
+      hint: '已知恢复时间到点或工具上报额度未用完时自动解除；手动清除前请确认额度已恢复。只有运行环境主人和管理员可以清除。',
     },
     workspaces: {
       paused: '空间恢复前暂停领取新任务，现有运行继续。',
@@ -110,7 +110,7 @@ const runtimesZhCN: RuntimesLocale = {
       ended: '已结束',
       active: '工作仍在继续',
       unknown: '无法确认是否结束',
-      oldRunner: '此执行机尚未提供诊断原因',
+      oldRunner: '此运行环境尚未提供诊断原因',
       noCleanup: '尚未收到本地清理结果',
       discardsUntracked: '清理将丢弃未跟踪文件',
       decision: {
@@ -187,7 +187,7 @@ const runtimesZhCN: RuntimesLocale = {
       description:
         '它能提供给「从运行环境取」的变量，只显示名字，值留在那台机器上。在那台机器上用 `nocobase-runner env set NAME` 设置，或用 `--pass-env NAME` 放行。',
       none: '没有：需要从运行环境取变量的运行会在开始前失败。',
-      unknown: '未上报：它的执行机版本较旧。更新执行机后可以看到。',
+      unknown: '未上报：它的运行环境版本较旧。更新运行环境后可以看到。',
     },
     jobs: {
       allow: '允许执行构建作业',
@@ -195,7 +195,7 @@ const runtimesZhCN: RuntimesLocale = {
       unsupported: '这个运行环境的 runner 不支持作业，更新后才能打开。',
     },
     pathHint:
-      '执行机按它自己的 PATH 查找编码工具。请在能执行 which codex / which claude 的终端里重新执行 nocobase-runner service install 并重启服务（或重新执行 nocobase-runner start），让服务带上正确的 PATH。',
+      '运行环境按它自己的 PATH 查找编码工具。请在能执行 which codex / which claude 的终端里重新执行 nocobase-runner service install 并重启服务（或重新执行 nocobase-runner start），让服务带上正确的 PATH。',
     noTools: '没有发现编码工具',
     actionsFor: '{{name}} 的操作',
     columns: {
@@ -225,8 +225,8 @@ const runtimesZhCN: RuntimesLocale = {
       owner: '所有者 {{name}}',
     },
     status: {
-      updatePending: '执行机等待升级，暂不接活',
-      pruning: '执行机清理共享缓存，暂不接活',
+      updatePending: '运行环境等待升级，暂不接活',
+      pruning: '运行环境清理共享缓存，暂不接活',
       online: '在线',
       offline: '离线',
       revoked: '已吊销',
@@ -260,7 +260,7 @@ const runtimesZhCN: RuntimesLocale = {
     },
     trust: {
       isolationHint:
-        '无论个人还是共享，都建议在虚拟机或隔离环境中运行执行机：Agent 拥有完全权限，执行机不是沙箱。',
+        '无论个人还是共享，都建议在虚拟机或隔离环境中运行运行环境：Agent 拥有完全权限，运行环境不是沙箱。',
       label: '使用范围',
       team: '共享',
       teamHint: '可执行所有用户发起的任务，并会收到发起人的变量和密钥。',
@@ -311,7 +311,7 @@ const runtimesZhCN: RuntimesLocale = {
   },
   connect: {
     title: '添加运行环境',
-    description: '选择编码工具和使用范围，然后在目标机器上安装执行机。',
+    description: '选择编码工具和使用范围，然后在目标机器上安装运行环境。',
     createCredential: '生成安装命令',
     advanced: '高级：按编码工具限制',
     run: '在那台主机上运行以下命令。它会从本应用下载 runner（nocobase-runner）和本应用的 CLI，注册 runner 并设置为登录后自动启动：',
@@ -332,7 +332,7 @@ const runtimesZhCN: RuntimesLocale = {
     promptWindows:
       '首先判断你自己是否运行在 WSL Ubuntu 中。如果不在 WSL Ubuntu 中，立即停止，不要执行任何安装或注册命令；请告诉用户先到 PowerShell 执行 wsl --install、重启 Windows，再到 WSL Ubuntu 中打开 Agent，重新执行这段提示词。只有确认在 WSL Ubuntu 中，才能继续以下步骤。Node.js 和编码工具都必须安装在 WSL 中。如果 WSL 无法访问外网，请开启镜像网络。\n\n',
     promptBody:
-      '请将这台机器配置为 NocoBase 执行机。建议使用虚拟机或隔离环境：Agent 拥有完全权限，执行机不是沙箱。\n\n检查 Node.js 24 或更高版本，以及这些编码工具是否已安装并登录：{{tools}}。使用工具的官方安装方式，不要使用 snap 版工具。\n\n运行以下含一次性凭证的注册命令，安装执行机和应用 CLI，注册执行机并安装为后台服务：\n{{command}}\n\n处理常见问题：确保服务的 PATH 包含编码工具（在安装终端确认 which codex / which claude，然后重新执行 nocobase-runner service install 并重启服务）；按需为下载和后台服务配置代理；npm 全局安装权限不足时使用当前用户拥有的安装目录或 Node 版本管理器，不要使用 sudo npm install。\n\n最后执行 nocobase-runner status，确认已连上并检测到编码工具。告诉我还需要亲自完成哪些登录或网络步骤。注册凭证属于密钥，请勿写入结果报告。',
+      '请将这台机器配置为 NocoBase 运行环境。建议使用虚拟机或隔离环境：Agent 拥有完全权限，运行环境不是沙箱。\n\n检查 Node.js 24 或更高版本，以及这些编码工具是否已安装并登录：{{tools}}。使用工具的官方安装方式，不要使用 snap 版工具。\n\n运行以下含一次性凭证的注册命令，安装运行环境和应用 CLI，注册运行环境并安装为后台服务：\n{{command}}\n\n处理常见问题：确保服务的 PATH 包含编码工具（在安装终端确认 which codex / which claude，然后重新执行 nocobase-runner service install 并重启服务）；按需为下载和后台服务配置代理；npm 全局安装权限不足时使用当前用户拥有的安装目录或 Node 版本管理器，不要使用 sudo npm install。\n\n最后执行 nocobase-runner status，确认已连上并检测到编码工具。告诉我还需要亲自完成哪些登录或网络步骤。注册凭证属于密钥，请勿写入结果报告。',
     tokenOnce:
       '命令中带有一次性凭证，用于添加一个「{{trust}}」运行环境。只能使用一次，有效期至 {{time}}。',
     after: '几秒钟后，运行环境会出现在列表中，并列出它发现的每个编码工具…',
