@@ -3,6 +3,7 @@
   "Draft settings": "Draft settings",
   "Enable drafts": "Enable drafts",
   "Drafts cannot be saved this time. You can still fill out and submit the form.": "Drafts cannot be saved this time. You can still fill out and submit the form.",
+  "The local draft could not be deleted.": "The local draft could not be deleted.",
   "This is an unsubmitted draft. You can continue editing and submit it, or click “Delete draft” to start over.": "This is an unsubmitted draft. You can continue editing and submit it, or click “Delete draft” to start over.",
   "Your draft has been saved. You can continue editing and submit it, or click “Delete Draft” to start over.": "Your draft has been saved. You can continue editing and submit it, or click “Delete Draft” to start over."
 }

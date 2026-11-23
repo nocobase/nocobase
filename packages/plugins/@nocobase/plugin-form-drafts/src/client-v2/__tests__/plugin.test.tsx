@@ -40,6 +40,47 @@ const { db, openDB, store } = vi.hoisted(() => {
 
 vi.mock('idb', () => ({ openDB }));
 
+function quotaError() {
+  return new DOMException('Storage quota exceeded', 'QuotaExceededError');
+}
+
+async function openDraftForm() {
+  const engine = new FlowEngine();
+  const request = vi.fn().mockResolvedValue({ data: { data: { id: 1 } } });
+  engine.context.defineProperty('api', { value: { request } });
+  engine.registerModels({ CreateFormModel });
+  engine.context.dataSourceManager.getDataSource('main').addCollection({ name: 'posts', fields: [] });
+  const model = engine.createModel<CreateFormModel>({
+    use: 'CreateFormModel',
+    stepParams: {
+      resourceSettings: { init: { dataSourceKey: 'main', collectionName: 'posts' } },
+      draftCreateFlow: { createDraft: { enabled: true } },
+    },
+  });
+  const { result } = renderHook(() => Form.useForm());
+  const [form] = result.current;
+  const warning = vi.fn();
+  model.context.defineProperty('form', { value: form });
+  model.context.defineProperty('view', { value: { inputArgs: {} } });
+  model.context.defineProperty('message', { value: { warning } });
+  model.context.defineMethod('t', (key: string) => key);
+  await model.applyFlow('draftCreateFlow');
+  const view = render(
+    <Form form={form} initialValues={{ title: '' }}>
+      <Form.Item name="title" label="Title">
+        <input />
+      </Form.Item>
+    </Form>,
+  );
+  const enterTitle = (value: string) =>
+    fireEvent.change(view.getByRole('textbox', { name: 'Title' }), { target: { value } });
+  const submit = () =>
+    act(async () => {
+      await model.submit({ requestConfig: { refresh: false } });
+    });
+  return { model, form, request, warning, enterTitle, submit };
+}
+
 describe('PluginFormDraftsClient v2', () => {
   beforeEach(() => {
     store.clear();
@@ -122,41 +163,19 @@ describe('PluginFormDraftsClient v2', () => {
     expect(db.createObjectStore).toHaveBeenCalledWith('drafts', { keyPath: 'uid' });
   });
 
-  it('warns once and still submits the entered values when draft storage cannot be opened', async () => {
-    const engine = new FlowEngine();
-    const request = vi.fn().mockResolvedValue({ data: { data: { id: 1 } } });
-    engine.context.defineProperty('api', { value: { request } });
-    engine.registerModels({ CreateFormModel });
-    engine.context.dataSourceManager.getDataSource('main').addCollection({ name: 'posts', fields: [] });
-    const model = engine.createModel<CreateFormModel>({
-      use: 'CreateFormModel',
-      stepParams: {
-        resourceSettings: { init: { dataSourceKey: 'main', collectionName: 'posts' } },
-        draftCreateFlow: { createDraft: { enabled: true } },
-      },
-    });
-    const { result } = renderHook(() => Form.useForm());
-    const [form] = result.current;
-    const warning = vi.fn();
-    model.context.defineProperty('form', { value: form });
-    model.context.defineProperty('view', { value: { inputArgs: {} } });
-    model.context.defineProperty('message', { value: { warning } });
-    model.context.defineMethod('t', (key: string) => key);
-    openDB.mockRejectedValueOnce(new DOMException('Cannot open backing store', 'UnknownError'));
-
-    await model.applyFlow('draftCreateFlow');
-    const { getByRole } = render(
-      <Form form={form} initialValues={{ title: '' }}>
-        <Form.Item name="title" label="Title">
-          <input />
-        </Form.Item>
-      </Form>,
-    );
-    fireEvent.change(getByRole('textbox', { name: 'Title' }), { target: { value: 'Entered after the warning' } });
+  it.each([
+    [
+      'opening storage',
+      () => openDB.mockRejectedValueOnce(new DOMException('Cannot open backing store', 'UnknownError')),
+    ],
+    ['reading the draft', () => db.get.mockRejectedValueOnce(quotaError())],
+    ['creating an empty draft', () => db.put.mockRejectedValueOnce(quotaError())],
+  ] as const)('still submits the entered values after a failure %s', async (_operation, injectFailure) => {
+    injectFailure();
+    const { model, enterTitle, warning, request, submit } = await openDraftForm();
+    enterTitle('Entered after the warning');
     await model.applyFlow('draftSaveFlow');
-    await act(async () => {
-      await model.submit({ requestConfig: { refresh: false } });
-    });
+    await submit();
 
     expect(warning).toHaveBeenCalledTimes(1);
     expect(warning).toHaveBeenCalledWith(
@@ -166,18 +185,74 @@ describe('PluginFormDraftsClient v2', () => {
       expect.objectContaining({ method: 'post', url: 'posts:create', data: { title: 'Entered after the warning' } }),
     );
     expect(openDB).toHaveBeenCalledTimes(1);
-    expect(db.get).not.toHaveBeenCalled();
-    expect(db.put).not.toHaveBeenCalled();
+    expect(model.context.draftRepository.disabled).toBe(true);
+    expect(store.size).toBe(0);
     expect(db.delete).not.toHaveBeenCalled();
+  });
 
-    await model.applyFlow('draftCreateFlow');
+  it('clears a stale draft notice and retries storage when the form is reopened', async () => {
+    const { model, enterTitle } = await openDraftForm();
     expect(db.put).toHaveBeenCalledTimes(1);
-    fireEvent.change(getByRole('textbox', { name: 'Title' }), { target: { value: 'Another entry' } });
+    enterTitle('Another entry');
     await model.applyFlow('draftSaveFlow');
     expect(model.decoratorProps.beforeContent).toBeTruthy();
     openDB.mockRejectedValueOnce(new DOMException('Cannot open backing store', 'UnknownError'));
     await model.applyFlow('draftCreateFlow');
     expect(model.decoratorProps.beforeContent).toBeNull();
+    const setFormValues = vi.fn();
+    model.context.defineMethod('setFormValues', setFormValues);
+    await model.applyFlow('draftCreateFlow');
+    expect(setFormValues).toHaveBeenCalledWith([{ path: ['title'], value: 'Another entry' }], {
+      source: 'user',
+      triggerEvent: false,
+    });
+  });
+
+  it('keeps later edits and submits once when autosave fails', async () => {
+    const { model, form, enterTitle, request, warning, submit } = await openDraftForm();
+    enterTitle('First edit');
+    await model.applyFlow('draftSaveFlow');
+    expect(model.decoratorProps.beforeContent).toBeTruthy();
+
+    db.put.mockRejectedValueOnce(quotaError());
+    enterTitle('Unsaved edit');
+    await model.applyFlow('draftSaveFlow');
+    expect(form.getFieldValue('title')).toBe('Unsaved edit');
+    expect(model.decoratorProps.beforeContent).toBeNull();
+    enterTitle('Final edit');
+    await model.applyFlow('draftSaveFlow');
+    await submit();
+
+    expect(db.put).toHaveBeenCalledTimes(3);
+    expect(warning).toHaveBeenCalledTimes(1);
+    expect(request).toHaveBeenCalledTimes(1);
+    expect(request).toHaveBeenCalledWith(
+      expect.objectContaining({ method: 'post', url: 'posts:create', data: { title: 'Final edit' } }),
+    );
+    expect(db.delete).not.toHaveBeenCalled();
+  });
+
+  it('preserves the entered values when discarding a draft fails', async () => {
+    const { model, form, enterTitle, warning } = await openDraftForm();
+    enterTitle('Keep this value');
+    await model.applyFlow('draftSaveFlow');
+    const alert = model.decoratorProps.beforeContent as ReactElement<{ onDelete: () => Promise<void> }>;
+    db.delete.mockRejectedValueOnce(quotaError());
+    await alert.props.onDelete();
+
+    expect(form.getFieldValue('title')).toBe('Keep this value');
+    expect(store.size).toBe(1);
+    expect(warning).toHaveBeenCalledWith('The local draft could not be deleted.');
+  });
+
+  it('completes submission when local draft cleanup fails', async () => {
+    const { enterTitle, request, warning, submit } = await openDraftForm();
+    enterTitle('Submit once');
+    db.delete.mockRejectedValueOnce(quotaError());
+    await submit();
+    expect(request).toHaveBeenCalledTimes(1);
+    expect(db.delete).toHaveBeenCalledTimes(1);
+    expect(warning).toHaveBeenCalledWith('The local draft could not be deleted.');
   });
 
   it('saves only runtime user-edited values when runtime is available', async () => {
