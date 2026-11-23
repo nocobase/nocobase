@@ -647,6 +647,57 @@ describe('persisted Permission Sets and root subjects', () => {
     expect(protection('root')).toMatchObject({ assignableTo: ['user'] });
     expect(protection('member')).toMatchObject({ assignableTo: ['user'] });
   });
+
+  it('answers 409 to an assignment the subject already holds, also when requests race', async () => {
+    const assign = (body: object, user?: string) =>
+      router.request(`${PATH}/member/assignments`, json('POST', body, user));
+    const alice = { subject: { type: 'user', id: 'alice' } };
+    const responses = await Promise.all([1, 2, 3].map(() => assign(alice)));
+    expect(responses.map((response) => response.status).sort()).toEqual([
+      201, 409, 409,
+    ]);
+    const conflicts = responses.filter((response) => response.status === 409);
+    for (const response of conflicts) {
+      const body = JSON.stringify(await response.json());
+      expect(JSON.parse(body)).toMatchObject({
+        error: { status: 'ALREADY_EXISTS', reason: 'PERMISSION_SET_CONFLICT' },
+      });
+      expect(body).not.toMatch(/insert|constraint|authorization_permission/i);
+    }
+    // A sequential retry, even under a new assignment id, is the same duplicate grant.
+    const retried = await assign({ ...alice, id: 'alice-member-again' });
+    expect(retried.status).toBe(409);
+    // A caller without `assign` is still refused before the duplicate is noticed.
+    expect((await assign(alice, 'alice')).status).toBe(403);
+    const reloaded = createAppAuthorization({
+      connection: database.connection(),
+    });
+    expect(await reloaded.permissionSets.listAssignments('member')).toEqual([
+      {
+        id: 'user:alice:member',
+        subject: { type: 'user', id: 'alice' },
+        permissionSet: 'member',
+      },
+    ]);
+  });
+
+  it('keeps an assignment id collision with another grant an unexpected failure', async () => {
+    const collided = await router.request(
+      `${PATH}/member/assignments`,
+      json('POST', {
+        id: 'user:admin:root',
+        subject: { type: 'user', id: 'bob' },
+      }),
+    );
+    expect(collided.status).toBe(500);
+    const body = await collided.text();
+    expect(body).not.toContain('PERMISSION_SET_CONFLICT');
+    expect(body).not.toMatch(/insert|constraint/i);
+    const reloaded = createAppAuthorization({
+      connection: database.connection(),
+    });
+    expect(await reloaded.permissionSets.listAssignments('member')).toEqual([]);
+  });
 });
 
 describe('database write field grants', () => {
