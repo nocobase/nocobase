@@ -71,7 +71,7 @@ function setBeforeContent(model: DecoratedFormModel, beforeContent: React.ReactN
 }
 
 function disableDrafts(ctx: DraftFlowContext, repository: FormDraftRepository, message = UNAVAILABLE_DRAFT_MESSAGE) {
-  if (repository.disabled || repository !== ctx.draftRepository) {
+  if (repository !== ctx.draftRepository) {
     return;
   }
   repository.disable();
@@ -82,13 +82,10 @@ function disableDrafts(ctx: DraftFlowContext, repository: FormDraftRepository, m
   ctx.message.warning(ctx.t(message, { ns: NAMESPACE }));
 }
 
-async function deleteDraft(ctx: DraftFlowContext) {
+async function deleteDraft(ctx: DraftFlowContext, options?: { afterSubmit: boolean }) {
   const repository = ctx.draftRepository;
-  if (repository.disabled) {
-    return false;
-  }
   try {
-    await repository.delete();
+    await repository.delete(options);
   } catch {
     disableDrafts(ctx, repository, 'The local draft could not be deleted.');
     return false;
@@ -256,7 +253,9 @@ FormBlockModel.registerFlow({
         try {
           await repository.save(values, patches);
         } catch {
-          disableDrafts(draftCtx, repository);
+          if (!repository.disabled) {
+            disableDrafts(draftCtx, repository);
+          }
           return;
         }
         if (repository.disabled || repository !== draftCtx.draftRepository) {
@@ -278,7 +277,7 @@ FormBlockModel.registerFlow({
     deleteDraft: {
       async handler(ctx) {
         const draftCtx = ctx as unknown as DraftFlowContext;
-        if (await deleteDraft(draftCtx)) {
+        if (await deleteDraft(draftCtx, { afterSubmit: true })) {
           setBeforeContent(draftCtx.model, null);
         }
       },

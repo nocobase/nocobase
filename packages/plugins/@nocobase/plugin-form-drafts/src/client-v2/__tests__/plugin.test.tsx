@@ -208,7 +208,7 @@ describe('PluginFormDraftsClient v2', () => {
     });
   });
 
-  it('keeps later edits and submits once when autosave fails', async () => {
+  it('submits the latest edit after autosave fails and does not restore the earlier draft on reopen', async () => {
     const { model, form, enterTitle, request, warning, submit } = await openDraftForm();
     enterTitle('First edit');
     await model.applyFlow('draftSaveFlow');
@@ -229,7 +229,54 @@ describe('PluginFormDraftsClient v2', () => {
     expect(request).toHaveBeenCalledWith(
       expect.objectContaining({ method: 'post', url: 'posts:create', data: { title: 'Final edit' } }),
     );
+    const uid = model.context.draftRepository.uid;
+    expect(db.delete).toHaveBeenCalledTimes(1);
+    expect(db.delete).toHaveBeenCalledWith('drafts', uid);
+    expect(store.has(uid)).toBe(false);
+
+    const setFormValues = vi.fn();
+    model.context.defineMethod('setFormValues', setFormValues);
+    await model.applyFlow('draftCreateFlow');
+    expect(db.get).toHaveBeenLastCalledWith('drafts', uid);
+    expect(setFormValues).not.toHaveBeenCalled();
+    expect(store.get(uid)).toEqual({ uid, values: {} });
+  });
+
+  it('keeps a successful submission when autosave and subsequent cleanup both fail', async () => {
+    const { model, enterTitle, request, warning, submit } = await openDraftForm();
+    enterTitle('Earlier draft');
+    await model.applyFlow('draftSaveFlow');
+    const uid = model.context.draftRepository.uid;
+    const earlierDraft = store.get(uid);
+    expect(earlierDraft).toMatchObject({ values: { title: 'Earlier draft' } });
+
+    db.put.mockRejectedValueOnce(quotaError());
+    enterTitle('Submitted value');
+    await model.applyFlow('draftSaveFlow');
+    db.delete.mockRejectedValueOnce(quotaError());
+    await submit();
+
+    expect(request).toHaveBeenCalledTimes(1);
+    expect(request).toHaveBeenCalledWith(
+      expect.objectContaining({ method: 'post', url: 'posts:create', data: { title: 'Submitted value' } }),
+    );
+    expect(db.delete).toHaveBeenCalledTimes(1);
+    expect(warning).toHaveBeenCalledWith('The local draft could not be deleted.');
+    expect(store.get(uid)).toEqual(earlierDraft);
+  });
+
+  it('preserves the earlier draft when autosave fails and the submission is rejected', async () => {
+    const { model, enterTitle, request, submit } = await openDraftForm();
+    enterTitle('Earlier draft');
+    await model.applyFlow('draftSaveFlow');
+    db.put.mockRejectedValueOnce(quotaError());
+    enterTitle('Rejected value');
+    await model.applyFlow('draftSaveFlow');
+
+    request.mockRejectedValueOnce(new Error('Submission failed'));
+    await expect(Promise.resolve(submit())).rejects.toThrow('Submission failed');
     expect(db.delete).not.toHaveBeenCalled();
+    expect(store.get(model.context.draftRepository.uid)).toMatchObject({ values: { title: 'Earlier draft' } });
   });
 
   it('preserves the entered values when discarding a draft fails', async () => {

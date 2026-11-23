@@ -45,6 +45,7 @@ export class FormDraftRepository {
   readonly uid: string;
   #db?: IDBPDatabase;
   #disabled = false;
+  #hasStoredDraft = false;
 
   constructor(ctx: FormDraftContext) {
     this.uid = buildFormDraftUid(ctx);
@@ -74,13 +75,16 @@ export class FormDraftRepository {
       return;
     }
     await this.getDb().put(STORE_NAME, { uid: this.uid, values: {} });
+    this.#hasStoredDraft = true;
   }
 
   async get(): Promise<FormDraft | undefined> {
     if (this.#disabled) {
       return;
     }
-    return this.getDb().get(STORE_NAME, this.uid);
+    const draft: FormDraft | undefined = await this.getDb().get(STORE_NAME, this.uid);
+    this.#hasStoredDraft = !!draft;
+    return draft;
   }
 
   async save(values: FormDraftValues, patches?: FormDraftValuePatch[]) {
@@ -93,13 +97,15 @@ export class FormDraftRepository {
       draft.patches = JSON.parse(JSON.stringify(patches)) as FormDraftValuePatch[];
     }
     await this.getDb().put(STORE_NAME, draft);
+    this.#hasStoredDraft = true;
   }
 
-  async delete() {
-    if (this.#disabled) {
+  async delete({ afterSubmit = false } = {}) {
+    if (this.#disabled && !(afterSubmit && this.#hasStoredDraft)) {
       return;
     }
     await this.getDb().delete(STORE_NAME, this.uid);
+    this.#hasStoredDraft = false;
   }
 
   private getDb() {
