@@ -7,23 +7,36 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Repository } from '@nocobase/database';
+import type { Filter, Repository } from '@nocobase/database';
+import { isPlainObject, isValidFilter } from '@nocobase/utils';
+
+function isRecipientFilter(value: unknown): value is { filter: Filter } {
+  if (!value || typeof value !== 'object' || !('filter' in value)) {
+    return false;
+  }
+  return (
+    isPlainObject(value) &&
+    Object.keys(value).length === 1 &&
+    isPlainObject(value.filter) &&
+    isValidFilter(value.filter)
+  );
+}
+
 export async function parseUserSelectionConfig(
-  userSelectionConfig: Array<Record<any, any> | number | string>,
-  UserRepo: Repository,
+  userSelectionConfig: unknown[],
+  userRepo: Repository,
 ): Promise<string[]> {
-  const SelectionConfigs = userSelectionConfig.flat().filter(Boolean);
   const users = new Set<string>();
-  for (const item of SelectionConfigs) {
-    if (typeof item === 'object') {
-      const result = await UserRepo.find({
-        ...item,
-        fields: ['id'],
-      });
-      result.forEach((item) => users.add(String(item.id)));
-    } else {
+  for (const item of userSelectionConfig.flat().filter(Boolean)) {
+    if (typeof item === 'string' || typeof item === 'number') {
       users.add(String(item));
+      continue;
     }
+    if (!isRecipientFilter(item)) {
+      throw new Error('Invalid notification recipient. Select a user ID or configure a user filter.');
+    }
+    const matches = await userRepo.find({ filter: item.filter, fields: ['id'] });
+    matches.forEach((user) => users.add(String(user.id)));
   }
 
   return [...users];
