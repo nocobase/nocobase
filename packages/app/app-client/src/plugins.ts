@@ -251,7 +251,12 @@ export interface AppClientContributions {
 
 export type AppClientPluginContributions = AppClientContributions;
 
+export interface ResolveAppClientContributionsOptions {
+  readonly excludedRouteIds?: readonly string[];
+}
+
 export interface ResolvedAppClientContributions {
+  readonly excludedRouteIds?: ReadonlySet<string>;
   readonly routes: readonly AppClientRegisteredRoute[];
   readonly reactProviders: readonly AppClientRegisteredReactProvider[];
 }
@@ -466,6 +471,7 @@ export function defineClientReactProviders(
 
 export function resolveAppClientContributions(
   contributions: readonly AppClientContributions[],
+  options: ResolveAppClientContributionsOptions = {},
 ): ResolvedAppClientContributions {
   const routeIds = new Map<string, string>();
   const claimedPaths = new Map<string, ClaimedPath>();
@@ -508,14 +514,22 @@ export function resolveAppClientContributions(
     }
   }
 
-  const routes = resolveRouteTree(assembleRoutes(inputs), {
-    parentPath: '',
-    ids: routeIds,
-    claimed: claimedPaths,
-  });
+  const excludedRouteIds = options.excludedRouteIds?.length
+    ? new Set(options.excludedRouteIds.map((id) => id.trim()).filter(Boolean))
+    : undefined;
+  const tree = assembleRoutes(inputs);
+  const routes = resolveRouteTree(
+    excludedRouteIds ? excludeRoutes(tree, excludedRouteIds) : tree,
+    {
+      parentPath: '',
+      ids: routeIds,
+      claimed: claimedPaths,
+    },
+  );
 
   return Object.freeze({
     routes,
+    ...(excludedRouteIds ? { excludedRouteIds } : {}),
     reactProviders: sortReactProviders(reactProviders),
   });
 }
@@ -538,8 +552,6 @@ function assembleRoutes(inputs: readonly RouteInput[]): RouteNode[] {
   const groups = new Map<string, RouteNode>();
   const pending: { node: RouteNode; parent: string }[] = [];
   const all: RouteNode[] = [];
-  const groupId = (name: string, packageName: string): string =>
-    `${packageName}:${normalizeContributionName(name, packageName, 'route')}`;
   for (const input of inputs) {
     const copy = (
       definition: AppClientRouteDefinition,
@@ -559,7 +571,7 @@ function assembleRoutes(inputs: readonly RouteInput[]): RouteNode[] {
       };
       all.push(node);
       if (!definition.componentLoader) {
-        const id = groupId(definition.name, input.packageName);
+        const id = routeIdFor(definition.name, input.packageName);
         const previous = groups.get(id);
         if (previous)
           throw new Error(
@@ -578,7 +590,7 @@ function assembleRoutes(inputs: readonly RouteInput[]): RouteNode[] {
           node,
           parent: parent.includes(':')
             ? parent
-            : groupId(parent, input.packageName),
+            : routeIdFor(parent, input.packageName),
         });
       }
     }
@@ -613,6 +625,32 @@ function assembleRoutes(inputs: readonly RouteInput[]): RouteNode[] {
   };
   sort(roots);
   return roots;
+}
+
+/** Prune assembled subtrees before their paths can conflict with the application's replacement routes. */
+function excludeRoutes(
+  nodes: readonly RouteNode[],
+  excludedIds: Set<string>,
+  excludeParent = false,
+): RouteNode[] {
+  return nodes.flatMap((node) => {
+    const { definition, packageName } = node;
+    const id = routeIdFor(definition.name, packageName);
+    const excluded = excludeParent || excludedIds.has(id);
+    const children =
+      node.children && excludeRoutes(node.children, excludedIds, excluded);
+    const emptiedGroup =
+      !definition.componentLoader && node.children?.length && !children?.length;
+    if (excluded || emptiedGroup) {
+      excludedIds.add(id);
+      return [];
+    }
+    return [{ ...node, children }];
+  });
+}
+
+function routeIdFor(name: string, packageName: string): string {
+  return `${packageName}:${normalizeContributionName(name, packageName, 'route')}`;
 }
 
 function normalizeRouteContributions(

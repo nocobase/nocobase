@@ -61,7 +61,10 @@ class CoreClientServiceProvider extends ServiceProvider<ClientApplication> {
   public override register(): void {
     this.app.container.instance(
       appHeaderActionsToken,
-      new AppHeaderActionRegistry(),
+      new AppHeaderActionRegistry(
+        this.app.runtime.routes,
+        this.app.runtime.excludedHeaderActionIds,
+      ),
     );
     this.app.container.singleton(apiClientToken, (): ApiClient => {
       const baseURL = this.app.config.get<string>('api.baseURL');

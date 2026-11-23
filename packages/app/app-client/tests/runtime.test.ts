@@ -23,12 +23,130 @@ import {
 } from '../src/plugins.js';
 import { defineAppRuntime, resolveAppRuntime } from '../src/runtime/index.js';
 import { ClientApplication } from '../src/application.js';
+import { appHeaderActionsToken } from '../src/app-header-action-registry.js';
 
 function Wrapper({ children }: PropsWithChildren): ReactElement {
   return createElement(Fragment, undefined, children);
 }
 
 describe('app runtime', () => {
+  it('excludes route groups and their cross-plugin children before claiming paths and applying overrides', async () => {
+    const defaultLoader = vi.fn(async () => ({ default: () => null }));
+    const applicationLoader = vi.fn(async () => ({ default: () => null }));
+    const owner = defineClientPlugin({
+      packageName: '@example/orders',
+      routes: defineAppRoutes([
+        {
+          name: 'work',
+          navigation: { title: 'work' },
+          children: [
+            {
+              name: 'list',
+              path: '/work',
+              authz: 'skip',
+              componentLoader: defaultLoader,
+            },
+          ],
+        },
+      ]),
+    });
+    const extra = defineClientPlugin({
+      packageName: '@example/extra',
+      routes: defineAppRoutes([
+        {
+          name: 'extra',
+          parent: '@example/orders:work',
+          path: '/extra',
+          authz: 'skip',
+          componentLoader: defaultLoader,
+        },
+      ]),
+      routeComponentOverrides: () => [
+        { routeId: '@example/orders:list', componentLoader: defaultLoader },
+      ],
+    });
+    const runtime = await resolveAppRuntime(
+      defineAppRuntime({
+        packageName: '@example/app',
+        createAppConfig: createAppClientConfig,
+        plugins: defineClientPlugins([extra(), owner()]),
+        excludedRouteIds: ['@example/orders:work'],
+        routes: defineAppRoutes([
+          {
+            name: 'my-work',
+            path: '/work',
+            authz: 'skip',
+            componentLoader: applicationLoader,
+          },
+        ]),
+      }),
+      { rawConfig: {} },
+    );
+
+    expect(runtime.routes.map(({ id, path }) => [id, path])).toEqual([
+      ['@example/app:my-work', '/work'],
+    ]);
+    expect(defaultLoader).not.toHaveBeenCalled();
+    expect(applicationLoader).not.toHaveBeenCalled();
+  });
+
+  it('omits individually excluded toolbar actions and shortcuts whose pages are excluded', async () => {
+    const component = () => null;
+    const componentLoader = async () => ({ default: component });
+    class HeaderProvider extends ServiceProvider<ClientApplication> {
+      public readonly name = '@example/tools/header';
+
+      public override boot(): Promise<void> {
+        const header = this.app.services.resolve(appHeaderActionsToken);
+        header.add({ id: '@example/tools/hidden', component });
+        header.add({
+          id: '@example/tools/removed-link',
+          component,
+          routeId: '@example/tools:removed',
+        });
+        header.add({
+          id: '@example/tools/link',
+          component,
+          routeId: '@example/tools:kept',
+        });
+        return Promise.resolve();
+      }
+    }
+    const plugin = defineClientPlugin({
+      packageName: '@example/tools',
+      serviceProviders: [HeaderProvider],
+      routes: defineAppRoutes([
+        { name: 'kept', path: '/kept', authz: 'skip', componentLoader },
+        { name: 'removed', path: '/removed', authz: 'skip', componentLoader },
+      ]),
+    });
+    const runtime = await resolveAppRuntime(
+      defineAppRuntime({
+        packageName: '@example/app',
+        createAppConfig: createAppClientConfig,
+        plugins: defineClientPlugins([plugin()]),
+        excludedRouteIds: ['@example/tools:removed'],
+        excludedHeaderActionIds: ['@example/tools/hidden'],
+      }),
+      { rawConfig: {} },
+    );
+    const app = new ClientApplication({
+      runtime,
+      createRenderConfig: () => ({ routes: null }),
+    });
+    await app.start();
+    try {
+      expect(
+        app.services
+          .resolve(appHeaderActionsToken)
+          .list()
+          .map(({ id }) => id),
+      ).toEqual(['@example/tools/link']);
+    } finally {
+      await app.shutdown();
+    }
+  });
+
   it('assembles complete configuration before the application is created', async () => {
     const callback = vi.fn();
     const configure = vi.fn((context: AppRuntimeContext) => ({

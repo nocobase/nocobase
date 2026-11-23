@@ -128,6 +128,25 @@ const override = {
 
 The target ID must resolve to a page rather than a group, and a route may have only one final override. Include `componentEntry` so later maintainers can locate App-owned source. If an overridden parent page owns children, the replacement must preserve its `Outlet`.
 
+## Publish stable route and toolbar action IDs
+
+Document the package-qualified route ID (`<plugin-package>:<route-name>`) so an application can replace its component with `routeComponentOverrides` or omit it through `excludedRouteIds` in `defineAppRuntime()`. A parent exclusion also removes its descendants and their overrides. Applications retain the Server plugin and API separately through their Server composition.
+
+To contribute a shortcut, add a package-qualified header action from a Client ServiceProvider's `boot()`. Use `routeId` for the target so excluding the page also hides the shortcut:
+
+```ts
+import { appHeaderActionsToken } from '@nocobase/app-client';
+
+// Inside a Client ServiceProvider's boot().
+this.app.services.resolve(appHeaderActionsToken).add({
+  id: '@example/app-plugin-orders/header',
+  component: OrdersShortcut,
+  routeId: '@example/app-plugin-orders:orders',
+});
+```
+
+The application can omit only the shortcut with `excludedHeaderActionIds: ['@example/app-plugin-orders/header']` in its `defineAppRuntime()` declaration. Custom shells render the standard actions through `<AppHeaderActions />` in the authenticated header. Exclusion lists also accept IDs of plugins absent from a particular application.
+
 ## Test declarations and behavior
 
 Plugin declaration tests should inspect the real contribution and invoke page loaders:

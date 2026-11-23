@@ -153,6 +153,7 @@ export type {
   AppClientRoutePresentationKind,
   ClientServiceProviderConstructor,
   ClientServiceProviderContext,
+  ResolveAppClientContributionsOptions,
   ResolvedAppClientContributions,
 } from './plugins.js';
 

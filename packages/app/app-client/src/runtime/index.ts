@@ -61,6 +61,10 @@ export interface AppRuntimeDefinition {
   readonly routes?: AppClientRoutes;
   readonly locales?: AppClientLocales;
   readonly plugins: AppClientPlugins;
+  /** Removed from the Client route tree by its package-qualified ID, including descendants. */
+  readonly excludedRouteIds?: readonly string[];
+  /** Omitted from the authenticated toolbar by its registered ID. */
+  readonly excludedHeaderActionIds?: readonly string[];
   readonly routeComponentOverrides?: readonly AppClientRouteComponentOverrideDefinition[];
   readonly sourceExtensions?: readonly AppClientSourceExtension[];
   readonly validate?: AppRuntimeValidator;
@@ -87,6 +91,7 @@ export interface AppRuntimeContext {
   readonly serviceProviders: readonly AppClientRegisteredServiceProvider[];
   readonly reactProviders: readonly AppClientRegisteredReactProvider[];
   readonly routes: readonly AppClientRegisteredRoute[];
+  readonly excludedHeaderActionIds?: readonly string[];
   readonly validate?: AppRuntimeValidator;
 }
 
@@ -101,6 +106,12 @@ export function defineAppRuntime(
     serviceProviders: freezeOptionalList(definition.serviceProviders),
     reactProviders: freezeOptionalList(definition.reactProviders),
     routes: freezeRouteDeclarations(definition.routes),
+    excludedRouteIds:
+      definition.excludedRouteIds &&
+      Object.freeze([...definition.excludedRouteIds]),
+    excludedHeaderActionIds:
+      definition.excludedHeaderActionIds &&
+      Object.freeze([...definition.excludedHeaderActionIds]),
     routeComponentOverrides: definition.routeComponentOverrides
       ? Object.freeze([...definition.routeComponentOverrides])
       : undefined,
@@ -130,10 +141,10 @@ export async function resolveAppRuntime(
     routes: plugin.routes,
     reactProviders: plugin.reactProviders,
   }));
-  const contributions = resolveAppClientContributions([
-    applicationContribution,
-    ...pluginContributions,
-  ]);
+  const contributions = resolveAppClientContributions(
+    [applicationContribution, ...pluginContributions],
+    { excludedRouteIds: definition.excludedRouteIds },
+  );
   const i18n = options.i18n ?? (await createI18nRuntime(definition, config));
   const extensionOverrides = collectSourceExtensionRouteOverrides(
     definition.sourceExtensions ?? [],
@@ -166,11 +177,17 @@ export async function resolveAppRuntime(
       ),
     ]),
     reactProviders: contributions.reactProviders,
-    routes: applyClientRouteComponentOverrides(contributions.routes, [
-      ...definition.plugins.routeComponentOverrides,
-      ...(definition.routeComponentOverrides ?? []),
-      ...extensionOverrides,
-    ]),
+    routes: applyClientRouteComponentOverrides(
+      contributions.routes,
+      [
+        ...definition.plugins.routeComponentOverrides,
+        ...(definition.routeComponentOverrides ?? []),
+        ...extensionOverrides,
+      ].filter(
+        ({ routeId }) => !contributions.excludedRouteIds?.has(routeId.trim()),
+      ),
+    ),
+    excludedHeaderActionIds: definition.excludedHeaderActionIds,
     validate: definition.validate,
   };
   if (definition.defaultConfigs) {
