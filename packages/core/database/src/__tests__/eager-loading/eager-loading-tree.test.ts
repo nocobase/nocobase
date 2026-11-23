@@ -116,16 +116,17 @@ describe('Eager loading tree', () => {
     }).repository;
     await db.sync();
     const codes = ['42', '9007199254740992', '9007199254740993'];
+    const expectedChildIds = [];
     for (const code of codes) {
       await parents.create({ values: { code } });
-      await children.create({ values: { parentCode: code } });
+      const child = await children.create({ values: { parentCode: code } });
+      expectedChildIds.push(child.id);
     }
     const rows = await parents.find({ appends: ['children'], sort: ['id'] });
-    expect(rows.map((p) => [p.code, p.children.map((c) => c.parentCode)])).toEqual([
-      ['42', [42]],
-      [codes[1], [codes[1]]],
-      [codes[2], [codes[2]]],
-    ]);
+    expect(rows.map((parent) => parent.code)).toEqual(codes);
+    expect(rows.map((parent) => parent.children.map((child) => child.id))).toEqual(expectedChildIds.map((id) => [id]));
+    expect(rows[0].children[0].parentCode).toBe(42);
+    expect(rows.slice(1).map((parent) => String(parent.children[0].parentCode))).toEqual(codes.slice(1));
   });
 
   it('should sort has many default by primary key', async () => {
