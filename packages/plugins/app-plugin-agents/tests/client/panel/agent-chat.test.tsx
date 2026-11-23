@@ -54,10 +54,7 @@ vi.mock('@nocobase/app-client', async (original) => ({
 vi.mock('../../../client/panel/use-conversation-usage.js', () => ({
   useConversationUsage: () => ({ data: undefined }),
 }));
-vi.mock('@nocobase/app-plugin-authorization/client', async (original) => ({
-  ...(await original<
-    typeof import('@nocobase/app-plugin-authorization/client')
-  >()),
+vi.mock('@nocobase/app-plugin-authorization/client', () => ({
   useCan: vi.fn(() => ({
     can: false,
     isPending: false,
