@@ -193,18 +193,26 @@ export class DatabasePermissionSetStore implements PermissionSetStore<DatabaseCo
   }
 
   /**
-   * Whether the subject already holds the set, which is what the assignment's unique index rejects. Any other unique
-   * violation, such as an assignment id taken by another subject or set, is not a duplicate grant and stays unexpected.
+   * Whether the duplicate grant alone caused the violation: the subject already holds the set, and the assignment id is
+   * free or belongs to that very grant, as on a retry. An id held by another grant could have raised the violation
+   * itself, whichever index the database reports, so it is not a duplicate grant and stays unexpected.
    */
   private async isAssigned(input: PermissionSetAssignment): Promise<boolean> {
-    const row = await this.connection()
+    const held = await this.connection()
       .query.selectFrom('authorizationPermissionSetAssignments')
       .select(['id'])
       .where('subjectType', '=', input.subject.type)
       .where('subjectId', '=', input.subject.id)
       .where('permissionSetKey', '=', input.permissionSet)
       .executeTakeFirst();
-    return row !== undefined;
+    if (held === undefined) return false;
+    if (held.id === input.id) return true;
+    const idHolder = await this.connection()
+      .query.selectFrom('authorizationPermissionSetAssignments')
+      .select(['id'])
+      .where('id', '=', input.id)
+      .executeTakeFirst();
+    return idHolder === undefined;
   }
 
   async revoke(id: string): Promise<void> {

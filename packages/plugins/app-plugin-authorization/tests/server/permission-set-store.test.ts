@@ -93,6 +93,18 @@ describe('authorization plugin database stores', () => {
       .catch((error: unknown) => error);
     expect(collision).toBeInstanceOf(Error);
     expect(collision).not.toBeInstanceOf(PermissionSetConflictError);
+    // With the grant also held, the database may report either index, so another grant's id keeps it unexpected.
+    const daves = {
+      ...held,
+      id: 'user:dave:duplicate-check',
+      subject: { type: 'user', id: 'dave' },
+    };
+    await store.assign(daves);
+    const both = await store
+      .assign({ ...held, id: daves.id })
+      .catch((error: unknown) => error);
+    expect(both).toBeInstanceOf(Error);
+    expect(both).not.toBeInstanceOf(PermissionSetConflictError);
     const notNull = await store
       .assign({
         id: 'broken',
@@ -102,7 +114,10 @@ describe('authorization plugin database stores', () => {
       .catch((error: unknown) => error);
     expect(notNull).toBeInstanceOf(Error);
     expect(notNull).not.toBeInstanceOf(PermissionSetConflictError);
-    expect(await store.listAssignments('duplicate-check')).toEqual([held]);
+    expect(await store.listAssignments('duplicate-check')).toEqual([
+      held,
+      daves,
+    ]);
   });
 
   it('rejects a stale role revision atomically without losing a saved grant', async () => {
