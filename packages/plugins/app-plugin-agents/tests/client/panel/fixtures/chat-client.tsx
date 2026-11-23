@@ -1290,6 +1290,8 @@ const noSources: Chat.ChatSourcesValue = {
 export const useChatSources: typeof Chat.useChatSources = () =>
   useContext(SourcesContext) ?? noSources;
 
+export { useChatPages } from '../../../../client/chat/chat-pages.js';
+
 export const useChatPageTracking: typeof Chat.useChatPageTracking = () =>
   useContext(PageContext);
 

@@ -9,8 +9,8 @@ import {
   useChatPanel,
   useConversation,
   useConversationActions,
+  useChatPages,
 } from '../chat.js';
-import { useChatPages } from '../chat/chat-pages.js';
 import type { ConversationDetail } from '../../shared/conversations.js';
 import {
   ArchiveIcon,
