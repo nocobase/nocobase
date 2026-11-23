@@ -11,7 +11,7 @@ import runWaitZhCN from './runWait.zh-CN.js';
 import type { AgentsResource } from './en-US.js';
 
 const zhCN: AgentsResource = {
-  openAgentSettings: '前往 Agent 设置',
+  openAgentSettings: panelZhCN.openAgentSettings,
   myConversations: '我的会话',
   fileUsage: '会话附件',
   modelSuggestions: {

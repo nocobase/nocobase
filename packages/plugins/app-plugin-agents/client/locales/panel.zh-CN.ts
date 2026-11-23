@@ -1,5 +1,6 @@
 import type { AgentChatLocale } from './panel.en-US.js';
 const agentChatZhCN: AgentChatLocale = {
+  openAgentSettings: '前往 Agent 设置',
   chat: {
     sharing: {
       related: '关联记录',

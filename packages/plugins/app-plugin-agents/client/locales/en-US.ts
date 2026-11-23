@@ -12,7 +12,6 @@ import runtimesEnUS from './runtimes.en-US.js';
 import runWaitEnUS from './runWait.en-US.js';
 
 const pages = {
-  openAgentSettings: 'Open agent settings',
   myConversations: 'My conversations',
   fileUsage: 'Chat attachments',
   modelSuggestions: {
@@ -595,6 +594,7 @@ const pages = {
 
 /** The pages' texts with the permission titles the server registers (`shared/locales`). */
 const enUS: typeof pages &
+  Pick<typeof panelEnUS, 'openAgentSettings'> &
   typeof runtimesEnUS &
   typeof accessEnUS &
   typeof chatEnUS &
@@ -603,6 +603,7 @@ const enUS: typeof pages &
   typeof skillsEnUS &
   typeof runWaitEnUS = {
   ...pages,
+  openAgentSettings: panelEnUS.openAgentSettings,
   ...runtimesEnUS,
   ...chatEnUS,
   // The panel's own wording; the other languages fall back to English for keys they do not translate yet.

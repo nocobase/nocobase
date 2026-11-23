@@ -20,7 +20,6 @@ import {
   timelineOrder,
   useAgentText,
   useChatAgents,
-  useSetting,
   useChatModels,
   useConversationModel,
   shownThinking,
@@ -40,7 +39,7 @@ import type { ConversationDetail } from '../../shared/conversations.js';
 import type { ModelRef, ReasoningLevel } from '../../shared/models.js';
 import { BotMessageSquareIcon, GlobeIcon, PaperclipIcon } from 'lucide-react';
 import { Link } from 'react-router';
-import { ACCESS_NAMESPACE } from '../../shared/access.js';
+import { useCan } from '@nocobase/app-plugin-authorization/client';
 import { createPortal } from 'react-dom';
 import {
   useCallback,
@@ -1107,7 +1106,10 @@ function ConversationBody({
 
 function NoAgentNotice(): ReactElement {
   const { t } = useChatTranslation();
-  const canReadSettings = useSetting('agents.agents', 'read');
+  const { can: canReadSettings } = useCan({
+    resource: { type: 'settings', id: 'agents.agents' },
+    action: 'read',
+  });
   return (
     <p className='text-xs text-destructive' data-testid='chat-no-agent'>
       {t('chat.noAgent')}
@@ -1116,7 +1118,7 @@ function NoAgentNotice(): ReactElement {
           className='ms-1 font-medium text-destructive underline underline-offset-2'
           to='/settings/agents'
         >
-          {t('openAgentSettings', { ns: ACCESS_NAMESPACE })}
+          {t('openAgentSettings')}
         </Link>
       ) : null}
     </p>

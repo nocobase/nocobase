@@ -1,4 +1,5 @@
 export interface AgentChatLocale {
+  readonly openAgentSettings: string;
   readonly chat: {
     readonly sharing: {
       readonly related: string;
@@ -398,6 +399,7 @@ export interface AgentChatLocale {
   };
 }
 const agentChatEnUS: AgentChatLocale = {
+  openAgentSettings: 'Open agent settings',
   chat: {
     sharing: {
       related: 'Related records',

@@ -39,7 +39,7 @@ import chatEnUS from '../../../client/locales/chat.en-US.js';
 import chatZhCN from '../../../client/locales/chat.zh-CN.js';
 import panelEnUS from '../../../client/locales/panel.en-US.js';
 import panelZhCN from '../../../client/locales/panel.zh-CN.js';
-import { useSetting } from '../../../client/hooks/use-access.js';
+import { useCan } from '@nocobase/app-plugin-authorization/client';
 import { resetChatDemo } from './fixtures/chat-client.js';
 
 // The plugin's chat hooks need a server; the preview's in-memory stand-in answers in their place.
@@ -54,7 +54,17 @@ vi.mock('@nocobase/app-client', async (original) => ({
 vi.mock('../../../client/panel/use-conversation-usage.js', () => ({
   useConversationUsage: () => ({ data: undefined }),
 }));
-vi.mock('../../../client/hooks/use-access.js', () => ({ useSetting: vi.fn() }));
+vi.mock('@nocobase/app-plugin-authorization/client', async (original) => ({
+  ...(await original<
+    typeof import('@nocobase/app-plugin-authorization/client')
+  >()),
+  useCan: vi.fn(() => ({
+    can: false,
+    isPending: false,
+    error: undefined,
+    retry: vi.fn(),
+  })),
+}));
 afterEach(() => resetChatDemo());
 
 const runtime = await createTestI18nRuntime({
@@ -167,11 +177,19 @@ describe('ChatPanel', () => {
     async (canRead) => {
       const previousUrl = window.location.href;
       window.history.replaceState(null, '', '?agents=none');
-      vi.mocked(useSetting).mockReturnValue(canRead);
+      vi.mocked(useCan).mockReturnValue({
+        can: canRead,
+        isPending: false,
+        error: undefined,
+        retry: vi.fn(),
+      });
       try {
         renderPanel(null);
         const notice = await screen.findByTestId('chat-no-agent');
-        expect(useSetting).toHaveBeenCalledWith('agents.agents', 'read');
+        expect(useCan).toHaveBeenCalledWith({
+          resource: { type: 'settings', id: 'agents.agents' },
+          action: 'read',
+        });
         const link = within(notice).queryByRole('link', {
           name: enUS.openAgentSettings,
         });
@@ -179,7 +197,7 @@ describe('ChatPanel', () => {
         else expect(link).not.toBeInTheDocument();
       } finally {
         window.history.replaceState(null, '', previousUrl);
-        vi.mocked(useSetting).mockReset();
+        vi.mocked(useCan).mockReset();
       }
     },
   );
