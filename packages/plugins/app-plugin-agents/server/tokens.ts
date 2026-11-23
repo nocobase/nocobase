@@ -7,6 +7,7 @@ import {
 } from '@nocobase/service-provider';
 
 import type { BusinessKey, Scope } from '../shared/access.js';
+import type { Skill, SkillScope } from '../shared/skills.js';
 import type { Agents } from './composition.js';
 
 export type { Agents } from './composition.js';
@@ -183,3 +184,23 @@ export interface AgentsAccess {
 
 export const agentsAccessToken: ServiceToken<AgentsAccess> =
   createServiceToken<AgentsAccess>('@nocobase/app-plugin-agents/access');
+
+/**
+ * What an application keeps people from doing to skills through the admin API, read from each skill (its `metadata`
+ * above all): editing (saving, restoring a version, importing over it), deleting, and attaching it to a scope's
+ * default skills. Every answer is on top of the caller's own permissions, for every caller including managers; a
+ * missing method allows. The application's own code changing skills through the service is not affected. Unbound,
+ * nothing is refused. A refusal answers 403 `SKILL_PROTECTED`.
+ */
+export interface SkillPolicy {
+  readonly canEdit?: (skill: Skill) => boolean | Promise<boolean>;
+  readonly canDelete?: (skill: Skill) => boolean | Promise<boolean>;
+  /** Only a skill newly attached to the target is asked about; one attached before stays as it is. */
+  readonly canAttach?: (
+    skill: Skill,
+    target: { readonly scope: SkillScope; readonly scopeId: string },
+  ) => boolean | Promise<boolean>;
+}
+
+export const skillPolicyToken: ServiceToken<SkillPolicy> =
+  createServiceToken<SkillPolicy>('@nocobase/app-plugin-agents/skill-policy');

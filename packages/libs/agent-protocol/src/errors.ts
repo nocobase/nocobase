@@ -52,6 +52,7 @@ export type ErrorCode =
   | 'SCOPED_KEY_FORBIDDEN'
   | 'RUN_NOT_OWNED'
   | 'COMMAND_FORBIDDEN'
+  | 'SKILL_PROTECTED'
   | 'NOT_FOUND'
   | 'AGENT_NOT_FOUND'
   | 'RUN_NOT_FOUND'
@@ -119,6 +120,8 @@ export const ERROR_API_STATUS: Readonly<Record<ErrorCode, ApiStatus>> = {
   SCOPED_KEY_FORBIDDEN: 'PERMISSION_DENIED',
   RUN_NOT_OWNED: 'PERMISSION_DENIED',
   COMMAND_FORBIDDEN: 'PERMISSION_DENIED',
+  /** The application's skill policy keeps the skill from being edited, deleted or attached there. */
+  SKILL_PROTECTED: 'PERMISSION_DENIED',
   NOT_FOUND: 'NOT_FOUND',
   AGENT_NOT_FOUND: 'NOT_FOUND',
   RUN_NOT_FOUND: 'NOT_FOUND',

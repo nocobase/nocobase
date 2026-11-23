@@ -18,6 +18,7 @@ import {
   granted,
   resetApi,
 } from './fake-client.js';
+import { SkillSettingsContext } from '../../client/lib/skill-settings-context.js';
 import { skill, skillDetail } from './fixtures.js';
 import { renderPage, renderRoute } from './render.js';
 
@@ -480,6 +481,43 @@ describe('skill pages', () => {
     expect(await screen.findByText('Pull requests')).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'skills.edit' })).toBeNull();
     expect(screen.getByText('skills.readOnly')).toBeInTheDocument();
+  });
+
+  it('hides deleting a skill the server says may not be deleted, even from a manager', async () => {
+    current = { ...current, canDelete: false };
+    renderRoute(<SkillDetailPage />, '/skills/:skillId', '/skills/s1');
+    expect(
+      await screen.findByRole('button', { name: 'skills.edit' }),
+    ).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'skills.delete' })).toBeNull();
+  });
+
+  it('lets the application hide the global mount and render its own settings with the skill', async () => {
+    const seen: string[] = [];
+    renderRoute(
+      <SkillSettingsContext.Provider
+        value={{
+          Settings: ({ skill: shown, skillId }) => (
+            <p>{`settings ${skillId} ${shown.name}`}</p>
+          ),
+          showGlobalMount: (shown) => {
+            seen.push(shown.id);
+            return false;
+          },
+        }}
+      >
+        <SkillDetailPage />
+      </SkillSettingsContext.Provider>,
+      '/skills/:skillId',
+      '/skills/s1',
+    );
+    expect(
+      await screen.findByText(`settings s1 ${current.name}`),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole('switch', { name: 'skills.globalMount' }),
+    ).toBeNull();
+    expect(seen).toContain('s1');
   });
 
   it('compares an older version with the current one and restores it', async () => {
