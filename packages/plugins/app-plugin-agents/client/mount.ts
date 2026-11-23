@@ -8,6 +8,7 @@ import { createContext, useContext, type Context } from 'react';
 
 export interface AgentsMount {
   /** Where a usage row of one agent links to, or null when that mount has no page for it. */
+  readonly agentRouteId?: string;
   readonly agentLink: (key: string) => string | null;
 }
 
@@ -18,7 +19,10 @@ export const BUSINESS_MOUNT: AgentsMount = {
 
 /** The System settings mount has no page per agent, so an agent's row opens the agents list. */
 export function settingsMount(agentsPath: string): AgentsMount {
-  return { agentLink: () => agentsPath };
+  return {
+    agentRouteId: '@nocobase/app-plugin-agents:agents',
+    agentLink: () => agentsPath,
+  };
 }
 
 export const AgentsMountContext: Context<AgentsMount> =

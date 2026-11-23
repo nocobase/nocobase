@@ -22,6 +22,8 @@ The icon button area in the top-right corner of the page is rendered by `client/
 | Navigates to another page                               | Show a short tooltip describing the destination or purpose                                                         | Help, Notifications |
 | Opens a menu or configuration panel on the current page | Open the panel on hover; close it once the pointer leaves the trigger and panel area. Do not add a tooltip as well | Account menu        |
 
+Actions linked to a page through `routeId` and their badges stay hidden while the shell checks page access. When allowed actions appear, phone layouts recalculate which actions are inline and which are in More.
+
 ### Navigation entries
 
 Use `Tooltip`, `TooltipTrigger`, and `TooltipContent`, and pass the router's `Link` through the trigger's `render`. The header already provides a `TooltipProvider`; show the tooltip below (`side='bottom'`). Declare the target page in `client/routes.ts` first ([`page.md`](page.md)).
