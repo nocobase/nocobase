@@ -8,7 +8,7 @@ import {
   SHARING_RULES,
   RESTRICTION_RULES,
 } from './data-rule-kinds.js';
-import { ruleResources } from './default-access-model.js';
+import { newRuleResources, ruleResources } from './default-access-model.js';
 import { useAuthorizationClient } from '../use-authorization-client.js';
 import { useAuthorizationRevision } from '../use-authorization-revision.js';
 import type {
@@ -100,7 +100,8 @@ export function useReadableRuleTabs(): readonly RuleTab[] | undefined {
           const catalog = await api.request<{
             data: AuthorizationOptionsResponse;
           }>({ path: `${path}/options`, signal: controller.signal });
-          if (ruleResources(catalog.data, settings.workspace).length > 0)
+          const resources = ruleResources(catalog.data, settings.workspace);
+          if (newRuleResources(resources, settings.workspace).length > 0)
             return true;
           const rules = await api.request<{ data: readonly unknown[] }>({
             path,

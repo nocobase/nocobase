@@ -3,8 +3,7 @@ const settings = {
   permissionManagement: 'Roles and permissions',
   permissionManagementDescription:
     'Set what each role can open and do, and the data it can see.',
-  rolesDescription:
-    'Set the menus each role sees and what it may do with each kind of business data.',
+  rolesDescription: 'Choose which pages and actions each role can access.',
   createRoleAction: 'Create',
   deleteRole: 'Delete role',
   deleteRoleHint:
@@ -13,7 +12,7 @@ const settings = {
   editRole: 'Edit role',
   dataRules: 'Data rules',
   dataRulesDescription:
-    'Rules that apply to every role: the records each role starts from, the records shared with more people, and the records no role may reach.',
+    'Set default record access, sharing rules, and restrictions.',
   noDataRules: 'No data rules are installed in this application.',
   listChanged: 'The list has changed. Please retry.',
   defaultAccess: {
@@ -164,8 +163,7 @@ const settings = {
     subjectKind: 'Who',
     member: 'A member',
     title: 'Permission check',
-    description:
-      'Find out why someone cannot see something, or why they can change it. This only reads; nothing is changed.',
+    description: 'Check the permissions of a member or API key.',
     user: 'User',
     searchUser: 'Search users by name or email',
     noUsers: 'No user matches.',
@@ -377,22 +375,6 @@ const settings = {
     immediate:
       'Adding and removing members takes effect at once, without saving.',
     more: 'Showing {{shown}} of {{total}}. Search to narrow the list.',
-  },
-  howItWorks: {
-    title: 'How permissions are worked out',
-    intro:
-      'A person’s permissions are built in four layers, in this order. Roles decide what they may do; the rules decide which records.',
-    role: 'Roles',
-    roleDescription:
-      'Each role a person holds gives the pages, operations and settings it allows.',
-    defaultAccess: '+ Default access',
-    defaultAccessDescription:
-      'Adds the records everyone with an operation can reach by default.',
-    sharing: '+ Sharing rules',
-    sharingDescription: 'Shares more records with chosen people or roles.',
-    restriction: '− Restriction rules',
-    restrictionDescription:
-      'Takes away records no role may touch, whatever was allowed before.',
   },
   keyPermissions: {
     missing: "You don't have: {{actions}}",

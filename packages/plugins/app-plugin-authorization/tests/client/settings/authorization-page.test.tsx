@@ -39,6 +39,7 @@ const tree = (
       path='/settings/sharing-rules'
       element={<Content tab={DATA_RULES_TAB} />}
     />
+    <Route path='/settings' element={<p>Settings home</p>} />
     <Route path='/settings/checks' element={<Content tab='checks' />} />
   </Routes>
 );
@@ -65,6 +66,12 @@ async function mount(
   const view = await renderWithApp(tree, {
     route,
     locale,
+    authorization: {
+      workspace: {
+        business: [],
+        excludedNewRuleResources: { 'database.collection': ['instances'] },
+      },
+    },
     routes: settingsRoutes,
     namespaces: appNamespaces,
     fetch: answerApi(({ path }) =>
@@ -82,9 +89,12 @@ async function mount(
           ? {
               data: {
                 sections: [],
-                collections: available.includes(path.split('/')[1] ?? '')
-                  ? [{ name: 'projects' }]
-                  : [],
+                collections: [
+                  { name: 'instances' },
+                  ...(available.includes(path.split('/')[1] ?? '')
+                    ? [{ name: 'projects' }]
+                    : []),
+                ],
               },
             }
           : {
@@ -322,7 +332,7 @@ it('leaves a stored Data rules link for the first tab the person may open while 
   ).not.toBeInTheDocument();
 });
 
-it('leaves an empty rule surface for roles when all three kinds have no resources or rules', async () => {
+it('leaves an empty rule surface for roles when all three kinds have only excluded objects and no saved rules', async () => {
   await mount(
     '/settings/default-access',
     [
@@ -345,7 +355,7 @@ it('leaves an empty rule surface for roles when all three kinds have no resource
   ).not.toBeInTheDocument();
 });
 
-it('opens the remaining kind with saved rules even when its catalog is empty', async () => {
+it('opens the remaining kind with saved rules even when every catalog object is excluded', async () => {
   await mount(
     '/settings/roles',
     [
@@ -364,4 +374,15 @@ it('opens the remaining kind with saved rules even when its catalog is empty', a
       '/settings/sharing-rules',
     ),
   );
+});
+
+it('leaves an empty Data rules link for Settings when no other tab is accessible', async () => {
+  await mount(
+    '/settings/default-access',
+    ['authorization.default-access'],
+    'en-US',
+    DEFAULT_RULES,
+    [],
+  );
+  expect(await screen.findByText('Settings home')).toBeVisible();
 });

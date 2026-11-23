@@ -24,6 +24,7 @@ import type {
   AuthorizationOptionsResponse,
   LocalizedText,
 } from '../authorization-client.js';
+import { useAuthorizationClient } from '../use-authorization-client.js';
 import { useCan } from '../use-can.js';
 import { DataRuleEditor } from './data-rule-editor.js';
 import type { DataRuleKind } from './data-rule-kinds.js';
@@ -69,6 +70,7 @@ export function DataRuleList({
     t(`settings.${kind.texts}.${name}`, values);
   const settings = useAuthorizationSettings();
   const api = useApiClient();
+  const authorization = useAuthorizationClient();
   const toaster = useToaster();
   const { params, setParams, active } = useListLocation();
   const search = params.get('q') ?? '';
@@ -397,6 +399,14 @@ export function DataRuleList({
         </div>
       )
     ) : null;
+  const afterDelete = () => {
+    rules.reload();
+    if (
+      all.length === 1 &&
+      !newRuleResources(resources, settings.workspace).length
+    )
+      authorization.invalidate();
+  };
   const submission = useSubmission();
   const remove = async () => {
     if (!removing || busy || !canDelete) return;
@@ -438,7 +448,7 @@ export function DataRuleList({
         title: k('deleted', { name: name(removing) }),
       });
       setRemoving(undefined);
-      rules.reload();
+      afterDelete();
       requestAnimationFrame(() => searchRef.current?.focus());
     } catch (next) {
       setError(next);
@@ -573,7 +583,7 @@ export function DataRuleList({
           preview={sentence}
           onClose={closeEditor}
           onSaved={(saved) => replace(saved, editing?.key)}
-          onDeleted={() => rules.reload()}
+          onDeleted={afterDelete}
           onStale={() => rules.reload()}
         />
       ) : null}

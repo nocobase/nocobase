@@ -6,15 +6,14 @@ const settings: LocaleResource<typeof settingsEnUS> = {
   permissionManagement: '角色和权限',
   permissionManagementDescription:
     '设置每个角色能打开的页面、能做的操作和能看到的数据。',
-  rolesDescription: '设置每个角色能看到的菜单，以及对每类业务数据能做什么。',
+  rolesDescription: '设置每个角色可访问的页面和可执行的操作。',
   createRoleAction: '创建',
   deleteRole: '删除角色',
   deleteRoleHint: '确定删除「{{name}}」吗？成员将失去此角色授予的权限。',
   roleKeyHint: '角色创建后，标识不可修改。',
   editRole: '编辑角色',
   dataRules: '数据规则',
-  dataRulesDescription:
-    '对所有角色生效的规则：每个角色默认能看到的记录、额外共享给更多人的记录，以及任何角色都不能触及的记录。',
+  dataRulesDescription: '设置记录的默认访问范围、共享和限制规则。',
   noDataRules: '这个应用没有安装数据规则。',
   listChanged: '列表已变化，请重试。',
   defaultAccess: {
@@ -157,8 +156,7 @@ const settings: LocaleResource<typeof settingsEnUS> = {
     subjectKind: '检查对象',
     member: '成员',
     title: '权限检查',
-    description:
-      '排查“他为什么看不到”或“他为什么能改”。这里只查看，不会修改任何配置。',
+    description: '查看成员或 API 密钥的实际权限。',
     user: '用户',
     searchUser: '按姓名或邮箱搜索用户',
     noUsers: '没有匹配的用户。',
@@ -360,19 +358,6 @@ const settings: LocaleResource<typeof settingsEnUS> = {
     keepOne: '这个角色至少保留一位成员。',
     immediate: '添加和移除成员会立即生效，无需保存。',
     more: '显示 {{total}} 个中的 {{shown}} 个，搜索以缩小范围。',
-  },
-  howItWorks: {
-    title: '权限是怎么算出来的',
-    intro:
-      '一个人的权限按下面四层依次算出：角色决定能做什么，规则决定能碰哪些记录。',
-    role: '角色',
-    roleDescription: '一个人拥有的每个角色，给出它允许的页面、操作和系统设置。',
-    defaultAccess: '＋ 默认访问',
-    defaultAccessDescription: '补充有某项操作的人默认能访问的记录。',
-    sharing: '＋ 共享规则',
-    sharingDescription: '把更多记录共享给指定的人或角色。',
-    restriction: '− 限制规则',
-    restrictionDescription: '去掉任何角色都不能触及的记录，无论之前是否允许。',
   },
   keyPermissions: {
     missing: '你没有：{{actions}}',

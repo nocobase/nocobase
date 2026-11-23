@@ -90,7 +90,7 @@ export function ruleResources(
 export function newRuleResources(
   resources: readonly CatalogResource[],
   selection: PermissionWorkspaceSelection,
-  existing: readonly DataRule[],
+  existing: readonly DataRule[] = [],
 ): readonly CatalogResource[] {
   const used = new Set(existing.map((rule) => resourceKey(rule.resource)));
   return resources.filter(

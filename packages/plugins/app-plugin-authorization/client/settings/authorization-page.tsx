@@ -8,17 +8,9 @@ import {
 } from 'react';
 import { useNavigate } from 'react-router';
 
-import { InfoIcon } from 'lucide-react';
+import { SYSTEM_SETTINGS_ROUTE_PATH } from '@nocobase/app-client/plugins';
 import { PageContainer } from '#components/page-container';
 import { PageHeader } from '#components/page-header';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '#components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '#components/ui/tabs';
 import { AUTHORIZATION_NAMESPACE } from '../../shared.js';
 import { useAuthorizationClient } from '../use-authorization-client.js';
@@ -62,19 +54,18 @@ export function AuthorizationPage({
   const navigate = useNavigate();
   // A stored link to Data rules while no kind of rule is there to read leaves for the first tab the person may open.
   const leave =
-    ready && !open.some((item) => item.key === tab) ? open[0] : undefined;
+    ready && !open.some((item) => item.key === tab)
+      ? open[0]
+        ? pageTabHref(open[0])
+        : SYSTEM_SETTINGS_ROUTE_PATH
+      : undefined;
   useEffect(() => {
-    if (leave) void navigate(pageTabHref(leave), { replace: true });
+    if (leave) void navigate(leave, { replace: true });
   }, [leave, navigate]);
   const heading = t('settings.permissionManagement');
   return (
     <PageContainer>
-      <PageHeader
-        title={heading}
-        description={description}
-        note={<HowItWorks />}
-        actions={actions}
-      />
+      <PageHeader title={heading} description={description} actions={actions} />
       <Tabs
         className='gap-6'
         value={tab}
@@ -165,59 +156,4 @@ function useOpenTabs(
     ),
     ready: keys !== undefined && rules !== undefined,
   };
-}
-
-const STEPS = ['role', 'defaultAccess', 'sharing', 'restriction'] as const;
-
-/**
- * How a person's permissions are worked out: a link beside the page description that opens the four layers in a
- * dialog, so the page itself starts with the roles.
- */
-function HowItWorks(): ReactElement {
-  const { t } = useTranslation(AUTHORIZATION_NAMESPACE);
-  const [open, setOpen] = useState(false);
-  return (
-    <>
-      <button
-        type='button'
-        data-slot='authorization-how-it-works'
-        className='inline-flex items-center gap-1 text-primary underline-offset-4 hover:underline focus-visible:underline focus-visible:outline-none'
-        onClick={() => setOpen(true)}
-      >
-        <InfoIcon aria-hidden className='size-3.5' />
-        {t('settings.howItWorks.title')}
-      </button>
-      <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className='sm:max-w-lg'>
-          <DialogHeader>
-            <DialogTitle>{t('settings.howItWorks.title')}</DialogTitle>
-            <DialogDescription>
-              {t('settings.howItWorks.intro')}
-            </DialogDescription>
-          </DialogHeader>
-          <ol className='grid gap-3 text-sm'>
-            {STEPS.map((step, index) => (
-              <li key={step} className='flex min-w-0 gap-3'>
-                <span
-                  aria-hidden
-                  className='flex size-6 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-medium text-primary'
-                >
-                  {index + 1}
-                </span>
-                <div className='grid min-w-0 gap-0.5'>
-                  <span className='font-medium'>
-                    {t(`settings.howItWorks.${step}`)}
-                  </span>
-                  <span className='text-muted-foreground'>
-                    {t(`settings.howItWorks.${step}Description`)}
-                  </span>
-                </div>
-              </li>
-            ))}
-          </ol>
-          <DialogFooter showCloseButton />
-        </DialogContent>
-      </Dialog>
-    </>
-  );
 }
