@@ -18,6 +18,8 @@ export interface SkillListFilter {
 export interface SkillListExtension {
   /** Tabs above the table, each with its count; the first, usually every skill, is selected at first. */
   readonly filters?: readonly SkillListFilter[];
+  /** A person-readable title shown above a skill's name, such as its front matter `metadata` title; none when absent. */
+  readonly title?: (skill: Skill) => string | undefined;
   /** A column after the name, such as what a skill is for. */
   readonly column?: {
     readonly header: ReactNode;
