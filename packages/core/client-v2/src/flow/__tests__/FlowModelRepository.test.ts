@@ -8,9 +8,28 @@
  */
 
 import { describe, it, expect, vi } from 'vitest';
-import { FlowModelRepository } from '../FlowModelRepository';
+import { FlowEngine, FlowModel } from '@nocobase/flow-engine';
+import type { BaseApplication } from '../../BaseApplication';
+import { FlowModelRepository, loadRouteContentForEditing } from '../FlowModelRepository';
 
 describe('FlowModelRepository', () => {
+  it('keeps the browse UID when the route parent is outside the current engine', async () => {
+    const engine = new FlowEngine();
+    engine.registerModels({ FlowModel });
+    const request = vi
+      .fn()
+      .mockResolvedValueOnce({ data: {} })
+      .mockResolvedValueOnce({ data: { data: 'browse-uid' } })
+      .mockResolvedValueOnce({
+        data: { data: { uid: 'browse-uid', use: 'FlowModel', parentId: 'route', subKey: 'page' } },
+      });
+    engine.setModelRepository(new FlowModelRepository({ apiClient: { request } } as unknown as BaseApplication));
+    const options = { use: 'FlowModel', parentId: 'route', subKey: 'page', subType: 'object' as const };
+    const browsing = engine.createModel({ ...options, uid: 'browse-uid' });
+    expect(await loadRouteContentForEditing(engine, options)).toBe(browsing);
+    expect(request.mock.calls[1][0].data).toMatchObject({ ...options, uid: browsing.uid });
+  });
+
   it('dedupes concurrent findOne requests with same key', async () => {
     const request = vi.fn(async () => {
       await new Promise((resolve) => setTimeout(resolve, 10));

@@ -7,10 +7,15 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { render, waitFor } from '@testing-library/react';
+import { observable } from '@formily/reactive';
+import { act, render, waitFor } from '@testing-library/react';
 import React from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { FlowPage } from '../FlowPage';
+import { RouteModel } from '../models/base/RouteModel';
+import { loadRouteContentForEditing } from '../FlowModelRepository';
+
+vi.mock('../FlowModelRepository', () => ({ loadRouteContentForEditing: vi.fn() }));
 
 type TestContextProperty = {
   value?: unknown;
@@ -71,7 +76,6 @@ const createPageModel = (): TestPageModel => {
 };
 
 const mocks = vi.hoisted(() => ({
-  flowSettingsEnabled: false,
   loadModel: vi.fn(),
   loadOrCreateModel: vi.fn(),
   rendererMobileStates: [] as boolean[],
@@ -82,6 +86,8 @@ const mocks = vi.hoisted(() => ({
   viewSourceId: undefined as unknown,
   contextMobileLayout: undefined as boolean | undefined,
 }));
+
+const editor = observable({ enabled: false });
 
 vi.mock('@nocobase/flow-engine', async () => {
   const actual = await vi.importActual<typeof import('@nocobase/flow-engine')>('@nocobase/flow-engine');
@@ -98,11 +104,14 @@ vi.mock('@nocobase/flow-engine', async () => {
       return ReactModule.createElement('div', { 'data-testid': 'flow-model-renderer' });
     }),
     useFlowEngine: vi.fn(() => ({
+      getModel: () => Object.create(RouteModel.prototype),
       getModelClassAsync: vi.fn(async () => TestPageModelClass),
       loadModel: mocks.loadModel,
       loadOrCreateModel: mocks.loadOrCreateModel,
       context: {
-        flowSettingsEnabled: mocks.flowSettingsEnabled,
+        get flowSettingsEnabled() {
+          return editor.enabled;
+        },
       },
       translate: vi.fn((value: string) => value),
     })),
@@ -170,7 +179,7 @@ describe('FlowPage', () => {
   });
 
   afterEach(() => {
-    mocks.flowSettingsEnabled = false;
+    editor.enabled = false;
     mocks.loadModel.mockReset();
     mocks.loadOrCreateModel.mockReset();
     mocks.rendererMobileStates = [];
@@ -180,6 +189,31 @@ describe('FlowPage', () => {
     mocks.viewInputMobileLayout = true;
     mocks.viewSourceId = undefined;
     mocks.contextMobileLayout = undefined;
+  });
+
+  it('waits for the persisted route page before rendering the editor after a browse-first visit', async () => {
+    mocks.model = createPageModel();
+    const { queryByTestId } = render(<FlowPage parentId="route" />);
+    await waitFor(() => expect(queryByTestId('flow-model-renderer')).toBeTruthy());
+    expect(mocks.loadOrCreateModel).toHaveBeenCalledWith(expect.objectContaining({ parentId: 'route' }), {
+      skipSave: true,
+    });
+    expect(loadRouteContentForEditing).not.toHaveBeenCalled();
+
+    let finish: () => void;
+    vi.mocked(loadRouteContentForEditing).mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          finish = () => resolve(mocks.model as unknown as Awaited<ReturnType<typeof loadRouteContentForEditing>>);
+        }),
+    );
+    act(() => {
+      editor.enabled = true;
+    });
+    await waitFor(() => expect(loadRouteContentForEditing).toHaveBeenCalledOnce());
+    expect(queryByTestId('flow-model-renderer')).toBeNull();
+    finish();
+    await waitFor(() => expect(queryByTestId('flow-model-renderer')).toBeTruthy());
   });
 
   it('uses showFlowSettings from page model props', async () => {
@@ -239,7 +273,7 @@ describe('FlowPage', () => {
   });
 
   it('keeps configured page model cache behavior in flow settings mode', async () => {
-    mocks.flowSettingsEnabled = true;
+    editor.enabled = true;
     mocks.model = createPageModel();
     mocks.viewFilterByTk = 1;
 

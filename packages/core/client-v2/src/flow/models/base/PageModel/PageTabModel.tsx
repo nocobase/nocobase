@@ -7,7 +7,16 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { FlowModel, FlowModelRenderer, observable, type ParamObject, tExpr } from '@nocobase/flow-engine';
+import { observer } from '@formily/reactive-react';
+import { loadRouteContentForEditing } from '../../../FlowModelRepository';
+import {
+  type CreateModelOptions,
+  FlowModel,
+  FlowModelRenderer,
+  observable,
+  type ParamObject,
+  tExpr,
+} from '@nocobase/flow-engine';
 import { Icon, type NocoBaseDesktopRoute } from '../../../../flow-compat';
 import type { RouteRepository } from '../../../../RouteRepository';
 import { useRequest } from 'ahooks';
@@ -17,10 +26,27 @@ import { SkeletonFallback } from '../../../components/SkeletonFallback';
 import { TextAreaWithContextSelector } from '../../../components/TextAreaWithContextSelector';
 import { BlockGridModel } from '../BlockGridModel';
 
-function PageTabChildrenRenderer({ ctx, options }) {
-  const { data, loading } = useRequest(
+const PageTabChildrenRenderer = observer(({ ctx, options }: PageTabChildrenProps) => {
+  const routeMode =
+    ctx.model instanceof RootPageTabModel && ctx.model.props.route?.id != null
+      ? ctx.flowSettingsEnabled
+        ? 'edit'
+        : 'browse'
+      : undefined;
+  return <PageTabChildren key={routeMode} ctx={ctx} options={options} routeMode={routeMode} />;
+});
+
+type PageTabChildrenProps = { ctx: FlowModel['context']; options: CreateModelOptions };
+
+function PageTabChildren({ ctx, options, routeMode }: PageTabChildrenProps & { routeMode?: 'edit' | 'browse' }) {
+  const { data, loading, error } = useRequest(
     async () => {
-      const model: FlowModel = await ctx.engine.loadOrCreateModel(options, { skipSave: !ctx.flowSettingsEnabled });
+      const model: FlowModel =
+        routeMode === 'edit'
+          ? await loadRouteContentForEditing(ctx.engine, options)
+          : await ctx.engine.loadOrCreateModel(options, {
+              skipSave: routeMode === 'browse' || !ctx.flowSettingsEnabled,
+            });
       model.context.addDelegate(ctx);
       return model;
     },
@@ -28,6 +54,7 @@ function PageTabChildrenRenderer({ ctx, options }) {
       refreshDeps: [ctx.model.uid],
     },
   );
+  if (error) throw error;
   const margin = ctx?.isMobileLayout ? 8 : ctx?.themeToken.marginBlock;
   if (loading || !data?.uid) {
     return <SkeletonFallback style={{ margin }} />;

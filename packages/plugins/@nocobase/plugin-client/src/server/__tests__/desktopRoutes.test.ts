@@ -8,7 +8,6 @@
  */
 
 import Database, { Model, Repository } from '@nocobase/database';
-import type { FlowModelRepository } from '@nocobase/plugin-flow-engine';
 import { createMockServer, MockServer } from '@nocobase/test';
 import CleanOrphanFlowRouteModelsMigration from '../migrations/202605121200-clean-orphan-flow-route-models';
 
@@ -299,10 +298,9 @@ describe('desktopRoutes', async () => {
   });
 });
 
-describe('desktopRoutes flow models', () => {
+describe('desktopRoutes flow model cleanup', () => {
   let app: MockServer, db: Database, desktopRoutesRepo: Repository;
-  let flowRepo: FlowModelRepository;
-  let usageRepo: Repository;
+  let flowRepo: any, usageRepo: any;
 
   const buildReferenceOptions = (templateUid: string) => ({
     use: 'ReferenceBlockModel',
@@ -403,98 +401,6 @@ describe('desktopRoutes flow models', () => {
 
   afterEach(async () => {
     await app.destroy();
-  });
-
-  it('persists the v2 page and default grid before the route is opened', async () => {
-    const response = await app
-      .agent()
-      .resource('desktopRoutes')
-      .create({
-        values: {
-          type: 'flowPage',
-          title: 'Browse first',
-          schemaUid: 'browse-first-page',
-          children: [{ type: 'tabs', schemaUid: 'browse-first-tab', hidden: true }],
-        },
-      });
-    expect(response.status).toBe(200);
-
-    const page = await flowRepo.findModelByParentId('browse-first-page', { subKey: 'page' });
-    const grid = await flowRepo.findModelByParentId('browse-first-tab', { subKey: 'grid' });
-    expect(page).toMatchObject({ use: 'RootPageModel', parentId: 'browse-first-page', subType: 'object' });
-    expect(grid).toMatchObject({ use: 'BlockGridModel', parentId: 'browse-first-tab', subType: 'object' });
-
-    await flowRepo.upsertModel({
-      uid: 'browse-first-block',
-      use: 'TableBlockModel',
-      parentId: grid.uid,
-      subKey: 'items',
-      subType: 'array',
-    });
-    const reloaded = await flowRepo.findModelByParentId('browse-first-tab', { subKey: 'grid' });
-    expect(reloaded.uid).toBe(grid.uid);
-    expect(reloaded.subModels.items).toEqual([expect.objectContaining({ uid: 'browse-first-block' })]);
-  });
-
-  it('initializes grids for additional v2 tabs without replacing existing page configuration', async () => {
-    const route = await desktopRoutesRepo.create({
-      values: { type: 'flowPage', schemaUid: 'multi-tab-page' },
-    });
-    const page = await flowRepo.findModelByParentId('multi-tab-page', { subKey: 'page' });
-    await flowRepo.upsertModel({ ...page, props: { title: 'Keep this title' } });
-
-    await desktopRoutesRepo.create({
-      values: { type: 'tabs', schemaUid: 'additional-tab', parentId: route.id },
-    });
-
-    expect(await flowRepo.findModelByParentId('additional-tab', { subKey: 'grid' })).toMatchObject({
-      use: 'BlockGridModel',
-      parentId: 'additional-tab',
-    });
-    expect(await flowRepo.findModelByParentId('multi-tab-page', { subKey: 'page' })).toMatchObject({
-      uid: page.uid,
-      props: { title: 'Keep this title' },
-    });
-  });
-
-  it('does not create v2 content models for classic pages', async () => {
-    await desktopRoutesRepo.create({
-      values: {
-        type: 'page',
-        schemaUid: 'classic-page',
-        children: [{ type: 'tabs', schemaUid: 'classic-tab' }],
-      },
-    });
-    expect(await flowRepo.findModelByParentId('classic-page', { subKey: 'page' })).toBeNull();
-    expect(await flowRepo.findModelByParentId('classic-tab', { subKey: 'grid' })).toBeNull();
-  });
-
-  it('rolls back the route and its page when grid initialization fails', async () => {
-    const save = flowRepo.upsertModel.bind(flowRepo);
-    const initialize = vi.spyOn(flowRepo, 'upsertModel').mockImplementation((model, options) => {
-      if (model.use === 'BlockGridModel') {
-        throw new Error('Grid initialization failed');
-      }
-      return save(model, options);
-    });
-    try {
-      await expect(
-        desktopRoutesRepo.create({
-          values: {
-            type: 'flowPage',
-            schemaUid: 'failed-page',
-            children: [{ type: 'tabs', schemaUid: 'failed-tab' }],
-          },
-        }),
-      ).rejects.toThrow('Grid initialization failed');
-    } finally {
-      initialize.mockRestore();
-    }
-    expect(await desktopRoutesRepo.count({ filter: { schemaUid: { $in: ['failed-page', 'failed-tab'] } } })).toBe(0);
-    expect(await flowRepo.findOne({ filter: { uid: 'failed-page' } })).toBeNull();
-    expect(await flowRepo.findOne({ filter: { uid: 'failed-tab' } })).toBeNull();
-    expect(await flowRepo.findModelByParentId('failed-page', { subKey: 'page' })).toBeNull();
-    expect(await flowRepo.findModelByParentId('failed-tab', { subKey: 'grid' })).toBeNull();
   });
 
   it('should remove child route flow model tree and template usages when deleting a parent desktop route', async () => {

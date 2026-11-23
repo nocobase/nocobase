@@ -15,6 +15,9 @@ import {
   useFlowViewContext,
 } from '@nocobase/flow-engine';
 import type { FlowEngineContext, FlowModel, FlowModelRendererProps, ModelConstructor } from '@nocobase/flow-engine';
+import { observer } from '@formily/reactive-react';
+import { loadRouteContentForEditing } from './FlowModelRepository';
+import { RouteModel } from './models/base/RouteModel';
 import { useRequest } from 'ahooks';
 import React from 'react';
 import FlowRoute from './components/FlowRoute';
@@ -85,8 +88,19 @@ const bindViewLayoutState = (model: FlowModel, ctx?: FlowPageViewContext | null)
   });
 };
 
-export const FlowPage = React.memo((props: FlowPageProps & Record<string, unknown>) => {
-  const { pageModelClass = 'ChildPageModel', parentId, onModelLoaded, defaultTabTitle, ...rest } = props;
+export const FlowPage = observer((props: FlowPageProps & Record<string, unknown>) => {
+  const engine = useFlowEngine();
+  const routeMode =
+    props.parentId && engine.getModel(props.parentId, true) instanceof RouteModel
+      ? engine.context.flowSettingsEnabled
+        ? 'edit'
+        : 'browse'
+      : undefined;
+  return <FlowPageContent key={routeMode} {...props} routeMode={routeMode} />;
+});
+
+function FlowPageContent(props: FlowPageProps & { routeMode?: 'edit' | 'browse' } & Record<string, unknown>) {
+  const { pageModelClass = 'ChildPageModel', parentId, onModelLoaded, defaultTabTitle, routeMode, ...rest } = props;
   const flowEngine = useFlowEngine();
   const ctx = useFlowViewContext<FlowPageViewContext>();
   const { loading, data, error } = useRequest(
@@ -101,7 +115,7 @@ export const FlowPage = React.memo((props: FlowPageProps & Record<string, unknow
         async: true,
         parentId,
         subKey: 'page',
-        subType: 'object',
+        subType: 'object' as const,
         use: pageModelClass,
       };
       const isRuntimeRecordScopedPage =
@@ -136,7 +150,11 @@ export const FlowPage = React.memo((props: FlowPageProps & Record<string, unknow
       }
       const data =
         (isRuntimeRecordScopedPage && (await flowEngine.loadModel({ ...options, refresh: true }))) ||
-        (await flowEngine.loadOrCreateModel(options, { skipSave: !flowEngine.context.flowSettingsEnabled }));
+        (routeMode === 'edit'
+          ? await loadRouteContentForEditing(flowEngine, options)
+          : await flowEngine.loadOrCreateModel(options, {
+              skipSave: routeMode === 'browse' || !flowEngine.context.flowSettingsEnabled,
+            }));
       if (data?.uid && onModelLoaded) {
         data.context.addDelegate(ctx);
         bindViewLayoutState(data, ctx);
@@ -156,7 +174,7 @@ export const FlowPage = React.memo((props: FlowPageProps & Record<string, unknow
     return <SkeletonFallback style={{ margin: ctx?.isMobileLayout ? 8 : ctx?.themeToken.marginBlock }} />;
   }
   return <InternalFlowPage uid={data.uid} {...rest} />;
-});
+}
 
 FlowPage.displayName = 'FlowPage';
 
