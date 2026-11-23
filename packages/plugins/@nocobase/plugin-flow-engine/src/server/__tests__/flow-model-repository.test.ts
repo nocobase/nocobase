@@ -34,6 +34,29 @@ describe('ui_schema repository', () => {
     treePathCollection = db.getCollection('flowModelTreePath');
   });
 
+  it('reuses the same grid for first editors and preserves configured children on re-entry', async () => {
+    await repository.insertModel({ uid: 'tab', use: 'RouteModel' });
+    const ensure = (uid: string) =>
+      repository.ensureRouteContent({ parentId: 'tab', subKey: 'grid', use: 'BlockGridModel', uid });
+    // SQLite uses a single writer; row-locking dialects can actually overlap the requests.
+    const uids = db.inDialect('sqlite')
+      ? [await ensure('browse-a'), await ensure('browse-b')]
+      : await Promise.all([ensure('browse-a'), ensure('browse-b')]);
+    expect(new Set(uids).size).toBe(1);
+    expect(['browse-a', 'browse-b']).toContain(uids[0]);
+    await repository.upsertModel({
+      uid: 'table',
+      parentId: uids[0],
+      subKey: 'items',
+      subType: 'array',
+      use: 'TableBlockModel',
+    });
+    expect(await ensure('later-visit')).toBe(uids[0]);
+    const grid = await repository.findModelByParentId('tab', { subKey: 'grid' });
+    expect(grid.subModels.items).toMatchObject([{ uid: 'table' }]);
+    expect(await treePathCollection.repository.count({ filter: { ancestor: 'tab', depth: 1 } })).toBe(1);
+  });
+
   it('should insert a flat model', async () => {
     const model1 = {
       uid: 'uid1',
