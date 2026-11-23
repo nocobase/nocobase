@@ -274,7 +274,7 @@ export class PluginClientServer extends Plugin {
         }
       }
     });
-    this.db.on('desktopRoutes.afterCreate', async (instance: Model, { transaction }) => {
+    this.db.on('desktopRoutes.afterCreate', async (instance: Model, { transaction, context }) => {
       const r = this.db.getRepository<FlowModelRepository>('flowModels');
       if (r) {
         await r.create({
@@ -287,6 +287,8 @@ export class PluginClientServer extends Plugin {
             },
           },
         });
+      }
+      if (r && !context?.skipRouteContentInitialization) {
         if (instance.get('type') === 'flowPage') {
           await r.upsertModel(
             {

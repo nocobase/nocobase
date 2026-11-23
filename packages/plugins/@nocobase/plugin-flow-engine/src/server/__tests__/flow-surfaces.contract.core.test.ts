@@ -975,6 +975,15 @@ describe('flowSurfaces API contract core', () => {
     expect(item.menuSchemaUid).toEqual(expect.any(String));
     expect(item.menuSchemaUid).not.toBe(item.pageSchemaUid);
 
+    const pageChildren = await db.getRepository('flowModelTreePath').find({
+      filter: { ancestor: item.pageSchemaUid, depth: 1 },
+    });
+    expect(pageChildren.map((path) => path.get('descendant'))).toEqual([item.pageUid]);
+    expect(await flowRepo.findModelByParentId(item.pageSchemaUid, { subKey: 'page' })).toMatchObject({
+      uid: item.pageUid,
+    });
+    expect(await flowRepo.findModelByParentId(item.tabSchemaUid, { subKey: 'grid' })).toBeNull();
+
     const initialized = await createPage(rootAgent, {
       menuRouteId: item.routeId,
       tabTitle: 'Overview',

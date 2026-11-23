@@ -2395,6 +2395,8 @@ export class FlowSurfacesService {
           },
         ],
       },
+      // This menu owns its page UID and leaves the default tab without a grid until createPage binds it.
+      context: { skipRouteContentInitialization: true },
       transaction: options.transaction,
     });
     await this.attachDesktopRouteScopeToRouteAndChildren(
