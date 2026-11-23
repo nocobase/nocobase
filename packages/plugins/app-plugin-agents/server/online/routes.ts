@@ -26,6 +26,7 @@ import {
   ModelCatalogQuery,
   ModelCatalogServiceSchema,
   ModelCheckSchema,
+  ModelProviderSchema,
   ModelServiceViewSchema,
   ProviderModelsSchema,
   ServiceParams,
@@ -121,6 +122,31 @@ export function createModelRoutes(
       }),
   );
 
+  // The providers "Add service" offers: the built-in ones, then those other plugins registered.
+  router.get(
+    '/modelProviders',
+    scoped,
+    allow('agents.services', 'read'),
+    describeRoute({
+      tags,
+      summary: 'List model service providers',
+      operationId: 'agentsListModelProviders',
+      ...cliRoute({
+        command: 'service providers',
+        columns: ['name', 'title', 'kinds', 'keyRequired'],
+      }),
+      description:
+        'Needs `agents.services` read. The providers a model service can use: the built-in ones first, then those other plugins registered on the server (`agents.models.providers.register`).',
+      responses: {
+        200: listResponse(ModelProviderSchema),
+        ...apiErrorResponses,
+      },
+    }),
+    (context) => {
+      const data = online.providers.list();
+      return context.json({ data, meta: { total: data.length } });
+    },
+  );
   router.get(
     '/services',
     scoped,

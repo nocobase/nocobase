@@ -5,13 +5,13 @@ description: Configure or diagnose multi-instance NocoBase 3 applications, inclu
 
 # Distributed applications
 
-This package provides guidance only. It has no runtime exports, configuration section, UI or automatically registered adapters. Do not add a `distributed` section to `config.yml` or register this package in a runtime plugin list. A synchronized Skill is not evidence that an application is distributed.
+The plugin also contributes a read-only page, **System settings › System › Cluster and distributed**, backed by `GET /api/distributed/status`. Both application templates register it. It reports the backend each service on the answering instance selected, whether it is shared, local or undeclared, whether its adapter is registered, ID generation, and checks with how to fix them. It reflects one instance only and never proves cross-instance behavior; use it to confirm an instance's effective selections, not as verification. Do not add a `distributed` section to `config.yml`. A synchronized Skill or a registered page is not evidence that an application is distributed.
 
 ## Inspect the application first
 
 Read the application's `AGENTS.md`, installed deployment Skill and the compatible Skills for the services being changed. Inspect `package.json`, the lockfile, `server/plugins.ts`, configuration factories, `config.yml`, environment mappings, file storage and deployment topology. Use the installed versions' public declarations and documentation; a source checkout is not required.
 
-Record each service's effective selector, adapter, shared destination, namespace and overrides without exposing credentials. Distinguish a dependency being installed, a Server plugin being registered, a backend being selected, and successful cross-instance verification. Inspect named backends selected by business code as well as the default. Do not assume every application needs every Redis plugin.
+When the application runs, read `GET /api/distributed/status` (signed in with the `page:distributed.status/access` grant) for each service's effective selection; it carries no credentials. Record each service's effective selector, adapter, shared destination, namespace and overrides without exposing credentials. Distinguish a dependency being installed, a Server plugin being registered, a backend being selected, and successful cross-instance verification. Inspect named backends selected by business code as well as the default. Do not assume every application needs every Redis plugin.
 
 ## Configure and verify
 
@@ -24,6 +24,6 @@ Record each service's effective selector, adapter, shared destination, namespace
 
 ## Ownership and limits
 
-The application owns its configuration, Server composition, business operations, deployment manifests and access rules. Each runtime plugin owns its public adapters and connection lifecycle. This plugin owns only this Skill and its references. Edit these sources when maintaining the plugin, never the application's generated Skill copies.
+The application owns its configuration, Server composition, business operations, deployment manifests and access rules. Each runtime plugin owns its public adapters and connection lifecycle. This plugin owns this Skill, its references and the read-only status page; other plugins extend the page through `distributedStatusToken` and `distributedStatusSlotsToken`, described in the package README. Edit these sources when maintaining the plugin, never the application's generated Skill copies.
 
 Use original service Tokens and registered public APIs. Distributed coordination does not expand user permissions, make application side effects exactly-once, migrate in-memory work to Redis, or make local files shared. Read the owning plugin's supported topology and failure semantics; do not promise Cluster or Sentinel support without version-specific evidence.

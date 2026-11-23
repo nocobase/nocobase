@@ -373,3 +373,50 @@ test('rolls back all eligible assignments when the transaction fails unexpectedl
         .findOne({ filter: { id } }),
     ).toMatchObject({ status: 'active' });
 });
+
+test('declares the page its customers and contacts are used on and the Views that page turns on', async ({
+  testApp,
+}) => {
+  const admin = await signIn(testApp, DEFAULT_ADMIN_CREDENTIALS);
+  const response = await admin.fetch('/authorization/permissionSets/options');
+  expect(response.status).toBe(200);
+  const { data } = (await response.json()) as {
+    data: {
+      sections: {
+        subsections: {
+          resources: {
+            type: string;
+            id: string;
+            usedOn?: string[];
+            actions: { name: string; defaultFor?: string[] }[];
+          }[];
+        }[];
+      }[];
+    };
+  };
+  const resources = data.sections.flatMap((section) =>
+    section.subsections.flatMap((subsection) => subsection.resources),
+  );
+  const composite = (id: string) =>
+    resources.find(
+      (resource) => resource.type === 'composite' && resource.id === id,
+    );
+  for (const id of [
+    'example.crm.customers',
+    'example.crm.contacts',
+    'example.crm.salesReps',
+  ])
+    expect([id, composite(id)?.usedOn]).toEqual([id, ['customer-contacts']]);
+  const defaults = (id: string) =>
+    composite(id)
+      ?.actions.filter((action) => action.defaultFor?.length)
+      .map((action) => [action.name, action.defaultFor]);
+  expect(defaults('example.crm.customers')).toEqual([
+    ['view', ['customer-contacts']],
+  ]);
+  expect(defaults('example.crm.contacts')).toEqual([
+    ['view', ['customer-contacts']],
+  ]);
+  // Choosing customer owners is never turned on by opening the page.
+  expect(defaults('example.crm.salesReps')).toEqual([]);
+});

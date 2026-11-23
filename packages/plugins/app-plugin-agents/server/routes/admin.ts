@@ -27,10 +27,10 @@ import {
  * - Model services and the catalog of their models: `online/routes.ts`.
  * - Model prices, each of a source (a model service for chat, a coding tool for work), and the coding tools paid by
  *   subscription: `agents.prices` read shows them with the models coding tools reported, manage replaces them.
- * - Usage (`GET /agents/usage`, `shared/reports.ts`): what runs used and cost, for whoever the usage page's grant
- *   opens it to; every run for a reader of agents, otherwise the runs the caller started or owns, on subjects they may
- *   see; and `GET /agents/usage/models`, the model calls made outside runs (embeddings, reranking, utility texts), for
- *   a reader of agents. Other reports are the application's: it reads them from `agents.reporting`.
+ * - Usage (`GET /agents/usage`, `shared/reports.ts`): what runs used and cost, for anyone signed in: every run for a
+ *   reader of usage (`agents.prices` read), otherwise the runs the caller started or owns, on subjects
+ *   they may see; and `GET /agents/usage/models`, the model calls made outside runs (embeddings, reranking, utility
+ *   texts), rows only for the same readers. Other reports are the application's: it reads them from `agents.reporting`.
  */
 import {
   apiErrorResponse,
@@ -51,13 +51,13 @@ import { z } from 'zod';
 import {
   reaches,
   type BusinessKey,
-  type Page,
   type Scope,
   type SettingsAction,
   type SettingsItem,
 } from '../../shared/access.js';
 import { SKILL_UPLOAD_MAX_BYTES, type SkillView } from '../../shared/skills.js';
 import { CONVERSATION_SUBJECT } from '../../shared/conversations.js';
+import type { ChatAudience } from '../../shared/agents.js';
 import type { Run } from '../../shared/runs.js';
 import type { VariableScope } from '../../shared/variables.js';
 import type { AgentsVocabulary } from '../../shared/vocabulary.js';
@@ -194,9 +194,9 @@ export interface AdminCaller {
   readonly userId: string;
   readonly keyScope?: KeyScope;
   can(item: SettingsItem, action: SettingsAction): Promise<boolean>;
-  /** Whether a page grant (`PAGES`) opens the page for the caller. */
-  opens(page: Page): Promise<boolean>;
   scope(key: BusinessKey): Promise<Scope>;
+  /** Who the caller is to an agent that limits who may chat with it (`mayChat`), read once per request. */
+  chatAudience(): Promise<ChatAudience>;
   /** Set when a run's token authenticated the request: the subject the run works on. */
   readonly run?: {
     readonly id: string;
@@ -226,13 +226,13 @@ async function requireCan(
 
 /**
  * Whether the caller may change a record of `agents.agents/edit` related to `relatedTo` (an agent's owner, a skill's
- * creator): managers of agents and `all` change every one, a set of users the ones related to them.
+ * creator): managers of skills and `all` change every one, a set of users the ones related to them.
  */
 async function mayEdit(
   who: AdminCaller,
   relatedTo: string | null,
 ): Promise<boolean> {
-  if (await who.can('agents.agents', 'manage')) return true;
+  if (await who.can('agents.skills', 'manage')) return true;
   return reaches(await who.scope('agents.agents/edit'), relatedTo);
 }
 
@@ -307,9 +307,9 @@ export function createAdminRoutes(
     const who = caller(context);
     const skill = await services.skills.get(context.req.param('skillId') ?? '');
     if (!(await mayEdit(who, skill.createdById))) {
-      if (!(await who.can('agents.agents', 'read'))) throw notFound('Skill');
+      if (!(await who.can('agents.skills', 'read'))) throw notFound('Skill');
       throw forbidden(
-        'Only its creator (with the related level of agents.agents edit) or a manager of agents may edit this skill.',
+        'Only its creator (with the related level of agents.agents edit) or a manager of skills may edit this skill.',
       );
     }
     await next();
@@ -335,8 +335,8 @@ export function createAdminRoutes(
     const who = caller(context);
     if (!withAgent && scope === 'global') {
       if (scopeId !== 'default') throw notFound('Scope');
-      const manage = await who.can('agents.agents', 'manage');
-      if (!manage && !(await who.can('agents.agents', 'read')))
+      const manage = await who.can('agents.skills', 'manage');
+      if (!manage && !(await who.can('agents.skills', 'read')))
         throw notFound('Scope');
       return { scope, scopeId, manage };
     }
@@ -880,7 +880,7 @@ export function createAdminRoutes(
   router.get(
     '/skills',
     scoped,
-    can('agents.agents', 'read'),
+    can('agents.skills', 'read'),
     describeRoute({
       tags,
       summary: 'List skills',
@@ -889,7 +889,7 @@ export function createAdminRoutes(
         command: 'skill list',
         columns: ['id', 'name', 'version', 'updatedAt'],
       }),
-      description: 'The skill library. Needs `agents.agents` read.',
+      description: 'The skill library. Needs `agents.skills` read.',
       responses: { 200: listResponse(SkillSchema), ...apiErrorResponses },
     }),
     async (context) => {
@@ -900,7 +900,7 @@ export function createAdminRoutes(
   router.post(
     '/skills',
     scoped,
-    can('agents.agents', 'manage'),
+    can('agents.skills', 'manage'),
     describeRoute({
       tags,
       summary: 'Create a skill',
@@ -912,7 +912,7 @@ export function createAdminRoutes(
         examples: ['skill create --content-file SKILL.md'],
       }),
       description:
-        "Named and described by its SKILL.md front matter, checked against the Agent Skills specification: a problem answers 400 with each one's `field` and `reason` in `metadata.problems` (`taken` when another skill has the name). Needs `agents.agents` manage.",
+        "Named and described by its SKILL.md front matter, checked against the Agent Skills specification: a problem answers 400 with each one's `field` and `reason` in `metadata.problems` (`taken` when another skill has the name). Needs `agents.skills` manage.",
       responses: {
         201: dataResponse(SkillDetailSchema, 'Created.'),
         ...apiErrorResponses,
@@ -933,7 +933,7 @@ export function createAdminRoutes(
   router.get(
     '/skills/:skillId',
     scoped,
-    can('agents.agents', 'read'),
+    can('agents.skills', 'read'),
     describeRoute({
       tags,
       summary: 'Get a skill',
@@ -944,7 +944,7 @@ export function createAdminRoutes(
         flags: { skillId: { name: 'skill' } },
       }),
       description:
-        'Its body, files and where it is attached, with whether the caller may edit it. Needs `agents.agents` read.',
+        'Its body, files and where it is attached, with whether the caller may edit it. Needs `agents.skills` read.',
       responses: {
         200: dataResponse(SkillViewSchema),
         404: noSkill,
@@ -977,7 +977,7 @@ export function createAdminRoutes(
         examples: ['skill update <skill> --content-file SKILL.md --revision 3'],
       }),
       description:
-        "Saves a new version with everything it holds, its SKILL.md checked as a new skill's is; a new front matter `name` renames the skill. Its creator (at the related level of `agents.agents` edit) or a manager of agents may.",
+        "Saves a new version with everything it holds, its SKILL.md checked as a new skill's is; a new front matter `name` renames the skill. Its creator (at the related level of `agents.agents` edit) or a manager of skills may.",
       responses: {
         200: dataResponse(SkillViewSchema),
         404: noSkill,
@@ -999,7 +999,7 @@ export function createAdminRoutes(
   router.delete(
     '/skills/:skillId',
     scoped,
-    can('agents.agents', 'manage'),
+    can('agents.skills', 'manage'),
     describeRoute({
       tags,
       summary: 'Delete a skill',
@@ -1010,7 +1010,7 @@ export function createAdminRoutes(
         flags: { skillId: { name: 'skill' } },
         confirm: 'Delete this skill from the library?',
       }),
-      description: 'Needs `agents.agents` manage.',
+      description: 'Needs `agents.skills` manage.',
       responses: {
         204: emptyResponse(),
         404: noSkill,
@@ -1026,7 +1026,7 @@ export function createAdminRoutes(
   router.get(
     '/skills/:skillId/versions',
     scoped,
-    can('agents.agents', 'read'),
+    can('agents.skills', 'read'),
     describeRoute({
       tags,
       summary: "List a skill's versions",
@@ -1037,7 +1037,7 @@ export function createAdminRoutes(
         flags: { skillId: { name: 'skill' } },
         columns: ['version', 'name', 'note', 'createdByName', 'createdAt'],
       }),
-      description: 'Newest first. Needs `agents.agents` read.',
+      description: 'Newest first. Needs `agents.skills` read.',
       responses: {
         200: listResponse(SkillVersionSchema),
         404: noSkill,
@@ -1055,7 +1055,7 @@ export function createAdminRoutes(
   router.get(
     '/skills/:skillId/versions/:version',
     scoped,
-    can('agents.agents', 'read'),
+    can('agents.skills', 'read'),
     describeRoute({
       tags,
       summary: 'Get a skill version',
@@ -1065,7 +1065,7 @@ export function createAdminRoutes(
         args: ['skillId', 'version'],
         flags: { skillId: { name: 'skill' } },
       }),
-      description: 'Needs `agents.agents` read.',
+      description: 'Needs `agents.skills` read.',
       responses: {
         200: dataResponse(SkillVersionDetailSchema),
         404: notFoundAs('The skill or version'),
@@ -1098,7 +1098,7 @@ export function createAdminRoutes(
         confirm: 'Make this version the current one?',
       }),
       description:
-        'The version becomes current again, as a new version. Its creator (at the related level of `agents.agents` edit) or a manager of agents may.',
+        'The version becomes current again, as a new version. Its creator (at the related level of `agents.agents` edit) or a manager of skills may.',
       responses: {
         200: dataResponse(SkillViewSchema),
         400: apiErrorResponse(
@@ -1128,11 +1128,11 @@ export function createAdminRoutes(
   const mayUpload: MiddlewareHandler<AdminEnv> = async (context, next) => {
     const who = caller(context);
     if (
-      !(await who.can('agents.agents', 'manage')) &&
+      !(await who.can('agents.skills', 'manage')) &&
       (await who.scope('agents.agents/edit')) === 'none'
     )
       throw forbidden(
-        'This needs agents.agents manage, or the edit action on skills.',
+        'This needs agents.skills manage, or the edit action on skills.',
       );
     await next();
   };
@@ -1217,7 +1217,7 @@ export function createAdminRoutes(
         ],
       }),
       description:
-        'A zip in the Agent Skills layout, uploaded first (`agentsUploadSkillFile`): a new skill named by its front matter, or with `skillId` a new version of that skill, checked as a save is. Executable files stay executable. A new skill needs `agents.agents` manage; a new version, the right to edit the skill.',
+        'A zip in the Agent Skills layout, uploaded first (`agentsUploadSkillFile`): a new skill named by its front matter, or with `skillId` a new version of that skill, checked as a save is. Executable files stay executable. A new skill needs `agents.skills` manage; a new version, the right to edit the skill.',
       responses: {
         201: dataResponse(SkillViewSchema, 'Imported.'),
         404: noSkill,
@@ -1232,13 +1232,13 @@ export function createAdminRoutes(
       if (input.skillId) {
         const skill = await services.skills.get(input.skillId);
         if (!(await mayEdit(who, skill.createdById))) {
-          if (!(await who.can('agents.agents', 'read')))
+          if (!(await who.can('agents.skills', 'read')))
             throw notFound('Skill');
           throw forbidden(
-            'Only its creator (with the related level of agents.agents edit) or a manager of agents may edit this skill.',
+            'Only its creator (with the related level of agents.agents edit) or a manager of skills may edit this skill.',
           );
         }
-      } else await requireCan(context, 'agents.agents', 'manage');
+      } else await requireCan(context, 'agents.skills', 'manage');
       const imported = await services.skills.importArchive(who.userId, input);
       return context.json({ data: await viewOf(context, imported.id) }, 201);
     },
@@ -1246,7 +1246,7 @@ export function createAdminRoutes(
   router.get(
     '/skills/:skillId/archive',
     scoped,
-    can('agents.agents', 'read'),
+    can('agents.skills', 'read'),
     describeRoute({
       tags,
       summary: 'Export a skill',
@@ -1258,7 +1258,7 @@ export function createAdminRoutes(
         examples: ['skill export <skill> --version 2 --out skills/'],
       }),
       description:
-        'A version (the current one by default) as a zip in the Agent Skills layout: `<slug>/SKILL.md` with its front matter, and its files, executable ones with the executable bit. Needs `agents.agents` read.',
+        'A version (the current one by default) as a zip in the Agent Skills layout: `<slug>/SKILL.md` with its front matter, and its files, executable ones with the executable bit. Needs `agents.skills` read.',
       responses: {
         200: {
           description: 'The zip.',
@@ -1297,7 +1297,7 @@ export function createAdminRoutes(
   router.get(
     '/skills/:skillId/versions/:version/file',
     scoped,
-    can('agents.agents', 'read'),
+    can('agents.skills', 'read'),
     describeRoute({
       tags,
       summary: 'Download a skill file',
@@ -1309,7 +1309,7 @@ export function createAdminRoutes(
         examples: ['skill file get <skill> 3 --path assets/logo.png --out .'],
       }),
       description:
-        "One file of a version, as it is stored, named by its path's last part. Needs `agents.agents` read.",
+        "One file of a version, as it is stored, named by its path's last part. Needs `agents.skills` read.",
       responses: {
         200: {
           description: 'The file.',
@@ -1369,7 +1369,7 @@ export function createAdminRoutes(
         },
       }),
       description:
-        'The skills every run gets: global default, then application scopes, then working directories; later scopes override the same slug. Global reads require agents.agents read or manage.',
+        'The skills every run gets: global default, then application scopes, then working directories; later scopes override the same slug. Global reads require agents.skills read or manage.',
       responses: {
         200: dataResponse(SkillAttachmentsSchema),
         404: noScope,
@@ -1414,7 +1414,7 @@ export function createAdminRoutes(
         ],
       }),
       description:
-        'Makes `skillIds` the skills attached to the scope. Global accepts only default and requires agents.agents manage; other scopes need the right to change that scope. An empty skillIds array clears attachments. Agent attachments are refused.',
+        'Makes `skillIds` the skills attached to the scope. Global accepts only default and requires agents.skills manage; other scopes need the right to change that scope. An empty skillIds array clears attachments. Agent attachments are refused.',
       responses: {
         200: dataResponse(SkillAttachmentsSchema),
         400: apiErrorResponse(
@@ -1755,16 +1755,15 @@ export function createAdminRoutes(
       }),
   );
 
-  // What runs used and cost, behind the usage page's grant.
-  const usagePage: MiddlewareHandler<AdminEnv> = async (context, next) => {
-    if (!(await caller(context).opens('usage')))
-      throw forbidden('This needs the usage page.');
-    await next();
-  };
+  /**
+   * Whether the usage report covers every run: for a reader of usage (`agents.prices` read) only; everyone else, a
+   * reader of agents included, sees the runs they started or own.
+   */
+  const usageOfAll = (who: AdminCaller): Promise<boolean> =>
+    who.can('agents.prices', 'read');
   router.get(
     '/usage',
     scoped,
-    usagePage,
     describeRoute({
       tags,
       summary: 'Get the usage report',
@@ -1779,7 +1778,7 @@ export function createAdminRoutes(
         examples: ['run usage --group-by agent --from 2026-09-01'],
       }),
       description:
-        'What runs used and cost, grouped by `groupBy`, over `from` to `to` (UTC days, the last 30 by default, at most 366). Needs the usage page; every run for a reader of agents, otherwise the runs the caller started or owns.',
+        'What runs used and cost, grouped by `groupBy`, over `from` to `to` (UTC days, the last 30 by default, at most 366). Every run for a reader of usage (`agents.prices` read), otherwise the runs the caller started or owns.',
       responses: {
         200: dataResponse(UsageReportSchema),
         400: apiErrorResponse(
@@ -1797,7 +1796,7 @@ export function createAdminRoutes(
         data: await services.reporting.usage(
           {
             userId: who.userId,
-            allRuns: await who.can('agents.agents', 'read'),
+            allRuns: await usageOfAll(who),
           },
           {
             ...Object.fromEntries(
@@ -1810,18 +1809,17 @@ export function createAdminRoutes(
     },
   );
 
-  // What model calls outside runs used (embeddings, reranking, utility texts), behind the usage page's grant.
+  // What model calls outside runs used (embeddings, reranking, utility texts).
   router.get(
     '/usage/models',
     scoped,
-    usagePage,
     describeRoute({
       tags,
       summary: 'Get the model usage outside runs',
       operationId: 'agentsGetModelUsage',
       ...cliRoute({ command: 'model usage' }),
       description:
-        'The model calls made outside runs (embeddings, reranking, utility texts), over `from` to `to`. Needs the usage page; rows only for a reader of agents.',
+        'The model calls made outside runs (embeddings, reranking, utility texts), over `from` to `to`. Rows only for a reader of usage (`agents.prices` read).',
       responses: {
         200: dataResponse(ModelUsageReportSchema),
         400: apiErrorResponse(
@@ -1841,7 +1839,7 @@ export function createAdminRoutes(
         data: await services.reporting.modelUsage(
           {
             userId: who.userId,
-            allRuns: await who.can('agents.agents', 'read'),
+            allRuns: await usageOfAll(who),
           },
           range,
         ),

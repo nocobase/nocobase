@@ -5,23 +5,33 @@ description: 'Integrate mail pages, permissions, and background jobs.'
 
 # Developer Reference
 
-Mail can be a standalone workspace or part of customer and project pages. The application owns page entries, provider configuration, and business associations. Mail provides account, sending, and synchronization capabilities.
+Mail brings its own pages and can be extended from customer and project pages. The application owns provider configuration, role grants and business associations. Mail provides the pages, accounts, sending and synchronization.
 
-## Integrate pages
+## Pages
 
-`@nocobase/app-plugin-mail/client` exports two complete page components:
+Registering the plugin adds four pages, with no page code in the application:
 
-| Component           | Purpose                                                            |
-| ------------------- | ------------------------------------------------------------------ |
-| `MailWorkspacePage` | Message list, reading, composition, and replies.                   |
-| `MailAccountsPage`  | Mailbox connection, account management, signatures, and templates. |
+| Page                                         | Path             | Purpose                                                                  |
+| -------------------------------------------- | ---------------- | ------------------------------------------------------------------------ |
+| Mail                                         | `/mail`          | Message list, reading, composition and replies, with the unread count.   |
+| Team mail                                    | `/mail/team`     | Members' synchronized mail, read only, with optional bulk actions.       |
+| Personal settings › Messages › Mail accounts | `/me/mail`       | Connect mailboxes and manage signatures, templates, labels and activity. |
+| System settings › Messages › Mail            | `/settings/mail` | Providers, every account's status, sync and send logs, runtime settings. |
 
-Mount pages in application routes and add navigation entries. For custom composition, use public components from `@nocobase/app-plugin-mail/client/components`.
+Each page can be replaced as a whole by its route name (`mail`, `mailTeam`, `mailAccounts`, `mailSettings`) with `routeComponentOverrides`. `MailWorkspacePage`, `MailAccountsPage` and the components in `@nocobase/app-plugin-mail/client/components` stay available for custom pages.
 
-A mail center page can reuse the workspace directly:
+## Extend the pages
 
-```tsx
-export { MailWorkspacePage as default } from '@nocobase/app-plugin-mail/client';
+A client plugin resolves `mailExtensionsToken` and registers Provider titles, a panel beside the open message, composer tools, workspace buttons, template variables and a handler called after sending:
+
+```ts
+const mail = this.app.container.resolve(mailExtensionsToken);
+mail.slots.messageAside.add({ name: 'customer', component: CustomerPanel });
+mail.templateVariables.add({
+  key: 'customer',
+  label: 'Customer',
+  resolve: ({ to }) => findCustomer(to),
+});
 ```
 
 ## Connect business data
@@ -32,13 +42,13 @@ Use `useMailClient()` for client operations and `mailServiceToken` for the serve
 
 ## Configure access
 
-| Resource          | Purpose                                                                  |
-| ----------------- | ------------------------------------------------------------------------ |
-| `mail.workspace`  | Personal mail workspace.                                                 |
-| `mail.admin`      | Administrative account overview and sending and synchronization records. |
-| `mail.management` | Cross-user mail management.                                              |
+| Permission              | Levels        | Purpose                                                                        |
+| ----------------------- | ------------- | ------------------------------------------------------------------------------ |
+| Mail (`mail.workspace`) | Use           | Personal mail and Mail accounts.                                               |
+| Team mail               | View, Process | Read members' mail; Process adds marking read, starring and archiving in bulk. |
+| Mail settings           | View, Manage  | Account status and logs; Manage adds retrying and cancelling members' tasks.   |
 
-Personal account and message operations enforce account ownership. Grant the relevant permissions to application roles and declare access rules for business pages separately.
+Grant them on the role permission page. Process and Manage do not include View. Personal account and message operations enforce account ownership. Finished sync and send logs are kept 90 days by default (`mail.logRetentionDays`).
 
 ## Providers and background jobs
 

@@ -93,7 +93,7 @@ export interface PermissionSetsApi<TTransaction = unknown> {
 }
 
 export type PermissionSetWriteOperation =
-  'create' | 'update' | 'delete' | 'assign' | 'revoke';
+  'create' | 'update' | 'updateTitle' | 'delete' | 'assign' | 'revoke';
 
 /** Owner of a protection the library declares on its own behalf. */
 export const PERMISSION_SETS_PROTECTION_OWNER: string =
@@ -103,6 +103,19 @@ export interface PermissionSetProtection {
   /** Who registers the protection, usually a plugin package name. */
   owner: string;
   keys: readonly string[];
+  /**
+   * Every set whose key starts with one of these, present or created later, by any process: for an owner that creates
+   * its sets at run time, such as one per API key. No other owner may protect an overlapping prefix, and the management
+   * surface cannot create a set in it (unless `allow` names `create`). A key another owner protects by name stays
+   * theirs, whichever is registered first, such as a root set an application configured under the prefix. A set
+   * already named so before is protected too unless listed in `except`. Every process must pass the same `except`, so
+   * an owner lists those sets once, when it reserves the prefix, and stores the list rather than reading the prefix at
+   * boot, and never gives one of those names to a set of its own. Such a protection cannot be unrestricted or require an
+   * active assignment.
+   */
+  prefixes?: readonly string[];
+  /** Keys `prefixes` leaves alone, such as roles an application had named so before the prefix was reserved. */
+  except?: readonly string[];
   /** Operations the generic management surface may still perform. */
   allow?: readonly PermissionSetWriteOperation[];
   /**
@@ -139,6 +152,8 @@ export interface PermissionSetProtectionInfo {
   assignableTo?: readonly string[];
   /** Present only when the generic management surface leaves the set out of its lists. */
   hidden?: boolean;
+  /** Keys a prefix protection leaves alone. */
+  except?: readonly string[];
 }
 
 export class PermissionSetProtectedError extends Error {
@@ -202,10 +217,8 @@ export interface PermissionSetsOptions<TTransaction = unknown> {
   /** Where Permission Sets and their assignments are read and written. */
   store: PermissionSetStore<TTransaction>;
   /**
-   * The Permission Set that confers unrestricted access. Declaring it here
-   * protects it as the library's own: it may be assigned and revoked but not
-   * edited or deleted, and it keeps an active assignment unless the
-   * application says otherwise.
+   * The Permission Set that confers unrestricted access. Its protection permits title updates, assignments and
+   * revocations. It keeps an active assignment unless the application says otherwise.
    */
   rootSet?: string | PermissionSetRootSet;
   /**
@@ -255,7 +268,7 @@ export function permissionSetsPlugin<TTransaction = unknown>(
     service.protect({
       owner: PERMISSION_SETS_PROTECTION_OWNER,
       keys: [rootSet.key],
-      allow: ['assign', 'revoke'],
+      allow: ['updateTitle', 'assign', 'revoke'],
       requireActiveAssignment: rootSet.requireActiveAssignment ?? true,
       unrestricted: true,
       ...(rootSet.assignableTo ? { assignableTo: rootSet.assignableTo } : {}),
@@ -281,6 +294,8 @@ export function permissionSetsPlugin<TTransaction = unknown>(
 /** What every service derived from one plugin instance shares. */
 interface PermissionSetSharedState {
   readonly protections: Map<string, PermissionSetProtectionInfo>;
+  /** Protections by key prefix. */
+  prefixes?: Map<string, PermissionSetProtectionInfo>;
   readonly subscribers: Set<AuthorizationGrantsChangedListener>;
   subjects?: AuthorizationSubjectRegistry;
 }
@@ -328,6 +343,42 @@ class PermissionSetService<
 
   protect(protection: PermissionSetProtection): () => void {
     const allow = [...new Set(protection.allow ?? [])];
+    const info: PermissionSetProtectionInfo = {
+      owner: protection.owner,
+      allow,
+      ...(protection.requireActiveAssignment
+        ? { requireActiveAssignment: true }
+        : {}),
+      ...(protection.unrestricted ? { unrestricted: true } : {}),
+      ...(protection.assignableTo
+        ? { assignableTo: [...protection.assignableTo] }
+        : {}),
+      ...(protection.hidden ? { hidden: true } : {}),
+      ...(protection.except?.length ? { except: [...protection.except] } : {}),
+    };
+    const prefixes = protection.prefixes ?? [];
+    if (
+      prefixes.length &&
+      (protection.unrestricted || protection.requireActiveAssignment)
+    )
+      throw new Error(
+        'A protection by key prefix cannot be unrestricted or require an active assignment.',
+      );
+    const byPrefix: Map<string, PermissionSetProtectionInfo> =
+      (this.shared.prefixes ??= new Map<string, PermissionSetProtectionInfo>());
+    // No other owner may reserve an overlapping prefix. A key protected by name, by anyone, takes precedence over a
+    // prefix (`protection`), so neither order of registration fails.
+    for (const prefix of prefixes) {
+      if (!prefix) throw new Error('A protected key prefix cannot be empty');
+      for (const [other, info] of byPrefix)
+        if (
+          info.owner !== protection.owner &&
+          (other.startsWith(prefix) || prefix.startsWith(other))
+        )
+          throw new Error(
+            `Permission Sets starting with "${prefix}" overlap "${other}", which ${info.owner} protects`,
+          );
+    }
     const registered: string[] = [];
     for (const key of protection.keys) {
       const existing = this.protections.get(key);
@@ -336,35 +387,32 @@ class PermissionSetService<
           `Permission Set "${key}" is already protected by ${existing.owner}`,
         );
       }
-      this.protections.set(key, {
-        owner: protection.owner,
-        allow,
-        ...(protection.requireActiveAssignment
-          ? { requireActiveAssignment: true }
-          : {}),
-        ...(protection.unrestricted ? { unrestricted: true } : {}),
-        ...(protection.assignableTo
-          ? { assignableTo: [...protection.assignableTo] }
-          : {}),
-        ...(protection.hidden ? { hidden: true } : {}),
-      });
+      this.protections.set(key, info);
       registered.push(key);
     }
+    for (const prefix of prefixes) byPrefix.set(prefix, info);
     return (): void => {
       for (const key of registered) {
         if (this.protections.get(key)?.owner === protection.owner) {
           this.protections.delete(key);
         }
       }
+      for (const prefix of prefixes)
+        if (byPrefix.get(prefix)?.owner === protection.owner)
+          byPrefix.delete(prefix);
     };
   }
 
   protection(key: string): PermissionSetProtectionInfo | undefined {
-    return this.protections.get(key);
+    const exact = this.protections.get(key);
+    if (exact) return exact;
+    for (const [prefix, info] of this.shared.prefixes ?? [])
+      if (key.startsWith(prefix) && !info.except?.includes(key)) return info;
+    return undefined;
   }
 
   assertWritable(key: string, operation: PermissionSetWriteOperation): void {
-    const protection = this.protections.get(key);
+    const protection = this.protection(key);
     if (!protection || protection.allow.includes(operation)) return;
     throw new PermissionSetProtectedError(key, protection.owner, operation);
   }
@@ -698,7 +746,7 @@ class PermissionSetService<
    * assigns through the api is held to the same restriction.
    */
   private assertAssignableTo(key: string, subject: PermissionSetSubject): void {
-    const assignableTo = this.protections.get(key)?.assignableTo;
+    const assignableTo = this.protection(key)?.assignableTo;
     if (!assignableTo || assignableTo.includes(subject.type)) return;
     throw new PermissionSetSubjectNotAllowedError(key, subject.type);
   }

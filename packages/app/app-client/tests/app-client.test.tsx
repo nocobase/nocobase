@@ -22,11 +22,7 @@ import {
   realtimeClientToken,
   type ClientApplicationRenderConfigFactory,
 } from '../src/application.js';
-import {
-  AppHeaderActions,
-  appHeaderActionsToken,
-  useApiClient,
-} from '../src/index.js';
+import { useApiClient } from '../src/index.js';
 import { ClientApplicationContext } from '../src/application-context.js';
 import { AppClientProviders, AppClientRoot } from '../src/app-client.js';
 import {
@@ -87,35 +83,6 @@ describe('app client', () => {
       unmount();
       await first.shutdown();
       await second.shutdown();
-    }
-  });
-
-  it('renders application-scoped header actions in registration order', async () => {
-    const app = await createTestApplication(() =>
-      defineAppClientRenderConfig({}),
-    );
-    const registry = app.services.resolve(appHeaderActionsToken);
-    const first = {
-      id: 'example.first',
-      component: () => <button>First action</button>,
-    };
-    registry.add(first);
-    registry.add({
-      id: 'example.second',
-      component: () => <button>Second action</button>,
-    });
-    try {
-      expect(() => registry.add(first)).toThrow('already registered');
-      render(
-        <ClientApplicationContext.Provider value={app}>
-          <AppHeaderActions />
-        </ClientApplicationContext.Provider>,
-      );
-      expect(
-        screen.getAllByRole('button').map((action) => action.textContent),
-      ).toEqual(['First action', 'Second action']);
-    } finally {
-      await app.shutdown();
     }
   });
 

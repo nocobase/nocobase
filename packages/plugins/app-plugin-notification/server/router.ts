@@ -1,5 +1,4 @@
 import {
-  ApiError,
   apiErrorResponse,
   apiErrorResponses,
   apiValidator,
@@ -10,21 +9,20 @@ import {
 import { Hono } from 'hono';
 
 import {
-  NOTIFICATION_ERROR_DOMAIN,
   notificationApiError,
   notificationErrorHandler,
 } from './http-errors.js';
-import type { NotificationLogDetails, NotificationLogs } from './logs.js';
+import type { NotificationLogs } from './logs.js';
 import {
   NotificationLogDetailsSchema,
   NotificationLogListQuery,
   NotificationLogParams,
 } from './routes/schemas.js';
-import type { NotificationLogCursor } from './store.js';
+import { encodePageToken, parsePageToken } from './routes/page-token.js';
 
 const tags = ['Notification'];
 const logsAccess =
-  'Requires the `page:notification.logs/access` grant; without it the route answers 403 `NOTIFICATION_LOGS_FORBIDDEN`.';
+  'Requires the `read` action of the `notification` settings item; without it the route answers 403 `AUTHORIZATION_DENIED`.';
 
 export interface NotificationRouterOptions {
   readonly logs: Pick<NotificationLogs, 'get' | 'listDetails'>;
@@ -57,7 +55,7 @@ export function createNotificationRouter({
     async (context) => {
       const { pageSize, pageToken } = context.req.valid('query');
       const before =
-        pageToken === undefined ? undefined : parseLogPageToken(pageToken);
+        pageToken === undefined ? undefined : parsePageToken(pageToken);
       const rows = await logs.listDetails(pageSize + 1, before);
       const data = rows.slice(0, pageSize);
       const last = data.at(-1);
@@ -65,7 +63,7 @@ export function createNotificationRouter({
         data,
         meta:
           rows.length > pageSize && last
-            ? { nextPageToken: encodeLogPageToken(last) }
+            ? { nextPageToken: encodePageToken(last.log) }
             : {},
       });
     },
@@ -102,43 +100,4 @@ export function createNotificationRouter({
   );
 
   return router;
-}
-
-function encodeLogPageToken(details: NotificationLogDetails): string {
-  return Buffer.from(
-    JSON.stringify({ createdAt: details.log.createdAt, id: details.log.id }),
-  ).toString('base64url');
-}
-
-function parseLogPageToken(value: string): NotificationLogCursor {
-  try {
-    const parsed: unknown = JSON.parse(
-      Buffer.from(value, 'base64url').toString('utf8'),
-    );
-    if (
-      typeof parsed === 'object' &&
-      parsed !== null &&
-      'createdAt' in parsed &&
-      'id' in parsed &&
-      typeof parsed.createdAt === 'string' &&
-      typeof parsed.id === 'string' &&
-      parsed.id.length > 0 &&
-      Number.isFinite(Date.parse(parsed.createdAt))
-    )
-      return { createdAt: parsed.createdAt, id: parsed.id };
-  } catch {
-    // Reported below as an invalid token.
-  }
-  throw new ApiError({
-    status: 'INVALID_ARGUMENT',
-    reason: 'INVALID_PAGE_TOKEN',
-    domain: NOTIFICATION_ERROR_DOMAIN,
-    message: 'pageToken is not a token this list returned.',
-    fieldViolations: [
-      {
-        field: 'pageToken',
-        description: 'pageToken is not a token this list returned.',
-      },
-    ],
-  });
 }

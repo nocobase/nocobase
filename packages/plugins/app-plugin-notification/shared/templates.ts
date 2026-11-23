@@ -37,6 +37,21 @@ export interface NotificationTemplateChannel {
   readonly enabled: boolean | null;
 }
 
+/**
+ * How a notification kind uses a channel type: `required` always sends and a person cannot turn it off, `on` sends
+ * unless the person turned it off, `off` sends only when the person turned it on. The in-app inbox is always `required`.
+ */
+export type NotificationChannelPolicy = 'required' | 'on' | 'off';
+
+/** A kind's policy for one channel type, such as `email`. */
+export interface NotificationKindChannelPolicy {
+  /** The channel type (message family): `in-app`, `email`, `web-push`. */
+  readonly type: string;
+  readonly policy: NotificationChannelPolicy;
+  /** Whether a person may change it: every policy except `required`. */
+  readonly adjustable: boolean;
+}
+
 export interface NotificationTemplateView {
   readonly id: string;
   /** Package that registered the template; a technical identifier. */
@@ -44,6 +59,8 @@ export interface NotificationTemplateView {
   /** Display name of the registering module, for example "Users". */
   readonly contributorLabel?: NotificationTemplateText;
   readonly category: NotificationTemplateText;
+  /** The category's stable key, which the inbox filters by, such as `approval`. */
+  readonly categoryKey: string;
   readonly name: NotificationTemplateText;
   readonly trigger: NotificationTemplateText;
   readonly recipients: NotificationTemplateText;
@@ -56,7 +73,15 @@ export interface NotificationTemplateView {
     readonly description: NotificationTemplateText;
   }[];
   readonly channels: readonly NotificationTemplateChannel[];
+  /**
+   * The kind's channel policies, when it is sent with `notify()`. Absent for a template its owner sends itself (an
+   * invitation to an email address), which is listed for reference only and has no personal preference.
+   */
+  readonly policies?: readonly NotificationKindChannelPolicy[];
 }
+
+/** A notification kind is the template directory entry `notify()` sends; the two names describe one view. */
+export type NotificationKindView = NotificationTemplateView;
 
 export interface NotificationTemplatePreview {
   readonly synthetic: true;

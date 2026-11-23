@@ -107,6 +107,14 @@ const frFR: LocaleResource<typeof enUS> = {
         environments: 'Déployer des environnements',
       },
     },
+    humanOnly: {
+      deployProtected:
+        'Le déploiement dans un environnement protégé doit être approuvé par une personne ; une clé peut seulement le demander.',
+      delete:
+        'Supprimer une app efface ses données ; seule une personne peut le faire.',
+      configure:
+        'Configurer une app modifie ses paramètres et ses secrets ; seule une personne peut le faire.',
+    },
     keyScopes: {
       apps: {
         title: 'Applications et déploiements',

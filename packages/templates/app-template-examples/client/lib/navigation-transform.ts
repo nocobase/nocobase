@@ -1,4 +1,3 @@
-import { groupFoundationNavigation } from '@nocobase/app-plugin-foundation/client';
 import type { AppClientRegisteredRoute } from '@nocobase/app-client/plugins';
 import { Workflow } from 'lucide-react';
 import type { RouteNavigationItem } from '../routing/route-navigation.js';
@@ -7,11 +6,11 @@ import type { RouteNavigationItem } from '../routing/route-navigation.js';
  * The settings route group: one sidebar entry opening its home page. Its direct child groups are categories on that
  * page, the entries inside a category are modules (one card each), and the pages of a module group are its tabs.
  */
-export const SETTINGS_GROUP = 'systemManagement';
+export const SETTINGS_GROUP = 'settings';
 /** The settings home page, a navigation-less child of the settings group. */
 export const SETTINGS_HOME = 'settingsHome';
-/** The category a module registered directly under the settings group is shown in. */
-export const SETTINGS_FALLBACK_CATEGORY = 'settingsSystem';
+/** The category a module registered directly under the settings group is shown in: the built-in `other` category's route. */
+export const SETTINGS_FALLBACK_CATEGORY = 'systemSettings.other';
 
 /** Examples share one shallow workflow menu; route ownership, URLs and guards stay with their plugins. */
 export function groupWorkflowNavigation(
@@ -85,74 +84,13 @@ export function groupWorkflowNavigation(
 }
 
 /**
- * Application-owned navigation structure, before the sidebar folds the settings group into one entry. `routes` is the
- * registered tree the permission-filtered `items` came from.
+ * The application's navigation as the sidebar shows it, from the routes the viewer may open. The shared router calls
+ * this one function, so a template arranges its own menu here: Examples also gathers its workflow menu.
  */
 export function organizeNavigation(
   items: RouteNavigationItem[],
-  routes: readonly AppClientRegisteredRoute[],
 ): RouteNavigationItem[] {
-  return groupFoundationNavigation(
-    withSettingsGroup(groupWorkflowNavigation(items), routes),
-    SETTINGS_GROUP,
-  );
-}
-
-/** Application-owned navigation customization, applied after permission filtering. */
-export function transformNavigation(
-  items: RouteNavigationItem[],
-  routes: readonly AppClientRegisteredRoute[],
-): RouteNavigationItem[] {
-  const organized = organizeNavigation(items, routes);
-  const hasGuide = organized.some(
-    (item) =>
-      item.route.name === SETTINGS_GROUP &&
-      item.children.some(
-        (child) =>
-          child.route.packageName === '@nocobase/app-plugin-foundation' &&
-          child.route.name === 'capabilityGuide',
-      ),
-  );
-  return collapseSettingsNavigation(organized).map((item) =>
-    hasGuide && item.route.name === SETTINGS_HOME
-      ? {
-          ...item,
-          activeRouteKeys: [
-            ...(item.activeRouteKeys ?? []),
-            ...routes
-              .filter(
-                (route) =>
-                  route.packageName === '@nocobase/app-plugin-foundation' &&
-                  ['capabilityGuide', 'capabilityGuideEntry'].includes(
-                    route.name,
-                  ),
-              )
-              .map((route) => `${route.packageName}:${route.path}:${route.id}`),
-          ],
-        }
-      : item,
-  );
-}
-
-/**
- * Permission filtering drops a group with nothing visible in it, which the settings group is until a module joins it.
- * Keep it in place so a plugin's settings entry, such as App Foundation, still has a group to join.
- */
-function withSettingsGroup(
-  items: RouteNavigationItem[],
-  routes: readonly AppClientRegisteredRoute[],
-): RouteNavigationItem[] {
-  const index = routes.findIndex((route) => settingsHomeRoute(route));
-  if (index < 0 || items.some((item) => item.route === routes[index]))
-    return items;
-  const position = items.filter(
-    (item) => routes.indexOf(item.route) < index,
-  ).length;
-  return [
-    ...items.slice(0, position),
-    { route: routes[index], children: [] },
-    ...items.slice(position),
-  ];
+  return collapseSettingsNavigation(groupWorkflowNavigation(items));
 }
 
 /** The settings home page of a settings group route, when the application registers one. */
@@ -162,6 +100,26 @@ export function settingsHomeRoute(
   if (route.name !== SETTINGS_GROUP || route.componentLoader) return undefined;
   return route.children?.find(
     (child) => child.name === SETTINGS_HOME && child.componentLoader,
+  );
+}
+
+/** The personal settings group (`withSettingsShell`) and its home page, `/me`, which opens the first personal page. */
+export const PERSONAL_SETTINGS_GROUP = 'personalSettings';
+export const PERSONAL_SETTINGS_HOME = 'personalSettingsHome';
+
+/**
+ * The home page of the system or the personal settings group: where the group's breadcrumb level links, so the first
+ * level of `System settings › page` and `Personal settings › page` leads back to `/settings` or `/me`.
+ */
+export function settingsAreaHomeRoute(
+  route: AppClientRegisteredRoute,
+): AppClientRegisteredRoute | undefined {
+  const system = settingsHomeRoute(route);
+  if (system) return system;
+  if (route.name !== PERSONAL_SETTINGS_GROUP || route.componentLoader)
+    return undefined;
+  return route.children?.find(
+    (child) => child.name === PERSONAL_SETTINGS_HOME && child.componentLoader,
   );
 }
 
@@ -212,7 +170,7 @@ export interface SettingsCategory {
 }
 
 /**
- * The settings home's cards, from the permission-filtered navigation (`organizeNavigation` output): one category per
+ * The settings home's cards, from the permission-filtered navigation: one category per
  * child group of the settings group, in route order, and the modules the viewer may open in each. A module registered
  * directly under the settings group joins the fallback category. Empty categories are left out.
  */
@@ -268,4 +226,44 @@ function firstPage(
     if (nested) return nested;
   }
   return undefined;
+}
+
+/**
+ * The navigation shown in place of the application's while a settings page is open: each category a headed section,
+ * each module one entry. A module of several views opens its first view the viewer may open and stays selected on all
+ * of them, the tabs inside the page switching between them; an entry also stays selected on the pages below its own
+ * path, such as a record opened from it.
+ */
+export function settingsNavigation(
+  catalog: readonly SettingsCategory[],
+  routes: readonly AppClientRegisteredRoute[],
+): RouteNavigationItem[] {
+  const pages = allPages(routes);
+  const key = (route: AppClientRegisteredRoute): string =>
+    `${route.packageName}:${route.path}:${route.id}`;
+  return catalog.map((category) => ({
+    route: category.route,
+    children: category.modules.map((module) => {
+      const own = [module.target, ...descendantPages(module.route)];
+      const below = pages.filter((page) =>
+        own.some((route) => page.path.startsWith(`${route.path}/`)),
+      );
+      return {
+        route: module.route.componentLoader
+          ? module.route
+          : { ...module.target, navigation: module.route.navigation },
+        children: [],
+        activeRouteKeys: [...new Set([...own, ...below].map(key))],
+      };
+    }),
+  }));
+}
+
+function allPages(
+  routes: readonly AppClientRegisteredRoute[],
+): AppClientRegisteredRoute[] {
+  return routes.flatMap((route) => [
+    ...(route.componentLoader ? [route] : []),
+    ...allPages(route.children ?? []),
+  ]);
 }

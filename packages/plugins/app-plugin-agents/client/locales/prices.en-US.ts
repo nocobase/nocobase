@@ -9,7 +9,7 @@ const pricesEnUS = {
       online: 'Online (model services)',
       noOnline:
         'No model to price yet. Turn on a model service and its models first.',
-      runner: 'Runner (coding tools)',
+      runner: 'Runtime (coding tools)',
     },
     price: {
       model: 'Model',

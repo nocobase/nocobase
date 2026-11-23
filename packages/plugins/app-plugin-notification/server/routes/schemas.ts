@@ -77,6 +77,57 @@ const providerIdempotency = z.object({
   expiresAt: z.iso.datetime().optional(),
 });
 
+export const NotificationDeliverySchema: z.ZodType = z
+  .object({
+    id: z.string(),
+    notificationId: z.string(),
+    channelName: z.string(),
+    channelType: z.string(),
+    providerType: z.string(),
+    recipientKey: z.string().optional().meta({
+      description:
+        'Who the delivery went to: the user id, address or device id, for finding it. Absent on deliveries made before it was recorded.',
+    }),
+    attemptCount: z.number().int().min(0),
+    status: deliveryStatus,
+    nextRunAt: z.iso.datetime().optional(),
+    lastError: errorSnapshot.optional(),
+    retryResolution: retryResolution.optional(),
+    providerIdempotency: providerIdempotency.optional(),
+    createdAt: z.iso.datetime(),
+    updatedAt: z.iso.datetime(),
+  })
+  .meta({
+    ref: 'NotificationDelivery',
+    description:
+      'One channel delivery. The recipient and message snapshots are never included.',
+  });
+
+export const NotificationAttemptSchema: z.ZodType = z
+  .object({
+    id: z.string(),
+    deliveryId: z.string(),
+    sequence: z.number().int().min(1),
+    providerType: z.string(),
+    status: z.enum(['submitting', 'accepted', 'failed', 'unknown']),
+    startedAt: z.iso.datetime(),
+    finishedAt: z.iso.datetime().optional(),
+    providerMessageId: z.string().optional(),
+    error: errorSnapshot.optional(),
+    retryResolution: retryResolution.optional(),
+  })
+  .meta({ ref: 'NotificationAttempt' });
+
+export const NotificationRetryAuditSchema: z.ZodType = z
+  .object({
+    id: z.string(),
+    deliveryId: z.string(),
+    resolution: retryResolution,
+    providerIdempotency: providerIdempotency.optional(),
+    createdAt: z.iso.datetime(),
+  })
+  .meta({ ref: 'NotificationRetryAudit' });
+
 export const NotificationLogDetailsSchema: z.ZodType = z
   .object({
     log: z
@@ -84,9 +135,12 @@ export const NotificationLogDetailsSchema: z.ZodType = z
         id: z.string().meta({ description: 'The notification id.' }),
         idempotencyKey: z.string().optional(),
         requestFingerprint: z.string().optional(),
+        kind: z.string().optional().meta({
+          description: 'The notification kind, for a send made by `notify()`.',
+        }),
         sourceType: z.string().meta({
           description:
-            'Who sent the notification, such as `notification-test` for a test send.',
+            'Who sent the notification, such as `notification.test` for a test send.',
         }),
         sourceReferenceId: z.string().optional(),
         status: notificationStatus.meta({
@@ -103,49 +157,9 @@ export const NotificationLogDetailsSchema: z.ZodType = z
       }),
     deliveries: z.array(
       z.object({
-        delivery: z
-          .object({
-            id: z.string(),
-            notificationId: z.string(),
-            channelName: z.string(),
-            channelType: z.string(),
-            providerType: z.string(),
-            attemptCount: z.number().int().min(0),
-            status: deliveryStatus,
-            nextRunAt: z.iso.datetime().optional(),
-            lastError: errorSnapshot.optional(),
-            retryResolution: retryResolution.optional(),
-            providerIdempotency: providerIdempotency.optional(),
-            createdAt: z.iso.datetime(),
-            updatedAt: z.iso.datetime(),
-          })
-          .meta({
-            description:
-              'One channel delivery. The recipient and message snapshots are never included.',
-          }),
-        attempts: z.array(
-          z.object({
-            id: z.string(),
-            deliveryId: z.string(),
-            sequence: z.number().int().min(1),
-            providerType: z.string(),
-            status: z.enum(['submitting', 'accepted', 'failed', 'unknown']),
-            startedAt: z.iso.datetime(),
-            finishedAt: z.iso.datetime().optional(),
-            providerMessageId: z.string().optional(),
-            error: errorSnapshot.optional(),
-            retryResolution: retryResolution.optional(),
-          }),
-        ),
-        retryAudits: z.array(
-          z.object({
-            id: z.string(),
-            deliveryId: z.string(),
-            resolution: retryResolution,
-            providerIdempotency: providerIdempotency.optional(),
-            createdAt: z.iso.datetime(),
-          }),
-        ),
+        delivery: NotificationDeliverySchema,
+        attempts: z.array(NotificationAttemptSchema),
+        retryAudits: z.array(NotificationRetryAuditSchema),
       }),
     ),
   })

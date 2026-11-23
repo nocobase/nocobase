@@ -542,7 +542,7 @@ describe('the Permission Set the library protects as the root set', () => {
       }).permissionSets.protection('administrator'),
     ).toEqual({
       owner: PERMISSION_SETS_PROTECTION_OWNER,
-      allow: ['assign', 'revoke'],
+      allow: ['updateTitle', 'assign', 'revoke'],
       requireActiveAssignment: true,
       unrestricted: true,
     });
@@ -563,7 +563,7 @@ describe('the Permission Set the library protects as the root set', () => {
 
     expect(authorization.permissionSets.protection('administrator')).toEqual({
       owner: PERMISSION_SETS_PROTECTION_OWNER,
-      allow: ['assign', 'revoke'],
+      allow: ['updateTitle', 'assign', 'revoke'],
       unrestricted: true,
     });
     await expect(
@@ -810,5 +810,110 @@ describe('batched effective permission sets', () => {
     });
     expect(await authorization.permissionSets.getEffective(alice)).toEqual([]);
     expect(getMany).not.toHaveBeenCalled();
+  });
+});
+
+describe('protecting Permission Sets by key prefix', () => {
+  it('protects every set whose key starts with the prefix, including sets created afterwards', async () => {
+    const authorization = authorizationWith({}, []);
+    const release = authorization.permissionSets.protect({
+      owner: '@nocobase/test',
+      keys: [],
+      prefixes: ['system-key-'],
+      allow: [],
+      assignableTo: ['user'],
+      hidden: true,
+    });
+    // Created after the protection, as another process would.
+    await authorization.permissionSets.create({
+      key: 'system-key-42',
+      grants: [],
+    });
+    expect(authorization.permissionSets.protection('system-key-42')).toEqual({
+      owner: '@nocobase/test',
+      allow: [],
+      assignableTo: ['user'],
+      hidden: true,
+    });
+    expect(authorization.permissionSets.protection('other')).toBeUndefined();
+    expect(() =>
+      authorization.permissionSets.assertWritable('system-key-42', 'update'),
+    ).toThrow(PermissionSetProtectedError);
+    await expect(
+      authorization.permissionSets.assign({
+        subject: { type: 'authenticated', id: '*' },
+        permissionSet: 'system-key-42',
+      }),
+    ).rejects.toBeInstanceOf(PermissionSetSubjectNotAllowedError);
+    // A key another owner protects by name stays theirs, such as a root set configured under the prefix.
+    const named = authorization.permissionSets.protect({
+      owner: '@nocobase/other',
+      keys: ['system-key-operators'],
+      unrestricted: true,
+    });
+    expect(
+      authorization.permissionSets.protection('system-key-operators'),
+    ).toMatchObject({ owner: '@nocobase/other', unrestricted: true });
+    named();
+    expect(() =>
+      authorization.permissionSets.protect({
+        owner: '@nocobase/test',
+        keys: [],
+        prefixes: ['admin-'],
+        unrestricted: true,
+      }),
+    ).toThrow(/prefix/u);
+    // Another owner may not reserve an overlapping prefix.
+    for (const prefixes of [['system-'], ['system-key-x']])
+      expect(() =>
+        authorization.permissionSets.protect({
+          owner: '@nocobase/other',
+          keys: [],
+          prefixes,
+        }),
+      ).toThrow(/overlap/u);
+    // The management surface cannot create a set in the reserved prefix.
+    expect(() =>
+      authorization.permissionSets.assertWritable('system-key-new', 'create'),
+    ).toThrow(PermissionSetProtectedError);
+    release();
+    expect(
+      authorization.permissionSets.protection('system-key-42'),
+    ).toBeUndefined();
+  });
+  it('leaves a key protected by name, registered before or after the prefix, and the keys it excepts', () => {
+    const authorization = authorizationWith({}, []);
+    // Configured before the prefix, as an application's root set is.
+    authorization.permissionSets.protect({
+      owner: '@nocobase/host',
+      keys: ['system-key-root'],
+      unrestricted: true,
+    });
+    const release = authorization.permissionSets.protect({
+      owner: '@nocobase/test',
+      keys: [],
+      prefixes: ['system-key-'],
+      except: ['system-key-sales'],
+      allow: [],
+      hidden: true,
+    });
+    // Registered after it, as another plugin's own set is.
+    authorization.permissionSets.protect({
+      owner: '@nocobase/plugin',
+      keys: ['system-key-audit'],
+    });
+    expect(
+      authorization.permissionSets.protection('system-key-root'),
+    ).toMatchObject({ owner: '@nocobase/host', unrestricted: true });
+    expect(
+      authorization.permissionSets.protection('system-key-audit')?.owner,
+    ).toBe('@nocobase/plugin');
+    expect(
+      authorization.permissionSets.protection('system-key-sales'),
+    ).toBeUndefined();
+    expect(
+      authorization.permissionSets.protection('system-key-42')?.owner,
+    ).toBe('@nocobase/test');
+    release();
   });
 });

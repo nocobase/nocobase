@@ -3,6 +3,7 @@ import type { LocaleResource } from '@nocobase/i18n';
 import type enUS from './en-US.js';
 
 const frFR: LocaleResource<typeof enUS> = {
+  fileUsage: 'Images de la session',
   navigation: {
     agentSessions: 'My Agents',
   },

@@ -1,9 +1,3 @@
-export { AppHeaderActions } from './app-header-actions.js';
-export {
-  appHeaderActionsToken,
-  type AppHeaderAction,
-  type AppHeaderActionRegistry,
-} from './app-header-action-registry.js';
 export {
   getAvatarInitials,
   type AvatarInitialsOptions,
@@ -45,7 +39,12 @@ export {
   type RemoteRepository,
   type RemoteRepositoryQuery,
 } from '@nocobase/api-client';
-export { useApiClient, useClientApplication, useService } from './hooks.js';
+export {
+  useApiClient,
+  useClientApplication,
+  useHeaderActions,
+  useService,
+} from './hooks.js';
 export {
   PageBreadcrumbProvider,
   usePageBreadcrumb,
@@ -109,18 +108,54 @@ export {
   type AppClientLocaleContribution,
   type CreateAppI18nRuntimeOptions,
 } from './i18n.js';
+export { APP_CLIENT_NAMESPACE } from './namespace.js';
+export { default as appClientLocales } from './locales/index.js';
+export {
+  AppAsideOutlet,
+  AppLayoutProviders,
+  defineLayoutExtensions,
+  useLayoutExtensions,
+  type AppClientLayoutExtensionDefinition,
+  type AppClientLayoutExtensions,
+  type AppClientRegisteredLayoutExtension,
+} from './layout-extensions.js';
 export {
   applyClientRouteComponentOverrides,
+  applyHeaderActionOverrides,
+  badgeCount,
   defineAppRoutes,
+  defineHeaderActionOverrides,
+  defineHeaderActions,
   defineClientPlugin,
   defineClientPlugins,
   defineClientReactProviders,
   defineClientRouteComponentOverrides,
   defineClientSourceExtension,
+  definePersonalSettingsRoutes,
+  defineSettingsCategories,
+  defineSystemSettingsRoutes,
+  isPersonalSettingsRoute,
+  isSystemSettingsRoute,
+  PERSONAL_SETTINGS_CATEGORIES,
+  PERSONAL_SETTINGS_ROUTE_PATH,
   resolveAppClientContributions,
+  resolveHeaderActions,
+  SYSTEM_SETTINGS_CATEGORIES,
+  SYSTEM_SETTINGS_ROUTE_PATH,
 } from './plugins.js';
 export type {
   AppClientAppRoutesContribution,
+  AppClientBadge,
+  AppClientBadgeHook,
+  AppClientBadgeTone,
+  AppClientHeaderActionDefinition,
+  AppClientHeaderActionOverride,
+  AppClientHeaderActions,
+  AppClientRegisteredHeaderAction,
+  AppClientPersonalSettingsRoutesContribution,
+  AppClientSystemSettingsRoutesContribution,
+  AppClientRouteSurface,
+  AppClientSettingsRouteSurface,
   AppClientContribution,
   AppClientContributions,
   AppClientContributionSource,
@@ -155,6 +190,10 @@ export type {
   ClientServiceProviderContext,
   ResolveAppClientContributionsOptions,
   ResolvedAppClientContributions,
+  AppClientSettingsCategoryOverride,
+  AppClientSettingsCategoryOverrides,
+  PersonalSettingsCategory,
+  SystemSettingsCategory,
 } from './plugins.js';
 
 export { NavigationGuardProvider } from './navigation-guard-provider.js';
@@ -226,3 +265,8 @@ export {
   type RouteOverlayHostConfig,
   type RouteOverlayHostValue,
 } from './route-containers.js';
+export {
+  PersonalSettingsBackground,
+  PersonalSettingsDialogRoutes,
+} from './personal-settings-router.js';
+export { usePersonalSettingsNavigation } from './personal-settings-navigation.js';

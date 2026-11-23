@@ -148,8 +148,10 @@ describe('user locale integration', () => {
     identity.user = null;
     rerender();
     await screen.findByText('content');
+    // The consumer publishes the guest preference in an effect after its content appears.
+    await waitFor(() => expect(preference?.identity).toBeNull());
     await act(async () => {
-      await preference?.set('zh-CN');
+      await preference!.set('zh-CN');
     });
     identity.user = 'bob';
     identity.session = 'bob-2';

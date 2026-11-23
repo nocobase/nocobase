@@ -36,6 +36,8 @@ export interface DefaultAccessEditorProps {
   readonly resourceError?: string | undefined;
   readonly labels: {
     readonly key: string;
+    /** Under a new rule's key: how it is filled in. */
+    readonly keyHint?: string;
     readonly resource: string;
     readonly chooseResource: string;
     readonly action: string;
@@ -79,29 +81,6 @@ export function DefaultAccessEditor({
     <div className='flex min-w-0 flex-col gap-6'>
       <div className='grid gap-4 sm:grid-cols-2'>
         <div className='flex min-w-0 flex-col gap-2'>
-          <Label htmlFor={`${id}-key`}>{labels.key} *</Label>
-          <Input
-            id={`${id}-key`}
-            name='ruleKey'
-            data-field-path='key'
-            value={ruleKey}
-            required
-            disabled={existing || readOnly}
-            aria-invalid={Boolean(keyError)}
-            aria-describedby={keyError ? `${id}-key-error` : undefined}
-            onChange={(event) => onKeyChange(event.target.value)}
-          />
-          {keyError && (
-            <p
-              data-feedback-field-error
-              id={`${id}-key-error`}
-              className='text-sm text-destructive'
-            >
-              {keyError}
-            </p>
-          )}
-        </div>
-        <div className='flex min-w-0 flex-col gap-2'>
           <Label htmlFor={`${id}-resource`}>{labels.resource} *</Label>
           <Select
             value={resource}
@@ -139,6 +118,40 @@ export function DefaultAccessEditor({
               className='text-sm text-destructive'
             >
               {resourceError}
+            </p>
+          )}
+        </div>
+        <div className='flex min-w-0 flex-col gap-2'>
+          <Label htmlFor={`${id}-key`}>{labels.key}</Label>
+          <Input
+            id={`${id}-key`}
+            name='ruleKey'
+            data-field-path='key'
+            value={ruleKey}
+            required
+            disabled={existing || readOnly}
+            aria-invalid={Boolean(keyError)}
+            aria-describedby={
+              keyError
+                ? `${id}-key-error`
+                : labels.keyHint && !existing
+                  ? `${id}-key-hint`
+                  : undefined
+            }
+            onChange={(event) => onKeyChange(event.target.value)}
+          />
+          {!keyError && labels.keyHint && !existing && (
+            <p id={`${id}-key-hint`} className='text-xs text-muted-foreground'>
+              {labels.keyHint}
+            </p>
+          )}
+          {keyError && (
+            <p
+              data-feedback-field-error
+              id={`${id}-key-error`}
+              className='text-sm text-destructive'
+            >
+              {keyError}
             </p>
           )}
         </div>

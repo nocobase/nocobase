@@ -12,7 +12,12 @@ import { toSyncRunView } from '../views.js';
 import { requireActiveAccount, requireOwnedAccount } from './access.js';
 import { type MailServiceDependencies } from './dependencies.js';
 import { mailSyncDateMonthsAgo } from '../../shared/mail-sync-date.js';
-import { mailFailedPrecondition, mailNotFound } from './errors.js';
+import {
+  mailAccountInactive,
+  mailAccountNotFound,
+  mailFailedPrecondition,
+  mailNotFound,
+} from './errors.js';
 
 export class MailSyncService {
   private readonly scheduler: MailSyncScheduler;
@@ -43,6 +48,14 @@ export class MailSyncService {
       context,
       input.accountId,
     );
+    return this.schedule(context, account, input);
+  }
+
+  private async schedule(
+    context: MailOperationContext,
+    account: MailAccount,
+    input: MailStartSyncInput,
+  ): Promise<MailSyncRunView> {
     const { run } = await this.scheduler.request(
       account,
       context.actorId,
@@ -123,26 +136,9 @@ export class MailSyncService {
     syncRunId: string,
   ): Promise<MailSyncRunView> {
     const run = await this.requireOwnedSyncRun(context, syncRunId);
-    if (!['failed', 'cancelled'].includes(run.status)) {
-      throw mailFailedPrecondition(
-        'MAIL_SYNC_RUN_STATE_INVALID',
-        'Only failed or cancelled sync runs can be retried.',
-      );
-    }
-    const receivedAfter =
-      run.mode === 'initial'
-        ? (validDateOrUndefined(run.policy.receivedAfter) ??
-          validDateOrUndefined(
-            (await this.dependencies.store.getAccount(run.accountId))
-              ?.initialSyncReceivedAfter,
-          ) ??
-          new Date(`${mailSyncDateMonthsAgo(1)}T00:00:00Z`).toISOString())
-        : undefined;
-    return this.startSync(context, {
-      accountId: run.accountId,
-      mode: run.mode,
-      receivedAfter,
-    });
+    return this.retry(context, run, () =>
+      requireActiveAccount(this.dependencies.store, context, run.accountId),
+    );
   }
 
   public async cancelSyncRun(
@@ -150,13 +146,72 @@ export class MailSyncService {
     syncRunId: string,
   ): Promise<MailSyncRunView> {
     const run = await this.requireOwnedSyncRun(context, syncRunId);
+    return this.cancel(run, context.actorId);
+  }
+
+  /**
+   * Retry any member's failed or cancelled run, for a caller with `settings:mail.admin/manage`. The new run is
+   * requested by the caller and synchronizes the member's account as their own retry would.
+   */
+  public async retryManagedSyncRun(
+    context: MailOperationContext,
+    syncRunId: string,
+  ): Promise<MailSyncRunView> {
+    const run = await this.requireSyncRun(syncRunId);
+    return this.retry(context, run, async () => {
+      const account = await this.dependencies.store.getAccount(run.accountId);
+      if (!account) throw mailAccountNotFound();
+      if (account.status !== 'active') throw mailAccountInactive();
+      return account;
+    });
+  }
+
+  /** Cancel any member's active run, for a caller with `settings:mail.admin/manage`. */
+  public async cancelManagedSyncRun(
+    context: MailOperationContext,
+    syncRunId: string,
+  ): Promise<MailSyncRunView> {
+    const run = await this.requireSyncRun(syncRunId);
+    const account = await this.dependencies.store.getAccount(run.accountId);
+    return this.cancel(run, account?.userId ?? context.actorId);
+  }
+
+  private async retry(
+    context: MailOperationContext,
+    run: MailSyncRun,
+    activeAccount: () => Promise<MailAccount>,
+  ): Promise<MailSyncRunView> {
+    if (!['failed', 'cancelled'].includes(run.status)) {
+      throw mailFailedPrecondition(
+        'MAIL_SYNC_RUN_STATE_INVALID',
+        'Only failed or cancelled sync runs can be retried.',
+      );
+    }
+    const account = await activeAccount();
+    const receivedAfter =
+      run.mode === 'initial'
+        ? (validDateOrUndefined(run.policy.receivedAfter) ??
+          validDateOrUndefined(account.initialSyncReceivedAfter) ??
+          new Date(`${mailSyncDateMonthsAgo(1)}T00:00:00Z`).toISOString())
+        : undefined;
+    return this.schedule(context, account, {
+      accountId: run.accountId,
+      mode: run.mode,
+      receivedAfter,
+    });
+  }
+
+  private async cancel(
+    run: MailSyncRun,
+    ownerId: string,
+  ): Promise<MailSyncRunView> {
     if (!['pending', 'running'].includes(run.status)) {
       throw mailFailedPrecondition(
         'MAIL_SYNC_RUN_STATE_INVALID',
         'Only active sync runs can be cancelled.',
       );
     }
-    const cancelled = await this.dependencies.store.cancelSyncRun(syncRunId);
+    const cancelled = await this.dependencies.store.cancelSyncRun(run.id);
     if (!cancelled)
       throw mailFailedPrecondition(
         'MAIL_SYNC_RUN_STATE_INVALID',
@@ -164,16 +219,13 @@ export class MailSyncService {
       );
     notifyMailMessageChange(
       this.dependencies.messageChangeNotifier,
-      context.actorId,
+      ownerId,
       this.dependencies.logger,
     );
     return toSyncRunView(cancelled);
   }
 
-  private async requireOwnedSyncRun(
-    context: MailOperationContext,
-    syncRunId: string,
-  ): Promise<MailSyncRun> {
+  private async requireSyncRun(syncRunId: string): Promise<MailSyncRun> {
     const run = await this.dependencies.store.getSyncRun(syncRunId);
     if (!run)
       throw mailNotFound(
@@ -181,6 +233,14 @@ export class MailSyncService {
         'Mail sync run was not found.',
         'syncRunId',
       );
+    return run;
+  }
+
+  private async requireOwnedSyncRun(
+    context: MailOperationContext,
+    syncRunId: string,
+  ): Promise<MailSyncRun> {
+    const run = await this.requireSyncRun(syncRunId);
     await requireOwnedAccount(this.dependencies.store, context, run.accountId);
     return run;
   }

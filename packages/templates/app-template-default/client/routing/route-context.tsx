@@ -12,6 +12,7 @@ import {
 import { EMPTY_ARRAY } from '#lib/constants';
 
 import { matchRouteTree } from './route-navigation.js';
+import { withSettingsShell } from './settings-shell.js';
 
 /* eslint-disable react-refresh/only-export-components -- provider and hooks are intentionally colocated */
 
@@ -98,9 +99,11 @@ export function useRouteAccess(): RouteAccess {
  */
 export function RouteTreeProvider({
   children,
-  routes,
+  routes: registered,
   access,
 }: RouteTreeProviderProps): ReactElement {
+  // Settings pages always sit under the Settings group, whether given registered or already gathered.
+  const routes = useMemo(() => withSettingsShell(registered), [registered]);
   const location = useLocation();
   const pathname = location.pathname.replace(/\/+$/u, '') || '/';
   const search = location.search;

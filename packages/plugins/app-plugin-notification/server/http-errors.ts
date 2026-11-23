@@ -102,3 +102,12 @@ function englishMessage(
       : JSON.stringify(value);
   });
 }
+
+/** The text of `key` in the request's language when the i18n middleware resolved one, else in English. */
+export function notificationText(
+  context: Context,
+  key: string,
+  params?: Readonly<Record<string, unknown>>,
+): string {
+  return localize(context, key, params)?.message ?? englishMessage(key, params);
+}

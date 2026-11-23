@@ -6,7 +6,6 @@ import {
   guessModelKind,
   MODEL_KINDS,
   MODEL_PROVIDERS,
-  providerOf,
   type ModelKind,
   type ModelOption,
   type ModelProviderOption,
@@ -14,12 +13,25 @@ import {
   type ProviderModel,
 } from '../../shared/models.js';
 
-/** The services grouped by provider type in the order `MODEL_PROVIDERS` lists them, each provider's as added. */
+/** A provider by its type among `providers` (the built-in ones by default); null when none has it. */
+export function providerIn(
+  providers: readonly ModelProviderOption[],
+  name: string,
+): ModelProviderOption | null {
+  return providers.find((provider) => provider.name === name) ?? null;
+}
+
+/** The services grouped by provider type in the order `providers` lists them, each provider's as added. */
 export function sortServices(
   services: readonly ModelServiceView[],
+  providers: readonly ModelProviderOption[] = MODEL_PROVIDERS,
 ): ModelServiceView[] {
-  const rank = (service: ModelServiceView) =>
-    MODEL_PROVIDERS.findIndex((provider) => provider.name === service.provider);
+  const rank = (service: ModelServiceView) => {
+    const index = providers.findIndex(
+      (provider) => provider.name === service.provider,
+    );
+    return index === -1 ? providers.length : index;
+  };
   return services
     .map((service, index) => ({ service, index }))
     .sort((a, b) => rank(a.service) - rank(b.service) || a.index - b.index)
@@ -169,8 +181,11 @@ export function baseUrlOf(
 }
 
 /** The host a service calls, as the list shows it: its own base URL's, else its provider's default's; null for none. */
-export function hostOf(service: ModelServiceView): string | null {
-  const provider = providerOf(service.provider);
+export function hostOf(
+  service: ModelServiceView,
+  providers: readonly ModelProviderOption[] = MODEL_PROVIDERS,
+): string | null {
+  const provider = providerIn(providers, service.provider);
   const url = service.baseUrl ?? provider?.defaultBaseUrl ?? null;
   if (!url) return null;
   try {
@@ -183,9 +198,15 @@ export function hostOf(service: ModelServiceView): string | null {
 /** A service's state in the list: off, missing what it needs to answer, or on. */
 export type ServiceStatus = 'off' | 'noKey' | 'noModels' | 'on';
 
-export function serviceStatus(service: ModelServiceView): ServiceStatus {
+export function serviceStatus(
+  service: ModelServiceView,
+  providers: readonly ModelProviderOption[] = MODEL_PROVIDERS,
+): ServiceStatus {
   if (!service.enabled) return 'off';
-  if (!service.apiKeySet && providerOf(service.provider)?.keyRequired)
+  if (
+    !service.apiKeySet &&
+    providerIn(providers, service.provider)?.keyRequired
+  )
     return 'noKey';
   if (service.models.length === 0) return 'noModels';
   return 'on';

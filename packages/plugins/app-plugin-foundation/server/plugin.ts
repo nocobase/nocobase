@@ -13,6 +13,7 @@ const foundationPlugin: AppServerPlugin = defineServerPlugin({
   packageName: '@nocobase/app-plugin-foundation',
   serviceProviders,
   routes,
+  // Only the migration that drops the snapshot table an earlier version kept remains in use.
   database: { migrations: './database/migrations' },
 });
 

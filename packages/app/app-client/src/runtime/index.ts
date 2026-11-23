@@ -38,6 +38,17 @@ import {
   type ClientServiceProviderConstructor,
 } from '../plugins.js';
 import {
+  resolveLayoutExtensions,
+  type AppClientRegisteredLayoutExtension,
+} from '../layout-extensions.js';
+import {
+  applyHeaderActionOverrides,
+  resolveHeaderActions,
+  type AppClientHeaderActionOverride,
+  type AppClientHeaderActions,
+  type AppClientRegisteredHeaderAction,
+} from '../header-actions.js';
+import {
   readAppClientPublicConfig,
   readAppClientRuntimeConfig,
 } from './browser-config.js';
@@ -61,11 +72,13 @@ export interface AppRuntimeDefinition {
   readonly routes?: AppClientRoutes;
   readonly locales?: AppClientLocales;
   readonly plugins: AppClientPlugins;
-  /** Removed from the Client route tree by its package-qualified ID, including descendants. */
+  /** Entries removed from the Client route tree by their package-qualified IDs, including descendants. */
   readonly excludedRouteIds?: readonly string[];
-  /** Omitted from the authenticated toolbar by its registered ID. */
-  readonly excludedHeaderActionIds?: readonly string[];
   readonly routeComponentOverrides?: readonly AppClientRouteComponentOverrideDefinition[];
+  /** The application's own header actions, beside its plugins' (`AppClientHeaderActionDefinition`). */
+  readonly headerActions?: AppClientHeaderActions;
+  /** Hides or replaces header actions by name, the application's own or its plugins' (`AppClientHeaderActionOverride`). */
+  readonly headerActionOverrides?: readonly AppClientHeaderActionOverride[];
   readonly sourceExtensions?: readonly AppClientSourceExtension[];
   readonly validate?: AppRuntimeValidator;
 }
@@ -91,7 +104,10 @@ export interface AppRuntimeContext {
   readonly serviceProviders: readonly AppClientRegisteredServiceProvider[];
   readonly reactProviders: readonly AppClientRegisteredReactProvider[];
   readonly routes: readonly AppClientRegisteredRoute[];
-  readonly excludedHeaderActionIds?: readonly string[];
+  /** The header's actions in order, overrides applied. Older hand-composed runtimes may omit this. */
+  readonly headerActions?: readonly AppClientRegisteredHeaderAction[];
+  /** The plugins' layout providers and asides, in registration order. Older hand-composed runtimes may omit this. */
+  readonly layoutExtensions?: readonly AppClientRegisteredLayoutExtension[];
   readonly validate?: AppRuntimeValidator;
 }
 
@@ -109,9 +125,10 @@ export function defineAppRuntime(
     excludedRouteIds:
       definition.excludedRouteIds &&
       Object.freeze([...definition.excludedRouteIds]),
-    excludedHeaderActionIds:
-      definition.excludedHeaderActionIds &&
-      Object.freeze([...definition.excludedHeaderActionIds]),
+    headerActions: freezeOptionalList(definition.headerActions),
+    headerActionOverrides: definition.headerActionOverrides
+      ? Object.freeze([...definition.headerActionOverrides])
+      : undefined,
     routeComponentOverrides: definition.routeComponentOverrides
       ? Object.freeze([...definition.routeComponentOverrides])
       : undefined,
@@ -150,6 +167,23 @@ export async function resolveAppRuntime(
     definition.sourceExtensions ?? [],
   );
 
+  const routes = applyClientRouteComponentOverrides(
+    contributions.routes,
+    [
+      ...definition.plugins.routeComponentOverrides,
+      ...(definition.routeComponentOverrides ?? []),
+      ...extensionOverrides,
+    ].filter(
+      ({ routeId }) => !contributions.excludedRouteIds?.has(routeId.trim()),
+    ),
+  );
+  const pageIds = new Set<string>();
+  const visitRoute = (route: AppClientRegisteredRoute): void => {
+    if (route.componentLoader) pageIds.add(route.id);
+    route.children?.forEach(visitRoute);
+  };
+  routes.forEach(visitRoute);
+
   const runtime: AppRuntimeContext = {
     registeredPlugins: Object.freeze(
       definition.plugins.plugins.map(({ packageName }) =>
@@ -177,17 +211,32 @@ export async function resolveAppRuntime(
       ),
     ]),
     reactProviders: contributions.reactProviders,
-    routes: applyClientRouteComponentOverrides(
-      contributions.routes,
-      [
-        ...definition.plugins.routeComponentOverrides,
-        ...(definition.routeComponentOverrides ?? []),
-        ...extensionOverrides,
-      ].filter(
-        ({ routeId }) => !contributions.excludedRouteIds?.has(routeId.trim()),
-      ),
+    routes,
+    headerActions: Object.freeze(
+      applyHeaderActionOverrides(
+        resolveHeaderActions([
+          {
+            packageName: definition.packageName,
+            source: 'application',
+            headerActions:
+              resolveDeclaration(definition.headerActions, undefined) ?? [],
+          },
+          ...definition.plugins.plugins.map((plugin) => ({
+            packageName: plugin.packageName,
+            source: 'plugin' as const,
+            headerActions: plugin.headerActions,
+          })),
+        ]),
+        definition.headerActionOverrides ?? [],
+      ).filter(({ routeId }) => routeId === undefined || pageIds.has(routeId)),
     ),
-    excludedHeaderActionIds: definition.excludedHeaderActionIds,
+    layoutExtensions: resolveLayoutExtensions(
+      definition.plugins.plugins.map((plugin) => ({
+        packageName: plugin.packageName,
+        source: 'plugin' as const,
+        layoutExtensions: plugin.layoutExtensions,
+      })),
+    ),
     validate: definition.validate,
   };
   if (definition.defaultConfigs) {

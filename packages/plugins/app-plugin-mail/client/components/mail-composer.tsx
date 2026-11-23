@@ -23,7 +23,12 @@ import {
   localDateTimeMinimum,
   replaceComposerSignature,
 } from '../lib/mail-composer-state.js';
-import { renderMailTemplate } from '../lib/mail-template.js';
+import { htmlToPlainText, renderMailTemplate } from '../lib/mail-template.js';
+import {
+  resolveMailTemplateVariables,
+  useMailExtensions,
+} from '../extensions.js';
+import { MailSlotBoundary } from './mail-slot-boundary.js';
 import { MailRichTextEditor } from './mail-rich-text-editor.js';
 import { MailHtmlBody } from './mail-html-body.js';
 import { Button } from './ui/button.js';
@@ -37,6 +42,8 @@ export function MailComposer(props: MailComposerComponentProps): ReactElement {
   const Surface = props.inline ? 'section' : DialogPopup;
   const Title = props.inline ? 'h2' : DialogTitle;
   const { templateVariables } = props;
+  const extensions = useMailExtensions();
+  const toolbarItems = extensions.slots.composeToolbar.list();
   const mobile = useSyncExternalStore(
     subscribeToMobileLayout,
     isMobileLayout,
@@ -479,20 +486,26 @@ export function MailComposer(props: MailComposerComponentProps): ReactElement {
                       ) {
                         return;
                       }
-                      const rendered = renderMailTemplate(
-                        template,
-                        templateVariables,
-                      );
-                      setComposer((current) =>
-                        current
-                          ? {
-                              ...current,
-                              subject: rendered.subject,
-                              text: rendered.text,
-                              html: rendered.html,
-                            }
-                          : current,
-                      );
+                      // Registered variables first; a `templateVariables` prop of the same key wins.
+                      void resolveMailTemplateVariables(extensions, {
+                        accountId: composerAccountId,
+                        to: composer?.to ?? '',
+                      }).then((registered) => {
+                        const rendered = renderMailTemplate(template, {
+                          ...registered,
+                          ...templateVariables,
+                        });
+                        setComposer((current) =>
+                          current
+                            ? {
+                                ...current,
+                                subject: rendered.subject,
+                                text: rendered.text,
+                                html: rendered.html,
+                              }
+                            : current,
+                        );
+                      });
                     },
                   },
                 }}
@@ -529,6 +542,56 @@ export function MailComposer(props: MailComposerComponentProps): ReactElement {
                 })}
                 value={composer.html}
               />
+              {toolbarItems.length > 0 ? (
+                <div
+                  data-slot='mail-compose-toolbar'
+                  className='flex flex-wrap items-center gap-2'
+                >
+                  {toolbarItems.map((item) => (
+                    <MailSlotBoundary key={item.name}>
+                      <item.component
+                        accountId={composerAccountId}
+                        state={{
+                          mode: composer.mode,
+                          to: composer.to,
+                          cc: composer.cc,
+                          bcc: composer.bcc,
+                          subject: composer.subject,
+                          text: composer.text,
+                          html: composer.html,
+                        }}
+                        disabled={sending || uploading}
+                        insertText={(text) =>
+                          setComposer((current) =>
+                            current
+                              ? {
+                                  ...current,
+                                  text: current.text
+                                    ? `${current.text}\n${text}`
+                                    : text,
+                                  html: `${current.html}<p>${escapeComposerText(text)}</p>`,
+                                }
+                              : current,
+                          )
+                        }
+                        insertHtml={(html) =>
+                          setComposer((current) =>
+                            current
+                              ? {
+                                  ...current,
+                                  text: [current.text, htmlToPlainText(html)]
+                                    .filter(Boolean)
+                                    .join('\n'),
+                                  html: `${current.html}${html}`,
+                                }
+                              : current,
+                          )
+                        }
+                      />
+                    </MailSlotBoundary>
+                  ))}
+                </div>
+              ) : null}
               {composer.forwardQuote ? (
                 <section className='rounded-lg border p-3'>
                   <div className='flex items-center justify-between gap-2'>
@@ -913,5 +976,15 @@ function ComposerFrame({
     <Dialog {...props}>
       <DialogPortal>{children}</DialogPortal>
     </Dialog>
+  );
+}
+
+function escapeComposerText(text: string): string {
+  return text.replace(
+    /[&<>"']/gu,
+    (character) =>
+      ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[
+        character
+      ] ?? character,
   );
 }

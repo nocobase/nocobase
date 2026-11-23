@@ -1,10 +1,39 @@
 # Client Routes, Navigation, and Overrides
 
-Use Client Routes for navigable browser pages. A plugin contributes its pages through its single `routes` field with `defineAppRoutes()`, the only Client route API, and keeps each page behind a lazy `componentLoader()`.
+Use Client Routes for navigable browser pages. A plugin contributes its pages through its single `routes` field — business pages with `defineAppRoutes()`, system settings pages with `defineSystemSettingsRoutes()`, personal settings pages with `definePersonalSettingsRoutes()` — and keeps each page behind a lazy `componentLoader()`.
 
-## Plugins contribute no settings pages
+## Settings pages
 
-There is no settings or dev surface: no `/settings` or `/dev` prefix, no settings layout, and no settings entry in the application header. A plugin does not contribute administration or settings pages. It exposes its administration through server APIs and, where an administrator grants it, settings items ([system settings](system-settings.md)); whether an application offers a page for it, and where, is the application's decision, made with ordinary App routes in its own `client/routes.ts`. Do not ship development-only tool pages as routes either.
+A plugin's administration page is declared with `defineSystemSettingsRoutes()` and mounted under `/settings`, in the application's System settings ([System settings navigation](../../nocobase-app-development/references/settings-navigation.md)). The definition is the same as an App route's; its `path` is relative to `/settings`, a top-level page names a built-in category with `parent` through `SYSTEM_SETTINGS_CATEGORIES` (`account`, `automation`, `messages`, `ai`, `data`, `system` or `other`), a top-level group declares `kind: 'module'`, and without its own `authz` it admits only unrestricted administrators. A plugin with business configuration may add its own category with a root group declaring `category: true`; a page naming an unknown category is shown under `other` ([categories](../../nocobase-app-development/references/settings-navigation.md#categories)). Pass several contributions as an array:
+
+```ts
+import {
+  defineAppRoutes,
+  defineSystemSettingsRoutes,
+  SYSTEM_SETTINGS_CATEGORIES,
+} from '@nocobase/app-client/plugins';
+
+const routes = [
+  defineAppRoutes([/* business pages */]),
+  defineSystemSettingsRoutes([
+    {
+      parent: SYSTEM_SETTINGS_CATEGORIES.system,
+      name: 'storageSettings',
+      path: '/storage', // /settings/storage
+      authz: { resource: { type: 'settings', id: 'storage' }, action: 'read' },
+      navigation: {
+        title: 'settings.title',
+        description: 'settings.description',
+      },
+      componentLoader: () => import('./pages/storage-settings.js'),
+    },
+  ]),
+];
+```
+
+The page still sits on a server capability: the settings item and API that read and change the configuration ([system settings](system-settings.md)) check the same grant as the page's `authz`. There is no dev surface; do not ship development-only tool pages as routes. `@nocobase/app-plugin-routes-example` shows one settings page beside its App route.
+
+A page where each signed-in person configures their own account, such as their own API keys or mail accounts, is a personal settings page declared with `definePersonalSettingsRoutes()` and mounted under `/me`, opened from the account menu ([personal settings](../../nocobase-app-development/references/settings-navigation.md#personal-settings)). Its `path` is relative to `/me`, a top-level page names a personal category with `parent` through `PERSONAL_SETTINGS_CATEGORIES` (`account` for profile, security and preferences, `integrations` for API keys and connected accounts), and without its own `authz` it admits every signed-in person and stays out of page permissions; its API reads and writes only the current person's data, taken from the session. A plugin with both an application-wide and a personal side declares one page on each surface.
 
 Paths are internal application paths. Do not include `/main` or another deployment base path.
 
@@ -92,6 +121,32 @@ export default function OrdersPage(): ReactElement {
 }
 ```
 
+### Badges on navigation entries
+
+`navigation.badge` puts a count beside a menu entry, such as unread messages. It is a React hook returning `{ count, tone? }` (`tone` is `default` or `attention`) or `undefined`; the menu calls it while it renders the entry, and `undefined` or `0` shows nothing. The hook runs inside the signed-in session, and the shell remounts when the person changes, so it starts over for each person. The hook owns its data: read it with a query and refresh it from a realtime topic or a write's invalidation; never start a request from the hook's body on each render. The templates show it on every page entry, including a page that has a sub-menu of its own, inside sub-menus, sections and the collapsed sidebar's popover too; a layout may pass its own count for an entry through `NavigationMenu`'s `badges`, which replaces the declared one.
+
+```ts
+import { defineAppRoutes } from '@nocobase/app-client/plugins';
+
+import { useUnreadCount } from './hooks/use-unread-count.js';
+
+export default defineAppRoutes([
+  {
+    name: 'inbox',
+    path: '/inbox',
+    authz: 'skip',
+    navigation: {
+      title: 'navigation.inbox',
+      badge: () => {
+        const unread = useUnreadCount(); // a query kept fresh by a realtime topic
+        return unread ? { count: unread, tone: 'attention' } : undefined;
+      },
+    },
+    componentLoader: () => import('./pages/inbox.js'),
+  },
+]);
+```
+
 Relative links resolve from the current route. Test direct navigation, refresh, browser back and forward, parent layout preservation, menu selection, denied access, and each intended Outlet.
 
 A root App route may declare `parent` to be appended to an existing navigation group: a group name in the same package, or `package-name:group-name` for one another package declares. Only root entries may declare it; its path is relative to the target group. Avoid accidental name and normalized-path collisions; parameter names do not make structurally identical dynamic paths distinct.
@@ -132,20 +187,21 @@ The target ID must resolve to a page rather than a group, and a route may have o
 
 Document the package-qualified route ID (`<plugin-package>:<route-name>`) so an application can replace its component with `routeComponentOverrides` or omit it through `excludedRouteIds` in `defineAppRuntime()`. A parent exclusion also removes its descendants and their overrides. Applications retain the Server plugin and API separately through their Server composition.
 
-To contribute a shortcut, add a package-qualified header action from a Client ServiceProvider's `boot()`. Use `routeId` for the target so excluding the page also hides the shortcut:
+Register a shortcut in the Client plugin's `headerActions` declaration. Give it a stable unique name and set `routeId` to its target's package-qualified ID so excluding the page also hides the shortcut.
 
 ```ts
-import { appHeaderActionsToken } from '@nocobase/app-client';
+import { defineHeaderActions } from '@nocobase/app-client/plugins';
 
-// Inside a Client ServiceProvider's boot().
-this.app.services.resolve(appHeaderActionsToken).add({
-  id: '@example/app-plugin-orders/header',
-  component: OrdersShortcut,
-  routeId: '@example/app-plugin-orders:orders',
-});
+const headerActions = defineHeaderActions([
+  {
+    name: 'orders.shortcut',
+    component: OrdersShortcut,
+    routeId: '@example/app-plugin-orders:orders',
+  },
+]);
 ```
 
-The application can omit only the shortcut with `excludedHeaderActionIds: ['@example/app-plugin-orders/header']` in its `defineAppRuntime()` declaration. Custom shells render the standard actions through `<AppHeaderActions />` in the authenticated header. Exclusion lists also accept IDs of plugins absent from a particular application.
+Pass `headerActions` to `defineClientPlugin()`. The application can hide just the shortcut with `headerActionOverrides: [{ name: 'orders.shortcut', hidden: true }]` or use an override to replace its component. A route exclusion can name a plugin absent from the application.
 
 ## Test declarations and behavior
 

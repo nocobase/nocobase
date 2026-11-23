@@ -33,6 +33,9 @@ export function createRealtimeInAppStore(
     countUnread(userId) {
       return store.countUnread(userId);
     },
+    countUnreadByCategory(userId) {
+      return store.countUnreadByCategory(userId);
+    },
     async update(input) {
       const item = await store.update(input);
       if (item) {

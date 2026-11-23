@@ -2,7 +2,6 @@ import databaseExplorer from '../../pages/settings/database-explorer/en-US.js';
 import settings from './settings-en-US.js';
 import type { LocaleResource } from '@nocobase/i18n';
 import deviceApprovalEnUS from '#extensions/nocobase-device-approval/locales/en-US';
-import inboxEnUS from '#extensions/nocobase-inbox/locales/en-US';
 
 /**
  * The copy of what the template ships: the shell, the sign-in pages and shared components. A template upgrade
@@ -81,8 +80,6 @@ const systemEnUS = {
 
   // The UI Library block of the `/device` page; the keys below may reword it.
   ...deviceApprovalEnUS,
-  // The UI Library block of the `/inbox` page; the keys below may reword it.
-  ...inboxEnUS,
   // Shared form wording overrides the defaults included by composed blocks.
   formFeedback: {
     field: 'This value was rejected. Check it and try again.',
@@ -93,13 +90,6 @@ const systemEnUS = {
     denied:
       'You cannot submit this form with your current access. Your input has been kept.',
   },
-  // The UI Library component of the header's inbox button.
-  'inboxButton.title': 'Inbox',
-  'inboxButton.pending': 'Inbox, {{count}} waiting',
-  'inboxButton.unread': 'Inbox, {{count}} unread',
-  'inboxButton.pendingHint':
-    '{{count}} waiting for you; it goes down once they are handled.',
-  'inboxButton.unreadHint': '{{count}} unread; it goes down as you read them.',
   'auth.welcome': 'Welcome back',
   'auth.loginDescription': 'Sign in with your username or email and password.',
   'auth.registerTitle': 'Create an account',
@@ -227,6 +217,7 @@ const systemEnUS = {
     description: 'Go to a page of this application.',
     breadcrumb: 'Breadcrumb',
     breadcrumbMore: 'Show the levels in between',
+    moreActions: 'More actions',
     back: 'Back',
     backTo: 'Back to {{label}}',
   },

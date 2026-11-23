@@ -52,15 +52,15 @@ The one way to pick an agent: a trigger with the agent's avatar (availability do
 
 ### agent-chat
 
-A simple agent conversation panel with shared page/panel headers, history, composer and launchers. It has no association requirements. For related-work slots and conversation details, add agent-chat-details.
+The agents plugin's own conversation panel, generated from @nocobase/app-plugin-agents (client/panel) as a copy to edit: install it only to replace the whole panel, and register agents({ headerAction: false, panel: false }) so the plugin's own panel and header button stay out. Panel and page headers, history, composer and launchers; no association requirements. For related-work slots and conversation details, add agent-chat-details.
 
 - Kind: block
 - Install: `yes n | pnpm exec shadcn add @nocobase/agent-chat`
 - Installs to: `client/extensions/nocobase-agent-chat/`
-- Plugin dependencies: `@nocobase/app-plugin-agents`, `@nocobase/app-plugin-file`
+- Plugin dependencies: `@nocobase/app-plugin-agents`, `@nocobase/app-plugin-authorization`, `@nocobase/app-plugin-file`
 - Also installs: `@nocobase/markdown-view`, `@nocobase/agent-run-history`, `@nocobase/agent-composer`, `@nocobase/agent-picker`, `@nocobase/attachment-list`
 - Example: `@nocobase/agent-chat-demo` (`pnpm exec shadcn view @nocobase/agent-chat-demo`)
-- After installing: Requires the agents plugin (and the file plugin on the server for files sent in chat): wrap the routes in ChatProvider from @nocobase/app-plugin-agents/client/chat (pass memoryScope, the signed-in person's id, so a new conversation starts with the agent they used last; pass conversationPath when ChatConversationPage has a route such as /chat/:conversationId), optionally with ChatExtensionsContext for cards among the messages. Render ChatPanel as a sibling of <main> inside a `relative flex` row, ChatHeaderButton in the header and ChatFloatingButton anywhere; add the plugin's chatLinkRoutes(base) for links that open the panel; spread locales/ into client/locales/.
+- After installing: Generated from the agents plugin's panel (ui-library/scripts/sync-agent-chat.mjs); the plugin already renders this panel, so install the copy only to replace it entirely, with agents({ headerAction: false, panel: false }): the plugin keeps providing ChatProvider (from @nocobase/app-plugin-agents/client/chat) around the signed-in layout, so do not add another; optionally add ChatExtensionsContext for cards among the messages. Render ChatPanel as a sibling of <main> inside a `relative flex` row, ChatHeaderButton in the header and ChatFloatingButton anywhere; add the plugin's chatLinkRoutes(base) for links that open the panel; spread locales/ into client/locales/.
 
 ### agent-chat-details
 
@@ -367,7 +367,7 @@ Preserves form input, maps safe field errors and focuses the first editable erro
 
 ### inbox
 
-The /inbox page over @nocobase/app-plugin-notification-in-app: a master–detail list with All and To do views, a kind filter, cards clickable anywhere with a chevron, read, unread and delete, one detail header for every kind whose title links to the message's page, with the decision's buttons right under it, j / k navigation and realtime refresh. Use it for an application's inbox. Wired: reads the plugin's /client/inbox hooks; an InboxSource adds decisions that wait on the viewer, and a registry adds renderers per sender and categories such as plans from another API.
+The /inbox page of @nocobase/app-plugin-notification-in-app, generated from the plugin's own source, for an application that copies the page out to own it entirely: a rail with All, Unread, Pending and the notification categories, a list grouped as Pending, Today and Earlier, a detail pane with read, unread, delete and open, decisions through registered renderers and pending sources, j / k navigation and realtime refresh. Normally register the plugin instead: it provides this page at /inbox and the header inbox button, and is customized through its options, its extension points and routeComponentOverrides.
 
 - Kind: block
 - Install: `yes n | pnpm exec shadcn add @nocobase/inbox`
@@ -375,11 +375,11 @@ The /inbox page over @nocobase/app-plugin-notification-in-app: a master–detail
 - Plugin dependencies: `@nocobase/app-plugin-notification-in-app`
 - Also installs: `@nocobase/page-header`
 - Example: `@nocobase/inbox-demo` (`pnpm exec shadcn view @nocobase/inbox-demo`)
-- After installing: Requires @nocobase/app-plugin-notification-in-app registered on the server and client. Render <InboxPage /> from inbox-page.tsx on an /inbox route with auth: 'required', and spread locales/ into client/locales/. It lists the plugin's items as notifications; to add decisions that wait on the viewer, pass a source implementing InboxSource (source.ts) over your own API, and a registry with renderers and categories.
+- After installing: Generated from packages/plugins/app-plugin-notification-in-app/client/inbox-page; do not install it to get an inbox, register @nocobase/app-plugin-notification-in-app on the server and client instead. Install it only to own the page: replace the plugin's page with a route component override for routeId @nocobase/app-plugin-notification-in-app:inbox (routeComponentOverrides in defineAppRuntime()) whose page renders <InboxPage /> from inbox-page.tsx, and edit the copy. It keeps the plugin's translations (namespace @nocobase/app-plugin-notification-in-app) and its extension lists: renderers and pending sources registered with inboxRenderersToken and inboxSourcesToken still reach the copy.
 
 ### inbox-button
 
-A header button linking to the inbox, with an amber badge for what waits on the viewer or the unread count, its tooltip, and the browser tab title prefix. Use it in an application header. Presentational: pass inboxBadge(waiting, unread), with the unread count from useInboxUnreadCount() of @nocobase/app-plugin-notification-in-app/client/inbox.
+A header button linking to the inbox, with an amber badge for what waits on the viewer or the unread count, its tooltip, and the browser tab title prefix. Use it in an application header of your own; the in-app notification plugin already registers a header inbox button, so use this only when you replace it (headerActionOverrides on inbox). Presentational: pass inboxBadge(waiting, unread), with the unread count from useInboxUnreadCount() of @nocobase/app-plugin-notification-in-app/client/inbox.
 
 - Kind: component
 - Install: `yes n | pnpm exec shadcn add @nocobase/inbox-button`

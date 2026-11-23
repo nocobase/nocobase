@@ -28,15 +28,17 @@ import { useEffect, useMemo } from 'react';
 
 import {
   fetchInbox,
+  fetchUnreadByCategory,
   fetchUnreadCount,
   markInboxRead,
   mutateInboxItem,
   type InboxItem,
+  type InboxCategoryCount,
   type InboxListResponse,
   type InboxMutationAction,
 } from '../api.js';
 import { IN_APP_NOTIFICATION_REALTIME_TOPIC } from '../../shared/realtime.js';
-import { INBOX_PAGE_SIZE, inboxKeys } from './keys.js';
+import { INBOX_PAGE_SIZE, inboxKeys, type InboxListFilters } from './keys.js';
 
 /** The pages `useInboxItems` has loaded. */
 export type InboxPages = InfiniteData<InboxListResponse, string | undefined>;
@@ -51,19 +53,28 @@ export interface InboxActions {
   readonly pending: boolean;
 }
 
-/** The viewer's messages, newest first, one page of `pageSize` at a time; `fetchNextPage()` loads the next. */
+/**
+ * The viewer's messages, newest first, one page of `pageSize` at a time; `fetchNextPage()` loads the next. `filters`
+ * narrows them on the server to one category or the unread ones.
+ */
 export function useInboxItems(
   pageSize: number = INBOX_PAGE_SIZE,
+  filters: InboxListFilters = {},
 ): UseInfiniteQueryResult<InboxPages> {
   const client = useApiClient();
   const ready = useInboxReadiness();
   return useInfiniteQuery({
     enabled: ready,
-    queryKey: inboxKeys.page(pageSize),
+    queryKey: inboxKeys.page(pageSize, filters),
     queryFn: ({ pageParam, signal }) =>
       fetchInbox(
         client,
-        { pageSize, ...(pageParam ? { pageToken: pageParam } : {}) },
+        {
+          pageSize,
+          ...(filters.category ? { category: filters.category } : {}),
+          ...(filters.unreadOnly ? { unreadOnly: true } : {}),
+          ...(pageParam ? { pageToken: pageParam } : {}),
+        },
         signal,
       ),
     initialPageParam: undefined as string | undefined,
@@ -80,6 +91,22 @@ export function useInboxUnreadCount(): UseQueryResult<number> {
     enabled: ready,
     queryKey: inboxKeys.unread,
     queryFn: ({ signal }) => fetchUnreadCount(client, signal),
+    retry: false,
+    staleTime: 30_000,
+  });
+}
+
+/** How many of the viewer's messages are unread in each category. */
+export function useInboxUnreadByCategory(): UseQueryResult<
+  readonly InboxCategoryCount[]
+> {
+  const client = useApiClient();
+  const ready = useInboxReadiness();
+  return useQuery({
+    enabled: ready,
+    queryKey: inboxKeys.unreadByCategory,
+    queryFn: async ({ signal }) =>
+      (await fetchUnreadByCategory(client, signal)).categories,
     retry: false,
     staleTime: 30_000,
   });

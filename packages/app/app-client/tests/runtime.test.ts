@@ -23,7 +23,6 @@ import {
 } from '../src/plugins.js';
 import { defineAppRuntime, resolveAppRuntime } from '../src/runtime/index.js';
 import { ClientApplication } from '../src/application.js';
-import { appHeaderActionsToken } from '../src/app-header-action-registry.js';
 
 function Wrapper({ children }: PropsWithChildren): ReactElement {
   return createElement(Fragment, undefined, children);
@@ -93,28 +92,17 @@ describe('app runtime', () => {
   it('omits individually excluded toolbar actions and shortcuts whose pages are excluded', async () => {
     const component = () => null;
     const componentLoader = async () => ({ default: component });
-    class HeaderProvider extends ServiceProvider<ClientApplication> {
-      public readonly name = '@example/tools/header';
-
-      public override boot(): Promise<void> {
-        const header = this.app.services.resolve(appHeaderActionsToken);
-        header.add({ id: '@example/tools/hidden', component });
-        header.add({
-          id: '@example/tools/removed-link',
-          component,
-          routeId: '@example/tools:removed',
-        });
-        header.add({
-          id: '@example/tools/link',
-          component,
-          routeId: '@example/tools:kept',
-        });
-        return Promise.resolve();
-      }
-    }
     const plugin = defineClientPlugin({
       packageName: '@example/tools',
-      serviceProviders: [HeaderProvider],
+      headerActions: [
+        { name: 'tools.hidden', component },
+        {
+          name: 'tools.removed-link',
+          component,
+          routeId: '@example/tools:removed',
+        },
+        { name: 'tools.link', component, routeId: '@example/tools:kept' },
+      ],
       routes: defineAppRoutes([
         { name: 'kept', path: '/kept', authz: 'skip', componentLoader },
         { name: 'removed', path: '/removed', authz: 'skip', componentLoader },
@@ -126,25 +114,13 @@ describe('app runtime', () => {
         createAppConfig: createAppClientConfig,
         plugins: defineClientPlugins([plugin()]),
         excludedRouteIds: ['@example/tools:removed'],
-        excludedHeaderActionIds: ['@example/tools/hidden'],
+        headerActionOverrides: [{ name: 'tools.hidden', hidden: true }],
       }),
       { rawConfig: {} },
     );
-    const app = new ClientApplication({
-      runtime,
-      createRenderConfig: () => ({ routes: null }),
-    });
-    await app.start();
-    try {
-      expect(
-        app.services
-          .resolve(appHeaderActionsToken)
-          .list()
-          .map(({ id }) => id),
-      ).toEqual(['@example/tools/link']);
-    } finally {
-      await app.shutdown();
-    }
+    expect(runtime.headerActions?.map(({ name }) => name)).toEqual([
+      'tools.link',
+    ]);
   });
 
   it('assembles complete configuration before the application is created', async () => {
