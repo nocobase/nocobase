@@ -484,15 +484,16 @@ export function createSkillService(deps: SkillServiceDeps): SkillService {
       .filter((entry) => isSkillScript(entry))
       .map((entry) => entry.path)
       .sort((a, b) => a.localeCompare(b));
+    const frontMatter = current
+      ? parseSkillMarkdown(current.content).frontMatter
+      : {};
     return {
       id: skill.id,
       slug: skill.slug,
       name: skill.name,
       description: skill.description,
-      compatibility: current
-        ? (parseSkillMarkdown(current.content).frontMatter.compatibility ??
-          null)
-        : null,
+      compatibility: frontMatter.compatibility ?? null,
+      metadata: frontMatter.metadata ?? {},
       version: Number(skill.currentVersion),
       fileCount: manifest.length,
       size: current ? sizeOf(current.content, manifest) : 0,

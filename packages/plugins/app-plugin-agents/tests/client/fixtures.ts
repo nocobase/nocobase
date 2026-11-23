@@ -104,6 +104,7 @@ export function skill(id: string, overrides: Partial<Skill> = {}): Skill {
     name: `skill-${id}`,
     description: 'When to use it',
     compatibility: null,
+    metadata: {},
     version: 1,
     fileCount: 0,
     size: 0,
@@ -126,6 +127,7 @@ export function skillDetail(
     files: [],
     attachments: [],
     canEdit: true,
+    canDelete: true,
     ...overrides,
   };
 }

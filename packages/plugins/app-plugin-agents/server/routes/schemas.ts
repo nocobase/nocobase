@@ -1064,6 +1064,10 @@ const skillObject = z.object({
     description:
       "The front matter's `compatibility`: what the skill needs of its environment.",
   }),
+  metadata: z.record(z.string(), z.string()).meta({
+    description:
+      "The front matter's `metadata`, string keys and values an application may read to classify the skill; empty when it has none.",
+  }),
   version: z.number().int().meta({
     description:
       "The current version and the skill's revision: a save names the version it was made against.",
@@ -1117,7 +1121,13 @@ const skillDetailObject = skillObject.extend({
 export const SkillDetailSchema: z.ZodType<SkillDetail> = skillDetailObject;
 
 export const SkillViewSchema: z.ZodType<SkillView> = skillDetailObject
-  .extend({ canEdit: z.boolean() })
+  .extend({
+    canEdit: z.boolean(),
+    canDelete: z.boolean().meta({
+      description:
+        "Whether the caller may delete it: a manager of skills, unless the application's skill policy protects it.",
+    }),
+  })
   .meta({ ref: 'AgentsSkillView' });
 
 const skillVersionObject = z.object({

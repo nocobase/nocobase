@@ -12,7 +12,10 @@ import { DownloadIcon, PencilIcon, Trash2Icon } from 'lucide-react';
 import { useContext, useState, type ReactElement } from 'react';
 import { Link, useNavigate, useParams } from 'react-router';
 
-import type { SkillDetail } from '../../../../shared/skills.js';
+import type {
+  SkillDetail,
+  SkillView as SkillViewData,
+} from '../../../../shared/skills.js';
 import { agentsKeys } from '../../../api/keys.js';
 import { AgSection } from '../../../components/ag-section.js';
 import { AgListSkeleton, AgLoadError } from '../../../components/ag-states.js';
@@ -59,7 +62,7 @@ export default function SkillDetailPage(): ReactElement {
 function SkillView({ skillId }: { readonly skillId: string }): ReactElement {
   const { t } = useTranslation();
   const api = useAgentsApi();
-  const canDelete = useSetting('agents.agents', 'manage');
+  const canManage = useSetting('agents.agents', 'manage');
   const detail = useQuery({
     queryKey: agentsKeys.skill(skillId),
     queryFn: () => api.skill(skillId),
@@ -99,7 +102,7 @@ function SkillView({ skillId }: { readonly skillId: string }): ReactElement {
       key={`${detail.data.id}:${detail.data.version}`}
       skill={detail.data}
       canEdit={detail.data.canEdit}
-      canDelete={canDelete}
+      canManage={canManage}
     />
   );
 }
@@ -107,14 +110,16 @@ function SkillView({ skillId }: { readonly skillId: string }): ReactElement {
 function SkillBody({
   skill,
   canEdit,
-  canDelete,
+  canManage,
 }: {
-  readonly skill: SkillDetail;
-  /** Its creator at the related level, or a manager: from the server. */
+  readonly skill: SkillViewData;
+  /** Its creator at the related level, or a manager, unless the application protects it: from the server. */
   readonly canEdit: boolean;
-  /** Deleting a skill needs managing agents. */
-  readonly canDelete: boolean;
+  /** Managing skills: the mounts. */
+  readonly canManage: boolean;
 }): ReactElement {
+  // Deleting needs managing skills and a skill the application does not protect: from the server.
+  const canDelete = skill.canDelete;
   const { t } = useTranslation();
   const api = useAgentsApi();
   const notify = useNotify();
@@ -165,7 +170,7 @@ function SkillBody({
               {canEdit ? (
                 <ImportSkillButton skill={skill} onImported={() => undefined} />
               ) : null}
-              {canEdit && canDelete ? (
+              {canDelete ? (
                 <Button
                   variant='outline'
                   onClick={() => setConfirmingDelete(true)}
@@ -202,7 +207,7 @@ function SkillBody({
       ) : (
         <SkillFiles skill={skill} />
       )}
-      <SkillAttachments skill={skill} canManage={canDelete} />
+      <SkillAttachments skill={skill} canManage={canManage} />
       <SkillVersions skill={skill} canEdit={canEdit} />
       <AlertDialog open={confirmingDelete} onOpenChange={setConfirmingDelete}>
         <AlertDialogContent>
@@ -259,7 +264,7 @@ function SkillAttachments({
   skill,
   canManage,
 }: {
-  readonly skill: SkillDetail;
+  readonly skill: SkillViewData;
   readonly canManage: boolean;
 }): ReactElement {
   const { t } = useTranslation();
@@ -271,15 +276,17 @@ function SkillAttachments({
     <AgSection id='ag-skill-attachments' title={t('skills.attachments')}>
       {canManage ? (
         <div className='mb-4 flex flex-col gap-4 rounded-lg border p-4'>
-          <SkillMountToggle
-            skillId={skill.id}
-            queryKey={agentsKeys.scopeSkills('global', 'default')}
-            load={() => api.scopeSkills('global', 'default')}
-            save={(ids) => api.setScopeSkills('global', 'default', ids)}
-            title={t('skills.globalMount')}
-            description={t('skills.globalMountDescription')}
-          />
-          {extra ? <extra.Settings skillId={skill.id} /> : null}
+          {extra?.showGlobalMount?.(skill) === false ? null : (
+            <SkillMountToggle
+              skillId={skill.id}
+              queryKey={agentsKeys.scopeSkills('global', 'default')}
+              load={() => api.scopeSkills('global', 'default')}
+              save={(ids) => api.setScopeSkills('global', 'default', ids)}
+              title={t('skills.globalMount')}
+              description={t('skills.globalMountDescription')}
+            />
+          )}
+          {extra ? <extra.Settings skillId={skill.id} skill={skill} /> : null}
         </div>
       ) : null}
       {skill.attachments.length > 0 ? (
