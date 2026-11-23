@@ -176,3 +176,43 @@ export async function runSkillRows(
     ),
   );
 }
+
+/** A skill with the parts of its current version a summary reads. */
+export interface CurrentSkillRow extends SkillRecord {
+  readonly content: string | null;
+  readonly manifest: unknown;
+  readonly versionCreatedById: string | null;
+}
+
+/**
+ * Every skill, or the given ones, joined to its current version in one query: no condition per skill, so a large
+ * library stays within the database's expression limits.
+ */
+export async function currentSkillRows(
+  conn: DatabaseConnection,
+  ids?: readonly string[],
+): Promise<CurrentSkillRow[]> {
+  if (ids?.length === 0) return [];
+  let query = conn.query
+    .selectFrom('agSkills as s')
+    .leftJoin('agSkillVersions as v', (join) =>
+      join
+        .onRef('v.skillId', '=', 's.id')
+        .onRef('v.version', '=', 's.currentVersion'),
+    )
+    .select([
+      's.id',
+      's.slug',
+      's.name',
+      's.description',
+      's.currentVersion',
+      's.createdById',
+      's.createdAt',
+      's.updatedAt',
+      'v.content',
+      'v.manifest',
+      'v.createdById as versionCreatedById',
+    ]);
+  if (ids) query = query.where('s.id', 'in', [...ids]);
+  return query.orderBy('s.name').orderBy('s.id').execute<CurrentSkillRow>();
+}

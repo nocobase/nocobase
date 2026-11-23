@@ -69,6 +69,7 @@ import {
 import {
   attachedSkillIds,
   attachmentsRepo,
+  currentSkillRows,
   replaceAttachments,
   runSkillRows,
   type RunSkillRow,
@@ -478,7 +479,9 @@ export function createSkillService(deps: SkillServiceDeps): SkillService {
 
   const summary = (
     skill: SkillRecord,
-    current: SkillVersionRecord | undefined,
+    current:
+      | Pick<SkillVersionRecord, 'content' | 'manifest' | 'createdById'>
+      | undefined,
   ): Skill => {
     const manifest = manifestOf(current?.manifest);
     const scripts = manifest
@@ -711,30 +714,22 @@ export function createSkillService(deps: SkillServiceDeps): SkillService {
 
   return {
     async list(ids) {
-      const conn = tx.read();
-      const unique = ids ? [...new Set(ids)] : undefined;
-      if (unique?.length === 0) return [];
-      const skills = await skillsRepo(conn).findMany({
-        ...(unique
-          ? { filter: (f) => f.or(unique.map((id) => f.string('id').eq(id))) }
-          : {}),
-        sort: (sort) => [sort.field('name').asc(), sort.field('id').asc()],
-      });
-      if (skills.length === 0) return [];
-      // Every current version at once, rather than one query per skill.
-      const currents = await versionsRepo(conn).findMany({
-        filter: (f) =>
-          f.or(
-            skills.map((skill) =>
-              f.and([
-                f.string('skillId').eq(skill.id),
-                f.number('version').eq(Number(skill.currentVersion)),
-              ]),
-            ),
-          ),
-      });
-      const byId = new Map(currents.map((row) => [row.skillId, row]));
-      return skills.map((skill) => summary(skill, byId.get(skill.id)));
+      const rows = await currentSkillRows(
+        tx.read(),
+        ids ? [...new Set(ids)] : undefined,
+      );
+      return rows.map((row) =>
+        summary(
+          row,
+          row.content === null
+            ? undefined
+            : {
+                content: row.content,
+                manifest: row.manifest,
+                createdById: row.versionCreatedById,
+              },
+        ),
+      );
     },
 
     get: (id) => detail(tx.read(), id),
