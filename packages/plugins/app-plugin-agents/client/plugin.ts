@@ -3,6 +3,8 @@
  * brings everything: the ✦ button in the header (`agent`, its badge the conversations waiting for the viewer), the
  * panel beside the content, the conversation page (`/chat/:conversationId`, route `agentChat`), the five System
  * settings pages under AI (Agent, Model services, Runtimes, Skills, Usage) and Personal settings › Preferences › Agent.
+ * `chatRoutes: false` leaves the conversation pages to the application, and the settings pages follow the application's
+ * `systemSettingsRoutes` and `personalSettingsRoutes`.
  *
  * Customizing, from least to most:
  *
@@ -76,27 +78,34 @@ const preferencesRoutes = definePersonalSettingsRoutes([
 const factory = defineClientPlugin<AgentsClientOptions>({
   packageName: '@nocobase/app-plugin-agents',
   locales,
-  routes: (options) => [
-    agentsSettingsRoutes,
-    preferencesRoutes,
-    defineAppRoutes([
-      {
-        name: 'agentConversations',
-        path: resolveAgentsOptions(options).chatPath,
-        auth: 'required',
-        authz: 'skip',
-        breadcrumb: { title: 'myConversations' },
-        componentLoader: async () => {
-          const [{ default: Page }, { withAgents }] = await Promise.all([
-            import('./pages/chat/sessions.js'),
-            import('./query.js'),
-          ]);
-          return { default: withAgents(Page) };
-        },
-      },
-      chatRoute(resolveAgentsOptions(options).chatPath),
-    ]),
-  ],
+  routes: (options) => {
+    const { chatPath } = resolveAgentsOptions(options);
+    return [
+      agentsSettingsRoutes,
+      preferencesRoutes,
+      defineAppRoutes(
+        [
+          {
+            name: 'agentConversations',
+            path: chatPath,
+            auth: 'required',
+            authz: 'skip',
+            breadcrumb: { title: 'myConversations' },
+            componentLoader: async () => {
+              const [{ default: Page }, { withAgents }] = await Promise.all([
+                import('./pages/chat/sessions.js'),
+                import('./query.js'),
+              ]);
+              return { default: withAgents(Page) };
+            },
+          },
+          chatRoute(chatPath),
+        ],
+        // Disabled like excludedRouteIds: the application may own these paths and still target the route IDs.
+        { disabled: options.chatRoutes === false },
+      ),
+    ];
+  },
   headerActions: (options) =>
     resolveAgentsOptions(options).headerAction
       ? [

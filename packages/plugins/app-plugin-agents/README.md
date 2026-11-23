@@ -321,6 +321,8 @@ Model services are not configured here: they are added on the application's page
 
 ## Web UI
 
+Set `chatRoutes: false` to leave both chat paths to the application. The panel and header action have independent options.
+
 Registering the plugin is enough: `agents()` in the application's `client/plugins.ts` (with the server and CLI entries registered too) brings, with no page code in the application:
 
 - the ✦ button in the header (header action `agent`), its badge the conversations waiting for the viewer (a reply, a confirmation, a failure; `GET /api/agents/conversationAttention`, refreshed by `conversation.changed` on `agents:conversations`, never polled);

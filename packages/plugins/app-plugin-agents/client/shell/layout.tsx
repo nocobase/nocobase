@@ -25,6 +25,7 @@ import { PageDraftStoreContext, PageDraftStore } from '../chat/page-draft.js';
 import { ACCESS_NAMESPACE } from '../../shared/access.js';
 import { AIFormRegistryProvider } from '../chat/ai-form.js';
 import { CHAT_PANEL_STORAGE_KEY } from '../chat/panel-state.js';
+import { useChatPages } from '../chat/chat-pages.js';
 import { ChatProvider, useChatPanel } from '../chat/provider.js';
 import { agentsQueryClient } from '../query.js';
 import { AgentsOptionsContext, type ResolvedAgentsOptions } from './options.js';
@@ -48,6 +49,7 @@ function IdentityChat({
   readonly options: ResolvedAgentsOptions;
 }>): ReactElement | null {
   const [pageDrafts] = useState(() => new PageDraftStore());
+  const { detail } = useChatPages(options.chatPath);
   const [ready, setReady] = useState(false);
   useLayoutEffect(() => {
     // The panel's stored state and the cache are not per person: clear them before the provider reads them.
@@ -75,8 +77,11 @@ function IdentityChat({
     <AIFormRegistryProvider>
       <ChatProvider
         memoryScope={userId}
-        conversationPath={(id) =>
-          `${options.chatPath}/${encodeURIComponent(id)}`
+        conversationPath={
+          // Without a conversation page, links to one would land on the application's fallback.
+          detail
+            ? (id) => `${options.chatPath}/${encodeURIComponent(id)}`
+            : undefined
         }
       >
         {options.panel && options.panel.defaultOpen ? <OpenOnce /> : null}

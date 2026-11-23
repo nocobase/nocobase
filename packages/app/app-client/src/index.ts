@@ -146,6 +146,7 @@ export {
 } from './plugins.js';
 export type {
   AppClientAppRoutesContribution,
+  AppClientRouteContributionOptions,
   AppClientBadge,
   AppClientBadgeHook,
   AppClientBadgeTone,

@@ -34,37 +34,41 @@ export interface MailRouteOptions {
  */
 export function mailRoutes(
   options: MailRouteOptions = {},
+  workspaceRoutes = true,
 ): readonly AppClientRouteContribution[] {
   return [
-    defineAppRoutes([
-      {
-        ...parentOf(options.mail),
-        name: 'mail',
-        path: '/mail',
-        auth: 'required',
-        authz: MAIL_ACCESS.workspace,
-        ...navigationOf(options.mail, {
-          title: 'navigation.mail',
-          icon: Mail,
-          badge: useMailNavigationBadge,
-        }),
-        breadcrumb: { title: 'navigation.mail' },
-        componentLoader: () => import('./pages/mail-page.js'),
-      },
-      {
-        ...parentOf(options.mailTeam),
-        name: 'mailTeam',
-        path: '/mail/team',
-        auth: 'required',
-        authz: MAIL_ACCESS.teamView,
-        ...navigationOf(options.mailTeam, {
-          title: 'navigation.mailTeam',
-          icon: UsersRound,
-        }),
-        breadcrumb: { title: 'navigation.mailTeam' },
-        componentLoader: () => import('./pages/mail-team-page.js'),
-      },
-    ]),
+    defineAppRoutes(
+      [
+        {
+          ...parentOf(options.mail),
+          name: 'mail',
+          path: '/mail',
+          auth: 'required',
+          authz: MAIL_ACCESS.workspace,
+          ...navigationOf(options.mail, {
+            title: 'navigation.mail',
+            icon: Mail,
+            badge: useMailNavigationBadge,
+          }),
+          breadcrumb: { title: 'navigation.mail' },
+          componentLoader: () => import('./pages/mail-page.js'),
+        },
+        {
+          ...parentOf(options.mailTeam),
+          name: 'mailTeam',
+          path: '/mail/team',
+          auth: 'required',
+          authz: MAIL_ACCESS.teamView,
+          ...navigationOf(options.mailTeam, {
+            title: 'navigation.mailTeam',
+            icon: UsersRound,
+          }),
+          breadcrumb: { title: 'navigation.mailTeam' },
+          componentLoader: () => import('./pages/mail-team-page.js'),
+        },
+      ],
+      { disabled: !workspaceRoutes },
+    ),
     definePersonalSettingsRoutes([
       {
         parent: PERSONAL_SETTINGS_CATEGORIES.integrations,

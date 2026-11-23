@@ -172,19 +172,23 @@ export function isOpeningLocation(location: { readonly key: string }): boolean {
 /**
  * Remembers the last application page outside settings, in this tab, so leaving settings returns to it. Moving between
  * system and personal settings keeps it. A settings page the document opened on forgets it, and leads to the home
- * page (`isOpeningLocation`).
+ * page (`isOpeningLocation`). The layout passes whether the location is a settings page: with a settings surface off,
+ * the application may own pages under its path, and those are pages to return to.
  */
-export function useRememberSettingsReturn(): void {
+export function useRememberSettingsReturn(
+  inSettings: (pathname: string) => boolean = isAnySettingsPath,
+): void {
   const location = useLocation();
   const { pathname, search, hash } = location;
   const opening = isOpeningLocation(location);
+  const settings = inSettings(pathname);
   useEffect(() => {
     try {
-      if (!isAnySettingsPath(pathname))
+      if (!settings)
         sessionStorage.setItem(RETURN_KEY, `${pathname}${search}${hash}`);
       else if (opening) sessionStorage.removeItem(RETURN_KEY);
     } catch {
       // Storage can be unavailable, as in a private window; Back then leads home.
     }
-  }, [pathname, search, hash, opening]);
+  }, [pathname, search, hash, opening, settings]);
 }
