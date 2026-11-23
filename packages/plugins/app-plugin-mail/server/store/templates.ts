@@ -1,7 +1,11 @@
-import { type DatabaseManager } from '@nocobase/db';
+import {
+  isUniqueConstraintViolation,
+  type DatabaseManager,
+} from '@nocobase/db';
 import { type MailTemplate } from '../../shared/mail.js';
 import { toMailTemplate } from './mappers.js';
 import { type TemplateRow } from './rows.js';
+import { MailError } from '../services/errors.js';
 
 export class MailTemplatesStore {
   public constructor(private readonly database: DatabaseManager) {}
@@ -38,7 +42,24 @@ export class MailTemplatesStore {
       createdAt: now,
       updatedAt: now,
     };
-    if (existing) {
+    try {
+      await this.writeTemplate(row, existing !== undefined);
+    } catch (error) {
+      if (
+        isUniqueConstraintViolation(error) &&
+        (await this.hasNameConflict(row))
+      )
+        throw mailTemplateNameConflict(error);
+      throw error;
+    }
+    return toMailTemplate(row);
+  }
+
+  private async writeTemplate(
+    row: TemplateRow,
+    exists: boolean,
+  ): Promise<void> {
+    if (exists) {
       await this.database
         .query()
         .updateTable<TemplateRow>('mailTemplates')
@@ -49,7 +70,7 @@ export class MailTemplatesStore {
           html: row.html,
           updatedAt: row.updatedAt,
         })
-        .where('id', '=', template.id)
+        .where('id', '=', row.id)
         .where('ownerId', '=', row.ownerId)
         .execute();
     } else {
@@ -59,7 +80,22 @@ export class MailTemplatesStore {
         .values(row)
         .execute();
     }
-    return toMailTemplate(row);
+  }
+
+  /**
+   * Whether another template of the same owner holds the name, which is what the `(ownerId, name)` unique index
+   * rejects. Any other unique violation, such as an id collision, is not a name conflict and stays unexpected.
+   */
+  private async hasNameConflict(row: TemplateRow): Promise<boolean> {
+    const conflicting = await this.database
+      .query()
+      .selectFrom<TemplateRow>('mailTemplates')
+      .select('id')
+      .where('ownerId', '=', row.ownerId)
+      .where('name', '=', row.name)
+      .where('id', '!=', row.id)
+      .executeTakeFirst<Pick<TemplateRow, 'id'>>();
+    return conflicting !== undefined;
   }
 
   public async deleteTemplate(
@@ -74,4 +110,13 @@ export class MailTemplatesStore {
       .execute();
     return result.deletedCount === 1;
   }
+}
+
+function mailTemplateNameConflict(cause: unknown): MailError {
+  return new MailError({
+    status: 'ALREADY_EXISTS',
+    reason: 'MAIL_TEMPLATE_ALREADY_EXISTS',
+    message: 'Mail template name is already in use.',
+    cause,
+  });
 }
