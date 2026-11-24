@@ -12,15 +12,14 @@ export type AppBackupFileReference = {
 );
 
 export interface AppBackupConfig {
-  /** Paths beneath each filesystem disk to preserve on backup and restore. */
-  excludePaths?: readonly string[];
+  /** Disk-relative paths to omit from backup and preserve on restore. */
+  disks?: Readonly<Record<string, { excludePaths?: readonly string[] }>>;
   /** Reference columns outside the conventional disk/key pair. */
   fileReferences?: readonly AppBackupFileReference[];
   connections?: Readonly<
     Record<
       string,
       {
-        hosting?: 'managed' | 'self-managed';
         tls?: { mode: 'require' | 'verify-full'; caFile?: string };
       }
     >
@@ -31,7 +30,7 @@ export interface AppBackupConfig {
 export function registerBackupConfig(config: AppConfig): void {
   config.mergeDefaults({
     backup: {
-      excludePaths: [],
+      disks: {},
       fileReferences: [],
       connections: {},
       tools: {},

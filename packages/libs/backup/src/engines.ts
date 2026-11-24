@@ -20,7 +20,6 @@ export interface SnapshotData {
 }
 
 export interface DatabaseExport extends SnapshotData {
-  mode: 'dump' | 'recovery-point';
   server: ServerInfo;
   snapshot: SnapshotInfo;
 }

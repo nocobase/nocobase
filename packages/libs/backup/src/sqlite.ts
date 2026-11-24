@@ -93,7 +93,6 @@ export const sqliteEngine: DatabaseEngine<SqliteBackupConnection> = {
         },
       });
       return withSqlite(file, async (snapshot) => ({
-        mode: 'dump',
         server: serverInfo(snapshot),
         snapshot: { time },
         ...((await options.collect?.(sqliteReader(snapshot))) ?? emptySnapshot),

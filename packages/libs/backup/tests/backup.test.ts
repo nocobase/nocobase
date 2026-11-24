@@ -184,6 +184,7 @@ describe('SQLite application backup', () => {
     try {
       const created = await createOnline();
       expect(deleted).toBe(true);
+      expect(created.manifest.limitations).toEqual([]);
       expect(created.manifest.connections.map(({ mode }) => mode)).toEqual([
         'dump',
         'excluded',
@@ -355,6 +356,33 @@ describe('SQLite application backup', () => {
       'upload.txt',
     );
     restored.close();
+  });
+
+  it('restores only archived files while keeping the current database', async () => {
+    await createOnline();
+    online = false;
+    const live = new Sqlite(dbFile);
+    live.exec(
+      'CREATE TABLE current_data (value INTEGER); INSERT INTO current_data VALUES (42)',
+    );
+    live.close();
+    await writeFile(join(disk, 'upload.txt'), 'changed after backup');
+
+    const result = await restoreBackup(archive, target, { filesOnly: true });
+    expect(result.connections).toEqual([
+      { name: 'main', status: 'skipped' },
+      { name: 'external', status: 'skipped' },
+    ]);
+    expect(result.missingFiles).toEqual([]);
+    expect(await readFile(join(disk, 'upload.txt'), 'utf8')).toBe('old upload');
+    const current = new Sqlite(dbFile);
+    try {
+      expect(
+        current.prepare('SELECT value FROM current_data').pluck().get(),
+      ).toBe(42);
+    } finally {
+      current.close();
+    }
   });
 
   it('puts both database and disk contents back if a post-restore reference check fails', async () => {

@@ -84,8 +84,14 @@ export async function resolveDisks(
           // Protect both the configured name and any resolved path within the disk.
           paths.add(path);
           const resolved = await canonical(join(root, path));
-          if (contains(root, resolved))
-            paths.add(portableRelative(root, resolved));
+          if (resolved === root || !contains(root, resolved)) {
+            throw new BackupError(
+              'BACKUP_UNSAFE_PATH',
+              'A backup exclusion must resolve to a path below its filesystem disk root.',
+              { disk: config.name, path },
+            );
+          }
+          paths.add(portableRelative(root, resolved));
         }
         if (paths.has('')) {
           throw new BackupError(

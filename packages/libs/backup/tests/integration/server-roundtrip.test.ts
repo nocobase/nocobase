@@ -1,6 +1,13 @@
 // db-test-portability: dialect-specific — exercise actual native database dump and restore clients.
 import { randomBytes } from 'node:crypto';
-import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
+import {
+  mkdir,
+  mkdtemp,
+  readFile,
+  readdir,
+  rm,
+  writeFile,
+} from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import Sqlite from 'better-sqlite3';
@@ -395,51 +402,68 @@ exec ${shell(client)} "$@"`,
     60_000,
   );
 
-  it.skipIf(pgTest)(
-    'falls back only on a confirmed MySQL export permission denial',
-    async () => {
-      if (connection.dialect !== 'mysql')
-        throw new Error('This scenario needs a MySQL server.');
-      const account = name + '_reader';
-      await query(
-        `CREATE USER '${account}'@'%' IDENTIFIED BY 'backup-fixture'`,
-      );
-      try {
-        await query('CREATE TABLE private_data (value INT)', name);
-        await query(`GRANT SELECT ON ${name}.uploads TO '${account}'@'%'`);
-        await query(`GRANT UPDATE ON ${name}.private_data TO '${account}'@'%'`);
-        target.connections = [
-          {
-            ...connection,
-            hosting: 'managed',
-            username: account,
-            password: 'backup-fixture',
-          },
-        ];
-        const saved = await createBackup(target, {
-          output: archive,
-          tmpDir: root,
-        });
-        expect(saved.manifest.connections[0]).toMatchObject({
-          mode: 'recovery-point',
-          reason: 'export-permission-denied',
-        });
-        expect(
-          await verifyBackup(archive, { target, tmpDir: root }),
-        ).toMatchObject({ ok: true });
-      } finally {
-        await query(`DROP USER '${account}'@'%'`);
+  it('fails and cleans the entire backup when the second export is denied', async () => {
+    const account = name + '_reader';
+    const mysqlAccount = `'${account}'@'%'`;
+    const accountPassword = 'backup-fixture';
+    const sqliteFile = join(root, 'first.sqlite');
+    new Sqlite(sqliteFile).close();
+    await query(
+      pgTest
+        ? `CREATE ROLE ${account} LOGIN PASSWORD '${accountPassword}'`
+        : `CREATE USER ${mysqlAccount} IDENTIFIED BY '${accountPassword}'`,
+    );
+    try {
+      await query('CREATE TABLE private_data (value INT)', name);
+      if (pgTest) {
+        await query('GRANT SELECT ON uploads TO ' + account, name);
+      } else {
+        await query(`GRANT SELECT ON ${name}.uploads TO ${mysqlAccount}`);
+        await query(`GRANT UPDATE ON ${name}.private_data TO ${mysqlAccount}`);
       }
-    },
-    60_000,
-  );
+      let firstSnapshotRead = false;
+      target.connections = [
+        {
+          dialect: 'sqlite',
+          name: 'first',
+          filename: sqliteFile,
+          schemaManagement: 'managed',
+          async readMigrations() {
+            firstSnapshotRead = true;
+            return [];
+          },
+          readMigrationCatalog: async () => [],
+        },
+        {
+          ...connection,
+          username: account,
+          password: accountPassword,
+        },
+      ];
+      const before = (await readdir(root)).sort();
+      await expect(
+        createBackup(target, { output: archive, tmpDir: root }),
+      ).rejects.toMatchObject({
+        code: 'BACKUP_EXPORT_DENIED',
+        details: { connection: 'main' },
+      });
+      expect(firstSnapshotRead).toBe(true);
+      expect((await readdir(root)).sort()).toEqual(before);
+    } finally {
+      if (pgTest) {
+        await query('DROP OWNED BY ' + account, name);
+        await query('DROP ROLE ' + account);
+      } else {
+        await query(`DROP USER ${mysqlAccount}`);
+      }
+    }
+  }, 60_000);
 
   it.skipIf(pgTest)(
-    'fails interrupted or invalid dumps even for a managed MySQL server',
+    'fails interrupted or invalid dumps',
     async () => {
       if (connection.dialect !== 'mysql')
         throw new Error('This scenario needs a MySQL server.');
-      target.connections = [{ ...connection, hosting: 'managed' }];
       for (const [script, code] of [
         [
           "printf 'incomplete dump'; kill -TERM $$",
@@ -458,53 +482,6 @@ exec ${shell(client)} "$@"`,
         await expect(readFile(archive)).rejects.toMatchObject({
           code: 'ENOENT',
         });
-      }
-    },
-    60_000,
-  );
-
-  it.skipIf(!pgTest)(
-    'records the managed server recovery point on confirmed export permission denial',
-    async () => {
-      if (connection.dialect !== 'postgres')
-        throw new Error('This scenario needs a PostgreSQL server.');
-      const account = name + '_reader';
-      await query(`CREATE ROLE ${account} LOGIN PASSWORD 'backup-fixture'`);
-      try {
-        await query('CREATE TABLE private_data (value INT)', name);
-        await query('GRANT SELECT ON uploads TO ' + account, name);
-        target.connections = [
-          {
-            ...connection,
-            hosting: 'managed',
-            username: account,
-            password: 'backup-fixture',
-          },
-        ];
-        const saved = await createBackup(target, {
-          output: archive,
-          tmpDir: root,
-        });
-        expect(saved.manifest.connections[0]).toMatchObject({
-          mode: 'recovery-point',
-          reason: 'export-permission-denied',
-        });
-        expect(saved.manifest.limitations).toHaveLength(1);
-        await expect(
-          restoreBackup(archive, target, { tmpDir: root }),
-        ).rejects.toMatchObject({ code: 'RESTORE_EXTERNAL_RECOVERY_REQUIRED' });
-        expect(
-          await restoreBackup(archive, target, {
-            filesOnly: true,
-            tmpDir: root,
-          }),
-        ).toMatchObject({
-          connections: [{ status: 'skipped' }],
-          disks: [{ status: 'restored' }],
-        });
-      } finally {
-        await query('DROP OWNED BY ' + account, name);
-        await query('DROP ROLE ' + account);
       }
     },
     60_000,

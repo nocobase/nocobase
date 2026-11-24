@@ -1,5 +1,6 @@
 // db-test-portability: sqlite-only — backup and restore need a file-backed SQLite database.
 import { execFile } from 'node:child_process';
+import { createHash } from 'node:crypto';
 import {
   access,
   mkdir,
@@ -7,6 +8,7 @@ import {
   readFile,
   readdir,
   rm,
+  symlink,
   writeFile,
 } from 'node:fs/promises';
 import { join } from 'node:path';
@@ -22,6 +24,7 @@ import { AppConfig, createAppPaths } from '../src/config/index.js';
 import {
   createAppDatabaseManager,
   DatabaseProvider,
+  type AppDatabaseConfig,
 } from '../src/database/index.js';
 import { resolveStandaloneAppRuntime } from '../src/node/index.js';
 import { defineServerPlugins } from '../src/plugins/index.js';
@@ -45,9 +48,13 @@ afterEach(async () => {
   await rm(root, { recursive: true, force: true });
 });
 
-it.each(['embedded', 'standalone'] as const)(
-  'verifies and restores a backup made after %s startup from a built release',
-  async (mode) => {
+it.each([
+  { mode: 'embedded', configuredPackage: undefined, compatible: false },
+  { mode: 'standalone', configuredPackage: undefined, compatible: true },
+  { mode: 'embedded', configuredPackage: 'app', compatible: true },
+] as const)(
+  'checks migration identity after $mode startup with package override $configuredPackage',
+  async ({ mode, configuredPackage, compatible }) => {
     const revision = join(root, 'revision');
     const dist = join(revision, 'dist');
     const storageDir = join(root, 'volume');
@@ -83,6 +90,7 @@ export default defineMigration({
               database: {
                 default: 'main',
                 drivers: { sqlite },
+                migrations: { packageName: configuredPackage },
                 connections: {
                   main: {
                     dialect: 'sqlite',
@@ -129,15 +137,69 @@ export default defineMigration({
             ],
           },
         });
-        expect(await verifyBackup(file, { target })).toMatchObject({
-          ok: true,
-        });
       } finally {
         await app.shutdown();
       }
+      const db = createAppDatabaseManager(
+        cli.config.get<AppDatabaseConfig>('database')!,
+        cli.paths,
+      )!;
+      try {
+        await db.query('main').insertInto('rows').values({ id: 1 }).execute();
+      } finally {
+        await db.destroy();
+      }
+      if (!compatible) {
+        expect(await verifyBackup(file, { target })).toMatchObject({
+          ok: false,
+          problems: [{ code: 'RESTORE_MIGRATION_MISMATCH' }],
+        });
+        await expect(restoreBackup(file, target)).rejects.toMatchObject({
+          code: 'RESTORE_MIGRATION_MISMATCH',
+        });
+        const current = createAppDatabaseManager(
+          cli.config.get<AppDatabaseConfig>('database')!,
+          cli.paths,
+        )!;
+        try {
+          expect(
+            await current
+              .query('main')
+              .selectFrom('rows')
+              .selectAll()
+              .execute(),
+          ).toEqual([{ id: 1 }]);
+        } finally {
+          await current.destroy();
+        }
+        return;
+      }
+
+      // A sealed build can still verify the same artifact's pre-sealing checksum.
+      const sealed = source + '\n// @nocobase/task-manifest v1\n';
+      await writeFile(migration, sealed);
+      const taskManifest = join(migrations, '.manifest.json');
+      await writeFile(
+        taskManifest,
+        JSON.stringify({
+          version: 1,
+          files: {
+            '001_rows.js': {
+              sourceChecksum: createHash('sha256')
+                .update('source version')
+                .digest('hex'),
+              artifactChecksum: createHash('sha256')
+                .update(sealed)
+                .digest('hex'),
+            },
+          },
+        }),
+      );
+      expect(await verifyBackup(file, { target })).toMatchObject({ ok: true });
       expect(await restoreBackup(file, target)).toMatchObject({
         connections: [{ name: 'main', status: 'restored' }],
       });
+      await rm(taskManifest);
       await writeFile(migration, source + '\n// Changed migration.');
       expect(await verifyBackup(file, { target })).toMatchObject({
         ok: false,
@@ -184,6 +246,126 @@ async function application(disks?: AppDriveConfig['disks']) {
   });
   return { app: new Application({ config, paths }), drive, paths };
 }
+
+it('excludes a path on the named disk and preserves it during restore', async () => {
+  const uploads = join(root, 'uploads');
+  const documents = join(root, 'documents');
+  const { app } = await application({
+    local: { driver: 'fs', location: uploads, visibility: 'private' },
+    documents: { driver: 'fs', location: documents, visibility: 'private' },
+  });
+  app.config.mergeDefaults({
+    backup: { disks: { local: { excludePaths: ['cache'] } } },
+  });
+  for (const location of [uploads, documents]) {
+    await mkdir(join(location, 'cache'), { recursive: true });
+    await writeFile(join(location, 'cache/file'), 'original');
+  }
+  const target = await resolveAppBackupTarget(app);
+  const saved = await createBackup(target, {
+    output: join(root, 'backup.tgz'),
+  });
+  expect(saved.manifest.disks).toEqual([
+    expect.objectContaining({
+      name: 'local',
+      count: 0,
+      skippedPaths: ['.nocobase-backup', 'cache'],
+    }),
+    expect.objectContaining({
+      name: 'documents',
+      count: 1,
+      skippedPaths: ['.nocobase-backup'],
+    }),
+  ]);
+  for (const location of [uploads, documents]) {
+    await writeFile(join(location, 'cache/file'), 'current');
+  }
+  await restoreBackup(saved.file, target);
+  expect(await readFile(join(uploads, 'cache/file'), 'utf8')).toBe('current');
+  expect(await readFile(join(documents, 'cache/file'), 'utf8')).toBe(
+    'original',
+  );
+});
+
+it('rejects exclusions for unknown disks', async () => {
+  const { app } = await application();
+  app.config.mergeDefaults({
+    backup: { disks: { unknown: { excludePaths: ['cache'] } } },
+  });
+  await expect(resolveAppBackupTarget(app)).rejects.toMatchObject({
+    code: 'BACKUP_INVALID_TARGET',
+    details: { disk: 'unknown' },
+  });
+});
+
+it('keeps explicit backup TLS and executable overrides for a database', async () => {
+  const { app, paths } = await application();
+  app.config.mergeDefaults({
+    database: {
+      default: 'main',
+      connections: {
+        main: {
+          dialect: 'postgres',
+          database: 'example',
+          username: 'exporter',
+          ssl: { rejectUnauthorized: false },
+        },
+      },
+    },
+    backup: { tools: { pgDump: 'tools/pg_dump', psql: 'psql' } },
+  });
+  const inferred = await resolveAppBackupTarget(app);
+  expect(inferred.connections[0]).toMatchObject({ tls: { mode: 'require' } });
+  expect(inferred.tools).toEqual({
+    pgDump: join(paths.deploymentRootDir, 'tools/pg_dump'),
+    psql: 'psql',
+  });
+  app.config.mergeDefaults({
+    database: { connections: { main: { ssl: { ca: 'custom CA' } } } },
+  });
+  await expect(resolveAppBackupTarget(app)).rejects.toMatchObject({
+    code: 'BACKUP_TLS_CONFIG_REQUIRED',
+  });
+  app.config.mergeDefaults({
+    backup: {
+      connections: { main: { tls: { mode: 'verify-full', caFile: 'ca.pem' } } },
+    },
+  });
+  expect((await resolveAppBackupTarget(app)).connections[0]).toMatchObject({
+    tls: {
+      mode: 'verify-full',
+      caFile: join(paths.deploymentRootDir, 'ca.pem'),
+    },
+  });
+});
+
+it.each(['../outside', 'escape'] as const)(
+  'rejects a disk exclusion that points outside storage: %s',
+  async (path) => {
+    const { app, paths } = await application();
+    const outside = join(root, 'outside');
+    await mkdir(paths.storage(), { recursive: true });
+    await mkdir(outside);
+    await symlink(outside, paths.storage('escape'), 'junction');
+    await writeFile(join(outside, 'keep'), 'unchanged');
+    const saved = await createBackup(await resolveAppBackupTarget(app), {
+      output: join(root, 'initial.tgz'),
+    });
+    app.config.mergeDefaults({
+      backup: { disks: { local: { excludePaths: [path] } } },
+    });
+    const target = await resolveAppBackupTarget(app);
+    const output = join(root, 'invalid.tgz');
+    await expect(createBackup(target, { output })).rejects.toMatchObject({
+      code: 'BACKUP_UNSAFE_PATH',
+    });
+    await expect(access(output)).rejects.toMatchObject({ code: 'ENOENT' });
+    await expect(restoreBackup(saved.file, target)).rejects.toMatchObject({
+      code: 'BACKUP_UNSAFE_PATH',
+    });
+    expect(await readFile(join(outside, 'keep'), 'utf8')).toBe('unchanged');
+  },
+);
 
 it('keeps configured jobs, queue and session persistence outside the archive and restore', async () => {
   const { app, paths } = await application();

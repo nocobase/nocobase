@@ -542,21 +542,10 @@ export async function createBackup(
                 };
                 for (const reference of data.references)
                   references.push(reference);
-                if (data.mode === 'recovery-point') {
-                  manifest.connections.push({
-                    ...entry,
-                    mode: data.mode,
-                    reason: 'export-permission-denied',
-                  });
-                  manifest.limitations.push(
-                    `Database "${name}" requires external point-in-time recovery before restoring files.`,
-                  );
-                  return;
-                }
                 const info = await describeEntry(payload, path, options.signal);
                 manifest.connections.push({
                   ...entry,
-                  mode: data.mode,
+                  mode: 'dump',
                   ...info,
                 });
                 entries.push(info);
@@ -803,12 +792,6 @@ function restoreSelection(
       }
     }
     return dumps.filter((entry) => selected.has(entry.name));
-  }
-  if (manifest.connections.some((entry) => entry.mode === 'recovery-point')) {
-    throw new BackupError(
-      'RESTORE_EXTERNAL_RECOVERY_REQUIRED',
-      'Restore the database externally before performing a files-only restore.',
-    );
   }
   return dumps;
 }

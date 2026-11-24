@@ -56,8 +56,6 @@ interface ServerConnection extends ConnectionBase {
   database: string;
   username: string;
   password?: string;
-  /** Permit recovery-point fallback for a server that denies logical exports. */
-  hosting?: 'managed' | 'self-managed';
 }
 
 export interface PostgresBackupConnection extends ServerConnection {
@@ -141,6 +139,7 @@ export interface VerifyBackupOptions {
 export interface RestoreBackupOptions {
   connections?: readonly string[];
   allowPartial?: boolean;
+  /** Restore archived filesystem disks while leaving database contents intact. */
   filesOnly?: boolean;
   sha256?: string;
   tmpDir?: string;
@@ -185,10 +184,6 @@ export type ConnectionManifest =
       path: string;
       sha256: string;
       size: number;
-    })
-  | (IncludedConnectionManifest & {
-      mode: 'recovery-point';
-      reason: 'export-permission-denied';
     });
 
 export type DiskManifest =
@@ -223,7 +218,8 @@ export interface BackupManifest {
   disks: DiskManifest[];
   secrets: { fingerprints: KeyFingerprint[] };
   indexSha256: string;
-  limitations: string[];
+  /** Reserved empty field in the version 1 manifest. */
+  limitations: [];
 }
 
 export interface CreateBackupResult {

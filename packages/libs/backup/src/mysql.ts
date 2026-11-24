@@ -1,5 +1,5 @@
 import { createReadStream, createWriteStream } from 'node:fs';
-import { open, readFile, rm, writeFile } from 'node:fs/promises';
+import { open, readFile, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { pipeline } from 'node:stream/promises';
 import { createConnection } from 'mysql2/promise';
@@ -265,52 +265,30 @@ export const mysqlEngine: DatabaseEngine<MysqlBackupConnection> = {
         : (context.tools.mysqlDump ?? 'mysqldump');
       const defaults = await credentials(connection, server, context);
       const time = await serverTime(client);
-      try {
-        await runClient(
-          tool,
-          [
-            defaults,
-            nonTransactional.length ? '--lock-tables' : '--single-transaction',
-            '--routines',
-            '--triggers',
-            '--events',
-            '--hex-blob',
-            '--no-tablespaces',
-            '--complete-insert',
-            ...(mariadb ? [] : ['--set-gtid-purged=OFF']),
-            '--',
-            connection.database,
-          ],
-          {
-            output: file,
-            signal: context.signal,
-            exportPermission:
-              /(?:command denied to user|access denied.*(?:privilege|to database)|you need \(at least one of\) the).*\((?:1044|1142|1227|1370)\)|insufficient privileges to SHOW CREATE/i,
-          },
-        );
-      } catch (error) {
-        if (
-          !context.collect ||
-          connection.hosting !== 'managed' ||
-          !(error instanceof BackupError) ||
-          error.code !== 'BACKUP_EXPORT_DENIED'
-        )
-          throw error;
-        await rm(file, { force: true });
-        await client.query('SET TRANSACTION ISOLATION LEVEL REPEATABLE READ');
-        await client.query(
-          'START TRANSACTION WITH CONSISTENT SNAPSHOT, READ ONLY',
-        );
-        return {
-          mode: 'recovery-point',
-          server,
-          snapshot: { time: await serverTime(client) },
-          ...(await context.collect(mysqlReader(client, connection.database))),
-        };
-      }
+      await runClient(
+        tool,
+        [
+          defaults,
+          nonTransactional.length ? '--lock-tables' : '--single-transaction',
+          '--routines',
+          '--triggers',
+          '--events',
+          '--hex-blob',
+          '--no-tablespaces',
+          '--complete-insert',
+          ...(mariadb ? [] : ['--set-gtid-purged=OFF']),
+          '--',
+          connection.database,
+        ],
+        {
+          output: file,
+          signal: context.signal,
+          exportPermission:
+            /(?:command denied to user|access denied.*(?:privilege|to database)|you need \(at least one of\) the).*\((?:1044|1142|1227|1370)\)|insufficient privileges to SHOW CREATE/i,
+        },
+      );
       await verifyMysqlDump(file);
       return {
-        mode: 'dump',
         server,
         snapshot: { time },
         ...(context.collect
