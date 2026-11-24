@@ -87,6 +87,7 @@
   },
   "dependencies": {
     "@clack/prompts": "catalog:",
+    "@nocobase/backup": "workspace:^",
     "@nocobase/cli-envelope": "workspace:^",
     "@nocobase/logging": "workspace:^",
     "@nocobase/secrets": "workspace:^",

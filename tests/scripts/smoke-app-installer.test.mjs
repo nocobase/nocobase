@@ -177,19 +177,25 @@ test('a later build is a repacked archive with a new build time, broken on reque
   }
 });
 
-test('the database is the one file an application has', () => {
+test('the configured default SQLite file is used alongside auxiliary databases', () => {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'installer-smoke-db-'));
   try {
-    fs.mkdirSync(path.join(root, 'storage', 'logs'), { recursive: true });
-    fs.writeFileSync(path.join(root, 'storage', 'database.sqlite'), '');
-    fs.writeFileSync(path.join(root, 'storage', 'logs', 'app.log'), '');
-    assert.equal(
-      databaseFile(root),
-      path.join(root, 'storage', 'database.sqlite'),
+    fs.writeFileSync(
+      path.join(root, 'config.yml'),
+      'database:\n  default: business\n  connections:\n    business:\n      dialect: sqlite\n      database: data/business.db\n    other:\n      dialect: sqlite\n      database: other.sqlite\n',
     );
-
+    const file = path.join(root, 'storage', 'data', 'business.db');
+    fs.mkdirSync(path.dirname(file), { recursive: true });
+    fs.mkdirSync(path.join(root, 'storage', '.nocobase-backup'));
+    fs.writeFileSync(file, '');
+    fs.writeFileSync(
+      path.join(root, 'storage', '.nocobase-backup', 'application.sqlite'),
+      '',
+    );
     fs.writeFileSync(path.join(root, 'storage', 'other.sqlite'), '');
-    assert.throws(() => databaseFile(root), /found 2/);
+    assert.equal(databaseFile(root), file);
+    fs.unlinkSync(file);
+    assert.throws(() => databaseFile(root), /connection "business"/);
   } finally {
     fs.rmSync(root, { recursive: true, force: true });
   }

@@ -52,11 +52,13 @@
     "@aws-sdk/s3-request-presigner": "^3.577.0",
     "@poppinss/utils": "^7.0.1",
     "ali-oss": "^6.23.0",
+    "better-sqlite3": "catalog:",
     "flydrive": "^2.1.0"
   },
   "devDependencies": {
     "@nocobase/dev-config": "workspace:*",
     "@types/ali-oss": "^6.23.3",
+    "@types/better-sqlite3": "^7.6.13",
     "@types/node": "catalog:",
     "eslint": "catalog:",
     "prettier": "catalog:",

@@ -199,6 +199,19 @@ database:
     #   # Optional: read metadata from another directory in the same layout instead of this connection's own.
     #   # metadataStore: database/shared-crm/metadata
 
+# Optional backup settings. Disk exclusions are relative to a named filesystem Drive disk.
+# backup:
+#   disks:
+#     local:
+#       excludePaths: [cache, tmp]
+#   connections:
+#     main: # Example for a PostgreSQL or MySQL connection that needs explicit TLS.
+#       tls:
+#         mode: verify-full
+#         caFile: certs/database-ca.pem
+#   tools:
+#     pgDump: tools/pg_dump
+
 snowflake:
   # Assign a unique worker ID to each concurrently running instance.
   workerId: 0
