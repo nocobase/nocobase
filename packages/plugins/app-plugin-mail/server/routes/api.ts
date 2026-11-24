@@ -753,7 +753,12 @@ export const mailApiRoutes: AppApiRouteContribution<AppPluginApplication> =
         'mailCreateTemplate',
         'Create a template',
         { '201': dataResponse(MailTemplateSchema) },
-        { errors: { 413: true } },
+        {
+          errors: {
+            409: 'The caller already has a template with this name (`MAIL_TEMPLATE_ALREADY_EXISTS`).',
+            413: true,
+          },
+        },
       ),
       apiValidator('json', SaveTemplateInput),
       async (context) => {
@@ -780,7 +785,11 @@ export const mailApiRoutes: AppApiRouteContribution<AppPluginApplication> =
         { '200': dataResponse(MailTemplateSchema) },
         {
           description: 'Omitted fields keep their stored values.',
-          errors: { 404: true, 413: true },
+          errors: {
+            404: true,
+            409: 'Another template of the caller already has this name (`MAIL_TEMPLATE_ALREADY_EXISTS`).',
+            413: true,
+          },
         },
       ),
       apiValidator('param', TemplateParams),
