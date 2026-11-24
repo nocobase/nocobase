@@ -436,10 +436,29 @@ function defaultsOf(
 }
 
 export function createModelServices(deps: {
+  readonly enabled?: boolean;
   readonly tx: TxRunner;
   readonly clock: Clock;
   readonly box: Sealer;
 }): ModelServices {
+  if (deps.enabled === false) {
+    const unavailable = () =>
+      Promise.reject(new ModelError('config', 'Model services are disabled.'));
+    return {
+      list: () => Promise.resolve([]),
+      catalog: () => Promise.resolve({ services: [] }),
+      defaults: () => Promise.resolve({ chat: null, effectiveChat: null }),
+      capabilities: () => Promise.resolve({ webSearch: false }),
+      create: unavailable,
+      update: unavailable,
+      remove: unavailable,
+      check: unavailable,
+      models: unavailable,
+      setDefaultChat: unavailable,
+      connectionFor: unavailable,
+      endpointFor: unavailable,
+    };
+  }
   const repo = (conn: DatabaseConnection) =>
     conn.repository<ServiceRecord>(SERVICES);
 

@@ -4,6 +4,7 @@ import {
   MailExtensions,
   resolveMailTemplateVariables,
 } from '../../client/extensions.js';
+import mail from '../../client/plugin.js';
 import { mailRoutes } from '../../client/routes.js';
 import { MAIL_ACCESS } from '../../shared/access.js';
 
@@ -20,6 +21,7 @@ function routesByName(
 ): ReadonlyMap<string, RouteLike> {
   const routes = new Map<string, RouteLike>();
   for (const contribution of contributions) {
+    if (contribution.disabled) continue;
     for (const route of contribution.routes as readonly RouteLike[]) {
       if (route.name) routes.set(route.name, route);
     }
@@ -53,6 +55,13 @@ describe('Mail pages', () => {
       path: '/mail',
     });
     expect(routes.get('mail')?.navigation).toBeDefined();
+  });
+
+  it('keeps settings pages when the application owns the workspace paths', () => {
+    expect([
+      ...routesByName(mail({ workspaceRoutes: false }).routes).keys(),
+    ]).toEqual(['mailAccounts', 'mailSettings']);
+    expect(routesByName(mail().routes).has('mailTeam')).toBe(true);
   });
 
   it('moves or hides a navigation entry while keeping its page', () => {

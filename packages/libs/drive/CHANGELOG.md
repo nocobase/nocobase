@@ -1,5 +1,11 @@
 # @nocobase/drive
 
+## 0.1.0-beta.9
+
+### Minor Changes
+
+- 28a7606: Add built-in backup commands, disk-specific path exclusions, and application compatibility checks for restore.
+
 ## 0.1.0-beta.8
 
 ### Minor Changes

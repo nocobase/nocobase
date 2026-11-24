@@ -220,3 +220,17 @@ export function queueConfigKeys(config: QueueConfig | undefined): string[] {
   validateQueueConfig(config);
   return Object.keys(config?.backends ?? {});
 }
+
+/** Local persistence paths of all configured memory backends, including named ones. */
+export function queuePersistencePaths(
+  config: QueueConfig | undefined,
+  defaults: QueueConfigDefaults,
+): string[] {
+  return queueConfigKeys(config).flatMap((name) => {
+    const { persistencePath } = resolveQueueConfig(
+      selectQueueConfig(config, name),
+      defaults,
+    );
+    return persistencePath ? [persistencePath] : [];
+  });
+}

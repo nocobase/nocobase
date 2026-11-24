@@ -1,5 +1,60 @@
 # @nocobase/app-plugin-authz-default-access
 
+## 1.0.0-beta.22
+
+### Minor Changes
+
+- a6b9b74: Move the Roles and permissions pages out of the application templates into `@nocobase/app-plugin-authorization`. Its client plugin now registers them in the System settings' Accounts and permissions category, with the Roles and Data rules tabs, the role editor and Default access; an application passes its page catalog, business objects and page titles through the plugin's `pageCatalog`, `workspace` and `pageTitles` options, or leaves the pages out with `routes: false`. Other packages extend the page through `authorizationSettingsToken` from the new `@nocobase/app-plugin-authorization/client/settings` entry point: `pageTabs` adds a top tab, `ruleTabs` a kind of data rule and `roleTabs` a tab of a role's detail. Default access now registers its tab under Data rules this way. The tab bar shows only the tabs the viewer may open. Route names, paths and settings ids are unchanged, so links and existing grants keep working. The templates drop their copies of these pages, components and tests, and the upgrade guide describes the move.
+
+### Patch Changes
+
+- a6b9b74: Data rules in Roles and permissions now edit Default access, Sharing rules and Restriction rules side by side: each kind is a tab its plugin adds, its rules read as one sentence in the list, and a rule is created, edited and deleted in a side sheet over the list, naming who a sharing or restriction rule applies to, its reason and a preview. A sharing rule never offers every record. Closing a rule with unsaved changes asks once, and the old Default access create and edit addresses open the sheet. A new Permission check tab, for unrestricted roles, picks a user and lists everything the user may do with the role it comes from, or checks one operation step by step through roles, default access, sharing and restriction rules. It only reads.
+- a6b9b74: Declare the plugin's title and one-line description in English and Chinese under `nocobase` in `package.json`, which the App Foundation plugins page lists it by.
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [1048669]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [1048669]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [1048669]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [1048669]
+- Updated dependencies [1048669]
+- Updated dependencies [1048669]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [1048669]
+  - @nocobase/app-client@4.0.0-beta.12
+  - @nocobase/authorization@1.0.0-beta.17
+  - @nocobase/app-plugin-authorization@1.0.0-beta.39
+  - @nocobase/app-plugin-authentication@2.0.0-beta.24
+  - @nocobase/app-server@5.0.0-beta.9
+  - @nocobase/db@1.0.0-beta.30
+  - @nocobase/i18n@2.0.0-beta.2
+  - @nocobase/service-provider@0.0.2-beta.2
+
 ## 1.0.0-beta.21
 
 ### Patch Changes

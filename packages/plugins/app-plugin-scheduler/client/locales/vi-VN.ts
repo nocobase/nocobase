@@ -289,7 +289,7 @@ const viVN: SchedulerResource = {
       full: 'Chỉ chạy trên bản dựng đầy đủ có tất cả plugin; nếu không, tác vụ của các plugin không được tải cũng sẽ bị đánh dấu là đã xóa.',
     },
     readOnly:
-      'Trang này chỉ đọc: các thiết lập này nằm trong cấu hình của ứng dụng và có hiệu lực khi triển khai lại. Bộ nhớ đệm, hàng đợi và các dịch vụ khác được đề cập trong thiết lập cụm và phân tán.',
+      'Trang này chỉ đọc: các thiết lập này nằm trong cấu hình của ứng dụng và có hiệu lực khi triển khai lại.',
   },
   cron: {
     everyMinute: 'Mỗi phút',

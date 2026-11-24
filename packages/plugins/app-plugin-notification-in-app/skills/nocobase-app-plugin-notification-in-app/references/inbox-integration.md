@@ -1,5 +1,7 @@
 # Inbox Integration Contract
 
+Set `inboxRoute: false` to omit the built-in inbox page.
+
 ## Required packages
 
 - `@nocobase/app-plugin-authentication` supplies the authenticated user and session.

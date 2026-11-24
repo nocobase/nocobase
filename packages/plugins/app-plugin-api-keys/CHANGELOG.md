@@ -1,5 +1,113 @@
 # @nocobase/app-plugin-api-keys
 
+## 1.0.0-beta.27
+
+### Minor Changes
+
+- e848c53: Allow applications to omit system API key management routes.
+
+### Patch Changes
+
+- Updated dependencies [300f760]
+- Updated dependencies [29c62bd]
+- Updated dependencies [28a7606]
+- Updated dependencies [8ff2df3]
+- Updated dependencies [6a3bb3e]
+  - @nocobase/app-client@4.0.0-beta.13
+  - @nocobase/app-plugin-authentication@2.0.0-beta.25
+  - @nocobase/app-server@5.0.0-beta.10
+  - @nocobase/app-plugin-scheduler@1.0.0-beta.27
+  - @nocobase/app-plugin-authorization@1.0.0-beta.39
+  - @nocobase/app-plugin-notification@2.0.0-beta.10
+
+## 1.0.0-beta.26
+
+### Minor Changes
+
+- a6b9b74: API key permissions now take the shape of a permission set's grants. `POST /api/apiKeys` accepts `permissions` (the same resources, actions and composite record scopes a role holds, plus the records a business is limited to), checks that the maker holds each action (`KEY_SCOPE_EXCEEDS_YOURS`) and that a key may hold it (`KEY_ACTION_HUMAN_ONLY`), and every key answers `permissions`; `GET /api/apiKeys/grantable` lists what the caller may give and the templates resolved to it. Keys are stored in a new format `2` of the `permissions` column. Actions can be declared human-only (`humanOnly: <reason>`, with an optional `risk`) where they are registered with the authorization plugin: any API key, including one without permissions and a service account's, is then denied them with `KEY_HUMAN_ONLY`, while a signed-in person keeps them. Plugins register key templates and record sources with `authz.credentials`, and a key's composite record scopes restrict records like a restriction rule (`KeyScope.policy`). Releases marks configuring, deleting and protected deploys human-only and registers the "CI deploy" and "CI upload" templates and the Apps record source; projects registers its projects record source; agents marks managing model services human-only.
+
+  Deprecated, still working for one more minor release and then removed: scope groups and presets (`KeyScopeGroupDeclaration`, `KeyScopePresetDeclaration`, `apiKeyScopesToken`'s `groups.add`, `presets.add`, `mapAccess`), the `scope` field of `/api/apiKeys`, `GET /api/apiKeys/scopeOptions` and `/scopeObjects/:group`, `ScopedApiKeys.scopeOptions`, `scopeObjects` and `setScope`, `encodeKeyScope` and `decodeKeyScope`, and the `KEY_SCOPE_GROUPS` and `KEY_SCOPE_PRESETS` of releases, projects and agents. They keep their behaviour and convert to format `2`. Keys stored in format `1` keep working and are converted in the background on the first request after the upgrade, exactly as they are enforced then, so no key widens and none has to be regenerated. To migrate, register templates and record sources with `authz.credentials`, mark the actions no key may hold `humanOnly`, and send `permissions` instead of `scope`; the API keys README describes the formats.
+
+- a6b9b74: The API keys plugin now ships its own pages: Personal settings › API keys lists a person's keys with what each can do, its expiry and last use, and rotates or revokes them; New key picks a key's permissions from the role editor's table limited to what the person holds (actions only a person may take greyed out with the reason, record scopes no wider than theirs, high-risk actions only after a warning), with templates and the Everything I can do, Read only and Clear quick settings, and shows the secret once with a copy button and a `curl` example; a key's read-only detail strikes through the permissions its owner has lost. An application replaces a page with `routeComponentOverrides` (`API_KEY_ROUTES`) or leaves them out with `apiKeys({ routes: false })`.
+
+  Administrators can grant `settings:personalApiKeys/create` to an existing role to allow its members to create personal API keys, unless the application sets its own policy. The system settings page uses `settings:apiKeys` `read` and `manage`. A key that acts as its owner in full ("Same as me") is now refused with `SAME_AS_ME_DISABLED` unless the application sets `apiKeys.allowSameAsMe: true`; existing keys keep working. `GET /api/apiKeys/:keyId` answers a key with the permissions it lost (`lapsed`), `GET /api/apiKeys/objects/:business` the records a key may be limited to, and `GET /api/apiKeys` says in `meta` whether the caller may create keys. The authorization plugin adds `GET /api/authorization/permissionSets/grantableOptions`, the permission catalogue limited to what the caller holds, and `KeyPermissionEditor` (`loadKeyPermissionEditor` from `client/settings`), and its permission editor takes `builtInTabs`, human-only and lapsed actions, object footnotes and disabled scope options.
+
+  Managing accounts is now a person's only: every action of the `user` resource is declared `humanOnly`, so no API key may be given one or take one. A new key's composite actions are pinned to the record scopes its maker holds when it is made (`GrantableAction.policy`, and filled in for a scope the request leaves out), so a key does not widen when its maker's roles do later. `GET /api/authorization/permissionSets/grantableOptions` lists only what the caller holds; a key's detail reads its catalogue, with the actions it lost, from `GET /api/apiKeys/:keyId/catalog`.
+
+- a6b9b74: System keys act as no person: a record access can be declared `personal` (the built-in "records I own" and "records I created" are), and a key scope marked `personless` gets no records from default access or sharing rules that select by one, while restriction rules still apply; sharing rules refuse subjects a subject type keeps from being shared with (`filterShareable`), which the users plugin uses to refuse service accounts. Permission Sets can be protected by key prefix, so every process protects a system key's hidden set, including one another process created later.
+
+  A system key's data scope may be limited to chosen records the person giving it can see (`GET /api/apiKeys/scopeRecords`, the permission table's "Selected records"), checked again on the server; every record or records of another person are refused. Permission changes are serialized per key and written with their activity in one transaction. Owners must be active members, and owners are told a week before a system key expires. Idle disabling follows the rule each key took when it was created or rotated, and rotating clears the last reminder. Managed keys are only viewed, disabled or deleted by administrators; notices to their manager are stored and delivered again until taken. `adopt` takes the key to adopt, keeps its own scope and runs in one transaction. The system key and members' key lists filter and page in the database. Permission check shows a key's state, what it covers and the records it keeps, refuses everything for a disabled or expired key, and opens from a personal key's detail too.
+
+- a6b9b74: The API keys plugin now has system keys: each acts as a service account of its own, not as any member, with a hidden protected permission set whose grants an administrator gives one by one from what they hold, changes at any time and sees recorded with who changed what, before and after. System keys take records as all or selected ones only. Managed keys are system keys another feature creates, adjusts and rotates for a person through `createManaged`, `setPermissionsManaged` and `rotateManaged`, never beyond that person, and its manager is told when an administrator disables or deletes one; `adopt` lists an application's own service-account key as a system key without changing its secret. System settings › API keys shows system keys, managed keys, members' personal keys (filtered and revoked without seeing the key) and rules: whether "same as me" keys are allowed, the longest and default lifetime of a personal key, and disabling keys unused for a number of days, with a reminder a week before; opening it takes `settings:apiKeys/read` and changing anything `manage`. Roles and permissions › Permission check can check a system key or a member's personal key.
+
+  The authorization plugin's role tabs declare `targets` (`'role'`, `'apiKey'`) and the `resourceTypes` they edit, so a tab declared for keys appears in a key's permission table too, receiving the value, a change callback, whether it is editable and, for a key, the ceiling of what its maker holds. Permission check takes other kinds of subject (`checkSubjects` on the client, `inspector.identities.add` on the server), and `KeyPermissionEditor` takes `systemKey` to offer only all or selected records.
+
+- a6b9b74: Add two settings pages to the authentication plugin. System settings › Accounts › Sign-in and authentication (`/settings/authentication`) shows the effective sign-in methods, registration, password, password recovery and session settings, where each value comes from (environment variable, `config.yml`, code or default), the problems to fix such as password recovery being off or `app.publicOrigin` missing, a "How to change" snippet per section, and a "How to enable" guide for single sign-on, social sign-in, two-factor authentication and passkeys that builds the callback URL where one is needed and an editable prompt for a development agent to turn the method on in the application's repository; it is read-only and saves nothing. Personal settings › Account › Account and security (`/me/security`) lets every signed-in person change their password, sign out of other devices, see and sign out command-line and browser sessions, and link or unlink single sign-on and social accounts through Better Auth's own endpoints. Applications replace either page with `authentication({ settingsComponentLoader, accountSecurityComponentLoader })` or `routeComponentOverrides`, and name the providers their sign-in page shows a button for with `authentication({ signInButtons })`.
+
+  The authentication plugin adds `GET /api/authentication/settings`, which needs the new `authentication.settings` settings item's `read` action and never returns a secret, signing key, client secret or mail credential, and `GET /api/authentication/providers`, the providers a signed-in person can link. Other plugins add rows to the page's sign-in methods with `signInMethodsToken`; the API keys plugin adds its API keys row. The authorization plugin declares the `authentication.settings` item and binds `authenticationSettingsAccessToken`. The templates' `config.example.yml` points to the new page.
+
+### Patch Changes
+
+- a6b9b74: `SystemApiKeys.adopt` reads the grants the account holds in its own transaction instead of trusting the caller (given `permissions` must each be held, `ADOPT_NOT_HELD`), and answers again only for the same key (`ALREADY_SYSTEM_KEY` otherwise). Chosen records are checked against what the giver reaches, restriction rules included, under every role. Disabling or deleting a managed key commits its state, activity and notice together, and the manager gets the notice's `noticeId` on every attempt. `GET /api/apiKeys/scopeRecords` searches and pages in the database, and the system key list pages. Permission check shows, for a key's chosen records, which it reaches now and which the roles and rules leave out (`POST /api/authorization/inspector/records`), and reads a format-1 key's record limits as converted. A Permission Set prefix protection reserves its prefix against other owners, and API keys report sets already named in `system-key-` at boot.
+
+  "Same as me" personal keys stay off by default. An application whose callers create them — Studio's CLI and tests do — sets `apiKeys.allowSameAsMe: true`; for Studio that one configuration line is the only change this release needs.
+
+- a6b9b74: `SystemApiKeys.adopt` refuses when a Permission Set already carries the account's reserved name (`SYSTEM_KEY_SET_TAKEN`), so an application's role and its members never receive the import, and answers a repeated import only for the same key and the same requested grants, in any order or split, as recorded on the system key itself. Deleting a system key whose service account could not be removed, even after the account was marked deleted, finishes when it is deleted again, and its manager is told once. Roles already named in the reserved `system-key-` prefix are listed by the migration that creates their list, again if it is rolled back and applied again (a rollback that would forget the name of a deleted role is refused), and keep working as they are in every process; no system key takes one of their names, and a failure to read the list protects the whole prefix and is logged as an error. A set another owner protects by name under the prefix, such as a configured root set, stays theirs, so the application still starts. Permission check and the record picker tell a failed read from records that are not reached, and the picker adds a page only once it arrives.
+- a6b9b74: A Permission Set protected by name stays its owner's even under another owner's protected key prefix, whichever is registered first, so an application whose root or default set is named in a reserved prefix still starts; a prefix protection may also leave named keys alone (`except`). Deleting a user whose deletion was interrupted after the account was marked deleted finishes the remaining cleanup instead of doing nothing.
+- a6b9b74: Apply personal API key rules consistently at issuance and rotation, and keep recently used or rotated keys active during idle checks. Notification retries preserve previously skipped recipients, and the inbox shows available items when a source fails.
+- a6b9b74: Group personal settings into Account and Integrations, with a Preferences entry and palette icon under Account and personal API keys under Integrations.
+- a6b9b74: Declare the plugin's title and one-line description in English and Chinese under `nocobase` in `package.json`, which the App Foundation plugins page lists it by.
+- a6b9b74: Use the available width on settings pages, manage role names, copies, and deletion from the role list while configuring permissions in the adjacent panel, hide empty permission tabs, align user totals with pagination, and list Database under System.
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [1048669]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [1048669]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [1048669]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [1048669]
+- Updated dependencies [1048669]
+- Updated dependencies [1048669]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [1048669]
+  - @nocobase/app-client@4.0.0-beta.12
+  - @nocobase/authorization@1.0.0-beta.17
+  - @nocobase/app-plugin-authorization@1.0.0-beta.39
+  - @nocobase/app-plugin-authentication@2.0.0-beta.24
+  - @nocobase/app-server@5.0.0-beta.9
+  - @nocobase/app-plugin-notification@2.0.0-beta.10
+  - @nocobase/app-plugin-scheduler@1.0.0-beta.26
+  - @nocobase/db@1.0.0-beta.30
+  - @nocobase/i18n@2.0.0-beta.2
+  - @nocobase/service-provider@0.0.2-beta.2
+
 ## 1.0.0-beta.25
 
 ### Patch Changes

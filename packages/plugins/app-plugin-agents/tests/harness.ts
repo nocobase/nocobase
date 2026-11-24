@@ -296,10 +296,11 @@ export function testSecrets(
 
 export async function createHarness(
   options: {
-    /** `null` for an application without secrets keys. */
+    readonly modelServices?: boolean;
     readonly uiRecovery?: OnlineAgentRecoveryConfig;
     readonly drive?: AppDriveConfig;
     readonly measureOnlineAgent?: (phase: string, durationMs: number) => void;
+    /** `null` for an application without secrets keys. */
     readonly secrets?: SecretsService | null;
     readonly dist?: DistConfig;
     readonly retryBaseDelayMs?: number;
@@ -341,6 +342,7 @@ export async function createHarness(
     options.drive?.default ?? 'memory',
   );
   const services = createAgents({
+    modelServices: options.modelServices,
     limitForDisk: (disk) => drive.getUploadLimit(disk),
     measureOnlineAgent: options.measureOnlineAgent,
     uiRecovery: options.uiRecovery,

@@ -1,5 +1,76 @@
 # @nocobase/app-plugin-users
 
+## 2.0.0-beta.22
+
+### Minor Changes
+
+- a6b9b74: The API keys plugin now ships its own pages: Personal settings › API keys lists a person's keys with what each can do, its expiry and last use, and rotates or revokes them; New key picks a key's permissions from the role editor's table limited to what the person holds (actions only a person may take greyed out with the reason, record scopes no wider than theirs, high-risk actions only after a warning), with templates and the Everything I can do, Read only and Clear quick settings, and shows the secret once with a copy button and a `curl` example; a key's read-only detail strikes through the permissions its owner has lost. An application replaces a page with `routeComponentOverrides` (`API_KEY_ROUTES`) or leaves them out with `apiKeys({ routes: false })`.
+
+  Administrators can grant `settings:personalApiKeys/create` to an existing role to allow its members to create personal API keys, unless the application sets its own policy. The system settings page uses `settings:apiKeys` `read` and `manage`. A key that acts as its owner in full ("Same as me") is now refused with `SAME_AS_ME_DISABLED` unless the application sets `apiKeys.allowSameAsMe: true`; existing keys keep working. `GET /api/apiKeys/:keyId` answers a key with the permissions it lost (`lapsed`), `GET /api/apiKeys/objects/:business` the records a key may be limited to, and `GET /api/apiKeys` says in `meta` whether the caller may create keys. The authorization plugin adds `GET /api/authorization/permissionSets/grantableOptions`, the permission catalogue limited to what the caller holds, and `KeyPermissionEditor` (`loadKeyPermissionEditor` from `client/settings`), and its permission editor takes `builtInTabs`, human-only and lapsed actions, object footnotes and disabled scope options.
+
+  Managing accounts is now a person's only: every action of the `user` resource is declared `humanOnly`, so no API key may be given one or take one. A new key's composite actions are pinned to the record scopes its maker holds when it is made (`GrantableAction.policy`, and filled in for a scope the request leaves out), so a key does not widen when its maker's roles do later. `GET /api/authorization/permissionSets/grantableOptions` lists only what the caller holds; a key's detail reads its catalogue, with the actions it lost, from `GET /api/apiKeys/:keyId/catalog`.
+
+- a6b9b74: System keys act as no person: a record access can be declared `personal` (the built-in "records I own" and "records I created" are), and a key scope marked `personless` gets no records from default access or sharing rules that select by one, while restriction rules still apply; sharing rules refuse subjects a subject type keeps from being shared with (`filterShareable`), which the users plugin uses to refuse service accounts. Permission Sets can be protected by key prefix, so every process protects a system key's hidden set, including one another process created later.
+
+  A system key's data scope may be limited to chosen records the person giving it can see (`GET /api/apiKeys/scopeRecords`, the permission table's "Selected records"), checked again on the server; every record or records of another person are refused. Permission changes are serialized per key and written with their activity in one transaction. Owners must be active members, and owners are told a week before a system key expires. Idle disabling follows the rule each key took when it was created or rotated, and rotating clears the last reminder. Managed keys are only viewed, disabled or deleted by administrators; notices to their manager are stored and delivered again until taken. `adopt` takes the key to adopt, keeps its own scope and runs in one transaction. The system key and members' key lists filter and page in the database. Permission check shows a key's state, what it covers and the records it keeps, refuses everything for a disabled or expired key, and opens from a personal key's detail too.
+
+- a6b9b74: `notify()` writes to each person in the language they chose, as one send: the users plugin tells the notification plugin each person's language through the new `notificationUserLocalesToken`, and the user preferences service gains `getForUsers(userIds, key)`. A repeated `notify()` call returns the first send only when it is the same request (kind, people, data, target and source, with dates compared by their instant; data `notify()` cannot compare, such as a `Map`, is refused); another request under the same idempotency key, including a direct `send()`, fails with `IDEMPOTENCY_KEY_CONFLICT`. Channels can name the key the delivery log files a recipient under with `recipientKey()`, and web-push files each push under its device, so the delivery log finds every device's push. Saving the same personal notification choice from two places at once no longer fails.
+- a6b9b74: Ship the User management pages with `@nocobase/app-plugin-users`: registering `users()` now adds the user list at `/settings/users`, the New user dialog and the Edit user drawer to the Accounts and permissions category of System settings, with the same paths, route names, page access and behavior the templates had. The client entry exports `USERS_ROUTE_ID`, `USER_CREATE_ROUTE_ID` and `USER_EDIT_ROUTE_ID`, so an application can replace any one of these pages through `routeComponentOverrides` while the others stay the plugin's, and exports `UserForm` and `RoleSelection` for replacement pages. The templates no longer contain their own copy of these pages. An application created from an earlier template removes its `settingsUsers` route entry, or turns its customized copy into a route override, before updating; otherwise `/settings/users` is registered twice.
+
+### Patch Changes
+
+- a6b9b74: Declare the plugin's title and one-line description in English and Chinese under `nocobase` in `package.json`, which the App Foundation plugins page lists it by.
+- a6b9b74: Use the available width on settings pages, manage role names, copies, and deletion from the role list while configuring permissions in the adjacent panel, hide empty permission tabs, align user totals with pagination, and list Database under System.
+- 1048669: Document how to create demo accounts with roles through the Users service in sample data, that `db reset` needs `db sample` afterwards to build service-registered sample data, and the primary key types of the lifecycle log tables.
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [1048669]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [1048669]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [1048669]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [1048669]
+- Updated dependencies [1048669]
+- Updated dependencies [1048669]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [1048669]
+  - @nocobase/app-client@4.0.0-beta.12
+  - @nocobase/authorization@1.0.0-beta.17
+  - @nocobase/app-plugin-authorization@1.0.0-beta.39
+  - @nocobase/app-plugin-authentication@2.0.0-beta.24
+  - @nocobase/app-server@5.0.0-beta.9
+  - @nocobase/app-plugin-notification@2.0.0-beta.10
+  - @nocobase/db@1.0.0-beta.30
+  - @nocobase/i18n@2.0.0-beta.2
+  - @nocobase/service-provider@0.0.2-beta.2
+
 ## 2.0.0-beta.21
 
 ### Patch Changes

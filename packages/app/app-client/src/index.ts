@@ -42,6 +42,7 @@ export {
 export {
   useApiClient,
   useClientApplication,
+  useHasRoute,
   useHeaderActions,
   useService,
 } from './hooks.js';
@@ -145,6 +146,7 @@ export {
 } from './plugins.js';
 export type {
   AppClientAppRoutesContribution,
+  AppClientRouteContributionOptions,
   AppClientBadge,
   AppClientBadgeHook,
   AppClientBadgeTone,
@@ -188,6 +190,7 @@ export type {
   AppClientRoutePresentationKind,
   ClientServiceProviderConstructor,
   ClientServiceProviderContext,
+  ResolveAppClientContributionsOptions,
   ResolvedAppClientContributions,
   AppClientSettingsCategoryOverride,
   AppClientSettingsCategoryOverrides,

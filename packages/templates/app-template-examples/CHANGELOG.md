@@ -1,5 +1,221 @@
 # @nocobase/app-template-examples
 
+## 2.0.0-beta.1
+
+### Patch Changes
+
+- 300f760: Allow applications to exclude contributed routes by ID and hide toolbar shortcuts linked to excluded or inaccessible pages.
+- 28a7606: Add built-in backup commands, disk-specific path exclusions, and application compatibility checks for restore.
+- 8ff2df3: Applications can disable system settings, personal settings, chat, inbox and mail workspace routes independently. All five are enabled by default, so existing applications keep their pages when upgrading. Plugins can turn off their own pages with `{ disabled: true }` on `defineAppRoutes()` and the settings route helpers; disabled routes behave like `excludedRouteIds`, so overrides and header actions that target them no longer fail.
+- 6a3bb3e: Remove the distributed readiness plugin from the open-source templates. Existing applications can remove it with the plugin CLI or migrate to the Pro cluster readiness plugin.
+- Updated dependencies [300f760]
+- Updated dependencies [29c62bd]
+- Updated dependencies [28a7606]
+- Updated dependencies [8e7f898]
+- Updated dependencies [f3ae984]
+- Updated dependencies [8ff2df3]
+- Updated dependencies [5fcb0c8]
+- Updated dependencies [e848c53]
+- Updated dependencies [28a7606]
+- Updated dependencies [6a3bb3e]
+  - @nocobase/app-plugin-agents@2.0.0-beta.20
+  - @nocobase/app-plugin-authentication@2.0.0-beta.25
+  - @nocobase/app-server@5.0.0-beta.10
+  - @nocobase/app-cli@1.0.0-beta.39
+  - @nocobase/app-plugin-notification-in-app@2.0.0-beta.8
+  - @nocobase/app-plugin-mail@1.0.0-beta.28
+  - @nocobase/app-plugin-file@1.0.0-beta.34
+  - @nocobase/app-plugin-api-keys@1.0.0-beta.27
+  - @nocobase/jobs@1.0.0-beta.8
+  - @nocobase/queue@1.0.0-beta.13
+  - @nocobase/app-plugin-scheduler@1.0.0-beta.27
+  - @nocobase/app-plugin-file-example@1.0.0-beta.27
+  - @nocobase/app-plugin-notification-example@1.0.0-beta.19
+  - @nocobase/app-plugin-template-print-example@1.0.0-beta.12
+  - @nocobase/app-plugin-knowledge@0.1.0-beta.24
+  - @nocobase/app-plugin-authorization-example@1.0.0-beta.27
+  - @nocobase/app-plugin-cli-example@0.1.0-beta.7
+  - @nocobase/app-plugin-lifecycle-example@0.1.0-beta.20
+  - @nocobase/app-plugin-office-flows-example@0.1.0-beta.14
+  - @nocobase/app-plugin-realtime-example@0.1.0-beta.17
+  - @nocobase/app-plugin-repository-example@2.0.0-beta.9
+  - @nocobase/app-plugin-authorization@1.0.0-beta.39
+  - @nocobase/app-plugin-authz-default-access@1.0.0-beta.22
+  - @nocobase/app-plugin-authz-restriction-rules@1.0.0-beta.20
+  - @nocobase/app-plugin-authz-sharing-rules@1.0.0-beta.21
+  - @nocobase/app-plugin-concurrency@0.1.0-beta.4
+  - @nocobase/app-plugin-database-explorer@1.0.0-beta.21
+  - @nocobase/app-plugin-foundation@0.1.0-beta.21
+  - @nocobase/app-plugin-notification@2.0.0-beta.10
+  - @nocobase/app-plugin-notification-web-push@0.1.0-beta.10
+  - @nocobase/app-plugin-users@2.0.0-beta.22
+  - @nocobase/lifecycle@0.1.0-beta.7
+
+## 2.0.0-beta.0
+
+### Major Changes
+
+- a6b9b74: Move user and role management from template-owned pages into plugins. When upgrading a customized application, migrate imports of the removed template files and register role editor extensions through the authorization plugin.
+
+### Minor Changes
+
+- a6b9b74: The Agents plugin now brings its own UI: registering `agents()` adds the ✦ button in the header (header action `agent`, its badge the conversations waiting for the viewer), the Agent panel beside the content (loaded the first time it opens; full screen on phones), the conversation page `/chat/:conversationId` (route `agentChat`), System settings › AI (Agent, Model services, Runtimes, Skills, Usage) and Personal settings › Preferences › Agent. The UI Library's `agent-chat` block moved into the plugin and is generated from it. Customize with options (`agents({ headerAction, panel: { width, defaultOpen }, chatPath })`), extension points (`useAgentContext`, `AskAgentButton`, `agents.toolRenderers.add`, `agents.slots.composerActions|messageActions|emptyState.add`, `agents.preferenceSections.add`), `agents.components.replace(name, Component)`, `routeComponentOverrides` and `headerActionOverrides`; the `settingsRoutes` option is gone because the settings pages are always registered.
+
+  The settings pages and their API check settings items instead of page grants: Agent `agents.agents`, Model services `agents.services`, Runtimes `agents.runners`, the new Skills `agents.skills` and Usage `agents.prices`. The usage report is open to anyone signed in (every run for a reader of usage, otherwise their own runs); the Usage page shows the prices in a Prices tab (`?tab=prices`). Migration `202611210001_ag_settings_grants` gives existing roles the matching Skills and Usage grants, so they keep what they could do; rolling it back removes only the grants it added. Each agent can limit who may chat with it to roles (`chatRoles`, migration `202611210002_ag_agent_chat_roles`; existing agents stay open to everyone): others, managers of agents included, do not see it in the panel and the chat API answers 403 to creating, sending, queueing and switching; only root chats with every agent, and the team default Agent must stay open to everyone. The Agent page opens an agent's details with its settings, business actions, default skills and runs, read-only for who does not manage agents. A person sets their own reasoning effort in Personal settings › Preferences › Agent (`ChatPreferences.effort`, migration `202611210003_ag_chat_preference_effort`), which new conversations take where the agent offers it. Other plugins register model service providers with `agents.models.providers.register`, listed by `GET /api/agents/modelProviders`.
+
+  `@nocobase/app-client` adds layout extensions: a plugin's `layoutExtensions` contribute a provider around the signed-in layout and an aside the layout renders beside its content (`AppLayoutProviders`, `AppAsideOutlet`). Both templates render them and register the Agents plugin only, with no Agent page code; Examples drops its copied `nocobase-agent-chat` block, its Agent pages under business navigation and the hard-coded header chat button. Applications that copied the block before should delete it (and the code mounting it), or keep it with `agents({ headerAction: false, panel: false })`.
+
+- a6b9b74: Move the Roles and permissions pages out of the application templates into `@nocobase/app-plugin-authorization`. Its client plugin now registers them in the System settings' Accounts and permissions category, with the Roles and Data rules tabs, the role editor and Default access; an application passes its page catalog, business objects and page titles through the plugin's `pageCatalog`, `workspace` and `pageTitles` options, or leaves the pages out with `routes: false`. Other packages extend the page through `authorizationSettingsToken` from the new `@nocobase/app-plugin-authorization/client/settings` entry point: `pageTabs` adds a top tab, `ruleTabs` a kind of data rule and `roleTabs` a tab of a role's detail. Default access now registers its tab under Data rules this way. The tab bar shows only the tabs the viewer may open. Route names, paths and settings ids are unchanged, so links and existing grants keep working. The templates drop their copies of these pages, components and tests, and the upgrade guide describes the move.
+- a6b9b74: Add the read-only Cluster and distributed settings page and `GET /api/distributed/status`, which show the backend each shared service selected on the answering instance, whether it is shared between instances, and what must change before running several instances, with server and client extension points. Caching, concurrency, Jobs, Queue and Realtime gain a read-only `describe()` and let an adapter declare `sharing: 'local' | 'shared'` when it registers. The file plugin reports the file collections stored on a local disk. Both application templates register the plugin.
+- a6b9b74: Replace the App Foundation overview with a Plugins page under System settings › System (`/settings/plugins`): the plugins an application uses, their versions and states, grouped as enabled and not enabled, with the plugins needing attention first and the commands that enable, update or disable each one. It reads `GET /api/foundation/plugins`, and both the page and the API require the new «Plugins · View» settings item (`foundation.plugins` / `read`) instead of unrestricted access. A plugin that ships only a CLI entry counts as enabled when the application's `cli/plugins.ts` registers it, and the disable command lists separately the enabled plugins that need it and those that only use it optionally. The earlier `/settings/foundation` and `/settings/capabilities` addresses open the new page.
+
+  Removed: the capability overview, the Features and extensions guide and all of its detail pages, the source, API and database scans with their evidence, module matrix and record counts, the saved snapshots and background scan, the `foundation modules build` command and its `afterServerBuild` hook, the `foundation` configuration section with `FOUNDATION_SCAN_ON_START`, the `page:capability-guide` grant, and the `./capability-guide`, `./cli`, `./config` and `./client/pages` exports together with `CAPABILITY_GUIDE_ACCESS`, `groupFoundationNavigation` and the client factory's options. A new migration drops the `foundationSnapshots` table. Both templates register `foundation()` without options, no longer register the plugin's CLI or its configuration section, and the default template's home page no longer shows the built-in capability cards.
+
+- a6b9b74: Add the platform pieces for message features. Personal settings gain a built-in `messages` category (Messages), after Preferences and before Other, shown only when a page joins it. A route's `navigation` may declare a `badge` hook returning `{ count, tone? }`, and the menu shows the count beside the entry at any depth, nothing at zero; a layout's `badges` still replace it. Plugins and applications register buttons in the header's right-hand area with `headerActions` (`{ name, order, component, auth?, badge? }`), rendered by order with their badges and the account menu last, collapsing the buttons that render something into a More popover on phones; `useHeaderActions({ signedIn })` gives a signed-out visitor only `auth: 'optional'` actions, without badges. An application hides or replaces one by name with `headerActionOverrides`. The templates render header actions and declared badges, and Examples registers its Agent chat button as the `agent-chat` header action.
+- a6b9b74: Notify people instead of channels. Notification templates become notification kinds that declare a policy per channel type (`required`, `on` or `off`), and the notification service gains `notify(kind, { to: userIds, data, target, source, idempotencyKey })`, which applies each person's choices, reaches them through every channel type that can (in-app by user, email by account address, web-push by enabled device) and makes one ordinary `send()`; `send()` and `sendTransient()` are unchanged. Each person chooses channels per kind in the new `notificationPreferences` table through `GET`/`PUT /api/notifications/preferences`; required channels cannot be turned off. In-app items record their kind, category and source, and the inbox list filters by `category`. The plugins now own every notification page: the in-app client plugin registers the `/inbox` page and the header's inbox button with a pending-or-unread badge and exports inbox entry renderers and pending sources as extension points, replacing `NotificationInAppInbox` and `NotificationInAppProvider`; the notification client plugin registers System settings › Messages › Notifications (channels with a test send to yourself, kinds, and a filterable delivery log with retry) and Personal settings › Messages › Notifications, with channel type displays and personal sections as extension points, and web-push adds its devices section. The settings pages and their API check the new `notification` settings item (`read`, `manage`) instead of `page:notification.templates` and `page:notification.logs`, and `/api/notifications/templates` is replaced by `/api/notifications/kinds`. Projects and the notification example send with `notify()`; Projects drops its `inboxChannel` option. Both templates drop their copied inbox and notification template pages and only register the plugins, and Examples registers web-push with a sample channel.
+- 1048669: Role permissions are set in two tabs. Menus only decides which menus a role sees in the sidebar, stored as page access apart from every action, and warns when a checked menu's page would open empty because the role cannot view its object. Business objects sets each object's actions and data scope once for every menu that uses it, so an object used by several pages has one setting, and an action that also reads another object’s records, such as creating a contact for a customer, follows that object’s View scope and can only be narrower. Pages declare the objects they use in `permissionWorkspaceSelection.pages`, for reference only, and the Permission check lists the menus a user sees and their actions per object.
+- 1048669: Roles and permissions set a role in three tabs. Menus choose which business menus the role sees in the sidebar and are stored as page access on their own; Business objects set each object's actions and data scope once for every menu that uses it, with other actions following or narrowing View and scopes titled by their registered collections; System settings set each settings page's actions without data scopes, and a settings page shows in the sidebar once the action that opens it is on. Actions that can grant permissions carry a warning, the system administrator is shown as unrestricted, a role can be duplicated, and switching roles asks before discarding unsaved changes.
+- a6b9b74: Declare the templates' System settings with `defineSystemSettingsRoutes()` and switch the sidebar to a settings menu on `/settings` pages. The System settings entry now stands apart at the bottom of the business menu and opens the first settings page the viewer may open; on any settings page the sidebar shows Back, returning to the page the viewer left, followed by each category over the modules the viewer may open, in the mobile drawer as well. The settings home, Users, Roles and permissions (formerly Permission management), Database (Database Explorer) and Notifications are settings routes placed in the built-in categories — Accounts and permissions, Data and files, and Messages — with App Foundation in System, and settings pages contributed by plugins join the same menu. Add personal settings under `/me`, opened from the first item of the account menu: the built-in Account, Preferences and Other categories with a Language and appearance page, Back that keeps the page left while moving between system and personal settings, and the person's identity above the menu; every personal settings page, a plugin's included, is at most 860px wide, and the Personal settings breadcrumb leads back to `/me`. A settings page that declares its own breadcrumb, such as a skill page, still starts with System settings or Personal settings. Back from a settings page the tab opened on directly leads to the home page, and it returns only to paths inside the application. The built-in category titles now come from `@nocobase/app-client`, so the templates no longer translate them. Examples moves its settings pages under `/settings` (`/settings/users`, `/settings/roles`, `/settings/default-access`, `/settings/workflows`, `/settings/knowledge/indexing`) and redirects the former URLs, keeping the path, query and hash. Closing a default data scope form now returns to the list wherever it is mounted. The default template now registers Users and Permission management from the start, in the Accounts and permissions category; each module shows only to those its page grant admits. Examples declares its own CRM settings category ahead of the built-in ones, shown once it holds a page.
+
+### Patch Changes
+
+- a6b9b74: System keys act as no person: a record access can be declared `personal` (the built-in "records I own" and "records I created" are), and a key scope marked `personless` gets no records from default access or sharing rules that select by one, while restriction rules still apply; sharing rules refuse subjects a subject type keeps from being shared with (`filterShareable`), which the users plugin uses to refuse service accounts. Permission Sets can be protected by key prefix, so every process protects a system key's hidden set, including one another process created later.
+
+  A system key's data scope may be limited to chosen records the person giving it can see (`GET /api/apiKeys/scopeRecords`, the permission table's "Selected records"), checked again on the server; every record or records of another person are refused. Permission changes are serialized per key and written with their activity in one transaction. Owners must be active members, and owners are told a week before a system key expires. Idle disabling follows the rule each key took when it was created or rotated, and rotating clears the last reminder. Managed keys are only viewed, disabled or deleted by administrators; notices to their manager are stored and delivered again until taken. `adopt` takes the key to adopt, keeps its own scope and runs in one transaction. The system key and members' key lists filter and page in the database. Permission check shows a key's state, what it covers and the records it keeps, refuses everything for a disabled or expired key, and opens from a personal key's detail too.
+
+- a6b9b74: Add two settings pages to the authentication plugin. System settings › Accounts › Sign-in and authentication (`/settings/authentication`) shows the effective sign-in methods, registration, password, password recovery and session settings, where each value comes from (environment variable, `config.yml`, code or default), the problems to fix such as password recovery being off or `app.publicOrigin` missing, a "How to change" snippet per section, and a "How to enable" guide for single sign-on, social sign-in, two-factor authentication and passkeys that builds the callback URL where one is needed and an editable prompt for a development agent to turn the method on in the application's repository; it is read-only and saves nothing. Personal settings › Account › Account and security (`/me/security`) lets every signed-in person change their password, sign out of other devices, see and sign out command-line and browser sessions, and link or unlink single sign-on and social accounts through Better Auth's own endpoints. Applications replace either page with `authentication({ settingsComponentLoader, accountSecurityComponentLoader })` or `routeComponentOverrides`, and name the providers their sign-in page shows a button for with `authentication({ signInButtons })`.
+
+  The authentication plugin adds `GET /api/authentication/settings`, which needs the new `authentication.settings` settings item's `read` action and never returns a secret, signing key, client secret or mail credential, and `GET /api/authentication/providers`, the providers a signed-in person can link. Other plugins add rows to the page's sign-in methods with `signInMethodsToken`; the API keys plugin adds its API keys row. The authorization plugin declares the `authentication.settings` item and binds `authenticationSettingsAccessToken`. The templates' `config.example.yml` points to the new page.
+
+- a6b9b74: Rework a role's detail in Roles and permissions into the Page access, Operations, System settings and Members tabs, followed by the tabs other packages register through `roleTabs`. A composite now names the pages it is used on with `usedOn(...)` and an action the pages that turn it on with `defaultFor(...)`; neither grants anything, and the options routes return both. Checking a page turns on its declared operations at their default scope and says so, each page shows how many of its operations are on and whether it opens empty, each operation lists the pages it is used on and warns when none of them is open, and operations used on no page are grouped under Other operations. System settings pages offer None, View and Manage above their individual switches and mark high-risk actions. Saving a role first reviews every change and marks high-risk grants, and members are added and removed at once. The page explains how roles, default access, sharing and restriction rules combine. The customer and sales examples declare the pages their operations are used on.
+- 1048669: Document table-keyed authorization policies, role assignments, sample data, and workflow management. Support action-specific scope captions by slot key, and keep template route tests compatible with application settings registration.
+- a6b9b74: Register the Foundation overview and capability guide as system settings pages. The overview moves to `/settings/foundation` with a redirect from its previous address, and capability guide links keep their existing URLs. Without `settingsGroup` the pages join the built-in System category.
+- a6b9b74: Mail registers its own pages: **Mail** (`/mail`, with the unread count in the navigation), **Team mail** (`/mail/team`), **Personal settings › Messages › Mail accounts** (`/me/mail`) and **System settings › Messages › Mail** (`/settings/mail`), each replaceable by route name with `routeComponentOverrides`; `mail({ routes })` moves or hides the two navigation entries. `mail.oauthReturnUrl` now defaults to `/me/mail`. Team mail and Mail settings permissions are registered with the authorization plugin and can be granted on the role permission page, and every `/api/mail` route checks the same requirement its page declares. Applications extend the pages through `mailExtensionsToken`: `providerTypes`, `slots.messageAside`, `slots.composeToolbar`, `slots.workspaceActions`, `templateVariables` and `composer.onComplete`; the existing page props keep working. New `GET /api/mail/settings/overview`, member, account, result and time filters on `/settings/syncRuns` and `/settings/submissions`, which now page by `pageToken` instead of `page` so rows added or cleaned up between two pages neither repeat nor go missing, and retry and cancel of other members' runs and sends under `/settings`, offered only to a caller holding `manage`. Each `/api/mail` route declares the permission it checks as its `x-cli.action`, so the command line offers it only to callers holding that permission. `GET /api/mail/submissions?groupByBatch=true` now lists single and scheduled sends beside whole bulk sends, counting each as one entry. Finished sync runs and sends are deleted after `mail.logRetentionDays` (`MAIL_LOG_RETENTION_DAYS`, default 90, `0` keeps them), and a migration indexes both log tables by creation time. `/settings/submissions` no longer returns subjects, bodies or addresses, and failures on the settings logs no longer name the recipients of a partial delivery. Mail Example drops its five pages and extends Mail's pages instead, with a **Set up demo mailboxes** workspace action.
+
+  **Permission upgrade, without a compatibility layer:** `page:mail.workspace/access` is unchanged. `page:mail.management/access` is replaced by `mail:mail.management/view` (read-only Team mail), plus `mail:mail.management/process` for marking read, starring and archiving in bulk. `page:mail.admin/access` is replaced by `settings:mail.admin/read` (read-only Mail settings), plus `settings:mail.admin/manage` for retrying and cancelling other members' syncs and sends. Former grants are not converted and no longer open any route: check the application's role seeds and any code that writes these grants directly, and grant the replacements.
+
+- 1048669: The application templates' first-read instructions now state the permission rules generated applications broke: business-object IDs differ from table names, operations use short titles such as View and Create, a Create hides only its own scope slot and keeps its related-record scopes, and a duplicate business key answers 409 through a unique constraint.
+- a6b9b74: Support opening personal settings in a dialog over the current page with client.personalSettings.openMode. Personal settings pages and their plugin routes can also be opened directly under /me.
+- a6b9b74: Group personal settings into Account and Integrations, with a Preferences entry and palette icon under Account and personal API keys under Integrations.
+- a6b9b74: Refresh plugin styles when registering a client plugin during development, keep parent links available on untitled detail pages, and preserve navigation state across settings redirects.
+- 1048669: Saving a role keeps every scope it has on other objects' records while that object's View is off, so opening a seeded role and saving it, or only renaming it, no longer clears them; the editor shows the stored value read-only with "Needs X view" until an administrator turns that View on. The authorization guides explain how preset roles grant the View of the objects their operations read.
+- 1048669: Match a page to its primary business object by ID unless the app explicitly maps the page. Document how to configure the three role editor tabs, translate action descriptions and scope titles, and verify scoped access.
+- 1048669: Role permissions: applying new custom filter conditions to View sends actions with their own scope back to following View and says so, and a filter stored on an action that follows View is shown read-only.
+- 1048669: Applying a View's stored custom filter again no longer resets other actions' own filters, and locked filters show their stored conditions and scope name.
+- 1048669: The role editor shows each scope of an action with several data scopes on its own line and in full, wrapping long names instead of cutting them off. The business object list hides its group title when every object is in the same group, and public menus such as Home no longer show a "Visible to everyone" caption.
+- 1048669: Saving a role without touching a menu keeps each of its pages' access as stored, so a menu where only some pages open no longer opens the rest; checking or unchecking the menu still opens or closes all of them. Hidden data scopes of an action the role already has are kept exactly, missing or empty values included, and only an action turned on now gets their initial value. The role editor shows a stored data scope wider than View, or one View does not list, as it is until an administrator changes View, and its three tabs wrap their names and counts on phones.
+- 1048669: Keep template navigation tests compatible with application menu and account routes. Document how to assign existing users through User management, provision demo accounts, and configure lifecycle storage and test composition.
+- a6b9b74: Use the available width on settings pages, manage role names, copies, and deletion from the role list while configuring permissions in the adjacent panel, hide empty permission tabs, align user totals with pagination, and list Database under System.
+- a6b9b74: Ship the User management pages with `@nocobase/app-plugin-users`: registering `users()` now adds the user list at `/settings/users`, the New user dialog and the Edit user drawer to the Accounts and permissions category of System settings, with the same paths, route names, page access and behavior the templates had. The client entry exports `USERS_ROUTE_ID`, `USER_CREATE_ROUTE_ID` and `USER_EDIT_ROUTE_ID`, so an application can replace any one of these pages through `routeComponentOverrides` while the others stay the plugin's, and exports `UserForm` and `RoleSelection` for replacement pages. The templates no longer contain their own copy of these pages. An application created from an earlier template removes its `settingsUsers` route entry, or turns its customized copy into a route override, before updating; otherwise `/settings/users` is registered twice.
+- e6f2e33: Use the standard list empty state for workflow definitions and executions, and explain how to manage workflows with an Agent in the project repository.
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [44395d2]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [1048669]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [1048669]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [1048669]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [acc1f0d]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [0a61940]
+- Updated dependencies [b430b2d]
+- Updated dependencies [00f16da]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [aa05454]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [1048669]
+- Updated dependencies [1048669]
+- Updated dependencies [1048669]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a9b9146]
+- Updated dependencies [1048669]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+  - @nocobase/app-plugin-agents@2.0.0-beta.19
+  - @nocobase/authorization@1.0.0-beta.17
+  - @nocobase/app-plugin-api-keys@1.0.0-beta.26
+  - @nocobase/app-plugin-authorization@1.0.0-beta.39
+  - @nocobase/app-plugin-users@2.0.0-beta.22
+  - @nocobase/app-plugin-authentication@2.0.0-beta.24
+  - @nocobase/app-plugin-authz-sharing-rules@1.0.0-beta.21
+  - @nocobase/app-plugin-authorization-example@1.0.0-beta.27
+  - @nocobase/app-plugin-authz-default-access@1.0.0-beta.22
+  - @nocobase/app-plugin-authz-restriction-rules@1.0.0-beta.20
+  - @nocobase/app-plugin-distributed@0.1.0-beta.2
+  - @nocobase/caching@1.0.0-beta.5
+  - @nocobase/jobs@1.0.0-beta.7
+  - @nocobase/queue@1.0.0-beta.12
+  - @nocobase/app-server@5.0.0-beta.9
+  - @nocobase/app-plugin-concurrency@0.1.0-beta.4
+  - @nocobase/app-plugin-file@1.0.0-beta.33
+  - @nocobase/app-plugin-knowledge@0.1.0-beta.24
+  - @nocobase/app-plugin-foundation@0.1.0-beta.21
+  - @nocobase/app-plugin-notification@2.0.0-beta.10
+  - @nocobase/app-plugin-notification-in-app@2.0.0-beta.7
+  - @nocobase/lifecycle@0.1.0-beta.7
+  - @nocobase/app-plugin-mail@1.0.0-beta.27
+  - @nocobase/app-plugin-mail-example@1.0.0-beta.14
+  - @nocobase/app-plugin-notification-providers@1.0.0-beta.21
+  - @nocobase/app-plugin-notification-web-push@0.1.0-beta.10
+  - @nocobase/app-plugin-notification-example@1.0.0-beta.19
+  - @nocobase/app-cli@1.0.0-beta.38
+  - @nocobase/app-plugin-database-explorer@1.0.0-beta.21
+  - @nocobase/app-plugin-i18n@1.0.0-beta.24
+  - @nocobase/app-plugin-scheduler@1.0.0-beta.26
+  - @nocobase/app-plugin-routes-example@1.0.0-beta.27
+  - @nocobase/db@1.0.0-beta.30
+  - @nocobase/app-plugin-file-example@1.0.0-beta.27
+  - @nocobase/app-plugin-template-print-example@1.0.0-beta.12
+  - @nocobase/app-plugin-cli-example@0.1.0-beta.7
+  - @nocobase/app-plugin-lifecycle-example@0.1.0-beta.20
+  - @nocobase/app-plugin-office-flows-example@0.1.0-beta.14
+  - @nocobase/app-plugin-realtime-example@0.1.0-beta.17
+  - @nocobase/app-plugin-repository-example@2.0.0-beta.9
+  - @nocobase/app-plugin-database-example@0.1.0-beta.11
+  - @nocobase/app-plugin-jobs-example@1.0.0-beta.14
+  - @nocobase/app-plugin-queue-example@1.0.0-beta.16
+  - @nocobase/app-plugin-service-provider-example@1.0.0-beta.12
+  - @nocobase/app-plugin-skills-example@1.0.0-beta.11
+  - @nocobase/concurrency@0.1.0-beta.1
+  - @nocobase/config@0.1.0-beta.3
+  - @nocobase/db-sqlite@0.1.0-beta.6
+  - @nocobase/i18n@2.0.0-beta.2
+  - @nocobase/realtime@1.0.0-beta.2
+  - @nocobase/repository-input@0.1.0-beta.3
+  - @nocobase/service-provider@0.0.2-beta.2
+  - @nocobase/snowflake@1.0.0-beta.4
+
 ## 2.0.0-beta
 
 ## 1.0.0-beta.84

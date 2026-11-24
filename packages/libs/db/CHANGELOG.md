@@ -1,5 +1,11 @@
 # @nocobase/db
 
+## 1.0.0-beta.30
+
+### Patch Changes
+
+- 1048669: Document how to create demo accounts with roles through the Users service in sample data, that `db reset` needs `db sample` afterwards to build service-registered sample data, and the primary key types of the lifecycle log tables.
+
 ## 1.0.0-beta.29
 
 ### Minor Changes

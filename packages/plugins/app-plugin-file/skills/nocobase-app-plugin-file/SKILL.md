@@ -9,6 +9,8 @@ Use `@nocobase/app-plugin-file/server` and `@nocobase/app-plugin-file/client`. T
 
 Inspect the App's existing registrations, migrations, disks, and resources first. Register the Server default export and the Client default factory before consumers, using the App's plugin lifecycle commands. The core does not create collections or routes.
 
+To omit the storage overview and disk check endpoints, register `createFileServerPlugin({ storageManagementRoutes: false })` from `@nocobase/app-plugin-file/server`. File repositories and application-owned attachment routes remain available. The default export enables both management endpoints.
+
 ## Find and reuse the preview UI first
 
 Inspect `client/extensions/nocobase-file-component-ui/` before writing upload or preview components. Current Default templates preinstall this application-owned UI Library source and its client dependencies; older applications and other templates may not. Import from its `index.ts`, not from plugin-internal paths. Registering the plugin supplies services and translations; it does not automatically install or upgrade the copied UI.

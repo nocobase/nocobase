@@ -1,9 +1,8 @@
-import type { PartialLocaleResource } from '@nocobase/i18n';
+import type { LocaleResource } from '@nocobase/i18n';
 
 import type enUS from './en-US.js';
 
-/** The inbox's main words; the rest falls back to English. */
-const viVN: PartialLocaleResource<typeof enUS> = {
+const viVN: LocaleResource<typeof enUS> = {
   inbox: {
     title: 'Hộp thư',
     views: {
@@ -24,14 +23,73 @@ const viVN: PartialLocaleResource<typeof enUS> = {
       info: 'Trước đó',
       decision: 'Đang chờ',
     },
+    actionsFor: 'Thao tác cho {{title}}',
+    allRead: 'Đã đánh dấu tất cả là đã đọc.',
+    back: 'Quay lại danh sách',
+    cancel: 'Hủy',
+    clearFilter: 'Xóa bộ lọc',
+    count: '×{{count}}',
+    deleted: 'Đã xóa.',
+    description: 'Thông báo và yêu cầu gửi đến bạn.',
+    empty: {
+      decision: 'Không có quyết định nào đang chờ bạn',
+      info: 'Không có thông báo',
+      todo: 'Không có gì đang chờ bạn',
+      unread: 'Đã xem hết',
+    },
+    emptyAll: 'Không có gì ở đây',
+    emptyDescription: 'Thông báo và yêu cầu gửi đến bạn sẽ xuất hiện ở đây.',
+    filters: 'Bộ lọc hộp thư đến',
+    forbidden: 'Bạn không được phép thực hiện thao tác này.',
+    keyMove: 'Di chuyển',
+    keyOpen: 'Đang mở',
+    kinds: {
+      all: 'Tất cả loại',
+      decision: 'Quyết định',
+      info: 'Trước đó',
+      label: 'Loại',
+      today: 'Hôm nay',
+    },
+    detailsUnavailable: 'Không thể tải một số chi tiết trong hộp thư đến.',
+    loadFailed: 'Không thể tải hộp thư đến',
+    loadFailedDescription: 'Kiểm tra kết nối rồi thử lại.',
+    loadMore: 'Tải thêm',
+    loading: 'Đang tải',
+    noMatchDescription: 'Xóa bộ lọc để xem mọi loại.',
+    nothingSelected: 'Chọn một mục để xem',
+    notification: 'Thông báo',
+    outcomes: {
+      approved: 'Đã phê duyệt',
+      rejected: 'Đã từ chối',
+      withdrawn: 'Đã rút lại',
+    },
+    pendingDecisions: '{{count}} đang chờ',
+    request: {
+      approve: 'Phê duyệt',
+      commentFor: '{{action}}: {{title}}',
+      commentPlaceholder: 'Viết gì đó…',
+      newLine: 'để xuống dòng',
+      quickSend: 'để gửi',
+      reject: 'Từ chối',
+    },
+    requestFailed: 'Yêu cầu thất bại. Hãy thử lại.',
+    resolved: 'Đã xử lý',
+    retry: 'Thử lại',
+    unread: 'Chưa đọc',
+    unreadCount: '{{count}} chưa đọc',
   },
   inboxButton: {
     title: 'Hộp thư',
     viewAll: 'Mở hộp thư',
+    empty: 'Chưa có tin nhắn',
+    pending: 'Hộp thư đến, đang chờ: {{count}}',
+    recent: 'Tin nhắn gần đây',
+    unread: 'Hộp thư đến, {{count}} chưa đọc',
   },
   nav: {
     inbox: 'Hộp thư',
   },
+  common: { loading: 'Đang tải' },
 };
 
 export default viVN;

@@ -9,6 +9,8 @@ import fs from 'node:fs';
 import { createRequire } from 'node:module';
 import os from 'node:os';
 import path from 'node:path';
+import { readDatabaseInventory } from '../packages/tools/app-installer/src/lib/backup.ts';
+import { layoutOf } from '../packages/tools/app-installer/src/lib/layout.ts';
 
 const usage = `Usage: node scripts/smoke-app-installer.mjs --root DIR --archive FILE
   [--port 13000] [-- INSTALLER...]
@@ -125,19 +127,17 @@ export function markLastUpgradeMigrated(root) {
   writeState(root, state);
 }
 
-/** The application's SQLite database: the one file a fresh application has. */
+/** The SQLite file configured for the application's default connection. */
 export function databaseFile(root) {
-  const found = fs
-    .readdirSync(path.join(root, 'storage'), {
-      recursive: true,
-      withFileTypes: true,
-    })
-    .filter((entry) => entry.isFile() && entry.name.endsWith('.sqlite'));
-  if (found.length !== 1)
+  const inventory = readDatabaseInventory(layoutOf(root), {});
+  const file = inventory.sqlite.find(
+    ({ connection }) => connection === inventory.defaultConnection,
+  )?.file;
+  if (!file || !fs.statSync(file, { throwIfNoEntry: false })?.isFile())
     fail(
-      `Expected one SQLite database under ${path.join(root, 'storage')}, found ${found.length}.`,
+      `Expected a SQLite file for connection "${inventory.defaultConnection}" in ${root}/config.yml.`,
     );
-  return path.join(found[0].parentPath, found[0].name);
+  return file;
 }
 
 /** Opens the application's SQLite database with the better-sqlite3 a release ships. */

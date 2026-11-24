@@ -15,17 +15,21 @@ run-name: studio-release:${{ inputs.channel }}${{ inputs.dry_run && ' (dry run)'
 #   versions of package.json and packages/studio-cli/package.json are bumped to the next version (1.0.0-beta.58 ->
 #   1.0.0-beta.59, 1.0.0 -> 1.0.1) through a squashed pull request into the source branch.
 # - Once the tag is pushed, Studio's own scripts/release/release-notes.mjs, taken from the released commit, writes the
-#   English and Chinese release notes from the descriptions of the pull requests merged since the previous tag. They
-#   become the GitHub release `v<version>` of nocobase/studio (a prerelease for beta; an existing release is left
-#   alone), go into the job summary with the pull requests whose description the script could not read, and the
-#   Chinese notes go into the success notice. The same script prepends the version to CHANGELOG.md and
-#   CHANGELOG.zh-CN.md, which live on `dev` only: a beta release commits them in its bump pull request to `dev`; a
-#   latest release keeps its bump pull request to `main` version-only and merges them into `dev` through a second
-#   squashed pull request from `release/studio-<version>-changelog`. Notes, changelog and GitHub release are
-#   best-effort: the image and the tag are already published by then, so a failure there (or a released commit older
-#   than the script) warns and is reported in the summary and the notice, but never fails the run. Each image's public
-#   notes (without pull request links and authors, and Studio's without Studio EE-only areas) are also uploaded to the
-#   registry, where the public image pages show them per version; also best-effort.
+#   release notes in English, Chinese and Japanese from the descriptions of the pull requests merged since the
+#   previous tag, with pull request links but no authors. They become the GitHub release `v<version>` of
+#   nocobase/studio (a prerelease for beta; an existing release is left alone), go into the job summary with the pull
+#   requests whose description the script could not read, and the Chinese notes go into the success notice. The same
+#   script prepends the version to CHANGELOG.md, CHANGELOG.zh-CN.md and CHANGELOG.ja-JP.md (released commits older
+#   than Japanese support write the first two only), which live on `dev` only: a beta release commits them in its bump
+#   pull request to `dev`; a latest release keeps its bump pull request to `main` version-only and merges them into
+#   `dev` through a second squashed pull request from `release/studio-<version>-changelog`. Notes, changelog and
+#   GitHub release are best-effort: the image and the tag are already published by then, so a failure there (or a
+#   released commit older than the script) warns and is reported in the summary and the notice, but never fails the
+#   run. Each image's public notes (without pull request links and authors, and Studio's without Studio EE-only areas)
+#   are also uploaded to the registry, where the public image pages show them per version, with the Japanese notes
+#   when the script wrote them; also best-effort. The script's website notes (every change across the three images,
+#   paid-only modules marked with an edition) are committed to nocobase/website-v3 as the Studio entry of
+#   https://www.nocobase.com/changelog/ by scripts/studio-website-changelog.mjs; best-effort as well.
 # - Once Studio CE is on both public registries, a release that moves studio-ce's `latest` tag also uploads the
 #   one-command installer of the released commit to https://get.nocobase.com/studio, whose default image is
 #   `nocobase/studio-ce:latest`, by calling v3-studio-installer.yml (the `installer` job). It is best-effort too, in a
@@ -703,9 +707,9 @@ jobs:
       # commit older than the script has no notes. It reads every pull request in `<previous tag>..v<version>` through gh,
       # hence the write token (pull requests read is all it uses). scripts/release is copied out of the checkout because
       # the latest channel runs it again later from a checkout of dev, which may hold a different version of it.
-      # For beta it also prepends the version to CHANGELOG.md and CHANGELOG.zh-CN.md in the working tree, which the bump
-      # commit then carries. Any failure is a warning: a half-written changelog is restored and the release goes on
-      # without notes.
+      # For beta it also prepends the version to CHANGELOG.md, CHANGELOG.zh-CN.md and CHANGELOG.ja-JP.md in the working
+      # tree, which the bump commit then carries. Any failure is a warning: a half-written changelog is restored and the
+      # release goes on without notes.
       - name: Write the release notes
         id: notes
         continue-on-error: true
@@ -729,7 +733,7 @@ jobs:
             else
               echo "::warning::Writing the release notes failed; this release goes on without them."
               rm -rf "$notes"
-              for file in CHANGELOG.md CHANGELOG.zh-CN.md; do
+              for file in CHANGELOG.md CHANGELOG.zh-CN.md CHANGELOG.ja-JP.md; do
                 if git ls-files --error-unmatch -- "$file" > /dev/null 2>&1; then
                   git checkout HEAD -- "$file"
                 else
@@ -738,7 +742,7 @@ jobs:
               done
             fi
           fi
-          if [ "$available" = "true" ] && [ -n "$(git status --porcelain -- CHANGELOG.md CHANGELOG.zh-CN.md)" ]; then
+          if [ "$available" = "true" ] && [ -n "$(git status --porcelain -- CHANGELOG.md CHANGELOG.zh-CN.md CHANGELOG.ja-JP.md)" ]; then
             changelog=true
           fi
           {
@@ -774,7 +778,7 @@ jobs:
           done
           git add package.json packages/studio-cli/package.json
           if [ "$CHANGELOG" = "true" ]; then
-            for file in CHANGELOG.md CHANGELOG.zh-CN.md; do
+            for file in CHANGELOG.md CHANGELOG.zh-CN.md CHANGELOG.ja-JP.md; do
               if [ -e "$file" ]; then git add -- "$file"; fi
             done
           fi
@@ -798,7 +802,7 @@ jobs:
         run: |
           subject="chore: bump studio version to ${NEXT} [skip ci]"
           body="Studio \`${VERSION}\` was released as \`${REGISTRY}/${IMAGE_REPOSITORY}:${VERSION}\` and tagged \`v${VERSION}\`; this moves \`${SOURCE_BRANCH}\` on to \`${NEXT}\`."
-          if [ "$CHANGELOG" = "true" ]; then body="${body} It also adds \`v${VERSION}\` to CHANGELOG.md and CHANGELOG.zh-CN.md."; fi
+          if [ "$CHANGELOG" = "true" ]; then body="${body} It also adds \`v${VERSION}\` to CHANGELOG.md, CHANGELOG.zh-CN.md and CHANGELOG.ja-JP.md."; fi
           pr_url=$(gh pr create -R nocobase/studio \
             --base "$SOURCE_BRANCH" \
             --head "$BUMP_BRANCH" \
@@ -836,7 +840,7 @@ jobs:
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
         run: |
           fail() {
-            echo "::warning::Writing the changelog of v${VERSION} into dev failed: $1. Add it to CHANGELOG.md and CHANGELOG.zh-CN.md on dev by hand."
+            echo "::warning::Writing the changelog of v${VERSION} into dev failed: $1. Add it to CHANGELOG.md, CHANGELOG.zh-CN.md and CHANGELOG.ja-JP.md on dev by hand."
             echo "result=failed" >> "$GITHUB_OUTPUT"
             exit 0
           }
@@ -846,12 +850,12 @@ jobs:
           node "${RUNNER_TEMP}/studio-release-scripts/release-notes.mjs" \
             --tag "v${VERSION}" --channel latest --repo nocobase/studio \
             --out-dir "${RUNNER_TEMP}/notes-dev" --changelog-root . || fail "the release notes script exited non-zero"
-          if [ -z "$(git status --porcelain -- CHANGELOG.md CHANGELOG.zh-CN.md)" ]; then
+          if [ -z "$(git status --porcelain -- CHANGELOG.md CHANGELOG.zh-CN.md CHANGELOG.ja-JP.md)" ]; then
             echo "dev's changelogs already have v${VERSION}."
             echo "result=unchanged" >> "$GITHUB_OUTPUT"
             exit 0
           fi
-          for file in CHANGELOG.md CHANGELOG.zh-CN.md; do
+          for file in CHANGELOG.md CHANGELOG.zh-CN.md CHANGELOG.ja-JP.md; do
             if [ -e "$file" ]; then git add -- "$file"; fi
           done
           git diff --cached --stat
@@ -861,7 +865,7 @@ jobs:
             --base dev \
             --head "$CHANGELOG_BRANCH" \
             --title "$subject" \
-            --body "Adds Studio \`v${VERSION}\`, released from \`main\`, to CHANGELOG.md and CHANGELOG.zh-CN.md. Released by ${RUN_URL}") \
+            --body "Adds Studio \`v${VERSION}\`, released from \`main\`, to CHANGELOG.md, CHANGELOG.zh-CN.md and CHANGELOG.ja-JP.md. Released by ${RUN_URL}") \
             || fail "opening the pull request from ${CHANGELOG_BRANCH}"
           echo "url=${pr_url}" >> "$GITHUB_OUTPUT"
 
@@ -921,10 +925,11 @@ jobs:
 
       # The registry's public image pages (https://pkg-v3.nocobase.com/-/images/nocobase/studio and studio-ee) show each
       # version's release notes, read from PUT /-/release-notes/<repository>/<version>. Customers cannot open the private
-      # nocobase/studio, so each image gets the public notes the script writes for it, release-notes.<image>.<language>.md,
-      # without pull request links and authors; Studio's leave out the scopes Studio's scripts/release/scopes.json marks
-      # Studio EE-only. An upload replaces the version's notes, so a retried run is harmless. A released commit whose script
-      # writes no notes for an image uploads nothing for it. Failure is a warning only.
+      # nocobase/studio, so each image gets the public notes the script writes for it, release-notes.<image>.<language>.md
+      # in English, Chinese and, when the script writes it, Japanese, without pull request links and authors; Studio's
+      # leave out the scopes Studio's scripts/release/scopes.json marks Studio EE-only. An upload replaces the version's
+      # notes, so a retried run is harmless. A released commit whose script writes no notes for an image uploads nothing
+      # for it. Failure is a warning only.
       - name: Upload the release notes to the registry
         id: registry_notes
         continue-on-error: true
@@ -946,7 +951,13 @@ jobs:
               continue
             fi
             body="${RUNNER_TEMP}/registry-release-notes.${edition}.json"
-            jq -nc --rawfile en "$en" --rawfile zh "$zh" '{ en: $en, "zh-CN": $zh }' > "$body"
+            # Japanese notes come from released commits whose script writes them; older ones send English and Chinese.
+            ja="${notes}/release-notes.${edition}.ja-JP.md"
+            if [ -s "$ja" ]; then
+              jq -nc --rawfile en "$en" --rawfile zh "$zh" --rawfile ja "$ja" '{ en: $en, "zh-CN": $zh, "ja-JP": $ja }' > "$body"
+            else
+              jq -nc --rawfile en "$en" --rawfile zh "$zh" '{ en: $en, "zh-CN": $zh }' > "$body"
+            fi
             url="https://${REGISTRY}/-/release-notes/${repository}/${VERSION}"
             if curl --fail-with-body --silent --show-error --retry 3 --retry-all-errors --max-time 30 \
               --request PUT \
@@ -971,6 +982,138 @@ jobs:
             echo "result=partial" >> "$GITHUB_OUTPUT"
           fi
 
+      # Studio's script writes release-notes.website.<locale>.md for a release with changes: every change across the
+      # three images, paid-only modules marked with an edition. scripts/studio-website-changelog.mjs of this workflow's
+      # ref turns them into homepage/content/changelog/studio-<version>.md (.zh-CN.md, .ja-JP.md) of nocobase/website-v3,
+      # which www.nocobase.com/changelog/ lists in the same timeline as NocoBase 3. A push to website-v3's main runs its
+      # site.yml, which builds and publishes the site, so the commit message must never suppress CI. A released commit
+      # whose script writes no website notes, or a release with no changes, adds nothing. Requires the NocoBase App to be
+      # installed on nocobase/website-v3 with contents write (v3-github-release.yml uses it the same way). Failure is a
+      # warning only; the summary and the success notice report it.
+      - name: Check for website notes
+        id: website_notes
+        if: ${{ !cancelled() && steps.tag.outputs.tagged == 'true' && steps.notes.outputs.available == 'true' }}
+        run: |
+          if [ -s "${RUNNER_TEMP}/notes/release-notes.website.en.md" ]; then
+            echo "available=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "The released commit's release notes script wrote no website notes; the website gets no entry."
+            echo "available=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Create a website token
+        id: website_token
+        continue-on-error: true
+        if: ${{ !cancelled() && steps.website_notes.outputs.available == 'true' }}
+        uses: actions/create-github-app-token@v2
+        with:
+          app-id: ${{ vars.NOCOBASE_APP_ID }}
+          private-key: ${{ secrets.NOCOBASE_APP_PRIVATE_KEY }}
+          owner: nocobase
+          repositories: website-v3
+          permission-contents: write
+
+      - name: Check out the website changelog script
+        id: website_tooling
+        continue-on-error: true
+        if: ${{ !cancelled() && steps.website_token.outcome == 'success' }}
+        uses: actions/checkout@v4
+        with:
+          path: website-tooling
+          sparse-checkout: scripts
+          persist-credentials: false
+
+      # The App token stays in this checkout's credentials so the next step can push; nothing else uses it.
+      - name: Check out the website
+        id: website
+        continue-on-error: true
+        if: ${{ !cancelled() && steps.website_tooling.outcome == 'success' }}
+        uses: actions/checkout@v4
+        with:
+          repository: nocobase/website-v3
+          ref: main
+          path: website-v3
+          fetch-depth: 1
+          token: ${{ steps.website_token.outputs.token }}
+
+      # Other releases may push to website-v3 at the same time. A rejected push starts again from the new main and
+      # writes the entry afresh rather than rebasing, because the commit only ever adds, replaces or removes this
+      # entry's files; a rewritten entry keeps its date and publishedAt.
+      - name: Publish the changelog to the website
+        id: website_changelog
+        continue-on-error: true
+        if: ${{ !cancelled() && steps.website.outcome == 'success' }}
+        working-directory: website-v3
+        env:
+          VERSION: ${{ needs.prepare.outputs.version }}
+        run: |
+          git config user.name "nocobase[bot]"
+          git config user.email "179432756+nocobase[bot]@users.noreply.github.com"
+          for attempt in 1 2 3 4 5; do
+            if [ "$attempt" -gt 1 ]; then
+              sleep $((attempt * 5))
+              git fetch --depth=1 origin main
+              git reset --hard --quiet FETCH_HEAD
+            fi
+            # Every file of the entry the script wrote, left unchanged or removed: the English file comes first.
+            output=$(node "$GITHUB_WORKSPACE/website-tooling/scripts/studio-website-changelog.mjs" \
+              --version "$VERSION" \
+              --notes-dir "${RUNNER_TEMP}/notes" \
+              --out-dir homepage/content/changelog)
+            mapfile -t files <<< "$output"
+            if [ -z "${files[0]}" ]; then
+              echo "Studio v${VERSION} has no website notes, so the website gets no entry for it."
+              echo "result=skipped" >> "$GITHUB_OUTPUT"
+              exit 0
+            fi
+            if git cat-file -e "HEAD:${files[0]}" 2> /dev/null; then verb=update; else verb=add; fi
+            git add --all -- "${files[@]}"
+            if git diff --cached --quiet; then
+              echo "The website already has the entry for Studio v${VERSION}."
+              echo "result=unchanged" >> "$GITHUB_OUTPUT"
+              exit 0
+            fi
+            git commit --quiet -m "chore(changelog): $verb studio v${VERSION}"
+            if git push origin HEAD:main; then
+              echo "Committed ${files[*]} to nocobase/website-v3 ($verb)."
+              {
+                echo "result=published"
+                echo "url=https://github.com/nocobase/website-v3/commit/$(git rev-parse HEAD)"
+              } >> "$GITHUB_OUTPUT"
+              exit 0
+            fi
+            echo "Push attempt $attempt was rejected; retrying from the new main."
+          done
+          echo "::warning::Could not push the changelog of Studio v${VERSION} to nocobase/website-v3 main after 5 attempts."
+          exit 1
+
+      # Collapses the steps above into one result for the summary and the notice: skipped when there was nothing to
+      # publish, failed when a step that ran did not succeed.
+      - name: Report the website changelog
+        id: website_result
+        if: ${{ !cancelled() && steps.tag.outputs.tagged == 'true' && steps.notes.outputs.available == 'true' }}
+        env:
+          TOKEN: ${{ steps.website_token.outcome }}
+          TOOLING: ${{ steps.website_tooling.outcome }}
+          CHECKOUT: ${{ steps.website.outcome }}
+          COMMIT: ${{ steps.website_changelog.outcome }}
+          RESULT: ${{ steps.website_changelog.outputs.result }}
+          URL: ${{ steps.website_changelog.outputs.url }}
+          VERSION: ${{ needs.prepare.outputs.version }}
+        run: |
+          if [ "$TOKEN" = "skipped" ]; then
+            result=skipped
+          elif [ "$TOKEN" = "failure" ] || [ "$TOOLING" = "failure" ] || [ "$CHECKOUT" = "failure" ] || [ "$COMMIT" = "failure" ]; then
+            result=failed
+            echo "::warning::The changelog of Studio v${VERSION} was not published to the website; add homepage/content/changelog/studio-${VERSION}.md to nocobase/website-v3 by hand (scripts/studio-website-changelog.mjs)."
+          else
+            result="${RESULT:-failed}"
+          fi
+          {
+            echo "result=${result}"
+            echo "url=${URL}"
+          } >> "$GITHUB_OUTPUT"
+
       - name: Summary
         if: ${{ always() }}
         env:
@@ -993,6 +1136,8 @@ jobs:
           RELEASE_RESULT: ${{ steps.github_release.outputs.result }}
           RELEASE_URL: ${{ steps.github_release.outputs.url }}
           REGISTRY_NOTES_RESULT: ${{ steps.registry_notes.outputs.result }}
+          WEBSITE_RESULT: ${{ steps.website_result.outputs.result }}
+          WEBSITE_URL: ${{ steps.website_result.outputs.url }}
           INSTALLER_REASON: ${{ needs.prepare.outputs.installer_reason }}
         run: |
           notes="${RUNNER_TEMP}/notes"
@@ -1034,6 +1179,7 @@ jobs:
             echo "- GitHub release: ${RELEASE_URL:-not created} (${RELEASE_RESULT:-skipped})"
             echo "- Changelog: ${changelog}"
             echo "- Release notes on ${REGISTRY}/-/images: ${REGISTRY_NOTES_RESULT:-skipped}"
+            echo "- Changelog on https://www.nocobase.com/changelog/: ${WEBSITE_RESULT:-skipped}${WEBSITE_URL:+ (${WEBSITE_URL})}"
             echo "- One-command installer at https://get.nocobase.com/studio: ${INSTALLER_REASON}"
             echo
             echo "\`docker pull ${REGISTRY}/${IMAGE_REPOSITORY}:${VERSION}\`"
@@ -1114,6 +1260,7 @@ jobs:
           CHANGELOG_RESULT: ${{ steps.changelog.outputs.result }}
           CHANGELOG_URL: ${{ steps.changelog.outputs.url }}
           INSTALLER_UPLOAD: ${{ needs.prepare.outputs.installer_upload }}
+          WEBSITE_RESULT: ${{ steps.website_result.outputs.result }}
         run: |
           notes="${RUNNER_TEMP}/notes"
           published_tags=
@@ -1138,6 +1285,9 @@ jobs:
             extra="${extra:+${extra}${nl}}GitHub Release：${RELEASE_URL}"
           else
             extra="${extra:+${extra}${nl}}⚠️ GitHub Release 没有创建成功，需要手动创建。"
+          fi
+          if [ "$WEBSITE_RESULT" = "failed" ]; then
+            extra="${extra:+${extra}${nl}}⚠️ 更新日志没有发布到官网 www.nocobase.com/changelog/，详见构建详情。"
           fi
           if [ "$INSTALLER_UPLOAD" = "true" ]; then
             extra="${extra:+${extra}${nl}}一键安装脚本 https://get.nocobase.com/studio 由 installer 任务另外上传（OSS 没配置时跳过，见构建详情），失败会单独通知。"
