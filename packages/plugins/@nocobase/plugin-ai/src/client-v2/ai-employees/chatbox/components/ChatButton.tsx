@@ -44,7 +44,7 @@ export const ChatButton: React.FC = observer(() => {
   const { switchAIEmployee } = useChatBoxActions();
 
   useEffect(() => {
-    repository.getAIEmployees().catch(console.error);
+    repository.refreshAIEmployees().catch(console.error);
   }, [repository]);
 
   useEffect(() => {

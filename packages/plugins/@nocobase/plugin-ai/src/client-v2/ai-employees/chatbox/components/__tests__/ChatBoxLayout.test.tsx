@@ -8,7 +8,8 @@
  */
 
 import React from 'react';
-import { cleanup, render, waitFor } from '@testing-library/react';
+import { CurrentUserContext } from '@nocobase/client-v2';
+import { act, cleanup, render, waitFor } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { AI_EMPLOYEE_TRIGGER_TASK_EVENT } from '../../../../manager/ai-manager';
 import { clearMountedChatBoxes, registerMountedChatBox } from '../../stores/mounted-chat-boxes';
@@ -26,6 +27,7 @@ const runtime = vi.hoisted(() => {
   const app = {
     eventBus,
     apiClient: {
+      auth: { token: 'test-token' },
       resource: vi.fn(),
     },
     pm: {
@@ -70,7 +72,8 @@ vi.mock('antd', async (importOriginal) => {
   };
 });
 
-vi.mock('@nocobase/client-v2', () => ({
+vi.mock('@nocobase/client-v2', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@nocobase/client-v2')>()),
   useApp: () => runtime.app,
   useMobileLayout: () => ({ isMobileLayout: false }),
 }));
@@ -113,9 +116,18 @@ vi.mock('../../../AISelectionControl', () => ({
   AISelectionControl: () => null,
 }));
 
+function renderAuthenticatedLayout() {
+  return render(
+    <CurrentUserContext.Provider value={{ loading: false, data: { data: { id: 1 } } }}>
+      <ChatBoxLayout />
+    </CurrentUserContext.Provider>,
+  );
+}
+
 describe('ChatBoxLayout AI employee task bridge', () => {
   afterEach(() => {
     cleanup();
+    runtime.app.apiClient.auth.token = 'test-token';
     runtime.triggerTask.mockClear();
     runtime.loadUnreadCounts.mockClear();
     runtime.onChatBoxMounted.mockClear();
@@ -126,8 +138,40 @@ describe('ChatBoxLayout AI employee task bridge', () => {
     clearMountedChatBoxes();
   });
 
+  it('starts chat when the user is authenticated and stops unread refreshes on sign-out', () => {
+    const layout = (id?: number) => (
+      <CurrentUserContext.Provider value={{ loading: false, data: { data: id == null ? undefined : { id } } }}>
+        <ChatBoxLayout>
+          <input aria-label="page" />
+        </ChatBoxLayout>
+      </CurrentUserContext.Provider>
+    );
+    const { getByRole, rerender } = render(layout());
+    const pageInput = getByRole('textbox');
+    expect(runtime.loadUnreadCounts).not.toHaveBeenCalled();
+    expect(runtime.onChatBoxMounted).not.toHaveBeenCalled();
+
+    rerender(layout(1));
+    expect(getByRole('textbox')).toBe(pageInput);
+    expect(runtime.onChatBoxMounted).toHaveBeenCalledTimes(1);
+    expect(runtime.loadUnreadCounts).toHaveBeenCalledTimes(1);
+
+    act(() => {
+      runtime.app.apiClient.auth.token = '';
+      runtime.eventBus.dispatchEvent(new Event('auth:tokenChanged'));
+    });
+    runtime.eventBus.dispatchEvent(new Event('ws:message:ai-conversations:read'));
+    expect(runtime.loadUnreadCounts).toHaveBeenCalledTimes(1);
+    expect(runtime.onChatBoxUnmounted).toHaveBeenCalledTimes(1);
+    act(() => {
+      runtime.app.apiClient.auth.token = 'new-token';
+      runtime.eventBus.dispatchEvent(new Event('auth:tokenChanged'));
+    });
+    expect(runtime.loadUnreadCounts).toHaveBeenCalledTimes(2);
+  });
+
   it('calls hook triggerTask after receiving an AI employee task event', async () => {
-    render(<ChatBoxLayout />);
+    renderAuthenticatedLayout();
 
     await waitFor(() => {
       expect(runtime.onChatBoxMounted).toHaveBeenCalledTimes(1);
@@ -159,7 +203,7 @@ describe('ChatBoxLayout AI employee task bridge', () => {
       syncContextItems: vi.fn(),
     });
 
-    render(<ChatBoxLayout />);
+    renderAuthenticatedLayout();
 
     await waitFor(() => {
       expect(runtime.onChatBoxMounted).toHaveBeenCalledTimes(1);
@@ -194,7 +238,7 @@ describe('ChatBoxLayout AI employee task bridge', () => {
       syncContextItems: vi.fn(),
     });
 
-    render(<ChatBoxLayout />);
+    renderAuthenticatedLayout();
 
     await waitFor(() => {
       expect(runtime.onChatBoxMounted).toHaveBeenCalledTimes(1);
@@ -218,7 +262,7 @@ describe('ChatBoxLayout AI employee task bridge', () => {
   });
 
   it('marks the ChatBox unmounted before removing the bridge listener', async () => {
-    const { unmount } = render(<ChatBoxLayout />);
+    const { unmount } = renderAuthenticatedLayout();
 
     await waitFor(() => {
       expect(runtime.onChatBoxMounted).toHaveBeenCalledTimes(1);

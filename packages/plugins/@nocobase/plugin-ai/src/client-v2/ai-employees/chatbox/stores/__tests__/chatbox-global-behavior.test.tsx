@@ -14,7 +14,7 @@ import { ChatButton } from '../../components/ChatButton';
 import { ChatBoxRuntimeProvider, createChatBoxRuntime, type ChatBoxRuntime } from '../runtime';
 
 const mocks = vi.hoisted(() => ({
-  getAIEmployees: vi.fn(),
+  refreshAIEmployees: vi.fn(),
   setResponseLoading: vi.fn(),
   switchAIEmployee: vi.fn(),
 }));
@@ -50,7 +50,7 @@ vi.mock('../../../../repositories/hooks/useAIConfigRepository', () => ({
         builtIn: true,
       },
     ],
-    getAIEmployees: mocks.getAIEmployees,
+    refreshAIEmployees: mocks.refreshAIEmployees,
   }),
 }));
 
@@ -88,19 +88,20 @@ const renderWithRuntime = (runtime: ChatBoxRuntime) => {
 
 describe('global chatbox behavior', () => {
   beforeEach(() => {
-    mocks.getAIEmployees.mockResolvedValue(undefined);
+    mocks.refreshAIEmployees.mockResolvedValue(undefined);
     mocks.setResponseLoading.mockClear();
     mocks.switchAIEmployee.mockClear();
   });
 
   afterEach(() => {
-    mocks.getAIEmployees.mockReset();
+    mocks.refreshAIEmployees.mockReset();
   });
 
   it('opens the global runtime and selects the leader employee from ChatButton', () => {
     const runtime = createChatBoxRuntime();
 
     renderWithRuntime(runtime);
+    expect(mocks.refreshAIEmployees).toHaveBeenCalledTimes(1);
 
     fireEvent.click(screen.getByRole('button', { name: 'Open AI chat' }));
 

@@ -7,10 +7,10 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React, { useCallback, useEffect } from 'react';
+import React, { useCallback, useEffect, useSyncExternalStore } from 'react';
 import { Avatar, Button, Card, Flex, notification, theme, Typography } from 'antd';
 import { CloseOutlined } from '@ant-design/icons';
-import { useApp, useMobileLayout } from '@nocobase/client-v2';
+import { CurrentUserContext, useApp, useMobileLayout } from '@nocobase/client-v2';
 import { observer } from '@nocobase/flow-engine';
 import { ChatBox } from './ChatBox';
 import { ChatButton } from './ChatButton';
@@ -33,17 +33,32 @@ const { Text } = Typography;
 
 export const ChatBoxLayout: React.FC<{
   children?: React.ReactNode;
-}> = ({ children }) => {
+  UserConsumer?: typeof CurrentUserContext.Consumer;
+}> = ({ children, UserConsumer = CurrentUserContext.Consumer }) => {
+  const { apiClient, eventBus } = useApp();
+  // V1 can retain the last current-user response after sign-out.
+  const subscribe = useCallback(
+    (notify: () => void) => {
+      eventBus.addEventListener('auth:tokenChanged', notify);
+      return () => eventBus.removeEventListener('auth:tokenChanged', notify);
+    },
+    [eventBus],
+  );
+  const hasToken = useSyncExternalStore(subscribe, () => Boolean(apiClient.auth.token));
   return (
     <ChatBoxRuntimeProvider runtime={getGlobalChatBoxRuntime()}>
-      <ChatBoxLayoutContent>{children}</ChatBoxLayoutContent>
+      {children}
+      <UserConsumer>
+        {(user) => {
+          const userId = user?.data?.data?.id;
+          return hasToken && userId != null ? <ChatBoxLayoutContent key={userId} /> : null;
+        }}
+      </UserConsumer>
     </ChatBoxRuntimeProvider>
   );
 };
 
-const ChatBoxLayoutContent: React.FC<{
-  children?: React.ReactNode;
-}> = observer(({ children }) => {
+const ChatBoxLayoutContent = observer(() => {
   const app = useApp();
   const { isMobileLayout } = useMobileLayout();
   const { chatBoxModel, chatToolModel } = useChatBoxRuntime();
@@ -112,7 +127,6 @@ const ChatBoxLayoutContent: React.FC<{
 
   return (
     <>
-      {children}
       <ChatButton />
       {open && !expanded && !isMobileLayout ? (
         <style>

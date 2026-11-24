@@ -8,6 +8,7 @@
  */
 
 import React from 'react';
+import { CurrentUserContext } from '@nocobase/client-v2';
 import { act, render, renderHook, screen } from '@testing-library/react';
 import { observer } from '@nocobase/flow-engine';
 import { afterEach, describe, expect, it, vi } from 'vitest';
@@ -43,6 +44,7 @@ vi.mock('@nocobase/client-v2', async (importOriginal) => ({
       })),
     },
     apiClient: {
+      auth: { token: 'test-token' },
       resource: () => ({
         unreadCounts: async () => ({
           data: {
@@ -225,9 +227,11 @@ describe('chatbox runtime context', () => {
     getGlobalChatBoxRuntime().chatSenderModel.setSenderValue('layout-runtime');
 
     render(
-      <ChatBoxLayout>
-        <RuntimeReader />
-      </ChatBoxLayout>,
+      <CurrentUserContext.Provider value={{ loading: false, data: { data: { id: 1 } } }}>
+        <ChatBoxLayout>
+          <RuntimeReader />
+        </ChatBoxLayout>
+      </CurrentUserContext.Provider>,
     );
 
     expect(screen.getByTestId('runtime-reader').textContent).toBe('layout-runtime');
@@ -237,7 +241,11 @@ describe('chatbox runtime context', () => {
   it('renders global floating surfaces from runtime state', () => {
     const runtime = getGlobalChatBoxRuntime();
 
-    render(<ChatBoxLayout />);
+    render(
+      <CurrentUserContext.Provider value={{ loading: false, data: { data: { id: 1 } } }}>
+        <ChatBoxLayout />
+      </CurrentUserContext.Provider>,
+    );
 
     expect(screen.queryByTestId('chat-box')).toBeNull();
     expect(screen.queryByTestId('tool-modal')).toBeNull();
