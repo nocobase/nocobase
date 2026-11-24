@@ -41,7 +41,10 @@ export function UserMenu(): ReactElement {
   const toaster = useToaster();
   const resolveError = useAuthenticationErrorResolver();
   const { open } = usePersonalSettingsNavigation();
-  const { config } = useClientApplication();
+  const { config, runtime } = useClientApplication();
+  const hasPersonalSettings = runtime.routes.some(
+    (route) => route.surface === 'personalSettings',
+  );
 
   const name =
     identity?.fullName ||
@@ -84,19 +87,21 @@ export function UserMenu(): ReactElement {
         </div>
         <DropdownMenuSeparator />
         {/* Personal settings come first; Language and Theme stay below as shortcuts to the same preferences. */}
-        <DropdownMenuItem
-          className='gap-2'
-          onClick={() => {
-            open(
-              config.get('personalSettings.openMode') === 'dialog'
-                ? 'dialog'
-                : 'page',
-            );
-          }}
-        >
-          <UserCog className='size-4' />
-          {t('settings.personal.title')}
-        </DropdownMenuItem>
+        {hasPersonalSettings && (
+          <DropdownMenuItem
+            className='gap-2'
+            onClick={() => {
+              open(
+                config.get('personalSettings.openMode') === 'dialog'
+                  ? 'dialog'
+                  : 'page',
+              );
+            }}
+          >
+            <UserCog className='size-4' />
+            {t('settings.personal.title')}
+          </DropdownMenuItem>
+        )}
         <LanguageSwitcher />
         <ThemeSettings />
         <DropdownMenuSeparator />

@@ -1,5 +1,7 @@
 # UI customization
 
+Set `chatRoutes: false` to omit the chat pages.
+
 The plugin brings its UI when it is registered; customize it in layers, choosing the least that does the job. Each layer keeps what later versions of the plugin bring, except the last.
 
 ## 1. Register the plugin

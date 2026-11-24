@@ -1,7 +1,10 @@
 // @vitest-environment node
 import { expect, it } from 'vitest';
 import client from '../client/index.js';
-import server, { FILE_COLUMNS } from '../server/index.js';
+import server, {
+  createFileServerPlugin,
+  FILE_COLUMNS,
+} from '../server/index.js';
 
 it('provides services, public disk limits and the file storage settings page without owning collections', () => {
   expect(server.serviceProviders).toHaveLength(2);
@@ -38,4 +41,11 @@ it('publishes the file column contract from the Server entry', () => {
     'createdAt',
     'updatedAt',
   ]);
+});
+
+it('can omit storage management routes while keeping file services', () => {
+  expect(createFileServerPlugin().routes).toEqual(server.routes);
+  const plugin = createFileServerPlugin({ storageManagementRoutes: false });
+  expect(plugin.routes).toEqual([]);
+  expect(plugin.serviceProviders).toEqual(server.serviceProviders);
 });

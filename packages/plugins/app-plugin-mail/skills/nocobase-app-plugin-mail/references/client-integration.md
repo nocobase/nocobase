@@ -1,5 +1,7 @@
 # Client integration
 
+Set `workspaceRoutes: false` to omit the Mail and Team mail business pages.
+
 See the [public API inventory](public-api.md) for the exact package entries, exported Client methods, component props and Server extension contracts.
 
 ## Production composition

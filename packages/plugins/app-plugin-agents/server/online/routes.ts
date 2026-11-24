@@ -50,6 +50,7 @@ export function createModelRoutes(
 ): Hono<AdminEnv> {
   const router = domainRouter<AdminEnv>();
   const online = agents.models;
+  if (online.enabled === false) return router;
 
   const allow =
     (

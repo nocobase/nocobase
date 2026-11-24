@@ -1,9 +1,8 @@
-import type { PartialLocaleResource } from '@nocobase/i18n';
+import type { LocaleResource } from '@nocobase/i18n';
 
 import type enUS from './en-US.js';
 
-/** The inbox's main words; the rest falls back to English. */
-const jaJP: PartialLocaleResource<typeof enUS> = {
+const jaJP: LocaleResource<typeof enUS> = {
   inbox: {
     title: '受信箱',
     views: {
@@ -24,14 +23,73 @@ const jaJP: PartialLocaleResource<typeof enUS> = {
       info: 'それ以前',
       decision: '対応待ち',
     },
+    actionsFor: '{{title}} の操作',
+    allRead: 'すべて既読にしました。',
+    back: '一覧に戻る',
+    cancel: 'キャンセル',
+    clearFilter: 'フィルターをクリア',
+    count: '×{{count}}',
+    deleted: '削除しました。',
+    description: '自分宛ての通知とリクエストです。',
+    empty: {
+      decision: '判断待ちのものはありません',
+      info: '通知はありません',
+      todo: '対応待ちのものはありません',
+      unread: 'すべて確認しました',
+    },
+    emptyAll: '何もありません',
+    emptyDescription: '自分宛ての通知とリクエストがここに表示されます。',
+    filters: '受信トレイのフィルター',
+    forbidden: 'この操作は許可されていません。',
+    keyMove: '移動',
+    keyOpen: '進行中',
+    kinds: {
+      all: 'すべての種類',
+      decision: '判断',
+      info: 'それ以前',
+      label: '種類',
+      today: '今日',
+    },
+    detailsUnavailable: '受信トレイの詳細を一部読み込めませんでした。',
+    loadFailed: '受信トレイを読み込めません',
+    loadFailedDescription: '接続を確認して再試行してください。',
+    loadMore: 'さらに読み込む',
+    loading: '読み込み中',
+    noMatchDescription: 'フィルターをクリアするとすべての種類が表示されます。',
+    nothingSelected: '表示する項目を選んでください',
+    notification: '通知',
+    outcomes: {
+      approved: '承認済み',
+      rejected: '却下',
+      withdrawn: '取り下げ済み',
+    },
+    pendingDecisions: '対応待ち {{count}} 件',
+    request: {
+      approve: '承認',
+      commentFor: '{{action}}：{{title}}',
+      commentPlaceholder: '何か書いてください…',
+      newLine: 'で改行',
+      quickSend: 'で送信',
+      reject: '拒否',
+    },
+    requestFailed: 'リクエストに失敗しました。もう一度お試しください。',
+    resolved: '対応済み',
+    retry: '再試行',
+    unread: '未読',
+    unreadCount: '未読 {{count}} 件',
   },
   inboxButton: {
     title: '受信箱',
     viewAll: '受信箱を開く',
+    empty: 'メッセージはまだありません',
+    pending: '受信トレイ、{{count}}件待機中',
+    recent: '最近のメッセージ',
+    unread: '受信トレイ、未読 {{count}} 件',
   },
   nav: {
     inbox: '受信箱',
   },
+  common: { loading: '読み込み中' },
 };
 
 export default jaJP;

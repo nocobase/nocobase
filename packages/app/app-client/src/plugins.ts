@@ -356,11 +356,24 @@ export interface AppClientRouteBreadcrumb {
 export interface AppClientAppRoutesContribution {
   readonly parent: 'app';
   readonly routes: readonly AppClientRouteDefinition[];
+  /** Set by `{ disabled: true }`: the routes are not registered, and references to their IDs are treated as excluded. */
+  readonly disabled?: boolean;
+}
+
+/** How a route contribution is registered. */
+export interface AppClientRouteContributionOptions {
+  /**
+   * Leaves the routes out, the way `excludedRouteIds` does: their paths stay free for the application, and route
+   * component overrides and header actions that target them are dropped instead of failing. A plugin uses it for an
+   * option that turns off its own pages, such as `agents({ chatRoutes: false })`.
+   */
+  readonly disabled?: boolean;
 }
 
 export interface AppClientSystemSettingsRoutesContribution {
   readonly parent: 'systemSettings';
   readonly routes: readonly AppClientRouteDefinition[];
+  readonly disabled?: boolean;
   /** Set by `defineSettingsCategories()`: how the application shows existing categories. */
   readonly categories?: AppClientSettingsCategoryOverrides;
 }
@@ -368,6 +381,7 @@ export interface AppClientSystemSettingsRoutesContribution {
 export interface AppClientPersonalSettingsRoutesContribution {
   readonly parent: 'personalSettings';
   readonly routes: readonly AppClientRouteDefinition[];
+  readonly disabled?: boolean;
   /** Set by `defineSettingsCategories()`: how the application shows existing categories. */
   readonly categories?: AppClientSettingsCategoryOverrides;
 }
@@ -480,6 +494,8 @@ export interface AppClientContributions {
 export type AppClientPluginContributions = AppClientContributions;
 
 export interface ResolveAppClientContributionsOptions {
+  readonly systemSettingsRoutes?: boolean;
+  readonly personalSettingsRoutes?: boolean;
   readonly excludedRouteIds?: readonly string[];
 }
 
@@ -611,10 +627,12 @@ function resolveServiceProviders<TOptions>(
 
 export function defineAppRoutes(
   routes: readonly AppClientRouteDefinition[],
+  options: AppClientRouteContributionOptions = {},
 ): AppClientAppRoutesContribution {
   return Object.freeze({
     parent: 'app',
     routes: freezeNavigationRoutes(routes),
+    ...(options.disabled ? { disabled: true } : {}),
   });
 }
 
@@ -632,10 +650,12 @@ export function defineAppRoutes(
  */
 export function defineSystemSettingsRoutes(
   routes: readonly AppClientRouteDefinition[],
+  options: AppClientRouteContributionOptions = {},
 ): AppClientSystemSettingsRoutesContribution {
   return Object.freeze({
     parent: 'systemSettings',
     routes: freezeNavigationRoutes(routes),
+    ...(options.disabled ? { disabled: true } : {}),
   });
 }
 
@@ -648,10 +668,12 @@ export function defineSystemSettingsRoutes(
  */
 export function definePersonalSettingsRoutes(
   routes: readonly AppClientRouteDefinition[],
+  options: AppClientRouteContributionOptions = {},
 ): AppClientPersonalSettingsRoutesContribution {
   return Object.freeze({
     parent: 'personalSettings',
     routes: freezeNavigationRoutes(routes),
+    ...(options.disabled ? { disabled: true } : {}),
   });
 }
 
@@ -807,6 +829,33 @@ export function resolveAppClientContributions(
   const reactProviders: AppClientRegisteredReactProvider[] = [];
   const reactProviderIds = new Set<string>();
   const inputs: RouteInput[] = [];
+  const excludedRoutes = new Map<string, 'page' | 'group'>();
+  function rememberDisabled(
+    packageName: string,
+    routes: readonly AppClientRouteDefinition[],
+  ): void {
+    for (const route of routes) {
+      excludedRoutes.set(
+        routeIdFor(route.name, packageName),
+        route.componentLoader ? 'page' : 'group',
+      );
+      if (route.children) rememberDisabled(packageName, route.children);
+    }
+  }
+
+  // Disabled contributions still join the tree, so another package's routes under their groups resolve, and are
+  // pruned with their descendants like excludedRouteIds. A shared settings category stays: other packages fill it.
+  const disabledRouteIds = new Set<string>();
+  function rememberDisabledIds(
+    packageName: string,
+    routes: readonly AppClientRouteDefinition[],
+  ): void {
+    for (const route of routes) {
+      if (!('category' in route && route.category === true))
+        disabledRouteIds.add(routeIdFor(route.name, packageName));
+      if (route.children) rememberDisabledIds(packageName, route.children);
+    }
+  }
 
   for (const contribution of contributions) {
     const packageName = normalizePackageName(contribution.packageName);
@@ -819,6 +868,17 @@ export function resolveAppClientContributions(
         throw new Error(
           `Plugin "${packageName}" contributed routes to unsupported parent "${String(surface)}"; declare them with defineAppRoutes(), defineSystemSettingsRoutes() or definePersonalSettingsRoutes().`,
         );
+      }
+      if (routeContribution.disabled)
+        rememberDisabledIds(packageName, routeContribution.routes);
+      if (
+        (surface === 'systemSettings' &&
+          options.systemSettingsRoutes === false) ||
+        (surface === 'personalSettings' &&
+          options.personalSettingsRoutes === false)
+      ) {
+        rememberDisabled(packageName, routeContribution.routes);
+        continue;
       }
       const categories =
         'categories' in routeContribution
@@ -858,13 +918,12 @@ export function resolveAppClientContributions(
     ? new Set(options.excludedRouteIds.map((id) => id.trim()).filter(Boolean))
     : undefined;
   const tree = assembleRoutes(inputs, excludedRouteIds);
-  const excludedRoutes = excludedRouteIds
-    ? new Map<string, 'page' | 'group'>()
-    : undefined;
-  const roots =
-    excludedRoutes && excludedRouteIds
-      ? excludeRoutes(tree, excludedRouteIds, excludedRoutes)
-      : tree;
+  const prunedRouteIds = disabledRouteIds.size
+    ? new Set([...(excludedRouteIds ?? []), ...disabledRouteIds])
+    : excludedRouteIds;
+  const roots = prunedRouteIds
+    ? excludeRoutes(tree, prunedRouteIds, excludedRoutes)
+    : tree;
   if (excludedRouteIds && isDevelopment()) {
     const packages = new Set(
       contributions.map(({ packageName }) => packageName.trim()),
@@ -873,7 +932,7 @@ export function resolveAppClientContributions(
       const separator = id.indexOf(':');
       if (separator < 1) continue;
       const packageName = id.slice(0, separator);
-      if (packages.has(packageName) && !excludedRoutes?.has(id))
+      if (packages.has(packageName) && !excludedRoutes.has(id))
         console.warn(
           `excludedRouteIds references missing route "${id}" from registered package "${packageName}".`,
         );
@@ -897,9 +956,11 @@ export function resolveAppClientContributions(
     ),
   ]);
 
+  // A visible page can reuse the ID of a disabled contribution, such as an application page replacing a disabled one.
+  for (const id of routeIds.keys()) excludedRoutes.delete(id);
   return Object.freeze({
     routes,
-    ...(excludedRoutes ? { excludedRoutes } : {}),
+    ...(excludedRoutes.size ? { excludedRoutes } : {}),
     reactProviders: sortReactProviders(reactProviders),
   });
 }

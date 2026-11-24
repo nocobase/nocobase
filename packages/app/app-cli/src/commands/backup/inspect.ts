@@ -9,8 +9,7 @@ import {
 } from '../../lib/backup-command.ts';
 
 export default class BackupInspect extends AppCommand {
-  static override summary =
-    'Show the contents and limitations of an application backup.';
+  static override summary = 'Show the contents of an application backup.';
   static override args: { file: Interfaces.Arg<string> } = {
     file: Args.string({
       required: true,
@@ -24,7 +23,6 @@ export default class BackupInspect extends AppCommand {
       inspectBackup(args.file, { signal }),
     );
     printBackupManifest(manifest, (message) => this.log(message));
-    for (const warning of manifest.limitations) this.warn(warning);
     return manifest;
   }
 }

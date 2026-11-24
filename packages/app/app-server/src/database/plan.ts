@@ -49,8 +49,6 @@ export interface AppDatabaseTask {
   connection: string;
   kind: AppDatabaseTaskKind;
   config: AppDatabaseMigrationConfig;
-  /** The source whose package name was inferred from the application root. */
-  implicitAppSource?: MigrationSource;
   skipReason?: 'external' | 'auto-run-disabled';
   /**
    * Explicit migration directories that do not exist, with the package each
@@ -236,11 +234,6 @@ export function planAppDatabaseTasks(
           sources,
           autoRun,
         },
-        ...(kind === 'migrations' &&
-        options.sources === undefined &&
-        options.packageName === undefined
-          ? { implicitAppSource: appSources[0] }
-          : {}),
         skipReason: external
           ? 'external'
           : selection.autoRun && !autoRun

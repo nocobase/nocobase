@@ -72,11 +72,6 @@ const manifestSchema: z.ZodType<BackupManifest> = z.strictObject({
         sha256: digest,
         size,
       }),
-      z.strictObject({
-        ...includedConnection,
-        mode: z.literal('recovery-point'),
-        reason: z.literal('export-permission-denied'),
-      }),
     ]),
   ),
   disks: z.array(
@@ -110,7 +105,7 @@ const manifestSchema: z.ZodType<BackupManifest> = z.strictObject({
     ),
   }),
   indexSha256: digest,
-  limitations: z.array(name),
+  limitations: z.tuple([]),
 });
 
 export const dumpExtension: Readonly<

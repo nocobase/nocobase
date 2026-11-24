@@ -156,31 +156,18 @@ export const postgresEngine: DatabaseEngine<PostgresBackupConnection> = {
       const { snapshot, time } = rows[0];
       const lsn = await walPosition(client);
       const server = await serverInfo(client);
-      let mode: 'dump' | 'recovery-point' = 'dump';
-      try {
-        await runClient(
-          context.tools.pgDump ?? 'pg_dump',
-          ['-Fc', '--no-password', '--snapshot=' + snapshot],
-          {
-            env: await credentials(connection, context),
-            output: file,
-            signal: context.signal,
-            exportPermission:
-              /pg_dump: error: (?:query failed: ERROR:\s+)?(?:permission denied for (?:table|schema|sequence)|must be (?:owner|superuser))/i,
-          },
-        );
-      } catch (error) {
-        if (
-          !context.collect ||
-          connection.hosting !== 'managed' ||
-          !(error instanceof BackupError) ||
-          error.code !== 'BACKUP_EXPORT_DENIED'
-        )
-          throw error;
-        mode = 'recovery-point';
-      }
+      await runClient(
+        context.tools.pgDump ?? 'pg_dump',
+        ['-Fc', '--no-password', '--snapshot=' + snapshot],
+        {
+          env: await credentials(connection, context),
+          output: file,
+          signal: context.signal,
+          exportPermission:
+            /pg_dump: error: (?:query failed: ERROR:\s+)?(?:permission denied for (?:table|schema|sequence)|must be (?:owner|superuser))/i,
+        },
+      );
       return {
-        mode,
         server,
         snapshot: { time: time.toISOString(), lsn },
         ...((await context.collect?.(postgresReader(client))) ?? emptySnapshot),

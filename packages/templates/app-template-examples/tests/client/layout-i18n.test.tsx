@@ -366,6 +366,49 @@ it('shows personal settings in their own navigation and keeps the way back acros
   );
 });
 
+it('returns to an application page under /settings when system settings are off', async () => {
+  const reports: AppClientRegisteredRoute = {
+    id: 'test:reports',
+    name: 'reports',
+    path: '/settings/reports',
+    packageName: 'test',
+    source: 'application',
+    auth: 'required',
+    authz: 'skip',
+    navigation: { title: 'Reports' },
+    componentLoader: async () => ({ default: () => null }),
+  };
+  await setup(
+    <>
+      <AppLayout
+        routes={[
+          ...personalSettingsFixture().filter(
+            (route) => route.surface !== 'systemSettings',
+          ),
+          reports,
+        ]}
+      />
+      <Link to='/settings/reports'>Open reports</Link>
+      <Link to='/me/preferences'>Open personal settings</Link>
+    </>,
+  );
+  fireEvent.click(screen.getByRole('link', { name: 'Open reports' }));
+  // The application's page keeps the application's menu.
+  await waitFor(() =>
+    expect(
+      screen.getByRole('navigation', { name: 'Application navigation' }),
+    ).toBeVisible(),
+  );
+  fireEvent.click(screen.getByRole('link', { name: 'Open personal settings' }));
+  await screen.findByRole('navigation', {
+    name: 'Personal settings navigation',
+  });
+  expect(screen.getByRole('link', { name: 'Back' })).toHaveAttribute(
+    'href',
+    '/settings/reports',
+  );
+});
+
 it('links the first breadcrumb level of personal settings back to /me', async () => {
   await setup(
     <AppLayout routes={personalSettingsFixture()} />,

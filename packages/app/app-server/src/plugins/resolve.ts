@@ -15,28 +15,19 @@ export interface ResolveAppServerPluginsOptions {
   readonly defaultAppPackageName?: string;
 }
 
-/** Resolve the name used for application-owned migration and seed sources. */
-export function resolveAppPackageName(
-  rootDir: string,
-  defaultAppPackageName: string = 'app',
-): string {
-  const appPackagePath = path.join(rootDir, 'package.json');
-  const appPackage = existsSync(appPackagePath) ? readJson(appPackagePath) : {};
-  return typeof appPackage.name === 'string'
-    ? appPackage.name
-    : defaultAppPackageName;
-}
-
 export function resolveAppServerPlugins(
   rootDir: string,
   serverPlugins: AppServerPlugins,
   options: ResolveAppServerPluginsOptions = {},
 ): ResolvedAppServerPlugins {
+  const appPackagePath = path.join(rootDir, 'package.json');
+  const appPackage = existsSync(appPackagePath) ? readJson(appPackagePath) : {};
+
   return {
-    appPackageName: resolveAppPackageName(
-      rootDir,
-      options.defaultAppPackageName,
-    ),
+    appPackageName:
+      typeof appPackage.name === 'string'
+        ? appPackage.name
+        : (options.defaultAppPackageName ?? 'app'),
     plugins: serverPlugins.plugins.map((definition) => ({
       definition,
       metadata: resolvePlugin(definition),

@@ -48,6 +48,8 @@ Within a major version, existing public exports, required props, request fields,
 
 ## Pages
 
+Set `workspaceRoutes: false` to omit both business pages. The existing mail navigation options continue to control their menu entries.
+
 The client plugin registers four pages, each replaceable as a whole by route name with the application's `routeComponentOverrides`:
 
 | Route name     | Path             | Where                                            | Requires                                  |

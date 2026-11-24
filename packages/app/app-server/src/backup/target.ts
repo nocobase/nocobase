@@ -1,7 +1,7 @@
 import { realpath } from 'node:fs/promises';
 import { resolveDefaultAppConfigFile } from '../config/index.js';
 import { createHash } from 'node:crypto';
-import { dirname, relative, resolve, sep } from 'node:path';
+import { relative, resolve, sep } from 'node:path';
 import { BackupError } from '@nocobase/backup';
 import type {
   BackupConnection,
@@ -25,14 +25,15 @@ import { resolveConnections } from '../database/manager.js';
 import {
   defaultConnectionName,
   planAppDatabaseTasks,
-  type AppDatabaseTask,
 } from '../database/plan.js';
-import type { AppDatabaseConfig } from '../database/types.js';
+import type {
+  AppDatabaseConfig,
+  AppDatabaseMigrationConfig,
+} from '../database/types.js';
 import { resolveAppDriveConfig } from '../drive/config.js';
 import type { AppJobsConfig } from '../jobs/config.js';
 import type { AppLoggingConfig } from '../logging/config.js';
 import type { AppQueueConfig } from '../queue/config.js';
-import { resolveAppPackageName } from '../plugins/resolve.js';
 import { createSecretsService } from '../secrets/service.js';
 import type { AppSessionConfigInput } from '../session/config.js';
 import { readAppPackage } from '../support/app-package.js';
@@ -48,13 +49,10 @@ function text(config: object, key: string): string | undefined {
 function connectionConfig(
   name: string,
   source: ConnectionConfig,
-  migrationTask: AppDatabaseTask | undefined,
+  migration: AppDatabaseMigrationConfig | undefined,
   refs: readonly AppBackupFileReference[],
   preference: NonNullable<AppBackupConfig['connections']>[string] | undefined,
-  embeddedPackageName: string | undefined,
 ): BackupConnection {
-  const migration = migrationTask?.config;
-  const implicitAppSource = migrationTask?.implicitAppSource;
   const schemaInput: unknown = Reflect.get(source, 'schema');
   const schema =
     source.dialect === 'postgres'
@@ -113,23 +111,12 @@ function connectionConfig(
         extensions: migration.extensions,
       });
       return migrations.flatMap(
-        ({ packageName, name, filePath, checksum, legacyChecksum }) => {
-          const packageNames = [packageName];
-          if (
-            embeddedPackageName !== undefined &&
-            embeddedPackageName !== packageName &&
-            implicitAppSource?.packageName === packageName &&
-            implicitAppSource.directory === dirname(filePath)
-          ) {
-            packageNames.push(embeddedPackageName);
-          }
-          return packageNames.flatMap((owner) => [
-            { packageName: owner, name, checksum },
-            ...(legacyChecksum
-              ? [{ packageName: owner, name, checksum: legacyChecksum }]
-              : []),
-          ]);
-        },
+        ({ packageName, name, checksum, legacyChecksum }) => [
+          { packageName, name, checksum },
+          ...(legacyChecksum
+            ? [{ packageName, name, checksum: legacyChecksum }]
+            : []),
+        ],
       );
     },
     async *readFileReferences(
@@ -181,7 +168,6 @@ function connectionConfig(
         host: text(source, 'host'),
         port: typeof port === 'number' ? port : undefined,
         password: text(source, 'password'),
-        hosting: preference?.hosting,
         tls: preference?.tls ?? (ssl ? { mode: standardTls } : undefined),
       };
       return source.dialect === 'postgres'
@@ -256,15 +242,7 @@ export async function resolveAppBackupTarget(
       paths: app.paths,
       contributions: app.databaseTaskContributions,
     });
-    const phases = new Map(plan.map((task) => [task.connection, task]));
-    // The Host starts an embedded release from the parent of dist, while its
-    // CLI loads the same code from dist. Match the implicit migration source
-    // under either package name without rewriting the saved history.
-    const { rootDir, deploymentRootDir } = app.paths;
-    const embeddedPackageName =
-      rootDir === resolve(deploymentRootDir, 'dist')
-        ? resolveAppPackageName(deploymentRootDir)
-        : undefined;
+    const phases = new Map(plan.map((task) => [task.connection, task.config]));
     const resolved = resolveConnections(
       database.connections,
       app.paths,
@@ -294,7 +272,6 @@ export async function resolveAppBackupTarget(
                 },
               }
             : backup.connections?.[name],
-          embeddedPackageName,
         ),
       );
     }
@@ -302,7 +279,37 @@ export async function resolveAppBackupTarget(
   const drive = resolveAppDriveConfig(app.config);
   const manager = drive && createDriveManager(drive);
   const disks: BackupDisk[] = [];
-  for (const [name, definition] of Object.entries(drive?.disks ?? {})) {
+  const driveDisks = drive?.disks ?? {};
+  const diskOptions = new Map(Object.entries(backup.disks ?? {}));
+  for (const [name, options] of diskOptions) {
+    if (!Object.hasOwn(driveDisks, name)) {
+      throw new BackupError(
+        'BACKUP_INVALID_TARGET',
+        'Backup disk configuration names an unknown Drive disk.',
+        { disk: name },
+      );
+    }
+    const definition = driveDisks[name];
+    if (typeof definition === 'function' || definition.driver !== 'fs') {
+      throw new BackupError(
+        'BACKUP_INVALID_TARGET',
+        'Backup disk exclusions require a declarative filesystem disk.',
+        { disk: name },
+      );
+    }
+    if (
+      options?.excludePaths !== undefined &&
+      (!Array.isArray(options.excludePaths) ||
+        options.excludePaths.some((path) => typeof path !== 'string'))
+    ) {
+      throw new BackupError(
+        'BACKUP_INVALID_TARGET',
+        'Backup disk excludePaths must be an array of strings.',
+        { disk: name },
+      );
+    }
+  }
+  for (const [name, definition] of Object.entries(driveDisks)) {
     if (typeof definition === 'function') {
       throw new BackupError(
         'BACKUP_DISK_METADATA_REQUIRED',
@@ -326,7 +333,7 @@ export async function resolveAppBackupTarget(
         name,
         driver: 'fs',
         root,
-        excludePaths: backup.excludePaths,
+        excludePaths: diskOptions.get(name)?.excludePaths,
       });
     } else {
       disks.push({

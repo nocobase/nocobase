@@ -241,7 +241,7 @@ export function createReportService(deps: {
   readonly clock: Clock;
   readonly people: People;
   readonly subjects: SubjectRegistry;
-  readonly nativeAvailable: () => Promise<boolean>;
+  readonly includeOnlineUsage: () => Promise<boolean>;
 }): ReportService {
   async function callersRuns<Q extends SelectQuery<Row, Row>>(
     query: Q,
@@ -486,7 +486,7 @@ export function createReportService(deps: {
 
     async modelUsage(caller, query) {
       const range = reportRange(query, deps.clock.now());
-      if (!caller.allRuns || !(await deps.nativeAvailable()))
+      if (!caller.allRuns || !(await deps.includeOnlineUsage()))
         return { from: range.from, to: range.to, rows: [] };
       const conn = deps.tx.read();
       return {
@@ -508,7 +508,7 @@ export function createReportService(deps: {
         userId: query.userId ?? null,
       });
       const prices = await listPrices(conn);
-      const online = await deps.nativeAvailable();
+      const online = await deps.includeOnlineUsage();
       const first = aggregateUsage(
         online
           ? records

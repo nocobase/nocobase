@@ -69,6 +69,10 @@ export interface AppRuntimeDefinition {
   readonly defaultConfigs?: AppConfigFactory<AppClientConfigMap>;
   readonly serviceProviders?: AppClientServiceProviders;
   readonly reactProviders?: AppClientReactProviders;
+  /** Mount system settings contributions under /settings. Defaults to true. */
+  readonly systemSettingsRoutes?: boolean;
+  /** Mount personal settings contributions under /me. Defaults to true. */
+  readonly personalSettingsRoutes?: boolean;
   readonly routes?: AppClientRoutes;
   readonly locales?: AppClientLocales;
   readonly plugins: AppClientPlugins;
@@ -160,7 +164,11 @@ export async function resolveAppRuntime(
   }));
   const contributions = resolveAppClientContributions(
     [applicationContribution, ...pluginContributions],
-    { excludedRouteIds: definition.excludedRouteIds },
+    {
+      excludedRouteIds: definition.excludedRouteIds,
+      systemSettingsRoutes: definition.systemSettingsRoutes,
+      personalSettingsRoutes: definition.personalSettingsRoutes,
+    },
   );
   const i18n = options.i18n ?? (await createI18nRuntime(definition, config));
   const extensionOverrides = collectSourceExtensionRouteOverrides(

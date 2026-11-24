@@ -12,7 +12,8 @@ interface ModelBinding {
 /** Environment infrastructure: provision at startup and retain across every dataset clear/reset. */
 export class DemoModelRuntime {
   get available(): boolean {
-    return Boolean(this.deps.agents?.()?.models?.services);
+    const models = this.deps.agents?.()?.models;
+    return models?.enabled !== false && Boolean(models?.services);
   }
 
   constructor(private readonly deps: DemoDataDependencies) {}
@@ -31,7 +32,10 @@ export class DemoModelRuntime {
   }
 
   async load(): Promise<void> {
-    const row = this.enabled ? await this.row() : undefined;
+    const row =
+      this.enabled && this.deps.agents?.()?.models?.enabled !== false
+        ? await this.row()
+        : undefined;
     this.deps.models.bind(
       row?.modelService ?? null,
       row?.modelService ? row.modelKey : null,
@@ -40,6 +44,7 @@ export class DemoModelRuntime {
 
   async initialize(): Promise<void> {
     const agents = this.deps.agents?.();
+    if (agents?.models?.enabled === false) return this.load();
     const services = agents?.models?.services;
     if (!services) {
       if (agents)

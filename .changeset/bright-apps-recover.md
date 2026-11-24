@@ -3,6 +3,8 @@
 "@nocobase/app-cli": minor
 "@nocobase/drive": minor
 "@nocobase/backup": minor
+"@nocobase/app-template-default": patch
+"@nocobase/app-template-examples": patch
 ---
 
-Integrate application backup and restore with startup coordination, deferred Drive deletions, and the built-in backup commands, including verification of in-process deployments.
+Add built-in backup commands, disk-specific path exclusions, and application compatibility checks for restore.

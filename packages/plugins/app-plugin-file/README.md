@@ -3,6 +3,7 @@
 `@nocobase/app-plugin-file` provides file repositories, multipart uploads, stable content URLs. Server services reuse the application's Database and Drive managers; Client services reuse its API Client.
 
 - Register `./server` and the `./client` factory to provide the two Repository managers.
+- To omit the storage overview and disk check endpoints, register `createFileServerPlugin({ storageManagementRoutes: false })` from `@nocobase/app-plugin-file/server`. File repositories and application-owned attachment routes remain available. The default export enables both management endpoints.
 - Declare business collections and expose their operations with `defineFileRepositoryApiRoutes()`.
 - Install the `@nocobase/file-component-ui` UI Library block for editable upload, list, thumbnail, and preview UI.
 - Declare each feature that stores files with `registerUsage()` so the file storage settings page lists it.

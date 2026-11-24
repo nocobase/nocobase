@@ -60,8 +60,6 @@ export default class BackupCreate extends AppCommand {
     this.log(
       `Created ${result.file} (${result.size} bytes, SHA-256 ${result.sha256}).`,
     );
-    if (result.manifest.limitations.length) this.setStatus('partial-success');
-    for (const warning of result.manifest.limitations) this.warn(warning);
     return result;
   }
 }

@@ -64,6 +64,8 @@ export default defineAppRuntime({
 
 `plugins` is the complete value returned by `defineClientPlugins()`. Runtime resolution collects its route component overrides automatically. An application can explicitly pass `routeComponentOverrides` when it needs to replace an existing route's component; omit the option when no replacements are needed. The templates do not include empty route-override or source-extension entry files. UI Library source assets under `client/extensions/` are imported by the application where needed, without automatic extension discovery.
 
+Set `systemSettingsRoutes: false` or `personalSettingsRoutes: false` in `defineAppRuntime()` to omit that settings surface before route paths are claimed. Both surfaces are enabled by default.
+
 Static import makes the composition plan available to runtime resolution. It does not register a service, execute lifecycle hooks, render a React component, load a route page, or load locale messages. Declaration modules must therefore remain side-effect-free.
 
 ## Client entry
@@ -465,5 +467,7 @@ When reporting an API failure, pass `...errorToastOptions(error)` from `@nocobas
 Set `excludedRouteIds` in `defineAppRuntime()` to remove routes by package-qualified ID before the application claims paths. A route exclusion also removes its descendants and their component overrides. A header action may declare its target's `routeId` to hide it when its target is excluded. The standard shells also hide linked actions while page permissions are pending or denied. A missing route ID or a group used as a target raises an error during Client runtime setup. To hide or replace just the action, use the application's `headerActionOverrides`.
 
 For system and personal settings, exclude individual pages or modules. Excluding a shared settings category ID raises an error. Categories emptied by exclusions disappear from navigation. Use `defineSettingsCategories()` to hide a category and move its pages to the fallback category.
+
+A plugin can offer an option that turns off its own pages, such as `agents({ chatRoutes: false })`, by passing `{ disabled: true }` to `defineAppRoutes()`, `defineSystemSettingsRoutes()` or `definePersonalSettingsRoutes()`. Disabled routes behave exactly like excluded ones: their paths stay free, and component overrides and header actions that target their IDs are dropped instead of failing. Prefer the plugin's option when it has one; use `excludedRouteIds` for any other page or for finer control. Both may name the same route.
 
 Use `useHasRoute(routeId)` before rendering a link to another contributed page. It reports whether the page is registered after exclusions. The route still applies its normal access check. In development, an exclusion whose package is present but whose route is missing produces one warning per ID.

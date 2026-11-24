@@ -17,6 +17,8 @@ import {
 } from '../src/config.js';
 import {
   defineAppRoutes,
+  definePersonalSettingsRoutes,
+  defineSystemSettingsRoutes,
   defineClientPlugin,
   defineClientPlugins,
   defineClientReactProviders,
@@ -29,6 +31,200 @@ function Wrapper({ children }: PropsWithChildren): ReactElement {
 }
 
 describe('app runtime', () => {
+  const settingsPage = {
+    name: 'example',
+    path: '/example',
+    authz: 'skip' as const,
+    componentLoader: async () => ({ default: () => null }),
+  };
+  const settingsPlugin = defineClientPlugin({
+    packageName: '@example/plugin',
+    routes: [
+      defineSystemSettingsRoutes([settingsPage]),
+      definePersonalSettingsRoutes([{ ...settingsPage, name: 'personal' }]),
+    ],
+  });
+
+  it.each([
+    [{}, ['systemSettings', 'personalSettings']],
+    [{ personalSettingsRoutes: false }, ['systemSettings']],
+    [{ systemSettingsRoutes: false }, ['personalSettings']],
+    [{ personalSettingsRoutes: false, systemSettingsRoutes: false }, []],
+  ] as const)(
+    'selects settings surfaces independently: %j',
+    async (options, expected) => {
+      const runtime = await resolveAppRuntime(
+        defineAppRuntime({
+          packageName: '@example/app',
+          createAppConfig: createAppClientConfig,
+          plugins: defineClientPlugins([settingsPlugin()]),
+          ...options,
+        }),
+        { rawConfig: {} },
+      );
+      expect(new Set(runtime.routes.map((route) => route.surface))).toEqual(
+        new Set(expected),
+      );
+    },
+  );
+
+  it('treats routes of a disabled settings surface like excluded routes', async () => {
+    const runtime = await resolveAppRuntime(
+      defineAppRuntime({
+        packageName: '@example/app',
+        createAppConfig: createAppClientConfig,
+        plugins: defineClientPlugins([settingsPlugin()]),
+        systemSettingsRoutes: false,
+        personalSettingsRoutes: false,
+        excludedRouteIds: ['@example/app:unlisted'],
+        headerActions: [
+          {
+            name: 'personalShortcut',
+            routeId: '@example/plugin:personal',
+            component: () => null,
+          },
+        ],
+        routeComponentOverrides: [
+          {
+            routeId: '@example/plugin:personal',
+            componentLoader: settingsPage.componentLoader,
+          },
+        ],
+        routes: defineAppRoutes([
+          { ...settingsPage, name: 'unlisted', path: '/unlisted' },
+          // The application owns a path the disabled system settings page would have claimed.
+          { ...settingsPage, path: '/settings/example' },
+        ]),
+      }),
+      { rawConfig: {} },
+    );
+    expect(runtime.routes.map((route) => route.path)).toEqual([
+      '/settings/example',
+    ]);
+    expect(runtime.headerActions).toEqual([]);
+  });
+
+  it.each(['option', 'excludedRouteIds'] as const)(
+    'treats routes a plugin disables like excluded routes: %s',
+    async (via) => {
+      const page = {
+        name: 'inbox',
+        path: '/inbox',
+        authz: 'skip' as const,
+        componentLoader: async () => ({ default: () => null }),
+      };
+      const plugin = defineClientPlugin<{ inboxRoute?: boolean }>({
+        packageName: '@example/inbox',
+        routes: (options) =>
+          defineAppRoutes([page], { disabled: options.inboxRoute === false }),
+        headerActions: [
+          {
+            name: 'inboxButton',
+            routeId: '@example/inbox:inbox',
+            component: () => null,
+          },
+        ],
+      });
+      const runtime = await resolveAppRuntime(
+        defineAppRuntime({
+          packageName: '@example/app',
+          createAppConfig: createAppClientConfig,
+          plugins: defineClientPlugins([
+            plugin(via === 'option' ? { inboxRoute: false } : {}),
+          ]),
+          ...(via === 'excludedRouteIds'
+            ? { excludedRouteIds: ['@example/inbox:inbox'] }
+            : {}),
+          routeComponentOverrides: [
+            {
+              routeId: '@example/inbox:inbox',
+              componentLoader: page.componentLoader,
+            },
+          ],
+          routes: defineAppRoutes([{ ...page, name: 'ownInbox' }]),
+        }),
+        { rawConfig: {} },
+      );
+      expect(runtime.routes.map((route) => route.id)).toEqual([
+        '@example/app:ownInbox',
+      ]);
+      expect(runtime.headerActions).toEqual([]);
+    },
+  );
+
+  it.each(['option', 'excludedRouteIds'] as const)(
+    "removes another package's pages under a disabled group: %s",
+    async (via) => {
+      const loader = async () => ({ default: () => null });
+      const reports = defineClientPlugin<{ reports?: boolean }>({
+        packageName: '@example/reports',
+        routes: (options) =>
+          defineAppRoutes(
+            [
+              {
+                name: 'reports',
+                path: '/reports',
+                children: [
+                  {
+                    name: 'summary',
+                    path: 'summary',
+                    authz: 'skip',
+                    componentLoader: loader,
+                  },
+                ],
+              },
+            ],
+            { disabled: options.reports === false },
+          ),
+      });
+      const sales = defineClientPlugin({
+        packageName: '@example/sales',
+        routes: defineAppRoutes([
+          {
+            name: 'salesReport',
+            parent: '@example/reports:reports',
+            path: 'sales',
+            authz: 'skip',
+            componentLoader: loader,
+          },
+        ]),
+        headerActions: [
+          {
+            name: 'salesShortcut',
+            routeId: '@example/sales:salesReport',
+            component: () => null,
+          },
+        ],
+      });
+      const runtime = await resolveAppRuntime(
+        defineAppRuntime({
+          packageName: '@example/app',
+          createAppConfig: createAppClientConfig,
+          plugins: defineClientPlugins([
+            reports(via === 'option' ? { reports: false } : {}),
+            sales(),
+          ]),
+          ...(via === 'excludedRouteIds'
+            ? { excludedRouteIds: ['@example/reports:reports'] }
+            : {}),
+          routes: defineAppRoutes([
+            {
+              name: 'ownReports',
+              path: '/reports',
+              authz: 'skip',
+              componentLoader: loader,
+            },
+          ]),
+        }),
+        { rawConfig: {} },
+      );
+      expect(runtime.routes.map((route) => route.id)).toEqual([
+        '@example/app:ownReports',
+      ]);
+      expect(runtime.headerActions).toEqual([]);
+    },
+  );
+
   it('excludes route groups and their cross-plugin children before claiming paths and applying overrides', async () => {
     const defaultLoader = vi.fn(async () => ({ default: () => null }));
     const applicationLoader = vi.fn(async () => ({ default: () => null }));

@@ -49,7 +49,6 @@ export default class BackupVerify extends AppCommand {
       return verified;
     });
     this.log(`Verified ${args.file} (SHA-256 ${result.sha256}).`);
-    for (const warning of result.manifest.limitations) this.warn(warning);
     return result;
   }
 }

@@ -32,8 +32,7 @@ export default class BackupRestore extends AppCommand {
       description: 'Permit restoring only the selected database connections.',
     }),
     'files-only': Flags.boolean({
-      description:
-        'Restore only local files after restoring the databases externally.',
+      description: 'Restore only local files and leave databases unchanged.',
     }),
   };
 
