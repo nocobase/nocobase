@@ -58,7 +58,7 @@ async function artifact(
   );
   if (cli) {
     // Its server waits while `$DEMO_START_HOLD` exists, having written `$DEMO_START_MARK`: a deployment held there.
-    // It also takes published configuration.
+    // It fails to start while `$DEMO_START_FAIL` exists, and it also takes published configuration.
     const server = path.join(source, 'dist', 'server');
     await rename(
       path.join(server, 'embedded.js'),
@@ -76,6 +76,8 @@ async function artifact(
         "    writeFileSync(scope.env.DEMO_START_MARK, '');",
         '    while (existsSync(hold)) await new Promise((resolve) => setTimeout(resolve, 20));',
         '  }',
+        '  const fail = scope.env?.DEMO_START_FAIL;',
+        "  if (fail && existsSync(fail)) throw new Error('The demo App was told not to start');",
         '  const app = await base(scope);',
         "  return { ...app, config: { reload: async () => ({ status: 'reloaded' }) } };",
         '}',
@@ -473,6 +475,10 @@ describe('backups on a managed Host', () => {
         },
       },
     );
+    // The data was never put back, so the record says nothing was restored.
+    const recorded = await host.getOperation('fail-r', { scope });
+    expect(recorded).not.toHaveProperty('checkpoint');
+    expect(recorded).not.toHaveProperty('result');
     expect(await running()).toBe(false);
     // Asked again, the recorded failure answers without running the command.
     await commands();
@@ -486,6 +492,117 @@ describe('backups on a managed Host', () => {
     ).rejects.toMatchObject({ code: 'RESTORE_IMPORT_FAILED' });
     expect(await commands()).toEqual([]);
   });
+
+  it('keeps the restored checkpoint of a restore whose App did not start once its data was back', async () => {
+    const env = { DEMO_START_FAIL: path.join(root, 'start-fail') };
+    await host.applyDeployment(spec('nostart-d', withCli, env));
+    await data('backed-up');
+    await host.createBackup!('demo', { operationId: 'nostart-b', scope });
+    await data('replaced');
+    await writeFile(env.DEMO_START_FAIL, '');
+    try {
+      const failure = await host.restoreBackup!('demo', {
+        operationId: 'nostart-r',
+        scope,
+        backupId: 'nostart-b',
+        deployment: spec('nostart-r', withCli, env),
+      }).catch((error: unknown) => error);
+      expect(failure).toBeInstanceOf(Error);
+      expect(await data()).toBe('backed-up');
+      await expect(
+        host.getOperation('nostart-r', { scope }),
+      ).resolves.toMatchObject({
+        kind: 'restore',
+        state: 'failed',
+        checkpoint: 'restored',
+        result: {
+          restore: { connections: [{ name: 'main', status: 'restored' }] },
+        },
+      });
+      expect(await running()).toBe(false);
+    } finally {
+      await rm(env.DEMO_START_FAIL, { force: true });
+    }
+  }, 60_000);
+
+  it('keeps the restored checkpoint of a restore whose deployment was cancelled once its data was back', async () => {
+    const env = {
+      BACKUP_CLI_HOLD: path.join(root, 'cancel-hold'),
+      BACKUP_CLI_HOLD_COMMAND: 'restore',
+    };
+    await host.applyDeployment(spec('cancel-d', withCli));
+    await data('backed-up');
+    await host.createBackup!('demo', { operationId: 'cancel-b', scope });
+    await data('replaced');
+    await commands();
+    const request = {
+      operationId: 'cancel-r',
+      scope,
+      backupId: 'cancel-b',
+      deployment: spec('cancel-r', withCli, env),
+    };
+    // The restore command holds; meanwhile another App's deployment holds the Host's queue while it starts, so the
+    // restore's deployment waits behind it once the data is back and can be cancelled there.
+    await writeFile(env.BACKUP_CLI_HOLD, '');
+    const pending = host.restoreBackup!('demo', request).catch(
+      (error: unknown) => error,
+    );
+    const blocker = {
+      DEMO_START_HOLD: path.join(root, 'blocker-hold'),
+      DEMO_START_MARK: path.join(root, 'blocker-mark'),
+    };
+    let blocking: Promise<unknown> | undefined;
+    try {
+      await waitFor(async () =>
+        (await readFile(log, 'utf8')).includes('backup restore'),
+      );
+      await writeFile(blocker.DEMO_START_HOLD, '');
+      blocking = host
+        .applyDeployment({
+          ...spec('blocker-d', { ...withCli, appId: 'blocker' }, blocker),
+          id: 'blocker',
+          appId: 'blocker',
+        })
+        .catch((error: unknown) => error);
+      await waitFor(
+        async () =>
+          (await stat(blocker.DEMO_START_MARK).catch(() => null)) !== null,
+      );
+      await rm(env.BACKUP_CLI_HOLD);
+      let cancelled = 'notFound';
+      await waitFor(async () => {
+        cancelled = await host.cancelDeployment('cancel-r', 'demo', { scope });
+        return cancelled !== 'notFound';
+      });
+      expect(cancelled).toBe('cancelled');
+    } finally {
+      await rm(env.BACKUP_CLI_HOLD, { force: true });
+      await rm(blocker.DEMO_START_HOLD, { force: true });
+    }
+    expect(await pending).toMatchObject({ code: 'DEPLOYMENT_CANCELLED' });
+    await blocking;
+    await host.removeDeployment('blocker', { scope });
+    await rm(blocker.DEMO_START_MARK, { force: true });
+    expect(await data()).toBe('backed-up');
+    await expect(
+      host.getOperation('cancel-r', { scope }),
+    ).resolves.toMatchObject({
+      kind: 'restore',
+      state: 'cancelled',
+      checkpoint: 'restored',
+      result: {
+        restore: { connections: [{ name: 'main', status: 'restored' }] },
+      },
+    });
+    // Asked again, the cancellation answers without restoring or deploying again.
+    await data('written-after');
+    await commands();
+    await expect(host.restoreBackup!('demo', request)).rejects.toMatchObject({
+      code: 'DEPLOYMENT_CANCELLED',
+    });
+    expect(await commands()).toEqual([]);
+    expect(await data()).toBe('written-after');
+  }, 60_000);
 
   it('refuses a release without the backup commands', async () => {
     await host.applyDeployment(spec('old-d', withoutCli));

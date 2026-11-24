@@ -623,7 +623,7 @@ export class ManagedScopes {
 
   /**
    * Runs a backup or restore at most once per operation ID, with its outcome recorded before and after: a repeat
-   * answers the recorded result (or failure), a concurrent one waits for the first, and one the previous Host process
+   * answers the recorded result (or failure, or cancellation), a concurrent one waits for the first, and one the previous Host process
    * left unfinished (`interrupted`) runs again.
    */
   private async task<T>(
@@ -639,6 +639,7 @@ export class ManagedScopes {
     return await this.once(scopeId, operationId, identity, async () => {
       const recorded = await this.recorded(scopeId, operationId, identity);
       if (recorded?.state === 'succeeded') return recorded.result as T;
+      if (recorded?.state === 'cancelled') throw new DeploymentCancelledError();
       if (recorded?.state === 'failed')
         throw new HostManagementError(
           recorded.error ?? `The recorded ${kind} failed`,
@@ -665,19 +666,25 @@ export class ManagedScopes {
           ? { checkpoint: recorded.checkpoint, result: recorded.result }
           : {}),
       });
-      const checkpoint: OperationCheckpoint = {
-        previous: recorded?.checkpoint
+      // The last step done, by this run or a previous one: a failed or cancelled record keeps it, so the control
+      // plane knows, for instance, that a restore's data is already back although its App did not come up.
+      let reached: { name: string; result: unknown } | null =
+        recorded?.checkpoint
           ? { name: recorded.checkpoint, result: recorded.result }
-          : null,
-        save: (name, result) =>
-          this.operations.put({
+          : null;
+      const checkpoint: OperationCheckpoint = {
+        previous: reached,
+        save: async (name, result) => {
+          await this.operations.put({
             ...base,
             state: 'running',
             error: null,
             finishedAt: null,
             checkpoint: name,
             result,
-          }),
+          });
+          reached = { name, result };
+        },
       };
       try {
         const result = await work(checkpoint);
@@ -693,7 +700,11 @@ export class ManagedScopes {
         const coded = error as { code?: unknown; details?: unknown };
         await this.operations.put({
           ...base,
-          state: 'failed',
+          state:
+            error instanceof DeploymentCancelledError ? 'cancelled' : 'failed',
+          ...(reached
+            ? { checkpoint: reached.name, result: reached.result }
+            : {}),
           error: fullErrorMessage(error),
           ...(typeof coded?.code === 'string' ? { errorCode: coded.code } : {}),
           ...(coded?.details !== undefined

@@ -44,7 +44,12 @@ if (process.env.BACKUP_CLI_LOG)
     process.env.BACKUP_CLI_LOG,
     `${name} ${process.env.APP_CONFIG_FILE ? readFileSync(process.env.APP_CONFIG_FILE, 'utf8').split('\n')[0] : 'no-config'}\n`,
   );
-const hold = process.env.BACKUP_CLI_HOLD;
+// `$BACKUP_CLI_HOLD_COMMAND` (such as `restore`) holds only that command.
+const hold =
+  !process.env.BACKUP_CLI_HOLD_COMMAND ||
+  process.env.BACKUP_CLI_HOLD_COMMAND === command
+    ? process.env.BACKUP_CLI_HOLD
+    : undefined;
 while (hold && existsSync(hold))
   await new Promise((resolve) => setTimeout(resolve, 20));
 
