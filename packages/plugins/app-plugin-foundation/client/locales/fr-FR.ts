@@ -22,7 +22,7 @@ const frFR: LocaleResource<typeof enUS> = {
     description:
       'Les plugins utilisés par cette application. Activer ou désactiver un plugin modifie le code de l’application et ne prend effet qu’après un redémarrage ; cette page donne donc les commandes à exécuter plutôt que des interrupteurs.',
     deployed:
-      'Cette application est déployée : seuls les plugins déployés avec elle sont listés. Les plugins visibles uniquement pendant le développement n’apparaissent pas ici.',
+      'Pour activer un plugin, enregistrez-le dans le projet source, puis redéployez l’application.',
     attention_one:
       '{{count}} plugin demande votre attention et apparaît en premier.',
     attention_other:
@@ -57,7 +57,7 @@ const frFR: LocaleResource<typeof enUS> = {
     skillsOnly: 'Activé · Skills uniquement',
     enabledAttention: 'Activé · À vérifier',
     disabled: 'Non activé',
-    preinstalled: 'Non activé · Développement uniquement',
+    preinstalled: 'Non activé · Dépendance de développement',
     disabledAttention: 'Non activé · À vérifier',
     unknown: 'Indéterminé · Reconstruire',
   },

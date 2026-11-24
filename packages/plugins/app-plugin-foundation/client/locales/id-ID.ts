@@ -22,7 +22,7 @@ const idID: LocaleResource<typeof enUS> = {
     description:
       'Plugin yang digunakan aplikasi ini. Mengaktifkan atau menonaktifkan plugin mengubah kode aplikasi dan baru berlaku setelah dimulai ulang, jadi halaman ini memberikan perintah yang perlu dijalankan, bukan sakelar.',
     deployed:
-      'Ini aplikasi yang sudah di-deploy: hanya plugin yang di-deploy bersamanya yang ditampilkan. Plugin yang hanya terlihat saat pengembangan tidak ada di sini.',
+      'Untuk mengaktifkan plugin, daftarkan plugin di proyek sumber lalu deploy ulang aplikasi.',
     attention_one:
       '{{count}} plugin perlu perhatian dan ditampilkan paling atas.',
     attention_other:
@@ -55,7 +55,7 @@ const idID: LocaleResource<typeof enUS> = {
     skillsOnly: 'Aktif · Hanya Skill',
     enabledAttention: 'Aktif · Perlu perhatian',
     disabled: 'Belum aktif',
-    preinstalled: 'Belum aktif · Hanya saat pengembangan',
+    preinstalled: 'Belum aktif · Dependensi pengembangan',
     disabledAttention: 'Belum aktif · Perlu perhatian',
     unknown: 'Tidak dapat dipastikan · Build ulang',
   },

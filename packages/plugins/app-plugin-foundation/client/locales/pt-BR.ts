@@ -22,7 +22,7 @@ const ptBR: LocaleResource<typeof enUS> = {
     description:
       'Os plugins que este aplicativo usa. Ativar ou desativar um deles altera o código do aplicativo e só vale depois de reiniciá-lo, por isso esta página mostra os comandos a executar em vez de chaves.',
     deployed:
-      'Este é um aplicativo implantado: só aparecem os plugins implantados com ele. Plugins visíveis apenas durante o desenvolvimento não aparecem aqui.',
+      'Para ativar um plugin, registre-o no projeto de origem e implante o aplicativo novamente.',
     attention_one: '{{count}} plugin precisa de atenção e aparece primeiro.',
     attention_other:
       '{{count}} plugins precisam de atenção e aparecem primeiro.',
@@ -56,7 +56,7 @@ const ptBR: LocaleResource<typeof enUS> = {
     skillsOnly: 'Ativado · Apenas Skills',
     enabledAttention: 'Ativado · Precisa de atenção',
     disabled: 'Não ativado',
-    preinstalled: 'Não ativado · Só no desenvolvimento',
+    preinstalled: 'Não ativado · Dependência de desenvolvimento',
     disabledAttention: 'Não ativado · Precisa de atenção',
     unknown: 'Não é possível saber · Recompilar',
   },

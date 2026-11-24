@@ -16,8 +16,11 @@ import {
 } from '../shared/plugins.js';
 
 interface ApplicationManifest {
-  readonly dependencies: Readonly<Record<string, string>>;
-  readonly devDependencies: Readonly<Record<string, string>>;
+  readonly declarations: ReadonlyMap<
+    string,
+    'dependencies' | 'devDependencies'
+  >;
+  readonly developmentPlugins: Readonly<Record<string, unknown>>;
   readonly deployed: boolean;
   /**
    * The packages the application's `cli/plugins` registers; `undefined` when a deployment was built before
@@ -78,10 +81,7 @@ export class FoundationPluginCatalog {
     const names = [
       ...new Set([
         ...server,
-        ...[
-          ...Object.keys(application.dependencies),
-          ...Object.keys(application.devDependencies),
-        ]
+        ...[...application.declarations.keys()]
           .filter(isPluginPackageName)
           .sort(),
       ]),
@@ -93,18 +93,17 @@ export class FoundationPluginCatalog {
 
     const classified = await Promise.all(
       names.map(async (packageName) => {
-        const installed = await this.readInstalled(packageName);
+        const snapshot = application.developmentPlugins[packageName];
+        const installed =
+          snapshot === undefined
+            ? await this.readInstalled(packageName)
+            : installedPlugin(record(snapshot));
         const entries = installed?.entries ?? {
           client: false,
           server: false,
           cli: false,
         };
-        const dependencyField =
-          packageName in application.dependencies
-            ? ('dependencies' as const)
-            : packageName in application.devDependencies
-              ? ('devDependencies' as const)
-              : undefined;
+        const dependencyField = application.declarations.get(packageName);
         const registration = classifyPluginRegistration({
           dependencyField,
           installed: installed !== undefined,
@@ -197,11 +196,24 @@ export class FoundationPluginCatalog {
       readCliPlugins(this.options.rootDir),
     ]).then(([manifest, cliPlugins]) => {
       const nocobase = record(manifest?.nocobase);
+      const deployed = typeof nocobase?.builtAt === 'string';
+      const developmentPlugins =
+        (deployed && record(nocobase?.developmentPlugins)) || {};
+      const declarations = new Map<
+        string,
+        'dependencies' | 'devDependencies'
+      >();
+      for (const name of Object.keys(stringRecord(manifest?.devDependencies)))
+        declarations.set(name, 'devDependencies');
+      for (const name of Object.keys(stringRecord(manifest?.dependencies)))
+        declarations.set(name, 'dependencies');
+      // Vendoring can also list a development plugin as a transitive production dependency.
+      for (const name of Object.keys(developmentPlugins))
+        declarations.set(name, 'devDependencies');
       return {
-        dependencies: stringRecord(manifest?.dependencies),
-        devDependencies: stringRecord(manifest?.devDependencies),
-        // `pnpm build` records when it built the deployable `dist/package.json`, which lists only `dependencies`.
-        deployed: typeof nocobase?.builtAt === 'string',
+        declarations,
+        developmentPlugins,
+        deployed,
         cliPlugins,
       };
     });
@@ -239,7 +251,10 @@ export class FoundationPluginCatalog {
   }
 }
 
-function installedPlugin(manifest: Record<string, unknown>): InstalledPlugin {
+function installedPlugin(
+  manifest: Record<string, unknown> | undefined,
+): InstalledPlugin | undefined {
+  if (!manifest) return undefined;
   const exports = record(manifest.exports) ?? {};
   const peers = stringRecord(manifest.peerDependencies);
   const peersMeta = record(manifest.peerDependenciesMeta) ?? {};

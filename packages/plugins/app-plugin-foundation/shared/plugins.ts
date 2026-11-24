@@ -21,7 +21,7 @@ export interface FoundationPluginView extends FoundationPluginMetadata {
   readonly packageName: string;
   /** The name `pnpm nocobase plugin …` takes: the short name of an official plugin, the package name otherwise. */
   readonly name: string;
-  /** The installed version, absent when the package does not resolve. */
+  /** The installed version in the source project or deployment, when available. */
   readonly version?: string;
   readonly dependencyField?: 'dependencies' | 'devDependencies';
   /** Whether the running application registers it. */

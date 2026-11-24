@@ -32,10 +32,9 @@ export const PluginSchema: z.ZodType<FoundationPluginView> = z
       description:
         'The name `pnpm nocobase plugin` commands take: the short name of an official plugin, the package name otherwise.',
     }),
-    version: z
-      .string()
-      .optional()
-      .meta({ description: 'The installed version.' }),
+    version: z.string().optional().meta({
+      description: 'The installed version in the source project or deployment.',
+    }),
     title: LocalizedText.optional(),
     description: LocalizedText.optional(),
     docs: LocalizedText.optional(),
