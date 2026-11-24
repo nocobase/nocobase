@@ -1,4 +1,3 @@
-import { withAuthAuditConnection } from '../audit.js';
 import type {
   ComparisonOperator,
   DatabaseConnection,
@@ -9,7 +8,13 @@ import type {
   SqlBool,
   UpdateQuery,
 } from '@nocobase/db';
-import type { BetterAuthOptions, DBAdapterInstance, Where } from 'better-auth';
+import {
+  getCurrentAdapter,
+  type BetterAuthOptions,
+  type DBAdapterInstance,
+  type DBTransactionAdapter,
+  type Where,
+} from 'better-auth';
 import { createAdapterFactory, type CustomAdapter } from 'better-auth/adapters';
 import type { Knex } from 'knex';
 
@@ -19,6 +24,20 @@ export interface DatabaseAdapterOptions {
     user: Record<string, unknown>,
     connection: DatabaseConnection,
   ): Promise<void>;
+}
+
+const transactionConnections = new WeakMap<
+  DBTransactionAdapter,
+  DatabaseConnection
+>();
+
+/** Returns the active connection for the current Better Auth transaction callback, if any. */
+export async function authTransactionConnection(): Promise<
+  DatabaseConnection | undefined
+> {
+  // Without an active adapter, Better Auth returns its fallback unchanged.
+  const adapter = await getCurrentAdapter(undefined!);
+  return transactionConnections.get(adapter);
 }
 
 type CleanWhere = Required<Where>;
@@ -461,11 +480,15 @@ export function databaseAdapter(
           if (!betterAuthOptions) {
             throw new Error('Better Auth adapter is not initialized');
           }
-          return currentConnection.transaction((transaction) =>
-            withAuthAuditConnection(transaction, () =>
-              callback(factory(transaction)(betterAuthOptions!)),
-            ),
-          );
+          return currentConnection.transaction(async (transaction) => {
+            const adapter = factory(transaction)(betterAuthOptions!);
+            transactionConnections.set(adapter, transaction);
+            try {
+              return await callback(adapter);
+            } finally {
+              transactionConnections.delete(adapter);
+            }
+          });
         },
       },
       adapter: ({

@@ -1,5 +1,3 @@
-import { AsyncLocalStorage } from 'node:async_hooks';
-import type { DatabaseConnection } from '@nocobase/db';
 import {
   auditEnabled,
   recordAuditInTransaction,
@@ -7,25 +5,16 @@ import {
   setAuditTarget,
   type AuditRouteOptions,
 } from '@nocobase/app-server/audit';
+import { authTransactionConnection } from './better-auth/database-adapter.js';
 
 export const passwordResetAuditAction = 'auth:resetPassword';
-const resetAuditConnection = new AsyncLocalStorage<DatabaseConnection>();
 
-/** Keep reset auditing inside Better Auth's password transaction, before its post-reset callback. */
-export function withAuthAuditConnection<T>(
-  connection: DatabaseConnection,
-  execute: () => Promise<T>,
-): Promise<T> {
-  return auditEnabled(passwordResetAuditAction)
-    ? resetAuditConnection.run(connection, execute)
-    : execute();
-}
-
+/** Record the reset inside Better Auth's password transaction, before its post-reset callback. */
 export async function recordPasswordResetAudit(userId: string): Promise<void> {
   if (!auditEnabled(passwordResetAuditAction)) return;
   setAuditActor({ type: 'user', userId });
   setAuditTarget({ collection: 'user', key: userId });
-  const connection = resetAuditConnection.getStore();
+  const connection = await authTransactionConnection();
   if (connection) await recordAuditInTransaction(connection);
 }
 
