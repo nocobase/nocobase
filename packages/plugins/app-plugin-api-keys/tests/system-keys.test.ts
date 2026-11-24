@@ -226,16 +226,22 @@ describe('system keys', () => {
         new MemberKeys({ connection: () => database.connection(), keys }),
       ],
     ]);
-    const api = await apiRoutes.createRouter({
+    const host = {
       container: {
         has: (token: unknown) => services.has(token),
         resolve: (token: unknown) => services.get(token),
       },
-    } as unknown as AppPluginApplication);
+    };
+    const router = (systemApiKeyRoutes?: boolean) =>
+      apiRoutes.createRouter({
+        ...host,
+        config: { get: () => ({ systemApiKeyRoutes }) },
+      } as unknown as AppPluginApplication);
     const routes = new Hono<{
       Variables: AuthEnv['Variables'] & AuthorizationEnv['Variables'];
     }>();
-    routes.route('/api', api);
+    routes.route('/api', await router());
+    routes.route('/api/disabled', await router(false));
     routes.get(
       '/settings/:id/:action',
       auth.required({ scopedKeys: true }),
@@ -261,6 +267,38 @@ describe('system keys', () => {
 
   afterAll(async () => {
     await testDatabase.destroy();
+  });
+
+  it('omits only system key management routes when disabled', async () => {
+    const created = await systemKeys.create(adminId, {
+      name: 'Existing integration',
+      expiresInDays: 30,
+      permissions: readOrders,
+    });
+    const id = created.key.identityId;
+    try {
+      for (const [method, suffix] of [
+        ['GET', ''],
+        ['POST', ''],
+        ['GET', '/' + id],
+        ['POST', '/' + id + '/rotate'],
+        ['DELETE', '/' + id],
+      ]) {
+        expect(
+          (await call('/disabled/systemApiKeys' + suffix, adminCookie, method))
+            .status,
+        ).toBe(404);
+      }
+      expect((await call('/disabled/apiKeys', adminCookie)).status).toBe(200);
+      expect((await call('/disabled/apiKeys/rules', adminCookie)).status).toBe(
+        200,
+      );
+      expect(
+        (await asKey(created.secret, '/settings/orders/read')).status,
+      ).toBe(200);
+    } finally {
+      await call('/systemApiKeys/' + id, adminCookie, 'DELETE');
+    }
   });
 
   it('shows someone who holds everything the person-only actions of a type without items, and refuses them to a key', async () => {

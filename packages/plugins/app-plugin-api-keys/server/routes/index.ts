@@ -25,7 +25,7 @@ import {
 import { Hono, type Context, type MiddlewareHandler } from 'hono';
 
 import { requireSignInSession } from '../key-sessions.js';
-import { ApiKeyRequestError } from '../scoped-keys.js';
+import { ApiKeyRequestError, type ApiKeysConfig } from '../scoped-keys.js';
 import {
   memberApiKeysToken,
   scopedApiKeysToken,
@@ -81,7 +81,7 @@ const newRouteOffCommandLine = cliRoute(false);
  * keys only, and only from a sign-in: a request made with any API key is refused (`requireSignInSession`).
  */
 export const apiRoutes: AppApiRouteContribution<AppPluginApplication> =
-  defineApiRoutes(({ container }) => {
+  defineApiRoutes(({ container, config }) => {
     const router = new Hono();
     if (!container.has(authenticationToken)) return router;
     const keys = container.resolve(scopedApiKeysToken);
@@ -458,7 +458,8 @@ export const apiRoutes: AppApiRouteContribution<AppPluginApplication> =
     router.route('/apiKeys', routes);
     if (
       container.has(authorizationToken) &&
-      container.has(systemApiKeysToken)
+      container.has(systemApiKeysToken) &&
+      config.get<ApiKeysConfig>('apiKeys')?.systemApiKeyRoutes !== false
     ) {
       const system = new Hono<Env>();
       system.onError((error, context) =>
