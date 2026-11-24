@@ -269,6 +269,10 @@ class DefaultMessageBrokerService implements MessageBrokerService {
               'Publishing inside a transaction needs an outbox; register @nocobase/app-plugin-message-broker.',
             );
           }
+          // Once set up, a transactional publish checks its binding the way a direct one does, so that a message the
+          // middleware cannot route fails the business transaction instead of waiting in the outbox. Before setup the
+          // outbox takes it, and setup checks every publisher requested by then.
+          if (this.state === 'ready') await this.lateBinding('publisher', name);
           await this.outbox.enqueue(publishOptions.transaction, name, encoded);
           return { messageId: encoded.messageId, deferred: true };
         }
@@ -649,7 +653,7 @@ class DefaultMessageBrokerService implements MessageBrokerService {
       const key = `${kind}:${name}`;
       let check = backend.checked.get(key);
       if (!check) {
-        check = (async () => {
+        const pending = (async () => {
           if (kind === 'subscription') {
             this.checkSubscription(
               backendName,
@@ -668,7 +672,12 @@ class DefaultMessageBrokerService implements MessageBrokerService {
           if (missing.length > 0)
             throw new MissingTopologyError(backendName, missing);
         })();
-        backend.checked.set(key, check);
+        check = pending;
+        backend.checked.set(key, pending);
+        // A failed check is not remembered: once an operator creates the missing resource, the next call passes.
+        pending.catch(() => {
+          if (backend.checked.get(key) === pending) backend.checked.delete(key);
+        });
       }
       await check;
     }
@@ -698,6 +707,7 @@ class DefaultMessageBrokerService implements MessageBrokerService {
     const schema = subscription.options.schema;
     const useInbox = subscription.options.inbox === true;
     const log = { subscription: subscription.name, backend: backend.name };
+    const usage = `subscription "${subscription.name}"`;
     const retryOutcome = (
       attempt: number,
       reason: string,
@@ -709,19 +719,7 @@ class DefaultMessageBrokerService implements MessageBrokerService {
           reason: `Gave up after ${attempt} attempt(s): ${reason}`,
         };
       }
-      let wait = delay ?? binding.retryDelay;
-      if (wait > 0 && !backend.implementation.capabilities.delayedRetry) {
-        this.logger.error(
-          { ...log, capability: 'delayedRetry' },
-          new UnsupportedCapabilityError(
-            backend.name,
-            'delayedRetry',
-            'retry({ delay })',
-          ).message,
-        );
-        wait = 0;
-      }
-      return { kind: 'retry', delay: wait };
+      return { kind: 'retry', delay: delay ?? binding.retryDelay };
     };
     const settle = (
       result: MessageResult | void,
@@ -730,6 +728,23 @@ class DefaultMessageBrokerService implements MessageBrokerService {
       if (result === undefined || result.kind === 'ack') return { kind: 'ack' };
       if (result.kind === 'reject')
         return { kind: 'deadLetter', reason: result.reason };
+      if (
+        result.delay !== undefined &&
+        result.delay > 0 &&
+        !backend.implementation.capabilities.delayedRetry
+      ) {
+        // Retrying at once instead would spend the attempts before whatever the handler waits for recovers.
+        const error = new UnsupportedCapabilityError(
+          backend.name,
+          'delayedRetry',
+          `retry({ delay: ${result.delay} }) in ${usage}`,
+        );
+        this.logger.error(
+          { ...log, capability: 'delayedRetry' },
+          error.message,
+        );
+        return { kind: 'deadLetter', reason: error.message };
+      }
       return retryOutcome(attempt, 'the handler asked to retry', result.delay);
     };
     return async (encoded, { attempt }) => {

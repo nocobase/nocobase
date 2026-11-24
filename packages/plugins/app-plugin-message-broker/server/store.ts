@@ -104,6 +104,17 @@ export class MessageBrokerStore implements MessageOutbox, MessageInbox {
         `The outbox lives on the "${defaultConnection}" connection; publish inside a transaction on it, not on "${transaction.name}".`,
       );
     }
+    // Outside a transaction, afterCommit() runs its callback at once; a row written through such a connection would
+    // stay behind when the caller's business transaction rolls back.
+    let committed = false;
+    transaction.afterCommit(() => {
+      committed = true;
+    });
+    if (committed) {
+      throw new TypeError(
+        'The outbox takes the connection database.transaction() passes to its callback; the connection given is not inside a transaction.',
+      );
+    }
     if (message.body.length > MAX_OUTBOX_BODY_BYTES) {
       throw new RangeError(
         `Message "${message.messageId}" has a ${message.body.length}-byte body; the outbox stores bodies of up to ${MAX_OUTBOX_BODY_BYTES} bytes. Publish a reference to the data instead.`,

@@ -84,15 +84,15 @@ The templates configure `inMemory`, which delivers within the process and loses 
 
 Each backend declares what it can do, and the service refuses a configuration or call that needs something it cannot, at setup or at the call, instead of quietly doing less:
 
-| Capability      | Needed by                                               | Checked                              |
-| --------------- | ------------------------------------------------------- | ------------------------------------ |
-| `perMessageAck` | `concurrency` above 1                                   | setup                                |
-| `delayedRetry`  | `retryDelay` above 0                                    | setup                                |
-| `delayedRetry`  | `retry({ delay })` from a handler                       | the call; logged and retried at once |
-| `orderedByKey`  | `ordered: true`                                         | setup                                |
-| `deadLetter`    | every subscription (`maxAttempts`, `reject()`, schemas) | setup                                |
+| Capability      | Needed by                                               | Checked                                 |
+| --------------- | ------------------------------------------------------- | --------------------------------------- |
+| `perMessageAck` | `concurrency` above 1                                   | setup                                   |
+| `delayedRetry`  | `retryDelay` above 0                                    | setup                                   |
+| `delayedRetry`  | `retry({ delay })` from a handler                       | the call; dead-lettered with the reason |
+| `orderedByKey`  | `ordered: true`                                         | setup                                   |
+| `deadLetter`    | every subscription (`maxAttempts`, `reject()`, schemas) | setup                                   |
 
-`inbox: true` needs a registered inbox and a transactional publish a registered outbox; both are checked too. A name first used after setup is bound and checked on first use.
+`inbox: true` needs a registered inbox and a transactional publish a registered outbox; both are checked too. A name first used after setup is bound and checked on first use, by a transactional publish as well as a direct one, so that a message the middleware cannot route fails the caller instead of waiting in the outbox; a failed check runs again on the next call, so a resource an operator creates later takes effect without a restart.
 
 ## Topology
 
@@ -112,7 +112,7 @@ Sent rows are deleted after `outboxRetention` (1 day) and inbox rows after `inbo
 
 A backend plugin calls `registerImplementation(adapter, implementation)` in its provider's `register()`; registration performs no I/O and closes once the service is set up. A `BrokerImplementation` declares `sharing` and `capabilities`, may set `implicitBindings` to accept undeclared names, validates its backend entry synchronously in `validateConfig()`, and creates a `BrokerRuntime` per backend. The runtime opens its connection in `open()`, reports missing resources from `checkTopology()`, resolves `publish()` only once the middleware confirmed the message, and delivers messages to the callback `startConsuming()` receives: the callback answers `ack`, `retry` with a delay, or `deadLetter` with a reason, and the runtime settles the message accordingly. `close()` stops consuming and releases the connection.
 
-`tests/contract/broker-contract.ts` holds the contract every backend passes, grouped as `core` plus one group per capability that runs only when the target declares it. A backend suite imports it from this package's source and calls `defineMessageBrokerContract(target)` with how to build a backend entry for a set of names, an entry whose topology is missing, and how to read a subscription's dead letters; `tests/unit/memory-contract.test.ts` is the `inMemory` target.
+`@nocobase/message-broker/contract` holds the contract every backend passes, grouped as `core` plus one group per capability that runs only when the target declares it. It imports `vitest`, an optional peer dependency the backend's test setup provides. A backend suite imports it and calls `defineMessageBrokerContract(target)` with how to build a backend entry for a set of names, an entry whose topology is missing, and how to read a subscription's dead letters; `tests/unit/memory-contract.test.ts` is the `inMemory` target.
 
 ## Mapping other middleware
 

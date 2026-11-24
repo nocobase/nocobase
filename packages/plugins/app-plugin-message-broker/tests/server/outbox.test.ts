@@ -12,6 +12,7 @@ import { afterEach, expect, vi } from 'vitest';
 
 import {
   backoff,
+  lazyExclusion,
   OutboxRelay,
   type RelayExclusion,
 } from '../../server/relay.js';
@@ -362,4 +363,73 @@ test('the outbox refuses a body larger than every dialect stores', async ({
     ),
   ).rejects.toThrow('the outbox stores bodies of up to 65535 bytes');
   expect(await rows(database)).toEqual([]);
+});
+
+test('the outbox refuses a connection outside a transaction, so a rollback leaves nothing behind', async ({
+  database,
+}) => {
+  const { broker } = await instance(database);
+  await expect(
+    database.transaction(async () => {
+      await broker
+        .publisher('orders')
+        .publish(
+          { body: {}, messageId: 'root' },
+          { transaction: database.connection() },
+        );
+      throw new Error('business failure');
+    }),
+  ).rejects.toThrow('not inside a transaction');
+  expect(await rows(database)).toEqual([]);
+});
+
+test('an idle poll takes no lock and cleanup still runs on schedule', async ({
+  database,
+}) => {
+  let clock = 5_000_000;
+  const locked: number[] = [];
+  const shared = sharedExclusion();
+  const { relay, store } = await instance(database, {
+    onCommitted: false,
+    now: () => clock,
+    exclusive: (tick) => {
+      locked.push(clock);
+      return shared(tick);
+    },
+  });
+  await store.process('erp', 'old', () => Promise.resolve());
+  // The first round cleans up; the polls after it find nothing to send and lock nothing.
+  await relay.round();
+  expect(locked).toEqual([clock]);
+  clock += 1000;
+  await relay.round();
+  await relay.round();
+  expect(locked).toHaveLength(1);
+  expect(await database.repository(INBOX_COLLECTION).count()).toBe(1);
+
+  clock += 60 * 60 * 1000;
+  await relay.round();
+  expect(locked).toHaveLength(2);
+  expect(await database.repository(INBOX_COLLECTION).count()).toBe(0);
+});
+
+test('a lock that failed to start is created again at the next round', async () => {
+  let attempts = 0;
+  const exclusive = lazyExclusion(() => {
+    attempts += 1;
+    return attempts === 1
+      ? Promise.reject(new Error('lock backend unavailable'))
+      : Promise.resolve(async (tick) => {
+          await tick();
+          return true;
+        });
+  });
+  const ran: number[] = [];
+  await expect(
+    exclusive(() => Promise.resolve(void ran.push(1))),
+  ).rejects.toThrow('lock backend unavailable');
+  expect(await exclusive(() => Promise.resolve(void ran.push(2)))).toBe(true);
+  expect(await exclusive(() => Promise.resolve(void ran.push(3)))).toBe(true);
+  expect(ran).toEqual([2, 3]);
+  expect(attempts).toBe(2);
 });

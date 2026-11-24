@@ -1,4 +1,4 @@
-import type { DatabaseManager, FilterBuilder } from '@nocobase/db';
+import type { DatabaseManager, FilterBuilder, Repository } from '@nocobase/db';
 import type {
   MessageBrokerLogger,
   MessageBrokerService,
@@ -28,6 +28,27 @@ export interface OutboxRelayOptions {
   readonly inboxRetention: number;
   readonly batchSize?: number;
   readonly now?: () => number;
+}
+
+/**
+ * An exclusion created on first use, such as one from the concurrency plugin's lock. Creating it again after a
+ * failure keeps a lock backend that was unavailable at startup from failing every later round.
+ */
+export function lazyExclusion(
+  create: () => Promise<RelayExclusion>,
+): RelayExclusion {
+  let created: Promise<RelayExclusion> | undefined;
+  return async (tick) => {
+    const pending = (created ??= create());
+    let exclusion: RelayExclusion;
+    try {
+      exclusion = await pending;
+    } catch (error) {
+      if (created === pending) created = undefined;
+      throw error;
+    }
+    return exclusion(tick);
+  };
 }
 
 const DEFAULT_BATCH_SIZE = 100;
@@ -95,7 +116,7 @@ export class OutboxRelay {
     do {
       this.again = false;
       try {
-        await this.options.exclusive(() => this.round());
+        await this.round();
       } catch (error) {
         this.options.logger.error(
           { error: truncateError(error) },
@@ -105,17 +126,42 @@ export class OutboxRelay {
     } while (this.again && !this.stopped);
   }
 
-  /** One round. Exposed for tests; production code calls `kick()`. */
+  /**
+   * One round: sends due rows when there are any, then cleans up once the cleanup interval passed. The lock is taken
+   * only for work: an idle poll is a single indexed read on each instance. Exposed for tests; production code calls
+   * `kick()`.
+   */
   public async round(): Promise<void> {
     const database = this.options.database();
     const outbox = database.repository<OutboxRow>(OUTBOX_COLLECTION);
+    if ((await this.due(outbox, 1)).length > 0) {
+      await this.options.exclusive(() => this.send(outbox));
+    }
     const now = this.now();
-    const rows = await outbox.findMany({
+    if (now - this.lastCleanup >= CLEANUP_INTERVAL_MS) {
+      // Another instance holding the lock is sending; this one cleans up at its next round instead.
+      if (await this.options.exclusive(() => this.cleanup(database, now))) {
+        this.lastCleanup = now;
+      }
+    }
+  }
+
+  private async due(
+    outbox: Repository<OutboxRow>,
+    limit: number,
+  ): Promise<OutboxRow[]> {
+    const now = this.now();
+    return await outbox.findMany({
       filter: (f: FilterBuilder<OutboxRow>) =>
         f.and([f.number('sentAt').empty(), f.number('nextAttemptAt').lte(now)]),
       sort: (sort) => sort.field('id').asc(),
-      limit: this.batchSize,
+      limit,
     });
+  }
+
+  /** Sends one batch of due rows; runs under the lock, so it reads them again. */
+  private async send(outbox: Repository<OutboxRow>): Promise<void> {
+    const rows = await this.due(outbox, this.batchSize);
     const broker = this.options.broker();
     const sent: (number | string)[] = [];
     // A failed message holds back later ones with the same publisher and key within this round.
@@ -162,10 +208,6 @@ export class OutboxRelay {
       });
     }
     if (rows.length === this.batchSize) this.again = true;
-    if (now - this.lastCleanup >= CLEANUP_INTERVAL_MS) {
-      this.lastCleanup = now;
-      await this.cleanup(database, now);
-    }
   }
 
   private async cleanup(database: DatabaseManager, now: number): Promise<void> {

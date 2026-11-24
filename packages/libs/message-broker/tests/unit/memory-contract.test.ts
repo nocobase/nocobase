@@ -7,7 +7,7 @@ import {
 import {
   defineMessageBrokerContract,
   silentLogger,
-} from '../contract/broker-contract.js';
+} from '@nocobase/message-broker/contract';
 
 defineMessageBrokerContract({
   name: 'inMemory',

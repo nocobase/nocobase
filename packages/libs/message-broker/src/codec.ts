@@ -15,14 +15,14 @@ export const jsonCodec: Codec = {
   },
 };
 
-/** Passes bytes through unchanged, for bodies another system encodes. */
+/** Passes bytes through unchanged, for bodies another system encodes. Encoding copies them, so the caller may reuse its Buffer. */
 export const rawCodec: Codec<Buffer> = {
   contentType: 'application/octet-stream',
   encode(value: Buffer): Buffer {
     if (!Buffer.isBuffer(value)) {
       throw new TypeError('The raw codec takes a Buffer body.');
     }
-    return value;
+    return Buffer.from(value);
   },
   decode(body: Buffer): Buffer {
     return body;

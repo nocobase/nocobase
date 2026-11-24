@@ -11,7 +11,7 @@ import {
   resolveMessageBrokerOutboxConfig,
   type MessageBrokerOutboxConfig,
 } from '../config.js';
-import { OutboxRelay, type RelayExclusion } from '../relay.js';
+import { lazyExclusion, OutboxRelay } from '../relay.js';
 import { MessageBrokerStore } from '../store.js';
 import { messageBrokerOutboxRelayToken } from '../tokens.js';
 
@@ -42,23 +42,19 @@ export class MessageBrokerOutboxProvider extends ServiceProvider<AppPluginApplic
             warn: (bindings, message) => console.warn(message, bindings),
             error: (bindings, message) => console.error(message, bindings),
           };
-      let executor: Promise<RelayExclusion> | undefined;
-      const exclusive: RelayExclusion = async (tick) => {
-        executor ??= (async (): Promise<RelayExclusion> => {
-          if (!container.has(concurrencyServiceToken)) {
-            return async (run) => {
-              await run();
-              return true;
-            };
-          }
-          const manager = await container
-            .resolve(concurrencyServiceToken)
-            .getManager();
-          const synchronous = await manager.createSynchronous(RELAY_LOCK);
-          return async (run) => (await synchronous.tryRun(run, 0)).acquired;
-        })();
-        return (await executor)(tick);
-      };
+      const exclusive = lazyExclusion(async () => {
+        if (!container.has(concurrencyServiceToken)) {
+          return async (run) => {
+            await run();
+            return true;
+          };
+        }
+        const manager = await container
+          .resolve(concurrencyServiceToken)
+          .getManager();
+        const synchronous = await manager.createSynchronous(RELAY_LOCK);
+        return async (run) => (await synchronous.tryRun(run, 0)).acquired;
+      });
       return new OutboxRelay({
         database: () => container.resolve(databaseManagerToken),
         broker: () => container.resolve(messageBrokerServiceToken),

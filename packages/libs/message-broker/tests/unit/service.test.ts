@@ -4,18 +4,22 @@ import {
   createInMemoryBroker,
   createMessageBrokerService,
   MissingTopologyError,
+  rawCodec,
   retry,
   UnsupportedCapabilityError,
   validateMessageBrokerConfig,
+  type BrokerImplementation,
+  type BrokerMessage,
   type BrokerTransaction,
   type EncodedMessage,
+  type HandlerContext,
   type MessageBrokerConfig,
   type MessageBrokerService,
   type MessageInbox,
   type MessageOutbox,
 } from '@nocobase/message-broker';
 
-import { silentLogger, waitFor } from '../contract/broker-contract.js';
+import { silentLogger, waitFor } from '@nocobase/message-broker/contract';
 
 const services: MessageBrokerService[] = [];
 
@@ -193,7 +197,7 @@ describe('capabilities', () => {
     },
   );
 
-  it('reports a retry delay the backend cannot honour and retries without it', async () => {
+  it('dead-letters a retry delay the backend cannot honour, with the reason, instead of retrying at once', async () => {
     const errors: string[] = [];
     const service = createMessageBrokerService(
       {
@@ -214,18 +218,22 @@ describe('capabilities', () => {
       },
     );
     services.push(service);
-    service.registerImplementation(
-      'limited',
-      createInMemoryBroker({ capabilities: { delayedRetry: false } }),
-    );
+    const limitedBroker = createInMemoryBroker({
+      capabilities: { delayedRetry: false },
+    });
+    service.registerImplementation('limited', limitedBroker);
     const attempts: number[] = [];
     service.subscription('worker').consume((_message, { attempt }) => {
       attempts.push(attempt);
-      return attempt === 1 ? retry({ delay: 60_000 }) : undefined;
+      return retry({ delay: 60_000 });
     });
     await service.setup();
     await service.publisher('worker').publish({ body: {} });
-    await waitFor(() => attempts.length === 2);
+    await waitFor(() => limitedBroker.deadLetters('worker').length === 1);
+    expect(attempts).toEqual([1]);
+    const [deadLetter] = limitedBroker.deadLetters('worker');
+    expect(deadLetter!.reason).toContain('does not support delayedRetry');
+    expect(deadLetter!.reason).toContain('retry({ delay: 60000 })');
     expect(errors[0]).toContain('delayedRetry');
   });
 
@@ -287,6 +295,84 @@ describe('topology', () => {
     await expect(
       service.publisher('late').publish({ body: {} }),
     ).rejects.toThrow('missing topic "late"');
+  });
+});
+
+describe('topology after setup', () => {
+  /** An inMemory backend whose middleware lacks topic "late" until `create()` is called. */
+  function lateTopic() {
+    const inMemory = createInMemoryBroker();
+    let exists = false;
+    const implementation: BrokerImplementation = {
+      ...inMemory,
+      createRuntime: (context) => {
+        const runtime = inMemory.createRuntime(context);
+        return {
+          ...runtime,
+          open: () => runtime.open(),
+          publish: (binding, message) => runtime.publish(binding, message),
+          startConsuming: (binding, deliver) =>
+            runtime.startConsuming(binding, deliver),
+          close: () => runtime.close(),
+          checkTopology: async (bindings) =>
+            exists
+              ? runtime.checkTopology(bindings)
+              : bindings.publishers.map((binding) => ({
+                  kind: 'topic',
+                  name: binding.name,
+                  usedBy: `publisher "${binding.name}"`,
+                })),
+        };
+      },
+    };
+    const service = create({
+      default: 'lazy',
+      backends: { lazy: { adapter: 'lazy' } },
+    });
+    service.registerImplementation('lazy', implementation);
+    return {
+      service,
+      create: () => {
+        exists = true;
+      },
+    };
+  }
+
+  it('refuses a transactional publish on a missing resource as a direct one does', async () => {
+    const written: string[] = [];
+    const { service } = lateTopic();
+    service.registerOutbox({
+      enqueue: (_transaction, _publisher, message) => {
+        written.push(message.messageId);
+        return Promise.resolve();
+      },
+    });
+    await service.setup();
+    const transaction: BrokerTransaction = { afterCommit: () => undefined };
+    await expect(
+      service.publisher('late').publish({ body: {} }, { transaction }),
+    ).rejects.toThrow('missing topic "late"');
+    await expect(
+      service.publisher('late').publish({ body: {} }),
+    ).rejects.toThrow('missing topic "late"');
+    expect(written).toEqual([]);
+  });
+
+  it('checks a failed name again, so a resource created later works without a restart', async () => {
+    const { service, create: createTopic } = lateTopic();
+    const received: unknown[] = [];
+    await service.setup();
+    await expect(
+      service.publisher('late').publish({ body: 1 }),
+    ).rejects.toThrow('missing topic "late"');
+    createTopic();
+    service.subscription('late').consume((message) => {
+      received.push(message.body);
+    });
+    await waitFor(() => service.describe().subscriptions[0]!.consuming);
+    await service.publisher('late').publish({ body: 2 });
+    await waitFor(() => received.length === 1);
+    expect(received).toEqual([2]);
   });
 });
 
@@ -416,5 +502,85 @@ describe('outbox and inbox', () => {
       { attempt: 2, transaction: 'tx' },
     ]);
     expect([...processed]).toEqual(['erp:same']);
+  });
+});
+
+describe('inMemory backend', () => {
+  it('keeps a message waiting for a delayed retry first in line across unsubscribe', async () => {
+    const service = create({
+      default: 'memory',
+      backends: {
+        memory: {
+          adapter: 'inMemory',
+          subscriptions: { orders: { ordered: true } },
+        },
+      },
+    });
+    const handled: string[] = [];
+    const handler = (message: BrokerMessage, { attempt }: HandlerContext) => {
+      handled.push(`${message.messageId}#${attempt}`);
+      return message.messageId === 'first' && attempt === 1
+        ? retry({ delay: 60_000 })
+        : undefined;
+    };
+    const stop = service.subscription('orders').consume(handler);
+    await service.setup();
+    const publisher = service.publisher('orders');
+    await publisher.publish({ body: 1, messageId: 'first', key: 'k' });
+    await waitFor(() => handled.length === 1);
+    await stop();
+    service.subscription('orders').consume(handler);
+    await publisher.publish({ body: 2, messageId: 'second', key: 'k' });
+    await waitFor(() => handled.length === 3);
+    expect(handled).toEqual(['first#1', 'first#2', 'second#1']);
+  });
+
+  it('delivers what was published even when the publisher reuses its Buffer', async () => {
+    const service = create(memory);
+    const received: string[] = [];
+    // Requested but not consumed yet: the message waits in the subscription's queue.
+    const subscription = service.subscription('raw', { codec: rawCodec });
+    await service.setup();
+    const body = Buffer.from('A');
+    await service.publisher('raw', { codec: rawCodec }).publish({ body });
+    body.write('B');
+    subscription.consume((message) => {
+      received.push(message.body.toString());
+    });
+    await waitFor(() => received.length === 1);
+    expect(received).toEqual(['A']);
+  });
+
+  it('gives each subscription and each retry its own copy of the message', async () => {
+    const service = create({
+      default: 'memory',
+      backends: {
+        memory: {
+          adapter: 'inMemory',
+          subscriptions: {
+            first: { topic: 'orders' },
+            second: { topic: 'orders' },
+          },
+        },
+      },
+    });
+    const seen: string[] = [];
+    const consume = (name: string) =>
+      service
+        .subscription(name, { codec: rawCodec })
+        .consume((message, { attempt }) => {
+          seen.push(`${name}#${attempt}:${message.body.toString()}`);
+          message.body.write('X');
+          message.headers.tampered = 'yes';
+          return name === 'first' && attempt === 1 ? retry() : undefined;
+        });
+    consume('first');
+    consume('second');
+    await service.setup();
+    await service
+      .publisher('orders', { codec: rawCodec })
+      .publish({ body: Buffer.from('A') });
+    await waitFor(() => seen.length === 3);
+    expect(seen.sort()).toEqual(['first#1:A', 'first#2:A', 'second#1:A']);
   });
 });

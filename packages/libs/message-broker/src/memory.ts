@@ -61,6 +61,19 @@ interface Pending {
   attempt: number;
 }
 
+/**
+ * A private copy of a message: the backend keeps it while the publisher may reuse its Buffer, and hands each delivery
+ * its own copy so that a handler changing one cannot change what a retry or another subscription receives.
+ */
+function copyMessage(message: EncodedMessage): EncodedMessage {
+  return {
+    ...message,
+    body: Buffer.from(message.body),
+    headers: { ...message.headers },
+    timestamp: new Date(message.timestamp.getTime()),
+  };
+}
+
 function topicOf(binding: PublisherBinding | SubscriptionBinding): string {
   return typeof binding.options.topic === 'string'
     ? binding.options.topic
@@ -89,7 +102,8 @@ class SubscriptionQueue {
   private readonly pending: Pending[] = [];
   private readonly busyKeys = new Set<string>();
   private readonly running = new Set<Promise<void>>();
-  private readonly timers = new Set<NodeJS.Timeout>();
+  /** Messages waiting for a delayed retry, in the order they started waiting. */
+  private readonly waiting = new Map<NodeJS.Timeout, Pending>();
   private deliver: DeliverMessage | undefined;
 
   public constructor(
@@ -107,9 +121,19 @@ class SubscriptionQueue {
     this.pump();
     return async () => {
       this.deliver = undefined;
-      for (const timer of this.timers) clearTimeout(timer);
-      this.timers.clear();
       await Promise.all(this.running);
+      // A message waiting for its delayed retry stays first in line, and keeps its key busy, until the queue is
+      // consumed again: the timer is only a delay, not the message's place.
+      const waiting = [...this.waiting];
+      this.waiting.clear();
+      for (const [timer] of waiting) clearTimeout(timer);
+      this.pending.unshift(...waiting.map(([, entry]) => entry));
+      if (this.binding.ordered) {
+        for (const [, entry] of waiting) {
+          if (entry.message.key !== undefined)
+            this.busyKeys.delete(entry.message.key);
+        }
+      }
     };
   }
 
@@ -133,7 +157,9 @@ class SubscriptionQueue {
     const key = this.binding.ordered ? entry.message.key : undefined;
     if (key !== undefined) this.busyKeys.add(key);
     const task = (async () => {
-      const outcome = await deliver(entry.message, { attempt: entry.attempt });
+      const outcome = await deliver(copyMessage(entry.message), {
+        attempt: entry.attempt,
+      });
       if (outcome.kind === 'retry') {
         entry.attempt += 1;
         // An ordered key stays busy while its message waits, so later messages with the key cannot overtake it.
@@ -142,12 +168,12 @@ class SubscriptionQueue {
           this.pending.unshift(entry);
           this.pump();
         };
-        if (outcome.delay > 0) {
+        if (outcome.delay > 0 && this.deliver) {
           const timer = setTimeout(() => {
-            this.timers.delete(timer);
+            this.waiting.delete(timer);
             requeue();
           }, outcome.delay);
-          this.timers.add(timer);
+          this.waiting.set(timer, entry);
         } else {
           requeue();
         }
@@ -230,7 +256,7 @@ class InMemoryRuntime implements BrokerRuntime {
       );
     }
     for (const subscription of this.routes.get(topic) ?? []) {
-      this.queues.get(subscription)!.push(message);
+      this.queues.get(subscription)!.push(copyMessage(message));
     }
     return Promise.resolve();
   }

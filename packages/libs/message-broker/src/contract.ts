@@ -14,7 +14,7 @@ import {
   type MessageBrokerService,
   type StandardSchema,
   type SubscriptionBindingOptions,
-} from '@nocobase/message-broker';
+} from './index.js';
 
 /**
  * The behavior every message broker backend shares, grouped by capability: `core` runs for every backend, each other
@@ -159,8 +159,8 @@ export function defineMessageBrokerContract(
           replyTo: 'replies',
           type: 'order.created',
         });
-        expect(message!.headers.tenant).toBe('acme');
-        expect(message!.timestamp.getTime()).toBe(timestamp.getTime());
+        expect(message.headers.tenant).toBe('acme');
+        expect(message.timestamp.getTime()).toBe(timestamp.getTime());
       });
 
       it('carries raw bytes with the raw codec', async () => {
@@ -180,7 +180,7 @@ export function defineMessageBrokerContract(
           .publisher('files', { codec: rawCodec })
           .publish({ body: bytes, contentType: 'application/x-test' });
         await waitFor(() => received.length === 1);
-        expect(received[0]!.equals(bytes)).toBe(true);
+        expect(received[0].equals(bytes)).toBe(true);
       });
 
       it('acknowledges a handler that returns and retries one that throws', async () => {
@@ -235,12 +235,9 @@ export function defineMessageBrokerContract(
           async () => (await created.deadLetters('worker')).length === 1,
         );
         expect(calls).toBe(1);
-        expect(await created.deadLetters('worker')).toEqual([
-          expect.objectContaining({
-            messageId: 'r-1',
-            reason: expect.stringContaining('not for us'),
-          }),
-        ]);
+        const deadLetters = await created.deadLetters('worker');
+        expect(deadLetters.map((entry) => entry.messageId)).toEqual(['r-1']);
+        expect(deadLetters[0]?.reason).toContain('not for us');
       });
 
       it('moves a message to the dead letter after maxAttempts failures', async () => {
@@ -261,7 +258,7 @@ export function defineMessageBrokerContract(
           async () => (await created.deadLetters('worker')).length === 1,
         );
         expect(calls).toBe(2);
-        expect((await created.deadLetters('worker'))[0]!.reason).toContain(
+        expect((await created.deadLetters('worker'))[0].reason).toContain(
           'always fails',
         );
       });
@@ -289,7 +286,7 @@ export function defineMessageBrokerContract(
           async () => (await created.deadLetters('worker')).length === 1,
         );
         expect(handled).toEqual([{ orderId: 'o-2' }]);
-        expect((await created.deadLetters('worker'))[0]!.reason).toContain(
+        expect((await created.deadLetters('worker'))[0].reason).toContain(
           'orderId must be a string',
         );
       });
@@ -309,7 +306,7 @@ export function defineMessageBrokerContract(
         await service.setup();
         await service.publisher('events').publish({ body: {} });
         await waitFor(() => seen.length === 2);
-        expect(seen[1]! - seen[0]!).toBeGreaterThanOrEqual(190);
+        expect(seen[1] - seen[0]).toBeGreaterThanOrEqual(190);
       });
     });
 
