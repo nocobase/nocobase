@@ -280,11 +280,12 @@ describe('notification manager server', () => {
       } as any,
     });
 
-    await notificationManager.sendNow({
+    const options = {
       channelName: testChannelData.name,
       message: { content: 'test' },
       triggerFrom: 'workflow',
-    });
+    };
+    await notificationManager.sendNow(options);
 
     expect(getChannel).toHaveBeenCalledWith(testChannelData.name);
     expect(send).toHaveBeenCalledWith(
@@ -307,6 +308,14 @@ describe('notification manager server', () => {
         hooks: false,
         validate: false,
       }),
+    );
+
+    send.mockRejectedValueOnce({ status: 'failure', reason: 'Invalid recipient', message: options.message });
+    const failed = await notificationManager.sendNow(options);
+    expect(failed).toMatchObject({ status: 'failure', reason: 'Invalid recipient' });
+    expect(create).toHaveBeenLastCalledWith(
+      expect.objectContaining({ reason: 'Invalid recipient' }),
+      expect.anything(),
     );
   });
 
