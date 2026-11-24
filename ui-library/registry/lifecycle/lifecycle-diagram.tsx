@@ -157,17 +157,6 @@ export function LifecycleDiagram({
       }
     : sourceGraph;
   const process = presentation === 'process';
-  const kindForNode = (node: FlowDiagramNode): FlowDiagramStepKind => {
-    const state = description.stateInfo.find((state) => state.name === node.id);
-    return (
-      (state && stateKind?.(state)) ??
-      (node.kind === 'initial'
-        ? 'start'
-        : node.kind === 'final'
-          ? 'success'
-          : 'work')
-    );
-  };
   const order = new Map(graph.nodes.map((node, index) => [node.id, index]));
   const nodeById = new Map(graph.nodes.map((node) => [node.id, node]));
   const candidateFoldedExitIds = useMemo(() => {
@@ -183,6 +172,19 @@ export function LifecycleDiagram({
         .map((state) => state.name),
     );
   }, [process, exitStates, description.stateInfo]);
+  const kindForNode = (node: FlowDiagramNode): FlowDiagramStepKind => {
+    const state = description.stateInfo.find((state) => state.name === node.id);
+    return (
+      (state && stateKind?.(state)) ??
+      (node.kind === 'initial'
+        ? 'start'
+        : node.kind === 'final'
+          ? candidateFoldedExitIds.has(node.id)
+            ? 'negative'
+            : 'success'
+          : 'work')
+    );
+  };
   const terminatedAt = (() => {
     if (!process || !currentState || !candidateFoldedExitIds.has(currentState))
       return undefined;
@@ -277,10 +279,15 @@ export function LifecycleDiagram({
         edge.source === id ? 'out' : edge.target === id ? 'in' : undefined;
       if (!direction) continue;
       const [name] = JSON.parse(edge.id) as string[];
-      const key = JSON.stringify([name, direction]);
+      const peer = direction === 'out' ? edge.target : edge.source;
+      // Keep each folded exit target as its own interactive entry so every
+      // off-canvas outcome retains its tone, click inspection and actions.
+      const key =
+        direction === 'out' && foldedExitIds.has(peer)
+          ? JSON.stringify([name, direction, peer])
+          : JSON.stringify([name, direction]);
       const group = groups.get(key) ?? { edge, direction, peers: [] };
       groups.set(key, group);
-      const peer = direction === 'out' ? edge.target : edge.source;
       if (!group.peers.includes(peer)) group.peers.push(peer);
     }
     return [...groups.values()].map(({ edge, direction, peers }) => {

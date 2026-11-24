@@ -12,7 +12,10 @@ import {
 } from '@testing-library/react';
 import * as reactFlow from '@xyflow/react';
 import { beforeAll, describe, expect, it, vi } from 'vitest';
-import { FlowDiagram } from '../../registry/components/flow-diagram.js';
+import {
+  FlowDiagram,
+  FlowDiagramTransitionNotes,
+} from '../../registry/components/flow-diagram.js';
 import { FlowDiagramDemo } from '../../website/demo/components/flow-diagram.js';
 import * as layoutModule from '../../registry/components/flow-layout.js';
 import type { FlowDiagramLayout } from '../../registry/components/flow-layout.js';
@@ -444,4 +447,185 @@ it('shows return and reassignment capsules in the demo without drawing their rou
   expect(
     screen.queryByTestId('rf__edge-reveal:withdraw'),
   ).not.toBeInTheDocument();
+});
+
+it('keeps transition notes open while focusing inside the note and closes them when focus leaves the canvas or moves to another diagram', async () => {
+  const onInspect = vi.fn();
+  const renderDiagram = (label: string) => (
+    <FlowDiagram
+      {...graph}
+      ariaLabel={label}
+      compact
+      nodes={graph.nodes.map((node) => ({ ...node, bare: true }))}
+      auxiliaryEdges={[
+        { id: 'return', source: 'b', target: 'a', label: 'Return' },
+      ]}
+      renderNode={(node, { active, noteSide }) => (
+        <div>
+          <span>{node.label}</span>
+          {active && node.id === 'b' && (
+            <FlowDiagramTransitionNotes
+              side={noteSide}
+              notes={[
+                {
+                  id: 'return',
+                  label: 'Return',
+                  peers: ['Draft'],
+                  detail: 'Review · Return → Draft',
+                  onClick: onInspect,
+                },
+              ]}
+            />
+          )}
+        </div>
+      )}
+    />
+  );
+
+  render(
+    <TestI18nProvider runtime={runtime}>
+      <div>
+        {renderDiagram('First diagram')}
+        {renderDiagram('Second diagram')}
+        <button type='button'>Outside control</button>
+      </div>
+    </TestI18nProvider>,
+  );
+
+  const firstCanvas = screen.getByLabelText('First diagram');
+  const secondCanvas = screen.getByLabelText('Second diagram');
+  const firstNodeB = await waitFor(() => {
+    const el = firstCanvas.querySelector<HTMLElement>(
+      '[data-testid="rf__node-b"]',
+    );
+    expect(el).not.toBeNull();
+    return el!;
+  });
+  const secondNodeB = await waitFor(() => {
+    const el = secondCanvas.querySelector<HTMLElement>(
+      '[data-testid="rf__node-b"]',
+    );
+    expect(el).not.toBeNull();
+    return el!;
+  });
+
+  fireEvent.focus(firstNodeB);
+  const noteButton = await screen.findByRole('button', { name: /Return/ });
+  // Moving focus from the node to a button inside its note keeps the note open.
+  fireEvent.blur(firstNodeB, { relatedTarget: noteButton });
+  expect(screen.getByRole('button', { name: /Return/ })).toBeInTheDocument();
+
+  // Moving focus outside the canvas closes the note.
+  fireEvent.blur(noteButton, {
+    relatedTarget: screen.getByRole('button', { name: 'Outside control' }),
+  });
+  expect(
+    screen.queryByRole('button', { name: /Return/ }),
+  ).not.toBeInTheDocument();
+
+  // Moving focus to a node in a different FlowDiagram also closes the first diagram's note.
+  fireEvent.focus(firstNodeB);
+  expect(
+    await screen.findByRole('button', { name: /Return/ }),
+  ).toBeInTheDocument();
+  fireEvent.blur(firstNodeB, { relatedTarget: secondNodeB });
+  expect(
+    firstCanvas.querySelector('[role="group"][aria-label="Other routes"]'),
+  ).toBeNull();
+});
+
+it('measures actual canvas bounds to flip transition notes left or fall back below/above on narrow canvases', async () => {
+  const rect = (left: number, top: number, width: number, height: number) =>
+    ({
+      left,
+      top,
+      width,
+      height,
+      right: left + width,
+      bottom: top + height,
+      x: left,
+      y: top,
+      toJSON: () => ({}),
+    }) as DOMRect;
+
+  let scenario: 'flip-left' | 'narrow-bottom' | 'narrow-top' = 'flip-left';
+  const spy = vi
+    .spyOn(HTMLElement.prototype, 'getBoundingClientRect')
+    .mockImplementation(function (this: HTMLElement) {
+      if (this.classList.contains('react-flow')) {
+        return scenario === 'flip-left'
+          ? rect(0, 0, 600, 400)
+          : rect(0, 0, 320, 400);
+      }
+      if (this.dataset.testStep === 'true') {
+        if (scenario === 'flip-left') return rect(300, 100, 200, 80);
+        if (scenario === 'narrow-bottom') return rect(60, 40, 200, 80);
+        return rect(60, 280, 200, 80);
+      }
+      if (this.classList.contains('bg-popover')) {
+        return rect(0, 0, 180, 60);
+      }
+      return rect(0, 0, 0, 0);
+    });
+
+  try {
+    const view = render(
+      <TestI18nProvider runtime={runtime}>
+        <div className='react-flow'>
+          <div data-test-step='true'>
+            <FlowDiagramTransitionNotes
+              side='right'
+              notes={[{ id: 'r1', label: 'Reject', peers: ['Rejected'] }]}
+            />
+          </div>
+        </div>
+      </TestI18nProvider>,
+    );
+
+    // Space on right is 100px (< 188px needed), space on left is 300px → flips left.
+    expect(screen.getByRole('group', { name: 'Other routes' })).toHaveAttribute(
+      'data-placement',
+      'left',
+    );
+
+    // Narrow 320px canvas: 60px left, 60px right (neither fits 188px), plenty of room below → bottom.
+    scenario = 'narrow-bottom';
+    view.rerender(
+      <TestI18nProvider runtime={runtime}>
+        <div className='react-flow'>
+          <div data-test-step='true'>
+            <FlowDiagramTransitionNotes
+              side='right'
+              notes={[{ id: 'r2', label: 'Reject', peers: ['Rejected'] }]}
+            />
+          </div>
+        </div>
+      </TestI18nProvider>,
+    );
+    expect(screen.getByRole('group', { name: 'Other routes' })).toHaveAttribute(
+      'data-placement',
+      'bottom',
+    );
+
+    // Narrow canvas near bottom edge: only 40px below, 280px above → top.
+    scenario = 'narrow-top';
+    view.rerender(
+      <TestI18nProvider runtime={runtime}>
+        <div className='react-flow'>
+          <div data-test-step='true'>
+            <FlowDiagramTransitionNotes
+              side='right'
+              notes={[{ id: 'r3', label: 'Reject', peers: ['Rejected'] }]}
+            />
+          </div>
+        </div>
+      </TestI18nProvider>,
+    );
+    expect(screen.getByRole('group', { name: 'Other routes' })).toHaveAttribute(
+      'data-placement',
+      'top',
+    );
+  } finally {
+    spy.mockRestore();
+  }
 });

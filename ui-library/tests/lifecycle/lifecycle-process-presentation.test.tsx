@@ -573,3 +573,115 @@ it('marks execution termination on the stopping canvas node from history and kee
     screen.getByTestId('rf__node-dept').querySelector('[data-execution-state]'),
   ).not.toHaveAttribute('data-exit-outcome');
 });
+
+it('defaults folded exit outcomes, note dots and fallback pills to negative when stateKind is omitted', async () => {
+  const view = render(
+    <TestI18nProvider runtime={runtime}>
+      <LifecycleDiagram
+        description={multiStageApproval}
+        exitStates={['rejected', 'voided']}
+        currentState='rejected'
+        history={[
+          { transition: 'submit', from: 'draft', to: 'dept' },
+          { transition: 'reject', from: 'dept', to: 'rejected' },
+        ]}
+        ariaLabel='Default exit tone'
+      />
+    </TestI18nProvider>,
+  );
+
+  const deptStep = (await screen.findByTestId('rf__node-dept')).querySelector(
+    '[data-execution-state]',
+  );
+  expect(deptStep).toHaveAttribute('data-exit-outcome', 'negative');
+
+  fireEvent.focus(screen.getByTestId('rf__node-legal'));
+  const rejectNote = await screen.findByRole('note', {
+    name: 'Legal · Reject → Rejected',
+  });
+  expect(rejectNote.querySelector('.bg-destructive')).not.toBeNull();
+
+  // Fallback active exit without history also uses negative styling rather than success green.
+  view.rerender(
+    <TestI18nProvider runtime={runtime}>
+      <LifecycleDiagram
+        description={multiStageApproval}
+        exitStates={['rejected', 'voided']}
+        currentState='rejected'
+        ariaLabel='Default exit tone fallback'
+      />
+    </TestI18nProvider>,
+  );
+  const rejectedStep = (
+    await screen.findByTestId('rf__node-rejected')
+  ).querySelector('[data-execution-state]');
+  expect(rejectedStep).toHaveClass('text-destructive');
+});
+
+it('keeps every folded exit target interactive when a single transition targets multiple final states', async () => {
+  const onStateClick = vi.fn();
+  const configureRejected = vi.fn();
+  const configureVoided = vi.fn();
+  const multiTargetExit = {
+    ...multiStageApproval,
+    transitions: [
+      ...multiStageApproval.transitions.filter(
+        (item) => item.name !== 'reject' && item.name !== 'voidRequest',
+      ),
+      {
+        ...description.transitions[0]!,
+        name: 'terminate',
+        title: 'Terminate',
+        from: ['dept'],
+        to: ['rejected', 'voided'],
+      },
+    ],
+  };
+
+  render(
+    <TestI18nProvider runtime={runtime}>
+      <LifecycleDiagram
+        description={multiTargetExit}
+        exitStates={['rejected', 'voided']}
+        onStateClick={onStateClick}
+        stateActions={(state) =>
+          state.name === 'rejected' ? (
+            <button type='button' onClick={configureRejected}>
+              Configure rejected
+            </button>
+          ) : state.name === 'voided' ? (
+            <button type='button' onClick={configureVoided}>
+              Configure voided
+            </button>
+          ) : null
+        }
+        ariaLabel='Multi-target exit transition'
+      />
+    </TestI18nProvider>,
+  );
+
+  fireEvent.focus(await screen.findByTestId('rf__node-dept'));
+  const rejectedNote = await screen.findByRole('note', {
+    name: 'Dept · Terminate → Rejected',
+  });
+  const voidedNote = screen.getByRole('note', {
+    name: 'Dept · Terminate → Voided',
+  });
+
+  fireEvent.click(rejectedNote.querySelector('button')!);
+  fireEvent.click(voidedNote.querySelector('button')!);
+  expect(onStateClick).toHaveBeenCalledTimes(2);
+  expect(onStateClick).toHaveBeenNthCalledWith(
+    1,
+    expect.objectContaining({ name: 'rejected' }),
+  );
+  expect(onStateClick).toHaveBeenNthCalledWith(
+    2,
+    expect.objectContaining({ name: 'voided' }),
+  );
+
+  fireEvent.click(screen.getByRole('button', { name: 'Configure rejected' }));
+  fireEvent.click(screen.getByRole('button', { name: 'Configure voided' }));
+  expect(configureRejected).toHaveBeenCalledOnce();
+  expect(configureVoided).toHaveBeenCalledOnce();
+});
