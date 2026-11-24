@@ -8,8 +8,10 @@
  */
 
 import React from 'react';
+import { createPortal } from 'react-dom';
+import { Cascader } from 'antd';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { render, screen } from '@nocobase/test/client';
+import { act, render, screen, userEvent } from '@nocobase/test/client';
 
 const mocks = vi.hoisted(() => {
   const renderMock = vi.fn(() => <div data-testid="initializer-render" />);
@@ -74,7 +76,7 @@ import {
   getCustomVariableConfig,
   parseCustomVariable,
 } from '../customVariableRequestCache';
-import { variableInitializer } from '../variableInitializer';
+import { VariableEditor, variableInitializer } from '../variableInitializer';
 
 describe('flow badge variable entry', () => {
   beforeEach(() => {
@@ -123,6 +125,23 @@ describe('flow badge variable entry', () => {
     expect(screen.getByTestId('data-source-application-provider')).toBeInTheDocument();
     expect(screen.getByTestId('schema-component-options')).toBeInTheDocument();
     expect(screen.getByTestId('schema-component')).toBeInTheDocument();
+  });
+
+  it('allows multiline input in an aggregate editor opened from a variable option', async () => {
+    const user = userEvent.setup();
+    mocks.schemaComponentMock.mockReturnValueOnce(createPortal(<textarea aria-label="Filter value" />, document.body));
+    render(
+      <Cascader
+        open
+        options={[{ value: 'aggregate', label: <VariableEditor visible setVisible={vi.fn()} initialValues={null} /> }]}
+      />,
+    );
+
+    const input = screen.getByRole('textbox', { name: 'Filter value' });
+    await act(() => user.click(input));
+    expect(input).toHaveFocus();
+    await act(() => user.keyboard('first{Enter}second'));
+    expect(input).toHaveValue('first\nsecond');
   });
 
   it('should reuse custom variable config and parse requests with the same key', async () => {
