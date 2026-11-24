@@ -12,6 +12,8 @@ import { createSchemaField, FormProvider } from '@formily/react';
 import { render, fireEvent, screen, waitFor } from '@testing-library/react';
 import React from 'react';
 import { ReadPrettyInternalTag } from '../InternalTag';
+import { ReadPrettyInternalViewer } from '../InternalViewer';
+import { BlockContext } from '../../../../block-provider/BlockProvider';
 import { OpenModeProvider } from '../../../../modules/popup/OpenModeProvider';
 import {
   CollectionRecordProvider,
@@ -19,6 +21,8 @@ import {
 } from '../../../../data-source/collection-record/CollectionRecordProvider';
 import { useActionContext } from '../../action/hooks';
 import { ActionContainer } from '../../action/Action.Container';
+
+const getCollection = vi.hoisted(() => vi.fn(() => ({})));
 
 vi.mock('../hooks', async (importOriginal) => ({
   ...(await importOriginal<object>()),
@@ -32,11 +36,12 @@ vi.mock('../util', async (importOriginal) => ({
 }));
 vi.mock('../../../../collection-manager', async (importOriginal) => ({
   ...(await importOriginal<object>()),
-  useCollectionManager_deprecated: () => ({ getCollection: () => ({}) }),
+  useCollectionManager_deprecated: () => ({ getCollection }),
 }));
 vi.mock('../../../../data-source', async (importOriginal) => ({
   ...(await importOriginal<object>()),
   useCollection: () => ({ dataSource: 'main', name: 'roles', getPrimaryKey: () => 'id' }),
+  useCollectionManager: () => ({ getCollection }),
   DataBlockProvider: ({ children }) => children,
 }));
 vi.mock('../../../', async (importOriginal) => ({
@@ -107,4 +112,35 @@ it.each([
   fireEvent.click(screen.getByText('Editor'));
   expect(await screen.findByText('Role detail 22')).toBeTruthy();
   await waitFor(() => expect((document.querySelector(selector) as HTMLElement).style.width).toBe(width));
+});
+
+describe.each([
+  ['Title', ReadPrettyInternalViewer],
+  ['Tag', ReadPrettyInternalTag],
+] as const)('%s tree association labels', (name, component) => {
+  afterEach(() => {
+    getCollection.mockReset();
+  });
+
+  it.each([
+    ['table-selector', '101'],
+    ['table', 'Building A / Floor 1 / 101'],
+  ])('renders the label for a %s block', async (blockName, expected) => {
+    getCollection.mockReturnValue({ template: 'tree' });
+    const building = { id: 3, title: '101', parent: { title: 'Floor 1', parent: { title: 'Building A' } } };
+    const form = createForm({ values: { building } });
+    const SchemaField = createSchemaField({ components: { [name]: component } });
+    render(
+      <OpenModeProvider>
+        <BlockContext.Provider value={{ name: blockName }}>
+          <FormProvider form={form}>
+            <SchemaField>
+              <SchemaField.Object name="building" x-component={name} x-component-props={{ enableLink: false }} />
+            </SchemaField>
+          </FormProvider>
+        </BlockContext.Provider>
+      </OpenModeProvider>,
+    );
+    expect(await screen.findByText(expected, { exact: true })).toBeTruthy();
+  });
 });

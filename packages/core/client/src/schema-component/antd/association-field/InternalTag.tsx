@@ -11,6 +11,7 @@ import { observer, useFieldSchema } from '@formily/react';
 import { toArr } from '@formily/shared';
 import React, { Fragment, useCallback, useRef } from 'react';
 import { useDesignable } from '../../';
+import { useBlockContext } from '../../../block-provider/BlockProvider';
 import { useCollectionManager_deprecated } from '../../../collection-manager';
 import { useCollectionRecordData } from '../../../data-source/collection-record/CollectionRecordProvider';
 import { useCompile } from '../../hooks';
@@ -47,7 +48,8 @@ const ButtonTabList: React.FC<ButtonListProps> = observer(
     const ellipsisWithTooltipRef = useRef<IEllipsisWithTooltipRef>();
     const { getCollection } = useCollectionManager_deprecated();
     const targetCollection = getCollection(collectionField?.target);
-    const isTreeCollection = targetCollection?.template === 'tree';
+    const block = useBlockContext();
+    const showTreePath = targetCollection?.template === 'tree' && block?.name !== 'table-selector';
     const { openPopup } = usePopupUtils();
     const recordData = useCollectionRecordData();
     const needWaitForFieldSchemaUpdatedRef = useRef(false);
@@ -61,7 +63,7 @@ const ButtonTabList: React.FC<ButtonListProps> = observer(
     const renderRecords = () =>
       toArr(props.value).map((record, index, arr) => {
         const value = record?.[fieldNames?.label || 'label'];
-        const label = isTreeCollection
+        const label = showTreePath
           ? transformNestedData(record)
               .map((o) => o?.[fieldNames?.label || 'label'])
               .join(' / ')
