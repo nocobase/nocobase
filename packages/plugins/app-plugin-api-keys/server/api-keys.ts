@@ -150,7 +150,11 @@ function createApiKeysPlugin(
           matcher: (ctx: { path?: string }) => ctx.path === '/api-key/delete',
           handler: createAuthMiddleware(async (ctx) => {
             if (!auditEnabled('auth:revokeApiKey')) return;
-            const keyId: unknown = ctx.body?.keyId;
+            const body: unknown = ctx.body;
+            const keyId: unknown =
+              body && typeof body === 'object'
+                ? Reflect.get(body, 'keyId')
+                : undefined;
             if (typeof keyId === 'string')
               setAuditTarget({ collection: 'apikey', key: keyId });
           }),
