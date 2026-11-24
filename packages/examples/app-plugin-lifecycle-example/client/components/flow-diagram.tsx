@@ -408,7 +408,7 @@ export interface FlowDiagramProps extends FlowDiagramGraph {
   readonly showMiniMap?: boolean;
   readonly renderNode?: (
     node: FlowDiagramNode,
-    state: { active: boolean; linked: boolean },
+    state: { active: boolean; linked: boolean; noteSide: 'left' | 'right' },
   ) => ReactNode;
   readonly onNodeClick?: (node: FlowDiagramNode) => void;
   readonly onEdgeClick?: (edge: FlowDiagramEdge) => void;
@@ -609,6 +609,12 @@ export function FlowDiagram({
               ? renderNode(item, {
                   active: item.id === active,
                   linked: linked.has(item.id),
+                  noteSide:
+                    layout &&
+                    placed.x > 160 &&
+                    placed.x + placed.width >= layout.width * 0.65
+                      ? 'left'
+                      : 'right',
                 })
               : item.label,
             actions: nodeActions?.(item),
@@ -727,6 +733,183 @@ export function FlowDiagram({
         )
       : 1;
   const viewportZoom = autoHeight && !expanded ? zoom : fittedZoom;
+  const canvasContent = !nodes.length ? (
+    <p role='status' className='p-4 text-sm text-muted-foreground'>
+      {t('flowDiagram.empty', { defaultValue: 'No states to display.' })}
+    </p>
+  ) : result?.key === structure && result.error ? (
+    <p role='alert' className='p-4 text-sm text-destructive'>
+      {t('flowDiagram.failed', {
+        defaultValue: 'Unable to lay out this diagram.',
+      })}
+    </p>
+  ) : !layout ? (
+    <p role='status' className='p-4 text-sm text-muted-foreground'>
+      {t('flowDiagram.loading', { defaultValue: 'Laying out diagram…' })}
+    </p>
+  ) : (
+    <ReactFlow<DiagramNode, DiagramEdge>
+      key={`${structure}:${width}:${autoHeight && !expanded ? 'auto' : canvasHeight}`}
+      proOptions={controls ? { hideAttribution: true } : undefined}
+      nodes={placedNodes}
+      edges={
+        revealedEdges.length ? [...placedEdges, ...revealedEdges] : placedEdges
+      }
+      nodeTypes={nodeTypes}
+      edgeTypes={edgeTypes}
+      fitViewOptions={{
+        padding: 0.08,
+        minZoom: initialMinZoom,
+        maxZoom: initialZoomLimit,
+      }}
+      defaultViewport={{
+        x: (width - layout.width * viewportZoom) / 2,
+        y:
+          ((autoHeight && !expanded ? height : canvasHeight) -
+            layout.height * viewportZoom) /
+          2,
+        zoom: viewportZoom,
+      }}
+      minZoom={Math.min(0.1, viewportZoom)}
+      maxZoom={2}
+      zoomOnScroll={false}
+      preventScrolling={false}
+      nodesDraggable={false}
+      nodesConnectable={false}
+      edgesReconnectable={false}
+      deleteKeyCode={null}
+      onNodeClick={(_, node) => onNodeClick?.(node.data.item)}
+      onNodeMouseEnter={(_, node) => setHovered(node.id)}
+      onNodeMouseLeave={() => setHovered(undefined)}
+      onEdgeClick={(_, edge) => {
+        const item = edges.find((candidate) => candidate.id === edge.id);
+        if (item) onEdgeClick?.(item);
+      }}
+      ariaLabelConfig={{
+        'controls.zoomIn.ariaLabel': t('flowDiagram.zoomIn'),
+        'controls.zoomOut.ariaLabel': t('flowDiagram.zoomOut'),
+        'controls.fitView.ariaLabel': t('flowDiagram.fitView', {
+          defaultValue: 'Fit to view',
+        }),
+        'node.a11yDescription.keyboardDisabled': t('flowDiagram.nodeHelp', {
+          defaultValue: 'Press Enter or Space to select a state.',
+        }),
+        'node.a11yDescription.default': t('flowDiagram.nodeHelp', {
+          defaultValue: 'Press Enter or Space to select a state.',
+        }),
+        'edge.a11yDescription.default': t('flowDiagram.edgeHelp', {
+          defaultValue: 'Press Enter or Space to select a transition.',
+        }),
+      }}
+    >
+      {!compact && <Background color='var(--border)' gap={24} size={1.5} />}
+      {!compact && (
+        <Panel position='top-left' className='pointer-events-none!'>
+          <div className='inline-flex items-center gap-3 rounded-lg border bg-card/95 px-3 py-2 text-xs text-muted-foreground shadow-xs'>
+            <span className='inline-flex items-center gap-1.5'>
+              <GitBranchIcon className='size-3.5' aria-hidden />
+              {t('flowDiagram.states', { defaultValue: 'States' })}
+              <span className='font-semibold text-foreground tabular-nums'>
+                {nodes.filter((node) => !node.decorative).length}
+              </span>
+            </span>
+            <span className='h-3 w-px bg-border' aria-hidden />
+            <span>
+              {t('flowDiagram.transitions', {
+                defaultValue: 'Transitions',
+              })}{' '}
+              <span className='font-semibold text-foreground tabular-nums'>
+                {edges.filter((edge) => !edge.decorative).length}
+              </span>
+            </span>
+          </div>
+        </Panel>
+      )}
+      {!controls && <DiagramToolbar top={autoHeight} />}
+      {controls && (
+        <>
+          <Controls
+            fitViewOptions={{
+              padding: 0.08,
+              minZoom: initialMinZoom,
+              maxZoom: initialZoomLimit,
+            }}
+            showInteractive={false}
+            aria-label={t('flowDiagram.controls', {
+              defaultValue: 'Diagram controls',
+            })}
+          >
+            <ControlButton
+              type='button'
+              onClick={() => setExpanded((value) => !value)}
+              aria-label={t(
+                expanded
+                  ? 'flowDiagram.exitFullscreen'
+                  : 'flowDiagram.fullscreen',
+                {
+                  defaultValue: expanded ? 'Exit fullscreen' : 'Fullscreen',
+                },
+              )}
+              title={t(
+                expanded
+                  ? 'flowDiagram.exitFullscreen'
+                  : 'flowDiagram.fullscreen',
+                {
+                  defaultValue: expanded ? 'Exit fullscreen' : 'Fullscreen',
+                },
+              )}
+            >
+              {expanded ? <Shrink /> : <Expand />}
+            </ControlButton>
+          </Controls>
+          {expanded && (
+            <Panel position='top-right'>
+              <div className='flex items-center gap-3 rounded-lg border bg-card p-2 text-card-foreground shadow-sm'>
+                <span className='text-xs text-muted-foreground'>
+                  {t('flowDiagram.escapeHint', {
+                    defaultValue: 'Press Escape to exit',
+                  })}
+                </span>
+                <Button
+                  variant='outline'
+                  size='sm'
+                  onClick={() => setExpanded(false)}
+                >
+                  <X />
+                  {t('flowDiagram.exitFullscreen', {
+                    defaultValue: 'Exit fullscreen',
+                  })}
+                </Button>
+              </div>
+            </Panel>
+          )}
+        </>
+      )}
+      {(expanded || showMiniMap) && (
+        <MiniMap<DiagramNode>
+          pannable
+          zoomable
+          ariaLabel={t('flowDiagram.minimap', {
+            defaultValue: 'Diagram overview',
+          })}
+          style={{ background: 'var(--card)' }}
+          nodeComponent={DiagramMiniMapNode}
+          nodeClassName={(node) =>
+            node.data.item.minimapShape === 'pill' ? 'minimap-pill' : ''
+          }
+          nodeColor={(node) =>
+            `color-mix(in srgb, ${node.data.item.minimapColor ?? 'var(--muted-foreground)'} 18%, var(--card))`
+          }
+          nodeStrokeColor={(node) =>
+            `color-mix(in srgb, ${node.data.item.minimapColor ?? 'var(--muted-foreground)'} 35%, var(--card))`
+          }
+          nodeStrokeWidth={2}
+          maskColor='color-mix(in srgb, var(--muted) 70%, transparent)'
+          className='max-w-[35%]'
+        />
+      )}
+    </ReactFlow>
+  );
   const canvas = (
     <div
       ref={containerRef}
@@ -736,7 +919,12 @@ export function FlowDiagram({
           target.closest<HTMLElement>('.react-flow__node')?.dataset.id,
         );
       }}
-      onBlur={() => setFocused(undefined)}
+      onBlur={(event) => {
+        const nextNode = (
+          event.relatedTarget as HTMLElement | null
+        )?.closest<HTMLElement>('.react-flow__node')?.dataset.id;
+        setFocused(nextNode);
+      }}
       onKeyDown={(event) => {
         if (event.key !== 'Enter' && event.key !== ' ') return;
         const target = event.target as HTMLElement | SVGElement;
@@ -764,185 +952,7 @@ export function FlowDiagram({
       )}
       style={{ ...(autoHeight && !expanded ? { height } : {}), ...style }}
     >
-      {!nodes.length ? (
-        <p role='status' className='p-4 text-sm text-muted-foreground'>
-          {t('flowDiagram.empty', { defaultValue: 'No states to display.' })}
-        </p>
-      ) : result?.key === structure && result.error ? (
-        <p role='alert' className='p-4 text-sm text-destructive'>
-          {t('flowDiagram.failed', {
-            defaultValue: 'Unable to lay out this diagram.',
-          })}
-        </p>
-      ) : !layout ? (
-        <p role='status' className='p-4 text-sm text-muted-foreground'>
-          {t('flowDiagram.loading', { defaultValue: 'Laying out diagram…' })}
-        </p>
-      ) : (
-        <ReactFlow<DiagramNode, DiagramEdge>
-          key={`${structure}:${width}:${autoHeight && !expanded ? 'auto' : canvasHeight}`}
-          proOptions={controls ? { hideAttribution: true } : undefined}
-          nodes={placedNodes}
-          edges={
-            revealedEdges.length
-              ? [...placedEdges, ...revealedEdges]
-              : placedEdges
-          }
-          nodeTypes={nodeTypes}
-          edgeTypes={edgeTypes}
-          fitViewOptions={{
-            padding: 0.08,
-            minZoom: initialMinZoom,
-            maxZoom: initialZoomLimit,
-          }}
-          defaultViewport={{
-            x: (width - layout.width * viewportZoom) / 2,
-            y:
-              ((autoHeight && !expanded ? height : canvasHeight) -
-                layout.height * viewportZoom) /
-              2,
-            zoom: viewportZoom,
-          }}
-          minZoom={Math.min(0.1, viewportZoom)}
-          maxZoom={2}
-          zoomOnScroll={false}
-          preventScrolling={false}
-          nodesDraggable={false}
-          nodesConnectable={false}
-          edgesReconnectable={false}
-          deleteKeyCode={null}
-          onNodeClick={(_, node) => onNodeClick?.(node.data.item)}
-          onNodeMouseEnter={(_, node) => setHovered(node.id)}
-          onNodeMouseLeave={() => setHovered(undefined)}
-          onEdgeClick={(_, edge) => {
-            const item = edges.find((candidate) => candidate.id === edge.id);
-            if (item) onEdgeClick?.(item);
-          }}
-          ariaLabelConfig={{
-            'controls.zoomIn.ariaLabel': t('flowDiagram.zoomIn'),
-            'controls.zoomOut.ariaLabel': t('flowDiagram.zoomOut'),
-            'controls.fitView.ariaLabel': t('flowDiagram.fitView', {
-              defaultValue: 'Fit to view',
-            }),
-            'node.a11yDescription.keyboardDisabled': t('flowDiagram.nodeHelp', {
-              defaultValue: 'Press Enter or Space to select a state.',
-            }),
-            'node.a11yDescription.default': t('flowDiagram.nodeHelp', {
-              defaultValue: 'Press Enter or Space to select a state.',
-            }),
-            'edge.a11yDescription.default': t('flowDiagram.edgeHelp', {
-              defaultValue: 'Press Enter or Space to select a transition.',
-            }),
-          }}
-        >
-          {!compact && <Background color='var(--border)' gap={24} size={1.5} />}
-          {!compact && (
-            <Panel position='top-left' className='pointer-events-none!'>
-              <div className='inline-flex items-center gap-3 rounded-lg border bg-card/95 px-3 py-2 text-xs text-muted-foreground shadow-xs'>
-                <span className='inline-flex items-center gap-1.5'>
-                  <GitBranchIcon className='size-3.5' aria-hidden />
-                  {t('flowDiagram.states', { defaultValue: 'States' })}
-                  <span className='font-semibold text-foreground tabular-nums'>
-                    {nodes.filter((node) => !node.decorative).length}
-                  </span>
-                </span>
-                <span className='h-3 w-px bg-border' aria-hidden />
-                <span>
-                  {t('flowDiagram.transitions', {
-                    defaultValue: 'Transitions',
-                  })}{' '}
-                  <span className='font-semibold text-foreground tabular-nums'>
-                    {edges.filter((edge) => !edge.decorative).length}
-                  </span>
-                </span>
-              </div>
-            </Panel>
-          )}
-          {!controls && <DiagramToolbar top={autoHeight} />}
-          {controls && (
-            <>
-              <Controls
-                fitViewOptions={{
-                  padding: 0.08,
-                  minZoom: initialMinZoom,
-                  maxZoom: initialZoomLimit,
-                }}
-                showInteractive={false}
-                aria-label={t('flowDiagram.controls', {
-                  defaultValue: 'Diagram controls',
-                })}
-              >
-                <ControlButton
-                  type='button'
-                  onClick={() => setExpanded((value) => !value)}
-                  aria-label={t(
-                    expanded
-                      ? 'flowDiagram.exitFullscreen'
-                      : 'flowDiagram.fullscreen',
-                    {
-                      defaultValue: expanded ? 'Exit fullscreen' : 'Fullscreen',
-                    },
-                  )}
-                  title={t(
-                    expanded
-                      ? 'flowDiagram.exitFullscreen'
-                      : 'flowDiagram.fullscreen',
-                    {
-                      defaultValue: expanded ? 'Exit fullscreen' : 'Fullscreen',
-                    },
-                  )}
-                >
-                  {expanded ? <Shrink /> : <Expand />}
-                </ControlButton>
-              </Controls>
-              {expanded && (
-                <Panel position='top-right'>
-                  <div className='flex items-center gap-3 rounded-lg border bg-card p-2 text-card-foreground shadow-sm'>
-                    <span className='text-xs text-muted-foreground'>
-                      {t('flowDiagram.escapeHint', {
-                        defaultValue: 'Press Escape to exit',
-                      })}
-                    </span>
-                    <Button
-                      variant='outline'
-                      size='sm'
-                      onClick={() => setExpanded(false)}
-                    >
-                      <X />
-                      {t('flowDiagram.exitFullscreen', {
-                        defaultValue: 'Exit fullscreen',
-                      })}
-                    </Button>
-                  </div>
-                </Panel>
-              )}
-            </>
-          )}
-          {(expanded || showMiniMap) && (
-            <MiniMap<DiagramNode>
-              pannable
-              zoomable
-              ariaLabel={t('flowDiagram.minimap', {
-                defaultValue: 'Diagram overview',
-              })}
-              style={{ background: 'var(--card)' }}
-              nodeComponent={DiagramMiniMapNode}
-              nodeClassName={(node) =>
-                node.data.item.minimapShape === 'pill' ? 'minimap-pill' : ''
-              }
-              nodeColor={(node) =>
-                `color-mix(in srgb, ${node.data.item.minimapColor ?? 'var(--muted-foreground)'} 18%, var(--card))`
-              }
-              nodeStrokeColor={(node) =>
-                `color-mix(in srgb, ${node.data.item.minimapColor ?? 'var(--muted-foreground)'} 35%, var(--card))`
-              }
-              nodeStrokeWidth={2}
-              maskColor='color-mix(in srgb, var(--muted) 70%, transparent)'
-              className='max-w-[35%]'
-            />
-          )}
-        </ReactFlow>
-      )}
+      {canvasContent}
     </div>
   );
   return expanded ? createPortal(canvas, document.body) : canvas;
@@ -1055,12 +1065,19 @@ const stepDotTones: Record<FlowDiagramStepKind, string> = {
   exception: 'bg-(--status-warning)',
 };
 
+export interface FlowDiagramStepOutcome {
+  readonly label: ReactNode;
+  readonly kind?: FlowDiagramStepKind;
+}
+
 export interface FlowDiagramStepProps {
   readonly kind: FlowDiagramStepKind;
   readonly label: ReactNode;
   readonly description?: ReactNode;
   readonly icon?: ReactNode;
   readonly progress?: 'plan' | 'current' | 'visited' | 'unreached';
+  /** Terminal outcome recorded directly on the step where execution stopped. */
+  readonly outcome?: FlowDiagramStepOutcome;
   /** Joined to the active state by a route left off the canvas. */
   readonly linked?: boolean;
   readonly actions?: ReactNode;
@@ -1075,6 +1092,7 @@ export function FlowDiagramStep({
   description,
   icon,
   progress = 'plan',
+  outcome,
   linked = false,
   actions,
   children,
@@ -1082,21 +1100,34 @@ export function FlowDiagramStep({
   const { t } = useTranslation();
   const card = kind === 'approval' || kind === 'work';
   const Icon = stepIcons[kind];
+  const outcomeKind = outcome?.kind ?? 'negative';
+  const OutcomeIcon = stepIcons[outcomeKind];
   return (
     <div
       data-execution-state={progress}
+      data-exit-outcome={outcome ? outcomeKind : undefined}
       className={cn(
         'relative flex h-full border bg-card text-card-foreground transition-[border-color,box-shadow,opacity]',
         card
           ? 'items-center gap-3 rounded-lg px-3 shadow-xs'
-          : 'flex-col items-center justify-center rounded-full px-4',
+          : 'items-center justify-center rounded-full px-4',
         kind === 'success' &&
           'border-(--status-success)/30 bg-(--status-success-background) text-(--status-success)',
         kind === 'negative' &&
           'border-dashed border-destructive/40 bg-destructive/5 text-destructive',
         kind === 'exception' &&
           'border-dashed border-(--status-warning)/35 bg-(--status-warning-background) text-(--status-warning)',
-        progress === 'current' && 'border-primary ring-2 ring-primary/40',
+        progress === 'current' &&
+          !outcome &&
+          'border-primary ring-2 ring-primary/40',
+        outcome &&
+          (outcomeKind === 'negative'
+            ? 'border-destructive ring-2 ring-destructive/30'
+            : outcomeKind === 'exception'
+              ? 'border-(--status-warning) ring-2 ring-(--status-warning)/30'
+              : outcomeKind === 'success'
+                ? 'border-(--status-success) ring-2 ring-(--status-success)/30'
+                : 'border-primary ring-2 ring-primary/40'),
         progress === 'unreached' && 'border-dashed opacity-55',
         linked &&
           'opacity-100 outline-2 outline-offset-2 outline-primary/60 outline-dashed',
@@ -1104,7 +1135,7 @@ export function FlowDiagramStep({
     >
       <span
         className={cn(
-          'flex max-w-full items-center gap-1.5',
+          'flex max-w-full items-center gap-2',
           card && 'w-full gap-3',
         )}
       >
@@ -1131,24 +1162,43 @@ export function FlowDiagramStep({
             </span>
           )}
         </span>
-        {card && actions}
+        {actions}
       </span>
-      {!card && actions}
-      {progress === 'current' && (
-        <span className='absolute -top-2.5 right-2 rounded-full bg-primary px-2 py-0.5 text-xs font-medium text-primary-foreground'>
-          {t('flowDiagram.current', { defaultValue: 'Current' })}
-        </span>
-      )}
-      {progress === 'visited' && card && (
+      {outcome ? (
         <span
-          className='absolute -top-2 right-2 flex size-4 items-center justify-center rounded-full bg-(--status-success) text-primary-foreground'
-          title={t('flowDiagram.visited', { defaultValue: 'Visited' })}
+          className={cn(
+            'absolute -top-2.5 right-2 inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium text-primary-foreground shadow-xs',
+            outcomeKind === 'negative' && 'bg-destructive',
+            outcomeKind === 'exception' && 'bg-(--status-warning)',
+            outcomeKind === 'success' && 'bg-(--status-success)',
+            outcomeKind !== 'negative' &&
+              outcomeKind !== 'exception' &&
+              outcomeKind !== 'success' &&
+              'bg-primary',
+          )}
         >
-          <CheckIcon aria-hidden className='size-3' />
-          <span className='sr-only'>
-            {t('flowDiagram.visited', { defaultValue: 'Visited' })}
-          </span>
+          <OutcomeIcon aria-hidden className='size-3' />
+          {outcome.label}
         </span>
+      ) : (
+        <>
+          {progress === 'current' && (
+            <span className='absolute -top-2.5 right-2 rounded-full bg-primary px-2 py-0.5 text-xs font-medium text-primary-foreground'>
+              {t('flowDiagram.current', { defaultValue: 'Current' })}
+            </span>
+          )}
+          {progress === 'visited' && card && (
+            <span
+              className='absolute -top-2 right-2 flex size-4 items-center justify-center rounded-full bg-(--status-success) text-primary-foreground'
+              title={t('flowDiagram.visited', { defaultValue: 'Visited' })}
+            >
+              <CheckIcon aria-hidden className='size-3' />
+              <span className='sr-only'>
+                {t('flowDiagram.visited', { defaultValue: 'Visited' })}
+              </span>
+            </span>
+          )}
+        </>
       )}
       {children}
     </div>
@@ -1167,13 +1217,19 @@ export interface FlowDiagramTransitionNote {
   readonly direction?: 'out' | 'in';
   /** Translated labels of the states at the other end of the route. */
   readonly peers?: readonly string[];
+  /** Optional click handler for inspecting a folded off-canvas outcome from the note. */
+  readonly onClick?: () => void;
+  /** Optional inline controls for a folded off-canvas outcome (such as configuration). */
+  readonly actions?: ReactNode;
 }
 
 /** Routes left off the canvas, listed in one card beside the active node. */
 export function FlowDiagramTransitionNotes({
   notes,
+  side = 'right',
 }: {
   readonly notes: readonly FlowDiagramTransitionNote[];
+  readonly side?: 'left' | 'right';
 }): ReactElement | null {
   const { t } = useTranslation();
   if (!notes.length) return null;
@@ -1195,7 +1251,10 @@ export function FlowDiagramTransitionNotes({
       aria-label={t('flowDiagram.otherRoutes', {
         defaultValue: 'Other routes',
       })}
-      className='nodrag nopan absolute top-1/2 left-full z-10 -translate-y-1/2 pl-2 text-left'
+      className={cn(
+        'nodrag nopan absolute top-1/2 z-10 -translate-y-1/2 text-left',
+        side === 'left' ? 'right-full pr-2' : 'left-full pl-2',
+      )}
     >
       <div className='flex w-max max-w-72 flex-col gap-2 rounded-lg border bg-popover p-2.5 text-xs text-popover-foreground shadow-md'>
         {sections.map(({ direction, title, icon: Icon }) => {
@@ -1207,13 +1266,9 @@ export function FlowDiagramTransitionNotes({
             <div key={direction} className='flex flex-col gap-1'>
               <p className='font-medium text-muted-foreground'>{title}</p>
               <ul className='flex flex-col gap-1'>
-                {items.map((note) => (
-                  <li key={note.id}>
-                    <span
-                      role='note'
-                      aria-label={note.detail}
-                      className='flex min-w-0 items-center gap-1.5'
-                    >
+                {items.map((note) => {
+                  const rowContent = (
+                    <>
                       <span
                         aria-hidden
                         className={cn(
@@ -1233,9 +1288,43 @@ export function FlowDiagramTransitionNotes({
                           </span>
                         </>
                       ) : null}
-                    </span>
-                  </li>
-                ))}
+                    </>
+                  );
+                  return (
+                    <li
+                      key={note.id}
+                      className='flex min-w-0 items-center justify-between gap-1.5'
+                    >
+                      {note.onClick ? (
+                        <span
+                          role='note'
+                          aria-label={note.detail}
+                          className='min-w-0 flex-1'
+                        >
+                          <button
+                            type='button'
+                            className='-mx-1 flex w-full min-w-0 items-center gap-1.5 rounded px-1 py-0.5 text-left transition-colors hover:bg-muted/80 focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none'
+                            onClick={(event) => {
+                              event.stopPropagation();
+                              note.onClick?.();
+                            }}
+                          >
+                            {rowContent}
+                          </button>
+                        </span>
+                      ) : (
+                        <span
+                          role='note'
+                          aria-label={note.detail}
+                          className='flex min-w-0 flex-1 items-center gap-1.5'
+                        >
+                          {rowContent}
+                        </span>
+                      )}
+                      {note.actions}
+                    </li>
+                  );
+                })}
               </ul>
             </div>
           );

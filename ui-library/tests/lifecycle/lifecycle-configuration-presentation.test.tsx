@@ -31,7 +31,9 @@ it('automatically renders a bound state control, preserves custom actions and do
     <LifecycleDiagram
       description={description}
       ariaLabel='Approval'
-      stateActions={() => <span>Existing action</span>}
+      stateActions={(state) =>
+        state.name === 'review' ? <span>Existing action</span> : null
+      }
       onStateClick={inspect}
       configuration={{
         label: () => '配置审批人',
@@ -113,6 +115,14 @@ it('adds no editor without an explicit authorized adapter', () => {
 it('keeps the default graph readable while respecting an explicit viewport preference', () => {
   const view = render(
     <LifecycleDiagram description={description} ariaLabel='Approval' />,
+  );
+  expect(screen.getByTestId('diagram')).toHaveAttribute('data-min-zoom', '0.1');
+  view.rerender(
+    <LifecycleDiagram
+      description={description}
+      presentation='classic'
+      ariaLabel='Approval'
+    />,
   );
   expect(screen.getByTestId('diagram')).toHaveAttribute('data-min-zoom', '0.7');
   view.rerender(

@@ -31,13 +31,12 @@ const runtime = await createTestI18nRuntime({
   },
 });
 
-it('keeps node actions and recorded progress in the optional process presentation', async () => {
+it('defaults to process presentation, keeping node actions and recorded progress', async () => {
   const configure = vi.fn();
   render(
     <TestI18nProvider runtime={runtime}>
       <LifecycleDiagram
         description={description}
-        presentation='process'
         stateKind={(state) =>
           state.name === 'review'
             ? 'approval'
@@ -127,7 +126,6 @@ it('omits long return lines in process mode and shows their explanation on node 
     <TestI18nProvider runtime={runtime}>
       <LifecycleDiagram
         description={process}
-        presentation='process'
         ariaLabel='Return paths'
         revealEdges={[
           {
@@ -265,4 +263,313 @@ it('lists a transition once per direction when it leaves, loops and arrives', as
     'Review · Customer reply → Draft, Review',
     'Approved · Customer reply → Review',
   ]);
+});
+
+it('retains return edges on the canvas when classic presentation is explicitly selected', async () => {
+  const process = {
+    ...description,
+    transitions: [
+      ...description.transitions,
+      {
+        ...description.transitions[0]!,
+        name: 'return',
+        title: 'Return',
+        from: ['approved'],
+        to: ['draft'],
+      },
+    ],
+  };
+  render(
+    <TestI18nProvider runtime={runtime}>
+      <LifecycleDiagram
+        description={process}
+        presentation='classic'
+        ariaLabel='Classic return paths'
+      />
+    </TestI18nProvider>,
+  );
+  expect(
+    await screen.findByTestId('rf__edge-["return","approved","draft"]'),
+  ).toBeInTheDocument();
+});
+
+const multiStageApproval = {
+  ...description,
+  states: [
+    'draft',
+    'dept',
+    'legal',
+    'finance',
+    'approved',
+    'rejected',
+    'voided',
+  ],
+  stateInfo: [
+    { name: 'draft', title: 'Draft', final: false, meta: {} },
+    { name: 'dept', title: 'Dept', final: false, meta: {} },
+    { name: 'legal', title: 'Legal', final: false, meta: {} },
+    { name: 'finance', title: 'Finance', final: false, meta: {} },
+    { name: 'approved', title: 'Approved', final: true, meta: {} },
+    { name: 'rejected', title: 'Rejected', final: true, meta: {} },
+    { name: 'voided', title: 'Voided', final: true, meta: {} },
+  ],
+  transitions: [
+    {
+      ...description.transitions[0]!,
+      name: 'submit',
+      title: 'Submit',
+      from: ['draft'],
+      to: ['dept'],
+    },
+    {
+      ...description.transitions[0]!,
+      name: 'deptApprove',
+      title: 'Dept approve',
+      from: ['dept'],
+      to: ['legal'],
+    },
+    {
+      ...description.transitions[0]!,
+      name: 'legalApprove',
+      title: 'Legal approve',
+      from: ['legal'],
+      to: ['finance'],
+    },
+    {
+      ...description.transitions[0]!,
+      name: 'approve',
+      title: 'Approve',
+      from: ['dept', 'legal', 'finance'],
+      to: ['approved'],
+    },
+    {
+      ...description.transitions[0]!,
+      name: 'reject',
+      title: 'Reject',
+      from: ['dept', 'legal', 'finance'],
+      to: ['rejected'],
+    },
+    {
+      ...description.transitions[0]!,
+      name: 'voidRequest',
+      title: 'Void',
+      from: ['draft', 'dept'],
+      to: ['voided'],
+    },
+  ],
+};
+
+it('keeps all final states on the canvas when exitStates is omitted, including multi-source success and negative outcomes', async () => {
+  render(
+    <TestI18nProvider runtime={runtime}>
+      <LifecycleDiagram
+        description={multiStageApproval}
+        stateKind={(state) =>
+          state.name === 'rejected' || state.name === 'voided'
+            ? 'negative'
+            : state.final
+              ? 'success'
+              : state.name === 'draft'
+                ? 'start'
+                : 'approval'
+        }
+        ariaLabel='Default no exitStates'
+      />
+    </TestI18nProvider>,
+  );
+
+  expect(await screen.findByTestId('rf__node-rejected')).toBeInTheDocument();
+  expect(screen.getByTestId('rf__node-voided')).toBeInTheDocument();
+  expect(screen.getByTestId('rf__node-approved')).toBeInTheDocument();
+  expect(
+    screen.getByTestId('rf__edge-["reject","dept","rejected"]'),
+  ).toBeInTheDocument();
+  expect(
+    screen.getByTestId('rf__edge-["reject","legal","rejected"]'),
+  ).toBeInTheDocument();
+  expect(
+    screen.getByTestId('rf__edge-["reject","finance","rejected"]'),
+  ).toBeInTheDocument();
+  expect(
+    screen.getByTestId('rf__edge-["approve","dept","approved"]'),
+  ).toBeInTheDocument();
+});
+
+it('omits explicit final exitStates without a bottom bar, ignores non-final names, and exposes folded exits in node hover/focus notes', async () => {
+  const onStateClick = vi.fn();
+  const configureExit = vi.fn();
+  const view = render(
+    <TestI18nProvider runtime={runtime}>
+      <LifecycleDiagram
+        description={multiStageApproval}
+        stateKind={(state) =>
+          state.name === 'rejected' || state.name === 'voided'
+            ? 'negative'
+            : state.final
+              ? 'success'
+              : state.name === 'draft'
+                ? 'start'
+                : 'approval'
+        }
+        exitStates={['rejected', 'voided', 'legal']}
+        endLabel='End'
+        stateActions={(state) =>
+          state.name === 'rejected' ? (
+            <button type='button' onClick={configureExit}>
+              Configure rejection
+            </button>
+          ) : null
+        }
+        onStateClick={onStateClick}
+        ariaLabel='Explicit exit states'
+      />
+    </TestI18nProvider>,
+  );
+
+  // Final exit states leave the canvas (along with their decorative $end markers);
+  // non-final 'legal' and non-listed final 'approved' remain on the canvas, and no bottom exit strip renders.
+  expect(await screen.findByTestId('rf__node-legal')).toBeInTheDocument();
+  expect(screen.getByTestId('rf__node-approved')).toBeInTheDocument();
+  expect(
+    screen.getByTestId('rf__node-["$end","approved"]'),
+  ).toBeInTheDocument();
+  expect(screen.queryByTestId('rf__node-rejected')).not.toBeInTheDocument();
+  expect(screen.queryByTestId('rf__node-voided')).not.toBeInTheDocument();
+  expect(
+    screen.queryByTestId('rf__node-["$end","rejected"]'),
+  ).not.toBeInTheDocument();
+  expect(
+    screen.queryByTestId('rf__edge-["reject","dept","rejected"]'),
+  ).not.toBeInTheDocument();
+  expect(
+    screen.queryByTestId('rf__edge-["reject","finance","rejected"]'),
+  ).not.toBeInTheDocument();
+  expect(
+    screen.queryByRole('group', { name: 'Exit outcomes' }),
+  ).not.toBeInTheDocument();
+
+  // Focusing any approval stage lists its folded exit routes in the floating note card;
+  // clicking the folded exit entry calls onStateClick for that exit state without clicking the stage,
+  // and keeps stateActions accessible on the note entry.
+  fireEvent.focus(screen.getByTestId('rf__node-dept'));
+  const rejectNote = await screen.findByRole('note', {
+    name: 'Dept · Reject → Rejected',
+  });
+  expect(rejectNote).toBeInTheDocument();
+  expect(
+    screen.getByRole('note', { name: 'Dept · Void → Voided' }),
+  ).toBeInTheDocument();
+  const rejectButton = rejectNote.querySelector('button');
+  expect(rejectButton).not.toBeNull();
+  fireEvent.click(rejectButton!);
+  expect(onStateClick).toHaveBeenCalledTimes(1);
+  expect(onStateClick).toHaveBeenCalledWith(
+    expect.objectContaining({ name: 'rejected' }),
+  );
+  fireEvent.click(screen.getByRole('button', { name: 'Configure rejection' }));
+  expect(configureExit).toHaveBeenCalledOnce();
+
+  // Predicate form works identically and still protects non-final states.
+  view.rerender(
+    <TestI18nProvider runtime={runtime}>
+      <LifecycleDiagram
+        description={multiStageApproval}
+        stateKind={(state) =>
+          state.name === 'rejected' || state.name === 'voided'
+            ? 'negative'
+            : state.final
+              ? 'success'
+              : state.name === 'draft'
+                ? 'start'
+                : 'approval'
+        }
+        exitStates={(state) =>
+          state.name === 'rejected' || state.name === 'dept'
+        }
+        ariaLabel='Predicate exit states'
+      />
+    </TestI18nProvider>,
+  );
+  expect(await screen.findByTestId('rf__node-dept')).toBeInTheDocument();
+  expect(screen.queryByTestId('rf__node-rejected')).not.toBeInTheDocument();
+  expect(screen.getByTestId('rf__node-voided')).toBeInTheDocument();
+});
+
+it('marks execution termination on the stopping canvas node from history and keeps only the active exit on canvas when history is absent', async () => {
+  const view = render(
+    <TestI18nProvider runtime={runtime}>
+      <LifecycleDiagram
+        description={multiStageApproval}
+        stateKind={(state) =>
+          state.name === 'rejected' || state.name === 'voided'
+            ? 'negative'
+            : state.final
+              ? 'success'
+              : state.name === 'draft'
+                ? 'start'
+                : 'approval'
+        }
+        exitStates={['rejected', 'voided']}
+        currentState='rejected'
+        history={[
+          { transition: 'submit', from: 'draft', to: 'dept' },
+          { transition: 'reject', from: 'dept', to: 'rejected' },
+        ]}
+        ariaLabel='Rejected execution with history'
+      />
+    </TestI18nProvider>,
+  );
+
+  // Termination renders directly on the stopping source node (Dept) with a negative outcome badge,
+  // while folded exit states stay off the canvas.
+  const deptStep = (await screen.findByTestId('rf__node-dept')).querySelector(
+    '[data-execution-state]',
+  );
+  expect(deptStep).toHaveAttribute('data-execution-state', 'current');
+  expect(deptStep).toHaveAttribute('data-exit-outcome', 'negative');
+  expect(deptStep).toHaveTextContent('Rejected');
+  expect(deptStep).not.toHaveTextContent('Current');
+  expect(screen.queryByTestId('rf__node-rejected')).not.toBeInTheDocument();
+  expect(screen.queryByTestId('rf__node-voided')).not.toBeInTheDocument();
+  expect(
+    screen
+      .getByTestId('rf__node-draft')
+      .querySelector('[data-execution-state]'),
+  ).toHaveAttribute('data-execution-state', 'visited');
+  expect(
+    screen
+      .getByTestId('rf__node-legal')
+      .querySelector('[data-execution-state]'),
+  ).toHaveAttribute('data-execution-state', 'unreached');
+
+  // Without history identifying a canvas source, only the active exit state stays on the canvas as current,
+  // while other folded exits (Voided) remain omitted.
+  view.rerender(
+    <TestI18nProvider runtime={runtime}>
+      <LifecycleDiagram
+        description={multiStageApproval}
+        stateKind={(state) =>
+          state.name === 'rejected' || state.name === 'voided'
+            ? 'negative'
+            : state.final
+              ? 'success'
+              : state.name === 'draft'
+                ? 'start'
+                : 'approval'
+        }
+        exitStates={['rejected', 'voided']}
+        currentState='rejected'
+        ariaLabel='Rejected execution without history'
+      />
+    </TestI18nProvider>,
+  );
+  const rejectedNode = await screen.findByTestId('rf__node-rejected');
+  expect(rejectedNode.querySelector('[data-execution-state]')).toHaveAttribute(
+    'data-execution-state',
+    'current',
+  );
+  expect(screen.queryByTestId('rf__node-voided')).not.toBeInTheDocument();
+  expect(
+    screen.getByTestId('rf__node-dept').querySelector('[data-execution-state]'),
+  ).not.toHaveAttribute('data-exit-outcome');
 });
