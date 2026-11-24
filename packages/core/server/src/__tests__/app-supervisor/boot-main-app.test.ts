@@ -96,6 +96,45 @@ describe('AppSupervisor bootMainApp behavior in worker mode', () => {
     expect(unregisterEnvironmentSpy).toHaveBeenCalled();
   });
 
+  it('applies a stop notification without broadcasting it back to the migrating replica', async () => {
+    process.env.WORKER_MODE = '!';
+    const mainApp = supervisor.bootMainApp({});
+    const appName = 'migrating-app';
+    const subApp = supervisor.registerApp({ mainApp, appModel: { name: appName, options: {} } });
+    await mainApp.emitAsync('afterStart', mainApp);
+    const [[, receive]] = vi.mocked(mainApp.syncMessageManager.subscribe).mock.calls;
+    const publish = vi.mocked(mainApp.syncMessageManager.publish);
+    const cleanup = vi.fn();
+    subApp.on('afterStop', cleanup);
+    vi.spyOn(supervisor, 'hasApp').mockReturnValue(true);
+    const stop = vi.spyOn(supervisor.getProcessAdapter(), 'stopApp').mockImplementation(async () => {
+      await subApp.emitAsync('afterStop');
+    });
+
+    const message = { type: 'app:stopped', appName };
+    await receive(message);
+    expect(stop).toHaveBeenCalledTimes(1);
+    expect(stop.mock.calls[0][0]).toBe(appName);
+    expect(cleanup).toHaveBeenCalledOnce();
+    expect(publish).not.toHaveBeenCalled();
+
+    await subApp.emitAsync('afterStop');
+    expect(publish).toHaveBeenCalledTimes(1);
+    expect(publish).toHaveBeenCalledWith('app_supervisor:sync', message, undefined);
+  });
+
+  it('does not forward a stop notification to a process adapter for an app absent on this replica', async () => {
+    process.env.WORKER_MODE = '!';
+    const mainApp = supervisor.bootMainApp({});
+    await mainApp.emitAsync('afterStart', mainApp);
+    const [[, receive]] = vi.mocked(mainApp.syncMessageManager.subscribe).mock.calls;
+    vi.spyOn(supervisor, 'hasApp').mockReturnValue(false);
+    const stop = vi.spyOn(supervisor.getProcessAdapter(), 'stopApp').mockResolvedValue(undefined);
+
+    await receive({ type: 'app:stopped', appName: 'remote-app' });
+    expect(stop).not.toHaveBeenCalled();
+  });
+
   it.each([
     { environments: ['B'], environmentName: 'A', shouldStart: false },
     { environments: [], environmentName: 'A', shouldStart: false },
