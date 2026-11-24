@@ -254,7 +254,7 @@ export function createPermissionSetHandler(
         input,
         async (transaction) => {
           const bound = transaction ? api.withTransaction(transaction) : api;
-          const created = await summarize(bound, await bound.create(input));
+          const created = summarize(bound, await bound.create(input));
           if (transaction) {
             setAuditTarget({
               collection: permissionSetCollection,
@@ -514,7 +514,7 @@ export function createPermissionSetHandler(
                   'update',
                 );
             }
-          const updated = await summarize(
+          const updated = summarize(
             bound,
             await bound.update(key, input, changes.expectedRevision),
           );
