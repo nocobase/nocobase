@@ -9,7 +9,7 @@
 
 import PluginACLClient from '@nocobase/plugin-acl/client';
 import PluginWorkflowClient from '@nocobase/plugin-workflow/client';
-import { Plugin, lazy } from '@nocobase/client';
+import { CurrentUserContext, Plugin, lazy } from '@nocobase/client';
 import { AIManager } from '../client-v2/manager/ai-manager';
 import { tval } from '@nocobase/utils/client';
 import { namespace } from './locale';
@@ -62,7 +62,7 @@ export class PluginAIClient extends Plugin {
 
   // You can get and modify the app instance here
   async load() {
-    this.app.use(ChatBoxLayout);
+    this.app.use(ChatBoxLayout, { UserConsumer: CurrentUserContext.Consumer });
 
     this.app.addComponents({
       AIResourceContextCollector,

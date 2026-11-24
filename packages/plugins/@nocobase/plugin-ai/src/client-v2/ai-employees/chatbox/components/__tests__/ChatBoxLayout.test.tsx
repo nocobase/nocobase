@@ -8,9 +8,10 @@
  */
 
 import React from 'react';
-import { cleanup, render, waitFor } from '@testing-library/react';
+import { CurrentUserContext } from '@nocobase/client-v2';
+import { act, cleanup, render, waitFor } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { AI_EMPLOYEE_TRIGGER_TASK_EVENT } from '../../../../manager/ai-manager';
+import { AIManager, AI_EMPLOYEE_TRIGGER_TASK_EVENT } from '../../../../manager/ai-manager';
 import { clearMountedChatBoxes, registerMountedChatBox } from '../../stores/mounted-chat-boxes';
 import { getGlobalChatBoxRuntime } from '../../stores/runtime';
 import type { RunJSAIEmployeeTriggerTaskOptions } from '../../utils';
@@ -23,13 +24,17 @@ const runtime = vi.hoisted(() => {
   const onChatBoxMounted = vi.fn();
   const onChatBoxUnmounted = vi.fn();
   const getAIEmployees = vi.fn().mockResolvedValue([{ username: 'nathan', nickname: 'Nathan' }]);
+  const refreshAIEmployees = vi.fn().mockResolvedValue([]);
   const app = {
     eventBus,
     apiClient: {
+      auth: { token: 'test-token' },
       resource: vi.fn(),
+      request: vi.fn(),
     },
+    flowEngine: { getModel: vi.fn() },
     pm: {
-      get: vi.fn(() => ({
+      get: vi.fn((): { aiManager: Pick<AIManager, 'onChatBoxMounted' | 'onChatBoxUnmounted'> } => ({
         aiManager: {
           onChatBoxMounted,
           onChatBoxUnmounted,
@@ -46,6 +51,7 @@ const runtime = vi.hoisted(() => {
     onChatBoxMounted,
     onChatBoxUnmounted,
     getAIEmployees,
+    refreshAIEmployees,
   };
 });
 
@@ -70,7 +76,8 @@ vi.mock('antd', async (importOriginal) => {
   };
 });
 
-vi.mock('@nocobase/client-v2', () => ({
+vi.mock('@nocobase/client-v2', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@nocobase/client-v2')>()),
   useApp: () => runtime.app,
   useMobileLayout: () => ({ isMobileLayout: false }),
 }));
@@ -90,6 +97,7 @@ vi.mock('../../hooks/useChatBoxActions', () => ({
 vi.mock('../../../../repositories/hooks/useAIConfigRepository', () => ({
   useAIConfigRepository: () => ({
     getAIEmployees: runtime.getAIEmployees,
+    refreshAIEmployees: runtime.refreshAIEmployees,
   }),
 }));
 
@@ -116,14 +124,100 @@ vi.mock('../../../AISelectionControl', () => ({
 describe('ChatBoxLayout AI employee task bridge', () => {
   afterEach(() => {
     cleanup();
+    runtime.app.apiClient.auth.token = 'test-token';
     runtime.triggerTask.mockClear();
     runtime.loadUnreadCounts.mockClear();
     runtime.onChatBoxMounted.mockClear();
     runtime.onChatBoxUnmounted.mockClear();
     runtime.getAIEmployees.mockClear();
+    runtime.refreshAIEmployees.mockClear();
     runtime.app.pm.get.mockClear();
     runtime.app.apiClient.resource.mockClear();
     clearMountedChatBoxes();
+  });
+
+  it('loads employee data and subscribes to unread refreshes only for a signed-in user', () => {
+    const layout = (id?: number) => (
+      <CurrentUserContext.Provider value={{ loading: false, data: { data: id == null ? undefined : { id } } }}>
+        <ChatBoxLayout>
+          <input aria-label="page" />
+        </ChatBoxLayout>
+      </CurrentUserContext.Provider>
+    );
+    const refresh = () => {
+      runtime.eventBus.dispatchEvent(new Event('ws:message:ai-employee-tasks:status'));
+      runtime.eventBus.dispatchEvent(new Event('ws:message:ai-conversations:read'));
+    };
+    const { getByRole, rerender } = render(layout());
+    const pageInput = getByRole('textbox');
+    refresh();
+    expect(runtime.refreshAIEmployees).not.toHaveBeenCalled();
+    expect(runtime.loadUnreadCounts).not.toHaveBeenCalled();
+
+    rerender(layout(1));
+    expect(runtime.refreshAIEmployees).toHaveBeenCalledTimes(1);
+    expect(runtime.loadUnreadCounts).toHaveBeenCalledTimes(1);
+    refresh();
+    expect(runtime.loadUnreadCounts).toHaveBeenCalledTimes(3);
+
+    act(() => {
+      runtime.app.apiClient.auth.token = '';
+      runtime.eventBus.dispatchEvent(new Event('auth:tokenChanged'));
+    });
+    refresh();
+    expect(runtime.refreshAIEmployees).toHaveBeenCalledTimes(1);
+    expect(runtime.loadUnreadCounts).toHaveBeenCalledTimes(3);
+
+    rerender(layout(2));
+    expect(runtime.refreshAIEmployees).toHaveBeenCalledTimes(1);
+    expect(runtime.loadUnreadCounts).toHaveBeenCalledTimes(3);
+    act(() => {
+      runtime.app.apiClient.auth.token = 'new-token';
+      runtime.eventBus.dispatchEvent(new Event('auth:tokenChanged'));
+    });
+    refresh();
+    expect(runtime.refreshAIEmployees).toHaveBeenCalledTimes(2);
+    expect(runtime.loadUnreadCounts).toHaveBeenCalledTimes(6);
+    expect(getByRole('textbox')).toBe(pageInput);
+    expect(runtime.onChatBoxMounted).toHaveBeenCalledTimes(1);
+    expect(runtime.onChatBoxUnmounted).not.toHaveBeenCalled();
+  });
+
+  it('delivers a RunJS task to a V2 embedded chat block with a page-scoped current user', async () => {
+    const manager = new AIManager(runtime.app);
+    runtime.app.pm.get.mockReturnValueOnce({ aiManager: manager });
+    const target = vi.fn().mockResolvedValue(undefined);
+    registerMountedChatBox({
+      uid: 'embedded-chat',
+      runtime: getGlobalChatBoxRuntime(),
+      triggerTask: target,
+      clear: vi.fn(),
+      syncContextItems: vi.fn(),
+    });
+    const task = { title: 'Write in embedded chat' };
+    // V2 EmbedAccessGuard provides the authenticated user inside the page, below the global chat layout.
+    const { getByRole } = render(
+      <ChatBoxLayout>
+        <CurrentUserContext.Provider value={{ loading: false, data: { data: { id: 7 } } }}>
+          <button
+            onClick={() => manager.triggerTask({ aiEmployee: 'nathan', tasks: [task], chatBoxUid: 'embedded-chat' })}
+          >
+            Run embedded task
+          </button>
+        </CurrentUserContext.Provider>
+      </ChatBoxLayout>,
+    );
+    expect(runtime.refreshAIEmployees).not.toHaveBeenCalled();
+    expect(runtime.loadUnreadCounts).not.toHaveBeenCalled();
+    getByRole('button', { name: 'Run embedded task' }).click();
+    await waitFor(() =>
+      expect(target).toHaveBeenCalledWith({
+        aiEmployee: { username: 'nathan', nickname: 'Nathan' },
+        tasks: [task],
+        chatBoxUid: 'embedded-chat',
+      }),
+    );
+    expect(runtime.triggerTask).not.toHaveBeenCalled();
   });
 
   it('calls hook triggerTask after receiving an AI employee task event', async () => {
