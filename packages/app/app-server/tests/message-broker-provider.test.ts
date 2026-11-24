@@ -21,7 +21,9 @@ import type { AppPluginApplication } from '../src/plugins/index.js';
 let rootDir: string;
 
 beforeEach(async () => {
-  rootDir = await mkdtemp(path.join(os.tmpdir(), 'nocobase-message-broker-app-'));
+  rootDir = await mkdtemp(
+    path.join(os.tmpdir(), 'nocobase-message-broker-app-'),
+  );
 });
 
 afterEach(async () => {
@@ -63,7 +65,9 @@ describe('MessageBrokerServiceProvider', () => {
     const provider = new MessageBrokerServiceProvider(app);
     expect(provider.name).toBe('@nocobase/app-server/message-broker');
     provider.register();
-    expect(container.resolveIfCreated(messageBrokerServiceToken)).toBeUndefined();
+    expect(
+      container.resolveIfCreated(messageBrokerServiceToken),
+    ).toBeUndefined();
 
     const broker = container.resolve(messageBrokerServiceToken);
     expect(getLogger).toHaveBeenCalledWith('message-broker');
@@ -80,9 +84,9 @@ describe('MessageBrokerServiceProvider', () => {
     });
 
     await provider.shutdown();
-    await expect(broker.publisher('orders').publish({ body: {} })).rejects.toThrow(
-      'shut down',
-    );
+    await expect(
+      broker.publisher('orders').publish({ body: {} }),
+    ).rejects.toThrow('shut down');
   });
 
   it('does not create the service at shutdown when nothing used it', async () => {
@@ -90,7 +94,9 @@ describe('MessageBrokerServiceProvider', () => {
     const provider = new MessageBrokerServiceProvider(app);
     provider.register();
     await provider.shutdown();
-    expect(container.resolveIfCreated(messageBrokerServiceToken)).toBeUndefined();
+    expect(
+      container.resolveIfCreated(messageBrokerServiceToken),
+    ).toBeUndefined();
   });
 
   it('reports an invalid section through the configuration validator', () => {
