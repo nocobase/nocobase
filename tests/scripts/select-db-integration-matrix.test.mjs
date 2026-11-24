@@ -391,6 +391,19 @@ test('PR selection excludes target-branch changes already present in the base', 
   ]);
 });
 
+const serverBackups = ['postgres', 'mysql'].map((dialect) => ({
+  dialect,
+  filter: '@nocobase/backup',
+  tests: 'tests/integration/server-roundtrip.test.ts',
+}));
+
+test('backup library changes select its two native client suites', () => {
+  assert.deepEqual(
+    selectPackageSuites(['packages/libs/backup/src/backup.ts']),
+    serverBackups,
+  );
+});
+
 test('missing or unavailable comparison commits conservatively select every database', (t) => {
   const repo = createRepository(t);
   const headSha = repo.commit();
@@ -398,6 +411,7 @@ test('missing or unavailable comparison commits conservatively select every data
     const plan = planDbIntegration({ ...repo, baseSha, headSha });
     assert.deepEqual(plan.databases, databases);
     assert.deepEqual(plan.suites, [
+      ...serverBackups,
       ...appPagination,
       ...receiptConcurrency,
       ...withdrawalConcurrency,

@@ -1,4 +1,5 @@
 export { validateJobsConfig } from './validate-config.js';
+export { jobsPersistencePaths } from './config.js';
 export {
   Job,
   JobHandlerNotRegisteredError,

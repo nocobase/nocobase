@@ -91,7 +91,7 @@ for (const [name, connection] of Object.entries(database.connections)) {
 database.drivers = {};
 export default {
   createAppConfig: () => new AppConfig(),
-  defaultConfigs: () => ({ database, snowflake: { workerId: 0 } }),
+  defaultConfigs: () => ({ app: { name: 'database-phases-fixture', publicBasePath: '/' }, database, snowflake: { workerId: 0 } }),
   plugins: { plugins: [] }, serviceProviders: [], routes: [],
 };
 `,
@@ -99,8 +99,9 @@ export default {
   writeFileSync(
     path.join(server, 'app.ts'),
     `
-import { appendFileSync } from 'node:fs';
+import { appendFileSync, existsSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
+import { setTimeout } from 'node:timers/promises';
 import { ServiceProvider } from '@nocobase/service-provider';
 import { databaseManagerToken, TaskLockBusyError } from '@nocobase/db';
 import { createAppFromRuntime } from '@nocobase/app-server/runtime';
@@ -128,6 +129,10 @@ class Resources extends ServiceProvider {
   async boot() { throw new Error('CLI must not boot resources'); }
   async shutdown() {
     trace('shutdown:resources');
+    if (process.env.FIXTURE_PAUSE_SHUTDOWN) {
+      writeFileSync('maintenance-paused', '');
+      while (!existsSync('maintenance-resume')) await setTimeout(20);
+    }
   }
 }
 export function createApp(runtime) {
@@ -188,7 +193,14 @@ export default defineSeed({ name: '001_business', async run({ query }) {
     try {
       ({ stdout, stderr } = await exec(
         process.execPath,
-        ['--import', 'tsx', entry, ...args, '--json', '--no-collections'],
+        [
+          '--import',
+          'tsx',
+          entry,
+          ...args,
+          '--json',
+          ...(args[0] === 'db' ? ['--no-collections'] : []),
+        ],
         {
           cwd: root,
           timeout: 30_000,
