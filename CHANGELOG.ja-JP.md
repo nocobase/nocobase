@@ -2,6 +2,23 @@
 
 このファイルには NocoBase 3 の主な変更を、リリースごとに 1 セクションずつ記録します。`nocobase-v3-beta/<日付>.<連番>` はベータ版、`nocobase-v3/<日付>.<連番>` は正式版です。各リリースで公開されたパッケージのバージョンは対応する GitHub Release を、各パッケージ自体の変更はパッケージ内の CHANGELOG.md を参照してください。
 
+## [nocobase-v3-beta/2026-11-24.2](https://github.com/nocobase/nocobase/releases/tag/nocobase-v3-beta%2F2026-11-24.2)
+
+### 🎉 新機能
+
+- **[アプリホスティング]** マネージド App Host が、各アプリ自身のバックアップコマンドでアプリ（プロセス内と Docker の両方）をバックアップ・復元できるようになり、アプリのイメージ（amd64 と arm64）に必要な PostgreSQL・MySQL・MariaDB のクライアントツールが含まれるようになりました。 ([#11668](https://github.com/nocobase/nocobase/pull/11668))
+
+### 🚀 改善
+
+- **[API キー]** アプリケーションで個人キーとシステムキーの管理を維持したまま、メンバーキーとルールの管理 API を無効にできます。 ([#11696](https://github.com/nocobase/nocobase/pull/11696))
+
+### 🐛 不具合修正
+
+- **[メール]** 既に使っている名前でメールテンプレートを保存すると、サーバーエラーではなく名前が使用中であることが表示されるようになりました。 ([#11682](https://github.com/nocobase/nocobase/pull/11682))
+- **[権限]** ユーザーが既に持っている権限セットを割り当てると、サーバーエラーではなく競合として報告されるようになりました。 ([#11683](https://github.com/nocobase/nocobase/pull/11683))
+- **[サーバー]** Host がインプロセスで読み込むアプリは、standalone・Docker・CLI と同じくアプリ自身のパッケージ名でマイグレーションを記録するようになり、起動方法をまたいだバージョン検査とバックアップの復元が正しく動作します。 ([#11692](https://github.com/nocobase/nocobase/pull/11692))
+- **[Agent ランナー]** サブモジュール内に残った正常な linked worktree メタデータによるチェックアウト拒否を修正し、有効なサブモジュールの `core.worktree` 検証と簡潔な Git エラー出力を追加するとともに、所有する実行一時ディレクトリの権限ずれの自動修復と詳細な診断エラーに対応しました。 ([#11701](https://github.com/nocobase/nocobase/pull/11701))
+
 ## [nocobase-v3-beta/2026-11-24.1](https://github.com/nocobase/nocobase/releases/tag/nocobase-v3-beta%2F2026-11-24.1)
 
 ### 🎉 新機能

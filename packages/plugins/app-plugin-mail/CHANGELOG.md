@@ -1,5 +1,16 @@
 # @nocobase/app-plugin-mail
 
+## 1.0.0-beta.29
+
+### Patch Changes
+
+- 3635b25: Answer 409 `MAIL_TEMPLATE_ALREADY_EXISTS` instead of 500 when a user creates or renames a mail template to a name they already use, including concurrent requests.
+- Updated dependencies [019d5ec]
+- Updated dependencies [fcc0c18]
+  - @nocobase/app-plugin-authorization@1.0.0-beta.40
+  - @nocobase/app-server@5.0.0-beta.11
+  - @nocobase/app-plugin-authentication@2.0.0-beta.25
+
 ## 1.0.0-beta.28
 
 ### Minor Changes

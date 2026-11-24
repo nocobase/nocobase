@@ -1,5 +1,14 @@
 # @nocobase/app-plugin-authorization
 
+## 1.0.0-beta.40
+
+### Patch Changes
+
+- 019d5ec: Answer 409 `PERMISSION_SET_CONFLICT` instead of 500 when a Permission Set is assigned to a subject that already holds it, including concurrent requests.
+- Updated dependencies [fcc0c18]
+  - @nocobase/app-server@5.0.0-beta.11
+  - @nocobase/app-plugin-authentication@2.0.0-beta.25
+
 ## 1.0.0-beta.39
 
 ### Minor Changes
