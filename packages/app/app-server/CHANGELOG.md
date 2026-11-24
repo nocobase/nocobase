@@ -1,5 +1,21 @@
 # @nocobase/app-server
 
+## 5.0.0-beta.10
+
+### Minor Changes
+
+- 28a7606: Add built-in backup commands, disk-specific path exclusions, and application compatibility checks for restore.
+
+### Patch Changes
+
+- Updated dependencies [28a7606]
+- Updated dependencies [28a7606]
+- Updated dependencies [28a7606]
+  - @nocobase/drive@0.1.0-beta.9
+  - @nocobase/backup@0.1.0-beta.0
+  - @nocobase/jobs@1.0.0-beta.8
+  - @nocobase/queue@1.0.0-beta.13
+
 ## 5.0.0-beta.9
 
 ### Minor Changes
