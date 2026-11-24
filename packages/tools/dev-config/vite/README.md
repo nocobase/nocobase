@@ -6,6 +6,9 @@
 - `dist/client` build output;
 - a relative `base` for builds, so one build can be mounted at any path;
 - the development `base` from `APP_BASE_PATH`, which `pnpm dev` passes to Vite;
+- Brotli (`.br`) and gzip (`.gz`) copies beside every compressible text asset
+  of at least 1 KB, which the application server returns for a matching
+  `Accept-Encoding`, with `Vary: Accept-Encoding`;
 - development HMR client port from `APP_VITE_DEV_PORT`;
 - development HMR host from `APP_VITE_DEV_HOST` when it is set to a specific
   hostname. When it is unset or `0.0.0.0`, Vite uses the page hostname.

@@ -1,4 +1,10 @@
-import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import {
+  mkdtempSync,
+  readdirSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+} from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { brotliDecompressSync, gunzipSync } from 'node:zlib';
@@ -36,11 +42,13 @@ describe('precompressAssets', () => {
       }) => Promise<{ plugins: unknown[] }>
     )({ command: 'build', mode: 'production' });
     expect(
-      config.plugins.flat().some(
-        (plugin) =>
-          (plugin as Plugin | undefined)?.name ===
-          'nocobase:precompress-assets',
-      ),
+      config.plugins
+        .flat()
+        .some(
+          (plugin) =>
+            (plugin as Plugin | undefined)?.name ===
+            'nocobase:precompress-assets',
+        ),
     ).toBe(true);
   });
 
@@ -89,7 +97,6 @@ describe('precompressAssets', () => {
         gunzipSync(readFileSync(path.join(dir, `${name}.gz`))).toString(),
       ).toBe(content);
     }
-    const { readdirSync } = await import('node:fs');
     expect(readdirSync(dir).sort()).toEqual(
       [
         'image.png',

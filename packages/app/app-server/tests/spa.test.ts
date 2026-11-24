@@ -204,7 +204,10 @@ describe('SPA routes', () => {
   it('answers Accept-Encoding with the precompressed copy the client prefers', async () => {
     const root = createSpaFixture();
     const source = 'console.log("asset");';
-    writeFileSync(rootPath(root, 'assets/index.js.br'), brotliCompressSync(source));
+    writeFileSync(
+      rootPath(root, 'assets/index.js.br'),
+      brotliCompressSync(source),
+    );
     writeFileSync(rootPath(root, 'assets/index.js.gz'), gzipSync(source));
     const router = new Hono();
     registerSpaRoutes(router, {
@@ -229,9 +232,9 @@ describe('SPA routes', () => {
 
     const gz = await request('gzip, br;q=0');
     expect(gz.headers.get('content-encoding')).toBe('gzip');
-    expect(
-      gunzipSync(Buffer.from(await gz.arrayBuffer())).toString(),
-    ).toBe(source);
+    expect(gunzipSync(Buffer.from(await gz.arrayBuffer())).toString()).toBe(
+      source,
+    );
 
     expect((await request('*')).headers.get('content-encoding')).toBe('br');
 
