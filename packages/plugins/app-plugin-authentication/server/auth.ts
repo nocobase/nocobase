@@ -571,24 +571,15 @@ export class Auth {
     // The upstream key endpoints may invoke host-provided policy callbacks on their own connection.
     if (!auditEnabled() || auditEnabled('auth:createApiKey'))
       return this.handler(request, options);
-    let response: Response | undefined;
-    const rollback = new Error(
-      'Authentication returned an unsuccessful response.',
-    );
-    try {
-      return await this.connection.transaction(async (connection) => {
-        response = await this.forConnection(connection).handler(
-          request,
-          options,
-        );
-        if (response.status >= 400) throw rollback;
-        await recordAuditInTransaction(connection, { status: response.status });
-        return response;
-      });
-    } catch (error) {
-      if (error === rollback && response) return response;
-      throw error;
-    }
+    return this.connection.transaction(async (connection) => {
+      const response = await this.forConnection(connection).handler(
+        request,
+        options,
+      );
+      // Better Auth can persist security effects, such as rate-limit counters, for unsuccessful requests.
+      await recordAuditInTransaction(connection, { status: response.status });
+      return response;
+    });
   }
 
   /**

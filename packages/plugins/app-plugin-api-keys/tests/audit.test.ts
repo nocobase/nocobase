@@ -86,6 +86,7 @@ beforeAll(async () => {
       plugins: [apiKey()],
       emailAndPassword: { enabled: true, autoSignIn: false },
       session: { storeSessionInDatabase: true },
+      rateLimit: { enabled: true, storage: 'database' },
     },
     api: { trustedProxies: ['192.0.2.0/24'] },
     caching: { default: 'memory', providers: { memory: { driver: 'memory' } } },
@@ -148,6 +149,12 @@ beforeAll(async () => {
       const connection = app.container
         .resolve(databaseManagerToken)
         .connection();
+      await connection.builder.createCollection('rateLimit', (collection) => {
+        collection.string('id').primary();
+        collection.string('key').unique();
+        collection.integer('count').notNull();
+        collection.bigInt('lastRequest').notNull();
+      });
       await connection.builder.createCollection('auditOrders', (collection) => {
         collection.string('id').primary();
         collection.string('name');
@@ -229,6 +236,12 @@ it('attributes and commits native audit events without retaining credentials or 
     password: 'invalid-credential',
   });
   expect(failed.status).toBe(401);
+  expect(
+    await app.container
+      .resolve(databaseManagerToken)
+      .repository('rateLimit')
+      .count(),
+  ).toBe(2);
   expect(events.at(-1)).toMatchObject({
     action: 'auth:signIn',
     actor: { type: 'anonymous' },
