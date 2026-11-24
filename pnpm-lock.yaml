@@ -5880,6 +5880,9 @@ importers:
       '@nocobase/app-plugin-mail':
         specifier: workspace:*
         version: link:../../plugins/app-plugin-mail
+      '@nocobase/app-plugin-message-broker':
+        specifier: workspace:*
+        version: link:../../plugins/app-plugin-message-broker
       '@nocobase/app-plugin-notification':
         specifier: workspace:*
         version: link:../../plugins/app-plugin-notification
@@ -5922,6 +5925,9 @@ importers:
       '@nocobase/lifecycle':
         specifier: workspace:*
         version: link:../../libs/lifecycle
+      '@nocobase/message-broker':
+        specifier: workspace:*
+        version: link:../../libs/message-broker
       '@nocobase/queue':
         specifier: workspace:*
         version: link:../../libs/queue
@@ -6259,6 +6265,9 @@ importers:
       '@nocobase/app-plugin-mail-example':
         specifier: workspace:*
         version: link:../../examples/app-plugin-mail-example
+      '@nocobase/app-plugin-message-broker':
+        specifier: workspace:*
+        version: link:../../plugins/app-plugin-message-broker
       '@nocobase/app-plugin-notification':
         specifier: workspace:*
         version: link:../../plugins/app-plugin-notification
@@ -6334,6 +6343,9 @@ importers:
       '@nocobase/lifecycle':
         specifier: workspace:*
         version: link:../../libs/lifecycle
+      '@nocobase/message-broker':
+        specifier: workspace:*
+        version: link:../../libs/message-broker
       '@nocobase/queue':
         specifier: workspace:*
         version: link:../../libs/queue

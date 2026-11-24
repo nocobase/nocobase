@@ -18,6 +18,7 @@ import logging from './logging.js';
 import drive from './drive.js';
 import concurrency from './concurrency.js';
 import queue from './queue.js';
+import messageBroker from './message-broker.js';
 import queueExample from './queue-example.js';
 import jobs from './jobs.js';
 import scheduler from './scheduler.js';
@@ -47,6 +48,7 @@ const defaultConfigs: AppConfigFactory<{
   drive: ReturnType<typeof drive>;
   concurrency: ReturnType<typeof concurrency>;
   queue: ReturnType<typeof queue>;
+  messageBroker: ReturnType<typeof messageBroker>;
   queueExample: ReturnType<typeof queueExample>;
   jobs: ReturnType<typeof jobs>;
   scheduler: ReturnType<typeof scheduler>;
@@ -76,6 +78,7 @@ const defaultConfigs: AppConfigFactory<{
   drive,
   concurrency,
   queue,
+  messageBroker,
   queueExample,
   jobs,
   scheduler,

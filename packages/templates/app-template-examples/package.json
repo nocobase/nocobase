@@ -183,6 +183,7 @@
   "dependencies": {
     "@nocobase/concurrency": "workspace:*",
     "@nocobase/app-plugin-concurrency": "workspace:*",
+    "@nocobase/app-plugin-message-broker": "workspace:*",
     "zod": "catalog:",
     "@nocobase/app-plugin-agents": "workspace:*",
     "@nocobase/app-plugin-api-keys": "workspace:*",
@@ -229,6 +230,7 @@
     "@nocobase/repository-input": "workspace:*",
     "@nocobase/authorization": "workspace:*",
     "@nocobase/queue": "workspace:*",
+    "@nocobase/message-broker": "workspace:*",
     "@nocobase/jobs": "workspace:*",
     "@nocobase/lifecycle": "workspace:*",
     "@nocobase/i18n": "workspace:*",
