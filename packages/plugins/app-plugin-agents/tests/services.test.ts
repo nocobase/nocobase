@@ -4,6 +4,7 @@
  */
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
+import type { AuthorizationContext } from '@nocobase/authorization/core';
 import { createAgents } from '../server/composition.js';
 import { nameFrom } from '../server/online/services.js';
 import { createHarness, type Harness } from './harness.js';
@@ -52,6 +53,18 @@ describe('model services', () => {
     });
     try {
       await restarted.onlineAgent.recoverAtStartup();
+      await expect(
+        restarted.onlineAgent.realtime(
+          {
+            user: { id: 'alice' },
+            credentials: { kind: 'test-session' },
+            authorization: {
+              identity: { principal: { type: 'user', id: 'alice' } },
+            } as AuthorizationContext,
+          },
+          { sessionId: String(session.body.data.id) },
+        ),
+      ).rejects.toThrow('Model services are disabled');
       const { services, gateway } = restarted.models;
       expect(await services.list()).toEqual([]);
       expect((await gateway.catalog()).services).toEqual([]);
