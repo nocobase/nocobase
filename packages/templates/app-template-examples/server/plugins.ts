@@ -2,6 +2,7 @@ import concurrency from '@nocobase/app-plugin-concurrency/server';
 import messageBroker from '@nocobase/app-plugin-message-broker/server';
 import mail from '@nocobase/app-plugin-mail/server';
 import mailExample from '@nocobase/app-plugin-mail-example/server';
+import messageBrokerExample from '@nocobase/app-plugin-message-broker-example/server';
 import defaultAccess from '@nocobase/app-plugin-authz-default-access/server';
 import sharingRules from '@nocobase/app-plugin-authz-sharing-rules/server';
 import restrictionRules from '@nocobase/app-plugin-authz-restriction-rules/server';
@@ -60,6 +61,7 @@ const serverPlugins: AppServerPlugins = defineServerPlugins([
   notificationWebPush,
   notificationExample,
   queueExample,
+  messageBrokerExample,
   realtimeExample,
   jobsExample,
   lifecycleExample,

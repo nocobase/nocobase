@@ -17,6 +17,7 @@ import {
 } from '../../server/relay.js';
 import {
   INBOX_COLLECTION,
+  MAX_OUTBOX_BODY_BYTES,
   MessageBrokerStore,
   OUTBOX_COLLECTION,
   type OutboxRow,
@@ -344,4 +345,21 @@ test('the outbox refuses a transaction on another connection', async ({
       timestamp: new Date(),
     }),
   ).rejects.toThrow('publish inside a transaction on it');
+});
+
+test('the outbox refuses a body larger than every dialect stores', async ({
+  database,
+}) => {
+  const { broker } = await instance(database);
+  await expect(
+    database.transaction((transaction) =>
+      broker
+        .publisher('orders')
+        .publish(
+          { body: 'x'.repeat(MAX_OUTBOX_BODY_BYTES), messageId: 'large' },
+          { transaction },
+        ),
+    ),
+  ).rejects.toThrow('the outbox stores bodies of up to 65535 bytes');
+  expect(await rows(database)).toEqual([]);
 });

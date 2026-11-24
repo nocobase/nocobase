@@ -184,6 +184,7 @@
     "@nocobase/concurrency": "workspace:*",
     "@nocobase/app-plugin-concurrency": "workspace:*",
     "@nocobase/app-plugin-message-broker": "workspace:*",
+    "@nocobase/app-plugin-message-broker-example": "workspace:*",
     "zod": "catalog:",
     "@nocobase/app-plugin-agents": "workspace:*",
     "@nocobase/app-plugin-api-keys": "workspace:*",

@@ -3,6 +3,7 @@ import { createAppTest } from '@nocobase/app-testing/server';
 import { messageBrokerServiceToken } from '@nocobase/app-server/message-broker';
 import { databaseManagerToken } from '@nocobase/db';
 import type { BrokerMessage } from '@nocobase/message-broker';
+import { messageBrokerExampleServiceToken } from '@nocobase/app-plugin-message-broker-example/server';
 import { createStandaloneServer } from '../../server/standalone.js';
 
 const test = createAppTest({
@@ -76,4 +77,18 @@ test('a message published in a committed transaction reaches its subscriber; a r
   } finally {
     await stop();
   }
+});
+
+test('the example plugin handles an order placed in a committed transaction', async ({
+  app,
+}) => {
+  const example = app.container.resolve(messageBrokerExampleServiceToken);
+  const database = app.container.resolve(databaseManagerToken);
+  const order = { orderId: 'example-1', total: 10 };
+  await expect(
+    database.transaction((transaction) =>
+      example.publishOrderPlaced(order, transaction),
+    ),
+  ).resolves.toEqual({ messageId: 'order-placed:example-1', deferred: true });
+  await vi.waitFor(() => expect(example.handled()).toContainEqual(order));
 });

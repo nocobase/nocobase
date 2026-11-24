@@ -17,6 +17,12 @@ export const INBOX_COLLECTION = 'messageBrokerInbox';
 /** Longest `lastError` kept on an outbox row. */
 const LAST_ERROR_LENGTH = 1024;
 
+/**
+ * Largest body the outbox stores. MySQL's BLOB holds 64 KB; the same limit applies on every dialect so that a message
+ * accepted on one database is accepted on all of them.
+ */
+export const MAX_OUTBOX_BODY_BYTES = 65_535;
+
 export interface OutboxRow {
   readonly id: number | string;
   readonly publisher: string;
@@ -96,6 +102,11 @@ export class MessageBrokerStore implements MessageOutbox, MessageInbox {
     if (transaction.name !== defaultConnection) {
       throw new Error(
         `The outbox lives on the "${defaultConnection}" connection; publish inside a transaction on it, not on "${transaction.name}".`,
+      );
+    }
+    if (message.body.length > MAX_OUTBOX_BODY_BYTES) {
+      throw new RangeError(
+        `Message "${message.messageId}" has a ${message.body.length}-byte body; the outbox stores bodies of up to ${MAX_OUTBOX_BODY_BYTES} bytes. Publish a reference to the data instead.`,
       );
     }
     const now = this.now();
