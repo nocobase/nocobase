@@ -2,6 +2,16 @@
   "name": "@nocobase/app-plugin-template-print-example",
   "displayName": "Template Print Example App Plugin",
   "description": "A runnable DOCX and PDF template printing example with authorized invoice data.",
+  "nocobase": {
+    "title": {
+      "en-US": "Invoice printing example",
+      "zh-CN": "发票打印示例"
+    },
+    "description": {
+      "en-US": "Generate DOCX and PDF invoices from records the user can access.",
+      "zh-CN": "使用用户有权访问的记录生成 DOCX 和 PDF 发票。"
+    }
+  },
   "version": "1.0.0-beta.12",
   "type": "module",
   "prettier": "@nocobase/dev-config/prettier",
