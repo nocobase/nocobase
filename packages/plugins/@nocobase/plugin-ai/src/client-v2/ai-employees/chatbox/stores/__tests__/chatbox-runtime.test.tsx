@@ -8,7 +8,6 @@
  */
 
 import React from 'react';
-import { CurrentUserContext } from '@nocobase/client-v2';
 import { act, render, renderHook, screen } from '@testing-library/react';
 import { observer } from '@nocobase/flow-engine';
 import { afterEach, describe, expect, it, vi } from 'vitest';
@@ -227,11 +226,9 @@ describe('chatbox runtime context', () => {
     getGlobalChatBoxRuntime().chatSenderModel.setSenderValue('layout-runtime');
 
     render(
-      <CurrentUserContext.Provider value={{ loading: false, data: { data: { id: 1 } } }}>
-        <ChatBoxLayout>
-          <RuntimeReader />
-        </ChatBoxLayout>
-      </CurrentUserContext.Provider>,
+      <ChatBoxLayout>
+        <RuntimeReader />
+      </ChatBoxLayout>,
     );
 
     expect(screen.getByTestId('runtime-reader').textContent).toBe('layout-runtime');
@@ -241,11 +238,7 @@ describe('chatbox runtime context', () => {
   it('renders global floating surfaces from runtime state', () => {
     const runtime = getGlobalChatBoxRuntime();
 
-    render(
-      <CurrentUserContext.Provider value={{ loading: false, data: { data: { id: 1 } } }}>
-        <ChatBoxLayout />
-      </CurrentUserContext.Provider>,
-    );
+    render(<ChatBoxLayout />);
 
     expect(screen.queryByTestId('chat-box')).toBeNull();
     expect(screen.queryByTestId('tool-modal')).toBeNull();

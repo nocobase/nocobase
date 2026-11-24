@@ -22,7 +22,7 @@ import { useChatBoxRuntime } from '../stores/runtime';
 
 const icon = new URL('../../icon.svg', import.meta.url).toString();
 
-export const ChatButton: React.FC = observer(() => {
+export const ChatButton: React.FC<{ loadEmployeesOnMount?: boolean }> = observer(({ loadEmployeesOnMount = true }) => {
   const ctx = useFlowContext<FlowRuntimeContext>();
   const t = useT();
   const { pathname } = useLocation();
@@ -44,8 +44,10 @@ export const ChatButton: React.FC = observer(() => {
   const { switchAIEmployee } = useChatBoxActions();
 
   useEffect(() => {
-    repository.refreshAIEmployees().catch(console.error);
-  }, [repository]);
+    if (loadEmployeesOnMount) {
+      repository.getAIEmployees().catch(console.error);
+    }
+  }, [loadEmployeesOnMount, repository]);
 
   useEffect(() => {
     if (badgeAnimationTimerRef.current) {

@@ -51,11 +51,38 @@ export const ChatBoxLayout: React.FC<{
       <UserConsumer>
         {(user) => {
           const userId = user?.data?.data?.id;
-          return hasToken && userId != null ? <ChatBoxLayoutContent key={userId} /> : null;
+          return hasToken && userId != null ? <ChatDataSync key={userId} /> : null;
         }}
       </UserConsumer>
+      <ChatBoxLayoutContent />
     </ChatBoxRuntimeProvider>
   );
+};
+
+const ChatDataSync = () => {
+  const { eventBus } = useApp();
+  const repository = useAIConfigRepository();
+  const { loadUnreadCounts } = useChatConversationActions();
+
+  useEffect(() => {
+    repository.refreshAIEmployees().catch(console.error);
+  }, [repository]);
+
+  const refreshUnreadCounts = useCallback(() => {
+    loadUnreadCounts().catch(console.error);
+  }, [loadUnreadCounts]);
+
+  useEffect(() => {
+    refreshUnreadCounts();
+    eventBus.addEventListener('ws:message:ai-employee-tasks:status', refreshUnreadCounts);
+    eventBus.addEventListener('ws:message:ai-conversations:read', refreshUnreadCounts);
+    return () => {
+      eventBus.removeEventListener('ws:message:ai-employee-tasks:status', refreshUnreadCounts);
+      eventBus.removeEventListener('ws:message:ai-conversations:read', refreshUnreadCounts);
+    };
+  }, [eventBus, refreshUnreadCounts]);
+
+  return null;
 };
 
 const ChatBoxLayoutContent = observer(() => {
@@ -65,24 +92,9 @@ const ChatBoxLayoutContent = observer(() => {
   const open = chatBoxModel.open;
   const expanded = chatBoxModel.expanded;
   const activeTool = chatToolModel.activeTool;
-  const { loadUnreadCounts } = useChatConversationActions();
   const { triggerTask } = useChatBoxActions();
   const aiConfigRepository = useAIConfigRepository();
   const t = useT();
-
-  const refreshUnreadCounts = useCallback(() => {
-    loadUnreadCounts().catch(console.error);
-  }, [loadUnreadCounts]);
-
-  useEffect(() => {
-    refreshUnreadCounts();
-    app.eventBus.addEventListener('ws:message:ai-employee-tasks:status', refreshUnreadCounts);
-    app.eventBus.addEventListener('ws:message:ai-conversations:read', refreshUnreadCounts);
-    return () => {
-      app.eventBus.removeEventListener('ws:message:ai-employee-tasks:status', refreshUnreadCounts);
-      app.eventBus.removeEventListener('ws:message:ai-conversations:read', refreshUnreadCounts);
-    };
-  }, [app.eventBus, refreshUnreadCounts]);
 
   useEffect(() => {
     const plugin = app.pm.get('ai') as PluginAIClientV2 | undefined;
@@ -127,7 +139,7 @@ const ChatBoxLayoutContent = observer(() => {
 
   return (
     <>
-      <ChatButton />
+      <ChatButton loadEmployeesOnMount={false} />
       {open && !expanded && !isMobileLayout ? (
         <style>
           {`
