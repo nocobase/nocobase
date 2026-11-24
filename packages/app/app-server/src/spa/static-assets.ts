@@ -122,18 +122,29 @@ async function serveFileIfExists(
     const weights = parseAcceptEncoding(options.acceptEncoding ?? null);
     // The heaviest weight wins, `precompressed` order breaks a tie, and a copy the build did not write is skipped.
     let bestWeight = 0;
+    let chosen: { encoding: string; path: string; size: number } | null = null;
     for (const { encoding, extension } of precompressed) {
       const weight = weightOf(weights, encoding);
       if (weight <= bestWeight) continue;
       const copy = await fileStats(`${filePath}${extension}`);
       if (!copy) continue;
       bestWeight = weight;
-      headers.set('content-encoding', encoding);
-      servedPath = `${filePath}${extension}`;
-      servedSize = copy.size;
+      chosen = {
+        encoding,
+        path: `${filePath}${extension}`,
+        size: Number(copy.size),
+      };
     }
-    if (bestWeight === 0 && !identityAccepted(weights)) {
-      return notAcceptable(headers.get('vary')!);
+    // The file itself competes only when the client names `identity`: a browser that merely omits it, and so accepts it
+    // at the default weight, still gets the compressed copy, which is why a tie also goes to the copy.
+    const identityWeight = weights.get('identity') ?? 0;
+    if (chosen && identityWeight > bestWeight) chosen = null;
+    if (chosen) {
+      headers.set('content-encoding', chosen.encoding);
+      servedPath = chosen.path;
+      servedSize = chosen.size;
+    } else if (!identityAccepted(weights)) {
+      return notAcceptable(headers.get('vary')!, method);
     }
   }
   headers.set('content-length', String(servedSize));
@@ -203,7 +214,9 @@ function notFound(): Response {
   );
 }
 
-function notAcceptable(vary: string): Response {
+function notAcceptable(vary: string, method: string): Response {
+  if (method === 'HEAD')
+    return new Response(null, { status: 406, headers: { vary } });
   return Response.json(
     {
       error: 'Not acceptable',

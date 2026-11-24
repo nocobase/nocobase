@@ -293,6 +293,14 @@ describe('SPA routes', () => {
       null,
     ]);
     expect(await encodingFor('identity;q=0, br')).toEqual([200, 'br']);
+    // A client that names identity and weighs it above the copies gets the file itself; a tie, or no mention, keeps
+    // the copy, which is what a browser's `gzip, deflate, br` gets.
+    expect(await encodingFor('identity;q=1, gzip;q=0.1')).toEqual([200, null]);
+    expect(await encodingFor('identity;q=0.9, br;q=0.8, gzip')).toEqual([
+      200,
+      'gzip',
+    ]);
+    expect(await encodingFor('identity, gzip')).toEqual([200, 'gzip']);
   });
 
   it('answers 406 when the copies are missing and the file itself is refused', async () => {
@@ -316,6 +324,14 @@ describe('SPA routes', () => {
     expect(refused.status).toBe(406);
     expect(refused.headers.get('vary')).toBe('accept-encoding');
     expect(refused.headers.get('content-encoding')).toBeNull();
+    // A HEAD request is refused the same way, without a body.
+    const head = await router.request(
+      'http://localhost/main/test/assets/index.js',
+      { method: 'HEAD', headers: { 'accept-encoding': 'br, identity;q=0' } },
+    );
+    expect(head.status).toBe(406);
+    expect(head.headers.get('vary')).toBe('accept-encoding');
+    expect(await head.text()).toBe('');
     // The same client takes the gzip copy once it accepts it.
     const gz = await request('br, gzip, identity;q=0');
     expect(gz.status).toBe(200);
