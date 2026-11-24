@@ -64,6 +64,8 @@ export default defineAppRuntime({
 
 `plugins` is the complete value returned by `defineClientPlugins()`. Runtime resolution collects its route component overrides automatically. An application can explicitly pass `routeComponentOverrides` when it needs to replace an existing route's component; omit the option when no replacements are needed. The templates do not include empty route-override or source-extension entry files. UI Library source assets under `client/extensions/` are imported by the application where needed, without automatic extension discovery.
 
+Set `systemSettingsRoutes: false` or `personalSettingsRoutes: false` in `defineAppRuntime()` to omit that settings surface before route paths are claimed. Both surfaces are enabled by default.
+
 Static import makes the composition plan available to runtime resolution. It does not register a service, execute lifecycle hooks, render a React component, load a route page, or load locale messages. Declaration modules must therefore remain side-effect-free.
 
 ## Client entry
@@ -327,7 +329,37 @@ export default {
 };
 ```
 
-Every page is an app route: there is no separate settings or dev surface. A page that configures something is an ordinary route in the application's navigation. Route component overrides replace only a page component loader and keep the plugin-owned route identity, path, authentication, navigation, and access metadata.
+Settings pages come in two kinds, declared mainly by plugins. System settings, declared with `defineSystemSettingsRoutes()`, configure the whole application and are mounted under `/settings` (`SYSTEM_SETTINGS_ROUTE_PATH`, `surface: 'systemSettings'`, `isSystemSettingsRoute()`). Personal settings, declared with `definePersonalSettingsRoutes()`, are where each signed-in person configures their own account and are mounted under `/me` (`PERSONAL_SETTINGS_ROUTE_PATH`, `surface: 'personalSettings'`, `isPersonalSettingsRoute()`). Both take the same definitions as `defineAppRoutes()` and share the one route tree, authorization, breadcrumbs and component loading, so the application can show each in a navigation of its own. A group declared at the root of a settings contribution is a category shared by every package of the same surface: a page names it with a bare `parent`, and the application declares the categories it offers. A category without a path keeps its pages' URLs independent of it. `packageName:name` still names one package's group, such as a module whose pages are tabs, and a route cannot join a group of another surface.
+
+```ts
+import {
+  definePersonalSettingsRoutes,
+  defineSystemSettingsRoutes,
+} from '@nocobase/app-client/plugins';
+
+export const systemSettings = defineSystemSettingsRoutes([
+  {
+    parent: 'system',
+    name: 'audit-settings',
+    path: '/audit',
+    authz: { resource: { type: 'settings', id: 'audit' }, action: 'read' },
+    navigation: { title: 'nav.auditSettings' },
+    componentLoader: () => import('./pages/audit-settings.js'),
+  },
+]);
+
+export const personalSettings = definePersonalSettingsRoutes([
+  {
+    parent: 'preferences',
+    name: 'audit-preferences',
+    path: '/audit',
+    navigation: { title: 'nav.auditPreferences' },
+    componentLoader: () => import('./pages/my-audit-preferences.js'),
+  },
+]);
+```
+
+A settings page's `auth` defaults to `required`. A system settings page's `authz` defaults to `unrestricted`, as on any protected page; declare a grant to open it to other roles. A personal settings page's `authz` defaults to `skip`, so every signed-in person can open it and it stays out of role permissions; its data belongs to the current person, whom the server takes from the session. Route component overrides replace only a page component loader and keep the plugin-owned route identity, path, surface, authentication, navigation, and access metadata.
 
 ## Client plugin declaration
 
@@ -429,3 +461,13 @@ The templates' copied `FeedbackForm` component supplies native field discovery, 
 ## Correlating error notifications
 
 When reporting an API failure, pass `...errorToastOptions(error)` from `@nocobase/app-client` into `toaster.show({ type: 'error', title, ...errorToastOptions(error) })`. The helper preserves `ApiClientError.requestId` for the host toaster to display and copy; ordinary local errors have no request ID. Keep the error's translated title and any existing action unchanged.
+
+### Exclude application routes
+
+Set `excludedRouteIds` in `defineAppRuntime()` to remove routes by package-qualified ID before the application claims paths. A route exclusion also removes its descendants and their component overrides. A header action may declare its target's `routeId` to hide it when its target is excluded. The standard shells also hide linked actions while page permissions are pending or denied. A missing route ID or a group used as a target raises an error during Client runtime setup. To hide or replace just the action, use the application's `headerActionOverrides`.
+
+For system and personal settings, exclude individual pages or modules. Excluding a shared settings category ID raises an error. Categories emptied by exclusions disappear from navigation. Use `defineSettingsCategories()` to hide a category and move its pages to the fallback category.
+
+A plugin can offer an option that turns off its own pages, such as `agents({ chatRoutes: false })`, by passing `{ disabled: true }` to `defineAppRoutes()`, `defineSystemSettingsRoutes()` or `definePersonalSettingsRoutes()`. Disabled routes behave exactly like excluded ones: their paths stay free, and component overrides and header actions that target their IDs are dropped instead of failing. Prefer the plugin's option when it has one; use `excludedRouteIds` for any other page or for finer control. Both may name the same route.
+
+Use `useHasRoute(routeId)` before rendering a link to another contributed page. It reports whether the page is registered after exclusions. The route still applies its normal access check. In development, an exclusion whose package is present but whose route is missing produces one warning per ID.

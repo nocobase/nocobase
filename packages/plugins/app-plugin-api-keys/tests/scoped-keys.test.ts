@@ -197,7 +197,8 @@ describe('scoped API keys', () => {
       connection: () => database.connection(),
       scopes,
       authorization: () => authz,
-      config: () => ({}),
+      // These keys include ones that act as their owner in full, as an application that turned them on makes.
+      config: () => ({ allowSameAsMe: true }),
     });
     // What the plugin's provider wires at boot.
     auth.addScopedCredentialCheck(
@@ -280,6 +281,7 @@ describe('scoped API keys', () => {
       auth: limitedAuth,
       connection: () => database.connection(),
       scopes,
+      config: () => ({ allowSameAsMe: true }),
     });
     const identity = await keys.identityOf(personId);
     await expect(
@@ -394,6 +396,14 @@ describe('scoped API keys', () => {
     expect(decodeKeyScope(null)).toBeNull();
     // An unknown format grants nothing rather than everything.
     expect(decodeKeyScope({ 'shop.orders': ['read'] })).toEqual({ groups: {} });
+    // A damaged record limit reaches no record rather than every one.
+    expect(
+      decodeKeyScope({
+        $v: ['1'],
+        'shop.orders': ['read'],
+        'shop.orders@': 'o-1',
+      }),
+    ).toEqual({ groups: { 'shop.orders': { level: 'read', objects: [] } } });
   });
 
   it('refuses a scope it cannot honour', async () => {
@@ -790,7 +800,7 @@ describe('scoped API keys', () => {
       connection: () => database.connection(),
       scopes,
       authorization: () => authz,
-      config: () => ({ maxScopedKeyDays: 30 }),
+      config: () => ({ maxScopedKeyDays: 30, allowSameAsMe: true }),
     });
     const identity = await strict.identityOf(personId);
     const scope = { groups: { 'shop.billing': { level: 'read' } } };

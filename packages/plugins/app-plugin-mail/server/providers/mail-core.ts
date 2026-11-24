@@ -39,6 +39,7 @@ import {
 } from '../realtime.js';
 import { createDatabaseMailStore } from '../store.js';
 import {
+  mailAssemblyInfoToken,
   mailProviderAdapterResolverToken,
   mailCredentialVaultToken,
   mailProviderRegistryToken,
@@ -72,6 +73,11 @@ export class MailCoreProvider extends ServiceProvider<MailCoreProviderApplicatio
     this.app.container.singleton(mailStoreToken, (container) =>
       createDatabaseMailStore(container.resolve(databaseManagerToken)),
     );
+    this.app.container.instance(mailAssemblyInfoToken, {
+      credentialVault: this.app.container.has(mailCredentialVaultToken)
+        ? 'application'
+        : 'builtin',
+    });
     if (!this.app.container.has(mailCredentialVaultToken)) {
       this.app.container.singleton(mailCredentialVaultToken, (container) =>
         createDatabaseMailCredentialVault(
@@ -107,6 +113,7 @@ export class MailCoreProvider extends ServiceProvider<MailCoreProviderApplicatio
         syncBatchSize: this.getMailConfig().syncBatchSize,
         pushWebhookUrl: this.getMailConfig().pushWebhookUrl,
         pushWebhookSecret: this.getMailConfig().pushWebhookSecret,
+        logRetentionDays: this.getMailConfig().logRetentionDays,
         outboundAttachments: container.resolve(
           mailOutboundAttachmentStorageToken,
         ),

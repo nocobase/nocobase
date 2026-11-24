@@ -2,6 +2,67 @@
 
 本文件记录 NocoBase 3 的所有重要变更，每次发布一节：`nocobase-v3-beta/<日期>.<序号>` 是预览版，`nocobase-v3/<日期>.<序号>` 是正式版。每次发布的包版本见对应的 GitHub Release，各个包自己的变更见包内的 CHANGELOG.md。
 
+## [nocobase-v3-beta/2026-11-24.1](https://github.com/nocobase/nocobase/releases/tag/nocobase-v3-beta%2F2026-11-24.1)
+
+### 🎉 新特性
+
+- **[备份]** 通过内置备份命令创建、查看、校验和还原应用数据库与上传文件备份。 ([#11642](https://github.com/nocobase/nocobase/pull/11642))
+- **[客户端]**
+  - 应用可以按 ID 移除插件页面，并自动隐藏指向这些页面的工具栏入口。 ([#11670](https://github.com/nocobase/nocobase/pull/11670))
+  - 应用可以按需关闭内置的设置、聊天、收件箱和邮件页面。 ([#11679](https://github.com/nocobase/nocobase/pull/11679))
+- **[认证]** 服务端认证扩展可以使用当前事务，使业务数据变更与认证操作一并提交或回滚。 ([#11681](https://github.com/nocobase/nocobase/pull/11681))
+- **[文件]** 应用可以关闭文件存储管理接口，同时保留附件服务。 ([#11685](https://github.com/nocobase/nocobase/pull/11685))
+- **[Agent]** 应用可以关闭托管模型服务，同时保留 Runner 模型和用量报表。 ([#11686](https://github.com/nocobase/nocobase/pull/11686))
+- **[API 密钥]** 应用可以关闭系统 API 密钥管理接口，已有密钥仍可使用。 ([#11687](https://github.com/nocobase/nocobase/pull/11687))
+
+### 🚀 优化
+
+- **[集群与分布式]** Default 和 Examples 模板已移除内置的分布式插件，已有应用可迁移到 Pro 集群就绪检查插件。 ([#11678](https://github.com/nocobase/nocobase/pull/11678))
+
+### 🐛 修复
+
+- **[Agent]** 关闭模型服务后也能使用演示数据，Agent 和收件箱控件已补齐各支持语言的翻译。 ([#11690](https://github.com/nocobase/nocobase/pull/11690))
+
+## [nocobase-v3-beta/2026-11-23.1](https://github.com/nocobase/nocobase/releases/tag/nocobase-v3-beta%2F2026-11-23.1)
+
+### 🎉 新特性
+
+- **[界面]** UI Library 权限编辑器改为「菜单」「业务对象」「系统设置」三个标签：菜单只控制侧边栏可见，每个业务对象的操作和数据范围只设一处、其他操作跟随或收窄查看范围，系统设置页单独设置、没有数据范围。 ([#11603](https://github.com/nocobase/nocobase/pull/11603))
+- **[邮件]**
+  - 可为每个邮箱账号选择要同步的文件夹；取消的文件夹在确认后删除其本地邮件，服务器上的邮件不受影响。 ([#11605](https://github.com/nocobase/nocobase/pull/11605))
+  - 将单封邮件下载为包含附件的原始 .eml 文件。 ([#11623](https://github.com/nocobase/nocobase/pull/11623))
+- **[插件生命周期]** 生命周期定义可以在恢复实例的同一事务中更新相关记录。 ([#11659](https://github.com/nocobase/nocobase/pull/11659))
+- **[应用模板]** 从默认模板新建应用后，管理员在添加第一个流程前即可从系统设置打开流程管理。 ([#11660](https://github.com/nocobase/nocobase/pull/11660))
+- **[客户端]** 成员可在个人设置中管理账号安全和个人 API 密钥，管理员可在系统设置中管理用户、角色、文件存储和计划任务。 ([#11663](https://github.com/nocobase/nocobase/pull/11663))
+- **[Agent]** 运行环境现在可以使用 Antigravity CLI 作为 Agent 工具，工具列表中它排在 Pi 之后。 ([#11664](https://github.com/nocobase/nocobase/pull/11664))
+
+### 🚀 优化
+
+- **[Agent]**
+  - 同一模型来自不同服务商时，新添加的 Agent 名称在后面用半角括号带上服务商，如「OpenCode · Qwen3.8 Flash (example-provider)」。 ([#11632](https://github.com/nocobase/nocobase/pull/11632))
+  - Skill 页面不再提示「在线 Agent 只能读取、不会执行脚本」，文件树改为只在 scripts 文件夹显示一个图标，不再给每个文件挂「脚本」标签。 ([#11635](https://github.com/nocobase/nocobase/pull/11635))
+- **[Skills]** 应用开发 Skill 现在可指导 Agent 为流程实例添加暂停、恢复、重置和重新启动操作，并接入记录级权限与审计历史。 ([#11641](https://github.com/nocobase/nocobase/pull/11641))
+- **[Agent 运行器]** Codex、OpenCode 和 Pi 推荐 GPT-6.2 Sol 和 Astra，并提供标准档默认用量价格。 ([#11645](https://github.com/nocobase/nocobase/pull/11645))
+- **[插件生命周期]** 扩展可以查询流程实例自指定记录以来是否已离开该次状态停留。 ([#11661](https://github.com/nocobase/nocobase/pull/11661))
+- **[应用模板]** 流程定义和执行记录的空状态间距现已统一，流程定义页会提示如何在项目仓库中通过 Agent 管理流程。 ([#11667](https://github.com/nocobase/nocobase/pull/11667))
+
+## [nocobase-v3-beta/2026-11-20.1](https://github.com/nocobase/nocobase/releases/tag/nocobase-v3-beta%2F2026-11-20.1)
+
+### 🎉 新特性
+
+- **[Agent]** 在线 Agent 对话可在模型旁为任意在线模型选择思考等级（默认、关闭，或极低到超高），模型不支持该等级时会在对话中提示。 ([#11555](https://github.com/nocobase/nocobase/pull/11555))
+- **[Agent 运行器]** 执行机可使用部署密钥和已核对的主机指纹，通过 SSH 检出、推送并构建仓库。 ([#11614](https://github.com/nocobase/nocobase/pull/11614))
+- **[插件生命周期]** 管理员可以挂起、恢复、重置或重启流程实例，并在工单示例中查看处置历史。 ([#11628](https://github.com/nocobase/nocobase/pull/11628))
+
+### 🚀 优化
+
+- **[Agent]** OpenCode、Pi 的模型显示服务商前缀；运行失败时显示编码工具的原始报错。 ([#11622](https://github.com/nocobase/nocobase/pull/11622))
+
+### 🐛 修复
+
+- **[命令行]** 修复网关进行同源跳转时 CLI 和执行机安装失败的问题 ([#11616](https://github.com/nocobase/nocobase/pull/11616))
+- **[Agent 运行器]** 只读步骤可通过执行机管理的 SSH 连接拉取，推送会被执行机拒绝。 ([#11627](https://github.com/nocobase/nocobase/pull/11627))
+
 ## [nocobase-v3-beta/2026-11-19.1](https://github.com/nocobase/nocobase/releases/tag/nocobase-v3-beta%2F2026-11-19.1)
 
 ### 🎉 新特性

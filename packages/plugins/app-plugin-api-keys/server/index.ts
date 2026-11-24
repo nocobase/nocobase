@@ -55,15 +55,48 @@ export {
   ApiKeyRequestError,
   connectOwnKeyPolicy,
   DEFAULT_SCOPED_KEY_DAYS,
+  READ_ONLY_TEMPLATE_ID,
   ScopedApiKeys,
   type ApiKeysConfig,
   type CheckedApiKey,
   type OwnKeyChange,
   type OwnKeyChangeListener,
   type OwnKeyPolicy,
+  type LegacyUpgradeSummary,
   type ScopedApiKeysOptions,
 } from './scoped-keys.js';
-export { apiKeyScopesToken, scopedApiKeysToken } from './tokens.js';
+export {
+  apiKeyScopesToken,
+  idleApiKeysToken,
+  memberApiKeysToken,
+  scopedApiKeysToken,
+  systemApiKeysToken,
+} from './tokens.js';
+export {
+  assertSystemPermissions,
+  SYSTEM_KEY_OWNER,
+  SystemApiKeys,
+  systemKeySet,
+  type AdoptSystemKeyInput,
+  type CreateSystemKeyInput,
+  type SystemKeyAction,
+  type SystemKeyEvent,
+  type SystemKeyManagedBy,
+  type SystemKeyManager,
+  type SystemKeyView,
+} from './system-keys.js';
+export {
+  MemberKeys,
+  type MemberKeysFilter,
+  type MemberKeyView,
+} from './member-keys.js';
+export {
+  IdleKeys,
+  IDLE_NOTICE_DAYS,
+  type IdleReminder,
+  type IdleSweepResult,
+} from './idle.js';
+export type { ApiKeyRules, ApiKeyRulesInput } from './rules.js';
 export { API_KEYS_ERROR_DOMAIN, toApiKeysApiError } from './routes/errors.js';
 export { ApiKeysProvider } from './providers/index.js';
 export * from '../shared/scopes.js';

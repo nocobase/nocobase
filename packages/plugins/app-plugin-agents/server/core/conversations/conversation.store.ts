@@ -94,6 +94,8 @@ export interface PreferencesRecord {
   readonly defaultAgentId: string | null;
   /** `personal` or `team`; null: `auto`. */
   readonly runnerPreference?: string | null;
+  /** The reasoning effort conversations they start take; null: each agent's default. */
+  readonly effort?: string | null;
   readonly onlineAgent?: JsonColumn;
   readonly updatedAt: string;
 }
@@ -131,6 +133,15 @@ export function settingsRepo(
   conn: DatabaseConnection,
 ): Repository<SettingRecord> {
   return conn.repository<SettingRecord>('agSettings');
+}
+
+/** The team's default chat agent (`agSettings`, key `chat`), or null. */
+export async function teamDefaultAgentId(
+  conn: DatabaseConnection,
+): Promise<string | null> {
+  const row = await settingsRepo(conn).findOne({ filter: { key: 'chat' } });
+  const value = jsonObject(row?.value);
+  return typeof value.defaultAgentId === 'string' ? value.defaultAgentId : null;
 }
 
 export async function findConversation(

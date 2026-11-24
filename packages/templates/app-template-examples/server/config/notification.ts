@@ -4,7 +4,13 @@ import type { NotificationConfig } from '@nocobase/app-plugin-notification/serve
 
 const notification: AppConfigFactory<NotificationConfig> =
   defineMailChannelsConfig({
-    defaults: { channels: { inbox: { provider: 'in-app' } } },
+    defaults: {
+      channels: {
+        inbox: { provider: 'in-app' },
+        // Reaches the devices a person turned on in Personal settings › Messages › Notifications.
+        webPush: { provider: 'web-push' },
+      },
+    },
   });
 
 export default notification;

@@ -1,8 +1,10 @@
 import { loggingToken } from '@nocobase/app-server/logging';
 import type {
+  ChannelConfigSummaryItem,
   ChannelContext,
   NotificationI18nText,
 } from '@nocobase/app-plugin-notification';
+import { maskedSecret, PROVIDERS_CONTRIBUTOR } from '../../summary.js';
 import {
   type NotificationProviderDefinition,
   type ProviderSendResult,
@@ -67,6 +69,16 @@ export interface ResendChannelConfig extends Omit<
 /** Legacy inline channel. It creates its own sender from the application factory and closes it with itself. */
 export class ResendChannel extends MailSenderChannel {
   static readonly type = 'resend';
+  static readonly contributor: string = PROVIDERS_CONTRIBUTOR;
+  /** Connection settings with the secret masked. */
+  static summarize(
+    config: ResendChannelConfig,
+  ): readonly ChannelConfigSummaryItem[] {
+    return [
+      { label: 'apiKey', value: maskedSecret(config.apiKey) },
+      { label: 'from', value: config.from },
+    ];
+  }
   static readonly label: NotificationI18nText = notificationProviderText(
     'providers.resend',
     'Resend',
@@ -82,6 +94,7 @@ export class ResendChannel extends MailSenderChannel {
         provider: 'resend',
       }),
       RESEND_CAPABILITIES,
+      context.container,
     );
     if (context.container.has(loggingToken))
       context.container

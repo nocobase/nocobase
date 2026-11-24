@@ -2,7 +2,7 @@ import type { ServicesLocale } from './services.en-US.js';
 
 const servicesZhCN: ServicesLocale = {
   models: {
-    title: '模型',
+    title: '模型服务',
     description:
       '在线 Agent 调用的模型服务，以及每个服务提供的模型：对话模型供 Agent 使用，向量模型和重排序模型供搜索使用。',
   },

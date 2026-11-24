@@ -24,7 +24,7 @@ import mail from './mail.js';
 // Add `mail: ReturnType<typeof mail>;` to the default config type and `mail,` to defaultAppConfigs({ ... }).
 ```
 
-Register that factory under the `mail` key in the application's `defaultAppConfigs()` composition. The plugin uses built-in defaults when the namespace is absent, but no external Mail provider is available until the application configures one. Keep provider credentials in private server configuration. `mailConfig` declares all seven `MAIL_*` overrides as section-relative environment rules; composing it makes them effective and discoverable with `pnpm nocobase config env`. The legacy `mailEnvironmentMappings` export retains fully prefixed paths for application-level environment providers; do not pass it as a section's `env`.
+Register that factory under the `mail` key in the application's `defaultAppConfigs()` composition. The plugin uses built-in defaults when the namespace is absent, but no external Mail provider is available until the application configures one. Keep provider credentials in private server configuration. `mailConfig` declares all eight `MAIL_*` overrides as section-relative environment rules; composing it makes them effective and discoverable with `pnpm nocobase config env`. The legacy `mailEnvironmentMappings` export retains fully prefixed paths for application-level environment providers; do not pass it as a section's `env`.
 
 For Gmail, `mail.providers.<name>.quota` can override per-user and per-project quota pacing using the allocation shown in Google Cloud; otherwise the plugin uses conservative defaults with headroom. Account creation requires an initial-sync date, and the account screen defaults it to one calendar month ago. Direct initial-sync requests must also provide a date boundary. See the Mail Skill references for configuration and quota details.
 
@@ -38,15 +38,93 @@ Custom menus can use `useMailUnreadCount()` and `MailUnreadCountState` from `/cl
 
 Composer completion preserves its existing three arguments and adds optional `MailComposerCompletionDetails` as the fourth: exact per-operation submissions and a detached client-request snapshot, or a separate draft reference. Associate business activity by submission ID, not the latest history row, and preserve each record's real status. Async completion errors are isolated and may be handled with `onCompletionError`; the composer does not wait for business persistence to close. See [client integration](skills/nocobase-app-plugin-mail/references/client-integration.md#associate-composer-completion-with-business-records) for unknown outcomes, drafts, bulk sends and reliability limits.
 
-For a production workspace, register an application-owned personal account route rendering the public `MailAccountsPage`, pass its path (without the deployment prefix) as `MailWorkspacePage.accountsHref`, and configure `mail.oauthReturnUrl` separately to the same page. The empty workspace shows a connection link and the populated workspace keeps an account-management link; without `accountsHref` it invents no route. Optional `headerActions` append application actions without replacing Compose or Sync. See the [client integration guide](skills/nocobase-app-plugin-mail/references/client-integration.md) for authentication and permission wiring.
-
-The plugin registers no built-in Dev, settings or management pages or routes; applications own their Mail pages. `mail.oauthReturnUrl` defaults to the application's root (`/`), not an account page. Register an application-owned, authenticated personal account page with `page / mail.workspace / access` permission and configure the return URL to that page. Production startup warns once only when the effective return URL targets the legacy `/dev/mail/accounts` destination, including prefixed and absolute forms; the current default does not trigger that warning. The warning does not block startup, change configuration or verify arbitrary application routes. An application-owned administrator overview using the read-only all-user APIs is not a substitute for personal connection. Application runtime environment checks use `app.nodeEnv`, including embedded apps with an environment distinct from their host.
-
 Other Server plugins may register custom providers through `mailProviderRegistryToken` and `MailProviderDefinition`. `createMailProviderRegistry()` creates a standalone registry for tests or isolated integrations; applications should extend the registry supplied by Mail Core. Provider capability records may contain capabilities unknown to this Mail version; Mail does not use unknown keys to enable built-in operations, and treats missing known capabilities as unsupported. Client UIs should tolerate unknown capability keys. A custom `MailCredentialVault` may be registered through `mailCredentialVaultToken` before Mail Core initializes when an application needs its own credential storage.
 
 `MailClient` is the preferred integration with Mail's HTTP API. The [HTTP API reference](skills/nocobase-app-plugin-mail/references/http-api.md) lists the `/api/mail` paths, request and response shapes, error codes, permission resources, realtime event, OAuth callback, and Provider webhook contracts. OAuth callbacks and Provider webhooks are protocol endpoints rather than general application APIs. A running application also serves the `/api/mail` routes in its OpenAPI document, at `/api/swagger/docs` (Swagger UI) and `/api/swagger` (JSON), for a signed-in user or an API key.
 
+The command line derived from that document offers each Mail route only to callers holding the permission the route checks, which its `x-cli.action` names as `type:id/action`: `page:mail.workspace/access`, `mail:mail.management/view` or `/process`, `settings:mail.admin/read` or `/manage`. Mail registers nothing more for the command line: the host's action gate returns these action names for a caller from their roles and, for an API key, its scope, and the manifest matches them exactly, so a gate that does not report them leaves the Mail commands out.
+
 Within a major version, existing public exports, required props, request fields, response meanings, error codes, permissions, and event semantics remain compatible. Additive fields and capabilities must be optional or safely ignored by older consumers. Removing or changing a public contract requires a new major version and a migration note.
+
+## Pages
+
+Set `workspaceRoutes: false` to omit both business pages. The existing mail navigation options continue to control their menu entries.
+
+The client plugin registers four pages, each replaceable as a whole by route name with the application's `routeComponentOverrides`:
+
+| Route name     | Path             | Where                                            | Requires                                  |
+| -------------- | ---------------- | ------------------------------------------------ | ----------------------------------------- |
+| `mail`         | `/mail`          | Navigation **Mail**, with the unread count       | `page` `mail.workspace` `access`          |
+| `mailTeam`     | `/mail/team`     | Navigation **Team mail**                         | `mail` `mail.management` `view`           |
+| `mailAccounts` | `/me/mail`       | Personal settings › Integrations › Mail accounts | signed in; its APIs need `mail.workspace` |
+| `mailSettings` | `/settings/mail` | System settings › Messages › Mail                | `settings` `mail.admin` `read`            |
+
+`mail({ routes: { mail: { order, parent }, mailTeam: false } })` moves a navigation entry or leaves it out of the menu; the page and its permission remain. The workspace links to the personal Mail accounts page to connect or reconnect an account, and marks accounts whose authorization has lapsed. Team mail lists every member's synchronized mail by member, account, address or `@domain` and keyword; opening a message never marks it read and offers no reply. The Mail settings page shows Providers and their capabilities, every account's status, every sync and send log, and the runtime configuration with where each value comes from; it never shows a subject, body or secret.
+
+`mail.oauthReturnUrl` defaults to the personal Mail accounts page (`/me/mail`), so a person returns there after connecting Gmail or Microsoft 365. An application that leaves out or moves that page configures `mail.oauthReturnUrl` to its own. `MailWorkspacePage` and `MailAccountsPage` remain exported for applications composing their own pages; their props, including `accountsHref`, `headerActions` and `templateVariables`, still work and are combined with what is registered through the extension points below. Production startup warns once when the effective return URL targets the legacy `/dev/mail/accounts` destination.
+
+## Permissions
+
+Mail registers what it offers to be granted with the authorization plugin (`shared/access.ts`), so roles get them on the role permission page. Every `/api/mail` route declares one requirement and the pages' `authz` use the same constants.
+
+| Resource                 | Action    | Allows                                                                                           |
+| ------------------------ | --------- | ------------------------------------------------------------------------------------------------ |
+| `page` `mail.workspace`  | `access`  | The caller's own mail: accounts, messages, drafts, sending, own logs                             |
+| `mail` `mail.management` | `view`    | Team mail: read every member's synchronized mail without changing it                             |
+| `mail` `mail.management` | `process` | Team mail: mark read, star and archive in bulk (`POST /api/mail/management/messages/batchApply`) |
+| `settings` `mail.admin`  | `read`    | Mail settings: Providers, every account's status, every sync and send log                        |
+| `settings` `mail.admin`  | `manage`  | Mail settings: retry or cancel another member's synchronization or send                          |
+
+`process` and `manage` do not include `view` and `read`. Grant read-only Team mail with **View** and add **Process** only when the role should mark read, star or archive in bulk; grant read-only mail operations with **View** and add **Manage** only when the role should retry or cancel other members' syncs and sends. `/api/mail/settings/accounts` answers only `mail.admin`, with status, Provider and last synchronization; `/api/mail/management/accounts` answers only `mail.management`, with the ids, addresses and owners Team mail's filters need.
+
+### Upgrading from the former page grants
+
+Team mail and Mail settings were checked as `page` resources that were never registered, so they could only be granted in code or seeds. They are replaced, without a compatibility layer and without converting old grants:
+
+| Former grant                      | Replacement                                                        |
+| --------------------------------- | ------------------------------------------------------------------ |
+| `page` `mail.workspace` `access`  | Unchanged                                                          |
+| `page` `mail.management` `access` | `mail` `mail.management` `view`, plus `process` for bulk actions   |
+| `page` `mail.admin` `access`      | `settings` `mail.admin` `read`, plus `manage` for retry and cancel |
+
+A role holding only a former grant is refused by every Team mail and Mail settings API. Check the application's role seeds and any code that writes grants directly, and grant the replacements on the role permission page or in the seed.
+
+## Extension points
+
+Resolve `mailExtensionsToken` in a client service provider's `boot()` and register what the plugin's own pages should show. Every registry rejects a second entry with the same name, key or type.
+
+```ts
+const mail = this.app.container.resolve(mailExtensionsToken);
+mail.providerTypes.add({
+  type: 'crm-gateway',
+  title: 'CRM gateway',
+  icon: Building2,
+});
+mail.slots.messageAside.add({ name: 'customer', component: CustomerAside });
+mail.slots.composeToolbar.add({ name: 'quote', component: InsertQuoteButton });
+mail.slots.workspaceActions.add({ name: 'import', component: ImportButton });
+mail.templateVariables.add({
+  key: 'customer',
+  label: 'Customer',
+  resolve: ({ to }) => lookUpCustomer(to),
+});
+const stop = mail.composer.onComplete.add(
+  (result, rejectedRecipients, error, details) => linkToDeal(details),
+);
+```
+
+- `providerTypes`: title, icon and an optional connect form for a server Provider `type`, used by the connect dialog and the Providers tab. Server Providers are still registered through `mailProviderRegistryToken`.
+- `slots.messageAside`: beside the open message, with its addresses; nothing is rendered when no aside is registered.
+- `slots.composeToolbar`: inside the composer, with `insertText` and `insertHtml`.
+- `slots.workspaceActions`: in the Mail header after Compose and Sync, which they never replace; replaces the need for the `headerActions` prop.
+- `templateVariables`: values for `{{key}}` placeholders when a template is applied; a `templateVariables` prop with the same key wins.
+- `composer.onComplete`: called after the page's own completion handling, with the submission IDs and results in its details; returns a function that removes the handler.
+
+Each slot entry renders inside its own error boundary. A custom `MailCredentialVault` is still registered through `mailCredentialVaultToken`.
+
+## Logs and retention
+
+`mail.logRetentionDays` (`MAIL_LOG_RETENTION_DAYS`, default 90) keeps finished sync runs and sends for that many days; `0` keeps them. The maintenance loop deletes at most 1,000 expired rows per table and instance each hour, and never deletes pending, scheduled, running or submitting work. `GET /api/mail/settings/syncRuns` and `GET /api/mail/settings/submissions` filter by member, account, result and time, and `GET /api/mail/settings/overview` returns Providers, capabilities, account counts and the runtime configuration with each value's source, never a secret.
 
 ## Exact participant filtering
 
@@ -93,5 +171,9 @@ Migration `202610250001_mail_imap_message_locations` supports existing mail data
 Pure local drafts, non-IMAP accounts and SMTP-accepted RFC Message-ID records without a recorded remote tuple remain unchanged. Such SMTP records do not acquire remote addressing merely by upgrading. Malformed legacy locators, out-of-range or missing tuple values, unrepresentable identities and competing message UUIDs for one account's tuple fail precise preflight before schema changes; the migration never guesses a generation, truncates an identity or drops a conflicting record.
 
 Use the maintenance window described above: stop application writes and all Mail workers, back up the database, run the application's `nocobase db apply`, verify sources, positions and representative existing-message operations, then restart. This is an offline upgrade. Historical migration checksums and existing key/subscription lengths remain unchanged, and this upgrade requires no checksum repair. Rollback refuses when mail business data exists because dropping locations or reverting the expanded header field would be destructive; this rollback restriction does not prevent populated upgrades.
+
+## Synchronized folders upgrade
+
+Migration `202611180001_mail_account_sync_folders` adds a nullable `syncFolderIds` column to accounts and pending authorizations. Existing accounts keep `null` and synchronize every folder exactly as before; nothing is deleted until an owner narrows the selection. The upgrade runs online. Its rollback refuses while any account owns folders, messages or other account data, because SQLite drops a column by rebuilding the accounts table and that would cascade into the account's data.
 
 User-facing and application-integration documentation is maintained in the NocoBase documentation site rather than duplicated in this package README.

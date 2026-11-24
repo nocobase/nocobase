@@ -40,7 +40,6 @@ import {
 } from 'ai';
 
 import {
-  providerOf,
   type ModelCatalog,
   type ModelCheck,
   type ModelKind,
@@ -59,6 +58,7 @@ import {
 } from './search/results.js';
 import { WEB_SEARCH_LIMITS } from '../../shared/web-search.js';
 import type { ModelUsageRecorder } from '../core/reports/model-usage.js';
+import { modelProviderOf } from './provider-registry.js';
 import {
   embeddingModel,
   languageModel,
@@ -509,7 +509,7 @@ export async function checkModel(
 ): Promise<CheckResult> {
   const signal = AbortSignal.timeout(CHECK_TIMEOUT_MS);
   try {
-    if (!connection.apiKey && providerOf(connection.provider)?.keyRequired)
+    if (!connection.apiKey && modelProviderOf(connection.provider)?.keyRequired)
       throw new ModelError('auth', 'The service has no API key.');
     await generateText({
       model: languageModel(connection, model),
@@ -578,7 +578,7 @@ async function checked(
 ): Promise<CheckResult> {
   const signal = AbortSignal.timeout(CHECK_TIMEOUT_MS);
   try {
-    if (!connection.apiKey && providerOf(connection.provider)?.keyRequired)
+    if (!connection.apiKey && modelProviderOf(connection.provider)?.keyRequired)
       throw new ModelError('auth', 'The service has no API key.');
     await attempt(signal);
     return { ok: true, message: null };

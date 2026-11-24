@@ -3,7 +3,10 @@ import {
   encodeAuthorizationTitle,
   decodeAuthorizationTitle,
 } from '@nocobase/authorization/core';
-import type { DatabaseConnection } from '@nocobase/db';
+import {
+  isUniqueConstraintViolation,
+  type DatabaseConnection,
+} from '@nocobase/db';
 import type { DatabaseConnectionSource } from './connection.js';
 import type { Knex } from 'knex';
 import type { PermissionGrant } from '@nocobase/authorization/core';
@@ -164,18 +167,50 @@ export class DatabasePermissionSetStore implements PermissionSetStore<DatabaseCo
     input: PermissionSetAssignment,
   ): Promise<PermissionSetAssignment> {
     const now = new Date();
-    await this.connection()
-      .query.insertInto('authorizationPermissionSetAssignments')
-      .values({
-        id: input.id,
-        subjectType: input.subject.type,
-        subjectId: input.subject.id,
-        permissionSetKey: input.permissionSet,
-        createdAt: now,
-        updatedAt: now,
-      })
-      .execute();
+    try {
+      // A savepoint inside a caller's transaction, so the lookup below can still run after the insert fails.
+      await this.connection().transaction(async (connection) => {
+        await connection.query
+          .insertInto('authorizationPermissionSetAssignments')
+          .values({
+            id: input.id,
+            subjectType: input.subject.type,
+            subjectId: input.subject.id,
+            permissionSetKey: input.permissionSet,
+            createdAt: now,
+            updatedAt: now,
+          })
+          .execute();
+      });
+    } catch (error) {
+      if (
+        reportsGrantConflict(error) ||
+        (isUniqueConstraintViolation(error) && (await this.holdsGrant(input)))
+      )
+        throw new PermissionSetConflictError(
+          `Permission Set ${input.permissionSet} is already assigned to this subject.`,
+        );
+      throw error;
+    }
     return input;
+  }
+
+  /**
+   * Whether the assignment id already holds this very grant, as when a request is retried; the database may then report
+   * the primary key rather than the grant. An id held by another grant, or by none any more, is not a duplicate grant.
+   */
+  private async holdsGrant(input: PermissionSetAssignment): Promise<boolean> {
+    const row = await this.connection()
+      .query.selectFrom('authorizationPermissionSetAssignments')
+      .select(['subjectType', 'subjectId', 'permissionSetKey'])
+      .where('id', '=', input.id)
+      .executeTakeFirst();
+    return (
+      row !== undefined &&
+      rowValue(row, 'subjectType') === input.subject.type &&
+      rowValue(row, 'subjectId') === input.subject.id &&
+      rowValue(row, 'permissionSetKey') === input.permissionSet
+    );
   }
 
   async revoke(id: string): Promise<void> {
@@ -281,4 +316,27 @@ function scalarString(value: unknown, label: string): string {
     return String(value);
   }
   throw new Error(`Invalid ${label}`);
+}
+
+/** The `(subjectType, subjectId, permissionSetKey)` unique constraint, named by the migration that creates the table. */
+const GRANT_CONSTRAINT =
+  'uq_authorization_permission_set_assignments_subject_set';
+
+/**
+ * Whether the failed write itself reports the grant's unique constraint, read from the driver's structured fields
+ * rather than its message or the rows left afterwards. PostgreSQL names the constraint; SQLite tells the primary key
+ * apart from other unique keys, and the grant is this table's only other one. Any other report, including the primary
+ * key and databases that name the key only in their message, is not taken as a duplicate grant.
+ */
+function reportsGrantConflict(error: unknown): boolean {
+  const visited = new Set<unknown>();
+  let current: unknown = error;
+  while (current && typeof current === 'object' && !visited.has(current)) {
+    visited.add(current);
+    const record = current as Record<string, unknown>;
+    if (record.code === 'SQLITE_CONSTRAINT_UNIQUE') return true;
+    if (record.code === '23505') return record.constraint === GRANT_CONSTRAINT;
+    current = record.cause ?? record.originalError;
+  }
+  return false;
 }

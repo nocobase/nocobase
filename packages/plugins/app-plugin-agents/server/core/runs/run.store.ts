@@ -12,6 +12,7 @@ import {
   type RunStatus,
 } from '@nocobase/agent-protocol';
 import type { DatabaseConnection, Repository } from '@nocobase/db';
+import { redactFailureMessage } from './failure-message.js';
 
 import { transactionRead } from '../transaction-read.js';
 import type {
@@ -304,7 +305,11 @@ export function toRun(record: RunRecord): Run {
     cancelRequestedAt: record.cancelRequestedAt,
     cancelledById: record.cancelledById,
     failureReason: record.failureReason as FailureReason | null,
-    failureDetail: record.failureDetail,
+    // Redacted again as it is read: a message stored before this rule existed is shown without what it covers.
+    failureDetail:
+      record.failureDetail == null
+        ? record.failureDetail
+        : redactFailureMessage(record.failureDetail),
     failureParams:
       record.failureParams == null ? null : jsonObject(record.failureParams),
     summary: record.summary,

@@ -1,4 +1,4 @@
-import type { PagePermissionTitles } from './page-permissions.js';
+import type { PagePermissionTitles } from '@nocobase/app-plugin-authorization/client/settings';
 
 /** Permission labels for application pages without navigation/breadcrumb titles (including overlays).
  * Keys are existing route names; values are application translation keys.
@@ -6,5 +6,4 @@ import type { PagePermissionTitles } from './page-permissions.js';
  */
 export const pagePermissionTitles: PagePermissionTitles = {
   // The template detail drawer shares the list page grant.
-  notificationTemplate: 'settings.notificationTemplates',
 };

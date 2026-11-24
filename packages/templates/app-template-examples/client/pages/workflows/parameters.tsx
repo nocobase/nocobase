@@ -341,7 +341,7 @@ export function WorkflowParametersForm({
           : 'workflows.parametersDescription',
       )}
       closeTo={{
-        pathname: `/workflows/definitions/${encodeURIComponent(workflowId)}`,
+        pathname: `/settings/workflows/definitions/${encodeURIComponent(workflowId)}`,
         search: search.toString(),
       }}
       beforeClose={confirmLeave}

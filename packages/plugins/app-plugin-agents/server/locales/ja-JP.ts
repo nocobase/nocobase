@@ -29,11 +29,16 @@ const jaJP: LocaleResource<typeof enUS> = {
         runners: '実行環境',
         prices: 'モデルの価格',
         services: 'モデルサービス',
+        skills: 'スキル',
       },
     },
     actions: {
       read: '表示',
       manage: '管理する',
+    },
+    humanOnly: {
+      servicesManage:
+        'モデルサービスの管理ではプロバイダーのキーを書き込みます。人のみが実行できます。',
     },
     keyScopes: {
       agents: {

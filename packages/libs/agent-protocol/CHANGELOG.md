@@ -1,5 +1,22 @@
 # @nocobase/agent-protocol
 
+## 0.1.0-beta.23
+
+### Patch Changes
+
+- 44395d2: Support Antigravity CLI on runtimes and list it between Pi and DeepSeek Harness, with Gemini CLI last.
+- acc1f0d: Suggest GPT-6.2 Sol and GPT-6.2 Astra for OpenAI tools and report them in the built-in runner model lists for Codex and OpenCode.
+- Updated dependencies [44395d2]
+  - @nocobase/acp-bridge@1.0.0-beta.8
+
+## 0.1.0-beta.22
+
+### Minor Changes
+
+- 188e419: Support SSH repository checkouts, pushes and build jobs on capable runners with deployment keys and verified host fingerprints.
+
+  Keep existing work and use the new origin when a task switches between HTTPS and SSH. Include classified SSH checkout and push failures in the run result.
+
 ## 0.1.0-beta.21
 
 ### Minor Changes

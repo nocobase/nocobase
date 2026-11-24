@@ -5,9 +5,23 @@ import {
   type AppServerPlugin,
 } from '@nocobase/app-server/plugins';
 import serviceProviders from './providers/index.js';
-const plugin: AppServerPlugin = defineServerPlugin({
-  baseDir: path.resolve(import.meta.dirname, '..'),
-  packageName: '@nocobase/app-plugin-file',
-  serviceProviders,
-});
+import { storageRoutes } from './storage-routes.js';
+
+export interface FileServerPluginOptions {
+  /** Register the storage overview and disk check endpoints. Defaults to true. */
+  storageManagementRoutes?: boolean;
+}
+
+export function createFileServerPlugin(
+  options: FileServerPluginOptions = {},
+): AppServerPlugin {
+  return defineServerPlugin({
+    baseDir: path.resolve(import.meta.dirname, '..'),
+    packageName: '@nocobase/app-plugin-file',
+    serviceProviders,
+    routes: options.storageManagementRoutes === false ? [] : [storageRoutes],
+  });
+}
+
+const plugin: AppServerPlugin = createFileServerPlugin();
 export default plugin;

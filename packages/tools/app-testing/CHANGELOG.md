@@ -1,5 +1,48 @@
 # @nocobase/app-testing
 
+## 0.1.0-beta.11
+
+### Patch Changes
+
+- 8ff2df3: Applications can disable system settings, personal settings, chat, inbox and mail workspace routes independently. All five are enabled by default, so existing applications keep their pages when upgrading. Plugins can turn off their own pages with `{ disabled: true }` on `defineAppRoutes()` and the settings route helpers; disabled routes behave like `excludedRouteIds`, so overrides and header actions that target them no longer fail.
+- Updated dependencies [300f760]
+- Updated dependencies [28a7606]
+- Updated dependencies [8ff2df3]
+  - @nocobase/app-client@4.0.0-beta.13
+  - @nocobase/app-server@5.0.0-beta.10
+  - @nocobase/app-cli@1.0.0-beta.39
+
+## 0.1.0-beta.10
+
+### Minor Changes
+
+- a6b9b74: `createTestAppConfig()`, and so every application `createTestApp()` and `createAppTest()` start, no longer writes `foundation: { scanOnStart: false }`: App Foundation no longer scans the application, so the section is gone. A `foundation` section a test passes in `config` is written as given.
+
+### Patch Changes
+
+- a6b9b74: Allow client tests to register application-owned routes alongside plugin routes, and register app-client's own translations, such as the built-in settings category titles, as an application does.
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [1048669]
+  - @nocobase/app-client@4.0.0-beta.12
+  - @nocobase/app-server@5.0.0-beta.9
+  - @nocobase/app-cli@1.0.0-beta.38
+  - @nocobase/db@1.0.0-beta.30
+  - @nocobase/db-mssql@0.1.0-beta.6
+  - @nocobase/db-mysql@0.1.0-beta.5
+  - @nocobase/db-oracle@0.1.0-beta.5
+  - @nocobase/db-postgres@0.1.0-beta.5
+  - @nocobase/db-sqlite@0.1.0-beta.6
+  - @nocobase/i18n@2.0.0-beta.2
+  - @nocobase/service-provider@0.0.2-beta.2
+
 ## 0.1.0-beta.9
 
 ### Minor Changes

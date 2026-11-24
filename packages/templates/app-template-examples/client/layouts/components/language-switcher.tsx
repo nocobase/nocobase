@@ -1,4 +1,3 @@
-import { useToaster } from '@nocobase/app-client';
 import { useAppLocale } from '@nocobase/app-plugin-i18n/client';
 import { useTranslation } from '@nocobase/i18n/client';
 import { Languages } from 'lucide-react';
@@ -13,6 +12,8 @@ import {
 } from '#components/ui/dropdown-menu';
 import { cn } from 'cn';
 
+import { useLocaleChange } from './use-locale-change.js';
+
 export interface LanguageSwitcherProps {
   readonly className?: string;
 }
@@ -21,39 +22,9 @@ export interface LanguageSwitcherProps {
 export function LanguageSwitcher({
   className,
 }: LanguageSwitcherProps): ReactElement | null {
-  const { locale, locales, setLocale, switching } = useAppLocale();
+  const { locale, locales, switching } = useAppLocale();
   const { t } = useTranslation();
-  const toaster = useToaster();
-
-  async function applyLocaleChange(value: string): Promise<void> {
-    const result = await setLocale(value);
-    if (result.fallback) {
-      toaster.show({
-        type: 'info',
-        title: t('notices.serverLocaleFallback', {
-          lng: value,
-          defaultValue:
-            'The server does not support this language, so server messages will use English.',
-        }),
-      });
-    }
-  }
-
-  function handleLocaleChange(value: unknown): void {
-    if (typeof value !== 'string' || value === locale) return;
-
-    const localeChange = applyLocaleChange(value);
-    localeChange.catch(() => {
-      toaster.show({
-        type: 'error',
-        title: t('notices.languageChangeFailed', {
-          lng: value,
-          defaultValue:
-            'Unable to complete the language change. Please try again.',
-        }),
-      });
-    });
-  }
+  const handleLocaleChange = useLocaleChange();
 
   // With one language there is nothing to choose.
   if (locales.length < 2) return null;

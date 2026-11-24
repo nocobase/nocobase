@@ -2,6 +2,7 @@ import type { DatabaseManager } from '@nocobase/db';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { MailPreferencesService } from '../../server/services/preferences.js';
 import { createDatabaseMailStore } from '../../server/store.js';
+import { MailTemplatesStore } from '../../server/store/templates.js';
 import type { MailStore } from '../../server/types.js';
 import {
   createMailTestDatabase,
@@ -124,6 +125,113 @@ describe('mail preferences persistence and ownership', () => {
       }),
     ).rejects.toThrow('not found');
     expect(await service.listTemplates(owner)).toEqual([]);
+  });
+
+  it('rejects concurrent creations of one template name with a single stored row', async () => {
+    const results = await Promise.allSettled(
+      Array.from({ length: 4 }, () =>
+        service.saveTemplate(owner, { name: 'Welcome', subject: 'Hi' }),
+      ),
+    );
+    const rejected = results.filter((result) => result.status === 'rejected');
+    expect(
+      results.filter((result) => result.status === 'fulfilled'),
+    ).toHaveLength(1);
+    expect(rejected).toHaveLength(3);
+    for (const result of rejected)
+      expect(result.reason).toMatchObject({
+        name: 'MailError',
+        status: 'ALREADY_EXISTS',
+        reason: 'MAIL_TEMPLATE_ALREADY_EXISTS',
+      });
+    expect(
+      (await service.listTemplates(owner)).map((template) => template.name),
+    ).toEqual(['Welcome']);
+  });
+
+  it('keeps unique violations other than a name conflict, and other database errors, unexpected', async () => {
+    const bobs = await service.saveTemplate(other, {
+      name: 'Shared',
+      subject: 'Bob',
+    });
+    // An id that collides with another owner's template violates the primary key, not the owner's name index.
+    const collision = await store
+      .saveTemplate({
+        id: bobs.id,
+        name: 'Fresh',
+        subject: 'Alice',
+        text: '',
+        html: '',
+        ownerId: owner.actorId,
+      })
+      .then(
+        () => undefined,
+        (error: unknown) => error,
+      );
+    expect(collision).toBeInstanceOf(Error);
+    expect(collision).not.toMatchObject({ name: 'MailError' });
+    // With the name also taken, the error follows the key the database reports for the failed write: PostgreSQL
+    // reports the primary key, SQLite the name. It holds when the template holding the id is deleted right after the
+    // failure, before the error is classified.
+    const reportsName = database.connection().dialect === 'sqlite';
+    const alices = await service.saveTemplate(owner, {
+      name: 'Taken',
+      subject: 'Alice',
+    });
+    const templates = new MailTemplatesStore(database);
+    const hooks = templates as unknown as {
+      writeTemplate(row: unknown, exists: boolean): Promise<void>;
+    };
+    const write = hooks.writeTemplate.bind(templates);
+    let deleteIdHolder = false;
+    hooks.writeTemplate = async (row, exists) => {
+      try {
+        await write(row, exists);
+      } catch (error) {
+        if (deleteIdHolder) await store.deleteTemplate(other.actorId, bobs.id);
+        throw error;
+      }
+    };
+    for (const deleted of [false, true]) {
+      deleteIdHolder = deleted;
+      const both = await templates
+        .saveTemplate({
+          id: bobs.id,
+          name: 'Taken',
+          subject: 'Alice',
+          text: '',
+          html: '',
+          ownerId: owner.actorId,
+        })
+        .then(
+          () => undefined,
+          (error: unknown) => error,
+        );
+      expect(both).toBeInstanceOf(Error);
+      if (reportsName)
+        expect(both).toMatchObject({
+          name: 'MailError',
+          reason: 'MAIL_TEMPLATE_ALREADY_EXISTS',
+        });
+      else expect(both).not.toMatchObject({ name: 'MailError' });
+    }
+    const notNull = await store
+      .saveTemplate({
+        id: '00000000-0000-4000-8000-000000000006',
+        name: 'Broken',
+        subject: null as unknown as string,
+        text: '',
+        html: '',
+        ownerId: owner.actorId,
+      })
+      .then(
+        () => undefined,
+        (error: unknown) => error,
+      );
+    expect(notNull).toBeInstanceOf(Error);
+    expect(notNull).not.toMatchObject({ name: 'MailError' });
+    expect(await service.listTemplates(owner)).toEqual([alices]);
+    expect(await service.listTemplates(other)).toEqual([]);
   });
 
   it('leaves new signatures non-default and persists clearing the only default', async () => {

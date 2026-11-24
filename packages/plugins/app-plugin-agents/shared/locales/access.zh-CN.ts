@@ -2,8 +2,8 @@ import type { AccessLocale } from './access.en-US.js';
 
 const accessZhCN: AccessLocale = {
   access: {
-    section: 'Agent 管理',
-    businessSection: 'Agent 管理',
+    section: 'AI',
+    businessSection: 'AI',
     businesses: {
       agents: {
         title: 'Agent 和技能',
@@ -24,12 +24,16 @@ const accessZhCN: AccessLocale = {
     settings: {
       agents: {
         agents: 'Agent',
-        runners: '运行环境',
-        prices: '模型价格',
         services: '模型服务',
+        runners: '运行环境',
+        skills: '技能',
+        prices: '用量',
       },
     },
     actions: { read: '查看', manage: '管理' },
+    humanOnly: {
+      servicesManage: '管理模型服务会写入服务商密钥，只能由人操作。',
+    },
     keyScopes: {
       agents: {
         title: 'Agent',
@@ -41,8 +45,8 @@ const accessZhCN: AccessLocale = {
         description: '查看运行环境和注册令牌；管理运行环境。',
       },
       prices: {
-        title: '模型价格',
-        description: '查看用于估算成本的模型价格；修改它们。',
+        title: '用量',
+        description: '查看所有运行的用量和用于估算成本的模型价格；修改价格。',
       },
       services: {
         title: '模型服务',

@@ -8,9 +8,10 @@ export interface AccessLocale {
     readonly settings: {
       readonly agents: {
         readonly agents: string;
-        readonly runners: string;
-        readonly prices: string;
         readonly services: string;
+        readonly runners: string;
+        readonly skills: string;
+        readonly prices: string;
       };
     };
     readonly actions: { readonly read: string; readonly manage: string };
@@ -31,6 +32,8 @@ export interface AccessLocale {
         };
       };
     };
+    /** Why an action is a person's only, as the permission editor shows it for an API key. */
+    readonly humanOnly: { readonly servicesManage: string };
     readonly keyScopes: {
       readonly [K in 'agents' | 'runners' | 'prices' | 'services']: {
         readonly title: string;
@@ -42,8 +45,8 @@ export interface AccessLocale {
 
 const accessEnUS: AccessLocale = {
   access: {
-    section: 'Agent management',
-    businessSection: 'Agent management',
+    section: 'AI',
+    businessSection: 'AI',
     businesses: {
       agents: {
         title: 'Agents and skills',
@@ -64,13 +67,18 @@ const accessEnUS: AccessLocale = {
     },
     settings: {
       agents: {
-        agents: 'Agents',
-        runners: 'Runtimes',
-        prices: 'Model prices',
+        agents: 'Agent',
         services: 'Model services',
+        runners: 'Runtimes',
+        skills: 'Skills',
+        prices: 'Usage',
       },
     },
     actions: { read: 'View', manage: 'Manage' },
+    humanOnly: {
+      servicesManage:
+        'Managing model services writes provider keys; only a person may do it.',
+    },
     keyScopes: {
       agents: {
         title: 'Agents',
@@ -79,12 +87,12 @@ const accessEnUS: AccessLocale = {
       },
       runners: {
         title: 'Runtimes',
-        description: 'See runners and registration tokens; manage runners.',
+        description: 'See runtimes and registration tokens; manage runtimes.',
       },
       prices: {
-        title: 'Model prices',
+        title: 'Usage',
         description:
-          'See the model prices costs are estimated from; change them.',
+          "See every run's usage and the model prices costs are estimated from; change the prices.",
       },
       services: {
         title: 'Model services',

@@ -3,6 +3,7 @@
   "compilerOptions": {
     "jsx": "react-jsx",
     "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "customConditions": ["development"],
     "rootDir": ".",
     "outDir": "dist"
   },

@@ -19,6 +19,10 @@ are Better Auth's, and Better Auth's documentation applies unchanged.
 
 ## Public surfaces
 
+Set `apiKeys.systemApiKeyRoutes: false` to omit the `/api/systemApiKeys` management endpoints. They are enabled by default. Personal key management, key rules, authentication of existing system keys and scheduled maintenance continue to work. To restore HTTP rotation or revocation for an existing system key, re-enable the routes.
+
+Set `apiKeys.keyAdministrationRoutes: false` to omit the member key and rule administration endpoints under `/api/apiKeys/members` and `/api/apiKeys/rules`. They are enabled by default. Previously saved rules still apply and take precedence over application configuration.
+
 - Server plugin: default export of `@nocobase/app-plugin-api-keys/server`.
   Contributes the `apikey` table migration and nothing else.
 - `apiKey(options?)`, plus `API_KEY_TABLE_NAME`, `API_KEY_ERROR_CODES` and the
@@ -38,7 +42,7 @@ are Better Auth's, and Better Auth's documentation applies unchanged.
   `POST /api/auth/api-key/delete`. All five act only on the caller's own keys.
 
 The plugin contributes no NocoBase route of its own. The endpoints above are
-Better Auth's, mounted by Authentication's `/api/auth/*` handler. Its server registers one thing: the access check that lets a valid key read the App's API document.
+Better Auth's, mounted by Authentication's `/api/auth/*` handler. Its server registers the access check that lets a valid key read the App's API document, and, through the authentication plugin's `signInMethodsToken`, the API keys row on System settings › Sign-in and authentication: `On` while `apiKey()` is among `auth.plugins`, `Not configured` otherwise. Removing the plugin removes the row.
 
 ## Register it
 
@@ -105,6 +109,8 @@ An unscoped key authenticates as its owner, but some Better Auth endpoints requi
 **`/list-sessions` turns an unscoped key into a sign-in session.** It returns each session's `token`, the unsigned half of the `token.signature` session cookie. Replayed as a cookie the token alone does not authenticate, but both application templates enable Better Auth's `bearer()` plugin (for CLI device sign-in), and with its default `requireSignature: false` it signs a bearer token itself. `Authorization: Bearer <token>` is therefore the owner's full sign-in session, not a key session: the guards above do not apply to it, so it can create new keys, revoke sessions and reach every endpoint a sign-in reaches. The regression suite pins this. A leaked unscoped key must be treated as a leaked sign-in: revoke the key, revoke the owner's sessions, and review every key the owner holds.
 
 In an App with the default templates' `bearer()`, close this path in one of two ways: give every key a scope (a scoped key cannot use account endpoints other than `/get-session`), or reject `/list-sessions` in the App's Better Auth `hooks.before` when an API key header is present. Check the configured key header names (`x-api-key` by default) rather than a resolved Session: the App's hook runs before plugin hooks resolve the key.
+
+**Key permissions.** A key's permissions take the shape of a permission set's grants (`permissions` on `POST /api/apiKeys`, stored as format `2`) and are intersected with the holder's current permission on every request. A plugin marks an action no key may hold with `humanOnly: <reason>` where it registers the action; every key, with permissions or without, is then denied it (`KEY_HUMAN_ONLY`) while a signed-in person keeps it. A plugin offers key templates and the records a key may be limited to through `authz.credentials.templates.add` and `authz.credentials.objectSources.add`. Scope groups (`KeyScopeGroupDeclaration`, `apiKeyScopesToken`, `scope` on `POST /api/apiKeys`) are deprecated; see the plugin README's "Format 1, deprecated" for the migration.
 
 ## Other constraints
 

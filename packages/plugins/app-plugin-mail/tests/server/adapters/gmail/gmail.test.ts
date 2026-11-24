@@ -1,3 +1,4 @@
+import { originalMime } from '../../../fixtures/original-message.js';
 import type {
   MailCredentialVault,
   MailProviderAdapter,
@@ -20,6 +21,99 @@ describe('Gmail HTTP errors', () => {
   afterEach(() => {
     vi.useRealTimers();
     vi.unstubAllGlobals();
+  });
+
+  it('downloads the exact provider MIME of one message', async () => {
+    const credentials = memoryVault();
+    await credentials.putAt('credential-1', {
+      provider: 'gmail',
+      accessToken: 'fixture-access-token',
+      refreshToken: 'fixture-refresh-token',
+      expiresAt: '2099-01-01T00:00:00.000Z',
+      scopes: [],
+      tokenType: 'Bearer',
+    });
+    const fetchMock = vi
+      .fn<typeof fetch>()
+      .mockResolvedValueOnce(
+        Response.json({ raw: originalMime.toString('base64url') }),
+      );
+    vi.stubGlobal('fetch', fetchMock);
+    const adapter = new GmailMailProviderAdapter(
+      context(credentials),
+      config(),
+      account(),
+    );
+    const signal = new AbortController().signal;
+    const original = await adapter.getOriginalMessage('selected/id', signal);
+    expect(original).toMatchObject({
+      ok: true,
+      value: { size: originalMime.length },
+    });
+    if (!original.ok) throw new Error('Expected original MIME');
+    expect(
+      Buffer.from(await new Response(original.value.stream).arrayBuffer()),
+    ).toEqual(originalMime);
+    expect(
+      String(fetchMock.mock.calls[0]?.[0]).endsWith(
+        '/users/me/messages/selected%2Fid?format=raw&fields=raw',
+      ),
+    ).toBe(true);
+    fetchMock.mockResolvedValueOnce(Response.json({}, { status: 404 }));
+    expect(
+      await adapter.getOriginalMessage('selected/id', signal),
+    ).toMatchObject({
+      ok: false,
+      error: { code: 'MAIL_ORIGINAL_NOT_FOUND' },
+    });
+    fetchMock.mockResolvedValueOnce(Response.json({ raw: 'AA+/' }));
+    expect(
+      await adapter.getOriginalMessage('selected/id', signal),
+    ).toMatchObject({
+      ok: false,
+      error: { code: 'GMAIL_ORIGINAL_INVALID' },
+    });
+    fetchMock.mockResolvedValueOnce(
+      new Response(
+        new ReadableStream<Uint8Array>({
+          start(controller) {
+            controller.enqueue(new Uint8Array(56 * 1024 * 1024));
+          },
+        }),
+      ),
+    );
+    expect(
+      await adapter.getOriginalMessage('selected/id', signal),
+    ).toMatchObject({
+      ok: false,
+      error: { code: 'MAIL_ORIGINAL_TOO_LARGE' },
+    });
+  });
+
+  it('asks for reauthorization when the Gmail grant is metadata-only', async () => {
+    const credentials = memoryVault();
+    await credentials.putAt('credential-1', {
+      provider: 'gmail',
+      accessToken: 'fixture-access-token',
+      refreshToken: 'fixture-refresh-token',
+      expiresAt: '2099-01-01T00:00:00.000Z',
+      scopes: ['https://www.googleapis.com/auth/gmail.metadata'],
+      tokenType: 'Bearer',
+    });
+    const fetchMock = vi.fn();
+    vi.stubGlobal('fetch', fetchMock);
+    const adapter = new GmailMailProviderAdapter(
+      context(credentials),
+      config(),
+      account(),
+    );
+    expect(
+      await adapter.getOriginalMessage('message', new AbortController().signal),
+    ).toMatchObject({
+      ok: false,
+      error: { category: 'authentication', retryable: false },
+    });
+    expect(fetchMock).not.toHaveBeenCalled();
   });
 
   it('logs account reauthorization failures without refresh tokens', async () => {

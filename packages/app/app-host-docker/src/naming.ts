@@ -28,7 +28,8 @@ export const LABEL: {
   role: 'org.nocobase.app-host.role',
 } as const;
 
-export type ResourceRole = 'app';
+/** `app`: what runs an App; `command`: a one-off container running the App's command-line tool. */
+export type ResourceRole = 'app' | 'command';
 
 export const APP_ID_PATTERN: RegExp = /^[a-zA-Z0-9_-]+$/;
 
@@ -89,6 +90,16 @@ export class Names {
 
   public volume(appId: string): string {
     return `${this.prefix}${appSlug(appId)}-storage`;
+  }
+
+  /** Where an App's backup archives are kept, apart from its storage so that a backup never holds another. */
+  public backupVolume(appId: string): string {
+    return `${this.prefix}${appSlug(appId)}-backups`;
+  }
+
+  /** A one-off container running an App's command-line tool. */
+  public commandContainer(appId: string, run: string): string {
+    return `${this.prefix}${appSlug(appId)}-cmd-${run}`;
   }
 
   /** The environment's network, which its Apps share. */

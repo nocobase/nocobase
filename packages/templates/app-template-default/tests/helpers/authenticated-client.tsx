@@ -1,3 +1,4 @@
+import users from '@nocobase/app-plugin-users/client';
 import type { ReactElement } from 'react';
 import { randomUUID } from 'node:crypto';
 import { CookieJar } from 'jsdom';
@@ -9,6 +10,9 @@ import authorization from '@nocobase/app-plugin-authorization/client/plugin';
 import { authorizationToken } from '@nocobase/app-plugin-authorization/server';
 import type { PermissionGrant } from '@nocobase/authorization/core';
 import authentication from '@nocobase/app-plugin-authentication/client/plugin';
+import defaultAccess from '@nocobase/app-plugin-authz-default-access/client';
+import sharingRules from '@nocobase/app-plugin-authz-sharing-rules/client';
+import restrictionRules from '@nocobase/app-plugin-authz-restriction-rules/client';
 import { useAuthentication } from '@nocobase/app-plugin-authentication/client';
 import {
   signIn,
@@ -29,6 +33,8 @@ export async function renderAuthenticatedClient(
     grants?: readonly PermissionGrant[];
     route?: string;
     locale?: string;
+    /** `false` leaves out the three rule plugins the application registers, as an application without them. */
+    rulePlugins?: boolean;
     prepare?: (server: TestApp, session: TestSession) => Promise<void>;
     namespaces?: NonNullable<Parameters<typeof renderWithApp>[1]>['namespaces'];
     beforeRequest?: (request: Request) => void | Promise<void>;
@@ -167,9 +173,16 @@ async function renderClient(
     return ui;
   }
   const view = await renderWithApp(<SessionObserver />, {
-    plugins: [authentication(), authorization()],
+    plugins: [
+      authentication(),
+      authorization(),
+      ...(options.rulePlugins === false
+        ? []
+        : [defaultAccess(), sharingRules(), restrictionRules()]),
+    ],
     namespace: packageMetadata.name,
     namespaces: {
+      '@nocobase/app-plugin-users': users().locales!,
       ...options.namespaces,
       [packageMetadata.name]: {
         'en-US': async () => ({ default: enUS }),

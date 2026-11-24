@@ -1,5 +1,69 @@
 # @nocobase/app-plugin-knowledge
 
+## 0.1.0-beta.24
+
+### Patch Changes
+
+- a6b9b74: Add a File storage page under System settings › System. It lists the configured disks with their location, visibility, size limit, completeness and setting sources, lists the features that store files with their disk, download method, file count and total size, and checks that a disk can be written, read, linked and deleted. Plugins declare the features that store files with `registerUsage()`, file repositories exposed with `defineFileRepositoryApiRoutes()` are listed automatically as public links, and the projects, knowledge, agents and agent sessions plugins list their file tables. Responses never include credentials or absolute server paths.
+- a6b9b74: Declare the plugin's title and one-line description in English and Chinese under `nocobase` in `package.json`, which the App Foundation plugins page lists it by.
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [44395d2]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [1048669]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [1048669]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [1048669]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [acc1f0d]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [1048669]
+- Updated dependencies [1048669]
+- Updated dependencies [1048669]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a9b9146]
+- Updated dependencies [1048669]
+- Updated dependencies [a6b9b74]
+  - @nocobase/app-plugin-agents@2.0.0-beta.19
+  - @nocobase/app-client@4.0.0-beta.12
+  - @nocobase/authorization@1.0.0-beta.17
+  - @nocobase/app-plugin-authorization@1.0.0-beta.39
+  - @nocobase/app-plugin-authentication@2.0.0-beta.24
+  - @nocobase/jobs@1.0.0-beta.7
+  - @nocobase/app-server@5.0.0-beta.9
+  - @nocobase/app-plugin-file@1.0.0-beta.33
+  - @nocobase/db@1.0.0-beta.30
+  - @nocobase/i18n@2.0.0-beta.2
+  - @nocobase/markdown-mermaid@0.1.0-beta.2
+  - @nocobase/service-provider@0.0.2-beta.2
+
 ## 0.1.0-beta.23
 
 ### Minor Changes

@@ -13,7 +13,9 @@ import {
 } from './account-writes.js';
 import { fromAccountRow } from './mappers.js';
 import { type AccountRow } from './rows.js';
-import { normalizeAddress } from './serialization.js';
+import { type MailProviderAccountCount } from '../contracts/persistence.js';
+import { countMessagesOutsideSyncFolders } from './message-writes.js';
+import { jsonOrNull, normalizeAddress } from './serialization.js';
 
 export class MailAccountsStore {
   public constructor(private readonly database: DatabaseManager) {}
@@ -87,6 +89,33 @@ export class MailAccountsStore {
     return rows.map(fromAccountRow);
   }
 
+  public async countAccountsByProvider(): Promise<
+    readonly MailProviderAccountCount[]
+  > {
+    const rows = await this.database
+      .query()
+      .selectFrom<AccountRow>('mailAccounts')
+      .select(({ fn }) => [
+        'providerType',
+        'providerName',
+        'status',
+        fn.countAll().as('count'),
+      ])
+      .groupBy(['providerType', 'providerName', 'status'])
+      .execute<{
+        readonly providerType: string;
+        readonly providerName: string;
+        readonly status: string;
+        readonly count: number | string;
+      }>();
+    return rows.map((row) => ({
+      providerType: row.providerType,
+      providerName: row.providerName,
+      status: row.status,
+      count: Number(row.count),
+    }));
+  }
+
   public async updateAccountStatus(
     accountId: string,
     status: 'active' | 'suspended',
@@ -99,6 +128,34 @@ export class MailAccountsStore {
         .where('id', '=', accountId)
         .execute();
     });
+  }
+
+  public async updateAccountSyncFolders(
+    accountId: string,
+    syncFolderIds: readonly string[] | undefined,
+  ): Promise<boolean> {
+    const result = await this.database
+      .query()
+      .updateTable<AccountRow>('mailAccounts')
+      .set({
+        syncFolderIds: jsonOrNull(syncFolderIds),
+        updatedAt: new Date().toISOString(),
+      })
+      .where('id', '=', accountId)
+      .where('status', '=', 'active')
+      .execute();
+    return result.updatedCount === 1;
+  }
+
+  public async countMessagesOutsideSyncFolders(
+    accountId: string,
+    syncFolderIds: readonly string[],
+  ): Promise<number> {
+    return countMessagesOutsideSyncFolders(
+      this.database.query(),
+      accountId,
+      syncFolderIds,
+    );
   }
 
   public async saveAccount(account: MailAccount): Promise<MailAccount> {

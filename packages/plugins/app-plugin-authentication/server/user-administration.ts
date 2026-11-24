@@ -380,13 +380,20 @@ class DefaultUserAdministrationService implements UserAdministrationService {
     if (userId === actorId)
       throw new TypeError('You cannot delete your own account.');
     await lockUserForAdministration(this.options.connection, userId);
-    if (!(await this.get(userId))) return;
+    // A user deleted already, whose cleanup was interrupted, has the rest done again: every step below is safe to repeat.
+    const row = await this.options.connection.query
+      .selectFrom('user')
+      .select(['id', 'deletedAt'])
+      .where('id', '=', userId)
+      .executeTakeFirst<{ id: string; deletedAt: unknown }>();
+    if (!row) return;
     const context = await this.options.auth.administrationContext();
-    await context.internalAdapter.updateUser(userId, {
-      disabledAt: new Date(),
-      deletedAt: new Date(),
-      deletedBy: actorId,
-    });
+    if (row.deletedAt === null || row.deletedAt === undefined)
+      await context.internalAdapter.updateUser(userId, {
+        disabledAt: new Date(),
+        deletedAt: new Date(),
+        deletedBy: actorId,
+      });
     await context.internalAdapter.deleteUserSessions(userId);
     await this.options.connection.query
       .deleteFrom('account')

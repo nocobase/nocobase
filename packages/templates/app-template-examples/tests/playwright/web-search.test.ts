@@ -1,4 +1,3 @@
-import enUS from '../../client/extensions/nocobase-agent-chat/locales/en-US.js';
 import { expect, test } from '@playwright/test';
 import { mkdir } from 'node:fs/promises';
 import path from 'node:path';
@@ -169,7 +168,10 @@ for (const viewport of [
         .fill('Search with one unavailable result.');
       await panel.getByTestId('chat-send').click();
       await expect(card).toHaveCount(2);
-      await expect(card.last()).toContainText(enUS.chat.webSearch.unavailable);
+      // The Agent panel's own English copy (`@nocobase/app-plugin-agents`, chat.webSearch.unavailable).
+      await expect(card.last()).toContainText(
+        'Search is temporarily unavailable.',
+      );
       await expect
         .poll(async () => (await detail()).execution?.status)
         .toBe('idle');

@@ -5,7 +5,7 @@ import { readZip, writeZip } from '../server/core/skills/index.js';
 import { SKILL_FILE_MAX_BYTES } from '../shared/skills.js';
 import { claim, createHarness, skillMd, type Harness } from './harness.js';
 
-const ADMIN = ['agents.agents/manage'];
+const ADMIN = ['agents.skills/manage'];
 const PNG = Uint8Array.from([0x89, 0x50, 0x4e, 0x47, 0, 1, 2, 3, 0xff]);
 
 /** Uploads `bytes` as the multipart `file` of `POST /agents/skills/uploads`. */
@@ -29,7 +29,7 @@ async function download(
   path: string,
 ): Promise<{ status: number; bytes: Uint8Array; headers: Headers }> {
   const response = await h.app.request(path, {
-    headers: { 'x-test-user': 'bob', 'x-test-can': 'agents.agents/read' },
+    headers: { 'x-test-user': 'bob', 'x-test-can': 'agents.skills/read' },
   });
   return {
     status: response.status,
@@ -118,7 +118,7 @@ describe('skill storage', () => {
     expect(unknown.body.error.metadata).toMatchObject({
       reason: 'unknownContent',
     });
-    expect((await upload(h, PNG, ['agents.agents/read'])).status).toBe(403);
+    expect((await upload(h, PNG, ['agents.skills/read'])).status).toBe(403);
   });
 
   it('keeps binary files and the executable bit, through the API and to the runner', async () => {

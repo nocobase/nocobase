@@ -9,6 +9,12 @@ import { I18nProvider } from '@nocobase/i18n/client';
 import locales from '../../client/locales/index.js';
 import { MAIL_PLUGIN_NS } from '../../client/namespace.js';
 import {
+  MailExtensions,
+  mailExtensionsToken,
+  type MailMessageAsideProps,
+  type MailWorkspaceActionProps,
+} from '../../client/extensions.js';
+import {
   act,
   fireEvent,
   screen,
@@ -400,6 +406,59 @@ describe('[UI][SRV] mail workspace, composer, drafts, and management', () => {
     );
     await user.click(compose);
     await screen.findByRole('dialog', { name: 'New message' });
+  });
+
+  it('shows registered workspace actions after Compose and Sync and a registered aside beside the open message', async () => {
+    const extensions = new MailExtensions();
+    const reloadSeen = vi.fn();
+    extensions.slots.workspaceActions.add({
+      name: 'crm-import',
+      component: ({ accounts, reload }: MailWorkspaceActionProps) => (
+        <button
+          type='button'
+          onClick={() => {
+            reloadSeen(accounts.length);
+            reload();
+          }}
+        >
+          Import from CRM
+        </button>
+      ),
+    });
+    extensions.slots.messageAside.add({
+      name: 'customer',
+      component: ({ addresses }: MailMessageAsideProps) => (
+        <p>Customer of {addresses.join(' ')}</p>
+      ),
+    });
+    const message = createUnreadMessage('opened');
+    mail.listMessages.mockResolvedValue({ items: [message] });
+    mail.getMessage.mockResolvedValue(message);
+    await renderWithApp(
+      <MailWorkspacePage
+        headerActions={<button type='button'>Application action</button>}
+      />,
+      {
+        namespace: MAIL_PLUGIN_NS,
+        namespaces: { [MAIL_PLUGIN_NS]: locales },
+        services: (app) => {
+          app.container.singleton(mailExtensionsToken, () => extensions);
+        },
+      },
+    );
+    const action = await screen.findByRole('button', {
+      name: 'Import from CRM',
+    });
+    expect(
+      screen.getByRole('button', { name: 'Application action' }),
+    ).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Compose' })).toBeInTheDocument();
+    await user.click(action);
+    expect(reloadSeen).toHaveBeenCalledWith(1);
+    expect(screen.queryByText(/^Customer of/u)).not.toBeInTheDocument();
+    await user.click(await screen.findByRole('button', { name: /opened/ }));
+    await screen.findByText('Body opened');
+    expect(await screen.findByText(/^Customer of/u)).toBeInTheDocument();
   });
 
   it.each(['suspended', 'removing'])(

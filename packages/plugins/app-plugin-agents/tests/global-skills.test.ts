@@ -8,7 +8,7 @@ let h: Harness;
 afterEach(async () => {
   await h?.close();
 });
-const ADMIN = ['agents.agents/manage'];
+const ADMIN = ['agents.skills/manage'];
 
 describe('team default skills', () => {
   it('resolves attachment display information only on the detail route and in scope batches', async () => {
@@ -35,7 +35,7 @@ describe('team default skills', () => {
     expect(batches).toEqual([]);
     const result = await h.request('GET', `/agents/skills/${skill.id}`, {
       user: 'alice',
-      can: ['agents.agents/read'],
+      can: ['agents.skills/read'],
     });
     expect(result.status).toBe(200);
     expect(result.body.data.attachments).toEqual([
@@ -50,7 +50,7 @@ describe('team default skills', () => {
     expect(batches).toEqual([['p1', 'p2']]);
     const hidden = await h.request('GET', `/agents/skills/${skill.id}`, {
       user: 'bob',
-      can: ['agents.agents/read'],
+      can: ['agents.skills/read'],
     });
     expect(
       hidden.body.data.attachments.every(
@@ -73,7 +73,7 @@ describe('team default skills', () => {
       (
         await h.request('PUT', path, {
           user: 'alice',
-          can: ['agents.agents/read'],
+          can: ['agents.skills/read'],
           body: { skillIds: [skill.id] },
         })
       ).status,
@@ -100,7 +100,7 @@ describe('team default skills', () => {
       (
         await h.request('GET', path, {
           user: 'alice',
-          can: ['agents.agents/read'],
+          can: ['agents.skills/read'],
         })
       ).body.data.skillIds,
     ).toEqual([skill.id]);

@@ -1618,6 +1618,27 @@ describe('[SRV][DATA] mail runtime, synchronization, sending, and consistency', 
     });
   });
 
+  it('waits for the folder selection before automatic or push synchronization', async () => {
+    executor = await InlineJobExecutor.ready();
+    runtime = createMailRuntime({
+      store,
+      adapters: resolver(baseAdapter()),
+      executor,
+      syncBatchSize: 37,
+    });
+    await store.updateAccountSyncFolders(ACCOUNT_ID, []);
+
+    await expect(runtime.createAutomaticSyncRuns()).resolves.toBe(0);
+    await expect(runtime.schedulePushSync(ACCOUNT_ID)).resolves.toBe(false);
+    await expect(store.findActiveSyncRun(ACCOUNT_ID)).resolves.toBeUndefined();
+
+    await store.updateAccountSyncFolders(ACCOUNT_ID, ['INBOX']);
+    await expect(runtime.createAutomaticSyncRuns()).resolves.toBe(1);
+    await expect(store.findActiveSyncRun(ACCOUNT_ID)).resolves.toMatchObject({
+      policy: { batchSize: 37, syncFolderIds: ['INBOX'] },
+    });
+  });
+
   it.each([
     'recoverSyncRuns',
     'cleanupExpiredAttachments',
@@ -4101,7 +4122,7 @@ describe('[SRV][DATA] mail runtime, synchronization, sending, and consistency', 
       }),
     ]);
     await expect(
-      service.listManagedSyncRunsPage({ actorId: 'user-1' }, 0, 20),
+      service.listManagedSyncRunsPage({ actorId: 'user-1' }, undefined, 20),
     ).resolves.toEqual({
       items: [
         expect.objectContaining({
@@ -4112,15 +4133,11 @@ describe('[SRV][DATA] mail runtime, synchronization, sending, and consistency', 
       total: 1,
     });
     await expect(
-      service.listManagedSubmissionsPage({ actorId: 'user-1' }, 0, 20),
+      service.listManagedSubmissionsPage({ actorId: 'user-1' }, undefined, 20),
     ).resolves.toEqual({
       items: [expect.objectContaining({ accountId: OTHER_ACCOUNT_ID })],
       total: 1,
     });
-    // A page past the end is empty but still reports the total, rather than truncating silently.
-    await expect(
-      service.listManagedSubmissionsPage({ actorId: 'user-1' }, 1, 20),
-    ).resolves.toEqual({ items: [], total: 1 });
     await expect(
       service.listManagedFolders({ actorId: 'user-1' }, UNKNOWN_ACCOUNT_ID),
     ).rejects.toMatchObject({

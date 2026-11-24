@@ -3,6 +3,7 @@
 // application only the descriptor.
 export { default } from './plugin.js';
 export {
+  AUTHORIZATION_NAMESPACE,
   AUTHORIZATION_PERMISSIONS_CHANGED_TOPIC,
   AUTHORIZATION_GLOBAL_PERMISSIONS_CHANGED_TOPIC,
 } from '../shared.js';
@@ -21,6 +22,7 @@ export {
   type AuthorizationSnapshot,
   type AuthorizationSubject,
   type ConfiguredAccess,
+  type ConfiguredCredential,
   type ConfiguredPermissionSet,
   type LocalizedText,
   type PermissionAssignmentInput,
@@ -35,7 +37,11 @@ export {
   type SubjectOption,
   type SubjectPage,
 } from './authorization-client.js';
-export { authorizationClientToken } from './tokens.js';
+export {
+  authorizationClientToken,
+  authorizationSettingsToken,
+} from './tokens.js';
+export type { AuthorizationClientOptions } from './plugin.js';
 export { useAuthorizationRevision } from './use-authorization-revision.js';
 export { useCan, type UseCanOptions, type UseCanResult } from './use-can.js';
 export { useAuthorizationClient } from './use-authorization-client.js';

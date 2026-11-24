@@ -36,6 +36,7 @@ import {
   providerOf,
   type ModelProviderName,
 } from '../../shared/models.js';
+import { modelProviderOf, registeredClient } from './provider-registry.js';
 
 import { openAISearchCall, type OpenAISearchCall } from './search/openai.js';
 import {
@@ -166,7 +167,7 @@ function ollamaSettings(settings: Settings): {
 export function baseUrlOf(connection: ModelConnection): string | null {
   return (
     connection.baseUrl ??
-    providerOf(connection.provider)?.defaultBaseUrl ??
+    modelProviderOf(connection.provider)?.defaultBaseUrl ??
     null
   );
 }
@@ -180,6 +181,12 @@ export function languageModel(
   model: string,
   session?: string | null,
 ): LanguageModel {
+  const custom = registeredClient(connection);
+  if (custom) {
+    if (!custom.language)
+      throw new Error(`${connection.provider} serves no chat models.`);
+    return custom.language(model);
+  }
   const settings = settingsOf(connection, session);
   switch (connection.provider) {
     case 'openai':
@@ -236,6 +243,8 @@ export function languageModel(
         fetch: settings.fetch,
         ...(settings.apiKey ? { apiKey: settings.apiKey } : {}),
       })(model);
+    default:
+      throw new Error(`${connection.provider} serves no chat models.`);
   }
 }
 
@@ -254,6 +263,12 @@ export function embeddingModel(
   model: string,
   dimensions: number | null,
 ): EmbeddingCall {
+  const custom = registeredClient(connection);
+  if (custom) {
+    if (!custom.embedding)
+      throw new Error(`${connection.provider} serves no embedding models.`);
+    return { model: custom.embedding(model), providerOptions: {} };
+  }
   const settings = settingsOf(connection);
   const sized = (key: string, option: string): Record<string, JSONObject> =>
     dimensions ? { [key]: { [option]: dimensions } } : {};
@@ -329,6 +344,12 @@ export function rerankingModel(
   connection: ModelConnection,
   model: string,
 ): RerankingModel {
+  const custom = registeredClient(connection);
+  if (custom) {
+    if (!custom.rerank)
+      throw new Error(`${connection.provider} serves no rerank models.`);
+    return custom.rerank(model);
+  }
   const settings = settingsOf(connection);
   switch (connection.provider) {
     case 'cohere':
@@ -551,6 +572,15 @@ export async function listModels(
   connection: ModelConnection,
   signal: AbortSignal,
 ): Promise<string[]> {
+  const custom = registeredClient(connection);
+  if (custom)
+    return [
+      ...new Set(
+        (custom.listModels ? await custom.listModels(signal) : [])
+          .map((id) => id.trim())
+          .filter(Boolean),
+      ),
+    ].sort((a, b) => a.localeCompare(b));
   const base = baseUrlOf(connection);
   if (!base) throw new Error('Set the base URL of the provider’s API.');
   const request = listRequest(connection);

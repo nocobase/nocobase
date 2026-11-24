@@ -4,14 +4,16 @@ import {
 } from '@nocobase/app-client/plugins';
 
 import locales from './locales/index.js';
+import serviceProviders from './service-provider.js';
 
 /**
- * Registers the locales for the resource title the plugin's server registers with the authorization catalog. It
- * contributes no pages: an application that edits these rules builds its page on the plugin's API among its own routes.
+ * Registers the locales for the resource title the plugin's server registers with the authorization catalog, and adds
+ * Restriction rules to the Data rules of the authorization plugin's Roles and permissions page.
  */
 const authzRestrictionRules: AppClientPluginFactory = defineClientPlugin({
   packageName: '@nocobase/app-plugin-authz-restriction-rules',
   locales,
+  serviceProviders,
 });
 
 export default authzRestrictionRules;

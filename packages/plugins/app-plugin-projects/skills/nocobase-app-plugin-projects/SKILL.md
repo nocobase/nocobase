@@ -18,8 +18,8 @@ for generic collection CRUD; the plugin's tables are only written through its AP
   notices reach only those who may see the issue): the plugin keeps no roles of its own. It may bind
   `projectsNoticesToken` (`ProjectsNotices`: `send`) to receive the plugin's notices (owner notified, commented,
   mentioned, status changed, owner or executor assigned; information carries a `group` to merge by) and keep its own
-  inbox; otherwise they go to the in-app
-  channel `projects.inboxChannel`. Another plugin binds `projectsTriggersToken` (`IssueTriggers`) to start work when
+  inbox; otherwise they go to `notify()` as the `projects.*` notification kinds (inbox always; push and email by
+  each member's notification settings). Another plugin binds `projectsTriggersToken` (`IssueTriggers`) to start work when
   a person comments, and adds notice rules through `projectsNoticeRulesToken`.
 - Shared types: `@nocobase/app-plugin-projects/shared/<name>` (`access`, `attachments`, `comments`, `common`, `issues`,
   `labels`, `members`, `projects`, `settings`, `statuses`, `subscriptions`, `subtasks`).

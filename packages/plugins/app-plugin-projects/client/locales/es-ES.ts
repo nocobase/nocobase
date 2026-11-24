@@ -3,6 +3,7 @@ import type { LocaleResource } from '@nocobase/i18n';
 import type enUS from './en-US.js';
 
 const esES: LocaleResource<typeof enUS> = {
+  fileUsage: 'Adjuntos de incidencias',
   actions: {
     cancel: 'Cancelar',
     close: 'Cerrar',
@@ -496,6 +497,46 @@ const esES: LocaleResource<typeof enUS> = {
     },
     tabsLabel: 'Vistas de Mis tareas',
     title: 'Mis tareas',
+  },
+  noticeKinds: {
+    contributor: 'Proyectos',
+    category: 'Proyectos',
+    recipients:
+      'Las personas a las que se refiere el aviso y que pueden ver la incidencia; nunca quien actuó.',
+    businessRule:
+      'Se envía una vez por aviso. Los miembros eligen push y correo para cada tipo en su configuración de notificaciones.',
+    languagePolicy:
+      'Redactado una vez en el idioma predeterminado de la aplicación.',
+    variables: {
+      title: 'Qué pasó',
+      body: 'El título de la incidencia o un extracto del comentario',
+    },
+    mentioned: {
+      name: 'Mencionado',
+      trigger: 'Alguien te menciona en una incidencia o un comentario.',
+    },
+    assigned: {
+      name: 'Asignado a ti',
+      trigger: 'Alguien te hace responsable o ejecutor de una incidencia.',
+    },
+    attention: {
+      name: 'Te necesita',
+      trigger:
+        'Otra persona mueve una incidencia de la que eres responsable a un estado que te necesita, como Bloqueada o En revisión.',
+    },
+    commented: {
+      name: 'Nuevo comentario',
+      trigger: 'Alguien comenta una incidencia que sigues.',
+    },
+    statusChanged: {
+      name: 'Cambio de estado',
+      trigger: 'Una incidencia que sigues pasa a otro estado.',
+    },
+    progress: {
+      name: 'Progreso',
+      trigger:
+        'Una dependencia de tu incidencia ha terminado, todas las subincidencias han terminado u otro complemento informa del progreso.',
+    },
   },
   nav: {
     general: 'Generales',

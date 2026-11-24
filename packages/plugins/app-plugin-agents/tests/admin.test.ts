@@ -5,7 +5,11 @@ import { inputsRepo } from '../server/core/runs/run.store.js';
 import type { AgentsNotice } from '../server/tokens.js';
 import { claim, createHarness, skillMd, type Harness } from './harness.js';
 
-const ADMIN = ['agents.agents/manage', 'agents.runners/manage'];
+const ADMIN = [
+  'agents.agents/manage',
+  'agents.skills/manage',
+  'agents.runners/manage',
+];
 
 describe('admin API', () => {
   let h: Harness;
@@ -1322,7 +1326,7 @@ describe('admin API', () => {
       ).toBe(400);
     const versions = await h.request('GET', `/agents/skills/${id}/versions`, {
       user: 'bob',
-      can: ['agents.agents/read'],
+      can: ['agents.skills/read'],
     });
     expect(
       versions.body.data.map((version: { version: number }) => version.version),
@@ -1343,7 +1347,7 @@ describe('admin API', () => {
     const agentId = await h.createAgent({ skillIds: [id] });
     const detail = await h.request('GET', `/agents/skills/${id}`, {
       user: 'bob',
-      can: ['agents.agents/read'],
+      can: ['agents.skills/read'],
     });
     expect(detail.body.data.attachments).toEqual([]);
     expect(detail.body.data).not.toHaveProperty('agentCount');

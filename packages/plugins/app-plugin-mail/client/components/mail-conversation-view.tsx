@@ -95,6 +95,8 @@ export interface MailConversationViewProps {
     readonly deleteDisabledReason?: (
       message: MailMessage,
     ) => string | undefined;
+    readonly downloadOriginal?: (message: MailMessage) => void;
+    readonly canDownloadOriginal?: (message: MailMessage) => boolean;
     readonly downloadAttachment?: (
       message: MailMessage,
       attachment: MailMessage['attachments'][number],
@@ -787,6 +789,15 @@ function MessageMoreActions({
                   {assignedLabelCount}
                 </span>
               ) : null}
+            </DropdownMenuItem>
+          ) : null}
+          {actions.downloadOriginal &&
+          actions.canDownloadOriginal?.(message) ? (
+            <DropdownMenuItem
+              onClick={() => actions.downloadOriginal?.(message)}
+            >
+              <Download aria-hidden='true' />
+              {t('workspace.downloadOriginal')}
             </DropdownMenuItem>
           ) : null}
           {actionLabels ? (

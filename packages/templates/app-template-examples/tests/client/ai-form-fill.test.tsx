@@ -30,9 +30,6 @@ vi.mock('@nocobase/app-plugin-agents/client/chat', () => ({
 vi.mock('@nocobase/app-plugin-authentication/client', () => ({
   useAuthentication: () => ({ session: { user: { id: 'user-a' } } }),
 }));
-vi.mock('../../client/components/online-agent/identity-context.js', () => ({
-  useOnlineAgentIdentityActive: () => () => true,
-}));
 vi.mock('../../client/components/online-agent/use-model-catalog.js', () => ({
   useModelCatalog: () => ({
     phase: 'ready',

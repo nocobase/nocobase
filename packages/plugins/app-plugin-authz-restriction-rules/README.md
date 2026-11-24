@@ -20,7 +20,7 @@ Adds restriction rules: for the subjects a rule lists, the records an action rea
  ────────────────────────      ────────────────────────────────────────────────────         ────────────────────────────
  restriction rules ──────────▶ `restrict` constraint for the rule's subjects ─┐             context.authorize(...)
                                 grants, default access, sharing ──────────────┴▶ type       authz.database.policyFor(...)
- display: its settings item is placed in the authorization subsection through authz.ui; the plugin contributes no page
+ display: its settings item is placed in the authorization subsection through authz.ui; its client adds a tab to Data rules
 ```
 
 ## Entry points
@@ -34,7 +34,7 @@ Adds restriction rules: for the subjects a rule lists, the records an action rea
 
 ## Install
 
-Register the default exports of `./client` and `./server` beside the main authorization plugin and run the application's migrations. Then add the factory to the application's authorization configuration:
+Register the default exports of `./client` and `./server` beside the main authorization plugin and run the application's migrations. The client plugin adds the Restriction rules tab to the Data rules of the authorization plugin's Roles and permissions page, shown to those who may read `authorization.restriction-rules`; its rules are created, edited and deleted there in a side sheet. Then add the factory to the application's authorization configuration:
 
 ```ts
 import { restrictionRules } from '@nocobase/app-plugin-authz-restriction-rules/server';

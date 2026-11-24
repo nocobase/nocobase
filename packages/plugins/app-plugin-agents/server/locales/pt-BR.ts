@@ -31,11 +31,16 @@ const ptBR: LocaleResource<typeof enUS> = {
         runners: 'Ambientes de execução',
         prices: 'Preços dos modelos',
         services: 'Serviços modelo',
+        skills: 'Habilidades',
       },
     },
     actions: {
       read: 'Visualizar',
       manage: 'Gerenciar',
+    },
+    humanOnly: {
+      servicesManage:
+        'Gerenciar serviços de modelos grava chaves de provedores; só uma pessoa pode fazer isso.',
     },
     keyScopes: {
       agents: {

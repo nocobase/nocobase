@@ -30,6 +30,11 @@ export interface DockerSettings {
   readonly storagePath: string;
   /** Where file configuration is written inside the container (`APP_CONFIG_FILE`). */
   readonly configPath: string;
+  /**
+   * Where the App's backup volume is mounted in the one-off containers that back it up and restore it; the image has
+   * to have this directory, writable by its user (the templates' images create it).
+   */
+  readonly backupsPath: string;
   readonly healthCheck: {
     /** Probed at `<base path><path>` inside the container. */
     readonly path: string;
@@ -45,6 +50,7 @@ export const DOCKER_DEFAULT_SETTINGS: DockerSettings = {
   containerPort: 13000,
   storagePath: '/app/storage',
   configPath: '/app/config.yml',
+  backupsPath: '/app/backups',
   healthCheck: {
     path: '/api/healthz',
     timeoutSeconds: 180,

@@ -346,6 +346,33 @@ describe('sharing rules through the authorization dispatcher', () => {
     expect(store.rules.size).toBe(0);
   });
 
+  it('refuses a subject its type keeps from being shared with, such as a service account', async () => {
+    const { authz, call, json, store } = fixture();
+    authz.subjects.add('user', {
+      filterActive: (ids) => Promise.resolve(ids),
+      filterShareable: (ids) =>
+        Promise.resolve(ids.filter((id) => id !== 'service-1')),
+    });
+    const refused = await call(
+      PATH,
+      json('POST', {
+        ...rule,
+        subjects: [...rule.subjects, { type: 'user', id: 'service-1' }],
+      }),
+    );
+    expect(refused.status).toBe(400);
+    expect(store.rules.size).toBe(0);
+    expect((await call(PATH, json('POST', rule))).status).toBe(201);
+    expect(
+      (
+        await call(
+          `${PATH}/${rule.key}`,
+          json('PATCH', { subjects: [{ type: 'user', id: 'service-1' }] }),
+        )
+      ).status,
+    ).toBe(400);
+  });
+
   it('declares its routes for the API document', async () => {
     const { authz } = fixture();
     const warnings: string[] = [];

@@ -170,6 +170,7 @@ export const clientMocks = {
       PageBreadcrumbProvider: actual.PageBreadcrumbProvider,
       usePageBreadcrumb: actual.usePageBreadcrumb,
       usePageBreadcrumbLevels: actual.usePageBreadcrumbLevels,
+      useHasRoute: actual.useHasRoute,
       ApiClientError: FakeApiError,
       realtimeClientToken: 'realtime',
       useApiClient: () => api,

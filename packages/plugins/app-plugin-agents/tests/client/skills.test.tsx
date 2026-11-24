@@ -189,16 +189,16 @@ describe('skill pages', () => {
           version: 3,
         }),
       },
-      ['agents.agents/read', 'agents.agents/manage'],
+      ['agents.skills/read', 'agents.skills/manage'],
     );
   });
 
-  it('lists skills with their scripts, compatibility, version and scope defaults', async () => {
+  it('lists skills with their compatibility, version and scope defaults', async () => {
     renderPage(<SkillsPage />);
     const row = await screen.findByTestId('skill-s1');
     expect(within(row).getByText('pr-etiquette')).toBeInTheDocument();
     expect(within(row).getByText('v2')).toBeInTheDocument();
-    expect(within(row).getByText('skills.scriptsNote')).toBeInTheDocument();
+    expect(within(row).queryByText('skills.scriptsNote')).toBeNull();
     expect(
       within(row).getByText('skills.compatibility(value=Needs git)'),
     ).toBeInTheDocument();
@@ -215,21 +215,26 @@ describe('skill pages', () => {
     expect(screen.queryByText(/name: pr-etiquette/u)).toBeNull();
     expect(screen.queryByText('Coder')).not.toBeInTheDocument();
     expect(screen.queryByText('skills.mountedAgents')).not.toBeInTheDocument();
-    expect(screen.getByTestId('skill-scripts-note')).toHaveTextContent(
-      'skills.scriptsNote',
-    );
+    expect(screen.queryByText('skills.scriptsNote')).toBeNull();
     const tree = screen.getByTestId('skill-tree');
     expect(within(tree).getByText('scripts')).toBeInTheDocument();
     expect(within(tree).getByText('check.sh')).toBeInTheDocument();
-    expect(within(tree).getByTestId('skill-script-badge')).toHaveTextContent(
-      'skills.scriptBadge',
-    );
+    // Only the `scripts` folder row carries the script mark, as an icon named "Script".
+    expect(within(tree).queryByText('skills.scriptBadge')).toBeNull();
+    expect(
+      within(tree).getAllByTestId('skill-scripts-folder-icon'),
+    ).toHaveLength(1);
+    expect(
+      within(tree).getByTestId('skill-scripts-folder-icon'),
+    ).toHaveAccessibleName('skills.scriptBadge');
     // Read-only: no tree actions.
     expect(
       within(tree).queryByRole('button', { name: 'skills.tree.newFile' }),
     ).toBeNull();
     fireEvent.click(within(tree).getByText('check.sh'));
     expect(screen.getByText('echo ok')).toBeInTheDocument();
+    // The open script's header keeps its badge.
+    expect(screen.getByText('skills.scriptBadge')).toBeInTheDocument();
     fireEvent.click(within(tree).getByText('logo.png'));
     expect(
       screen.getByText('skills.binaryFile(size=2.0 KB)'),
@@ -291,7 +296,7 @@ describe('skill pages', () => {
   });
 
   it('does not grant global settings to someone allowed to edit only their own skill', async () => {
-    granted.delete('agents.agents/manage');
+    granted.delete('agents.skills/manage');
     granted.add('agents.agents/edit');
     renderRoute(<SkillDetailPage />, '/skills/:skillId', '/skills/s1');
     fireEvent.click(await screen.findByRole('button', { name: 'skills.edit' }));
@@ -414,7 +419,7 @@ describe('skill pages', () => {
           });
         },
       },
-      ['agents.agents/read', 'agents.agents/manage'],
+      ['agents.skills/read', 'agents.skills/manage'],
     );
     renderRoute(<SkillDetailPage />, '/skills/:skillId', '/skills/s1');
     fireEvent.click(await screen.findByRole('button', { name: 'skills.edit' }));
@@ -447,7 +452,7 @@ describe('skill pages', () => {
           throw new FakeApiError(409, 'REVISION_CONFLICT');
         },
       },
-      ['agents.agents/read'],
+      ['agents.skills/read'],
     );
     renderRoute(<SkillDetailPage />, '/skills/:skillId', '/skills/s1');
     fireEvent.click(await screen.findByRole('button', { name: 'skills.edit' }));
@@ -519,7 +524,7 @@ describe('skill pages', () => {
           content: (request.json as SkillInput).content,
         }),
       },
-      ['agents.agents/read', 'agents.agents/manage'],
+      ['agents.skills/read', 'agents.skills/manage'],
     );
     renderRoute(<NewSkillPage />, '/skills/new', '/skills/new');
     const source = screen.getByLabelText('skills.content');
@@ -541,5 +546,47 @@ describe('skill pages', () => {
       files: [],
     });
     expect(await screen.findByText('elsewhere')).toBeInTheDocument();
+    expect(screen.getByTestId('location')).toHaveTextContent('/skills/s9');
+  });
+
+  it('creates and links relative to where the library is mounted, such as System settings', async () => {
+    resetApi(
+      {
+        'POST agents/skills': (request) => ({
+          ...current,
+          id: 's9',
+          name: 'release-notes',
+          content: (request.json as SkillInput).content,
+        }),
+      },
+      ['agents.skills/read', 'agents.skills/manage'],
+    );
+    const view = renderRoute(
+      <NewSkillPage />,
+      '/settings/skills/new',
+      '/settings/skills/new',
+    );
+    const source = screen.getByLabelText('skills.content');
+    fireEvent.change(source, {
+      target: {
+        value: (source as HTMLTextAreaElement).value.replace(
+          'new-skill',
+          'release-notes',
+        ),
+      },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'common.create' }));
+    expect(await screen.findByTestId('location')).toHaveTextContent(
+      '/settings/skills/s9',
+    );
+    view.unmount();
+
+    renderRoute(
+      <SkillDetailPage />,
+      '/settings/skills/:skillId',
+      '/settings/skills/s1',
+    );
+    const crumb = await screen.findByRole('link', { name: 'skills.title' });
+    expect(crumb).toHaveAttribute('href', '/settings/skills');
   });
 });

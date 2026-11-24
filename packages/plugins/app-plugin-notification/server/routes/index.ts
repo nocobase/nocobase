@@ -11,15 +11,14 @@ import {
   defineApiRoutes,
   type AppApiRouteContribution,
 } from '@nocobase/app-server/router';
-import { Hono, type Context } from 'hono';
+import { Hono, type MiddlewareHandler } from 'hono';
 
-import {
-  notificationApiError,
-  notificationErrorHandler,
-} from '../http-errors.js';
+import { NOTIFICATION_SETTINGS_RESOURCE } from '../../shared/access.js';
+import { notificationErrorHandler } from '../http-errors.js';
 import type { NotificationProviderApplicationConfig } from '../providers/notification.js';
 import { notificationRuntimeToken } from '../runtime.js';
-import { createTemplateRoutes } from './templates.js';
+import { createPreferenceRoutes } from './preferences.js';
+import { createSettingsRoutes } from './settings.js';
 
 type NotificationRoutesEnv = {
   Variables: AuthEnv['Variables'] & AuthorizationEnv['Variables'];
@@ -32,28 +31,31 @@ export const apiRoutes: AppApiRouteContribution<
   const notification = container.resolve(notificationRuntimeToken);
   const auth = container.resolve(authenticationToken);
   const authorization = container.resolve(authorizationToken);
+  const signedIn: readonly MiddlewareHandler[] = [
+    auth.required() as MiddlewareHandler,
+    authorization.middleware() as MiddlewareHandler,
+  ];
 
   const logs = new Hono<NotificationRoutesEnv>();
   logs.onError(notificationErrorHandler);
-  logs.use('/logs/:logId?', auth.required(), authorization.middleware());
+  logs.use(
+    '/logs/:logId?',
+    ...(signedIn as MiddlewareHandler<NotificationRoutesEnv>[]),
+  );
   logs.use('/logs/:logId?', async (context, next) => {
-    const allowed = await context.get('authz').can({
-      resource: { type: 'page', id: 'notification.logs' },
-      action: 'access',
-    });
-    if (!allowed) {
-      throw notificationApiError(context as Context, {
-        status: 'PERMISSION_DENIED',
-        reason: 'NOTIFICATION_LOGS_FORBIDDEN',
-        key: 'errors.logsForbidden',
-      });
-    }
+    await context
+      .get('authz')
+      .require({ resource: NOTIFICATION_SETTINGS_RESOURCE, action: 'read' });
     await next();
   });
   logs.route('/', notification.router);
 
   router.route('/notifications', logs);
-  router.route('/notifications', createTemplateRoutes(container));
+  router.route('/notifications', createSettingsRoutes(container, signedIn));
+  router.route(
+    '/notifications',
+    createPreferenceRoutes(container, auth.required()),
+  );
   return router;
 });
 

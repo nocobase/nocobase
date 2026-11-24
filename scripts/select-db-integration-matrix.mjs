@@ -29,6 +29,13 @@ const sharedFiles = new Set([
 // `pnpm test:db`, in the Database tests workflow, when a path they guard changes.
 export const packageSuites = [
   ...['postgres', 'mysql'].map((dialect) => ({
+    paths: ['packages/libs/backup/'],
+    dialect,
+    filter: '@nocobase/backup',
+    tests: ['tests/integration/server-roundtrip.test.ts'],
+  })),
+
+  ...['postgres', 'mysql'].map((dialect) => ({
     paths: [
       'packages/plugins/app-plugin-releases/server/services/releases.ts',
       'packages/plugins/app-plugin-releases/database/migrations/',
@@ -84,6 +91,19 @@ export const packageSuites = [
       'tests/active-input.test.ts',
       'tests/run-revision-migration.test.ts',
     ],
+  },
+  {
+    // Making an agent the team default and limiting who may chat with it lock the same agent row, so concurrent saves
+    // never leave a limited team default.
+    paths: [
+      'packages/plugins/app-plugin-agents/server/core/conversations/chat-settings.ts',
+      'packages/plugins/app-plugin-agents/server/core/agents/agent.service.ts',
+      'packages/plugins/app-plugin-agents/server/core/agents/agent.store.ts',
+      'packages/plugins/app-plugin-agents/tests/chat-roles-race.test.ts',
+    ],
+    dialect: 'postgres',
+    filter: '@nocobase/app-plugin-agents',
+    tests: ['tests/chat-roles-race.test.ts'],
   },
   {
     // Candidate pagination must preserve cursor order and avoid duplicate claims on PostgreSQL.

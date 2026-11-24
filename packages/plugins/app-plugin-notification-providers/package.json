@@ -2,11 +2,21 @@
   "name": "@nocobase/app-plugin-notification-providers",
   "displayName": "Notification Providers App Plugin",
   "description": "Provides built-in notification Channels and Providers.",
-  "version": "1.0.0-beta.20",
+  "version": "1.0.0-beta.21",
   "type": "module",
   "prettier": "@nocobase/dev-config/prettier",
   "engines": {
     "node": ">=24.0.0"
+  },
+  "nocobase": {
+    "title": {
+      "en-US": "Notification channels",
+      "zh-CN": "通知渠道"
+    },
+    "description": {
+      "en-US": "Email, IM and other delivery channels",
+      "zh-CN": "邮件、IM 等发送渠道"
+    }
   },
   "sideEffects": false,
   "files": [
@@ -82,6 +92,7 @@
     "@nocobase/mailer": "workspace:^"
   },
   "peerDependencies": {
+    "@nocobase/app-plugin-authentication": "workspace:^",
     "@nocobase/app-plugin-notification": "workspace:^",
     "@nocobase/app-server": "workspace:^",
     "@nocobase/i18n": "workspace:^",

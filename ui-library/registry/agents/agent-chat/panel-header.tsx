@@ -1,10 +1,15 @@
+import { useContext, useRef } from 'react';
+import { useNavigate } from 'react-router';
 import { ShareConversation } from './share-conversation.js';
-import { useState, type ReactElement } from 'react';
+import { useState, type ComponentType, type ReactElement } from 'react';
 import {
+  AgentsOptionsContext,
+  PageDraftStoreContext,
   CHAT_MOBILE_QUERY,
   useChatPanel,
   useConversation,
   useConversationActions,
+  useChatPages,
 } from '@nocobase/app-plugin-agents/client/chat';
 import type { ConversationDetail } from '@nocobase/app-plugin-agents/shared/conversations';
 import {
@@ -15,7 +20,7 @@ import {
 } from 'lucide-react';
 import { DropdownMenuItem } from '#components/ui/dropdown-menu';
 import { Button } from '#components/ui/button';
-import { PlusIcon, XIcon } from 'lucide-react';
+import { SquarePenIcon, XIcon } from 'lucide-react';
 import {
   ConversationHeader,
   ConversationHeading,
@@ -25,8 +30,21 @@ import { DeleteConversationDialog } from './delete-conversation.js';
 import { useMediaQuery } from './use-media-query.js';
 import { useChatMode } from './chat-mode.js';
 import { useChatTranslation } from './chat-i18n.js';
+import { replaceable } from '@nocobase/app-plugin-agents/client/chat';
 
-export function PanelHeader(): ReactElement {
+export interface PanelHeaderProps {
+  /**
+   * Receives the element the conversation renders its choices into (the agent, the model and its thinking level);
+   * a replacement that leaves it out shows them in the composer's toolbar instead.
+   */
+  readonly choiceSlot?: ((element: HTMLElement | null) => void) | undefined;
+}
+
+/**
+ * The panel's header over a conversation: its choices, the conversation list, a new conversation, the full-page view,
+ * the panel's size, the conversation's menu and close, then its title; replaceable as `PanelHeader`.
+ */
+export function DefaultPanelHeader(): ReactElement {
   const panel = useChatPanel();
   const conversation = useConversation(panel.conversationId, {
     passive: true,
@@ -36,6 +54,49 @@ export function PanelHeader(): ReactElement {
   const phone = useMediaQuery(CHAT_MOBILE_QUERY);
   const [deleting, setDeleting] = useState(false);
   const [sharing, setSharing] = useState(false);
+  const store = useContext(PageDraftStoreContext);
+  const { chatPath } = useContext(AgentsOptionsContext);
+  // The draft opens the conversation list, which the application may have left out.
+  const { list: hasChatList } = useChatPages(chatPath);
+  const navigate = useNavigate();
+  const openingRef = useRef(false);
+  const [openError, setOpenError] = useState(false);
+  async function openSessions(): Promise<void> {
+    if (!store || openingRef.current) return;
+    openingRef.current = true;
+    setOpenError(false);
+    try {
+      const context = await store.readers.context?.();
+      const editor = store.readers.editor?.();
+      if (editor === null) return;
+      const key = store.save({
+        id: panel.conversationId,
+        agent: panel.newAgentId,
+        model: null,
+        thinking: undefined,
+        search: false,
+        ...store.readers.choices?.(),
+        text: editor?.text ?? '',
+        files: editor?.files ?? [],
+        ...(context ? { context } : {}),
+      });
+      const search = new URLSearchParams(
+        panel.conversationId
+          ? { conversation: panel.conversationId }
+          : { draft: '1' },
+      );
+      await navigate(
+        { pathname: chatPath, search: search.toString() },
+        { state: { agentDraft: key } },
+      );
+      panel.closeChat();
+      panel.selectConversation(null);
+    } catch {
+      setOpenError(true);
+    } finally {
+      openingRef.current = false;
+    }
+  }
   return (
     <>
       <ConversationHeader
@@ -45,14 +106,19 @@ export function PanelHeader(): ReactElement {
             ? (title) => actions.rename.mutate({ id: conversation.id, title })
             : undefined
         }
-        onBack={() => panel.setView('history')}
-        onNew={
-          conversation && !conversation.snapshot
-            ? () => panel.selectConversation(null)
-            : undefined
+        onHistory={() => panel.setView('history')}
+        onOpenPage={
+          store
+            ? hasChatList
+              ? () => void openSessions()
+              : undefined
+            : conversation && !conversation.snapshot && panel.openPage
+              ? () => panel.openPage?.(conversation.id)
+              : undefined
         }
+        onNew={() => panel.selectConversation(null)}
         onExpand={
-          !phone
+          !store && !phone
             ? () =>
                 panel.setMode(panel.mode === 'expanded' ? 'docked' : 'expanded')
             : undefined
@@ -97,6 +163,7 @@ export function PanelHeader(): ReactElement {
           ) : null
         }
       />
+      {openError && <p role='alert'>{t('chat.contextFailed')}</p>}
       {conversation && (
         <ShareConversation
           conversationId={conversation.id}
@@ -115,10 +182,15 @@ export function PanelHeader(): ReactElement {
     </>
   );
 }
+// eslint-disable-next-line react-refresh/only-export-components -- wrapped once at load, so replacements follow it
+export const PanelHeader: ComponentType<PanelHeaderProps> = replaceable(
+  'PanelHeader',
+  DefaultPanelHeader,
+);
+
 export function PanelHistoryHeader(): ReactElement {
   const panel = useChatPanel();
   const { t } = useChatTranslation();
-  const mode = useChatMode();
   const phone = useMediaQuery(CHAT_MOBILE_QUERY);
   return (
     <header
@@ -126,9 +198,8 @@ export function PanelHistoryHeader(): ReactElement {
       className='flex items-center gap-2 border-b px-4 py-2'
     >
       <h2 className='min-w-0 flex-1 truncate text-sm font-semibold'>
-        {t(mode.mode === 'online' ? 'chat.modes.online' : 'chat.modes.runner')}
+        {t('chat.list.label')}
       </h2>
-      <ModeSwitchButton />
       <NewConversationButton />
       {!(!phone && panel.mode === 'expanded' && panel.view !== 'history') && (
         <Button
@@ -182,26 +253,7 @@ export function NewConversationButton(): ReactElement {
       aria-label={t('chat.newConversation')}
       onClick={mode.startNew}
     >
-      <PlusIcon />
+      <SquarePenIcon />
     </Button>
   );
-}
-export function ModeSwitchButton(): ReactElement | null {
-  const mode = useChatMode();
-  const { t } = useChatTranslation();
-  return mode.switchable && mode.other ? (
-    <Button
-      variant='ghost'
-      size='icon-sm'
-      data-testid='chat-mode-switch'
-      aria-label={t(
-        mode.other === 'online'
-          ? 'chat.modes.switchToOnline'
-          : 'chat.modes.switchToRunner',
-      )}
-      onClick={() => mode.other && mode.switchTo(mode.other)}
-    >
-      ⇄
-    </Button>
-  ) : null;
 }

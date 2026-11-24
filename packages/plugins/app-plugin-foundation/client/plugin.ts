@@ -4,24 +4,16 @@ import {
 } from '@nocobase/app-client/plugins';
 
 import locales from './locales/index.js';
-import {
-  createFoundationRoutes,
-  type FoundationRouteOptions,
-} from './routes.js';
+import routes from './routes.js';
 
-export interface FoundationClientOptions extends FoundationRouteOptions {
-  /**
-   * `false` leaves the page unregistered, for an application that routes `FoundationPage` itself. Defaults to `true`.
-   */
-  readonly routes?: boolean;
-}
-
-const foundation: AppClientPluginFactory<FoundationClientOptions> =
-  defineClientPlugin<FoundationClientOptions>({
-    packageName: '@nocobase/app-plugin-foundation',
-    locales,
-    routes: (options) =>
-      options.routes === false ? [] : createFoundationRoutes(options),
-  });
+/**
+ * The plugins page under System settings › System, and redirects from the earlier App Foundation pages. Takes no
+ * options; an application replaces the page with `routeComponentOverrides: { plugins }`.
+ */
+const foundation: AppClientPluginFactory = defineClientPlugin({
+  packageName: '@nocobase/app-plugin-foundation',
+  locales,
+  routes: [routes],
+});
 
 export default foundation;

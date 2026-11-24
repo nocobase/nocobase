@@ -1,5 +1,10 @@
 const messages = {
-  'push.title': 'Push notifications',
+  'push.deviceCount': 'Registered: {{total}} · Enabled: {{active}}',
+  'push.active': 'Enabled',
+  'push.paused': 'Paused',
+  'push.pause': 'Pause',
+  'push.resume': 'Resume',
+  'push.title': 'Push devices',
   'push.description':
     'Receive reminders on each device, even when the app is closed.',
   'push.subscribe': 'Subscribe this device',
@@ -28,6 +33,9 @@ const messages = {
   'push.failed': 'Unable to update push notifications. Please try again.',
   'push.loadingFailed': 'Unable to load devices. Please try again.',
   'push.retry': 'Retry',
+  'channelType.title': 'Browser push',
+  'channelType.testHint':
+    'Sends a test notification to the browsers you turned push on for. Turn it on under Personal settings › Notifications first.',
 };
 
 export default messages;

@@ -1,3 +1,4 @@
+import { originalMessageTooLarge } from '../original-message.js';
 import type { MailFetch } from '../../diagnostic-fetch.js';
 import type {
   MailProviderError,
@@ -21,29 +22,37 @@ export function fetchWithTimeout(
   return globalThis.fetch(input, { ...init, signal });
 }
 
-export async function readJson<T>(response: Response): Promise<T> {
-  if (!response.body) return (await response.json()) as T;
+export class GmailResponseTooLarge extends Error {}
+
+export async function readJson<T>(
+  response: Response,
+  maxBytes: number = MAX_PROVIDER_JSON_BYTES,
+): Promise<T> {
+  if (!response.body)
+    throw new Error('Gmail Provider response has no JSON body.');
   const reader =
     response.body.getReader() as ReadableStreamDefaultReader<Uint8Array>;
-  const chunks: Uint8Array[] = [];
+  const chunks: string[] = [];
+  const decoder = new TextDecoder();
   let total = 0;
-  while (true) {
-    const chunk = await reader.read();
-    if (chunk.done) break;
-    total += chunk.value.byteLength;
-    if (total > MAX_PROVIDER_JSON_BYTES) {
-      await reader.cancel();
-      throw new Error('Gmail Provider response exceeded the size limit.');
+  try {
+    while (true) {
+      const chunk = await reader.read();
+      if (chunk.done) break;
+      total += chunk.value.byteLength;
+      if (total > maxBytes) {
+        void reader.cancel().catch(() => {});
+        throw new GmailResponseTooLarge(
+          'Gmail Provider response exceeded the size limit.',
+        );
+      }
+      chunks.push(decoder.decode(chunk.value, { stream: true }));
     }
-    chunks.push(chunk.value);
+  } finally {
+    reader.releaseLock();
   }
-  const bytes = new Uint8Array(total);
-  let offset = 0;
-  for (const chunk of chunks) {
-    bytes.set(chunk, offset);
-    offset += chunk.byteLength;
-  }
-  return JSON.parse(new TextDecoder().decode(bytes)) as T;
+  chunks.push(decoder.decode());
+  return JSON.parse(chunks.join('')) as T;
 }
 
 export async function gmailRequest<T>(
@@ -52,6 +61,7 @@ export async function gmailRequest<T>(
   path: string,
   init: RequestInit,
   fetcher: MailFetch = fetchWithTimeout,
+  maxBytes?: number,
 ): Promise<MailProviderResult<T>> {
   try {
     const response = await fetcher(`${apiBase(config)}${path}`, {
@@ -63,9 +73,11 @@ export async function gmailRequest<T>(
       },
     });
     return response.ok
-      ? { ok: true, value: await readJson<T>(response) }
+      ? { ok: true, value: await readJson<T>(response, maxBytes) }
       : { ok: false, error: await responseError('GMAIL', response) };
   } catch (error) {
+    if (error instanceof GmailResponseTooLarge && maxBytes !== undefined)
+      return originalMessageTooLarge();
     return { ok: false, error: unknownError(error, 'GMAIL_REQUEST_FAILED') };
   }
 }
@@ -105,7 +117,9 @@ export async function responseError(
   const authenticationFailure =
     response.status === 401 ||
     (response.status === 403 &&
-      (reasons.has('authError') || reasons.has('insufficientPermissions')));
+      (reasons.has('authError') ||
+        reasons.has('insufficientPermissions') ||
+        reasons.has('ACCESS_TOKEN_SCOPE_INSUFFICIENT')));
   const rateLimitFailure =
     response.status === 429 ||
     (response.status === 403 &&

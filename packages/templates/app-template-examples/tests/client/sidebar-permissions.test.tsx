@@ -162,7 +162,7 @@ describe.each(['expanded', 'collapsed', 'mobile'])(
   },
 );
 
-const agentsRoutes = resolveAppClientContributions([
+const aiExampleRoutes = resolveAppClientContributions([
   {
     packageName: packageMetadata.name,
     source: 'application',
@@ -170,90 +170,49 @@ const agentsRoutes = resolveAppClientContributions([
       {
         ...applicationRoutes[0],
         routes: applicationRoutes[0].routes.filter(
-          (route) => route.name === 'agentsNavigation',
+          (route) => route.name === 'aiExamples',
         ),
       },
     ],
   },
 ]).routes;
 
-it.each(['agents', 'runtimes', 'agents.services', null])(
-  'shows only the permitted Agents settings entry for %s',
-  async (allowed) => {
-    await renderWithApp(
-      <SidebarPreferenceProvider value={sidebarPreference}>
-        <AppSidebarProvider>
-          <Menu entries={agentsRoutes} />
-        </AppSidebarProvider>
-      </SidebarPreferenceProvider>,
-      {
-        namespace: packageMetadata.name,
-        namespaces: { [packageMetadata.name]: enUS },
-        config: { app: { basePath: '/example' } },
-        fetch: answerApi(() => ({
-          data: {
-            unrestricted: false,
-            permissions: allowed
-              ? [
-                  {
-                    resource: {
-                      type: allowed === 'agents.services' ? 'settings' : 'page',
-                      id: allowed,
-                    },
-                    actions: [
-                      allowed === 'agents.services' ? 'read' : 'access',
-                    ],
-                  },
-                ]
-              : [],
-          },
-        })),
-        services: (app) => {
-          app.container.singleton(
-            authorizationClientToken,
-            (resolver) =>
-              new AuthorizationClient(resolver.resolve(apiClientToken)),
-          );
-        },
+it('shows the AI demonstrations to a signed-in person without any grant', async () => {
+  await renderWithApp(
+    <SidebarPreferenceProvider value={sidebarPreference}>
+      <AppSidebarProvider>
+        <Menu entries={aiExampleRoutes} />
+      </AppSidebarProvider>
+    </SidebarPreferenceProvider>,
+    {
+      namespace: packageMetadata.name,
+      namespaces: { [packageMetadata.name]: enUS },
+      config: { app: { basePath: '/example' } },
+      fetch: answerApi(() => ({
+        data: { unrestricted: false, permissions: [] },
+      })),
+      services: (app) => {
+        app.container.singleton(
+          authorizationClientToken,
+          (resolver) =>
+            new AuthorizationClient(resolver.resolve(apiClientToken)),
+        );
       },
-    );
-    if (allowed) {
-      const name = allowed === 'agents.services' ? 'models' : allowed;
-      expect(
-        await screen.findByRole('link', {
-          name: enUS.onlineAgent[
-            name as keyof typeof enUS.onlineAgent
-          ] as string,
-        }),
-      ).toHaveAttribute('href', `/example/${name}`);
-    }
-    await waitFor(() => {
-      expect(screen.queryAllByRole('link')).toHaveLength(allowed ? 4 : 3);
-    });
-    for (const name of ['agents', 'runtimes', 'models']) {
-      const resource = name === 'models' ? 'agents.services' : name;
-      if (resource !== allowed)
-        expect(
-          screen.queryByRole('link', {
-            name: enUS.onlineAgent[
-              name as keyof typeof enUS.onlineAgent
-            ] as string,
-          }),
-        ).not.toBeInTheDocument();
-    }
-    expect(screen.getByLabelText(enUS.onlineAgent.group)).toBeInTheDocument();
-    for (const name of [
-      'structuredExtraction',
-      'aiTranslation',
-      'aiFormFill',
-    ]) {
-      expect(
-        screen.getByRole('link', {
-          name: enUS[
-            name as 'structuredExtraction' | 'aiTranslation' | 'aiFormFill'
-          ].title,
-        }),
-      ).toBeInTheDocument();
-    }
-  },
-);
+    },
+  );
+  expect(
+    await screen.findByLabelText(enUS.aiExamples.group),
+  ).toBeInTheDocument();
+  await waitFor(() => {
+    expect(screen.queryAllByRole('link')).toHaveLength(3);
+  });
+  for (const name of [
+    'structuredExtraction',
+    'aiTranslation',
+    'aiFormFill',
+  ] as const) {
+    expect(
+      screen.getByRole('link', { name: enUS[name].title }),
+    ).toBeInTheDocument();
+  }
+});

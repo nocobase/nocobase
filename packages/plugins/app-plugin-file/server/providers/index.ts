@@ -4,6 +4,7 @@ import { databaseManagerToken } from '@nocobase/db';
 import { ServiceProvider } from '@nocobase/service-provider';
 import { ServerFileRepositoryManager } from '../repository.js';
 import { serverFileRepositoryManagerToken } from '../token.js';
+import { FileStorageAuthorizationProvider } from './authorization.js';
 
 export class FileRepositoryServiceProvider extends ServiceProvider<AppPluginApplication> {
   public readonly name: string = '@nocobase/app-plugin-file';
@@ -13,12 +14,13 @@ export class FileRepositoryServiceProvider extends ServiceProvider<AppPluginAppl
       (container) =>
         new ServerFileRepositoryManager(
           container.resolve(databaseManagerToken),
-          container.resolve(driveManagerToken),
+          () => container.resolve(driveManagerToken),
+          this.app.config,
         ),
     );
   }
 }
-const serviceProviders: readonly (typeof FileRepositoryServiceProvider)[] = [
-  FileRepositoryServiceProvider,
-];
+const serviceProviders: readonly (
+  typeof FileRepositoryServiceProvider | typeof FileStorageAuthorizationProvider
+)[] = [FileRepositoryServiceProvider, FileStorageAuthorizationProvider];
 export default serviceProviders;
