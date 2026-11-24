@@ -892,14 +892,45 @@ describe('checkout', () => {
       expect(resumed.repos[0]!.submodules).toEqual([child]);
       await resumed.release();
 
-      // Pointing the submodule's .git at the stale worktree admin entry must still be refused.
+      // Pointing the submodule's .git at the stale worktree admin entry must still be refused,
+      // even when its `gitdir` backlink has been removed.
       const wtAdmin = path.join(subGitDir, 'worktrees', 'tmp-sub-wt');
       const originalPointer = readFileSync(path.join(child, '.git'), 'utf8');
       writeFileSync(path.join(child, '.git'), `gitdir: ${wtAdmin}\n`);
       await expect(checkout(options)).rejects.toThrow(
-        /belongs to another checkout/u,
+        /redirected submodule Git directory/u,
       );
+      const wtBacklink = path.join(wtAdmin, 'gitdir');
+      const originalBacklink = readFileSync(wtBacklink, 'utf8');
+      rmSync(wtBacklink);
+      await expect(checkout(options)).rejects.toThrow(
+        /redirected submodule Git directory/u,
+      );
+      writeFileSync(wtBacklink, originalBacklink);
       writeFileSync(path.join(child, '.git'), originalPointer);
+
+      // An unused stale submodule config under modules/ must not block resuming healthy active submodules.
+      const unusedSub = path.join(entry.gitDir, 'modules', 'vendor', 'retired');
+      mkdirSync(unusedSub, { recursive: true });
+      const retiredWorktree = path.join(
+        root,
+        'gone-retired',
+        'vendor',
+        'retired',
+      );
+      git(
+        [
+          'config',
+          '--file',
+          path.join(unusedSub, 'config'),
+          'core.worktree',
+          retiredWorktree,
+        ],
+        root,
+      );
+      const resumedWithStaleModule = await checkout(options);
+      expect(resumedWithStaleModule.repos[0]!.submodules).toEqual([child]);
+      await resumedWithStaleModule.release();
 
       // A linked worktree commondir pointing outside its owning submodule must be refused.
       const wtCommon = path.join(wtAdmin, 'commondir');

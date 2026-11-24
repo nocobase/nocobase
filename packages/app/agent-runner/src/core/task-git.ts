@@ -164,7 +164,7 @@ async function checkMetadata(
   ])
     await checkCoreWorktree(config, context);
   const modules = path.join(dir, 'modules');
-  const walk = async (current: string, inWorktrees = false): Promise<void> => {
+  const walk = async (current: string): Promise<void> => {
     const info = await lstat(current).catch((error: NodeJS.ErrnoException) => {
       if (error.code === 'ENOENT') return undefined;
       throw error;
@@ -188,12 +188,7 @@ async function checkMetadata(
         !['objects', 'refs', 'logs', 'hooks'].includes(entry.name) &&
         entry.isDirectory()
       ) {
-        await walk(file, inWorktrees || entry.name === 'worktrees');
-      } else if (
-        !inWorktrees &&
-        (entry.name === 'config' || entry.name === 'config.worktree')
-      ) {
-        await checkCoreWorktree(file, context);
+        await walk(file);
       }
     }
   };
@@ -227,14 +222,15 @@ async function checkMetadata(
         throw new CheckoutError(
           `${pointer}: redirected submodule Git directory`,
         );
-      const backlinkFile = path.join(target, 'gitdir');
-      if (await regularFile(backlinkFile)) {
-        const backlink = (await readFile(backlinkFile, 'utf8')).trim();
-        if (path.resolve(target, backlink) !== pointer)
-          throw new CheckoutError(
-            `${pointer}: submodule Git metadata belongs to another checkout`,
-          );
-      }
+      if (
+        (await lstat(path.join(target, 'commondir')).catch(() => undefined)) !==
+          undefined ||
+        (await lstat(path.join(target, 'gitdir')).catch(() => undefined)) !==
+          undefined
+      )
+        throw new CheckoutError(
+          `${pointer}: redirected submodule Git directory`,
+        );
       await checkCoreWorktree(path.join(target, 'config'), context, child);
       await checkCoreWorktree(
         path.join(target, 'config.worktree'),

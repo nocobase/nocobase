@@ -1,5 +1,5 @@
 import { createHash } from 'node:crypto';
-import { lstat, mkdir, readdir, realpath, rm } from 'node:fs/promises';
+import { chmod, lstat, mkdir, readdir, realpath, rm } from 'node:fs/promises';
 import path from 'node:path';
 
 import type { RunnerPaths } from '../lib/home.ts';
@@ -11,17 +11,48 @@ import { workspaceHolders } from './process-tree.ts';
 const hash = (value: string, length: number): string =>
   createHash('sha256').update(value).digest('hex').slice(0, length);
 
+const formatMode = (mode: number): string =>
+  `0${(mode & 0o7777).toString(8).padStart(3, '0')}`;
+
 async function privateDirectory(
   dir: string,
   checkLength = true,
 ): Promise<void> {
-  const stat = await lstat(dir);
-  if (
-    !stat.isDirectory() ||
-    stat.uid !== process.getuid?.() ||
-    (stat.mode & 0o7777) !== 0o700
-  )
-    throw new Error(`Unsafe run temporary directory: ${dir}`);
+  const expectedUid = process.getuid?.();
+  let stat = await lstat(dir);
+  if (!stat.isDirectory()) {
+    const kind = stat.isSymbolicLink() ? 'symbolic link' : 'not a directory';
+    throw new Error(`Unsafe run temporary directory: ${dir} (${kind})`);
+  }
+  if (stat.uid !== expectedUid)
+    throw new Error(
+      `Unsafe run temporary directory: ${dir} (owned by uid ${stat.uid}, expected ${expectedUid})`,
+    );
+  if ((stat.mode & 0o7777) !== 0o700) {
+    // Only tighten permissions on a real directory we already own; re-stat to confirm it stuck.
+    try {
+      await chmod(dir, 0o700);
+      stat = await lstat(dir);
+    } catch (error) {
+      const reason = error instanceof Error ? error.message : String(error);
+      throw new Error(
+        `Unsafe run temporary directory: ${dir} (mode ${formatMode(stat.mode)}, expected 0700; chmod failed: ${reason})`,
+        { cause: error },
+      );
+    }
+    if (!stat.isDirectory()) {
+      const kind = stat.isSymbolicLink() ? 'symbolic link' : 'not a directory';
+      throw new Error(`Unsafe run temporary directory: ${dir} (${kind})`);
+    }
+    if (stat.uid !== expectedUid)
+      throw new Error(
+        `Unsafe run temporary directory: ${dir} (owned by uid ${stat.uid}, expected ${expectedUid})`,
+      );
+    if ((stat.mode & 0o7777) !== 0o700)
+      throw new Error(
+        `Unsafe run temporary directory: ${dir} (mode ${formatMode(stat.mode)}, expected 0700)`,
+      );
+  }
   if (
     checkLength &&
     (Buffer.byteLength(dir) > 40 || Buffer.byteLength(await realpath(dir)) > 40)

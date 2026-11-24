@@ -214,7 +214,7 @@ describe('short private run temporary directories', () => {
     ).toEqual([dir, dir, dir]);
   });
 
-  it('rejects existing directories, symlinks and unsafe permissions without taking them over', async () => {
+  it('rejects existing directories and symlinks, and restores drifted permissions on an owned root', async () => {
     const a = await allocate('/work/a');
     await a.lock.release();
     await expect(allocateRunTemp(paths, '/work/a')).rejects.toMatchObject({
@@ -226,19 +226,28 @@ describe('short private run temporary directories', () => {
       code: 'EEXIST',
     });
     expect((await lstat(link)).isSymbolicLink()).toBe(true);
+    // An owned namespace root whose permissions drifted (e.g. 0755) is tightened back to 0700.
     await chmod(root, 0o755);
-    await expect(allocateRunTemp(paths, '/work/b')).rejects.toThrow('Unsafe');
-    expect((await lstat(root)).mode & 0o777).toBe(0o755);
+    const healed = await allocate('/work/b');
+    expect((await lstat(root)).mode & 0o7777).toBe(0o700);
+    expect(existsSync(healed.dir)).toBe(true);
   });
 
-  it('rejects a namespace symlink without changing its target', async () => {
+  it('rejects a namespace symlink or regular file with a clear reason without changing its target', async () => {
     await symlink(home, root);
-    await expect(allocateRunTemp(paths, '/work/a')).rejects.toThrow('Unsafe');
+    await expect(allocateRunTemp(paths, '/work/a')).rejects.toThrow(
+      /Unsafe run temporary directory: .* \(symbolic link\)/u,
+    );
     expect((await lstat(root)).isSymbolicLink()).toBe(true);
     expect(existsSync(path.join(home, runTempName('/work/a')))).toBe(false);
+    await rm(root);
+    await writeFile(root, 'not a dir');
+    await expect(allocateRunTemp(paths, '/work/a')).rejects.toThrow(
+      /Unsafe run temporary directory: .* \(not a directory\)/u,
+    );
   });
 
-  it('refuses an ownership mismatch without adopting or deleting the directory', async () => {
+  it('refuses an ownership mismatch with uid details without adopting or deleting the directory', async () => {
     const allocation = await allocate('/work/owner');
     const uid = process.getuid!();
     // Model a different owner without changing any host account or directory ownership.
@@ -248,9 +257,15 @@ describe('short private run temporary directories', () => {
       .mockReturnValue(uid + 1);
     try {
       await expect(allocateRunTemp(paths, '/work/other')).rejects.toThrow(
-        'Unsafe',
+        new RegExp(
+          `Unsafe run temporary directory: .* \\(owned by uid ${uid}, expected ${uid + 1}\\)`,
+        ),
       );
-      await expect(removeRunTemp(allocation.dir)).rejects.toThrow('Unsafe');
+      await expect(removeRunTemp(allocation.dir)).rejects.toThrow(
+        new RegExp(
+          `Unsafe run temporary directory: .* \\(owned by uid ${uid}, expected ${uid + 1}\\)`,
+        ),
+      );
       expect(existsSync(allocation.dir)).toBe(true);
     } finally {
       getuid.mockRestore();
