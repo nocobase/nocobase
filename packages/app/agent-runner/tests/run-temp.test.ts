@@ -214,7 +214,7 @@ describe('short private run temporary directories', () => {
     ).toEqual([dir, dir, dir]);
   });
 
-  it('rejects existing directories and symlinks, and restores drifted permissions on an owned root', async () => {
+  it('rejects existing directories, symlinks and writable permissions, and restores non-writable drift on an owned root', async () => {
     const a = await allocate('/work/a');
     await a.lock.release();
     await expect(allocateRunTemp(paths, '/work/a')).rejects.toMatchObject({
@@ -226,11 +226,25 @@ describe('short private run temporary directories', () => {
       code: 'EEXIST',
     });
     expect((await lstat(link)).isSymbolicLink()).toBe(true);
-    // An owned namespace root whose permissions drifted (e.g. 0755) is tightened back to 0700.
+    // An owned namespace root whose permissions drifted without group/other write bits (e.g. 0755) is tightened back to 0700.
     await chmod(root, 0o755);
     const healed = await allocate('/work/b');
     expect((await lstat(root)).mode & 0o7777).toBe(0o700);
     expect(existsSync(healed.dir)).toBe(true);
+    // Dry-run GC must never mutate permissions on active run directories.
+    await chmod(healed.dir, 0o750);
+    expect(await gcRunTemps(paths, false)).toEqual([
+      { dir: a.dir, removed: false },
+    ]);
+    expect((await lstat(healed.dir)).mode & 0o7777).toBe(0o750);
+    await chmod(healed.dir, 0o700);
+    // A root that allowed group or other users to write must still be refused without adopting it.
+    await chmod(root, 0o775);
+    await expect(allocateRunTemp(paths, '/work/c')).rejects.toThrow(
+      /Unsafe run temporary directory: .* \(mode 0775, expected 0700\)/u,
+    );
+    expect((await lstat(root)).mode & 0o7777).toBe(0o775);
+    await chmod(root, 0o700);
   });
 
   it('rejects a namespace symlink or regular file with a clear reason without changing its target', async () => {

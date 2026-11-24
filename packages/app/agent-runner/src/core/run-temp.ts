@@ -16,8 +16,10 @@ const formatMode = (mode: number): string =>
 
 async function privateDirectory(
   dir: string,
-  checkLength = true,
+  options: { checkLength?: boolean; repairMode?: boolean } = {},
 ): Promise<void> {
+  const checkLength = options.checkLength ?? true;
+  const repairMode = options.repairMode ?? false;
   const expectedUid = process.getuid?.();
   let stat = await lstat(dir);
   if (!stat.isDirectory()) {
@@ -28,8 +30,13 @@ async function privateDirectory(
     throw new Error(
       `Unsafe run temporary directory: ${dir} (owned by uid ${stat.uid}, expected ${expectedUid})`,
     );
-  if ((stat.mode & 0o7777) !== 0o700) {
-    // Only tighten permissions on a real directory we already own; re-stat to confirm it stuck.
+  const perms = stat.mode & 0o7777;
+  if (perms !== 0o700) {
+    // Only tighten non-group/other-writable drift (e.g. 0755 or inherited setgid) during allocation.
+    if (!repairMode || (perms & 0o022) !== 0)
+      throw new Error(
+        `Unsafe run temporary directory: ${dir} (mode ${formatMode(stat.mode)}, expected 0700)`,
+      );
     try {
       await chmod(dir, 0o700);
       stat = await lstat(dir);
@@ -77,14 +84,14 @@ async function ensureRoot(paths: RunnerPaths): Promise<string> {
   await mkdir(root, { mode: 0o700 }).catch((error: NodeJS.ErrnoException) => {
     if (error.code !== 'EEXIST') throw error;
   });
-  await privateDirectory(root);
+  await privateDirectory(root, { repairMode: true });
   return root;
 }
 
 /** Validate existing lock directories before the shared lock helper inspects or reclaims them. */
 async function tempLock(dir: string, timeoutMs = 0): Promise<Lock> {
   try {
-    await privateDirectory(`${dir}.lock`, false);
+    await privateDirectory(`${dir}.lock`, { checkLength: false });
   } catch (error) {
     if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw error;
   }
@@ -108,7 +115,7 @@ export async function allocateRunTemp(
   try {
     await mkdir(dir, { mode: 0o700 });
     created = true;
-    await privateDirectory(dir);
+    await privateDirectory(dir, { repairMode: true });
     return { dir, lock };
   } catch (error) {
     if (created) await rm(dir, { recursive: true, force: true });
