@@ -19,6 +19,8 @@ are Better Auth's, and Better Auth's documentation applies unchanged.
 
 ## Public surfaces
 
+Set `apiKeys.systemApiKeyRoutes: false` to omit the `/api/systemApiKeys` management endpoints. They are enabled by default. Personal key management, key rules, authentication of existing system keys and scheduled maintenance continue to work. To restore HTTP rotation or revocation for an existing system key, re-enable the routes.
+
 - Server plugin: default export of `@nocobase/app-plugin-api-keys/server`.
   Contributes the `apikey` table migration and nothing else.
 - `apiKey(options?)`, plus `API_KEY_TABLE_NAME`, `API_KEY_ERROR_CODES` and the
