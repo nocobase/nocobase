@@ -46,6 +46,10 @@
       "types": "./src/queue/index.ts",
       "import": "./src/queue/index.ts"
     },
+    "./message-broker": {
+      "types": "./src/message-broker/index.ts",
+      "import": "./src/message-broker/index.ts"
+    },
     "./jobs": {
       "types": "./src/jobs/index.ts",
       "import": "./src/jobs/index.ts"
@@ -148,6 +152,10 @@
         "types": "./dist/queue/index.d.ts",
         "import": "./dist/queue/index.js"
       },
+      "./message-broker": {
+        "types": "./dist/message-broker/index.d.ts",
+        "import": "./dist/message-broker/index.js"
+      },
       "./jobs": {
         "types": "./dist/jobs/index.d.ts",
         "import": "./dist/jobs/index.js"
@@ -229,6 +237,7 @@
     "@nocobase/config": "workspace:^",
     "@nocobase/drive": "workspace:^",
     "@nocobase/logging": "workspace:^",
+    "@nocobase/message-broker": "workspace:^",
     "@nocobase/realtime": "workspace:^",
     "@nocobase/secrets": "workspace:^",
     "@nocobase/session": "workspace:^",

@@ -942,6 +942,9 @@ importers:
       '@nocobase/mailer':
         specifier: workspace:^
         version: link:../../libs/mailer
+      '@nocobase/message-broker':
+        specifier: workspace:^
+        version: link:../../libs/message-broker
       '@nocobase/queue':
         specifier: workspace:^
         version: link:../../libs/queue
@@ -3109,6 +3112,27 @@ importers:
       react-markdown:
         specifier: 'catalog:'
         version: 10.1.0(@types/react@19.2.18)(react@19.2.8)
+      typescript:
+        specifier: 'catalog:'
+        version: 6.0.3
+      vitest:
+        specifier: 'catalog:'
+        version: 4.1.10(@opentelemetry/api@1.9.0)(@types/node@24.13.3)(@vitest/coverage-v8@4.1.10)(jsdom@30.0.1(@noble/hashes@2.3.0))(vite@6.4.4(@types/node@24.13.3)(jiti@2.7.0)(lightningcss@1.33.0)(sass-embedded@1.103.1)(sass@1.103.1)(tsx@4.23.12)(yaml@2.9.0))
+
+  packages/libs/message-broker:
+    devDependencies:
+      '@nocobase/dev-config':
+        specifier: workspace:*
+        version: link:../../tools/dev-config
+      '@types/node':
+        specifier: 'catalog:'
+        version: 24.13.3
+      eslint:
+        specifier: 'catalog:'
+        version: 10.8.1(jiti@2.7.0)
+      prettier:
+        specifier: 'catalog:'
+        version: 3.9.6
       typescript:
         specifier: 'catalog:'
         version: 6.0.3
