@@ -2,6 +2,27 @@
 
 All notable changes to NocoBase 3 are documented in this file, one section per release: `nocobase-v3-beta/<date>.<n>` for a beta and `nocobase-v3/<date>.<n>` for a stable release. The versions each release published are on its GitHub Release, and every package's own changes are in its CHANGELOG.md.
 
+## [nocobase-v3-beta/2026-11-24.1](https://github.com/nocobase/nocobase/releases/tag/nocobase-v3-beta%2F2026-11-24.1)
+
+### 🎉 New Features
+
+- **[Backup]** Create, inspect, verify, and restore application database and upload backups through the built-in backup commands. ([#11642](https://github.com/nocobase/nocobase/pull/11642))
+- **[Client]**
+  - Applications can remove plugin pages by ID and automatically hide their linked toolbar shortcuts. ([#11670](https://github.com/nocobase/nocobase/pull/11670))
+  - Applications can disable the built-in settings, chat, inbox and mail pages individually. ([#11679](https://github.com/nocobase/nocobase/pull/11679))
+- **[Authentication]** Server-side authentication extensions can use the active transaction to commit or roll back their database changes with authentication. ([#11681](https://github.com/nocobase/nocobase/pull/11681))
+- **[Files]** Applications can disable the file storage administration endpoints while keeping attachment services. ([#11685](https://github.com/nocobase/nocobase/pull/11685))
+- **[Agents]** Applications can disable hosted model services while retaining Runner models and usage reports. ([#11686](https://github.com/nocobase/nocobase/pull/11686))
+- **[API keys]** Applications can disable system API key management endpoints while existing keys continue to work. ([#11687](https://github.com/nocobase/nocobase/pull/11687))
+
+### 🚀 Improvements
+
+- **[Cluster and distributed]** Default and Examples no longer bundle the distributed plugin, and existing applications can migrate to the Pro cluster readiness plugin. ([#11678](https://github.com/nocobase/nocobase/pull/11678))
+
+### 🐛 Bug Fixes
+
+- **[Agents]** Demo datasets now work with model services disabled, and agent and inbox controls have translations in all supported languages. ([#11690](https://github.com/nocobase/nocobase/pull/11690))
+
 ## [nocobase-v3-beta/2026-11-23.1](https://github.com/nocobase/nocobase/releases/tag/nocobase-v3-beta%2F2026-11-23.1)
 
 ### 🎉 New Features

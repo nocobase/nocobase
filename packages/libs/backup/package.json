@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/backup",
-  "version": "0.0.1",
+  "version": "0.1.0-beta.0",
   "description": "Application database and local file backups and restores for NocoBase.",
   "type": "module",
   "prettier": "@nocobase/dev-config/prettier",

@@ -2,6 +2,27 @@
 
 このファイルには NocoBase 3 の主な変更を、リリースごとに 1 セクションずつ記録します。`nocobase-v3-beta/<日付>.<連番>` はベータ版、`nocobase-v3/<日付>.<連番>` は正式版です。各リリースで公開されたパッケージのバージョンは対応する GitHub Release を、各パッケージ自体の変更はパッケージ内の CHANGELOG.md を参照してください。
 
+## [nocobase-v3-beta/2026-11-24.1](https://github.com/nocobase/nocobase/releases/tag/nocobase-v3-beta%2F2026-11-24.1)
+
+### 🎉 新機能
+
+- **[バックアップ]** 組み込みのバックアップコマンドで、アプリのデータベースとアップロードファイルのバックアップを作成、確認、検証、復元できます。 ([#11642](https://github.com/nocobase/nocobase/pull/11642))
+- **[クライアント]**
+  - アプリケーションはプラグインのページを ID で除外し、そのページを開くツールバーのショートカットも自動的に非表示にできます。 ([#11670](https://github.com/nocobase/nocobase/pull/11670))
+  - アプリケーションで組み込みの設定、チャット、受信トレイ、メールのページを個別に無効化できます。 ([#11679](https://github.com/nocobase/nocobase/pull/11679))
+- **[認証]** サーバー側の認証拡張は、実行中のトランザクションを使って、データベースの変更を認証処理と一緒にコミットまたはロールバックできます。 ([#11681](https://github.com/nocobase/nocobase/pull/11681))
+- **[ファイル]** アプリケーションは添付ファイル機能を維持したまま、ファイルストレージ管理 API を無効にできます。 ([#11685](https://github.com/nocobase/nocobase/pull/11685))
+- **[Agent]** アプリケーションは Runner のモデルと利用状況レポートを維持したまま、ホスト型モデルサービスを無効にできます。 ([#11686](https://github.com/nocobase/nocobase/pull/11686))
+- **[API キー]** 既存のキーを維持したまま、システム API キーの管理エンドポイントを無効にできます。 ([#11687](https://github.com/nocobase/nocobase/pull/11687))
+
+### 🚀 改善
+
+- **[クラスターと分散]** Default と Examples テンプレートから分散プラグインが外れ、既存のアプリは Pro のクラスタ準備状況プラグインに移行できます。 ([#11678](https://github.com/nocobase/nocobase/pull/11678))
+
+### 🐛 不具合修正
+
+- **[Agent]** モデルサービスが無効でもデモデータを利用できるようになり、エージェントと受信トレイの操作項目に全対応言語の翻訳が揃いました。 ([#11690](https://github.com/nocobase/nocobase/pull/11690))
+
 ## [nocobase-v3-beta/2026-11-23.1](https://github.com/nocobase/nocobase/releases/tag/nocobase-v3-beta%2F2026-11-23.1)
 
 ### 🎉 新機能

@@ -1,5 +1,17 @@
 # @nocobase/app-testing
 
+## 0.1.0-beta.11
+
+### Patch Changes
+
+- 8ff2df3: Applications can disable system settings, personal settings, chat, inbox and mail workspace routes independently. All five are enabled by default, so existing applications keep their pages when upgrading. Plugins can turn off their own pages with `{ disabled: true }` on `defineAppRoutes()` and the settings route helpers; disabled routes behave like `excludedRouteIds`, so overrides and header actions that target them no longer fail.
+- Updated dependencies [300f760]
+- Updated dependencies [28a7606]
+- Updated dependencies [8ff2df3]
+  - @nocobase/app-client@4.0.0-beta.13
+  - @nocobase/app-server@5.0.0-beta.10
+  - @nocobase/app-cli@1.0.0-beta.39
+
 ## 0.1.0-beta.10
 
 ### Minor Changes

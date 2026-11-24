@@ -1,5 +1,18 @@
 # @nocobase/app-cli
 
+## 1.0.0-beta.39
+
+### Minor Changes
+
+- 28a7606: Add built-in backup commands, disk-specific path exclusions, and application compatibility checks for restore.
+
+### Patch Changes
+
+- Updated dependencies [28a7606]
+- Updated dependencies [28a7606]
+  - @nocobase/app-server@5.0.0-beta.10
+  - @nocobase/backup@0.1.0-beta.0
+
 ## 1.0.0-beta.38
 
 ### Minor Changes
