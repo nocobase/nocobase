@@ -595,7 +595,7 @@ class DefaultMessageBrokerService implements MessageBrokerService {
     binding: SubscriptionBinding,
   ): void {
     const usage = `subscription "${binding.name}"`;
-    const require = (capability: BrokerCapability, why: string) => {
+    const needs = (capability: BrokerCapability, why: string) => {
       if (!implementation.capabilities[capability]) {
         throw new UnsupportedCapabilityError(
           backend,
@@ -604,12 +604,12 @@ class DefaultMessageBrokerService implements MessageBrokerService {
         );
       }
     };
-    require('deadLetter', 'every subscription');
+    needs('deadLetter', 'every subscription');
     if (binding.concurrency > 1)
-      require('perMessageAck', `concurrency ${binding.concurrency}`);
+      needs('perMessageAck', `concurrency ${binding.concurrency}`);
     if (binding.retryDelay > 0)
-      require('delayedRetry', `retryDelay ${binding.retryDelay}`);
-    if (binding.ordered) require('orderedByKey', 'ordered: true');
+      needs('delayedRetry', `retryDelay ${binding.retryDelay}`);
+    if (binding.ordered) needs('orderedByKey', 'ordered: true');
     const state = this.subscriptions.get(binding.name);
     if (state?.options.inbox && !this.inbox) {
       throw new Error(

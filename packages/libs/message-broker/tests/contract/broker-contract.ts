@@ -57,9 +57,7 @@ export interface MessageBrokerContractTarget {
     bindings: ContractBindings,
   ): MessageBrokerBackendEntry | Promise<MessageBrokerBackendEntry>;
   /** A backend entry whose publisher "missing" needs a resource the middleware lacks, and that resource's name. */
-  missingTopology(
-    scope: string,
-  ):
+  missingTopology(scope: string):
     | { readonly entry: MessageBrokerBackendEntry; readonly resource: string }
     | Promise<{
         readonly entry: MessageBrokerBackendEntry;
