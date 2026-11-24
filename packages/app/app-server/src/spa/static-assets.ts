@@ -47,20 +47,35 @@ const precompressed = [
   { encoding: 'gzip', extension: '.gz' },
 ] as const;
 
-/** The encodings an `Accept-Encoding` header accepts: those it lists without `q=0`, and every one for `*`. */
-export function acceptedEncodings(header: string | null): Set<string> {
-  const accepted = new Set<string>();
+/**
+ * The weights an `Accept-Encoding` header gives each coding (RFC 9110 section 12.5.3), by lowercase name; `*` stands
+ * for the codings it does not name. A coding without a valid `q` weighs 1.
+ */
+function parseAcceptEncoding(header: string | null): Map<string, number> {
+  const weights = new Map<string, number>();
   for (const part of header?.split(',') ?? []) {
-    const [name, ...parameters] = part.trim().toLowerCase().split(';');
-    const quality = parameters
-      .map((parameter) => parameter.trim())
-      .find((parameter) => parameter.startsWith('q='));
-    if (!name || (quality && Number(quality.slice(2)) === 0)) continue;
-    if (name === '*')
-      for (const { encoding } of precompressed) accepted.add(encoding);
-    else accepted.add(name);
+    const [rawName, ...parameters] = part.split(';');
+    const name = rawName.trim().toLowerCase();
+    if (!name) continue;
+    let weight = 1;
+    for (const parameter of parameters) {
+      const match = /^\s*q\s*=\s*(\d*\.?\d*)\s*$/i.exec(parameter);
+      if (match && match[1] !== '' && match[1] !== '.')
+        weight = Math.min(1, Number(match[1]));
+    }
+    weights.set(name, weight);
   }
-  return accepted;
+  return weights;
+}
+
+/** The weight a header gives a coding: its own, else that of `*`, else 0 (not accepted). */
+function weightOf(weights: Map<string, number>, encoding: string): number {
+  return weights.get(encoding) ?? weights.get('*') ?? 0;
+}
+
+/** Whether the file itself, without a coding, is acceptable: unless `identity;q=0`, or `*;q=0` naming no `identity`. */
+function identityAccepted(weights: Map<string, number>): boolean {
+  return (weights.get('identity') ?? weights.get('*') ?? 1) > 0;
 }
 
 async function fileStats(
@@ -104,15 +119,21 @@ async function serveFileIfExists(
   if (isCompressibleType(contentType)) {
     // Caches keep one copy per encoding, also of a file served uncompressed to a client that accepts none.
     headers.set('vary', 'accept-encoding');
-    const accepted = acceptedEncodings(options.acceptEncoding ?? null);
+    const weights = parseAcceptEncoding(options.acceptEncoding ?? null);
+    // The heaviest weight wins, `precompressed` order breaks a tie, and a copy the build did not write is skipped.
+    let bestWeight = 0;
     for (const { encoding, extension } of precompressed) {
-      if (!accepted.has(encoding)) continue;
-      const compressed = await fileStats(`${filePath}${extension}`);
-      if (!compressed) continue;
+      const weight = weightOf(weights, encoding);
+      if (weight <= bestWeight) continue;
+      const copy = await fileStats(`${filePath}${extension}`);
+      if (!copy) continue;
+      bestWeight = weight;
       headers.set('content-encoding', encoding);
       servedPath = `${filePath}${extension}`;
-      servedSize = compressed.size;
-      break;
+      servedSize = copy.size;
+    }
+    if (bestWeight === 0 && !identityAccepted(weights)) {
+      return notAcceptable(headers.get('vary')!);
     }
   }
   headers.set('content-length', String(servedSize));
@@ -178,6 +199,20 @@ function notFound(): Response {
     },
     {
       status: 404,
+    },
+  );
+}
+
+function notAcceptable(vary: string): Response {
+  return Response.json(
+    {
+      error: 'Not acceptable',
+    },
+    {
+      status: 406,
+      headers: {
+        vary,
+      },
     },
   );
 }

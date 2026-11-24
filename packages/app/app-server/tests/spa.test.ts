@@ -251,6 +251,79 @@ describe('SPA routes', () => {
     }
   });
 
+  it('chooses the copy by the weights of Accept-Encoding, not by the names it lists', async () => {
+    const root = createSpaFixture();
+    const source = 'console.log("asset");';
+    writeFileSync(
+      rootPath(root, 'assets/index.js.br'),
+      brotliCompressSync(source),
+    );
+    writeFileSync(rootPath(root, 'assets/index.js.gz'), gzipSync(source));
+    const router = new Hono();
+    registerSpaRoutes(router, {
+      basePath: '/main/test',
+      indexPath: path.join(root, 'index.html'),
+    });
+    const encodingFor = async (acceptEncoding: string) => {
+      const response = await router.request(
+        'http://localhost/main/test/assets/index.js',
+        { headers: { 'accept-encoding': acceptEncoding } },
+      );
+      return [response.status, response.headers.get('content-encoding')];
+    };
+
+    // A refusal of br outranks the wildcard, and the heavier weight wins even when it is the later one.
+    expect(await encodingFor('br;q=0, *;q=1')).toEqual([200, 'gzip']);
+    expect(await encodingFor('gzip;q=1, br;q=0.1')).toEqual([200, 'gzip']);
+    expect(await encodingFor('br;q=0.5, gzip;q=0.8')).toEqual([200, 'gzip']);
+    // Spaces around the name and the parameter are not part of them; equal weights prefer br.
+    expect(await encodingFor('gzip ;q=1')).toEqual([200, 'gzip']);
+    expect(await encodingFor(' GZIP ; Q = 0.5 , br ; q=0.5')).toEqual([
+      200,
+      'br',
+    ]);
+    // An explicit weight outranks the wildcard in the other direction too.
+    expect(await encodingFor('gzip;q=0, *;q=0.5')).toEqual([200, 'br']);
+    // Without a usable weight of the codings the build wrote, the file itself, unless that is refused too.
+    expect(await encodingFor('deflate, zstd')).toEqual([200, null]);
+    expect(await encodingFor('br;q=0, gzip;q=0')).toEqual([200, null]);
+    expect(await encodingFor('identity;q=0, *;q=0')).toEqual([406, null]);
+    expect(await encodingFor('br;q=0, gzip;q=0, identity;q=0')).toEqual([
+      406,
+      null,
+    ]);
+    expect(await encodingFor('identity;q=0, br')).toEqual([200, 'br']);
+  });
+
+  it('answers 406 when the copies are missing and the file itself is refused', async () => {
+    const root = createSpaFixture();
+    writeFileSync(
+      rootPath(root, 'assets/index.js.gz'),
+      gzipSync('console.log("asset");'),
+    );
+    const router = new Hono();
+    registerSpaRoutes(router, {
+      basePath: '/main/test',
+      indexPath: path.join(root, 'index.html'),
+    });
+    const request = (acceptEncoding: string) =>
+      router.request('http://localhost/main/test/assets/index.js', {
+        headers: { 'accept-encoding': acceptEncoding },
+      });
+
+    // Only br is accepted and the build wrote no .br: the file itself is the only thing left, and it is refused.
+    const refused = await request('br, identity;q=0');
+    expect(refused.status).toBe(406);
+    expect(refused.headers.get('vary')).toBe('accept-encoding');
+    expect(refused.headers.get('content-encoding')).toBeNull();
+    // The same client takes the gzip copy once it accepts it.
+    const gz = await request('br, gzip, identity;q=0');
+    expect(gz.status).toBe(200);
+    expect(gz.headers.get('content-encoding')).toBe('gzip');
+    // Without the identity refusal it gets the file itself.
+    expect((await request('br')).status).toBe(200);
+  });
+
   it('serves an asset without a precompressed copy, or an image, as it is', async () => {
     const root = createSpaFixture();
     writeFileSync(rootPath(root, 'assets/logo.png'), 'png');
