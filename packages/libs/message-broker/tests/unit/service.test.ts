@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import {
   createInMemoryBroker,
@@ -506,33 +506,79 @@ describe('outbox and inbox', () => {
 });
 
 describe('inMemory backend', () => {
-  it('keeps a message waiting for a delayed retry first in line across unsubscribe', async () => {
-    const service = create({
-      default: 'memory',
-      backends: {
-        memory: {
-          adapter: 'inMemory',
-          subscriptions: { orders: { ordered: true } },
+  it('keeps a delayed retry due at its time and first in line across unsubscribe', async () => {
+    vi.useFakeTimers();
+    try {
+      const service = create({
+        default: 'memory',
+        backends: {
+          memory: {
+            adapter: 'inMemory',
+            subscriptions: { orders: { ordered: true } },
+          },
         },
-      },
-    });
-    const handled: string[] = [];
-    const handler = (message: BrokerMessage, { attempt }: HandlerContext) => {
-      handled.push(`${message.messageId}#${attempt}`);
-      return message.messageId === 'first' && attempt === 1
-        ? retry({ delay: 60_000 })
-        : undefined;
-    };
-    const stop = service.subscription('orders').consume(handler);
-    await service.setup();
-    const publisher = service.publisher('orders');
-    await publisher.publish({ body: 1, messageId: 'first', key: 'k' });
-    await waitFor(() => handled.length === 1);
-    await stop();
-    service.subscription('orders').consume(handler);
-    await publisher.publish({ body: 2, messageId: 'second', key: 'k' });
-    await waitFor(() => handled.length === 3);
-    expect(handled).toEqual(['first#1', 'first#2', 'second#1']);
+      });
+      const handled: string[] = [];
+      const handler = (message: BrokerMessage, { attempt }: HandlerContext) => {
+        handled.push(`${message.messageId}#${attempt}`);
+        return message.messageId === 'first' && attempt === 1
+          ? retry({ delay: 60_000 })
+          : undefined;
+      };
+      const stop = service.subscription('orders').consume(handler);
+      await service.setup();
+      const publisher = service.publisher('orders');
+      await publisher.publish({ body: 1, messageId: 'first', key: 'k' });
+      await vi.advanceTimersByTimeAsync(0);
+      expect(handled).toEqual(['first#1']);
+      await stop();
+      await vi.advanceTimersByTimeAsync(10_000);
+      service.subscription('orders').consume(handler);
+      await publisher.publish({ body: 2, messageId: 'second', key: 'k' });
+      // Consuming again neither retries early nor lets the next message of the key overtake the waiting one.
+      await vi.advanceTimersByTimeAsync(49_999);
+      expect(handled).toEqual(['first#1']);
+      await vi.advanceTimersByTimeAsync(1);
+      expect(handled).toEqual(['first#1', 'first#2', 'second#1']);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('puts a retry that falls due while nothing consumes first in line for the next consumer', async () => {
+    vi.useFakeTimers();
+    try {
+      const service = create({
+        default: 'memory',
+        backends: {
+          memory: {
+            adapter: 'inMemory',
+            subscriptions: { orders: { ordered: true } },
+          },
+        },
+      });
+      const handled: string[] = [];
+      const handler = (message: BrokerMessage, { attempt }: HandlerContext) => {
+        handled.push(`${message.messageId}#${attempt}`);
+        return message.messageId === 'first' && attempt === 1
+          ? retry({ delay: 1000 })
+          : undefined;
+      };
+      const stop = service.subscription('orders').consume(handler);
+      await service.setup();
+      const publisher = service.publisher('orders');
+      await publisher.publish({ body: 1, messageId: 'first', key: 'k' });
+      await vi.advanceTimersByTimeAsync(0);
+      await stop();
+      await publisher.publish({ body: 2, messageId: 'second', key: 'k' });
+      await vi.advanceTimersByTimeAsync(5000);
+      expect(handled).toEqual(['first#1']);
+      service.subscription('orders').consume(handler);
+      await vi.advanceTimersByTimeAsync(0);
+      expect(handled).toEqual(['first#1', 'first#2', 'second#1']);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it('delivers what was published even when the publisher reuses its Buffer', async () => {

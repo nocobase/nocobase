@@ -102,8 +102,8 @@ class SubscriptionQueue {
   private readonly pending: Pending[] = [];
   private readonly busyKeys = new Set<string>();
   private readonly running = new Set<Promise<void>>();
-  /** Messages waiting for a delayed retry, in the order they started waiting. */
-  private readonly waiting = new Map<NodeJS.Timeout, Pending>();
+  /** Timers of messages waiting for a delayed retry; each puts its message first in line when it fires. */
+  private readonly timers = new Set<NodeJS.Timeout>();
   private deliver: DeliverMessage | undefined;
 
   public constructor(
@@ -121,20 +121,16 @@ class SubscriptionQueue {
     this.pump();
     return async () => {
       this.deliver = undefined;
+      // A message waiting for a delayed retry keeps its timer, and its key stays busy, so consuming again neither
+      // loses it nor retries it before it is due.
       await Promise.all(this.running);
-      // A message waiting for its delayed retry stays first in line, and keeps its key busy, until the queue is
-      // consumed again: the timer is only a delay, not the message's place.
-      const waiting = [...this.waiting];
-      this.waiting.clear();
-      for (const [timer] of waiting) clearTimeout(timer);
-      this.pending.unshift(...waiting.map(([, entry]) => entry));
-      if (this.binding.ordered) {
-        for (const [, entry] of waiting) {
-          if (entry.message.key !== undefined)
-            this.busyKeys.delete(entry.message.key);
-        }
-      }
     };
+  }
+
+  /** Drops the retry timers when the backend closes; nothing in it survives the process. */
+  public close(): void {
+    for (const timer of this.timers) clearTimeout(timer);
+    this.timers.clear();
   }
 
   private pump(): void {
@@ -168,12 +164,12 @@ class SubscriptionQueue {
           this.pending.unshift(entry);
           this.pump();
         };
-        if (outcome.delay > 0 && this.deliver) {
+        if (outcome.delay > 0) {
           const timer = setTimeout(() => {
-            this.waiting.delete(timer);
+            this.timers.delete(timer);
             requeue();
           }, outcome.delay);
-          this.waiting.set(timer, entry);
+          this.timers.add(timer);
         } else {
           requeue();
         }
@@ -269,6 +265,7 @@ class InMemoryRuntime implements BrokerRuntime {
   }
 
   public close(): Promise<void> {
+    for (const queue of this.queues.values()) queue.close();
     return Promise.resolve();
   }
 
