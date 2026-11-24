@@ -4,6 +4,8 @@ import {
   existsSync,
   mkdirSync,
   readFileSync,
+  rmSync,
+  symlinkSync,
   utimesSync,
   writeFileSync,
 } from 'node:fs';
@@ -15,6 +17,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { isInside } from '../src/lib/paths.ts';
 import { buildAgentEnv } from '../src/agent/env.ts';
 import { installGitHooks } from '../src/core/git-hooks.ts';
+import { taskGit } from '../src/core/task-git.ts';
 import { runnerPaths, type RunnerPaths } from '../src/lib/home.ts';
 import {
   acquireLock,
@@ -865,6 +868,106 @@ describe('checkout', () => {
       await expect(checkout(options)).rejects.toThrow(
         /redirected submodule Git directory/u,
       );
+    });
+
+    it('resumes after a linked worktree created inside a submodule is removed, while still refusing redirected commondir or core.worktree', async () => {
+      const options = {
+        paths,
+        appKey: 'app',
+        subjectKey: 'submodule-linked-worktree',
+        dirs: [repo('submodule-linked-worktree')],
+      };
+      const work = await checkout(options);
+      const entry = work.repos[0]!;
+      initByAgent(entry.dir);
+      const child = path.join(entry.dir, 'vendor/sub');
+      const subGitDir = path.join(entry.gitDir, 'modules', 'vendor', 'sub');
+      const tempWorktree = path.join(root, 'tmp-sub-wt');
+      git(['worktree', 'add', '--detach', tempWorktree, 'HEAD'], child);
+      // Simulate temporary directory cleanup leaving stale submodule worktree metadata behind.
+      rmSync(tempWorktree, { recursive: true, force: true });
+      await work.release();
+
+      const resumed = await checkout(options);
+      expect(resumed.repos[0]!.submodules).toEqual([child]);
+      await resumed.release();
+
+      // Pointing the submodule's .git at the stale worktree admin entry must still be refused.
+      const wtAdmin = path.join(subGitDir, 'worktrees', 'tmp-sub-wt');
+      const originalPointer = readFileSync(path.join(child, '.git'), 'utf8');
+      writeFileSync(path.join(child, '.git'), `gitdir: ${wtAdmin}\n`);
+      await expect(checkout(options)).rejects.toThrow(
+        /belongs to another checkout/u,
+      );
+      writeFileSync(path.join(child, '.git'), originalPointer);
+
+      // A linked worktree commondir pointing outside its owning submodule must be refused.
+      const wtCommon = path.join(wtAdmin, 'commondir');
+      const originalCommon = readFileSync(wtCommon, 'utf8');
+      writeFileSync(wtCommon, `${entry.gitDir}\n`);
+      await expect(checkout(options)).rejects.toThrow(
+        /redirected submodule configuration/u,
+      );
+
+      // A symlinked commondir inside worktrees/ must also be refused.
+      rmSync(wtCommon);
+      symlinkSync(subGitDir, wtCommon);
+      await expect(checkout(options)).rejects.toThrow(
+        /redirected submodule configuration/u,
+      );
+      rmSync(wtCommon);
+      writeFileSync(wtCommon, originalCommon);
+
+      // A commondir directly at the submodule root must still be refused.
+      const rootCommon = path.join(subGitDir, 'commondir');
+      writeFileSync(rootCommon, `${entry.gitDir}\n`);
+      await expect(checkout(options)).rejects.toThrow(
+        /redirected submodule configuration/u,
+      );
+      rmSync(rootCommon);
+
+      // A submodule core.worktree redirected outside the submodule (e.g. a deleted temp copy) must be refused clearly.
+      const goneWorktree = path.join(root, 'gone-temp', 'vendor', 'sub');
+      git(
+        [
+          'config',
+          '--file',
+          path.join(subGitDir, 'config'),
+          'core.worktree',
+          goneWorktree,
+        ],
+        root,
+      );
+      await expect(checkout(options)).rejects.toThrow(
+        new RegExp(
+          `redirected Git worktree \\(${goneWorktree.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\)`,
+        ),
+      );
+    });
+
+    it('reports concise git command errors from taskGit without runner-injected -c overrides', async () => {
+      const work = await checkout({
+        paths,
+        appKey: 'app',
+        subjectKey: 'concise-git-error',
+        dirs: [repo('concise-git-error')],
+      });
+      const entry = work.repos[0]!;
+      try {
+        const error = await taskGit(
+          { dir: entry.dir, cache: entry.cache, url: entry.url },
+          ['rev-parse', '--verify', 'refs/heads/no-such-branch'],
+        ).catch((caught: unknown) => caught);
+        expect(error).toBeInstanceOf(Error);
+        const message = (error as Error).message;
+        expect(message).toMatch(
+          /^git rev-parse --verify refs\/heads\/no-such-branch failed: /u,
+        );
+        expect(message).not.toContain('-c core.hooksPath=');
+        expect(message).not.toContain('--no-optional-locks');
+      } finally {
+        await work.release();
+      }
     });
 
     it('leaves them uninitialized in a new clone, for the agent to initialize into its own git directory', async () => {
