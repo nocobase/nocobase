@@ -1,4 +1,8 @@
-export { default } from './plugin.js';
+export {
+  default,
+  createFileServerPlugin,
+  type FileServerPluginOptions,
+} from './plugin.js';
 export { serverFileRepositoryManagerToken } from './token.js';
 export {
   ServerFileRepositoryManager,
