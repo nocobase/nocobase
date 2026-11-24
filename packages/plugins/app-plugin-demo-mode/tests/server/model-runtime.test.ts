@@ -100,6 +100,23 @@ it('provisions before import and keeps the same model and credentials after clea
   expect(services.remove).not.toHaveBeenCalled();
 });
 
+it('starts without a model and leaves an existing binding dormant when hosted models are disabled', async () => {
+  const disabled = make({ models: { enabled: false, services } });
+  await disabled.initialize();
+  expect((await disabled.status()).model.enabled).toBe(false);
+  expect(services.create).not.toHaveBeenCalled();
+
+  const hosted = make();
+  await hosted.initialize();
+  const name = hosted.models.serviceName;
+  await disabled.initialize();
+  await disabled.load();
+  expect(disabled.models.serviceName).toBeNull();
+  await hosted.initialize();
+  expect(hosted.models.serviceName).toBe(name);
+  expect(services.create).toHaveBeenCalledTimes(1);
+});
+
 it('keeps the environment model after a failed import', async () => {
   const demo = make();
   demo.register({
