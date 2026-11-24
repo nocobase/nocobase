@@ -238,7 +238,12 @@ export class NotificationManager implements NotificationManager {
     } catch (error) {
       logData.status = 'failure';
       const totalMs = Date.now() - startedAt;
-      const reason = error instanceof Error ? `${error.name}: ${error.message}` : JSON.stringify(error);
+      const reason =
+        error instanceof Error
+          ? `${error.name}: ${error.message}`
+          : typeof error?.reason === 'string'
+            ? error.reason
+            : JSON.stringify(error);
       this.plugin.logger.error('notification send failed', {
         channelName: params.channelName,
         triggerFrom: params.triggerFrom,
