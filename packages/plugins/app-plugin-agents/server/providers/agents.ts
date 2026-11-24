@@ -50,6 +50,8 @@ import {
 
 /** `agents` in the application's configuration. */
 export interface AgentsConfig {
+  /** Enable application-hosted model services. Runner models are independent. Defaults to true. */
+  readonly modelServices?: boolean;
   readonly uiRecovery?: OnlineAgentRecoveryConfig;
   readonly fileInputs?: import('../online/files/types.js').FileInputsConfig;
   /**
@@ -178,6 +180,7 @@ export class AgentsProvider extends ServiceProvider<AppPluginApplication> {
     this.app.container.singleton(agentsToken, (resolver) => {
       const config = this.app.config.get<AgentsConfig>('agents');
       return createAgents({
+        modelServices: config?.modelServices,
         limitForDisk: resolver.has(driveManagerToken)
           ? (disk) => resolver.resolve(driveManagerToken).getUploadLimit(disk)
           : undefined,

@@ -4,6 +4,7 @@
  */
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
+import { createAgents } from '../server/composition.js';
 import { nameFrom } from '../server/online/services.js';
 import { createHarness, type Harness } from './harness.js';
 import { startMockOpenAI, type MockOpenAI } from './mock-openai.js';
@@ -32,6 +33,46 @@ describe('model services', () => {
     baseUrl: `${mock.url}/`,
     apiKey: 'test-key',
     models: [{ value: 'mock-model' }, { value: 'mock-model' }],
+  });
+
+  it('blocks provider access after restarting against an existing model database', async () => {
+    h = await createHarness();
+    const original = h.services.models.services;
+    const saved = await original.create(local());
+    const ref = { modelService: saved.name, model: 'mock-model' };
+    const session = await h.request('POST', '/agents/conversations', {
+      user: 'alice',
+      body: { agentId: 'online' },
+    });
+    expect(session.status).toBe(201);
+    const restarted = createAgents({
+      modelServices: false,
+      database: h.database,
+      idGenerator: { generateString: () => 'unused' },
+    });
+    try {
+      await restarted.onlineAgent.recoverAtStartup();
+      const { services, gateway } = restarted.models;
+      expect(await services.list()).toEqual([]);
+      expect((await gateway.catalog()).services).toEqual([]);
+      await expect(services.connectionFor(ref)).rejects.toThrow('disabled');
+      await expect(services.endpointFor(ref, 'chat')).rejects.toThrow(
+        'disabled',
+      );
+      await expect(
+        gateway.generate({ model: ref, prompt: 'hello', source: 'test' }),
+      ).rejects.toThrow('disabled');
+      await expect(
+        gateway.embed({ model: ref, values: ['hello'], source: 'test' }),
+      ).rejects.toThrow('disabled');
+      await expect(services.remove(saved.name)).rejects.toThrow('disabled');
+      expect(mock.seen).toEqual([]);
+      expect((await original.list()).map((item) => item.name)).toEqual([
+        saved.name,
+      ]);
+    } finally {
+      await restarted.onlineAgent.shutdown();
+    }
   });
 
   it('names a service from its title', () => {

@@ -1,5 +1,7 @@
 # Model services
 
+Set `agents.modelServices: false` in the server configuration to disable application-hosted model services and their HTTP endpoints. Existing service records, keys and usage history are retained. Runner models, chats and jobs continue to use their own runtime. The default is enabled.
+
 Agents run on runners and do not use model services. The plugin keeps model services for the App's own model calls, such as a knowledge base's embeddings, reranking and short texts. The README's "Model services" section is the reference.
 
 ## Model services

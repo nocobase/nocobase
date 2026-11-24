@@ -1,6 +1,7 @@
 /** Online chat admission, saved defaults and usage follow the enabled chat catalog without deleting history. */
 import { afterEach, expect, it } from 'vitest';
 
+import { createAgents } from '../server/composition.js';
 import { createHarness, type Harness } from './harness.js';
 import { startMockOpenAI, type MockOpenAI } from './mock-openai.js';
 
@@ -233,4 +234,25 @@ it('filters online history before all usage aggregates and restores it when mode
   expect((await h.services.reporting.modelUsage(caller, {})).rows).toHaveLength(
     1,
   );
+
+  const disabled = createAgents({
+    database: h.database,
+    clock: h.clock,
+    idGenerator: { generateString: () => 'unused' },
+    modelServices: false,
+  });
+  try {
+    expect(
+      (await disabled.reporting.usage(caller, {})).totals.inputTokens,
+    ).toBe(300);
+    expect((await disabled.reporting.modelUsage(caller, {})).rows).toHaveLength(
+      1,
+    );
+    expect(
+      (await disabled.reporting.modelUsage({ ...caller, allRuns: false }, {}))
+        .rows,
+    ).toEqual([]);
+  } finally {
+    await disabled.onlineAgent.shutdown();
+  }
 });

@@ -22,8 +22,10 @@ const context = (id = 'alice'): OnlineAgentContext => ({
     identity: { principal: { type: 'user', id } },
   } as AuthorizationContext,
 });
-async function fixture(options: { outputFeature?: boolean } = {}) {
-  h = await createHarness();
+async function fixture(
+  options: { outputFeature?: boolean; modelServices?: boolean } = {},
+) {
+  h = await createHarness({ modelServices: options.modelServices });
   const runner = await h.registerRunner(
     options.outputFeature
       ? {
@@ -58,7 +60,7 @@ async function fixture(options: { outputFeature?: boolean } = {}) {
 }
 
 it('streams two canonical blocks before completion, deduplicates retransmission and keeps real notice positions', async () => {
-  const f = await fixture();
+  const f = await fixture({ modelServices: false });
   expect(f.agent.backend).toBe('runner');
   await f.agent.send([{ role: 'user', content: 'Two blocks' }]);
   const stream = await f.agent.receive();
