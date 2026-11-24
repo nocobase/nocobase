@@ -8,7 +8,7 @@
  */
 
 import React from 'react';
-import { fireEvent, render, screen } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { ChatButton } from '../../components/ChatButton';
@@ -79,12 +79,10 @@ vi.mock('../../hooks/useWorkflowTasks', () => ({
   }),
 }));
 
-const renderWithRuntime = (runtime: ChatBoxRuntime, initialEntry = '/customer1') => {
+const renderWithRuntime = (runtime: ChatBoxRuntime, { initialEntry = '/customer1', button = <ChatButton /> } = {}) => {
   return render(
     <MemoryRouter initialEntries={[initialEntry]}>
-      <ChatBoxRuntimeProvider runtime={runtime}>
-        <ChatButton />
-      </ChatBoxRuntimeProvider>
+      <ChatBoxRuntimeProvider runtime={runtime}>{button}</ChatBoxRuntimeProvider>
     </MemoryRouter>,
   );
 };
@@ -100,14 +98,21 @@ describe('global chatbox behavior', () => {
   });
 
   afterEach(() => {
+    cleanup();
     window.history.replaceState({}, '', '/');
     mocks.getAIEmployees.mockReset();
+  });
+
+  it('leaves employee loading to the layout when requested', () => {
+    renderWithRuntime(createChatBoxRuntime(), { button: <ChatButton loadEmployeesOnMount={false} /> });
+    expect(mocks.getAIEmployees).not.toHaveBeenCalled();
   });
 
   it('opens the global runtime from a non-default portal and selects the leader employee', () => {
     const runtime = createChatBoxRuntime();
 
     renderWithRuntime(runtime);
+    expect(mocks.getAIEmployees).toHaveBeenCalledTimes(1);
 
     fireEvent.click(screen.getByRole('button', { name: 'Open AI chat' }));
 
@@ -125,7 +130,7 @@ describe('global chatbox behavior', () => {
     window.history.replaceState({}, '', '/admin');
     const runtime = createChatBoxRuntime();
 
-    renderWithRuntime(runtime, '/admin');
+    renderWithRuntime(runtime, { initialEntry: '/admin' });
 
     expect(screen.getByRole('button', { name: 'Open AI chat' })).toBeTruthy();
   });
@@ -143,7 +148,7 @@ describe('global chatbox behavior', () => {
     window.history.replaceState({}, '', '/v/');
     const runtime = createChatBoxRuntime();
 
-    renderWithRuntime(runtime, '/');
+    renderWithRuntime(runtime, { initialEntry: '/' });
 
     expect(screen.queryByRole('button', { name: 'Open AI chat' })).toBeNull();
   });
@@ -153,7 +158,7 @@ describe('global chatbox behavior', () => {
     window.history.replaceState({}, '', '/drol/v/test');
     const runtime = createChatBoxRuntime();
 
-    renderWithRuntime(runtime, '/custom');
+    renderWithRuntime(runtime, { initialEntry: '/custom' });
 
     expect(screen.getByRole('button', { name: 'Open AI chat' })).toBeTruthy();
   });
@@ -163,7 +168,7 @@ describe('global chatbox behavior', () => {
     window.history.replaceState({}, '', '/nocobase/custom');
     const runtime = createChatBoxRuntime();
 
-    renderWithRuntime(runtime, '/custom');
+    renderWithRuntime(runtime, { initialEntry: '/custom' });
 
     expect(screen.queryByRole('button', { name: 'Open AI chat' })).toBeNull();
   });

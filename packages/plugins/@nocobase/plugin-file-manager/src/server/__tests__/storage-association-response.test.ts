@@ -103,6 +103,39 @@ describe('storage association responses', () => {
     expect(empty.body.data.storage).toBeNull();
   });
 
+  it('preserves the data source model when expanding collections', async () => {
+    const admin = await app.db.getRepository('users').findOne({ filter: { email: process.env.INIT_ROOT_EMAIL } });
+    const agent = await app.agent().login(admin, 'root');
+    const result = await agent.resource('dataSources').get({ filterByTk: 'main', appends: ['collections'] });
+
+    expect(result.status).toBe(200);
+    expect(result.body.data.key).toBe('main');
+    expect(result.body.data.collections).toEqual(expect.any(Array));
+  });
+
+  it('keeps business records with unrelated associations available to response middleware', async () => {
+    const report = await app.db.getRepository('reports').create({ values: {} });
+    await app.db.getRepository('files').create({ values: { title: 'Document', reportId: report.id } });
+    app.use(
+      async (ctx, next) => {
+        await next();
+        if (ctx.action?.resourceName === 'reports' && ctx.action.actionName === 'list') {
+          const records = ctx.body.rows ?? ctx.body;
+          ctx.set('X-Report-Id', String(records[0].get('id')));
+        }
+      },
+      { after: 'dataWrapping', before: 'dataSource' },
+    );
+    const admin = await app.db.getRepository('users').findOne({ filter: { email: process.env.INIT_ROOT_EMAIL } });
+    const agent = await app.agent().login(admin, 'root');
+    for (const paginate of [true, false]) {
+      const response = await agent.resource('reports').list({ appends: ['documents'], paginate });
+      expect(response.status).toBe(200);
+      expect(response.headers['x-report-id']).toBe(String(report.id));
+      expect(response.body.data[0].documents).toHaveLength(1);
+    }
+  });
+
   it('projects storage in nested file arrays and preserves unrelated JSON fields', async () => {
     const storage = await createStorage();
     const report = await app.db.getRepository('reports').create({ values: {} });

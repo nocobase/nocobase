@@ -31,6 +31,19 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return isPlainObject(value);
 }
 
+// Keep the original list when none of its records contains a storage association.
+function projectArray(records: unknown[], project: (record: unknown) => unknown): unknown[] {
+  let result = records;
+  records.forEach((record, index) => {
+    const projected = project(record);
+    if (projected !== record) {
+      if (result === records) result = records.slice();
+      result[index] = projected;
+    }
+  });
+  return result;
+}
+
 // The root has already been serialized with its model's normal hidden-field and virtual-field rules.
 function projectAssociations(
   value: unknown,
@@ -39,7 +52,7 @@ function projectAssociations(
   isAssociation: boolean,
 ): unknown {
   if (Array.isArray(value)) {
-    return value.map((record) => projectAssociations(record, collection, storages, isAssociation));
+    return projectArray(value, (record) => projectAssociations(record, collection, storages, isAssociation));
   }
   if (!isRecord(value)) {
     return value;
@@ -48,12 +61,16 @@ function projectAssociations(
     return pick(value, publicStorageFields);
   }
 
-  const result = { ...value };
+  let result = value;
   for (const [name, association] of Object.entries(collection.model.associations)) {
     if (Object.prototype.hasOwnProperty.call(value, name)) {
       const target = collection.db.getCollectionByModelName(association.target.name);
       if (target) {
-        result[name] = projectAssociations(value[name], target, storages, true);
+        const projected = projectAssociations(value[name], target, storages, true);
+        if (projected !== value[name]) {
+          if (result === value) result = { ...value };
+          result[name] = projected;
+        }
       }
     }
   }
@@ -84,14 +101,18 @@ export async function projectStorageAssociations(ctx: Context, next: Next) {
       return record;
     }
     const json = record instanceof Model ? record.toJSON() : record;
-    return projectAssociations(json, collection, storages, relatedStorage);
+    const projected = projectAssociations(json, collection, storages, relatedStorage);
+    return projected === json ? record : projected;
   }
 
   if (actionName === 'get') {
-    ctx.body = projectRecord(ctx.body);
+    const record = projectRecord(ctx.body);
+    if (record !== ctx.body) ctx.body = record;
   } else if (Array.isArray(ctx.body)) {
-    ctx.body = ctx.body.map(projectRecord);
+    const records = projectArray(ctx.body, projectRecord);
+    if (records !== ctx.body) ctx.body = records;
   } else if (Array.isArray(ctx.body.rows)) {
-    ctx.body = { ...ctx.body, rows: ctx.body.rows.map(projectRecord) };
+    const rows = projectArray(ctx.body.rows, projectRecord);
+    if (rows !== ctx.body.rows) ctx.body = { ...ctx.body, rows };
   }
 }
