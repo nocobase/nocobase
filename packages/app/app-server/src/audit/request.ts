@@ -171,19 +171,20 @@ export function auditRouteContext(): MiddlewareHandler {
 
 export function setAuditActor(actor: AuditActor): void {
   const request = current.getStore();
-  if (request) request.actor = actor;
+  if (request && !request.finished) request.actor = actor;
 }
 
 /** Mark the session produced by a successful API key validation. No key plaintext enters audit state. */
 export function markAuditApiKeySession(userId: string, apiKeyId: string): void {
   const request = current.getStore();
-  if (request) request.apiKeySession = { userId, apiKeyId };
+  if (request && !request.finished)
+    request.apiKeySession = { userId, apiKeyId };
 }
 
 /** Attribute the final session selected by authentication. */
 export function setAuditSessionActor(userId: string, sessionId: string): void {
   const request = current.getStore();
-  if (!request) return;
+  if (!request || request.finished) return;
   const key = request.apiKeySession;
   request.actor =
     key?.userId === userId && key.apiKeyId === sessionId
@@ -195,6 +196,7 @@ export function setAuditRoles(roles: readonly string[], userId?: string): void {
   const request = current.getStore();
   if (
     !request ||
+    request.finished ||
     (userId !== undefined &&
       (!('userId' in request.actor) || request.actor.userId !== userId))
   )
@@ -207,7 +209,7 @@ export function setAuditTarget(
   source?: AuditTarget,
 ): void {
   const request = current.getStore();
-  if (request) {
+  if (request && !request.finished) {
     request.targets = 'collection' in target ? [target] : [...target];
     request.source = source;
   }
@@ -217,7 +219,8 @@ export function addAuditMetadata(
   metadata: Readonly<Record<string, unknown>>,
 ): void {
   const request = current.getStore();
-  if (request?.route) request.metadata = { ...request.metadata, ...metadata };
+  if (request?.route && !request.finished)
+    request.metadata = { ...request.metadata, ...metadata };
 }
 
 async function eventOf(

@@ -260,6 +260,7 @@ export const apiRoutes: AppApiRouteContribution<AppPluginApplication> =
 
     routes.post(
       '/invitations',
+      auditRoute({ redactFields: ['inviteUrl'] }),
       allowed('invite', '*'),
       describeRoute({
         tags,
@@ -312,6 +313,13 @@ export const apiRoutes: AppApiRouteContribution<AppPluginApplication> =
 
     routes.post(
       '/invitations/:invitationId/resend',
+      auditRoute({
+        redactFields: ['inviteUrl'],
+        target: (context) => ({
+          collection: 'userInvitations',
+          key: context.req.param('invitationId'),
+        }),
+      }),
       allowed('invite', '*'),
       describeRoute({
         tags,
@@ -882,6 +890,7 @@ export const apiRoutes: AppApiRouteContribution<AppPluginApplication> =
     );
     invitations.post(
       '/lookup',
+      auditRoute(false),
       describeRoute({
         tags,
         summary: 'Look up an invitation by its token',
