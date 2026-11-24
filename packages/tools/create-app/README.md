@@ -56,7 +56,7 @@ pnpm create @nocobase/app
 | `-h, --help`          | Show help                                                                                |
 | `--version`           | Show the version                                                                         |
 
-`--template` supports `default` (the default application), `examples` (the example application), `multi-portal` (one application with multiple business entry points), `multi-app` (Main only, with optional independent children), and `sub-app` (an independent child application for a multi-app platform), each pointing at the corresponding `@nocobase/app-template-*` package. The multi-portal, multi-app and sub-app templates are commercial Pro packages, not bundled with this open-source creation tool. They require authorized registry access.
+The open-source `default` and `examples` aliases select their respective template packages. The commercial `multi-app`, `sub-app` and `multi-portal` aliases enable capabilities in Enterprise. Use a registry account with access to Enterprise and its plugins. When the selected Enterprise channel predates a capability, create-app uses its original scenario package on the same channel.
 
 ```bash
 pnpm create @nocobase/app crm --template=default   # the default, can be omitted
@@ -83,7 +83,7 @@ For the commercial multi-portal template, first log in to the private registry w
 ```bash
 pnpm login --registry=https://pkg-v3.nocobase.com/ --scope=@nocobase
 npm whoami --registry=https://pkg-v3.nocobase.com/
-npm view @nocobase/app-template-multi-portal@beta version --registry=https://pkg-v3.nocobase.com/
+npm view @nocobase/app-template-enterprise@beta version --registry=https://pkg-v3.nocobase.com/
 NOCOBASE_REGISTRY=https://pkg-v3.nocobase.com/ pnpm create @nocobase/app@beta crm --template=multi-portal --template-tag=beta
 ```
 
@@ -91,7 +91,7 @@ The alias follows `--template-tag` like Default and Examples. Registry selection
 
 ### Multi-app applications
 
-The `multi-app` alias resolves the commercial `@nocobase/app-template-multi-app` package in `nocobase/nocobase3-pro`. It creates Main only. Select the authorized registry explicitly and verify that the selected template version is available:
+The `multi-app` alias enables Main hosting and application access in Enterprise. It creates one Main application. Select the authorized registry explicitly and verify that the selected template version is available:
 
 ```bash
 NOCOBASE_REGISTRY=https://pkg-v3.nocobase.com/ pnpm create @nocobase/app@beta platform --template multi-app --template-tag beta
@@ -104,10 +104,10 @@ After creation, use the installed `nocobase-app-plugin-multi-app` Skill for mult
 
 ### Child applications
 
-The `sub-app` alias resolves the commercial `@nocobase/app-template-sub-app` package in `nocobase/nocobase3-pro`: an independent child application that a multi-app Main deploys and admits through platform SSO. It preinstalls the `deploy` CLI extension as a development dependency. Use the same registry login as above and verify the package before creating the project:
+The `sub-app` alias creates an independent Enterprise application with platform SSO that Main can deploy. It preinstalls the `deploy` CLI extension as a development dependency. Use the same registry login as above and verify the package before creating the project:
 
 ```bash
-npm view @nocobase/app-template-sub-app@beta version --registry=https://pkg-v3.nocobase.com/
+npm view @nocobase/app-template-enterprise@beta version --registry=https://pkg-v3.nocobase.com/
 NOCOBASE_REGISTRY=https://pkg-v3.nocobase.com/ pnpm create @nocobase/app@beta child-app --template sub-app --template-tag beta
 cd child-app
 pnpm nocobase config init --dialect sqlite

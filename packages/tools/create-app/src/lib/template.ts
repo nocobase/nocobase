@@ -3,7 +3,13 @@ import os from 'node:os';
 import path from 'node:path';
 import { CommandFailedError, runCommand } from './run-command.ts';
 
+import {
+  applyTemplatePreset,
+  type EnterprisePreset,
+} from './template-preset.ts';
+
 export interface TemplateAlias {
+  preset?: EnterprisePreset;
   /** Published package the name resolves to. Carries no tag; the channel is applied separately. */
   packageName: string;
 }
@@ -23,9 +29,18 @@ export const TEMPLATE_ALIASES: Readonly<Record<string, TemplateAlias>> = {
   pro: { packageName: '@nocobase/app-template-pro' },
   enterprise: { packageName: '@nocobase/app-template-enterprise' },
   examples: { packageName: '@nocobase/app-template-examples' },
-  'multi-portal': { packageName: '@nocobase/app-template-multi-portal' },
-  'multi-app': { packageName: '@nocobase/app-template-multi-app' },
-  'sub-app': { packageName: '@nocobase/app-template-sub-app' },
+  'multi-portal': {
+    packageName: '@nocobase/app-template-enterprise',
+    preset: 'multi-portal',
+  },
+  'multi-app': {
+    packageName: '@nocobase/app-template-enterprise',
+    preset: 'multi-app',
+  },
+  'sub-app': {
+    packageName: '@nocobase/app-template-enterprise',
+    preset: 'sub-app',
+  },
 };
 
 export const DEFAULT_TEMPLATE = 'default';
@@ -72,7 +87,7 @@ export function resolveTemplateSource(
 }
 
 /** Reads the alias table without inheriting `Object.prototype`, so `constructor` does not read as a template. */
-function lookupTemplateAlias(name: string): TemplateAlias | undefined {
+export function lookupTemplateAlias(name: string): TemplateAlias | undefined {
   return Object.hasOwn(TEMPLATE_ALIASES, name)
     ? TEMPLATE_ALIASES[name]
     : undefined;
@@ -93,6 +108,7 @@ export interface ResolvedTemplate {
 }
 
 export interface DownloadTemplateOptions {
+  preset?: EnterprisePreset;
   /** A published package (`pkg`, `pkg@1.2.3`) or a path to a local package directory. */
   source: string;
   nocobaseRegistry?: string;
@@ -239,6 +255,24 @@ export async function downloadTemplate(
       { timeoutMs: PACK_TIMEOUT_MS },
     );
 
+    if (
+      options.preset &&
+      !(await applyTemplatePreset(extractDirectory, options.preset))
+    ) {
+      // An older edition on the selected channel predates presets. Its original scenario package still exists.
+      const fallback = source.replace(
+        '@nocobase/app-template-enterprise@',
+        '@nocobase/app-template-' + options.preset + '@',
+      );
+      if (fallback === source)
+        throw new Error('The template does not provide the requested preset.');
+      await rm(extractDirectory, { recursive: true, force: true });
+      return downloadTemplate({
+        ...options,
+        source: fallback,
+        preset: undefined,
+      });
+    }
     const manifest = await readTemplateManifest(extractDirectory);
 
     return { directory: extractDirectory, ...manifest };

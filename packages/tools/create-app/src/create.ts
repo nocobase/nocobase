@@ -21,7 +21,11 @@ import {
   removeDirectory,
   scaffoldFromTemplate,
 } from './lib/scaffold.ts';
-import { downloadTemplate, resolveTemplateSource } from './lib/template.ts';
+import {
+  downloadTemplate,
+  lookupTemplateAlias,
+  resolveTemplateSource,
+} from './lib/template.ts';
 import { buildNpmrcFile } from './lib/npmrc.ts';
 import {
   FAILURE_CODES,
@@ -192,7 +196,9 @@ async function run(
   });
   state.stage = 'download';
   progress(`Downloading ${source}`);
+  const preset = lookupTemplateAlias(input.flags.template.trim())?.preset;
   const template = await downloadTemplate({
+    ...(preset ? { preset } : {}),
     nocobaseRegistry,
     source,
     ...(input.flags.registry !== undefined &&
