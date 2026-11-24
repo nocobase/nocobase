@@ -5,7 +5,10 @@
  */
 type Tree = { readonly [key: string]: string | Tree };
 
-export function mergeLocale<T extends object>(base: T, extra: object): T {
+export function mergeLocale<T extends object, U extends object>(
+  base: T,
+  extra: U,
+): T & U {
   const merged: Record<string, unknown> = { ...(base as object) };
   for (const [key, value] of Object.entries(extra)) {
     const current = merged[key];
@@ -17,5 +20,5 @@ export function mergeLocale<T extends object>(base: T, extra: object): T {
         ? mergeLocale(current as Tree, value as Tree)
         : value;
   }
-  return merged as T;
+  return merged as T & U;
 }
