@@ -4,6 +4,8 @@ import path from 'node:path';
 import type { ConfigEnv, Rollup, UserConfig, UserConfigExport } from 'vite';
 import { defineConfig, loadEnv, mergeConfig } from 'vite';
 
+import { precompressAssets } from './precompress.js';
+
 // A locale module is a `locales/` sibling named after the locale it provides, such as `en-US.ts` or
 // `zh-CN.js`. Both extensions are accepted because a consumer may build from plugin sources or from an
 // already compiled package. The locale-shaped filename keeps barrels such as `locales/index.ts` out.
@@ -119,6 +121,8 @@ export const createAppViteConfig: (
       plugins: [
         react(),
         tailwindcss(),
+        // The application server answers Accept-Encoding with these copies (`serveSpaAsset`).
+        precompressAssets(),
         {
           name: 'nocobase:client-plugin-styles',
           apply: 'serve',

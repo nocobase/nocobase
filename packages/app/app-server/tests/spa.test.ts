@@ -1,6 +1,12 @@
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
+import {
+  brotliCompressSync,
+  brotliDecompressSync,
+  gunzipSync,
+  gzipSync,
+} from 'node:zlib';
 
 import { Hono } from 'hono';
 import { afterEach, describe, expect, it, vi } from 'vitest';
@@ -193,6 +199,80 @@ describe('SPA routes', () => {
 
     await expect(htmlResponse.text()).resolves.toContain('<html lang="ja-JP">');
     await expect(assetResponse.text()).resolves.toBe('export default true;');
+  });
+
+  it('answers Accept-Encoding with the precompressed copy the client prefers', async () => {
+    const root = createSpaFixture();
+    const source = 'console.log("asset");';
+    writeFileSync(rootPath(root, 'assets/index.js.br'), brotliCompressSync(source));
+    writeFileSync(rootPath(root, 'assets/index.js.gz'), gzipSync(source));
+    const router = new Hono();
+    registerSpaRoutes(router, {
+      basePath: '/main/test',
+      indexPath: path.join(root, 'index.html'),
+    });
+    const request = (acceptEncoding?: string, method = 'GET') =>
+      router.request('http://localhost/main/test/assets/index.js', {
+        method,
+        headers: acceptEncoding ? { 'accept-encoding': acceptEncoding } : {},
+      });
+
+    const br = await request('gzip, deflate, br');
+    expect(br.headers.get('content-encoding')).toBe('br');
+    expect(br.headers.get('vary')).toBe('accept-encoding');
+    expect(br.headers.get('content-type')).toBe(
+      'text/javascript; charset=utf-8',
+    );
+    const brBody = Buffer.from(await br.arrayBuffer());
+    expect(br.headers.get('content-length')).toBe(String(brBody.byteLength));
+    expect(brotliDecompressSync(brBody).toString()).toBe(source);
+
+    const gz = await request('gzip, br;q=0');
+    expect(gz.headers.get('content-encoding')).toBe('gzip');
+    expect(
+      gunzipSync(Buffer.from(await gz.arrayBuffer())).toString(),
+    ).toBe(source);
+
+    expect((await request('*')).headers.get('content-encoding')).toBe('br');
+
+    const head = await request('br', 'HEAD');
+    expect(head.headers.get('content-encoding')).toBe('br');
+    expect(head.headers.get('content-length')).toBe(
+      String(brotliCompressSync(source).byteLength),
+    );
+
+    for (const plain of [await request(), await request('identity')]) {
+      expect(plain.headers.get('content-encoding')).toBeNull();
+      expect(plain.headers.get('vary')).toBe('accept-encoding');
+      await expect(plain.text()).resolves.toBe(source);
+    }
+  });
+
+  it('serves an asset without a precompressed copy, or an image, as it is', async () => {
+    const root = createSpaFixture();
+    writeFileSync(rootPath(root, 'assets/logo.png'), 'png');
+    writeFileSync(rootPath(root, 'assets/logo.png.br'), 'not served');
+    const router = new Hono();
+    registerSpaRoutes(router, {
+      basePath: '/main/test',
+      indexPath: path.join(root, 'index.html'),
+    });
+    const headers = { 'accept-encoding': 'br, gzip' };
+
+    const script = await router.request(
+      'http://localhost/main/test/assets/index.js',
+      { headers },
+    );
+    expect(script.headers.get('content-encoding')).toBeNull();
+    await expect(script.text()).resolves.toBe('console.log("asset");');
+
+    const image = await router.request(
+      'http://localhost/main/test/assets/logo.png',
+      { headers },
+    );
+    expect(image.headers.get('content-encoding')).toBeNull();
+    expect(image.headers.get('vary')).toBeNull();
+    await expect(image.text()).resolves.toBe('png');
   });
 
   it('does not return the SPA index for missing assets', async () => {

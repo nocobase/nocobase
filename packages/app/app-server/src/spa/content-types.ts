@@ -26,3 +26,10 @@ export function contentTypeFor(filePath: string): string {
     'application/octet-stream'
   );
 }
+
+/** Text types worth sending compressed; images, fonts and archives are compressed already. */
+export function isCompressibleType(contentType: string): boolean {
+  return /^(?:text\/|application\/(?:json|wasm)|image\/svg\+xml)/u.test(
+    contentType,
+  );
+}

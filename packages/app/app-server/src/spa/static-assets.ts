@@ -3,7 +3,7 @@ import { stat } from 'node:fs/promises';
 import path from 'node:path';
 import { Readable } from 'node:stream';
 
-import { contentTypeFor } from './content-types.js';
+import { contentTypeFor, isCompressibleType } from './content-types.js';
 
 const oneYearSeconds = 31_536_000;
 
@@ -33,50 +33,94 @@ export async function serveSpaAsset(
     {
       cacheControl:
         options.cacheControl ?? `public, max-age=${oneYearSeconds}, immutable`,
+      acceptEncoding: request.headers.get('accept-encoding'),
     },
   );
 
   return response ?? notFound();
 }
 
+// The copies the build writes beside each compressible asset (`precompressAssets` in `@nocobase/dev-config`), in the
+// order they are preferred.
+const precompressed = [
+  { encoding: 'br', extension: '.br' },
+  { encoding: 'gzip', extension: '.gz' },
+] as const;
+
+/** The encodings an `Accept-Encoding` header accepts: those it lists without `q=0`, and every one for `*`. */
+export function acceptedEncodings(header: string | null): Set<string> {
+  const accepted = new Set<string>();
+  for (const part of header?.split(',') ?? []) {
+    const [name, ...parameters] = part.trim().toLowerCase().split(';');
+    const quality = parameters
+      .map((parameter) => parameter.trim())
+      .find((parameter) => parameter.startsWith('q='));
+    if (!name || (quality && Number(quality.slice(2)) === 0)) continue;
+    if (name === '*')
+      for (const { encoding } of precompressed) accepted.add(encoding);
+    else accepted.add(name);
+  }
+  return accepted;
+}
+
+async function fileStats(
+  filePath: string,
+): Promise<Awaited<ReturnType<typeof stat>> | null> {
+  try {
+    const stats = await stat(filePath);
+    return stats.isFile() ? stats : null;
+  } catch (error) {
+    const code = (error as NodeJS.ErrnoException).code;
+    if (code === 'ENOENT' || code === 'ENOTDIR') return null;
+    throw error;
+  }
+}
+
 async function serveFileIfExists(
   rootDir: string,
   requestPath: string,
   method: string,
-  options: { cacheControl?: string } = {},
+  options: { cacheControl?: string; acceptEncoding?: string | null } = {},
 ): Promise<Response | null> {
   const filePath = resolveSpaFile(rootDir, requestPath);
   if (!filePath) {
     return null;
   }
 
-  let stats: Awaited<ReturnType<typeof stat>>;
-  try {
-    stats = await stat(filePath);
-  } catch (error) {
-    const code = (error as NodeJS.ErrnoException).code;
-    if (code === 'ENOENT' || code === 'ENOTDIR') {
-      return null;
-    }
-
-    throw error;
-  }
-
-  if (!stats.isFile()) {
+  const stats = await fileStats(filePath);
+  if (!stats) {
     return null;
   }
 
+  const contentType = contentTypeFor(filePath);
   const headers = new Headers({
     'cache-control': options.cacheControl ?? 'no-cache',
-    'content-length': String(stats.size),
-    'content-type': contentTypeFor(filePath),
+    'content-type': contentType,
     'last-modified': stats.mtime.toUTCString(),
   });
+
+  let servedPath = filePath;
+  let servedSize = stats.size;
+  if (isCompressibleType(contentType)) {
+    // Caches keep one copy per encoding, also of a file served uncompressed to a client that accepts none.
+    headers.set('vary', 'accept-encoding');
+    const accepted = acceptedEncodings(options.acceptEncoding ?? null);
+    for (const { encoding, extension } of precompressed) {
+      if (!accepted.has(encoding)) continue;
+      const compressed = await fileStats(`${filePath}${extension}`);
+      if (!compressed) continue;
+      headers.set('content-encoding', encoding);
+      servedPath = `${filePath}${extension}`;
+      servedSize = compressed.size;
+      break;
+    }
+  }
+  headers.set('content-length', String(servedSize));
 
   const body =
     method === 'HEAD'
       ? null
-      : (Readable.toWeb(createReadStream(filePath)) as ConstructorParameters<
+      : (Readable.toWeb(createReadStream(servedPath)) as ConstructorParameters<
           typeof Response
         >[0]);
   return new Response(body, { headers });
