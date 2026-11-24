@@ -5,7 +5,7 @@ import {
   setAuditSessionActor,
   setAuditTarget,
 } from '@nocobase/app-server/audit';
-import { authAuditOptions } from './audit.js';
+import { authAuditOptions, passwordResetAuditAction } from './audit.js';
 import {
   resolveMailSenderFactory,
   type MailSender,
@@ -116,6 +116,8 @@ export interface AuthOptions extends Omit<BetterAuthOptions, 'database'> {
   email?: AuthEmailConfig;
   passwordReset?: PasswordResetConfig;
   passwordResetServices?: PasswordResetServices;
+  /** Restore the public URL of an app-local HTTP request. Connection bindings inherit this mapping. */
+  mapHttpRequest?: (request: Request) => Request;
 }
 
 export interface CreateAuthenticationOptions extends Omit<
@@ -281,6 +283,7 @@ export class Auth {
       email,
       passwordReset,
       passwordResetServices,
+      mapHttpRequest,
       ...config
     } = options;
     this.connection = connection;
@@ -302,7 +305,11 @@ export class Auth {
         legacySender: selection.legacy,
       };
     }
-    this.options = { ...options, passwordResetServices: resetServices };
+    this.options = {
+      ...options,
+      mapHttpRequest,
+      passwordResetServices: resetServices,
+    };
     this.resetPolicy = new PasswordResetPolicy(
       passwordReset ?? {},
       config,
@@ -324,7 +331,12 @@ export class Auth {
       config.hooks?.after ?? createAuthMiddleware(async () => undefined);
     const auditAfter = createAuthMiddleware(async (context) => {
       const route = authAuditOptions(context.path ?? '');
-      if (!route || !auditEnabled(route.action)) return;
+      if (
+        !route ||
+        route.action === passwordResetAuditAction ||
+        !auditEnabled(route.action)
+      )
+        return;
       const session = context.context.newSession ?? context.context.session;
       if (!session) return;
       setAuditSessionActor(session.user.id, session.session.id);
@@ -559,7 +571,7 @@ export class Auth {
     options: AuthRequestOptions = {},
   ): Promise<Response> {
     return this.resetPolicy.runRequest(options.clientAddress, () =>
-      this.auth.handler(request),
+      this.auth.handler(this.options.mapHttpRequest?.(request) ?? request),
     );
   }
 
@@ -568,8 +580,12 @@ export class Auth {
     request: Request,
     options: AuthRequestOptions = {},
   ): Promise<Response> {
-    // The upstream key endpoints may invoke host-provided policy callbacks on their own connection.
-    if (!auditEnabled() || auditEnabled('auth:createApiKey'))
+    // Key creation runs host policy callbacks. Password reset audits through its native password transaction.
+    if (
+      !auditEnabled() ||
+      auditEnabled('auth:createApiKey') ||
+      auditEnabled(passwordResetAuditAction)
+    )
       return this.handler(request, options);
     return this.connection.transaction(async (connection) => {
       const response = await this.forConnection(connection).handler(

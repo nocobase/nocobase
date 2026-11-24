@@ -4,11 +4,15 @@ import {
   type RuleAction,
 } from '@nocobase/authorization/core';
 import type { DatabaseConnection } from '@nocobase/db';
-import type { DatabaseConnectionSource } from '@nocobase/app-plugin-authorization/server/extension';
+import {
+  recordRuleAudit,
+  type DatabaseConnectionSource,
+} from '@nocobase/app-plugin-authorization/server/extension';
 import type { SharingRule } from '@nocobase/authorization/sharing-rules';
 import type { SharingRuleStore } from '@nocobase/authorization/sharing-rules';
 
-const RULES = 'authorizationSharingRules';
+export const SHARING_RULES_COLLECTION = 'authorizationSharingRules';
+export const SHARING_RULES_SETTINGS = 'authorization.sharing-rules';
 const ASSIGNMENTS = 'authorizationSharingRuleAssignments';
 
 export class DatabaseSharingRuleStore implements SharingRuleStore<DatabaseConnection> {
@@ -25,10 +29,16 @@ export class DatabaseSharingRuleStore implements SharingRuleStore<DatabaseConnec
     const now = new Date();
     await this.connection().transaction(async (connection): Promise<void> => {
       await connection.query
-        .insertInto(RULES)
+        .insertInto(SHARING_RULES_COLLECTION)
         .values(this.toValues(rule, id, now, now))
         .execute();
       await this.replaceAssignments(connection, id, rule.subjects);
+      await recordRuleAudit(
+        connection,
+        SHARING_RULES_SETTINGS,
+        SHARING_RULES_COLLECTION,
+        { action: 'create', rule },
+      );
     });
     return rule;
   }
@@ -36,14 +46,14 @@ export class DatabaseSharingRuleStore implements SharingRuleStore<DatabaseConnec
   async update(key: string, rule: SharingRule): Promise<SharingRule> {
     await this.connection().transaction(async (connection): Promise<void> => {
       const current = await connection.query
-        .selectFrom(RULES)
+        .selectFrom(SHARING_RULES_COLLECTION)
         .select('id')
         .where('key', '=', key)
         .executeTakeFirst();
       if (!current) throw new Error(`Unknown Sharing Rule: ${key}`);
       const id = String(current.id);
       await connection.query
-        .updateTable(RULES)
+        .updateTable(SHARING_RULES_COLLECTION)
         .set(this.toUpdateValues(rule))
         .where('id', '=', id)
         .execute();
@@ -52,6 +62,12 @@ export class DatabaseSharingRuleStore implements SharingRuleStore<DatabaseConnec
         .where('sharingRuleId', '=', id)
         .execute();
       await this.replaceAssignments(connection, id, rule.subjects);
+      await recordRuleAudit(
+        connection,
+        SHARING_RULES_SETTINGS,
+        SHARING_RULES_COLLECTION,
+        { action: 'update', rule, previousKey: key },
+      );
     });
     return rule;
   }
@@ -59,7 +75,7 @@ export class DatabaseSharingRuleStore implements SharingRuleStore<DatabaseConnec
   async delete(key: string): Promise<void> {
     await this.connection().transaction(async (connection): Promise<void> => {
       const current = await connection.query
-        .selectFrom(RULES)
+        .selectFrom(SHARING_RULES_COLLECTION)
         .select('id')
         .where('key', '=', key)
         .executeTakeFirst();
@@ -69,13 +85,22 @@ export class DatabaseSharingRuleStore implements SharingRuleStore<DatabaseConnec
         .deleteFrom(ASSIGNMENTS)
         .where('sharingRuleId', '=', id)
         .execute();
-      await connection.query.deleteFrom(RULES).where('id', '=', id).execute();
+      await connection.query
+        .deleteFrom(SHARING_RULES_COLLECTION)
+        .where('id', '=', id)
+        .execute();
+      await recordRuleAudit(
+        connection,
+        SHARING_RULES_SETTINGS,
+        SHARING_RULES_COLLECTION,
+        { action: 'delete', key },
+      );
     });
   }
 
   async get(key: string): Promise<SharingRule | undefined> {
     const row = await this.connection()
-      .query.selectFrom(RULES)
+      .query.selectFrom(SHARING_RULES_COLLECTION)
       .select([
         'id',
         'key',
@@ -94,7 +119,7 @@ export class DatabaseSharingRuleStore implements SharingRuleStore<DatabaseConnec
 
   async list(): Promise<readonly SharingRule[]> {
     const rows = await this.connection()
-      .query.selectFrom(RULES)
+      .query.selectFrom(SHARING_RULES_COLLECTION)
       .select([
         'id',
         'key',

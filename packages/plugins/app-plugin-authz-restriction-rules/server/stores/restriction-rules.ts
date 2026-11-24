@@ -3,11 +3,15 @@ import {
   decodeAuthorizationTitle,
 } from '@nocobase/authorization/core';
 import type { DatabaseConnection } from '@nocobase/db';
-import type { DatabaseConnectionSource } from '@nocobase/app-plugin-authorization/server/extension';
+import {
+  recordRuleAudit,
+  type DatabaseConnectionSource,
+} from '@nocobase/app-plugin-authorization/server/extension';
 import type { RestrictionRule } from '@nocobase/authorization/restriction-rules';
 import type { RestrictionRuleStore } from '@nocobase/authorization/restriction-rules';
 
-const COLLECTION = 'authorizationRestrictionRules';
+export const RESTRICTION_RULES_COLLECTION = 'authorizationRestrictionRules';
+export const RESTRICTION_RULES_SETTINGS = 'authorization.restriction-rules';
 const ASSIGNMENTS = 'authorizationRestrictionRuleAssignments';
 
 export class DatabaseRestrictionRuleStore implements RestrictionRuleStore<DatabaseConnection> {
@@ -23,24 +27,30 @@ export class DatabaseRestrictionRuleStore implements RestrictionRuleStore<Databa
     const id = crypto.randomUUID();
     await this.connection().transaction(async (connection): Promise<void> => {
       await connection.query
-        .insertInto(COLLECTION)
+        .insertInto(RESTRICTION_RULES_COLLECTION)
         .values(this.toValues(rule, id, now, now))
         .execute();
       await this.replaceAssignments(connection, id, rule.subjects);
+      await recordRuleAudit(
+        connection,
+        RESTRICTION_RULES_SETTINGS,
+        RESTRICTION_RULES_COLLECTION,
+        { action: 'create', rule },
+      );
     });
     return rule;
   }
   async update(key: string, rule: RestrictionRule): Promise<RestrictionRule> {
     await this.connection().transaction(async (connection): Promise<void> => {
       const row = await connection.query
-        .selectFrom(COLLECTION)
+        .selectFrom(RESTRICTION_RULES_COLLECTION)
         .select('id')
         .where('key', '=', key)
         .executeTakeFirst();
       if (!row) throw new Error(`Unknown Restriction Rule: ${key}`);
       const id = String(row.id);
       await connection.query
-        .updateTable(COLLECTION)
+        .updateTable(RESTRICTION_RULES_COLLECTION)
         .set({ ...this.toUpdateValues(rule), updatedAt: new Date() })
         .where('id', '=', id)
         .execute();
@@ -49,13 +59,19 @@ export class DatabaseRestrictionRuleStore implements RestrictionRuleStore<Databa
         .where('restrictionRuleId', '=', id)
         .execute();
       await this.replaceAssignments(connection, id, rule.subjects);
+      await recordRuleAudit(
+        connection,
+        RESTRICTION_RULES_SETTINGS,
+        RESTRICTION_RULES_COLLECTION,
+        { action: 'update', rule, previousKey: key },
+      );
     });
     return rule;
   }
   async delete(key: string): Promise<void> {
     await this.connection().transaction(async (connection): Promise<void> => {
       const row = await connection.query
-        .selectFrom(COLLECTION)
+        .selectFrom(RESTRICTION_RULES_COLLECTION)
         .select('id')
         .where('key', '=', key)
         .executeTakeFirst();
@@ -65,14 +81,20 @@ export class DatabaseRestrictionRuleStore implements RestrictionRuleStore<Databa
         .where('restrictionRuleId', '=', String(row.id))
         .execute();
       await connection.query
-        .deleteFrom(COLLECTION)
+        .deleteFrom(RESTRICTION_RULES_COLLECTION)
         .where('id', '=', String(row.id))
         .execute();
+      await recordRuleAudit(
+        connection,
+        RESTRICTION_RULES_SETTINGS,
+        RESTRICTION_RULES_COLLECTION,
+        { action: 'delete', key },
+      );
     });
   }
   async get(key: string): Promise<RestrictionRule | undefined> {
     const row = await this.connection()
-      .query.selectFrom(COLLECTION)
+      .query.selectFrom(RESTRICTION_RULES_COLLECTION)
       .select([
         'id',
         'key',
@@ -89,7 +111,7 @@ export class DatabaseRestrictionRuleStore implements RestrictionRuleStore<Databa
   }
   async list(): Promise<readonly RestrictionRule[]> {
     const rows = await this.connection()
-      .query.selectFrom(COLLECTION)
+      .query.selectFrom(RESTRICTION_RULES_COLLECTION)
       .select([
         'id',
         'key',

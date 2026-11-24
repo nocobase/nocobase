@@ -1,3 +1,4 @@
+import { recordPasswordResetAudit } from './audit.js';
 import type { MailSendView } from '@nocobase/app-server/mailers';
 import { assertAuthEmailConfig, type AuthEmailConfig } from './email-config.js';
 import { createHash } from 'node:crypto';
@@ -318,9 +319,11 @@ export class PasswordResetPolicy {
                         code: 'INVALID_TOKEN',
                         message: 'Invalid token.',
                       });
-                    return this.resetWrites.run(userId, () =>
+                    const result = await this.resetWrites.run(userId, () =>
                       adapter.updatePassword(userId, password),
                     );
+                    await recordPasswordResetAudit(userId);
+                    return result;
                   },
                   createAccount: async (account) => {
                     if (!(await this.eligible(account.userId, adapter)))
@@ -328,9 +331,12 @@ export class PasswordResetPolicy {
                         code: 'INVALID_TOKEN',
                         message: 'Invalid token.',
                       });
-                    return this.resetWrites.run(account.userId, () =>
-                      adapter.createAccount(account),
+                    const result = await this.resetWrites.run(
+                      account.userId,
+                      () => adapter.createAccount(account),
                     );
+                    await recordPasswordResetAudit(account.userId);
+                    return result;
                   },
                 };
               }

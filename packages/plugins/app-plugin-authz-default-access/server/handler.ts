@@ -1,3 +1,5 @@
+import { auditRoute } from '@nocobase/app-server/audit';
+import { DEFAULT_ACCESS_COLLECTION } from './stores/default-access.js';
 import { z } from 'zod';
 import {
   ApiError,
@@ -27,6 +29,7 @@ import {
   parse,
   rethrowRuleConflict,
   settingsAccess,
+  recordRuleAudit,
   requireSettings,
   submitSettingsMutation,
   TotalMetaSchema,
@@ -43,6 +46,13 @@ export const DEFAULT_ACCESS_SETTINGS: string = `authorization.${DEFAULT_ACCESS_R
 export const DEFAULT_ACCESS_PATH = '/defaultAccess';
 
 type DefaultAccessAdministrationApi = DefaultAccessApi;
+
+const ruleAudit = auditRoute({
+  target: (context) => ({
+    collection: DEFAULT_ACCESS_COLLECTION,
+    key: context.req.param('key'),
+  }),
+});
 
 /** Every `/defaultAccess` route, gated by `settings:authorization.default-access`. */
 export function createDefaultAccessHandler(
@@ -67,16 +77,13 @@ export function createDefaultAccessHandler(
     validateDataScopeRule(authz, rule);
     return rule;
   };
-  const existing = async (key: string): Promise<DefaultAccessRule> => {
-    const rule = await api.get(key);
-    if (rule) return rule;
-    throw new ApiError({
+  const ruleNotFound = (key: string) =>
+    new ApiError({
       status: 'NOT_FOUND',
       reason: 'RULE_NOT_FOUND',
       domain: AUTHORIZATION_ERROR_DOMAIN,
       message: `Default-access rule ${key} was not found.`,
     });
-  };
   // Fixed segments (`options`, `subjects`, `records`) are registered before `/:key`.
   routes.route(
     '/',
@@ -108,6 +115,7 @@ export function createDefaultAccessHandler(
   );
   routes.post(
     DEFAULT_ACCESS_PATH,
+    ruleAudit,
     settingsAccess(DEFAULT_ACCESS_SETTINGS, 'create'),
     describeRoute({
       tags,
@@ -147,7 +155,17 @@ export function createDefaultAccessHandler(
         async (transaction) => {
           const bound = transaction ? api.withTransaction(transaction) : api;
           await assertRuleKeyAvailable((key) => bound.get(key), rule.key);
-          return bound.create(rule).catch(rethrowRuleConflict(rule.key));
+          const created = await bound
+            .create(rule)
+            .catch(rethrowRuleConflict(rule.key));
+          if (transaction)
+            await recordRuleAudit(
+              transaction,
+              DEFAULT_ACCESS_SETTINGS,
+              DEFAULT_ACCESS_COLLECTION,
+              { action: 'create', rule: created },
+            );
+          return created;
         },
         () =>
           requireSettings(
@@ -161,6 +179,7 @@ export function createDefaultAccessHandler(
   );
   routes.patch(
     `${DEFAULT_ACCESS_PATH}/:key`,
+    ruleAudit,
     settingsAccess(DEFAULT_ACCESS_SETTINGS, 'update'),
     describeRoute({
       tags,
@@ -206,14 +225,24 @@ export function createDefaultAccessHandler(
         async (transaction) => {
           const bound = transaction ? api.withTransaction(transaction) : api;
           const previous = await bound.get(key);
-          if (!previous) await existing(key);
+          if (!previous) throw ruleNotFound(key);
           const rule = checked({ ...previous, ...changes });
           await assertRuleKeyAvailable(
             (next) => bound.get(next),
             rule.key,
             key,
           );
-          return bound.update(key, rule).catch(rethrowRuleConflict(rule.key));
+          const updated = await bound
+            .update(key, rule)
+            .catch(rethrowRuleConflict(rule.key));
+          if (transaction)
+            await recordRuleAudit(
+              transaction,
+              DEFAULT_ACCESS_SETTINGS,
+              DEFAULT_ACCESS_COLLECTION,
+              { action: 'update', rule: updated, previousKey: key },
+            );
+          return updated;
         },
         () =>
           requireSettings(
@@ -227,6 +256,7 @@ export function createDefaultAccessHandler(
   );
   routes.delete(
     `${DEFAULT_ACCESS_PATH}/:key`,
+    ruleAudit,
     settingsAccess(DEFAULT_ACCESS_SETTINGS, 'delete'),
     describeRoute({
       tags,
@@ -253,8 +283,15 @@ export function createDefaultAccessHandler(
         { key },
         async (transaction) => {
           const bound = transaction ? api.withTransaction(transaction) : api;
-          if (!(await bound.get(key))) await existing(key);
+          if (!(await bound.get(key))) throw ruleNotFound(key);
           await bound.delete(key);
+          if (transaction)
+            await recordRuleAudit(
+              transaction,
+              DEFAULT_ACCESS_SETTINGS,
+              DEFAULT_ACCESS_COLLECTION,
+              { action: 'delete', key },
+            );
           return null;
         },
         () =>

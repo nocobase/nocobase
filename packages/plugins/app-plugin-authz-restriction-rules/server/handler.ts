@@ -1,3 +1,9 @@
+import { auditRoute } from '@nocobase/app-server/audit';
+import {
+  RESTRICTION_RULES_COLLECTION,
+  RESTRICTION_RULES_SETTINGS,
+} from './stores/restriction-rules.js';
+export { RESTRICTION_RULES_SETTINGS } from './stores/restriction-rules.js';
 import {
   ApiError,
   apiErrorResponse,
@@ -34,9 +40,15 @@ import { RuleSchema } from './schemas.js';
 
 /** The settings item suffix, and the rule name stored grants refer to. */
 export const RESTRICTION_RULES_RULE = 'restriction-rules';
-export const RESTRICTION_RULES_SETTINGS: string = `authorization.${RESTRICTION_RULES_RULE}`;
 /** The route prefix under `/api/authorization`. */
 export const RESTRICTION_RULES_PATH = '/restrictionRules';
+
+const ruleAudit = auditRoute({
+  target: (context) => ({
+    collection: RESTRICTION_RULES_COLLECTION,
+    key: context.req.param('key'),
+  }),
+});
 
 type RestrictionRulesAdministrationApi = Omit<
   RestrictionRulesApi,
@@ -95,6 +107,7 @@ export function createRestrictionRulesHandler(
   );
   routes.post(
     RESTRICTION_RULES_PATH,
+    ruleAudit,
     settingsAccess(RESTRICTION_RULES_SETTINGS, 'create'),
     describeRoute({
       tags,
@@ -129,6 +142,7 @@ export function createRestrictionRulesHandler(
   );
   routes.patch(
     `${RESTRICTION_RULES_PATH}/:key`,
+    ruleAudit,
     settingsAccess(RESTRICTION_RULES_SETTINGS, 'update'),
     describeRoute({
       tags,
@@ -170,6 +184,7 @@ export function createRestrictionRulesHandler(
   );
   routes.delete(
     `${RESTRICTION_RULES_PATH}/:key`,
+    ruleAudit,
     settingsAccess(RESTRICTION_RULES_SETTINGS, 'delete'),
     describeRoute({
       tags,

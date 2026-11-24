@@ -8,7 +8,11 @@ import * as appMailers from '@nocobase/app-server/mailers';
 import { MailSenderFactory } from '@nocobase/app-server/mailers';
 import { Auth } from '../../auth.js';
 import { createPasswordResetSender } from '../../reset-sender.js';
-import { createStandaloneServer } from '../fixtures/reset-app/server/standalone.js';
+import type { AuditEvent } from '@nocobase/app-server/audit';
+import {
+  createStandaloneServer,
+  resetServerFactory,
+} from '../fixtures/reset-app/server/standalone.js';
 import { createAuthFixture } from './support.js';
 
 const email = {
@@ -318,8 +322,22 @@ it.each([false, true])(
       .fn()
       .mockResolvedValue(new Response(JSON.stringify({ id: 'synthetic-id' })));
     vi.stubGlobal('fetch', fetch);
+    const events: AuditEvent[] = [];
+    const transactional: AuditEvent[] = [];
+    // Also keep the legacy delivery variant as a no-audit control.
     const app = await createTestApp({
-      createServer: createStandaloneServer,
+      createServer: legacy
+        ? createStandaloneServer
+        : resetServerFactory({
+            async record(event, options) {
+              if (event.action !== 'auth:resetPassword') return;
+              if (options?.connection) {
+                options.connection.afterCommit(() => {
+                  transactional.push(event);
+                });
+              } else events.push(event);
+            },
+          }),
       config: legacy
         ? {
             notification: {
@@ -332,19 +350,21 @@ it.each([false, true])(
       expect((await app.request('/authentication/capabilities')).status).toBe(
         200,
       );
-      expect(
-        (
-          await app.request(
-            '/auth/sign-up/email',
-            json({
-              email: 'synthetic@example.test',
-              username: 'synthetic',
-              name: 'Synthetic',
-              password: 'original-password',
-            }),
-          )
-        ).status,
-      ).toBe(200);
+      const signup = await app.request(
+        '/auth/sign-up/email',
+        json({
+          email: 'synthetic@example.test',
+          username: 'synthetic',
+          name: 'Synthetic',
+          password: 'original-password',
+        }),
+      );
+      if (!signup.ok)
+        throw new Error(
+          `Signup failed (${signup.status}): ${await signup.text()}`,
+        );
+      expect(signup.status).toBe(200);
+      const { user } = (await signup.json()) as { user: { id: string } };
       expect(
         (
           await app.request(
@@ -372,6 +392,34 @@ it.each([false, true])(
           )
         ).status,
       ).toBe(200);
+      if (!legacy) {
+        expect(transactional).toMatchObject([
+          {
+            action: 'auth:resetPassword',
+            actor: { type: 'user', userId: user.id },
+            targets: [{ collection: 'user', key: user.id }],
+            outcome: 'success',
+            status: 200,
+          },
+        ]);
+        const replay = await app.request(
+          '/auth/reset-password',
+          json({ token, newPassword: 'second-replacement-password' }),
+        );
+        expect(replay.status).toBe(400);
+        expect(events).toMatchObject([
+          {
+            action: 'auth:resetPassword',
+            actor: { type: 'anonymous' },
+            targets: [{ collection: 'user' }],
+            outcome: 'failure',
+            status: 400,
+          },
+        ]);
+        const serialized = JSON.stringify([...transactional, ...events]);
+        expect(serialized).not.toContain(token!);
+        expect(serialized).not.toContain('replacement-password');
+      }
       expect(
         (
           await app.request(

@@ -1,3 +1,9 @@
+import { auditRoute } from '@nocobase/app-server/audit';
+import {
+  SHARING_RULES_COLLECTION,
+  SHARING_RULES_SETTINGS,
+} from './stores/sharing-rules.js';
+export { SHARING_RULES_SETTINGS } from './stores/sharing-rules.js';
 import {
   ApiError,
   apiErrorResponse,
@@ -34,9 +40,15 @@ import { RuleSchema } from './schemas.js';
 
 /** The settings item suffix, and the rule name stored grants refer to. */
 export const SHARING_RULES_RULE = 'sharing-rules';
-export const SHARING_RULES_SETTINGS: string = `authorization.${SHARING_RULES_RULE}`;
 /** The route prefix under `/api/authorization`. */
 export const SHARING_RULES_PATH = '/sharingRules';
+
+const ruleAudit = auditRoute({
+  target: (context) => ({
+    collection: SHARING_RULES_COLLECTION,
+    key: context.req.param('key'),
+  }),
+});
 
 type SharingRulesAdministrationApi = Omit<SharingRulesApi, 'withTransaction'>;
 
@@ -107,6 +119,7 @@ export function createSharingRulesHandler(
   );
   routes.post(
     SHARING_RULES_PATH,
+    ruleAudit,
     settingsAccess(SHARING_RULES_SETTINGS, 'create'),
     describeRoute({
       tags,
@@ -141,6 +154,7 @@ export function createSharingRulesHandler(
   );
   routes.patch(
     `${SHARING_RULES_PATH}/:key`,
+    ruleAudit,
     settingsAccess(SHARING_RULES_SETTINGS, 'update'),
     describeRoute({
       tags,
@@ -182,6 +196,7 @@ export function createSharingRulesHandler(
   );
   routes.delete(
     `${SHARING_RULES_PATH}/:key`,
+    ruleAudit,
     settingsAccess(SHARING_RULES_SETTINGS, 'delete'),
     describeRoute({
       tags,

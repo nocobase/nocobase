@@ -1,3 +1,4 @@
+import { withAuthAuditConnection } from '../audit.js';
 import type {
   ComparisonOperator,
   DatabaseConnection,
@@ -460,8 +461,10 @@ export function databaseAdapter(
           if (!betterAuthOptions) {
             throw new Error('Better Auth adapter is not initialized');
           }
-          return currentConnection.transaction(async (transaction) =>
-            callback(factory(transaction)(betterAuthOptions!)),
+          return currentConnection.transaction((transaction) =>
+            withAuthAuditConnection(transaction, () =>
+              callback(factory(transaction)(betterAuthOptions!)),
+            ),
           );
         },
       },

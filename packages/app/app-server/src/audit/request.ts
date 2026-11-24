@@ -70,12 +70,13 @@ const current = new AsyncLocalStorage<AuditRequest>();
 const declarations = new WeakMap<object, ResolveRoute>();
 const writeMethods = new Set(['POST', 'PATCH', 'PUT', 'DELETE']);
 
-export function auditEnabled(action?: string): boolean {
+export function auditEnabled(action?: string, resource?: string): boolean {
   const request = current.getStore();
   return Boolean(
     request?.route &&
     !request.finished &&
-    (action === undefined || request.route.action === action),
+    (action === undefined || request.route.action === action) &&
+    (resource === undefined || request.route.resource === resource),
   );
 }
 
