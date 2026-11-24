@@ -65,7 +65,10 @@ const AggregateVariableSchemaRenderer = ({ initialValues, action }: { initialVal
     <DataSourceApplicationProvider dataSourceManager={app.dataSourceManager}>
       <SchemaComponentOptions components={app.components} scope={app.scopes}>
         <SchemaComponentContext.Provider value={{ ...schemaComponentContextValue, designable: false }}>
-          <SchemaComponent schema={getAggregateVariableSchema(initialValues, action)} />
+          {/* Events from the portaled drawer would otherwise reach the variable picker's focus and keyboard handlers. */}
+          <div onMouseDown={(event) => event.stopPropagation()} onKeyDown={(event) => event.stopPropagation()}>
+            <SchemaComponent schema={getAggregateVariableSchema(initialValues, action)} />
+          </div>
         </SchemaComponentContext.Provider>
       </SchemaComponentOptions>
     </DataSourceApplicationProvider>
