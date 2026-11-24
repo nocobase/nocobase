@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { css } from '@emotion/css';
+import { css, cx } from '@emotion/css';
 import {
   Collection,
   DisplayItemModel,
@@ -15,6 +15,8 @@ import {
   FieldModelRenderer,
   FlowModelContext,
   FormItem,
+  formItemStyle,
+  untracked,
 } from '@nocobase/flow-engine';
 import { get, castArray } from 'lodash';
 import React from 'react';
@@ -23,12 +25,45 @@ import { DetailsGridModel } from './DetailsGridModel';
 import { rebuildFieldSubModel } from '../../../internal/utils/rebuildFieldSubModel';
 import { isToManyAssociationField } from '../../../internal/utils/modelUtils';
 
-const mobileHorizontalItemMargin = css`
-  && {
-    margin-bottom: 11px;
+function mobileHorizontalItemStyle(marginBottom: number) {
+  return css`
+    &&.ant-form-item {
+      margin-bottom: ${formItemStyle.marginBottom}px;
 
-    @media (max-width: 575px) {
-      margin-bottom: 3px;
+      @media (max-width: 575px) {
+        margin-bottom: ${marginBottom}px;
+        min-height: ${32 - marginBottom}px;
+
+        > .ant-form-item-row > .ant-form-item-label {
+          padding-bottom: 0;
+          line-height: max(20px, 1.4em);
+
+          > label {
+            height: auto;
+            line-height: max(20px, 1.4em);
+          }
+        }
+
+        > .ant-form-item-row > .ant-form-item-control > .ant-form-item-control-input {
+          min-height: 20px;
+        }
+      }
+    }
+  `;
+}
+
+const mobileSpacingByBlock = new Map([
+  ['DetailsBlockModel', mobileHorizontalItemStyle(3)],
+  ['GridCardBlockModel', mobileHorizontalItemStyle(8)],
+]);
+
+const mobilePlainTextStyle = css`
+  @media (max-width: 575px) {
+    > .ant-form-item-row
+      > .ant-form-item-control
+      > .ant-form-item-control-input
+      > .ant-form-item-control-input-content {
+      line-height: max(20px, 1.4em);
     }
   }
 `;
@@ -228,12 +263,21 @@ export class DetailsItemModel extends DisplayItemModel<{
         idx,
       }),
     );
+    const spacing =
+      this.context.isMobileLayout && mergedProps.layout === 'horizontal'
+        ? mobileSpacingByBlock.get(this.context.blockModel.use)
+        : undefined;
+    const isPlainText =
+      spacing &&
+      modelForRender?.use === 'DisplayTextFieldModel' &&
+      (mergedProps.displayStyle ??
+        fieldModel.getStepParams('displayFieldSettings', 'displayStyle')?.displayStyle ??
+        // FieldModelRenderer writes back fork props after rendering. Subscribing here would render the item again.
+        untracked(() => modelForRender.props.displayStyle)) !== 'tag';
     return (
       <FormItem
         {...mergedProps}
-        itemMarginClassName={
-          this.context.isMobileLayout && mergedProps.layout === 'horizontal' ? mobileHorizontalItemMargin : undefined
-        }
+        itemMarginClassName={spacing && cx(spacing, isPlainText && mobilePlainTextStyle)}
         value={value}
       >
         <FieldModelRenderer model={modelForRender} />
