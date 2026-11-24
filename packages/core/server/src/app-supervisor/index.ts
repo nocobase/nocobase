@@ -7,6 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { AsyncLocalStorage } from 'node:async_hooks';
 import lodash from 'lodash';
 import { IncomingMessage, ServerResponse } from 'http';
 import { applyMixins, AsyncEmitter } from '@nocobase/utils';
@@ -69,6 +70,7 @@ export class AppSupervisor extends EventEmitter implements AsyncEmitter {
 
   private discoveryAdapter: AppDiscoveryAdapter;
   private processAdapter: AppProcessAdapter;
+  private readonly syncedStopAppName = new AsyncLocalStorage<string>();
   private commandAdapter: AppCommandAdapter;
   private discoveryAdapterName: string;
   private processAdapterName: string;
@@ -443,6 +445,9 @@ export class AppSupervisor extends EventEmitter implements AsyncEmitter {
       });
 
       app.on('afterStop', async () => {
+        if (this.syncedStopAppName.getStore() === appName) {
+          return;
+        }
         await this.sendSyncMessage(mainApp, {
           type: 'app:stopped',
           appName,
@@ -491,7 +496,10 @@ export class AppSupervisor extends EventEmitter implements AsyncEmitter {
 
           if (type === 'app:stopped') {
             const { appName } = message;
-            await this.stopApp(appName);
+            // A stop notification applies to local instances. Forwarding it as a command can stop the sender.
+            if (this.hasApp(appName)) {
+              await this.syncedStopAppName.run(appName, () => this.stopApp(appName));
+            }
           }
 
           if (type === 'app:removed') {
