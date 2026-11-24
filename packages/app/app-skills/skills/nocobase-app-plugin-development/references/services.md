@@ -173,6 +173,16 @@ Resolve database access through the owner-exported `databaseManagerToken`. Use `
 
 A `JobExecutor` job never resolves the container: the Provider that owns the executor creates the job class with a factory that closes over the Services it needs, then registers that class. A queue handler is likewise a closure the Provider registers in `boot()`; await its unregister function in `shutdown()` before releasing those Services. Do not store a global container for either.
 
+## Audit events
+
+Import `auditServiceToken` and the audit types from `@nocobase/app-server/audit`. An audit provider binds one `AuditService` during registration. Its `record(event, { connection })` writes using the supplied connection, inside the caller’s transaction. When the connection is absent, persist independently. A transactional audit write failure rolls back the business transaction. Independent audit write failures are logged without changing the HTTP response. Applications without the token do no audit I/O.
+
+Under `/api`, declared POST, PATCH, PUT and DELETE routes use their `cliRoute({ action })` action or their OpenAPI `operationId` by default. Place `auditRoute({ action, resource, target })` on a route to override these defaults or explicitly audit a read. Use `auditRoute(false)` for read-only POST routes or to opt out. The target resolver reads route parameters and runs before authorization so denied requests can name the attempted record. An authorization settings route uses its declared settings permission as the default action and resource. A custom dispatcher can register forwarded routers with the API document service or mount `auditRouteContext()` first on the forwarded router.
+
+In a handler, call `setAuditTarget({ collection, key })` when the record key becomes known. To capture a successful database mutation, call `recordAuditInTransaction(transaction, { status, response })` after the last write and return the corresponding status. For idempotent routes, make this call inside the callback that runs on the first execution, so replays return the receipt without recording success again. Use `addAuditMetadata()` for an allowlisted summary. Background jobs can call an installed audit service directly with a complete, already sanitized event and an optional transaction.
+
+Audit snapshots capture bounded JSON. A sensitive field is replaced in full, including objects and arrays. Use `redact` for dotted paths, `redactFields` for names at any depth or `captureBody: false` to omit both snapshots. For a route that can safely log only validated fields, use `captureBody: 'transaction'` and pass the request and response summaries explicitly to `recordAuditInTransaction()`. Leave credentials and unnecessary personal data out of metadata and target identifiers. Login failures omit the submitted identifier. Client IPs come from the connection peer unless `api.trustedProxies` or the existing `auth.advanced.ipAddress.trustedProxies` configuration trusts the peer to forward them.
+
 ## Test the contract and lifecycle
 
 Use a fresh `ServiceContainer` and a minimal typed App fixture. Cover these observable contracts:

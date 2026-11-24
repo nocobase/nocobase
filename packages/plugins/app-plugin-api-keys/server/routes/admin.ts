@@ -1,3 +1,4 @@
+import { auditRoute } from '@nocobase/app-server/audit';
 /**
  * The administration of keys, for System settings › API keys: system keys (`/api/systemApiKeys`), members' personal
  * keys (`/api/apiKeys/members`) and the rules (`/api/apiKeys/rules`). Reading takes `settings:apiKeys/read`, every
@@ -231,6 +232,13 @@ export function installKeyAdministration(
   );
   routes.delete(
     '/members/:keyId',
+    auditRoute({
+      resource: 'apikey',
+      target: (context) => ({
+        collection: 'apikey',
+        key: context.req.param('keyId'),
+      }),
+    }),
     access('manage'),
     describeRoute({
       ...offCommandLine,
@@ -268,6 +276,10 @@ export function installKeyAdministration(
   );
   routes.put(
     '/rules',
+    auditRoute({
+      resource: 'settings:apiKeys',
+      target: () => ({ collection: 'apiKeyRules', key: 'default' }),
+    }),
     access('manage'),
     describeRoute({
       ...offCommandLine,
@@ -319,6 +331,10 @@ export function installSystemKeys(
   );
   routes.post(
     '/',
+    auditRoute({
+      resource: 'apikey',
+      target: () => ({ collection: 'apikey' }),
+    }),
     access('manage'),
     describeRoute({
       ...offCommandLine,
@@ -479,6 +495,13 @@ export function installSystemKeys(
     );
   routes.delete(
     '/:identityId',
+    auditRoute({
+      resource: 'apikey',
+      target: (context) => ({
+        collection: 'apiKeySystemKeys',
+        key: context.req.param('identityId'),
+      }),
+    }),
     access('manage'),
     describeRoute({
       ...offCommandLine,

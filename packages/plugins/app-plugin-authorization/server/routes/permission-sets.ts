@@ -1,5 +1,13 @@
+import {
+  auditRoute,
+  recordAuditInTransaction,
+  setAuditTarget,
+} from '@nocobase/app-server/audit';
 import { z } from 'zod';
-import { submitSettingsMutation } from '../extension/submission.js';
+import {
+  submitSettingsMutation,
+  withSettingsAuditTransaction,
+} from '../extension/submission.js';
 import {
   ApiError,
   apiErrorResponse,
@@ -79,6 +87,21 @@ export const PERMISSION_SETS_SETTINGS = 'authorization.permission-sets';
 type Api = PermissionSetsApi;
 
 /** Every `/permissionSets` route, gated by `settings:authorization.permission-sets`. */
+const permissionSetCollection = 'authorizationPermissionSets';
+const assignmentCollection = 'authorizationPermissionSetAssignments';
+const permissionSetAudit = auditRoute({
+  target: (context) => ({
+    collection: permissionSetCollection,
+    key: context.req.param('key'),
+  }),
+});
+const assignmentAudit = auditRoute({
+  target: (context) => ({
+    collection: assignmentCollection,
+    key: context.req.param('assignmentId'),
+  }),
+});
+
 export function createPermissionSetHandler(
   host: AuthorizationExtensionHost,
   api: Api,
@@ -190,6 +213,7 @@ export function createPermissionSetHandler(
   );
   routes.post(
     '/permissionSets',
+    permissionSetAudit,
     settingsAccess(PERMISSION_SETS_SETTINGS, 'create'),
     describeRoute({
       tags,
@@ -230,7 +254,18 @@ export function createPermissionSetHandler(
         input,
         async (transaction) => {
           const bound = transaction ? api.withTransaction(transaction) : api;
-          return summarize(bound, await bound.create(input));
+          const created = await summarize(bound, await bound.create(input));
+          if (transaction) {
+            setAuditTarget({
+              collection: permissionSetCollection,
+              key: input.key,
+            });
+            await recordAuditInTransaction(transaction, {
+              status: 201,
+              response: { data: created },
+            });
+          }
+          return created;
         },
         () =>
           requireSettings(
@@ -273,6 +308,7 @@ export function createPermissionSetHandler(
   );
   routes.post(
     '/permissionSets/:key/assignments',
+    assignmentAudit,
     settingsAccess(PERMISSION_SETS_SETTINGS, 'assign'),
     describeRoute({
       tags,
@@ -310,11 +346,27 @@ export function createPermissionSetHandler(
         permissionSet: key,
       };
       api.assertWritable(key, 'assign');
-      return context.json({ data: await api.assign(input) }, 201);
+      const data = await withSettingsAuditTransaction(async (transaction) => {
+        const bound = transaction ? api.withTransaction(transaction) : api;
+        const assignment = await bound.assign(input);
+        if (transaction) {
+          setAuditTarget(
+            { collection: assignmentCollection, key: assignment.id },
+            { collection: permissionSetCollection, key },
+          );
+          await recordAuditInTransaction(transaction, {
+            status: 201,
+            response: { data: assignment },
+          });
+        }
+        return assignment;
+      });
+      return context.json({ data }, 201);
     },
   );
   routes.delete(
     '/permissionSets/:key/assignments/:assignmentId',
+    assignmentAudit,
     settingsAccess(PERMISSION_SETS_SETTINGS, 'assign'),
     describeRoute({
       tags,
@@ -348,7 +400,17 @@ export function createPermissionSetHandler(
           message: `Assignment ${assignmentId} of Permission Set ${key} was not found.`,
         });
       api.assertWritable(key, 'revoke');
-      await api.revoke(assignmentId);
+      await withSettingsAuditTransaction(async (transaction) => {
+        const bound = transaction ? api.withTransaction(transaction) : api;
+        await bound.revoke(assignmentId);
+        if (transaction) {
+          setAuditTarget(
+            { collection: assignmentCollection, key: assignmentId },
+            { collection: permissionSetCollection, key },
+          );
+          await recordAuditInTransaction(transaction, { status: 204 });
+        }
+      });
       return context.body(null, 204);
     },
   );
@@ -379,6 +441,7 @@ export function createPermissionSetHandler(
   );
   routes.patch(
     '/permissionSets/:key',
+    permissionSetAudit,
     settingsAccess(PERMISSION_SETS_SETTINGS, 'update'),
     describeRoute({
       tags,
@@ -451,10 +514,22 @@ export function createPermissionSetHandler(
                   'update',
                 );
             }
-          return summarize(
+          const updated = await summarize(
             bound,
             await bound.update(key, input, changes.expectedRevision),
           );
+          if (transaction) {
+            setAuditTarget(
+              { collection: permissionSetCollection, key: input.key },
+              input.key === key
+                ? undefined
+                : { collection: permissionSetCollection, key },
+            );
+            await recordAuditInTransaction(transaction, {
+              response: { data: updated },
+            });
+          }
+          return updated;
         },
         () =>
           requireSettings(
@@ -468,6 +543,7 @@ export function createPermissionSetHandler(
   );
   routes.delete(
     '/permissionSets/:key',
+    permissionSetAudit,
     settingsAccess(PERMISSION_SETS_SETTINGS, 'delete'),
     describeRoute({
       tags,
@@ -501,6 +577,8 @@ export function createPermissionSetHandler(
           const bound = transaction ? api.withTransaction(transaction) : api;
           if (!(await bound.get(key))) throw notFound(key);
           await bound.delete(key);
+          if (transaction)
+            await recordAuditInTransaction(transaction, { status: 204 });
           return null;
         },
         () =>

@@ -1,3 +1,8 @@
+import {
+  auditEnabled,
+  recordAuditInTransaction,
+  setAuditTarget,
+} from '@nocobase/app-server/audit';
 /**
  * Keys with scopes: creating, listing, rotating and revoking a user's keys, and recognizing the key behind a request.
  * The caller authorizes who may manage whose keys; this service only ever acts on the user it is told.
@@ -98,7 +103,7 @@ export class ApiKeyRequestError extends Error {
 }
 
 export interface ScopedApiKeysOptions {
-  readonly auth: Pick<Auth, 'pluginApi'>;
+  readonly auth: Pick<Auth, 'pluginApi'> & Partial<Pick<Auth, 'forConnection'>>;
   readonly connection: () => DatabaseConnection;
   readonly scopes: ApiKeyScopes;
   /** The application's authorization, to say what a user holds and to build their identity; optional. */
@@ -400,6 +405,18 @@ export class ScopedApiKeys {
 
   constructor(private readonly options: ScopedApiKeysOptions) {}
 
+  withConnection(connection: DatabaseConnection): ScopedApiKeys {
+    if (!this.options.auth.forConnection)
+      throw new Error(
+        'The authentication service cannot bind an API key transaction.',
+      );
+    return new ScopedApiKeys({
+      ...this.options,
+      connection: () => connection,
+      auth: this.options.auth.forConnection(connection),
+    });
+  }
+
   /**
    * Sets who may create keys of their own (`/api/apiKeys` and Better Auth's `/api-key/create`). Returns what removes
    * it again.
@@ -432,12 +449,15 @@ export class ScopedApiKeys {
 
   /** Saves the rules for keys; they act on keys made or rotated afterwards. */
   setRules(input: ApiKeyRulesInput, actorId: string): Promise<ApiKeyRules> {
-    return writeRules(
-      this.options.connection(),
-      this.options.config?.(),
-      input,
-      actorId,
-    );
+    const connection = this.options.connection();
+    const save = (database: DatabaseConnection) =>
+      writeRules(database, this.options.config?.(), input, actorId);
+    if (!auditEnabled('apiKeysSaveRules')) return save(connection);
+    return connection.transaction(async (transaction) => {
+      const data = await save(transaction);
+      await recordAuditInTransaction(transaction, { response: { data } });
+      return data;
+    });
   }
 
   /** Whether `userId` is a service account, whose keys the rules for personal keys do not bound. */
@@ -585,7 +605,21 @@ export class ScopedApiKeys {
     input: unknown,
     identity: AuthorizationIdentity,
   ): Promise<CreatedApiKey> {
-    return this.issue(userId, await this.check(input, identity));
+    const checked = await this.check(input, identity);
+    if (!auditEnabled('apiKeysCreateKey') || !this.options.auth.forConnection)
+      return this.issue(userId, checked);
+    return this.options.connection().transaction(async (transaction) => {
+      const data = await this.withConnection(transaction).issue(
+        userId,
+        checked,
+      );
+      setAuditTarget({ collection: 'apikey', key: data.key.id });
+      await recordAuditInTransaction(transaction, {
+        status: 201,
+        response: { data },
+      });
+      return data;
+    });
   }
 
   /**
@@ -1310,8 +1344,21 @@ export class ScopedApiKeys {
   }
 
   async revoke(userId: string, keyId: string): Promise<void> {
-    await this.requireRow(userId, keyId);
-    await this.remove(keyId);
+    const remove = async (keys: ScopedApiKeys) => {
+      await keys.requireRow(userId, keyId);
+      await keys.remove(keyId);
+    };
+    if (
+      (!auditEnabled('apiKeysRevokeKey') &&
+        !auditEnabled('apiKeysRevokeMemberKey')) ||
+      !this.options.auth.forConnection
+    )
+      return remove(this);
+    return this.options.connection().transaction(async (transaction) => {
+      await remove(this.withConnection(transaction));
+      setAuditTarget({ collection: 'apikey', key: keyId });
+      await recordAuditInTransaction(transaction, { status: 204 });
+    });
   }
 
   /** Every key of `userId`, as when the account is deleted. */

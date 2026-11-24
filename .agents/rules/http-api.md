@@ -19,6 +19,8 @@ A few routes keep their own shape. The data endpoints `defineRepositoryApiRoutes
 
 Every route in this repository follows the specification, and `ApiClientError` reads only the standard error body. A route that does not follow it is a defect, not a legacy form to preserve.
 
+For important operations, declare the action and targets with [the audit contract](../../packages/app/app-skills/skills/nocobase-app-plugin-development/references/services.md#audit-events) and record successful mutations on the business transaction.
+
 ### API documentation
 
 The application generates an OpenAPI 3.1 document from its assembled `/api` router and serves it at `GET /api/swagger` (JSON) and `GET /api/swagger/docs` (Swagger UI), below the application's base path, so a local application at `/main` serves `http://127.0.0.1:13000/main/api/swagger/docs`. The Swagger UI files ship in `@nocobase/app-server`'s `dist`; no CDN is involved and a template declares nothing. The specification for declaring a route is the "API documentation" section of `packages/app/app-skills/skills/nocobase-app-development/references/http-api.md`; what follows is what this repository holds every route to.

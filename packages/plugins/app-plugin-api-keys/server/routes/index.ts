@@ -1,3 +1,4 @@
+import { auditRoute, setAuditTarget } from '@nocobase/app-server/audit';
 import { authenticationToken } from '@nocobase/app-plugin-authentication/server';
 import {
   authorizationOptions,
@@ -312,6 +313,10 @@ export const apiRoutes: AppApiRouteContribution<AppPluginApplication> =
     );
     routes.post(
       '/',
+      auditRoute({
+        resource: 'apikey',
+        target: () => ({ collection: 'apikey' }),
+      }),
       mayCreate,
       describeRoute({
         tags,
@@ -342,16 +347,13 @@ export const apiRoutes: AppApiRouteContribution<AppPluginApplication> =
       apiValidator('json', CreateApiKeyInput),
       async (context) => {
         context.header('Cache-Control', 'no-store');
-        return context.json(
-          {
-            data: await keys.create(
-              userId(context),
-              context.req.valid('json'),
-              await identity(context),
-            ),
-          },
-          201,
+        const data = await keys.create(
+          userId(context),
+          context.req.valid('json'),
+          await identity(context),
         );
+        setAuditTarget({ collection: 'apikey', key: data.key.id });
+        return context.json({ data }, 201);
       },
     );
     // The permission catalogue a key's detail shows: what the caller holds, plus the actions this key still names after
@@ -401,6 +403,13 @@ export const apiRoutes: AppApiRouteContribution<AppPluginApplication> =
     );
     routes.post(
       '/:keyId/rotate',
+      auditRoute({
+        resource: 'apikey',
+        target: (context) => ({
+          collection: 'apikey',
+          key: context.req.param('keyId'),
+        }),
+      }),
       mayCreate,
       describeRoute({
         tags,
@@ -432,6 +441,13 @@ export const apiRoutes: AppApiRouteContribution<AppPluginApplication> =
     );
     routes.delete(
       '/:keyId',
+      auditRoute({
+        resource: 'apikey',
+        target: (context) => ({
+          collection: 'apikey',
+          key: context.req.param('keyId'),
+        }),
+      }),
       describeRoute({
         tags,
         summary: 'Revoke an API key',

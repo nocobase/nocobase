@@ -1,4 +1,12 @@
 import {
+  auditEnabled,
+  recordAuditInTransaction,
+  setAuditActor,
+  setAuditSessionActor,
+  setAuditTarget,
+} from '@nocobase/app-server/audit';
+import { authAuditOptions } from './audit.js';
+import {
   resolveMailSenderFactory,
   type MailSender,
 } from '@nocobase/app-server/mailers';
@@ -312,6 +320,17 @@ export class Auth {
     const configuredAccountUpdate = config.databaseHooks?.account?.update;
     const configuredBefore =
       config.hooks?.before ?? createAuthMiddleware(async () => undefined);
+    const configuredAfter =
+      config.hooks?.after ?? createAuthMiddleware(async () => undefined);
+    const auditAfter = createAuthMiddleware(async (context) => {
+      const route = authAuditOptions(context.path ?? '');
+      if (!route || !auditEnabled(route.action)) return;
+      const session = context.context.newSession ?? context.context.session;
+      if (!session) return;
+      setAuditSessionActor(session.user.id, session.session.id);
+      if (route.resource === 'user')
+        setAuditTarget({ collection: 'user', key: session.user.id });
+    });
     const resetGate = createAuthMiddleware(async (context) =>
       this.resetPolicy.prepareRequest(context),
     );
@@ -347,6 +366,8 @@ export class Auth {
         initializeUser: async (user, transaction) => {
           for (const initialize of this.userInitializers)
             await initialize(user, transaction);
+          if (auditEnabled('auth:signUp') && typeof user.id === 'string')
+            setAuditTarget({ collection: 'user', key: user.id });
         },
       }),
       plugins: [
@@ -363,6 +384,13 @@ export class Auth {
             return configuredBefore(...args);
           },
           configuredBefore,
+        ),
+        after: Object.assign(
+          async (...args: Parameters<typeof configuredAfter>) => {
+            await auditAfter(...args);
+            return configuredAfter(...args);
+          },
+          configuredAfter,
         ),
       },
       emailAndPassword: {
@@ -435,6 +463,22 @@ export class Auth {
         },
         session: {
           ...config.databaseHooks?.session,
+          delete: {
+            ...config.databaseHooks?.session?.delete,
+            before: async (session, context) => {
+              if (
+                context?.path === '/sign-out' &&
+                auditEnabled('auth:signOut')
+              ) {
+                setAuditSessionActor(session.userId, session.id);
+                setAuditTarget({ collection: 'user', key: session.userId });
+              }
+              return config.databaseHooks?.session?.delete?.before?.(
+                session,
+                context,
+              );
+            },
+          },
           create: {
             ...configuredSessionCreate,
             after: async (session, context) => {
@@ -517,6 +561,34 @@ export class Auth {
     return this.resetPolicy.runRequest(options.clientAddress, () =>
       this.auth.handler(request),
     );
+  }
+
+  /** Keep database-backed account changes and their audit event in the same transaction. */
+  async handleAudited(
+    request: Request,
+    options: AuthRequestOptions = {},
+  ): Promise<Response> {
+    // The upstream key endpoints may invoke host-provided policy callbacks on their own connection.
+    if (!auditEnabled() || auditEnabled('auth:createApiKey'))
+      return this.handler(request, options);
+    let response: Response | undefined;
+    const rollback = new Error(
+      'Authentication returned an unsuccessful response.',
+    );
+    try {
+      return await this.connection.transaction(async (connection) => {
+        response = await this.forConnection(connection).handler(
+          request,
+          options,
+        );
+        if (response.status >= 400) throw rollback;
+        await recordAuditInTransaction(connection, { status: response.status });
+        return response;
+      });
+    } catch (error) {
+      if (error === rollback && response) return response;
+      throw error;
+    }
   }
 
   /**
@@ -834,6 +906,19 @@ export class Auth {
     return false;
   }
 
+  private auditSession(auth: AuthSession): void {
+    if (!auth || !auditEnabled()) return;
+    if (auth.credential?.type === 'run') {
+      setAuditActor({
+        type: 'agentRun',
+        userId: auth.user.id,
+        runId: auth.credential.id,
+      });
+    } else {
+      setAuditSessionActor(auth.user.id, auth.session.id);
+    }
+  }
+
   optional(options: AuthMiddlewareOptions = {}): MiddlewareHandler<AuthEnv> {
     return async (context, next) => {
       const originFailure = await this.checkCookieWriteOrigin(context);
@@ -850,6 +935,7 @@ export class Auth {
           return rejectedCredential(context, error);
         throw error;
       }
+      this.auditSession(auth);
       const admission = auth?.credential
         ? await this.credentialRouteDecision(context, auth.credential)
         : undefined;
@@ -893,6 +979,7 @@ export class Auth {
           context,
         );
       }
+      this.auditSession(auth);
       const admission = auth.credential
         ? await this.credentialRouteDecision(context, auth.credential)
         : undefined;

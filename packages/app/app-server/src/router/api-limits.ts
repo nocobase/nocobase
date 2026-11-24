@@ -1,3 +1,4 @@
+import { createTrustedAuditProxies } from '../audit/ip.js';
 import type { Context, Hono, MiddlewareHandler } from 'hono';
 import { bodyLimit } from 'hono/body-limit';
 import { createMiddleware } from 'hono/factory';
@@ -28,6 +29,8 @@ export interface ApiRateLimitConfig {
  * it is unset, and nothing is installed for it.
  */
 export interface ApiConfig {
+  /** IP addresses or CIDRs trusted to forward the audit client address. An empty list disables forwarding. */
+  readonly trustedProxies?: readonly string[];
   /** The largest request body any `/api` route accepts. Routes still set their own, usually smaller, limit. */
   readonly bodyLimit?: ApiSize | null;
   /** How long a handler may take to produce its response. A streaming response that has started is not cut off. */
@@ -104,6 +107,7 @@ function parseQuantity(
 
 const apiConfigFields: ReadonlySet<string> = new Set([
   'bodyLimit',
+  'trustedProxies',
   'timeout',
   'rateLimit',
 ]);
@@ -151,7 +155,7 @@ export const validateApiConfig: ConfigValidator<ApiConfig> = (api, context) => {
     if (!apiConfigFields.has(key))
       context.warning(
         key,
-        'is not an api setting, so nothing reads it. Expected bodyLimit, timeout or rateLimit.',
+        'is not an api setting, so nothing reads it. Expected bodyLimit, timeout, rateLimit or trustedProxies.',
       );
   }
   const check = (path: string, parse: () => unknown): void => {
@@ -167,6 +171,10 @@ export const validateApiConfig: ConfigValidator<ApiConfig> = (api, context) => {
       );
     }
   };
+  if (isSet(api.trustedProxies))
+    check('trustedProxies', () =>
+      createTrustedAuditProxies(api.trustedProxies),
+    );
   if (isSet(api.bodyLimit))
     check('bodyLimit', () => parseApiSize(api.bodyLimit, 'api.bodyLimit'));
   if (isSet(api.timeout))

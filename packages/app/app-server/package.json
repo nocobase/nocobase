@@ -10,6 +10,10 @@
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "exports": {
+    "./audit": {
+      "types": "./src/audit/index.ts",
+      "import": "./src/audit/index.ts"
+    },
     "./application": {
       "types": "./src/application/index.ts",
       "import": "./src/application/index.ts"
@@ -116,6 +120,10 @@
   ],
   "publishConfig": {
     "exports": {
+      "./audit": {
+        "types": "./dist/audit/index.d.ts",
+        "import": "./dist/audit/index.js"
+      },
       "./application": {
         "types": "./dist/application/index.d.ts",
         "import": "./dist/application/index.js"

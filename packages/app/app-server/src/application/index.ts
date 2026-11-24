@@ -1,3 +1,6 @@
+import { auditServiceToken } from '../audit/index.js';
+import { auditMiddleware } from '../audit/request.js';
+import { createTrustedAuditProxies } from '../audit/ip.js';
 import { enterRunningApplication } from '../backup/runtime-guard.js';
 import type { ReleaseStorageLock } from '@nocobase/drive';
 import { MailSenderFactoryProvider } from '../mailers/index.js';
@@ -477,8 +480,30 @@ export class Application<
     // unknown API path with a page.
     const api = new Hono();
     api.use('*', requestIdMiddleware());
+    const apiConfig = this.config.get<ApiConfig>('api');
+    if (this.container.has(auditServiceToken)) {
+      api.use(
+        '*',
+        auditMiddleware({
+          service: this.container.resolve(auditServiceToken),
+          forwarded: () => this.forwardedApiRoutes.routers,
+          proxies: createTrustedAuditProxies(
+            apiConfig?.trustedProxies ??
+              this.config.get('auth.advanced.ipAddress.trustedProxies'),
+          ),
+          report: () => {
+            if (this.container.has(loggingToken))
+              this.container
+                .resolve(loggingToken)
+                .getLogger('audit')
+                .error('Could not record an audit event.');
+            else console.error('Could not record an audit event.');
+          },
+        }),
+      );
+    }
     // The `api` section's global limits, each installed only when configured.
-    installApiLimits(api, this.config.get<ApiConfig>('api'));
+    installApiLimits(api, apiConfig);
     // The last resort: anything no router recognized is an unexpected failure, answered with an opaque 500.
     api.onError((error, context) =>
       apiErrorHandler(toApiError(error), context),

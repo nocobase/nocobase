@@ -1,3 +1,5 @@
+import { auditRoute } from '@nocobase/app-server/audit';
+import { authAuditOptions } from '../audit.js';
 import type { AppPluginApplication } from '@nocobase/app-server/plugins';
 import {
   ApiError,
@@ -37,11 +39,18 @@ export const apiRoutes: AppApiRouteContribution<
   router.on(
     ['GET', 'POST'],
     '/auth/*',
+    auditRoute((context) =>
+      context.req.method === 'POST'
+        ? authAuditOptions(
+            context.req.path.slice(context.req.routePath.indexOf('*') - 1),
+          )
+        : false,
+    ),
     // A catch-all handing every request to Better Auth; its endpoints are documented one by one from Better Auth's own
     // generator, through the fragment the provider adds.
     describeRoute({ hide: true }),
     (context) =>
-      auth.handler(context.req.raw, {
+      auth.handleAudited(context.req.raw, {
         clientAddress: getClientAddress(context),
       }),
   );

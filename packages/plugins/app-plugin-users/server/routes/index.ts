@@ -1,4 +1,10 @@
 import {
+  auditEnabled,
+  auditRoute,
+  recordAuditInTransaction,
+  setAuditTarget,
+} from '@nocobase/app-server/audit';
+import {
   authenticationToken,
   UserAdministrationError,
   type AuthEnv,
@@ -26,7 +32,7 @@ import {
   type ApiErrorStatus,
   type AppApiRouteContribution,
 } from '@nocobase/app-server/router';
-import { databaseManagerToken } from '@nocobase/db';
+import { databaseManagerToken, type DatabaseConnection } from '@nocobase/db';
 import { AuthorizationDeniedError } from '@nocobase/authorization/core';
 import { PermissionSetLastAssignmentError } from '@nocobase/authorization/permission-sets';
 import { Hono, type Context, type MiddlewareHandler } from 'hono';
@@ -85,11 +91,40 @@ export const apiRoutes: AppApiRouteContribution<AppPluginApplication> =
     const authentication = container.resolve(authenticationToken);
     const authorization = container.resolve(authorizationToken);
     const users = container.resolve(userManagementServiceToken);
+    const userAudit = auditRoute({
+      resource: 'user',
+      target: (context) => ({
+        collection: 'user',
+        key: context.req.param('userId'),
+      }),
+    });
     const submit = async <T>(
       context: import('hono').Context<AuthorizationEnv>,
       input: unknown,
       execute: (service: typeof users) => Promise<T>,
+      status?: number,
     ): Promise<T> => {
+      const executeBound = async (
+        transaction: DatabaseConnection,
+      ): Promise<T> => {
+        const data = await execute(users.withConnection(transaction));
+        if (auditEnabled()) {
+          const key =
+            context.req.param('userId') ??
+            (data &&
+            typeof data === 'object' &&
+            'id' in data &&
+            typeof data.id === 'string'
+              ? data.id
+              : undefined);
+          setAuditTarget({ collection: 'user', key });
+          await recordAuditInTransaction(transaction, {
+            status: status ?? (data === null ? 204 : 200),
+            response: data === null ? undefined : { data },
+          });
+        }
+        return data;
+      };
       const protection = container.has(repositoryIdempotencyToken)
         ? container.resolve(repositoryIdempotencyToken)
         : undefined;
@@ -102,7 +137,12 @@ export const apiRoutes: AppApiRouteContribution<AppPluginApplication> =
             reason: 'IDEMPOTENCY_UNAVAILABLE',
             message: 'Operation receipts are unavailable.',
           });
-        return execute(users);
+        return auditEnabled()
+          ? container
+              .resolve(databaseManagerToken)
+              .connection()
+              .transaction(executeBound)
+          : execute(users);
       }
       if (!key)
         throw new ApiError({
@@ -162,7 +202,7 @@ export const apiRoutes: AppApiRouteContribution<AppPluginApplication> =
             }
           }
         },
-        execute: (transaction) => execute(users.withConnection(transaction)),
+        execute: executeBound,
       });
       context.header('Idempotency-Replayed', String(result.replayed));
       return result.data;
@@ -398,6 +438,7 @@ export const apiRoutes: AppApiRouteContribution<AppPluginApplication> =
 
     routes.post(
       '/',
+      userAudit,
       allowed('create', '*'),
       allowed('assign-role', '*'),
       describeRoute({
@@ -440,8 +481,11 @@ export const apiRoutes: AppApiRouteContribution<AppPluginApplication> =
       apiValidator('json', CreateUserInput),
       async (context) => {
         const input = context.req.valid('json');
-        const user = await submit(context, input, (service) =>
-          service.create(input),
+        const user = await submit(
+          context,
+          input,
+          (service) => service.create(input),
+          201,
         );
         logSecurityEvent(securityLogger, context, 'user.create', user.id, {
           roleScopes: Object.keys(input.roleScopes ?? {}).sort(),
@@ -475,6 +519,7 @@ export const apiRoutes: AppApiRouteContribution<AppPluginApplication> =
 
     routes.patch(
       '/:userId',
+      userAudit,
       createMiddleware<AuthorizationEnv>(async (context, next) => {
         try {
           await requireUserAction(
@@ -560,6 +605,7 @@ export const apiRoutes: AppApiRouteContribution<AppPluginApplication> =
 
     routes.delete(
       '/:userId',
+      userAudit,
       allowed('delete'),
       describeRoute({
         tags,
@@ -603,6 +649,7 @@ export const apiRoutes: AppApiRouteContribution<AppPluginApplication> =
 
     routes.post(
       '/:userId/disable',
+      userAudit,
       allowed('disable'),
       describeRoute({
         tags,
@@ -641,6 +688,7 @@ export const apiRoutes: AppApiRouteContribution<AppPluginApplication> =
 
     routes.post(
       '/:userId/enable',
+      userAudit,
       allowed('enable'),
       describeRoute({
         tags,
@@ -680,6 +728,7 @@ export const apiRoutes: AppApiRouteContribution<AppPluginApplication> =
     // API rules keep PUT for; there are no fields to merge, so PATCH would mean the same thing less precisely.
     routes.put(
       '/:userId/roleScopes/:scope',
+      userAudit,
       allowed('assign-role'),
       describeRoute({
         tags,
@@ -726,6 +775,7 @@ export const apiRoutes: AppApiRouteContribution<AppPluginApplication> =
 
     routes.post(
       '/:userId/resetPassword',
+      userAudit,
       allowed('reset-password'),
       describeRoute({
         tags,
@@ -773,6 +823,7 @@ export const apiRoutes: AppApiRouteContribution<AppPluginApplication> =
 
     routes.post(
       '/:userId/revokeSessions',
+      userAudit,
       allowed('revoke-sessions'),
       describeRoute({
         tags,

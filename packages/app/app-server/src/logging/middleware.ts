@@ -8,6 +8,7 @@ import {
   getRequestId,
   type AppHttpMiddleware,
 } from '../router/index.js';
+import { sensitiveParameterName } from '../secrets/sensitive-name.js';
 import { loggingToken } from './token.js';
 
 const defaultRequestHeaders = [
@@ -42,9 +43,6 @@ const identifierValue = (value: string) =>
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/iu.test(
     value,
   );
-const sensitiveParameterName =
-  /password|passwd|token|secret|authorization|cookie|api[-_]?key|credential|signature|code|state|session|ticket|otp|nonce|^key$/iu;
-
 function acceptsParameter(key: string, value: string): boolean {
   // Reject length before validating; never make a rejected value acceptable by
   // truncating it. Pagination is bounded independently of identifier shapes.

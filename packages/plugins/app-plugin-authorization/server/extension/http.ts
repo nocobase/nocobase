@@ -1,3 +1,4 @@
+import { auditRoute } from '@nocobase/app-server/audit';
 import { Hono, type MiddlewareHandler } from 'hono';
 import { createMiddleware } from 'hono/factory';
 import {
@@ -202,10 +203,16 @@ export function settingsAccess(
   id: string,
   action: string,
 ): MiddlewareHandler<SettingsRouterEnv> {
-  return createMiddleware<SettingsRouterEnv>(async (context, next) => {
-    await requireSettings(context.env.authorization, id, action);
-    await next();
-  });
+  return auditRoute(
+    (context) =>
+      ['POST', 'PUT', 'PATCH', 'DELETE'].includes(context.req.method)
+        ? { action, resource: `settings:${id}` }
+        : undefined,
+    createMiddleware<SettingsRouterEnv>(async (context, next) => {
+      await requireSettings(context.env.authorization, id, action);
+      await next();
+    }),
+  );
 }
 
 /**

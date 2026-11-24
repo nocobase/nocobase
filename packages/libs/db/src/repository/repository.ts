@@ -1189,17 +1189,23 @@ export class DefaultRepository<
     if (result === 'conflict') versionConflict(collection);
     if (result === 'multiple') multipleRecordsMatched(collection);
     if (result === 'missing') recordNotFound(collection);
-    if (typeof result !== 'string' && selection) {
-      return {
-        deleted: true,
-        record: pickSelection(
-          result.record,
-          selection.fields,
-          selection.select,
-        ) as TRecord,
-      };
-    }
-    return { deleted: true };
+    const confirmation = { deleted: true } as const;
+    if (typeof result === 'string') return confirmation;
+    const { identity, record } = result;
+    const visible =
+      record && selection
+        ? {
+            ...confirmation,
+            record: pickSelection(
+              record,
+              selection.fields,
+              selection.select,
+            ) as TRecord,
+          }
+        : confirmation;
+    return identity
+      ? rememberMutationIdentity(visible, collection, identity)
+      : visible;
   }
 
   async deleteMany<TSelection extends AnySelectBuilder<TRecord>>(

@@ -1,3 +1,4 @@
+import { auditEnabled, setAuditRoles } from '@nocobase/app-server/audit';
 import { PermissionSetConflictError } from '@nocobase/authorization/permission-sets';
 import {
   encodeAuthorizationTitle,
@@ -61,6 +62,14 @@ export class DatabasePermissionSetStore implements PermissionSetStore<DatabaseCo
         ),
       )
       .execute();
+    if (auditEnabled()) {
+      const principal = subjects.find((subject) => subject.type === 'user');
+      if (principal)
+        setAuditRoles(
+          rows.map((row) => String(row.permissionSetKey)),
+          principal.id,
+        );
+    }
     return rows.map((row) => ({
       id: String(row.id),
       subject: {
