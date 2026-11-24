@@ -23,4 +23,5 @@ export function createFileServerPlugin(
   });
 }
 
-export default createFileServerPlugin();
+const plugin: AppServerPlugin = createFileServerPlugin();
+export default plugin;
