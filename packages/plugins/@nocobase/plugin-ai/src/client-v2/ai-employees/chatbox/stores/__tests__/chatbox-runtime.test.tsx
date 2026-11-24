@@ -43,6 +43,7 @@ vi.mock('@nocobase/client-v2', async (importOriginal) => ({
       })),
     },
     apiClient: {
+      auth: { token: 'test-token' },
       resource: () => ({
         unreadCounts: async () => ({
           data: {

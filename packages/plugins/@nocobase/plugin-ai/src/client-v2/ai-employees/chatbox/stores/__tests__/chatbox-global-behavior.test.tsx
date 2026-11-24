@@ -8,7 +8,7 @@
  */
 
 import React from 'react';
-import { fireEvent, render, screen } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { ChatButton } from '../../components/ChatButton';
 import { ChatBoxRuntimeProvider, createChatBoxRuntime, type ChatBoxRuntime } from '../runtime';
@@ -78,12 +78,8 @@ vi.mock('../../hooks/useWorkflowTasks', () => ({
   }),
 }));
 
-const renderWithRuntime = (runtime: ChatBoxRuntime) => {
-  return render(
-    <ChatBoxRuntimeProvider runtime={runtime}>
-      <ChatButton />
-    </ChatBoxRuntimeProvider>,
-  );
+const renderWithRuntime = (runtime: ChatBoxRuntime, button = <ChatButton />) => {
+  return render(<ChatBoxRuntimeProvider runtime={runtime}>{button}</ChatBoxRuntimeProvider>);
 };
 
 describe('global chatbox behavior', () => {
@@ -94,13 +90,20 @@ describe('global chatbox behavior', () => {
   });
 
   afterEach(() => {
+    cleanup();
     mocks.getAIEmployees.mockReset();
+  });
+
+  it('leaves employee loading to the layout when requested', () => {
+    renderWithRuntime(createChatBoxRuntime(), <ChatButton loadEmployeesOnMount={false} />);
+    expect(mocks.getAIEmployees).not.toHaveBeenCalled();
   });
 
   it('opens the global runtime and selects the leader employee from ChatButton', () => {
     const runtime = createChatBoxRuntime();
 
     renderWithRuntime(runtime);
+    expect(mocks.getAIEmployees).toHaveBeenCalledTimes(1);
 
     fireEvent.click(screen.getByRole('button', { name: 'Open AI chat' }));
 
