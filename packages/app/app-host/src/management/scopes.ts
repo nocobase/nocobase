@@ -675,6 +675,8 @@ export class ManagedScopes {
       const checkpoint: OperationCheckpoint = {
         previous: reached,
         save: async (name, result) => {
+          // Known before it is written: a step done stays on the final record even when writing it here fails.
+          reached = { name, result };
           await this.operations.put({
             ...base,
             state: 'running',
@@ -683,7 +685,6 @@ export class ManagedScopes {
             checkpoint: name,
             result,
           });
-          reached = { name, result };
         },
       };
       try {

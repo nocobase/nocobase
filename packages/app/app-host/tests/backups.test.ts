@@ -32,6 +32,9 @@ import type {
   HostManagementService,
   HostScope,
 } from '../src/index.ts';
+import { createAppHost } from '../src/index.ts';
+import type { OperationLog } from '../src/management/operation-log.ts';
+import { MemoryOperationLog } from '../src/management/operation-log.ts';
 import { AppHostSupervisor } from '../src/supervisor.ts';
 
 const scope: HostScope = { id: 'backups' };
@@ -602,6 +605,99 @@ describe('backups on a managed Host', () => {
     });
     expect(await commands()).toEqual([]);
     expect(await data()).toBe('written-after');
+  }, 60_000);
+
+  it('keeps the restored checkpoint when recording it fails, and does not deploy the App', async () => {
+    // An in-process Host whose operation log fails once, when the restore records that its data is back.
+    const dir = path.join(root, 'checkpoint-write');
+    const stored = new MemoryOperationLog();
+    let failed = false;
+    const operations: OperationLog = {
+      get: (scopeId, operationId) => stored.get(scopeId, operationId),
+      put: async (operation) => {
+        if (
+          !failed &&
+          operation.state === 'running' &&
+          operation.checkpoint === 'restored'
+        ) {
+          failed = true;
+          throw Object.assign(new Error('EIO: i/o error, write'), {
+            code: 'EIO',
+          });
+        }
+        await stored.put(operation);
+      },
+    };
+    const inProcess = createAppHost({
+      mode: 'managed',
+      appRevisionsDir: path.join(dir, 'revisions'),
+      appVolumesDir: path.join(dir, 'volumes'),
+      artifact: {
+        driver: 'fs',
+        location: path.join(root, 'artifacts'),
+        visibility: 'private',
+      },
+      operations,
+      evictionIntervalMs: 0,
+    });
+    const service = inProcess.management;
+    const file = path.join(dir, 'volumes', 'demo', 'storage', 'data.txt');
+    const deployedBy = async (): Promise<unknown> =>
+      (await service.getStatus({ scope: scope.id })).deployments.find(
+        (deployment) => deployment.appId === 'demo',
+      );
+    try {
+      await service.applyDeployment(spec('write-d', withCli));
+      await mkdir(path.dirname(file), { recursive: true });
+      await writeFile(file, 'backed-up');
+      await service.createBackup!('demo', { operationId: 'write-b', scope });
+      await writeFile(file, 'replaced');
+      await commands();
+      const request = {
+        operationId: 'write-r',
+        scope,
+        backupId: 'write-b',
+        deployment: spec('write-r', withCli),
+      };
+      await expect(
+        service.restoreBackup!('demo', request),
+      ).rejects.toMatchObject({ code: 'EIO' });
+      expect(failed).toBe(true);
+      expect(await readFile(file, 'utf8')).toBe('backed-up');
+      const failure = {
+        kind: 'restore',
+        state: 'failed',
+        errorCode: 'EIO',
+        checkpoint: 'restored',
+        result: {
+          restore: { connections: [{ name: 'main', status: 'restored' }] },
+        },
+      };
+      await expect(
+        service.getOperation('write-r', { scope }),
+      ).resolves.toMatchObject(failure);
+      // The App stays stopped with the restored data: the deployment never ran.
+      expect(await deployedBy()).toMatchObject({
+        operationId: 'write-d',
+        observedState: 'stopped',
+      });
+      // Asked again, the recorded failure answers without restoring or deploying.
+      await writeFile(file, 'written-after');
+      await expect(
+        service.restoreBackup!('demo', request),
+      ).rejects.toMatchObject({ code: 'EIO' });
+      await expect(
+        service.getOperation('write-r', { scope }),
+      ).resolves.toMatchObject(failure);
+      expect(await commands()).toEqual([
+        'backup verify demo: true',
+        'backup restore demo: true',
+      ]);
+      expect(await deployedBy()).toMatchObject({ operationId: 'write-d' });
+      expect(await readFile(file, 'utf8')).toBe('written-after');
+    } finally {
+      await inProcess.close('test cleanup');
+    }
   }, 60_000);
 
   it('refuses a release without the backup commands', async () => {
