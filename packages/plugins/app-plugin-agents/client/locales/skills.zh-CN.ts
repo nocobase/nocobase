@@ -147,7 +147,6 @@ const skillsZhCN: typeof skillsEnUS = {
       title: '版本',
       description: '每次保存都是一个新版本；Agent 总是使用最新版。',
       current: '当前',
-      via: '{{author}} 经由 {{agent}}',
       compare: '对比',
       compareTitle: '第 {{version}} 版 → 第 {{current}} 版',
       compareDescription: '此后删除的行为红色，新增的行为绿色。',

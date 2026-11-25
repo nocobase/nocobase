@@ -269,11 +269,6 @@ const deDE: LocaleResource<typeof enUS> = {
       actionsHint:
         'Aktionen, die dieser Agent in den Geschäftsdaten ausführen darf. Auch die Person, die ihn gestartet hat, muss dazu berechtigt sein.',
       actionsNone: 'Dieser Agent hat keine Geschäftsaktionen.',
-      optionalActions: 'Optionale Aktionen',
-      optionalActionsHint:
-        'Für alle Agents aus, bis Sie sie für diesen einschalten. Er handelt trotzdem nur, wo die Person, die ihn geweckt hat, es auch darf.',
-      optionalActionsFailed:
-        'Die optionalen Aktionen konnten nicht geändert werden.',
       skillsHint:
         'Diese Standardfähigkeiten des Teams gelten für jeden Lauf aller Agenten. Sie können sie auf der Seite „Fähigkeiten“ ändern.',
       skillsNone: 'Noch keine Standardfähigkeiten für das Team.',
@@ -1841,7 +1836,6 @@ const deDE: LocaleResource<typeof enUS> = {
       description:
         'Jeder Speichervorgang erstellt eine neue Version; Agents erhalten immer die neueste Version.',
       current: 'Strom',
-      via: '{{author}} über {{agent}}',
       compare: 'Vergleiche',
       compareTitle: 'Version {{version}} → Version {{current}}',
       compareDescription:

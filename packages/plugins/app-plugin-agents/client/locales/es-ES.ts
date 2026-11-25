@@ -277,10 +277,6 @@ const esES: LocaleResource<typeof enUS> = {
       actionsHint:
         'Acciones que la aplicación permite realizar al agente sobre los datos de negocio. La persona que lo activó también debe tener permiso para realizarlas.',
       actionsNone: 'Este agente no tiene acciones de negocio.',
-      optionalActions: 'Acciones opcionales',
-      optionalActionsHint:
-        'Desactivadas para todos los agentes hasta que las actives para este. Aun así solo actúa donde la persona que lo activó también puede.',
-      optionalActionsFailed: 'No se pudieron cambiar las acciones opcionales.',
       skillsHint:
         'Habilidades predeterminadas del equipo para cada ejecución de cualquier agente. Puedes cambiarlas en la página de habilidades.',
       skillsNone: 'El equipo aún no tiene habilidades predeterminadas.',
@@ -1840,7 +1836,6 @@ const esES: LocaleResource<typeof enUS> = {
       description:
         'Cada guardado crea una nueva versión; los Agents siempre reciben la versión más reciente.',
       current: 'Actual',
-      via: '{{author}} a través de {{agent}}',
       compare: 'Comparar',
       compareTitle: 'Versión {{version}} → versión {{current}}',
       compareDescription:

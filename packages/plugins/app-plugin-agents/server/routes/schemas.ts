@@ -958,10 +958,6 @@ export const AgentActionOptionSchema: z.ZodType<AgentActionOption> = z.object({
   groupTitle: I18nTextSchema.optional(),
   description: I18nTextSchema.optional(),
   defaultOn: z.boolean().optional(),
-  optional: z.boolean().optional().meta({
-    description:
-      'Off for every agent until someone who manages agents turns it on for one (`optionalActions` of `PATCH /api/agents/{agentId}`).',
-  }),
   grantable: z.boolean().optional(),
   reason: I18nTextSchema.optional(),
 });

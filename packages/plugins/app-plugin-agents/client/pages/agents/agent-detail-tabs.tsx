@@ -1,12 +1,11 @@
 /**
  * The tabs of an agent's details beside its settings: the business actions it may perform (the application's, the same
- * for every agent discovered from runners, and the optional ones someone who manages agents turns on for this one), the
- * team's default skills every run of it gets, and its recent runs. Each reads what the viewer may read; only the
- * optional actions' switches change anything.
+ * for every agent discovered from runners), the team's default skills every run of it gets, and its recent runs. Each
+ * reads what the viewer may read; none of them changes anything.
  */
 import { useTranslation } from '@nocobase/i18n/client';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useState, type ReactElement } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import type { ReactElement } from 'react';
 
 import type { AgentView } from '../../../shared/agents.js';
 import { agentModelOf } from '../../../shared/model-catalog.js';
@@ -16,7 +15,6 @@ import { AgTag } from '../../components/ag-tag.js';
 import { TONE_CLASS } from '../../components/ag-tag-tones.js';
 import { Badge } from '../../components/ui/badge.js';
 import { Skeleton } from '../../components/ui/skeleton.js';
-import { Switch } from '../../components/ui/switch.js';
 import {
   Table,
   TableBody,
@@ -26,7 +24,6 @@ import {
   TableRow,
 } from '../../components/ui/table.js';
 import { useAgentsApi } from '../../hooks/use-agents-api.js';
-import { useNotify } from '../../hooks/use-notify.js';
 import { useText } from '../../hooks/use-vocabulary.js';
 import { useAgentActions } from '../../lib/action-catalog.js';
 import {
@@ -90,64 +87,21 @@ export function AgentSummary({
   );
 }
 
-/**
- * The business actions the agent may perform, by group, within what the person who woke it may do; then the optional
- * ones, each a switch for whoever may change the agent (`AgentActionOption.optional`, saved as `optionalActions`).
- */
+/** The business actions the agent may perform, by group, within what the person who woke it may do. */
 export function AgentActionsTab({
-  agent: opened,
+  agent,
 }: {
   readonly agent: AgentView;
 }): ReactElement {
   const { t } = useTranslation();
-  // The dialog keeps the agent it opened with: show what a switch saved, until a newer revision comes in.
-  const [saved, setSaved] = useState<AgentView | null>(null);
-  const agent =
-    saved && saved.id === opened.id && saved.revision > opened.revision
-      ? saved
-      : opened;
   const text = useText();
-  const api = useAgentsApi();
-  const notify = useNotify();
-  const queryClient = useQueryClient();
   const options = useAgentActions(agent.actions);
-  const toggle = useMutation({
-    mutationFn: (optionalActions: readonly string[]) =>
-      api.updateAgent(agent.id, {
-        optionalActions: [...optionalActions],
-        expectedRevision: agent.revision,
-      }),
-    onSuccess: async (result) => {
-      setSaved({ ...agent, ...result });
-      await queryClient.cancelQueries({ queryKey: agentsKeys.agents });
-      queryClient.setQueryData<AgentView[]>(agentsKeys.agents, (current) =>
-        current?.map((item) =>
-          item.id === result.id ? { ...item, ...result } : item,
-        ),
-      );
-      void queryClient.invalidateQueries({ queryKey: agentsKeys.agents });
-    },
-    onError: (error) => {
-      notify.error(error, t('agents.detail.optionalActionsFailed'));
-      void queryClient.invalidateQueries({ queryKey: agentsKeys.agents });
-    },
-  });
   if (!options) return <Skeleton className='h-16' />;
   const held = new Set(agent.actions);
-  const optional = options.filter(
-    (option) => option.optional && option.grantable !== false,
-  );
-  const granted = options.filter(
-    (option) => held.has(option.key) && !option.optional,
-  );
+  const granted = options.filter((option) => held.has(option.key));
   const groups = new Map<string, typeof granted>();
   for (const option of granted)
     groups.set(option.group, [...(groups.get(option.group) ?? []), option]);
-  const chosen = optional
-    .filter((option) => held.has(option.key))
-    .map((option) => option.key);
-  const editable =
-    agent.canEdit && agent.source === 'runner' && !toggle.isPending;
   return (
     <div className='space-y-4' data-testid='agent-actions'>
       <p className='text-sm text-muted-foreground'>
@@ -180,53 +134,6 @@ export function AgentActionsTab({
           </section>
         ))
       )}
-      {optional.length > 0 ? (
-        <section className='space-y-2' data-testid='agent-optional-actions'>
-          <div className='space-y-0.5'>
-            <h3 className='text-sm font-medium'>
-              {t('agents.detail.optionalActions')}
-            </h3>
-            <p className='text-sm text-muted-foreground'>
-              {t('agents.detail.optionalActionsHint')}
-            </p>
-          </div>
-          <ul className='divide-y rounded-lg border'>
-            {optional.map((option) => {
-              const id = `agent-optional-${option.key}`;
-              return (
-                <li
-                  key={option.key}
-                  className='flex items-start justify-between gap-3 px-3 py-2'
-                >
-                  <label htmlFor={id} className='min-w-0 space-y-0.5 text-sm'>
-                    <span className='block font-medium'>
-                      {text(option.title, option.key)}
-                    </span>
-                    {option.description ? (
-                      <span className='block text-muted-foreground'>
-                        {text(option.description, option.key)}
-                      </span>
-                    ) : null}
-                  </label>
-                  <Switch
-                    id={id}
-                    data-testid={id}
-                    checked={held.has(option.key)}
-                    disabled={!editable}
-                    onCheckedChange={(on) =>
-                      toggle.mutate(
-                        on
-                          ? [...chosen, option.key]
-                          : chosen.filter((key) => key !== option.key),
-                      )
-                    }
-                  />
-                </li>
-              );
-            })}
-          </ul>
-        </section>
-      ) : null}
     </div>
   );
 }

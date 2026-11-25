@@ -432,14 +432,7 @@ export function createAdminRoutes(
       operationId: 'agentsListActions',
       ...cliRoute({
         command: 'agent action list',
-        columns: [
-          'key',
-          'group',
-          'defaultOn',
-          'optional',
-          'grantable',
-          'types',
-        ],
+        columns: ['key', 'group', 'defaultOn', 'grantable', 'types'],
       }),
       description:
         'As the application offers them. Needs `agents.agents` read.',
@@ -2172,16 +2165,15 @@ export function createAdminRoutes(
         examples: [
           'agent update <agent> --good-at "Code review" --enabled --expected-revision 2',
           'agent update <agent> --no-enabled --expected-revision 3',
-          'agent update <agent> --optional-actions agents.skills/read --expected-revision 4',
         ],
       }),
       description:
-        "Writes what an agent discovered from runners is good at, its default reasoning effort, and enables or disables it, against the revision the edit was made from. An agent is enabled only with a description. Disabling withdraws its queued runs. `optionalActions` replaces which optional business actions it has (`GET /api/agents/actions`, `optional`); a new agent has none, and applying the application's defaults keeps the choice. An application's own agent is changed through the application. Needs `agents.agents` manage.",
+        "Writes what an agent discovered from runners is good at, its default reasoning effort, and enables or disables it, against the revision the edit was made from. An agent is enabled only with a description. Disabling withdraws its queued runs. An application's own agent is changed through the application. Needs `agents.agents` manage.",
       responses: {
         200: dataResponse(AgentSchema),
         400: apiErrorResponse(
           400,
-          'Enabling without a description (`GOOD_AT_REQUIRED`), an effort its tool does not take (`EFFORT_UNSUPPORTED`), an action that is not optional (`ACTION_NOT_OPTIONAL`), or an application’s own agent (`AGENT_MANAGED`).',
+          'Enabling without a description (`GOOD_AT_REQUIRED`), an effort its tool does not take (`EFFORT_UNSUPPORTED`), or an application’s own agent (`AGENT_MANAGED`).',
         ),
         404: noAgent,
         409: apiErrorResponse(

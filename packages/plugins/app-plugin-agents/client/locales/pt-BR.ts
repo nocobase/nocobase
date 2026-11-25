@@ -276,10 +276,6 @@ const ptBR: LocaleResource<typeof enUS> = {
       actionsHint:
         'Ações que o aplicativo permite que este agente execute nos dados de negócio. A pessoa que o acionou também precisa ter permissão para executá-las.',
       actionsNone: 'Este agente não tem ações de negócio.',
-      optionalActions: 'Ações opcionais',
-      optionalActionsHint:
-        'Desativadas para todos os agentes até você ativá-las para este. Ainda assim, ele só age onde a pessoa que o acionou também pode.',
-      optionalActionsFailed: 'Não foi possível alterar as ações opcionais.',
       skillsHint:
         'Habilidades padrão da equipe usadas em cada execução de todos os agentes. Você pode alterá-las na página de habilidades.',
       skillsNone: 'A equipe ainda não tem habilidades padrão.',
@@ -1829,7 +1825,6 @@ const ptBR: LocaleResource<typeof enUS> = {
       description:
         'Cada salvamento cria uma nova versão; os Agents sempre recebem a versão mais recente.',
       current: 'Atual',
-      via: '{{author}} via {{agent}}',
       compare: 'Comparar',
       compareTitle: 'Versão {{version}} → versão {{current}}',
       compareDescription:

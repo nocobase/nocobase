@@ -25,10 +25,6 @@ const shellZhCN: typeof shellEnUS = {
       actionsHint:
         '应用允许这个 Agent 在业务数据里做的事。只有唤起它的人也有权限时，它才会执行。',
       actionsNone: '这个 Agent 没有业务操作。',
-      optionalActions: '可选操作',
-      optionalActionsHint:
-        '默认对所有 Agent 关闭，需要为这个 Agent 单独开启。开启后，它仍只能在唤起它的人也有权限时执行。',
-      optionalActionsFailed: '无法修改可选操作。',
       skillsHint:
         '每个 Agent 的每次运行都会带上的团队默认技能，在「技能」页修改。',
       skillsNone: '还没有团队默认技能。',

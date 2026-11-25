@@ -223,8 +223,6 @@ export interface AgentPatch {
   readonly enabled?: boolean;
   /** Who may chat with it: null (or an empty list) for everyone, else permission set keys. */
   readonly chatRoles?: readonly string[] | null;
-  /** The optional business actions it has (`AgentActionOption.optional`), replacing its current choice. */
-  readonly optionalActions?: readonly string[];
   readonly expectedRevision: number;
 }
 
@@ -414,11 +412,6 @@ export interface AgentActionOption {
   readonly description?: I18nText;
   /** Given to every agent the runners report. */
   readonly defaultOn?: boolean;
-  /**
-   * Off for every agent until someone who manages agents turns it on for one (`AgentPatch.optionalActions`); each agent
-   * keeps its own choice.
-   */
-  readonly optional?: boolean;
   /** False for an action listed only to show where the boundary is: it is never granted. Grantable when absent. */
   readonly grantable?: boolean;
   /** Why it can never be granted to an agent, for a `grantable: false` action. */

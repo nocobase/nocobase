@@ -278,10 +278,6 @@ const frFR: LocaleResource<typeof enUS> = {
       actionsHint:
         'Actions que l’application autorise cet agent à effectuer sur les données métier. La personne qui l’a lancé doit également y être autorisée.',
       actionsNone: 'Cet agent n’a aucune action métier.',
-      optionalActions: 'Actions facultatives',
-      optionalActionsHint:
-        'Désactivées pour tous les agents jusqu’à ce que vous les activiez pour celui-ci. Il n’agit toujours que là où la personne qui l’a réveillé le peut aussi.',
-      optionalActionsFailed: 'Impossible de modifier les actions facultatives.',
       skillsHint:
         'Compétences par défaut de l’équipe utilisées à chaque exécution de chaque agent. Modifiez-les sur la page des compétences.',
       skillsNone: 'L’équipe n’a pas encore de compétences par défaut.',
@@ -1848,7 +1844,6 @@ const frFR: LocaleResource<typeof enUS> = {
       description:
         'Chaque enregistrement crée une nouvelle version ; les Agents reçoivent toujours la plus récente.',
       current: 'Actuel',
-      via: '{{author}} via {{agent}}',
       compare: 'Comparer',
       compareTitle: 'Version {{version}} → version {{current}}',
       compareDescription:

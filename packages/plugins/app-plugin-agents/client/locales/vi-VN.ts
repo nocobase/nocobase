@@ -263,10 +263,6 @@ const viVN: LocaleResource<typeof enUS> = {
       actionsHint:
         'Các thao tác mà ứng dụng cho phép tác tử thực hiện trên dữ liệu nghiệp vụ. Người kích hoạt tác tử cũng phải có quyền thực hiện thao tác đó.',
       actionsNone: 'Tác tử này chưa có thao tác nghiệp vụ.',
-      optionalActions: 'Thao tác tùy chọn',
-      optionalActionsHint:
-        'Tắt cho mọi agent cho đến khi bạn bật cho agent này. Agent vẫn chỉ thực hiện khi người đánh thức nó cũng có quyền.',
-      optionalActionsFailed: 'Không thể thay đổi thao tác tùy chọn.',
       skillsHint:
         'Kỹ năng mặc định của nhóm được dùng trong mọi lần chạy của mọi tác tử. Bạn có thể thay đổi trên trang Kỹ năng.',
       skillsNone: 'Nhóm chưa có kỹ năng mặc định.',
@@ -1786,7 +1782,6 @@ const viVN: LocaleResource<typeof enUS> = {
       description:
         'Mỗi lần lưu tạo một phiên bản mới; các tác tử luôn nhận được phiên bản mới nhất.',
       current: 'Hiện tại',
-      via: '{{author}} qua {{agent}}',
       compare: 'So sánh',
       compareTitle: 'Phiên bản {{version}} → phiên bản {{current}}',
       compareDescription:

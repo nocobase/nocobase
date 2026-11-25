@@ -20,7 +20,7 @@ The page defaults to enabled agents, with “Show disabled” to include disable
 ## The App's own agents and defaults
 
 - `agents.ensureSystem(input)` keeps an agent of the App's own, such as a project manager: fixed id, name, description, instructions, business actions and the tools and models it runs with. Call it at boot; it creates the agent the first time and writes changes after.
-- `agents.setDefaults(provider)` gives every discovered agent the App's instructions and business actions; call `agents.applyDefaults()` after the provider changes so agents discovered earlier get them too. Without a provider, business actions marked `defaultOn` apply. Its `optionalActions` (and `optional: true` on their action options) are off for every agent until someone who manages agents turns them on for one (`PATCH /api/agents/:agentId` with `optionalActions`, the Business actions tab's switches); `applyDefaults()` keeps each agent's choice. The application decides what an agent's run may do with them, for example only while the agent has the action.
+- `agents.setDefaults(provider)` gives every discovered agent the App's instructions and business actions; call `agents.applyDefaults()` after the provider changes so agents discovered earlier get them too. Without a provider, business actions marked `defaultOn` apply.
 - The system default chat agent is the App's to set (`PATCH /api/agents/chatSettings`); upgrading clears it along with every agent an earlier version kept.
 
 ## Upgrading from configured agents
