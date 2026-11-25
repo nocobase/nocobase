@@ -12,6 +12,7 @@ interface DemoModelInput {
 /** The official Agents capability used here, without requiring its types in non-AI applications. */
 export interface DemoAgents {
   readonly models?: {
+    readonly enabled?: boolean;
     readonly services?: {
       list(): Promise<readonly { name: string }[]>;
       create(input: DemoModelInput): Promise<{ name: string }>;

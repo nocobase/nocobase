@@ -34,6 +34,7 @@ import { fullErrorMessage } from '../errors.ts';
 import path from 'node:path';
 import { randomUUID } from 'node:crypto';
 import {
+  access,
   mkdir,
   readFile,
   readdir,
@@ -639,6 +640,115 @@ export class ManagedReconciler {
       this.reconciledRevision = revision;
       return this.getStatus();
     });
+  }
+
+  /**
+   * The definition an App's command-line tool runs with for a spec, without registering or starting anything: an
+   * in-process App's release expanded here (reused when it is), its configuration file written and its data
+   * directory; an external service's definition as its backend runs it. Queued behind deployments, so a release is
+   * never pruned or replaced while it is prepared.
+   */
+  commandDefinition(
+    spec: HostDeploymentSpec,
+    options: {
+      /**
+       * Which configuration file the command runs with. By default the spec's, written where the App's deployment
+       * reads it. `current`: the one the App runs with now, as deployed or published since (`publishAppConfig`), which
+       * a backup has to read its databases from.
+       */
+      readonly config?: 'current';
+    } = {},
+  ): Promise<AppDefinition> {
+    return this.enqueue(async () => {
+      validateDeploymentSet({ revision: 1, deployments: [spec] });
+      const configPath =
+        options.config === 'current'
+          ? ((await this.currentConfig(spec)) ??
+            (await this.prepareConfig(spec)))
+          : await this.prepareConfig(spec);
+      return await this.definitionFor(spec, configPath);
+    });
+  }
+
+  /**
+   * The definition to check a restore with before the App stops: the spec's inline configuration is written to a
+   * file of its own rather than where the running App reads it, so a refused restore never changes that. `dispose`
+   * removes that file and nothing else; it is already removed when preparing the definition fails.
+   */
+  preflightDefinition(spec: HostDeploymentSpec): Promise<{
+    readonly definition: AppDefinition;
+    readonly dispose: () => Promise<void>;
+  }> {
+    return this.enqueue(async () => {
+      validateDeploymentSet({ revision: 1, deployments: [spec] });
+      const isolated =
+        spec.config?.content !== undefined
+          ? await this.volumes.writeIsolatedConfig(
+              spec.appId,
+              spec.config.content,
+            )
+          : undefined;
+      const dispose = async (): Promise<void> => {
+        if (isolated) await rm(isolated, { force: true });
+      };
+      try {
+        const definition = await this.definitionFor(
+          spec,
+          isolated ?? (await this.prepareConfig(spec)),
+        );
+        return { definition, dispose };
+      } catch (error) {
+        await dispose();
+        throw error;
+      }
+    });
+  }
+
+  private async definitionFor(
+    spec: HostDeploymentSpec,
+    configPath: string | undefined,
+  ): Promise<AppDefinition> {
+    if (spec.backend !== 'in-process')
+      return this.serviceDefinition(spec, configPath);
+    const artifact = await this.artifactResolver
+      .restore(spec.artifact)
+      .catch(() => this.artifactResolver.resolve(spec.artifact));
+    return {
+      ...artifact.definition,
+      id: spec.appId,
+      appName: spec.appId,
+      backend: spec.backend,
+      isolation: spec.backend,
+      dataDir: await this.volumes.prepareStorageDir(spec.appId),
+      configPath,
+      env: spec.env ? { ...spec.env } : undefined,
+    };
+  }
+
+  /** The configuration file an App runs with now, when the Host keeps one: published content survives here. */
+  private async currentConfig(
+    spec: HostDeploymentSpec,
+  ): Promise<string | undefined> {
+    const registered = this.registry.definition(spec.appId)?.configPath;
+    if (registered) return registered;
+    if (spec.config?.content === undefined) return undefined;
+    const written = this.volumes.managedConfigPath(
+      spec.appId,
+      spec.config.revision ?? spec.id,
+    );
+    return (await access(written).then(
+      () => true,
+      () => false,
+    ))
+      ? written
+      : undefined;
+  }
+
+  /** Stops an App before its data is restored; an App this Host does not run is left alone. */
+  stopForRestore(appId: string): Promise<void> {
+    if (![...this.statuses.values()].some((status) => status.appId === appId))
+      return Promise.resolve();
+    return this.stopDeployment(appId).then(() => undefined);
   }
 
   /** The spec an App was last deployed or restored with. */

@@ -1,9 +1,8 @@
-import type { PartialLocaleResource } from '@nocobase/i18n';
+import type { LocaleResource } from '@nocobase/i18n';
 
 import type enUS from './en-US.js';
 
-/** The inbox's main words; the rest falls back to English. */
-const koKR: PartialLocaleResource<typeof enUS> = {
+const koKR: LocaleResource<typeof enUS> = {
   inbox: {
     title: '받은편지함',
     views: {
@@ -24,14 +23,69 @@ const koKR: PartialLocaleResource<typeof enUS> = {
       info: '이전',
       decision: '처리 대기',
     },
+    actionsFor: '{{title}} 작업',
+    allRead: '모두 읽음으로 표시했습니다.',
+    back: '목록으로 돌아가기',
+    cancel: '취소',
+    clearFilter: '필터 지우기',
+    count: '×{{count}}',
+    deleted: '삭제했습니다.',
+    description: '나에게 전송된 알림과 요청입니다.',
+    empty: {
+      decision: '결정을 기다리는 항목이 없습니다',
+      info: '알림 없음',
+      todo: '기다리고 있는 항목이 없습니다',
+      unread: '모두 확인했습니다',
+    },
+    emptyAll: '아무것도 없습니다',
+    emptyDescription: '나에게 전송된 알림과 요청이 여기에 표시됩니다.',
+    filters: '받은 편지함 필터',
+    forbidden: '이 작업을 할 수 있는 권한이 없습니다.',
+    keyMove: '이동',
+    keyOpen: '열림',
+    kinds: {
+      all: '모든 유형',
+      decision: '결정',
+      info: '이전',
+      label: '유형',
+      today: '오늘',
+    },
+    detailsUnavailable: '받은 편지함의 일부 세부 정보를 불러올 수 없습니다.',
+    loadFailed: '받은 편지함을 불러올 수 없습니다',
+    loadFailedDescription: '연결을 확인하고 다시 시도하세요.',
+    loadMore: '더 불러오기',
+    loading: '불러오는 중',
+    noMatchDescription: '모든 유형을 보려면 필터를 지우세요.',
+    nothingSelected: '항목을 선택해 확인하세요',
+    notification: '알림',
+    outcomes: { approved: '승인됨', rejected: '거절됨', withdrawn: '철회됨' },
+    pendingDecisions: '대기 중 {{count}}개',
+    request: {
+      approve: '승인',
+      commentFor: '{{action}}: {{title}}',
+      commentPlaceholder: '내용을 입력하세요…',
+      newLine: '줄 바꿈',
+      quickSend: '보내기',
+      reject: '거절',
+    },
+    requestFailed: '요청에 실패했습니다. 다시 시도하세요.',
+    resolved: '처리됨',
+    retry: '다시 시도',
+    unread: '읽지 않음',
+    unreadCount: '읽지 않음 {{count}}개',
   },
   inboxButton: {
     title: '받은편지함',
     viewAll: '받은편지함 열기',
+    empty: '아직 메시지가 없습니다',
+    pending: '받은 편지함, {{count}}개 대기 중',
+    recent: '최근 메시지',
+    unread: '받은 편지함, 읽지 않음 {{count}}개',
   },
   nav: {
     inbox: '받은편지함',
   },
+  common: { loading: '불러오는 중' },
 };
 
 export default koKR;

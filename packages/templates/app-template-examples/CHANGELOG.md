@@ -1,5 +1,78 @@
 # @nocobase/app-template-examples
 
+## 2.0.0-beta.2
+
+### Patch Changes
+
+- 63100e7: Include the PostgreSQL 17, MySQL 8.4 and MariaDB client tools in the production image, on amd64 and arm64, so that application backups can dump and restore those databases, and create `/app/backups` for a deployment host's backup volume.
+- Updated dependencies [019d5ec]
+- Updated dependencies [fcc0c18]
+- Updated dependencies [3635b25]
+- Updated dependencies [e444ed6]
+  - @nocobase/app-plugin-authorization@1.0.0-beta.40
+  - @nocobase/app-server@5.0.0-beta.11
+  - @nocobase/app-plugin-mail@1.0.0-beta.29
+  - @nocobase/app-plugin-api-keys@1.0.0-beta.28
+  - @nocobase/app-plugin-template-print-example@1.0.0-beta.12
+  - @nocobase/app-plugin-notification-web-push@0.1.0-beta.10
+  - @nocobase/app-plugin-scheduler@1.0.0-beta.27
+  - @nocobase/app-plugin-file-example@1.0.0-beta.27
+  - @nocobase/app-plugin-notification-example@1.0.0-beta.19
+  - @nocobase/app-plugin-authentication@2.0.0-beta.25
+  - @nocobase/app-plugin-file@1.0.0-beta.34
+  - @nocobase/app-plugin-agents@2.0.0-beta.20
+
+## 2.0.0-beta.1
+
+### Patch Changes
+
+- 300f760: Allow applications to exclude contributed routes by ID and hide toolbar shortcuts linked to excluded or inaccessible pages.
+- 28a7606: Add built-in backup commands, disk-specific path exclusions, and application compatibility checks for restore.
+- 8ff2df3: Applications can disable system settings, personal settings, chat, inbox and mail workspace routes independently. All five are enabled by default, so existing applications keep their pages when upgrading. Plugins can turn off their own pages with `{ disabled: true }` on `defineAppRoutes()` and the settings route helpers; disabled routes behave like `excludedRouteIds`, so overrides and header actions that target them no longer fail.
+- 6a3bb3e: Remove the distributed readiness plugin from the open-source templates. Existing applications can remove it with the plugin CLI or migrate to the Pro cluster readiness plugin.
+- Updated dependencies [300f760]
+- Updated dependencies [29c62bd]
+- Updated dependencies [28a7606]
+- Updated dependencies [8e7f898]
+- Updated dependencies [f3ae984]
+- Updated dependencies [8ff2df3]
+- Updated dependencies [5fcb0c8]
+- Updated dependencies [e848c53]
+- Updated dependencies [28a7606]
+- Updated dependencies [6a3bb3e]
+  - @nocobase/app-plugin-agents@2.0.0-beta.20
+  - @nocobase/app-plugin-authentication@2.0.0-beta.25
+  - @nocobase/app-server@5.0.0-beta.10
+  - @nocobase/app-cli@1.0.0-beta.39
+  - @nocobase/app-plugin-notification-in-app@2.0.0-beta.8
+  - @nocobase/app-plugin-mail@1.0.0-beta.28
+  - @nocobase/app-plugin-file@1.0.0-beta.34
+  - @nocobase/app-plugin-api-keys@1.0.0-beta.27
+  - @nocobase/jobs@1.0.0-beta.8
+  - @nocobase/queue@1.0.0-beta.13
+  - @nocobase/app-plugin-scheduler@1.0.0-beta.27
+  - @nocobase/app-plugin-file-example@1.0.0-beta.27
+  - @nocobase/app-plugin-notification-example@1.0.0-beta.19
+  - @nocobase/app-plugin-template-print-example@1.0.0-beta.12
+  - @nocobase/app-plugin-knowledge@0.1.0-beta.24
+  - @nocobase/app-plugin-authorization-example@1.0.0-beta.27
+  - @nocobase/app-plugin-cli-example@0.1.0-beta.7
+  - @nocobase/app-plugin-lifecycle-example@0.1.0-beta.20
+  - @nocobase/app-plugin-office-flows-example@0.1.0-beta.14
+  - @nocobase/app-plugin-realtime-example@0.1.0-beta.17
+  - @nocobase/app-plugin-repository-example@2.0.0-beta.9
+  - @nocobase/app-plugin-authorization@1.0.0-beta.39
+  - @nocobase/app-plugin-authz-default-access@1.0.0-beta.22
+  - @nocobase/app-plugin-authz-restriction-rules@1.0.0-beta.20
+  - @nocobase/app-plugin-authz-sharing-rules@1.0.0-beta.21
+  - @nocobase/app-plugin-concurrency@0.1.0-beta.4
+  - @nocobase/app-plugin-database-explorer@1.0.0-beta.21
+  - @nocobase/app-plugin-foundation@0.1.0-beta.21
+  - @nocobase/app-plugin-notification@2.0.0-beta.10
+  - @nocobase/app-plugin-notification-web-push@0.1.0-beta.10
+  - @nocobase/app-plugin-users@2.0.0-beta.22
+  - @nocobase/lifecycle@0.1.0-beta.7
+
 ## 2.0.0-beta.0
 
 ### Major Changes

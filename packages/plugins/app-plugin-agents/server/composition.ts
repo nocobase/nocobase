@@ -165,6 +165,7 @@ import {
 import { createSandboxProvider } from './online/sandbox/provider.js';
 import type { OnlineAgentSandboxOptions } from './online/sandbox/types.js';
 export interface AgentsDeps {
+  readonly modelServices?: boolean;
   readonly uiRecovery?: OnlineAgentRecoveryConfig;
   readonly fileInputs?: FileInputsConfig;
   readonly measureOnlineAgent?: (phase: string, durationMs: number) => void;
@@ -321,6 +322,7 @@ export interface Agents {
    * embedding, rerank and utility text calls (`embed`, `rerank`, `generate`), such as a knowledge base's search.
    */
   readonly models: {
+    readonly enabled?: boolean;
     readonly services: ModelServices;
     readonly gateway: ModelGateway;
     /** The providers a service can use: register one with `providers.register` (`online/provider-registry.ts`). */
@@ -381,7 +383,9 @@ export function createAgents(deps: AgentsDeps): Agents {
     slotsUsed: (conn, runnerId) => slots.used(conn, runnerId),
     onError,
   });
+  const modelServicesEnabled = deps.modelServices !== false;
   const modelServices = createModelServices({
+    enabled: modelServicesEnabled,
     tx,
     clock,
     box: createSealer(deps.secrets, MODEL_SERVICE_KEY_SECRET_PURPOSE),
@@ -617,6 +621,7 @@ export function createAgents(deps: AgentsDeps): Agents {
     onWarning: (message) => onError(message, new Error(message)),
   });
   const onlineAgent = new OnlineAgentService({
+    nativeEnabled: modelServicesEnabled,
     configurator,
     sandboxProvider: createSandboxProvider({ skills, ...deps.sandbox }),
     runner: runnerOnlineAgent,
@@ -758,7 +763,10 @@ export function createAgents(deps: AgentsDeps): Agents {
       clock,
       people,
       subjects,
-      nativeAvailable,
+      // Disabling execution preserves access to authorized historical usage.
+      includeOnlineUsage: modelServicesEnabled
+        ? nativeAvailable
+        : () => Promise.resolve(true),
     }),
     prices: createPriceService({ tx, ids, clock }),
     conversations,
@@ -766,6 +774,7 @@ export function createAgents(deps: AgentsDeps): Agents {
     chat,
     onlineAgent,
     models: {
+      enabled: modelServicesEnabled,
       services: modelServices,
       gateway,
       providers: modelProviders,

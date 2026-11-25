@@ -126,3 +126,18 @@ function positiveInteger(value: number, label: string): number {
     throw new Error(`Jobs ${label} must be a positive integer.`);
   return value;
 }
+
+/** Local persistence paths of all configured memory backends, including named ones. */
+export function jobsPersistencePaths(
+  config: JobsConfig | undefined,
+  defaults: JobsConfigDefaults,
+): string[] {
+  return Object.keys(config?.backends ?? {}).flatMap((name) => {
+    const selection = selectJobsConfig(config, name);
+    if (selection.config?.adapter !== 'memory') return [];
+    const base = resolveJobsConfig(selection, name, defaults);
+    return [
+      resolveMemoryJobsConfig(selection.config, base, defaults).persistencePath,
+    ];
+  });
+}

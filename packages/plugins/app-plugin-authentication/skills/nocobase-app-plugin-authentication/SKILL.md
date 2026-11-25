@@ -71,14 +71,15 @@ API document: the plugin lets a signed-in session read the App's OpenAPI documen
 
 ## Choose the task path
 
-| The task is                                                                                  | Read                                                                         |
-| -------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------- |
-| Require or read the session in an API route, compose with authorization, test it             | [protecting routes](references/protecting-routes.md)                         |
-| Read the user in a component, sign out, gate a page, change the login pages, add SSO buttons | [client session and pages](references/client-session-and-pages.md)           |
-| Add GitHub, Google, OIDC, magic link, or another sign-in method                              | [adding sign-in methods](references/adding-sign-in-methods.md)               |
-| Enable any official Better Auth plugin: CLI device login, bearer tokens, organizations, 2FA  | [Better Auth plugins](references/better-auth-plugins.md)                     |
-| The identity platform uses a protocol Better Auth cannot express                             | [custom Better Auth plugin](references/custom-better-auth-plugin.md)         |
-| Disable or reset an account from server code, add user fields, send reset emails, deploy     | [user lifecycle and deployment](references/user-lifecycle-and-deployment.md) |
+| The task is                                                                                  | Read                                                                                                                           |
+| -------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
+| Require or read the session in an API route, compose with authorization, test it             | [protecting routes](references/protecting-routes.md)                                                                           |
+| Read the user in a component, sign out, gate a page, change the login pages, add SSO buttons | [client session and pages](references/client-session-and-pages.md)                                                             |
+| Add GitHub, Google, OIDC, magic link, or another sign-in method                              | [adding sign-in methods](references/adding-sign-in-methods.md)                                                                 |
+| Enable any official Better Auth plugin: CLI device login, bearer tokens, organizations, 2FA  | [Better Auth plugins](references/better-auth-plugins.md)                                                                       |
+| Use the active database transaction from an authentication hook or resolver                  | [Using the current authentication transaction](references/better-auth-plugins.md#using-the-current-authentication-transaction) |
+| The identity platform uses a protocol Better Auth cannot express                             | [custom Better Auth plugin](references/custom-better-auth-plugin.md)                                                           |
+| Disable or reset an account from server code, add user fields, send reset emails, deploy     | [user lifecycle and deployment](references/user-lifecycle-and-deployment.md)                                                   |
 
 Read only the reference the task needs.
 

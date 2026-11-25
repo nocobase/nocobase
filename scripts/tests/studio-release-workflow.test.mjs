@@ -96,6 +96,11 @@ test('public release notes go to the registry for all three editions', async () 
           `- 甲 ${edition}。\n`,
         );
       }
+      // Only some released commits write Japanese notes; an image without them sends English and Chinese.
+      writeFileSync(
+        join(temp, 'notes/release-notes.studio-ee.ja-JP.md'),
+        '- エー studio-ee。\n',
+      );
     }
     // Records each call's URL and body, and fails for URLs containing $FAILING.
     writeFileSync(
@@ -154,7 +159,11 @@ echo '{"ok":true}'
     const edition = repository.split('/')[1];
     assert.deepEqual(
       JSON.parse(body),
-      { en: `- A ${edition}.\n`, 'zh-CN': `- 甲 ${edition}。\n` },
+      {
+        en: `- A ${edition}.\n`,
+        'zh-CN': `- 甲 ${edition}。\n`,
+        ...(edition === 'studio-ee' ? { 'ja-JP': '- エー studio-ee。\n' } : {}),
+      },
       'each image gets its own notes',
     );
     assert.match(args, /--request PUT/);

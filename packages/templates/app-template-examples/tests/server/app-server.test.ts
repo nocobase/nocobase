@@ -1562,7 +1562,14 @@ function createTestApp(options: CreateTestAppOptions = {}): TestApp {
     },
   };
   const config = createTestConfig(configValues);
-  const paths = createAppPaths({ rootDir: '/test/app-template-examples' });
+  const storageDir = mkdtempSync(
+    path.join(tmpdir(), 'app-template-examples-storage-'),
+  );
+  tempDirs.push(storageDir);
+  const paths = createAppPaths({
+    rootDir: '/test/app-template-examples',
+    storageDir,
+  });
   const database =
     options.database === false
       ? undefined

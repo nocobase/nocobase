@@ -1,5 +1,11 @@
 # @nocobase/jobs
 
+## 1.0.0-beta.8
+
+### Patch Changes
+
+- 28a7606: Expose configured memory backend persistence paths so application backups can exclude runtime state.
+
 ## 1.0.0-beta.7
 
 ### Minor Changes

@@ -2,6 +2,44 @@
 
 本文件记录 NocoBase 3 的所有重要变更，每次发布一节：`nocobase-v3-beta/<日期>.<序号>` 是预览版，`nocobase-v3/<日期>.<序号>` 是正式版。每次发布的包版本见对应的 GitHub Release，各个包自己的变更见包内的 CHANGELOG.md。
 
+## [nocobase-v3-beta/2026-11-24.2](https://github.com/nocobase/nocobase/releases/tag/nocobase-v3-beta%2F2026-11-24.2)
+
+### 🎉 新特性
+
+- **[应用托管]** 托管的 App Host 可以用应用自带的备份命令备份和还原其上的应用（进程内与 Docker 均支持），应用镜像（amd64 与 arm64）也内置了所需的 PostgreSQL、MySQL 和 MariaDB 客户端工具。 ([#11668](https://github.com/nocobase/nocobase/pull/11668))
+
+### 🚀 优化
+
+- **[API 密钥]** 应用可关闭成员密钥和规则管理接口，同时保留个人和系统密钥管理。 ([#11696](https://github.com/nocobase/nocobase/pull/11696))
+
+### 🐛 修复
+
+- **[邮件]** 保存邮件模板时若名称与自己已有模板重复，现在会提示名称已被使用，而不是返回服务器错误。 ([#11682](https://github.com/nocobase/nocobase/pull/11682))
+- **[权限]** 为已拥有某权限集的用户重复分配该权限集时，现在会提示冲突，而不是返回服务器错误。 ([#11683](https://github.com/nocobase/nocobase/pull/11683))
+- **[服务端]** Host 以 in-process 方式加载的应用现在按应用自身包名记录迁移，与 standalone、Docker 和 CLI 一致，跨入口的版本校验和备份还原可以正常工作。 ([#11692](https://github.com/nocobase/nocobase/pull/11692))
+- **[Agent 运行器]** 修复子模块内遗留正常 linked worktree 元数据导致任务检出被误拦截的问题，校验活跃子模块 `core.worktree` 并精简 Git 报错，同时为运行临时目录增加属主一致时的权限自愈与详细报错。 ([#11701](https://github.com/nocobase/nocobase/pull/11701))
+
+## [nocobase-v3-beta/2026-11-24.1](https://github.com/nocobase/nocobase/releases/tag/nocobase-v3-beta%2F2026-11-24.1)
+
+### 🎉 新特性
+
+- **[备份]** 通过内置备份命令创建、查看、校验和还原应用数据库与上传文件备份。 ([#11642](https://github.com/nocobase/nocobase/pull/11642))
+- **[客户端]**
+  - 应用可以按 ID 移除插件页面，并自动隐藏指向这些页面的工具栏入口。 ([#11670](https://github.com/nocobase/nocobase/pull/11670))
+  - 应用可以按需关闭内置的设置、聊天、收件箱和邮件页面。 ([#11679](https://github.com/nocobase/nocobase/pull/11679))
+- **[认证]** 服务端认证扩展可以使用当前事务，使业务数据变更与认证操作一并提交或回滚。 ([#11681](https://github.com/nocobase/nocobase/pull/11681))
+- **[文件]** 应用可以关闭文件存储管理接口，同时保留附件服务。 ([#11685](https://github.com/nocobase/nocobase/pull/11685))
+- **[Agent]** 应用可以关闭托管模型服务，同时保留 Runner 模型和用量报表。 ([#11686](https://github.com/nocobase/nocobase/pull/11686))
+- **[API 密钥]** 应用可以关闭系统 API 密钥管理接口，已有密钥仍可使用。 ([#11687](https://github.com/nocobase/nocobase/pull/11687))
+
+### 🚀 优化
+
+- **[集群与分布式]** Default 和 Examples 模板已移除内置的分布式插件，已有应用可迁移到 Pro 集群就绪检查插件。 ([#11678](https://github.com/nocobase/nocobase/pull/11678))
+
+### 🐛 修复
+
+- **[Agent]** 关闭模型服务后也能使用演示数据，Agent 和收件箱控件已补齐各支持语言的翻译。 ([#11690](https://github.com/nocobase/nocobase/pull/11690))
+
 ## [nocobase-v3-beta/2026-11-23.1](https://github.com/nocobase/nocobase/releases/tag/nocobase-v3-beta%2F2026-11-23.1)
 
 ### 🎉 新特性

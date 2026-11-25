@@ -1,5 +1,19 @@
 # @nocobase/app-plugin-authentication
 
+## 2.0.0-beta.25
+
+### Minor Changes
+
+- 29c62bd: Expose the active authentication transaction connection so server extensions can commit or roll back their database changes together with authentication.
+
+### Patch Changes
+
+- Updated dependencies [300f760]
+- Updated dependencies [28a7606]
+- Updated dependencies [8ff2df3]
+  - @nocobase/app-client@4.0.0-beta.13
+  - @nocobase/app-server@5.0.0-beta.10
+
 ## 2.0.0-beta.24
 
 ### Minor Changes

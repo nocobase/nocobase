@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/app-server",
-  "version": "5.0.0-beta.9",
+  "version": "5.0.0-beta.11",
   "type": "module",
   "prettier": "@nocobase/dev-config/prettier",
   "engines": {
@@ -13,6 +13,10 @@
     "./application": {
       "types": "./src/application/index.ts",
       "import": "./src/application/index.ts"
+    },
+    "./backup/runtime-guard": {
+      "types": "./src/backup/runtime-guard.ts",
+      "import": "./src/backup/runtime-guard.ts"
     },
     ".": {
       "types": "./src/index.ts",
@@ -115,6 +119,10 @@
       "./application": {
         "types": "./dist/application/index.d.ts",
         "import": "./dist/application/index.js"
+      },
+      "./backup/runtime-guard": {
+        "types": "./dist/backup/runtime-guard.d.ts",
+        "import": "./dist/backup/runtime-guard.js"
       },
       ".": {
         "types": "./dist/index.d.ts",
@@ -226,20 +234,21 @@
   "dependencies": {
     "@hono/node-server": "catalog:",
     "@nocobase/app-websocket": "workspace:^",
+    "@nocobase/backup": "workspace:^",
     "@nocobase/config": "workspace:^",
     "@nocobase/drive": "workspace:^",
     "@nocobase/logging": "workspace:^",
+    "@nocobase/mailer": "workspace:^",
     "@nocobase/realtime": "workspace:^",
     "@nocobase/secrets": "workspace:^",
     "@nocobase/session": "workspace:^",
     "@nocobase/snowflake": "workspace:^",
     "@sinclair/typebox": "catalog:",
-    "hono": "catalog:",
     "@standard-schema/spec": "^1.0.0",
+    "hono": "catalog:",
     "hono-openapi": "catalog:",
-    "zod": "catalog:",
     "openapi-types": "^12.1.3",
-    "@nocobase/mailer": "workspace:^"
+    "zod": "catalog:"
   },
   "devDependencies": {
     "@nocobase/db-mysql": "workspace:*",

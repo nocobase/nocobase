@@ -4,6 +4,7 @@ import path from 'node:path';
 import type { MigrationSource, SeedSource } from '@nocobase/db';
 
 import type { AppDatabaseTaskContributions } from '../database/index.js';
+import { readAppPackageSync } from '../support/app-package.js';
 import type {
   AppServerPlugin,
   AppServerPlugins,
@@ -20,14 +21,13 @@ export function resolveAppServerPlugins(
   serverPlugins: AppServerPlugins,
   options: ResolveAppServerPluginsOptions = {},
 ): ResolvedAppServerPlugins {
-  const appPackagePath = path.join(rootDir, 'package.json');
-  const appPackage = existsSync(appPackagePath) ? readJson(appPackagePath) : {};
-
+  // The same manifest lookup the SPA and the API document use, so an embedded release archive
+  // (manifest under dist/) records migrations under the same package name as every other entry.
   return {
     appPackageName:
-      typeof appPackage.name === 'string'
-        ? appPackage.name
-        : (options.defaultAppPackageName ?? 'app'),
+      readAppPackageSync(rootDir).name ??
+      options.defaultAppPackageName ??
+      'app',
     plugins: serverPlugins.plugins.map((definition) => ({
       definition,
       metadata: resolvePlugin(definition),

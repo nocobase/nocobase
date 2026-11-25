@@ -33,6 +33,7 @@ export const DEVELOPMENT_TOPICS: readonly string[] = Object.freeze([
 
 /** First segments of commands that act on the application the run is in, and so need one. */
 export const APPLICATION_TOPICS: readonly string[] = Object.freeze([
+  'backup',
   'build',
   'cli',
   'collections',
@@ -54,6 +55,9 @@ export const TREE_COMMANDS: readonly string[] = Object.freeze(['commands']);
 
 export const builtinTopics: Readonly<Record<string, { description: string }>> =
   Object.freeze({
+    backup: {
+      description: 'Create, verify, inspect and restore application backups.',
+    },
     cli: {
       description:
         "Package and link this application's own command line (nocobase.cli), and the runner.",
