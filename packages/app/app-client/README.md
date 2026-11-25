@@ -320,6 +320,10 @@ export default defineAppRoutes([
 ]);
 ```
 
+Set `layout: 'none'` on a signed-in App Route to render it without the application header and sidebar. Use `defineAppRoutes(routes, { layout: 'none' })` to set the default for every signed-in route in a contribution. The application still requires sign-in, prepares the session, and checks the route's `authz`. The registered route carries the resolved `layout` value. Omit the option to use the application's standard layout.
+
+A group can set the layout for its descendants. A page and the children it renders through its `Outlet` share one layout, so declare `layout: 'none'` on the parent page for that branch. Guest, optional, and settings routes keep their existing layouts. The application router in both templates consumes this option.
+
 Locale manifests are static, while each language module remains lazy:
 
 ```ts
