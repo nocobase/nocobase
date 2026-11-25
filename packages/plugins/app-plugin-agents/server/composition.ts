@@ -81,7 +81,6 @@ import {
   availableAgents,
   createAgentActionCatalog,
   createAgentService,
-  findAgents,
   listAgents,
   type AgentActionCatalog,
   type AgentService,
@@ -422,13 +421,6 @@ export function createAgents(deps: AgentsDeps): Agents {
       clock,
       disk: deps.skillDisk ?? (() => fallbackDisk!),
     }),
-    agentNames: async (conn, agentIds) =>
-      new Map(
-        [...(await findAgents(conn, agentIds))].map(([id, agent]) => [
-          id,
-          agent.name,
-        ]),
-      ),
   });
   const agents: AgentService = createAgentService({
     tx,

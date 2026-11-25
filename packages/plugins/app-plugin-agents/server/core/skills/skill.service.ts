@@ -279,11 +279,6 @@ export interface SkillServiceDeps {
   readonly clock: Clock;
   readonly people: People;
   readonly blobs: SkillBlobs;
-  /** The names of agents by id, for the versions an agent wrote (`SkillVersion.viaAgentName`); none when absent. */
-  readonly agentNames?: (
-    conn: DatabaseConnection,
-    ids: readonly string[],
-  ) => Promise<ReadonlyMap<string, string>>;
 }
 
 const ManifestSchema = z.array(
@@ -377,19 +372,6 @@ function skillOfArchive(entries: readonly ZipEntry[]): {
       .filter((entry) => entry !== markdown)
       .map((entry) => ({ ...entry, name: entry.name.slice(prefix.length) }))
       .sort((a, b) => a.name.localeCompare(b.name)),
-  };
-}
-
-/** Who a version was written through: the agent and its run, with the agent's name when it is known. */
-function viaOf(
-  row: Pick<SkillVersionRecord, 'viaAgentId' | 'viaRunId'>,
-  agents: ReadonlyMap<string, string>,
-): Pick<SkillVersion, 'viaAgentId' | 'viaAgentName' | 'viaRunId'> {
-  const agentId = row.viaAgentId ?? null;
-  return {
-    viaAgentId: agentId,
-    viaAgentName: agentId ? (agents.get(agentId) ?? null) : null,
-    viaRunId: row.viaRunId ?? null,
   };
 }
 
@@ -625,21 +607,6 @@ export function createSkillService(deps: SkillServiceDeps): SkillService {
       );
   };
 
-  /** The names of the agents that wrote `rows`: one query, none when no agent wrote any. */
-  const agentNamesOf = async (
-    conn: DatabaseConnection,
-    rows: readonly SkillVersionRecord[],
-  ): Promise<ReadonlyMap<string, string>> => {
-    const ids = [
-      ...new Set(
-        rows.flatMap((row) => (row.viaAgentId ? [row.viaAgentId] : [])),
-      ),
-    ];
-    return ids.length > 0 && deps.agentNames
-      ? deps.agentNames(conn, ids)
-      : new Map();
-  };
-
   /** Refuses a change made against a revision the skill has left. */
   const requireRevision = (skill: SkillRecord, expected: number): void => {
     const current = Number(skill.currentVersion);
@@ -806,7 +773,6 @@ export function createSkillService(deps: SkillServiceDeps): SkillService {
         conn,
         rows.map((row) => row.createdById),
       );
-      const agents = await agentNamesOf(conn, rows);
       return rows.map((row) => ({
         version: Number(row.version),
         name: row.name,
@@ -816,7 +782,6 @@ export function createSkillService(deps: SkillServiceDeps): SkillService {
         createdByName: row.createdById
           ? (names.get(row.createdById) ?? null)
           : null,
-        ...viaOf(row, agents),
         createdAt: row.createdAt,
       }));
     },
@@ -826,7 +791,6 @@ export function createSkillService(deps: SkillServiceDeps): SkillService {
       const skill = await requireSkill(conn, id);
       const row = await versionOf(conn, id, version);
       const names = await people.names(conn, [row.createdById]);
-      const agents = await agentNamesOf(conn, [row]);
       return {
         version: Number(row.version),
         name: row.name,
@@ -836,7 +800,6 @@ export function createSkillService(deps: SkillServiceDeps): SkillService {
         createdByName: row.createdById
           ? (names.get(row.createdById) ?? null)
           : null,
-        ...viaOf(row, agents),
         createdAt: row.createdAt,
         content: deliveredMarkdown(skill.slug, row.description, row.content),
         files: await entriesOf(manifestOf(row.manifest)),
