@@ -454,7 +454,7 @@ describe('role permission workspace', () => {
     );
     expect(ws.objects.some((object) => object.id === 'user:*')).toBe(false);
     // Grouped by the settings home's categories; no data scopes.
-    expect(roles.group).toBe('Accounts and permissions');
+    expect(roles.group).toBe('Accounts & permissions');
     expect(
       ws.settings.flatMap((item) =>
         item.objects.flatMap((object) =>

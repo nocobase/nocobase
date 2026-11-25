@@ -2,11 +2,11 @@
 export default {
   settings: {
     categories: {
-      account: 'Accounts and permissions',
-      automation: 'Workflows and automation',
+      account: 'Accounts & permissions',
+      automation: 'Workflows & automation',
       messages: 'Communications',
       ai: 'AI',
-      data: 'Data and files',
+      data: 'Data & files',
       system: 'System',
       other: 'Other',
     },

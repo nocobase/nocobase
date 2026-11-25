@@ -79,8 +79,8 @@ const enUS = {
     tabs: {
       methods: 'Sign-in methods',
       registration: 'Registration',
-      password: 'Password and recovery',
-      session: 'Sessions and security',
+      password: 'Password & recovery',
+      session: 'Sessions & security',
     },
     issues: {
       title_one: '{{count}} item needs attention',
@@ -384,7 +384,7 @@ const enUS = {
   },
 
   account: {
-    title: 'Account and security',
+    title: 'Account & security',
     navigationDescription: 'Your sign-in details, password and devices.',
     description:
       'Your sign-in details, password and the devices you are signed in on. Changes here affect only you.',

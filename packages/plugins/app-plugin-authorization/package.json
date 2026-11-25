@@ -11,8 +11,8 @@
   },
   "nocobase": {
     "title": {
-      "en-US": "Roles and permissions",
-      "zh-CN": "角色和权限"
+      "en-US": "Roles & permissions",
+      "zh-CN": "角色与权限"
     },
     "description": {
       "en-US": "Roles, permissions and access checks",

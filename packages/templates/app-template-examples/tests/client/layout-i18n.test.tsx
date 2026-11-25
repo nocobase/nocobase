@@ -231,7 +231,7 @@ it('opens the settings navigation from the Settings entry and leads back', async
   });
   expect(entry).toHaveAttribute('aria-current', 'location');
   // Categories head their modules; the application's own menu is gone.
-  expect(within(menu).getByText('Accounts and permissions')).toBeVisible();
+  expect(within(menu).getByText('Accounts & permissions')).toBeVisible();
   const users = within(menu).getByRole('link', { name: 'Users' });
   expect(users).toHaveAttribute('href', '/settings/users');
   expect(screen.queryByRole('link', { name: 'Projects' })).toBeNull();

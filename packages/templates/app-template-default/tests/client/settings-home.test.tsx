@@ -106,7 +106,7 @@ it('links the System settings breadcrumb back to the home from a module view', a
   expect(
     await within(trail).findByRole('link', { name: 'System settings' }),
   ).toHaveAttribute('href', '/main/settings');
-  expect(within(trail).getByText('Roles and permissions')).toBeVisible();
+  expect(within(trail).getByText('Roles & permissions')).toBeVisible();
 });
 
 it('opens workflow definitions and switches to execution history', async () => {
