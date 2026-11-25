@@ -123,10 +123,7 @@ export interface SkillView extends SkillDetail {
   readonly canDelete: boolean;
 }
 
-/**
- * The agent's run that wrote a version for its author, the person who woke the agent: kept on the version for audit
- * (`agSkillVersions.viaAgentId`, `viaRunId`), never answered by the API.
- */
+/** The agent's run that wrote a version for its author, the person who woke the agent. */
 export interface SkillVia {
   readonly agentId: string;
   readonly runId: string;
@@ -139,6 +136,10 @@ export interface SkillVersion {
   readonly note: string | null;
   readonly createdById: string | null;
   readonly createdByName: string | null;
+  /** The agent that wrote it for `createdById` in a run (`viaRunId`); null for a person's own change. */
+  readonly viaAgentId: string | null;
+  readonly viaAgentName: string | null;
+  readonly viaRunId: string | null;
   readonly createdAt: string;
 }
 

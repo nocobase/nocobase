@@ -16,7 +16,7 @@ describe('skills written by an agent’s run', () => {
     await h?.close();
   });
 
-  it('needs skill management for every write, and keeps the agent on the versions it writes for audit only', async () => {
+  it('needs skill management for every write, and records the agent on the versions it writes', async () => {
     h = await createHarness();
     const agentId = await h.createAgent({ name: 'Reviewer' });
     const run = { id: 'run-1', agentId };
@@ -155,52 +155,53 @@ describe('skills written by an agent’s run', () => {
     });
     expect(created.status).toBe(201);
 
-    // The audit is kept on the stored versions, never answered by the API.
-    const stored = (skillId: string) =>
-      h.database
-        .connection()
-        .repository('agSkillVersions')
-        .findMany({
-          filter: { skillId },
-          sort: (sort) => sort.field('version').desc(),
-        }) as Promise<
-        {
-          version: number;
-          createdById: string;
-          viaAgentId: string | null;
-          viaRunId: string | null;
-        }[]
-      >;
-    expect(
-      (await stored(skill.id)).map((row) => [
-        Number(row.version),
-        row.createdById,
-        row.viaAgentId,
-        row.viaRunId,
-      ]),
-    ).toEqual([
-      [4, 'bob', agentId, 'run-1'],
-      [3, 'bob', agentId, 'run-1'],
-      [2, 'bob', null, null],
-      [1, 'bob', null, null],
-    ]);
-    expect((await stored(created.body.data.id))[0]).toMatchObject({
-      createdById: 'bob',
-      viaAgentId: agentId,
-      viaRunId: 'run-1',
-    });
     const versions = await h.request(
       'GET',
       `/agents/skills/${skill.id}/versions`,
-      { user: 'bob', can: READ },
+      {
+        user: 'bob',
+        can: READ,
+      },
     );
+    expect(
+      versions.body.data.map(
+        (version: {
+          version: number;
+          createdById: string;
+          viaAgentId: string | null;
+          viaAgentName: string | null;
+          viaRunId: string | null;
+        }) => [
+          version.version,
+          version.createdById,
+          version.viaAgentId,
+          version.viaAgentName,
+          version.viaRunId,
+        ],
+      ),
+    ).toEqual([
+      [4, 'bob', agentId, 'Reviewer', 'run-1'],
+      [3, 'bob', agentId, 'Reviewer', 'run-1'],
+      [2, 'bob', null, null, null],
+      [1, 'bob', null, null, null],
+    ]);
     const one = await h.request(
       'GET',
       `/agents/skills/${skill.id}/versions/3`,
       { user: 'bob', can: READ },
     );
-    for (const version of [...versions.body.data, one.body.data])
-      for (const field of ['viaAgentId', 'viaAgentName', 'viaRunId'])
-        expect(version).not.toHaveProperty(field);
+    expect(one.body.data).toMatchObject({
+      createdById: 'bob',
+      viaAgentId: agentId,
+      viaAgentName: 'Reviewer',
+      viaRunId: 'run-1',
+    });
+    const versionsOfNew = await h.services.skills.versions(
+      created.body.data.id,
+    );
+    expect(versionsOfNew[0]).toMatchObject({
+      createdById: 'bob',
+      viaAgentId: agentId,
+    });
   });
 });

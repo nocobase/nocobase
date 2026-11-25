@@ -1155,6 +1155,12 @@ const skillVersionObject = z.object({
   note: z.string().nullable(),
   createdById: z.string().nullable(),
   createdByName: z.string().nullable(),
+  viaAgentId: z.string().nullable().meta({
+    description:
+      'The agent that wrote it for `createdById` in one of its runs (`viaRunId`); null for a person’s own change.',
+  }),
+  viaAgentName: z.string().nullable(),
+  viaRunId: z.string().nullable(),
   createdAt: dateTime,
 });
 
