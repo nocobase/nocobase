@@ -1713,6 +1713,11 @@ const MobileHomePlaceholder = observer(
           flex-direction: column;
         }
 
+        /* The page surface is absolutely positioned inside its settings host. */
+        .nb-ui-layout-mobile-page-slot [data-has-float-menu]:has(.nb-ui-layout-mobile-surface) {
+          height: 100%;
+        }
+
         .nb-ui-layout-mobile-page-slot .nb-ui-layout-mobile-surface {
           position: absolute;
           inset: 0;
