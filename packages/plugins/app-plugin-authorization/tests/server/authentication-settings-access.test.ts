@@ -16,7 +16,7 @@ import {
 } from '../../server/index.js';
 import { migratePlugins } from '../helpers/database-fixture.js';
 
-describe('reading the Sign-in and authentication settings', () => {
+describe('reading the Authentication settings', () => {
   it('declares the settings item and lets only identities granted its read action through', async () => {
     const testDatabase = await createTestDatabase();
     const { database } = testDatabase;

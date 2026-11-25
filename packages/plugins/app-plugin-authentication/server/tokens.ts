@@ -18,7 +18,7 @@ export const userAdministrationServiceToken: ServiceToken<UserAdministrationServ
   );
 
 /**
- * The sign-in methods other plugins add to the Sign-in and authentication settings page, such as API keys. Add one at
+ * The sign-in methods other plugins add to the Authentication settings page, such as API keys. Add one at
  * boot with `container.resolve(signInMethodsToken).add({...})`, after checking `container.has(signInMethodsToken)`.
  */
 export const signInMethodsToken: ServiceToken<SignInMethodRegistry> =
@@ -26,7 +26,7 @@ export const signInMethodsToken: ServiceToken<SignInMethodRegistry> =
     '@nocobase/app/authentication/sign-in-methods',
   );
 
-/** The settings item that grants reading the Sign-in and authentication settings, with the `read` action. */
+/** The settings item that grants reading the Authentication settings, with the `read` action. */
 export const AUTHENTICATION_SETTINGS_ID = 'authentication.settings';
 
 /**

@@ -1,7 +1,7 @@
 # Copy this file to config.yml before starting the application.
 
 # app:
-#   Public origin used for callbacks and redirects in production. System settings › Sign-in and authentication
+#   Public origin used for callbacks and redirects in production. System settings › Authentication
 #   shows whether it is set and the callback URLs built from it.
 #   publicOrigin: https://apps.example.com
 

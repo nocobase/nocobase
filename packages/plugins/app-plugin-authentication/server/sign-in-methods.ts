@@ -23,7 +23,7 @@ export interface SignInMethodState {
 }
 
 /**
- * A way to sign in or to call the API that another plugin adds to the Sign-in and authentication settings page.
+ * A way to sign in or to call the API that another plugin adds to the Authentication settings page.
  * Its `describe()` must return no secret: it only says whether the method is on and where that comes from.
  */
 export interface SignInMethodDefinition {

@@ -18,7 +18,7 @@ const action = (name: string) => ({
 });
 
 /**
- * The Permission Set and Sign-in and authentication settings items, and the Permission Set and inspector routes. The inspector is not a settings item:
+ * The Permission Set and Authentication settings items, and the Permission Set and inspector routes. The inspector is not a settings item:
  * it is never offered as a grantable permission, and its routes admit only an unrestricted identity.
  */
 export function installAuthorizationAdministration(
@@ -37,7 +37,7 @@ export function installAuthorizationAdministration(
     { type: 'settings', id: PERMISSION_SETS_SETTINGS },
     { section: AUTHORIZATION_SETTINGS_SECTION, order: 0 },
   );
-  // Reading the Sign-in and authentication settings. The authentication plugin owns the page and the route; it cannot
+  // Reading the Authentication settings. The authentication plugin owns the page and the route; it cannot
   // depend on this plugin, so the item is declared here and the provider binds its check.
   authz.settings.add({
     id: AUTHENTICATION_SETTINGS_ID,

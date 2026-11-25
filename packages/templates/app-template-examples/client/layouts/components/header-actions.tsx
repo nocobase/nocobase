@@ -47,7 +47,11 @@ const PHONE_INLINE_ACTIONS = 2;
  * The header's right-hand actions: the buttons the application and its plugins register (`headerActions`) that the
  * viewer may see, in their order, then the account menu, always last.
  */
-export function HeaderActions(): ReactElement {
+export function HeaderActions({
+  children,
+}: {
+  readonly children?: ReactNode;
+}): ReactElement {
   const { session } = useAuthentication();
   const actions = useHeaderActions({ signedIn: Boolean(session?.user) });
   const routes = useRouteTree();
@@ -66,6 +70,7 @@ export function HeaderActions(): ReactElement {
   }, [actions, denied, loading, routes]);
   return (
     <HeaderActionBar actions={visible}>
+      {children}
       <UserMenu />
     </HeaderActionBar>
   );

@@ -42,7 +42,7 @@ Set `apiKeys.keyAdministrationRoutes: false` to omit the member key and rule adm
   `POST /api/auth/api-key/delete`. All five act only on the caller's own keys.
 
 The plugin contributes no NocoBase route of its own. The endpoints above are
-Better Auth's, mounted by Authentication's `/api/auth/*` handler. Its server registers the access check that lets a valid key read the App's API document, and, through the authentication plugin's `signInMethodsToken`, the API keys row on System settings › Sign-in and authentication: `On` while `apiKey()` is among `auth.plugins`, `Not configured` otherwise. Removing the plugin removes the row.
+Better Auth's, mounted by Authentication's `/api/auth/*` handler. Its server registers the access check that lets a valid key read the App's API document, and, through the authentication plugin's `signInMethodsToken`, the API keys row on System settings › Authentication: `On` while `apiKey()` is among `auth.plugins`, `Not configured` otherwise. Removing the plugin removes the row.
 
 ## Register it
 

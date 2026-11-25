@@ -41,7 +41,7 @@ const enUS = {
       'This request came from another site and was refused. Reload the page and try again.',
   },
   settings: {
-    title: 'Sign-in and authentication',
+    title: 'Authentication',
     navigationDescription:
       'How people sign in, register, recover passwords and stay signed in.',
     description:

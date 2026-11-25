@@ -16,13 +16,13 @@ import {
 } from './routes.js';
 
 export interface AuthenticationClientOptions {
-  /** Replaces System settings › Accounts › Sign-in and authentication. */
+  /** Replaces System settings › Accounts › Authentication. */
   readonly settingsComponentLoader?: AppClientRouteComponentLoader;
   /** Replaces Personal settings › Account › Account and security. */
   readonly accountSecurityComponentLoader?: AppClientRouteComponentLoader;
   /**
    * The single sign-on or social providers the application's sign-in page shows a button for, by provider id, such as
-   * `['github']`. The Sign-in and authentication page lists only these as sign-in page entries; a provider configured
+   * `['github']`. The Authentication page lists only these as sign-in page entries; a provider configured
    * on the server without a button here is shown as configured but not on the sign-in page.
    */
   readonly signInButtons?: readonly string[];
