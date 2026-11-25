@@ -5,7 +5,7 @@ import { describeMigration } from '@nocobase/app-testing/server';
 
 const require = createRequire(import.meta.url);
 const authPackage = '@nocobase/app-plugin-authentication';
-const migration = '202612010003_verification_create_tables';
+const migration = '202611250001_verification_create_tables';
 
 describeMigration(migration, {
   sources: [

@@ -70,6 +70,9 @@ const appRuntime = defineAppRuntime({
     auth: defineAuthConfig({
       defaults: {
         trustedOrigins: ['http://localhost'],
+        advanced: {
+          ipAddress: { trustedProxies: ['192.0.2.10', '192.0.2.11'] },
+        },
         emailAndPassword: { enabled: true, autoSignIn: false },
       },
     }),
@@ -100,6 +103,7 @@ const appRuntime = defineAppRuntime({
         ttlSeconds: 300,
       },
       ipHourlyLimit: 8,
+      userHourlyLimit: 4,
       bindPhone: { channel: 'sms', template: 'code' },
       stepUp: { channel: 'sms', template: 'code' },
     }),

@@ -32,7 +32,7 @@ export class VerificationProvider extends ServiceProvider<AppPluginApplication> 
         database: container.resolve(databaseManagerToken),
         secrets: container.resolve(secretsServiceToken),
         config: config.get<VerificationConfig>('verification'),
-        incrementIp: (key, ttl) => counter.increment(key, 1, ttl),
+        incrementSender: (key, ttl) => counter.increment(key, 1, ttl),
         audit: (event) => logger.info(event, 'Verification event.'),
         sms: {
           id: 'sms',

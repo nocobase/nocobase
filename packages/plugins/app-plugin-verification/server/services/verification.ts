@@ -91,7 +91,7 @@ interface Options {
   readonly secrets: Pick<SecretsService, 'keyring'>;
   readonly config?: VerificationConfig;
   readonly sms: VerificationMethod;
-  readonly incrementIp: (key: string, ttl: number) => Promise<number>;
+  readonly incrementSender: (key: string, ttl: number) => Promise<number>;
   readonly audit: (event: {
     event: string;
     scene?: string;
@@ -262,7 +262,7 @@ export class DefaultVerificationService implements VerificationService {
 
   async send(input: SendCodeInput): Promise<CodeTiming> {
     const now = this.clock();
-    await this.reserveIp(input.clientAddress, now);
+    await this.reserveSender(input, now);
     const scene = this.scene(input.scene);
     if (scene.audience !== 'public' && !input.userId)
       throw verificationError(
@@ -425,13 +425,16 @@ export class DefaultVerificationService implements VerificationService {
 
   async consumeStepUp(input: StepUpScope & { token?: string }): Promise<void> {
     const binding = await this.phone(input.userId);
-    await this.consumeCredential(input, binding);
+    await this.consumeCredential(
+      input.userId,
+      await this.checkCredential(input, binding),
+    );
   }
 
-  private async consumeCredential(
+  private async checkCredential(
     input: StepUpScope & { token?: string },
     binding?: PhoneRow,
-  ): Promise<void> {
+  ): Promise<StepUpRow> {
     if (
       binding &&
       input.token &&
@@ -446,17 +449,29 @@ export class DefaultVerificationService implements VerificationService {
         row?.tokenHash &&
         row.bindingId === binding.bindingId &&
         Date.parse(row.expiresAt) > this.clock() &&
-        sameDigest(row.tokenHash, digest(input.token)) &&
-        (await this.writeVersioned('verificationStepUpTokens', id, row, {
-          tokenHash: null,
-        }))
+        sameDigest(row.tokenHash, digest(input.token))
       ) {
-        this.audit('stepUp.used', undefined, input.userId);
-        return;
+        return row;
       }
     }
     this.audit('stepUp.rejected', undefined, input.userId);
     throw invalidToken();
+  }
+
+  private async consumeCredential(
+    userId: string,
+    row: StepUpRow,
+  ): Promise<void> {
+    if (
+      Date.parse(row.expiresAt) <= this.clock() ||
+      !(await this.writeVersioned('verificationStepUpTokens', row.id, row, {
+        tokenHash: null,
+      }))
+    ) {
+      this.audit('stepUp.rejected', undefined, userId);
+      throw invalidToken();
+    }
+    this.audit('stepUp.used', undefined, userId);
   }
 
   async getPhone(userId: string): Promise<PhoneView> {
@@ -472,18 +487,20 @@ export class DefaultVerificationService implements VerificationService {
   }): Promise<PhoneView> {
     const binding = await this.phone(input.userId);
     const scene = this.scene('bindPhone');
-    // Require proof of the old binding before permitting a change, even if the new number is already in use.
-    if (binding)
-      await this.consumeCredential(
-        { ...input, purpose: changePhonePurpose },
-        binding,
-      );
+    // Check the old proof before testing the new code. Consume it only after the code succeeds.
+    const credential = binding
+      ? await this.checkCredential(
+          { ...input, purpose: changePhonePurpose },
+          binding,
+        )
+      : undefined;
     const challenge = this.challenge(
       { ...input, scene: 'bindPhone', target: input.phone },
       scene,
       binding,
     );
     await this.consumeCode('bindPhone', challenge, input.code);
+    if (credential) await this.consumeCredential(input.userId, credential);
     const values = {
       phone: challenge.target,
       bindingId: randomUUID(),
@@ -612,18 +629,26 @@ export class DefaultVerificationService implements VerificationService {
     };
   }
 
-  private async reserveIp(
-    address: string | undefined,
+  private async reserveSender(
+    input: SendCodeInput,
     now: number,
   ): Promise<void> {
+    const { userId, clientAddress } = input;
     const end = (Math.floor(now / hour) + 1) * hour;
-    const count = await this.options.incrementIp(
-      scopeId(address, String(end)),
+    const count = await this.options.incrementSender(
+      scopeId(userId ? 'user' : 'ip', userId ?? clientAddress, String(end)),
       end - now,
     );
-    if (count > this.config.ipHourlyLimit) {
-      this.audit('code.ipLimit');
-      throw limited('VERIFICATION_IP_SEND_LIMIT', end, now);
+    const limit = userId
+      ? this.config.userHourlyLimit
+      : this.config.ipHourlyLimit;
+    if (count > limit) {
+      this.audit(userId ? 'code.userLimit' : 'code.ipLimit', undefined, userId);
+      throw limited(
+        userId ? 'VERIFICATION_USER_SEND_LIMIT' : 'VERIFICATION_IP_SEND_LIMIT',
+        end,
+        now,
+      );
     }
   }
 

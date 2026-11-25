@@ -33,7 +33,7 @@ export interface SendCodeInput {
   readonly target?: string;
   readonly userId?: string;
   readonly purpose?: string;
-  /** The trusted connection peer, never a caller-supplied forwarding header. */
+  /** An anonymous client address resolved from trusted connection metadata and proxy policy. */
   readonly clientAddress?: string;
 }
 

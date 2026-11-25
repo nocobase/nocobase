@@ -97,13 +97,16 @@ const verificationRoutes: AppApiRouteContribution<AppPluginApplication> =
       }),
       apiValidator('json', sendInput),
       async (context) => {
+        const userId = context.get('auth')?.user.id;
         const { phone, ...input } = context.req.valid('json');
         return context.json({
           data: await service().send({
             ...input,
             target: phone,
-            userId: context.get('auth')?.user.id,
-            clientAddress: getClientAddress(context),
+            userId,
+            clientAddress: userId
+              ? undefined
+              : auth.clientAddress(context.req.raw, getClientAddress(context)),
           }),
         });
       },

@@ -24,13 +24,14 @@ const verification = defineVerificationConfig({
     maxAttempts: 5,
   },
   ipHourlyLimit: 20,
+  userHourlyLimit: 20,
   stepUpTtlSeconds: 300,
   bindPhone: { channel: 'system-sms', template: 'code' },
   stepUp: { channel: 'system-sms', template: 'code' },
 });
 ```
 
-Each reserved scene is enabled when its destination is configured. Code expiry and attempt limits are overridable by scene. A scene may increase the common resend interval or decrease the common hourly number limit. The number limits apply across all SMS scenes and server instances. The IP counter is shared across scenes and uses the application's configured cache. Use a shared counter backend such as Redis in multi-instance deployments. HTTP limits use the trusted connection peer and ignore untrusted forwarding headers. Requests behind a proxy that exposes only its own peer address share that address's bucket. Requests with no peer metadata share a fallback bucket.
+Each reserved scene is enabled when its destination is configured. Code expiry and attempt limits are overridable by scene. A scene may increase the common resend interval or decrease the common hourly number limit. The number limits apply across all SMS scenes and server instances. Anonymous requests use an IP quota, while signed-in requests use a separate quota per person. All sender counters use the configured application cache. Use a shared counter backend such as Redis in multi-instance deployments. Anonymous HTTP requests use the authentication plugin's peer-anchored `auth.advanced.ipAddress` proxy rules. Configure `trustedProxies` and, if needed, `ipAddressHeaders` to recognize your ingress. Forwarded addresses from untrusted peers are ignored. Requests with no peer metadata share a fallback bucket.
 
 ## Register scenes and verify a code
 
@@ -55,11 +56,11 @@ await verification.verify({
 });
 ```
 
-Clients request codes with `POST /api/verification/codes/send`, body `{ scene, phone? }`. Supply a canonical E.164 phone for SMS unless the scene targets the user's verified phone. A 429 response includes a `Retry-After` header in seconds and `error.metadata.retryAt` in ISO format. For a trusted server send, use `verification.send({ scene, target, userId, clientAddress })` with the authenticated user and trusted connection peer. `verify()` belongs inside the consuming operation's authorized server path. A successful verification consumes the code, and inputs from a client must never select another user's identity. Register additional delivery methods with `registerMethod()` and keep their OTP messages in memory during delivery.
+Clients request codes with `POST /api/verification/codes/send`, body `{ scene, phone? }`. Supply a canonical E.164 phone for SMS unless the scene targets the user's verified phone. A 429 response includes a `Retry-After` header in seconds and `error.metadata.retryAt` in ISO format. For a trusted server send, use `verification.send({ scene, target, userId, clientAddress })` with the authenticated user ID when signed in. For anonymous sends, resolve the peer through `Auth.clientAddress(request, peer)`. `verify()` belongs inside the consuming operation's authorized server path. A successful verification consumes the code, and inputs from a client must never select another user's identity. Register additional delivery methods with `registerMethod()` and keep their OTP messages in memory during delivery.
 
 ## Bind a phone or enforce step-up
 
-Read the signed-in person's masked phone at `GET /api/verification/me/phone`. Send a `bindPhone` code to the new phone and submit `{ phone, code }` to `PUT /api/verification/me/phone`. For a change, also prove control of the currently bound phone using the built-in purpose `verification.changePhone` and include the resulting credential as `X-Verification-Token`. A verified phone can belong to one person. There is no phone recovery or administrative unlink endpoint. Account deletion removes its phone binding and step-up records.
+Read the signed-in person's masked phone at `GET /api/verification/me/phone`. Send a `bindPhone` code to the new phone and submit `{ phone, code }` to `PUT /api/verification/me/phone`. For a change, also prove control of the currently bound phone using the built-in purpose `verification.changePhone` and include the resulting credential as `X-Verification-Token`. An incorrect new-phone code counts as a failed code attempt and leaves the old-phone credential available. A verified phone can belong to one person. There is no phone recovery or administrative unlink endpoint. Account deletion removes its phone binding and step-up records.
 
 ```ts
 verification.registerStepUpPurpose('tenants.disable', { ttlSeconds: 300 });

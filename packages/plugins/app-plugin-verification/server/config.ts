@@ -14,6 +14,7 @@ interface SmsDestination {
 export interface VerificationConfig {
   readonly defaults?: Partial<CodePolicy>;
   readonly ipHourlyLimit?: number;
+  readonly userHourlyLimit?: number;
   readonly stepUpTtlSeconds?: number;
   readonly bindPhone?: SmsDestination;
   readonly stepUp?: SmsDestination;
@@ -22,6 +23,7 @@ export interface VerificationConfig {
 interface ResolvedVerificationConfig extends VerificationConfig {
   readonly defaults: CodePolicy;
   readonly ipHourlyLimit: number;
+  readonly userHourlyLimit: number;
   readonly stepUpTtlSeconds: number;
 }
 
@@ -48,6 +50,7 @@ export const verificationConfigSchema: z.ZodType<ResolvedVerificationConfig> =
       maxAttempts: 5,
     }),
     ipHourlyLimit: z.number().int().min(1).max(10000).default(20),
+    userHourlyLimit: z.number().int().min(1).max(10000).default(20),
     stepUpTtlSeconds: seconds.default(300),
     bindPhone: destination.optional(),
     stepUp: destination.optional(),

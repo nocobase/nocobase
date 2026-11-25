@@ -199,6 +199,107 @@ test('uses one conservative IP bucket for requests without a trusted peer', asyn
   expect((await request(sendPath, json({ scene, phone }))).status).toBe(200);
 });
 
+test('uses trusted proxy chains for anonymous limits and keeps signed-in quotas separate', async ({
+  app,
+  testApp,
+}) => {
+  time();
+  captureSms();
+  app.container
+    .resolve(verificationServiceToken)
+    .registerScene(scene, { ...sms, audience: 'public' });
+  const sendFrom = (peer: string, forwarded: string, target: string) => {
+    const init = json({ scene, phone: target });
+    const headers = new Headers(init.headers);
+    headers.set('x-forwarded-for', forwarded);
+    return testApp.server.fetch(
+      new Request(`http://localhost${testApp.publicBasePath}/api${sendPath}`, {
+        ...init,
+        headers,
+      }),
+      { incoming: { socket: { remoteAddress: peer } } },
+    );
+  };
+  const trustedPeer = '192.0.2.10';
+  for (let index = 0; index < 8; index++) {
+    expect(
+      (
+        await sendFrom(
+          trustedPeer,
+          '203.0.113.1, 192.0.2.11',
+          `+1202555030${index}`,
+        )
+      ).status,
+    ).toBe(200);
+    expect(
+      (
+        await sendFrom(
+          '198.51.100.10',
+          `203.0.113.${20 + index}`,
+          `+1202555040${index}`,
+        )
+      ).status,
+    ).toBe(200);
+  }
+  expect(
+    (
+      await sendFrom(
+        trustedPeer,
+        '203.0.113.99, 203.0.113.1, 192.0.2.11',
+        phone,
+      )
+    ).status,
+  ).toBe(429);
+  expect((await sendFrom('198.51.100.10', '203.0.113.100', phone)).status).toBe(
+    429,
+  );
+  expect(
+    (await sendFrom(trustedPeer, '203.0.113.2, 192.0.2.11', phone)).status,
+  ).toBe(200);
+
+  for (let index = 0; index < 8; index++) {
+    expect(
+      (
+        await testApp.request(
+          sendPath,
+          json({ scene, phone: `+1202555060${index}` }),
+        )
+      ).status,
+    ).toBe(200);
+  }
+  expect(
+    (await testApp.request(sendPath, json({ scene, phone: newPhone }))).status,
+  ).toBe(429);
+  const owner = await person(testApp, 'owner');
+  for (let index = 0; index < 4; index++) {
+    expect(
+      (
+        await owner.fetch(
+          sendPath,
+          json({ scene: 'bindPhone', phone: `+1202555050${index}` }),
+        )
+      ).status,
+    ).toBe(200);
+  }
+  const blocked = await owner.fetch(
+    sendPath,
+    json({ scene: 'bindPhone', phone: newPhone }),
+  );
+  expect(blocked.status).toBe(429);
+  expect(blocked.headers.get('Retry-After')).toBe('3600');
+  expect(await blocked.json()).toMatchObject({
+    error: {
+      reason: 'VERIFICATION_USER_SEND_LIMIT',
+      metadata: { retryAt: '2026-11-25T18:00:00.000Z' },
+    },
+  });
+  const other = await person(testApp, 'other');
+  expect(
+    (await other.fetch(sendPath, json({ scene: 'bindPhone', phone: newPhone })))
+      .status,
+  ).toBe(200);
+});
+
 test('a concurrent send has one delivery and a concurrent verify has one success', async ({
   app,
 }) => {
@@ -312,6 +413,15 @@ test('binds to the signed-in person and changes a phone only with new and old ph
   expect(issue.status).toBe(200);
   expect(issue.headers.get('cache-control')).toBe('no-store');
   const { data } = await issue.json();
+  const wrongCode = replacement.code === '000000' ? '111111' : '000000';
+  const rejected = await owner.fetch(
+    phonePath,
+    json({ ...replacement, code: wrongCode }, 'PUT', data.token),
+  );
+  expect(rejected.status).toBe(400);
+  expect(await rejected.json()).toMatchObject({
+    error: { reason: 'VERIFICATION_CODE_INVALID' },
+  });
   expect(
     (await owner.fetch(phonePath, json(replacement, 'PUT', data.token))).status,
   ).toBe(200);
@@ -335,6 +445,51 @@ test('binds to the signed-in person and changes a phone only with new and old ph
       )
     ).status,
   ).toBe(409);
+});
+
+test('allows only one of two valid phone changes to consume the old proof', async ({
+  app,
+  testApp,
+}) => {
+  const clock = time();
+  const transport = captureSms();
+  const owner = await person(testApp, 'owner');
+  const service = app.container.resolve(verificationServiceToken);
+  const userId = owner.user.id;
+  const sendBinding = async (phone: string) => {
+    await service.send({ scene: 'bindPhone', target: phone, userId });
+    return { phone, code: transport.code(), userId };
+  };
+  await service.bindPhone(await sendBinding(phone));
+  clock.advance(10_000);
+  await service.send({ scene: 'stepUp', purpose: changePhonePurpose, userId });
+  const { token } = await service.issueStepUp({
+    purpose: changePhonePurpose,
+    userId,
+    code: transport.code(),
+  });
+  const candidates = [
+    await sendBinding(newPhone),
+    await sendBinding('+12025550107'),
+  ];
+  const results = await Promise.allSettled(
+    candidates.map((input) => service.bindPhone({ ...input, token })),
+  );
+  const winner = results.findIndex(({ status }) => status === 'fulfilled');
+  expect(winner).toBeGreaterThanOrEqual(0);
+  expect(results.filter(({ status }) => status === 'fulfilled')).toHaveLength(
+    1,
+  );
+  expect(results).toContainEqual(
+    expect.objectContaining({
+      reason: expect.objectContaining({
+        reason: 'VERIFICATION_STEP_UP_REQUIRED',
+      }),
+    }),
+  );
+  expect(
+    await app.container.resolve(userPhoneDirectoryToken).find([userId]),
+  ).toEqual(new Map([[userId, candidates[winner]!.phone]]));
 });
 
 test('consumes a user- and purpose-bound step-up proof at most once and refuses expired proofs', async ({

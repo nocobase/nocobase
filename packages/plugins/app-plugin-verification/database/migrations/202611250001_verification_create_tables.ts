@@ -1,7 +1,7 @@
 import { defineMigration, type MigrationDefinition } from '@nocobase/db';
 
 const migration: MigrationDefinition = defineMigration({
-  name: '202612010003_verification_create_tables',
+  name: '202611250001_verification_create_tables',
 
   async up({ builder }) {
     await builder.createCollection('userPhones', (collection) => {
