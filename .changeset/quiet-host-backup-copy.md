@@ -4,4 +4,4 @@
 "@nocobase/backup": minor
 ---
 
-Restore a backup into a separate application on the same Host using a read-only source archive and isolated target storage.
+Restore a backup into a separate application on the same Host using a read-only source archive and isolated target storage. Host initializes missing SQLite database files inside the isolated target volume.

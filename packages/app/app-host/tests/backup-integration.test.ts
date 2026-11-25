@@ -455,9 +455,7 @@ describe.runIf(ARTIFACT)('backups with a real release', () => {
     await writeFile(sourceFile, 'live file');
 
     const targetStorage = path.join(volumesDir, appId, 'storage');
-    await mkdir(targetStorage, { recursive: true });
     const targetDatabase = path.join(targetStorage, 'database.sqlite');
-    new DatabaseSync(targetDatabase).close();
     const base = {
       scope,
       sourceAppId,
@@ -482,6 +480,39 @@ describe.runIf(ARTIFACT)('backups with a real release', () => {
     expect(await healthy(sourceAppId)).toBe(true);
     expect(marker(database)).toBe('live');
     expect(await healthy(appId)).toBe(false);
+
+    await expect(stat(targetDatabase)).rejects.toMatchObject({
+      code: 'ENOENT',
+    });
+
+    const wrongKey = config(SQLITE);
+    const failed = {
+      ...base,
+      operationId: 'r-copy-sqlite-wrong-key',
+      deployment: spec(appId, 'r-copy-sqlite-wrong-key', wrongKey),
+    };
+    await expect(host.restoreBackup!(appId, failed)).rejects.toMatchObject({
+      code: 'RESTORE_KEY_FINGERPRINT_MISMATCH',
+    });
+    expect(await healthy(appId)).toBe(false);
+    expect((await stat(targetDatabase)).size).toBe(0);
+    marker(targetDatabase, 'target edit before retry');
+    await expect(host.restoreBackup!(appId, failed)).rejects.toMatchObject({
+      code: 'RESTORE_KEY_FINGERPRINT_MISMATCH',
+    });
+    // A fresh preflight also leaves a regular SQLite file intact if verification refuses the restore.
+    await expect(
+      host.restoreBackup!(appId, {
+        ...failed,
+        operationId: 'r-copy-sqlite-still-wrong-key',
+        deployment: spec(appId, 'r-copy-sqlite-still-wrong-key', wrongKey),
+      }),
+    ).rejects.toMatchObject({ code: 'RESTORE_KEY_FINGERPRINT_MISMATCH' });
+    expect(marker(targetDatabase)).toBe('target edit before retry');
+    await host.removeDeployment(appId, { scope, purgeData: true });
+    await expect(stat(targetDatabase)).rejects.toMatchObject({
+      code: 'ENOENT',
+    });
 
     const request = {
       ...base,

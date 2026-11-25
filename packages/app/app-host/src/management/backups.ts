@@ -28,7 +28,7 @@ import {
   type BackupArchiveLocation,
 } from '../service-backend.ts';
 import { InProcessCommandRunner } from './app-command.ts';
-import { assertCopyStorage, managedVolume } from './copy-restore-storage.ts';
+import { prepareCopyStorage, managedVolume } from './copy-restore-storage.ts';
 import type { ManagedReconciler } from './managed-reconciler.ts';
 import { assertOperationId } from './operation-log.ts';
 import { HostManagementError, type OperationCheckpoint } from './scopes.ts';
@@ -266,7 +266,7 @@ export class HostBackups {
             'Cross-instance restore requires in-process Apps on the same Host.',
             'BACKUP_UNSUPPORTED',
           );
-        await assertCopyStorage(
+        await prepareCopyStorage(
           appId,
           path.join(copyArchive.targetVolume, 'storage'),
           copyArchive.source,

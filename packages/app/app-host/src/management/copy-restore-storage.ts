@@ -1,4 +1,4 @@
-import { lstat, realpath, stat } from 'node:fs/promises';
+import { lstat, mkdir, open, realpath } from 'node:fs/promises';
 import path from 'node:path';
 
 import type { InProcessCommandRunner } from './app-command.ts';
@@ -144,7 +144,7 @@ export async function managedVolume(
   return expected;
 }
 
-export async function assertCopyStorage(
+export async function prepareCopyStorage(
   appId: string,
   targetStorageDir: string,
   source: InProcessCommandRunner,
@@ -158,6 +158,7 @@ export async function assertCopyStorage(
   const sourceFiles = await Promise.all(
     sourceStorage.files.map((file) => canonical(file.path)),
   );
+  const missingDatabases = new Set<string>();
   for (const file of targetStorage.files) {
     const destination = await canonical(file.path);
     if (
@@ -173,15 +174,14 @@ export async function assertCopyStorage(
       );
     }
     if (file.database) {
-      const entry = await stat(destination).catch(
+      const entry = await lstat(destination).catch(
         (error: NodeJS.ErrnoException) => {
           if (error.code !== 'ENOENT') throw error;
         },
       );
-      if (!entry?.isFile() || entry.nlink !== 1)
-        unsafe(
-          'A target SQLite database must be a separate, pre-provisioned file.',
-        );
+      if (!entry) missingDatabases.add(destination);
+      else if (!entry.isFile() || entry.nlink !== 1)
+        unsafe('A target SQLite database must be a separate regular file.');
     }
   }
   for (const targetDatabase of targetStorage.postgres) {
@@ -199,6 +199,20 @@ export async function assertCopyStorage(
     ) {
       unsafe(
         'A target PostgreSQL database and owner must be distinct from the source.',
+      );
+    }
+  }
+
+  // The backup CLI probes the database during verification. Initialize it only
+  // after every configured database and disk has passed the isolation checks.
+  for (const destination of missingDatabases) {
+    try {
+      await mkdir(path.dirname(destination), { recursive: true, mode: 0o700 });
+      const handle = await open(destination, 'wx', 0o600);
+      await handle.close();
+    } catch {
+      unsafe(
+        'The Host could not exclusively create the target SQLite database.',
       );
     }
   }
