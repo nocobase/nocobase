@@ -87,10 +87,12 @@ export function auditSnapshot(
       if (node instanceof Date) return node.toJSON();
       if (Array.isArray(node)) {
         const values: unknown[] = [];
-        for (const item of node as unknown[]) {
+        for (const [index, item] of (node as unknown[]).entries()) {
           budget -= 1;
           if (budget <= 0) break;
-          values.push(visit(item, path, depth + 1));
+          values.push(
+            visit(item, path ? `${path}.${index}` : String(index), depth + 1),
+          );
         }
         return values;
       }

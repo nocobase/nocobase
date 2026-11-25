@@ -78,6 +78,7 @@ it('masks entire sensitive fields on both snapshots and uses only a trusted peer
           }),
           redact: [
             { path: 'settings.privateFields' },
+            { path: 'team.0.mobile' },
             { field: 'privateMarker' },
           ],
         }),
@@ -89,6 +90,7 @@ it('masks entire sensitive fields on both snapshots and uses only a trusted peer
   );
   try {
     const json = {
+      team: [{ mobile: 'private' }, { mobile: 'public' }],
       password: { visibleWithoutWholeFieldMask: 'never persist' },
       apiKey: ['never persist'],
       settings: {
@@ -112,6 +114,7 @@ it('masks entire sensitive fields on both snapshots and uses only a trusted peer
     expect(await response.json()).toEqual(json);
     expect(events).toHaveLength(1);
     const expected = {
+      team: [{ mobile: '******' }, { mobile: 'public' }],
       password: '******',
       apiKey: '******',
       settings: {
@@ -486,6 +489,12 @@ it('refuses unknown active destinations and aborts timed-out writes', async () =
     ),
   ).rejects.toThrow('unregistered driver');
   await coordinator.close();
+
+  const unconfigured = new AuditCoordinator(report);
+  await expect(unconfigured.start({ enabled: true }, paths)).resolves.toBe(
+    false,
+  );
+  await unconfigured.close();
 
   const bounded = new AuditCoordinator(report);
   const abort = vi.fn();
