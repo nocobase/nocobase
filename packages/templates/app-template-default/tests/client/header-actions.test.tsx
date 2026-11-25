@@ -446,13 +446,12 @@ describe('signed-in state', () => {
 });
 
 it('registers the pinned settings shortcut for the application’s own route', async () => {
-  const { createHeaderActions } =
-    await import('../../client/header-actions.js');
-  expect(createHeaderActions('my-app')).toMatchObject([
+  const { headerActions } = await import('../../client/header-actions.js');
+  expect(headerActions).toMatchObject([
     {
       name: 'system-settings',
       placement: 'beforeAccount',
-      routeId: 'my-app:settingsHome',
+      routeId: 'app:settingsHome',
     },
   ]);
 });

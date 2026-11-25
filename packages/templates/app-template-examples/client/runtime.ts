@@ -2,20 +2,15 @@ import defaultConfigs from './config/index.js';
 import { createAppClientConfig } from '@nocobase/app-client';
 import { defineAppRuntime } from '@nocobase/app-client/runtime';
 
-import {
-  headerActionOverrides,
-  createHeaderActions,
-} from './header-actions.js';
+import { headerActionOverrides, headerActions } from './header-actions.js';
 import locales from './locales/index.js';
 import plugins from './plugins.js';
 import reactProviders from './react-providers.js';
 import routes from './routes.js';
 import serviceProviders from './service-provider.js';
 
-const packageName = '@nocobase/app-template-examples';
-
 const appRuntime = defineAppRuntime({
-  packageName,
+  packageName: '@nocobase/app-template-examples',
   createAppConfig: createAppClientConfig,
   defaultConfigs,
   serviceProviders,
@@ -23,7 +18,7 @@ const appRuntime = defineAppRuntime({
   reactProviders,
   routes,
   plugins,
-  headerActions: createHeaderActions(packageName),
+  headerActions,
   headerActionOverrides,
 });
 

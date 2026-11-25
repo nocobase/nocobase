@@ -11,18 +11,15 @@ import { SystemSettingsButton } from './layouts/components/system-settings-butto
  * The application's own buttons in the header, left of the account menu, beside those its plugins register. Each is
  * `{ name, order, component, auth?, badge? }`; lower `order` goes further left.
  */
-export function createHeaderActions(
-  packageName: string,
-): readonly AppClientHeaderActionDefinition[] {
-  return defineHeaderActions([
+export const headerActions: readonly AppClientHeaderActionDefinition[] =
+  defineHeaderActions([
     {
       name: 'system-settings',
-      routeId: `${packageName}:settingsHome`,
+      routeId: 'app:settingsHome',
       placement: 'beforeAccount',
       component: SystemSettingsButton,
     },
   ]);
-}
 
 /**
  * Hides or replaces a button someone registered, by its name: `{ name: 'inbox', hidden: true }`, or

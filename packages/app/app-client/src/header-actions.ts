@@ -54,8 +54,9 @@ export interface AppClientHeaderActionDefinition {
    */
   readonly auth?: 'required' | 'optional';
   /**
-   * Package-qualified ID of the target page. Excluding that page hides the action. The application's shell also
-   * checks page access before rendering a linked action. Unknown IDs and route groups fail during runtime setup.
+   * Use `app:<routeName>` for a host application page or a package-qualified ID for a plugin page.
+   * Excluding the target page hides the action. The shell checks page access before rendering it.
+   * Unknown IDs and route groups fail during runtime setup.
    */
   readonly routeId?: string;
   /** The count on the button's corner. */
@@ -175,6 +176,7 @@ export function resolveHeaderActions(
     readonly headerActions?: readonly AppClientHeaderActionDefinition[];
   }[],
 ): readonly AppClientRegisteredHeaderAction[] {
+  const host = contributions.find(({ source }) => source === 'application');
   const byName = new Map<string, AppClientRegisteredHeaderAction>();
   for (const contribution of contributions)
     for (const action of defineHeaderActions(
@@ -185,6 +187,10 @@ export function resolveHeaderActions(
         throw new Error(
           `Header action "${action.name}" from "${contribution.packageName}" is already registered by "${previous.packageName}".`,
         );
+      const routeId =
+        host && action.routeId?.startsWith('app:')
+          ? host.packageName + action.routeId.slice('app'.length)
+          : action.routeId;
       byName.set(
         action.name,
         Object.freeze({
@@ -193,7 +199,7 @@ export function resolveHeaderActions(
           ...(action.placement ? { placement: action.placement } : {}),
           component: action.component,
           auth: action.auth ?? 'required',
-          ...(action.routeId ? { routeId: action.routeId } : {}),
+          ...(routeId ? { routeId } : {}),
           ...(action.badge ? { badge: action.badge } : {}),
           packageName: contribution.packageName,
           source: contribution.source,

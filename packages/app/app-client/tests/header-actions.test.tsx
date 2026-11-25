@@ -48,6 +48,47 @@ async function runtimeWith(
 }
 
 describe('header actions', () => {
+  it('resolves app route targets against the host for application and plugin actions', async () => {
+    const plugin = defineClientPlugin({
+      packageName: '@example/extension',
+      headerActions: [
+        { name: 'pluginShortcut', routeId: 'app:dashboard', component: Inbox },
+      ],
+    });
+    const options = {
+      packageName: 'customer-app',
+      plugins: defineClientPlugins([plugin()]),
+      routes: defineAppRoutes([
+        {
+          name: 'dashboard',
+          path: '/dashboard',
+          authz: 'skip',
+          componentLoader: async () => ({ default: Inbox }),
+        },
+      ]),
+      headerActions: [
+        {
+          name: 'hostShortcut',
+          routeId: 'app:dashboard',
+          component: Assistant,
+        },
+      ],
+    };
+    const runtime = await runtimeWith(options);
+    expect(runtime.headerActions?.map((action) => action.routeId)).toEqual([
+      'customer-app:dashboard',
+      'customer-app:dashboard',
+    ]);
+    expect(
+      (
+        await runtimeWith({
+          ...options,
+          excludedRouteIds: ['customer-app:dashboard'],
+        })
+      ).headerActions,
+    ).toEqual([]);
+  });
+
   it('uses the same trimmed name for registering and overriding an action', async () => {
     const runtime = await runtimeWith({
       headerActions: [

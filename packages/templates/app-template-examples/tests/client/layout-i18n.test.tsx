@@ -22,7 +22,8 @@ import type { ReactNode } from 'react';
 import { Link, MemoryRouter, Route, Routes } from 'react-router';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import { createHeaderActions } from '../../client/header-actions.js';
+import { resolveHeaderActions } from '@nocobase/app-client/plugins';
+import { headerActions } from '../../client/header-actions.js';
 import locales from '../../client/locales/index.js';
 import { AppLayout } from '../../client/layouts/app-layout.js';
 import { inApplication } from '../../client/routing/settings-shell.js';
@@ -100,7 +101,11 @@ async function setup(children: ReactNode, initialEntry = '/') {
   });
   const app = {
     config: createAppClientConfig({ rawConfig: {} }),
-    runtime: { headerActions: createHeaderActions('test') },
+    runtime: {
+      headerActions: resolveHeaderActions([
+        { packageName: 'test', source: 'application', headerActions },
+      ]),
+    },
   } as unknown as ClientApplication;
   render(
     <I18nProvider runtime={runtime}>
