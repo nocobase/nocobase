@@ -1,14 +1,14 @@
 {
   "name": "@nocobase/actions",
-  "version": "2.2.52",
+  "version": "2.2.53",
   "description": "",
   "license": "Apache-2.0",
   "main": "./lib/index.js",
   "types": "./lib/index.d.ts",
   "dependencies": {
-    "@nocobase/cache": "2.2.52",
-    "@nocobase/database": "2.2.52",
-    "@nocobase/resourcer": "2.2.52"
+    "@nocobase/cache": "2.2.53",
+    "@nocobase/database": "2.2.53",
+    "@nocobase/resourcer": "2.2.53"
   },
   "repository": {
     "type": "git",
