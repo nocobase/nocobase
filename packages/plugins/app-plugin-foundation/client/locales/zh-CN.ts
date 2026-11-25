@@ -15,8 +15,7 @@ const zhCN: FoundationResource = {
     title: '插件',
     description:
       '这个应用用了哪些插件。启用和停用要改应用代码、重启后生效，所以这里不放开关，只给出要执行的命令。',
-    deployed:
-      '这是部署后的应用：只显示随应用部署的插件。开发时可见的插件不在这里。',
+    deployed: '要启用插件，请在源项目中注册插件，然后重新部署应用。',
     attention_one: '{{count}} 个插件需要注意，已排在最前面。',
     attention_other: '{{count}} 个插件需要注意，已排在最前面。',
     search: '搜索名称或包名',
@@ -47,7 +46,7 @@ const zhCN: FoundationResource = {
     skillsOnly: '已启用 · 只含 Skill',
     enabledAttention: '已启用 · 需要注意',
     disabled: '未启用',
-    preinstalled: '未启用 · 开发时可见',
+    preinstalled: '未启用 · 开发依赖',
     disabledAttention: '未启用 · 需要注意',
     unknown: '无法确认 · 需重新构建',
   },

@@ -22,7 +22,7 @@ const deDE: LocaleResource<typeof enUS> = {
     description:
       'Welche Plugins diese Anwendung nutzt. Ein Plugin zu aktivieren oder zu deaktivieren ändert den Code der Anwendung und wirkt erst nach einem Neustart, deshalb zeigt diese Seite die auszuführenden Befehle statt Schalter.',
     deployed:
-      'Dies ist eine bereitgestellte Anwendung: Es werden nur die mit ihr bereitgestellten Plugins angezeigt. Plugins, die nur während der Entwicklung sichtbar sind, fehlen hier.',
+      'Um ein Plugin zu aktivieren, registrieren Sie es im Quellprojekt und stellen Sie die Anwendung erneut bereit.',
     attention_one:
       '{{count}} Plugin braucht Aufmerksamkeit und steht ganz oben.',
     attention_other:
@@ -55,7 +55,7 @@ const deDE: LocaleResource<typeof enUS> = {
     skillsOnly: 'Aktiviert · Nur Skills',
     enabledAttention: 'Aktiviert · Braucht Aufmerksamkeit',
     disabled: 'Nicht aktiviert',
-    preinstalled: 'Nicht aktiviert · Nur in der Entwicklung',
+    preinstalled: 'Nicht aktiviert · Entwicklungsabhängigkeit',
     disabledAttention: 'Nicht aktiviert · Braucht Aufmerksamkeit',
     unknown: 'Unbekannt · Neu bauen',
   },

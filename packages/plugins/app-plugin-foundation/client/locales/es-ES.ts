@@ -22,7 +22,7 @@ const esES: LocaleResource<typeof enUS> = {
     description:
       'Los plugins que usa esta aplicación. Habilitar o deshabilitar uno cambia el código de la aplicación y surte efecto tras reiniciarla, por eso esta página muestra los comandos que hay que ejecutar en lugar de interruptores.',
     deployed:
-      'Esta es una aplicación desplegada: solo se muestran los plugins desplegados con ella. Los plugins visibles solo durante el desarrollo no aparecen aquí.',
+      'Para habilitar un plugin, regístralo en el proyecto de origen y vuelve a desplegar la aplicación.',
     attention_one: '{{count}} plugin requiere atención y aparece primero.',
     attention_other: '{{count}} plugins requieren atención y aparecen primero.',
     attention_many: '{{count}} plugins requieren atención y aparecen primero.',
@@ -54,7 +54,7 @@ const esES: LocaleResource<typeof enUS> = {
     skillsOnly: 'Habilitado · Solo Skills',
     enabledAttention: 'Habilitado · Requiere atención',
     disabled: 'No habilitado',
-    preinstalled: 'No habilitado · Solo en desarrollo',
+    preinstalled: 'No habilitado · Dependencia de desarrollo',
     disabledAttention: 'No habilitado · Requiere atención',
     unknown: 'No se puede saber · Recompilar',
   },

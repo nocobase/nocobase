@@ -2,6 +2,16 @@
   "name": "@nocobase/app-plugin-queue-example",
   "displayName": "Queue Example App Plugin",
   "description": "Example app plugin that publishes to and consumes an application queue.",
+  "nocobase": {
+    "title": {
+      "en-US": "Message queue example",
+      "zh-CN": "消息队列示例"
+    },
+    "description": {
+      "en-US": "Publish messages to an application queue and process them with a consumer.",
+      "zh-CN": "向应用队列投递消息，再由消费者处理。"
+    }
+  },
   "version": "1.0.0-beta.16",
   "type": "module",
   "prettier": "@nocobase/dev-config/prettier",

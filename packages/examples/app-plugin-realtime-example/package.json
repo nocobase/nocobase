@@ -2,6 +2,16 @@
   "name": "@nocobase/app-plugin-realtime-example",
   "displayName": "Realtime Example App Plugin",
   "description": "Business realtime examples for collaborative tasks, personal notifications, background CSV exports, and a subscription capability lab.",
+  "nocobase": {
+    "title": {
+      "en-US": "Realtime updates example",
+      "zh-CN": "实时更新示例"
+    },
+    "description": {
+      "en-US": "See live updates for shared tasks, personal notifications and background CSV exports.",
+      "zh-CN": "查看协作任务、个人通知和后台 CSV 导出的实时更新。"
+    }
+  },
   "version": "0.1.0-beta.17",
   "type": "module",
   "prettier": "@nocobase/dev-config/prettier",

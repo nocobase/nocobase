@@ -133,7 +133,9 @@ describe('plugins page', () => {
     ]);
     // Without a title, the short name.
     expect(disabled[2]).toHaveTextContent('template-print');
-    expect(disabled[2]).toHaveTextContent('Not enabled · Development only');
+    expect(disabled[2]).toHaveTextContent(
+      'Not enabled · Development dependency',
+    );
     expect(disabled[1]).toHaveTextContent(
       'Enable first: Agents (the enable command includes it)',
     );
@@ -456,11 +458,16 @@ describe('plugins page', () => {
       expect(item.textContent).not.toMatch(/server|client/i);
   });
 
-  it('tells a deployed application that development-only plugins are not listed', async () => {
+  it('shows development plugins in the not-enabled group of a deployment', async () => {
     await renderPage({ deployed: true });
 
     expect(
-      screen.getByText(/This is a deployed application/),
+      screen.getByText(/register it in the source project/),
+    ).toBeInTheDocument();
+    expect(
+      within(group(/Not enabled/)).getByText(
+        'Not enabled · Development dependency',
+      ),
     ).toBeInTheDocument();
   });
 

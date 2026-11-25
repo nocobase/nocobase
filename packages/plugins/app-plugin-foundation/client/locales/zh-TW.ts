@@ -21,8 +21,7 @@ const zhTW: LocaleResource<typeof enUS> = {
     title: '外掛',
     description:
       '這個應用用了哪些外掛。啟用和停用要改應用程式碼、重新啟動後生效，所以這裡不放開關，只給出要執行的命令。',
-    deployed:
-      '這是部署後的應用：只顯示隨應用部署的外掛。開發時可見的外掛不在這裡。',
+    deployed: '若要啟用外掛，請在原始專案中註冊外掛，再重新部署應用程式。',
     attention_one: '{{count}} 個外掛需要注意，已排在最前面。',
     attention_other: '{{count}} 個外掛需要注意，已排在最前面。',
     search: '搜尋名稱或套件名',
@@ -53,7 +52,7 @@ const zhTW: LocaleResource<typeof enUS> = {
     skillsOnly: '已啟用 · 只含 Skill',
     enabledAttention: '已啟用 · 需要注意',
     disabled: '未啟用',
-    preinstalled: '未啟用 · 開發時可見',
+    preinstalled: '未啟用 · 開發相依套件',
     disabledAttention: '未啟用 · 需要注意',
     unknown: '無法確認 · 需重新建置',
   },

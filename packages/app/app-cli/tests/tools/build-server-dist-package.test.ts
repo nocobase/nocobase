@@ -120,6 +120,45 @@ function readJson(filePath: string): Record<string, unknown> {
 }
 
 describe('server package generation', () => {
+  it('records development plugin metadata without adding packages to the deployment install', () => {
+    const { root } = createWorkspace();
+    const file = path.join(root, 'package.json');
+    const portal = '@acme/app-portal-help';
+    const peer = '@acme/app-plugin-reports';
+    const manifest = readJson(file);
+    writeJson(file, {
+      ...manifest,
+      devDependencies: { [portal]: '*', [peer]: '*', vite: '*' },
+    });
+    writeJson(path.join(root, 'node_modules', portal, 'package.json'), {
+      name: portal,
+      version: '1.0.0',
+      nocobase: { title: 'Help', privateSetting: 'omit' },
+      exports: { './client': './dist/client.js', './private': './private.js' },
+      peerDependencies: { [peer]: '^2', react: '^19' },
+      peerDependenciesMeta: { [peer]: { optional: true } },
+    });
+
+    expect(generate(root).status).toBe(0);
+    const dist = readJson(path.join(root, 'dist/package.json'));
+    expect(dist.nocobase).toEqual({
+      templateKind: 'app',
+      developmentPlugins: {
+        [portal]: {
+          version: '1.0.0',
+          exports: { './client': true },
+          nocobase: { title: 'Help' },
+          peerDependencies: { [peer]: '*' },
+          peerDependenciesMeta: { [peer]: { optional: true } },
+        },
+        [peer]: null,
+      },
+    });
+    expect(dist).not.toHaveProperty('devDependencies');
+    expect(Object.keys(dist.dependencies as object)).not.toContain(portal);
+    expect(existsSync(path.join(root, 'dist/vendor', portal))).toBe(false);
+  });
+
   it('lists declared dependencies, follows workspace packages into vendor, and skips dev and peer packages', () => {
     const { root } = createWorkspace();
 

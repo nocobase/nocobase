@@ -23,6 +23,7 @@ export async function createApplicationFixture(options: {
   readonly devDependencies?: readonly string[];
   readonly installed: readonly FixturePlugin[];
   readonly builtAt?: string;
+  readonly developmentPlugins?: Record<string, unknown>;
   /**
    * The CLI registrations to write: a source checkout's `cli/plugins.ts`, parsed with the TypeScript this package
    * resolves, or, `deployed`, the `cli/plugins.json` a build writes in its place.
@@ -47,7 +48,14 @@ export async function createApplicationFixture(options: {
     path.join(rootDir, 'package.json'),
     JSON.stringify({
       name: 'fixture-app',
-      ...(options.builtAt ? { nocobase: { builtAt: options.builtAt } } : {}),
+      ...(options.builtAt
+        ? {
+            nocobase: {
+              builtAt: options.builtAt,
+              developmentPlugins: options.developmentPlugins,
+            },
+          }
+        : {}),
       dependencies: ranges(options.dependencies),
       devDependencies: ranges(options.devDependencies),
     }),
