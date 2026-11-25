@@ -61,8 +61,12 @@ export async function postToProvider(
   } catch {
     // The parse error is not kept: it can quote the start of the provider's answer.
     await response.body?.cancel().catch(() => undefined);
+    // An unreadable success may have been submitted, so it stays unknown. An unreadable refusal is classified by its
+    // HTTP status, like a refusal without a business code.
     throw new SmsProviderError(
-      response.status === 429 ? 'SMS_RATE_LIMITED' : 'SMS_PROVIDER_UNAVAILABLE',
+      response.ok
+        ? 'SMS_PROVIDER_UNAVAILABLE'
+        : smsErrorCodeForStatus(response.status),
       {
         providerCode: `HTTP-${response.status}`,
         retryAfterMs,

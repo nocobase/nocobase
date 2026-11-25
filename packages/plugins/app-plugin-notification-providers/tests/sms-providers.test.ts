@@ -247,14 +247,48 @@ describe('Alibaba Cloud SMS', () => {
       outcome: 'unknown',
     });
   });
+});
 
-  it('treats an answer that is not JSON as unavailable', async () => {
-    stubFetch(new Response('<html>bad gateway</html>', { status: 502 }));
-    await expect(provider.send(send)).rejects.toMatchObject({
-      code: 'SMS_PROVIDER_UNAVAILABLE',
-      outcome: 'unknown',
-    });
-  });
+describe.each([
+  [
+    'Alibaba Cloud',
+    createAliyunSmsProvider({ accessKeyId: 'id', accessKeySecret: 'secret' }),
+  ],
+  [
+    'Tencent Cloud',
+    createTencentSmsProvider({
+      secretId: 'id',
+      secretKey: 'secret',
+      sdkAppId: '1',
+    }),
+  ],
+])('%s answers without a readable body', (_name, provider) => {
+  it.each([
+    [403, '', 'SMS_AUTH_FAILED', 'permanent'],
+    [403, '<html>forbidden</html>', 'SMS_AUTH_FAILED', 'permanent'],
+    [401, '', 'SMS_AUTH_FAILED', 'permanent'],
+    [400, '', 'SMS_REJECTED', 'permanent'],
+    [429, '', 'SMS_RATE_LIMITED', 'retryable'],
+    [429, 'slow down', 'SMS_RATE_LIMITED', 'retryable'],
+    [502, '<html>bad gateway</html>', 'SMS_PROVIDER_UNAVAILABLE', 'unknown'],
+    [503, '', 'SMS_PROVIDER_UNAVAILABLE', 'unknown'],
+    // A success that cannot be read may have been submitted.
+    [200, '', 'SMS_PROVIDER_UNAVAILABLE', 'unknown'],
+    [200, '<html>ok</html>', 'SMS_PROVIDER_UNAVAILABLE', 'unknown'],
+  ] as const)(
+    'maps HTTP %s with body "%s" to %s',
+    async (status, body, code, outcome) => {
+      stubFetch(
+        new Response(body, { status, headers: { 'retry-after': '30' } }),
+      );
+      const error = (await provider
+        .send(send)
+        .catch((e: unknown) => e)) as SmsProviderError;
+      expect(error).toMatchObject({ code, outcome });
+      if (code === 'SMS_RATE_LIMITED') expect(error.retryAfterMs).toBe(30_000);
+      expect(error.message).not.toContain('forbidden');
+    },
+  );
 });
 
 describe('Tencent Cloud SMS', () => {

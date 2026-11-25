@@ -248,6 +248,34 @@ describe('SMS through the notification manager', () => {
     }
   });
 
+  it.each([
+    ['aliyun', 'sms'],
+    ['tencent', 'sms-tencent'],
+  ])(
+    'tells the administrator the credentials are wrong when %s answers 403 with an empty body',
+    async (_service, channel) => {
+      fetchMock.mockResolvedValue(new Response('', { status: 403 }));
+      const manager = await harness();
+      try {
+        const sent = await manager.testChannel(channel, {
+          userId: 'alice',
+          title: 'Test',
+          body: 'It works.',
+        });
+        const delivery = (await manager.getNotification(sent.notificationId))!
+          .deliveries[0]!;
+        expect(delivery).toMatchObject({
+          status: 'failed',
+          error: { code: 'SMS_AUTH_FAILED', category: 'authentication' },
+        });
+        expect(delivery.error!.message).toMatch(/credentials/u);
+        expect(delivery.nextRunAt).toBeUndefined();
+      } finally {
+        await manager.close();
+      }
+    },
+  );
+
   it('does not retry a country or region the provider blocks', async () => {
     fetchMock.mockResolvedValue(
       Response.json({
