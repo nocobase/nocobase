@@ -55,7 +55,6 @@ const idID: LocaleResource<typeof enUS> = {
     skillsOnly: 'Aktif · Hanya Skill',
     enabledAttention: 'Aktif · Perlu perhatian',
     disabled: 'Belum aktif',
-    preinstalled: 'Belum aktif · Dependensi pengembangan',
     disabledAttention: 'Belum aktif · Perlu perhatian',
     unknown: 'Tidak dapat dipastikan · Build ulang',
   },

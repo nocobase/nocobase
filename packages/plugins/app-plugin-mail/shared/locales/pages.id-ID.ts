@@ -7,7 +7,7 @@ const pagesIdID: MailPagesResource = {
     mailAccounts: 'Akun surat',
     mailAccountsDescription:
       'Hubungkan kotak surat Anda dan kelola tanda tangan, templat, dan label.',
-    mailSettings: 'Surat',
+    mailSettings: 'Koneksi kotak surat',
     mailSettingsDescription:
       'Penyedia surat, status setiap akun, log sinkronisasi dan log pengiriman.',
   },
@@ -22,7 +22,7 @@ const pagesIdID: MailPagesResource = {
       },
     },
     settings: {
-      title: 'Surat',
+      title: 'Koneksi kotak surat',
       actions: {
         read: 'Lihat',
         manage:
@@ -113,7 +113,7 @@ const pagesIdID: MailPagesResource = {
       },
     },
     settings: {
-      title: 'Surat',
+      title: 'Koneksi kotak surat',
       description:
         'Penyedia surat yang dapat dihubungkan anggota, serta status koneksi, sinkronisasi, dan pengiriman setiap akun. Tidak ada isi pesan yang ditampilkan di sini. Email notifikasi sistem dikonfigurasi di Notifikasi.',
       tabs: {

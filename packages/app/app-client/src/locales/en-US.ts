@@ -4,7 +4,7 @@ export default {
     categories: {
       account: 'Accounts and permissions',
       automation: 'Workflows and automation',
-      messages: 'Messages',
+      messages: 'Communications',
       ai: 'AI',
       data: 'Data and files',
       system: 'System',

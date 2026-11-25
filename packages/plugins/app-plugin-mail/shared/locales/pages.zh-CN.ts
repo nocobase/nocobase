@@ -6,7 +6,7 @@ const pagesZhCN: MailPagesResource = {
     mailTeam: '团队邮件',
     mailAccounts: '邮箱账号',
     mailAccountsDescription: '连接你的邮箱，管理签名、模板和标签。',
-    mailSettings: '邮箱',
+    mailSettings: '邮箱接入',
     mailSettingsDescription: '邮件服务商、各账号状态、同步日志和发送日志。',
   },
   access: {
@@ -20,7 +20,7 @@ const pagesZhCN: MailPagesResource = {
       },
     },
     settings: {
-      title: '邮箱',
+      title: '邮箱接入',
       actions: {
         read: '查看',
         manage: '管理（重试和取消成员的同步与发送）',
@@ -110,7 +110,7 @@ const pagesZhCN: MailPagesResource = {
       },
     },
     settings: {
-      title: '邮箱',
+      title: '邮箱接入',
       description:
         '成员可连接的邮件服务商，以及每个账号的连接、同步和发送状态。此处不显示任何邮件内容。系统通知邮件请在通知中配置。',
       tabs: {

@@ -12,7 +12,7 @@ const pagesEnUS = {
     mailAccounts: 'Mail accounts',
     mailAccountsDescription:
       'Connect your mailboxes and manage signatures, templates and labels.',
-    mailSettings: 'Mail',
+    mailSettings: 'Mailbox connections',
     mailSettingsDescription:
       'Mail Providers, every account’s status, sync and send logs.',
   },
@@ -27,7 +27,7 @@ const pagesEnUS = {
       },
     },
     settings: {
-      title: 'Mail',
+      title: 'Mailbox connections',
       actions: {
         read: 'View',
         manage: "Manage (retry and cancel members' syncs and sends)",
@@ -117,7 +117,7 @@ const pagesEnUS = {
       },
     },
     settings: {
-      title: 'Mail',
+      title: 'Mailbox connections',
       description:
         'The mail Providers members can connect, and the connection, synchronization and sending status of every account. No message content is shown here. System notification emails are configured in Notifications.',
       tabs: {

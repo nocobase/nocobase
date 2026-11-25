@@ -7,7 +7,7 @@ const pagesPtBR: MailPagesResource = {
     mailAccounts: 'Contas de correio',
     mailAccountsDescription:
       'Conecte suas caixas de correio e gerencie assinaturas, modelos e etiquetas.',
-    mailSettings: 'Correio',
+    mailSettings: 'Conexões de caixas de e-mail',
     mailSettingsDescription:
       'Provedores de e-mail, o status de cada conta e os registros de sincronização e envio.',
   },
@@ -22,7 +22,7 @@ const pagesPtBR: MailPagesResource = {
       },
     },
     settings: {
-      title: 'Correio',
+      title: 'Conexões de caixas de e-mail',
       actions: {
         read: 'Visualizar',
         manage:
@@ -113,7 +113,7 @@ const pagesPtBR: MailPagesResource = {
       },
     },
     settings: {
-      title: 'Correio',
+      title: 'Conexões de caixas de e-mail',
       description:
         'Os provedores de e-mail que os membros podem conectar e o status de conexão, sincronização e envio de cada conta. Nenhum conteúdo de mensagem é exibido aqui. Os e-mails de notificação do sistema são configurados em Notificações.',
       tabs: {

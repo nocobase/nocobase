@@ -7,7 +7,7 @@ const pagesEsES: MailPagesResource = {
     mailAccounts: 'Cuentas de correo',
     mailAccountsDescription:
       'Conecta tus buzones y gestiona firmas, plantillas y etiquetas.',
-    mailSettings: 'Correo',
+    mailSettings: 'Conexiones de buzones',
     mailSettingsDescription:
       'Proveedores de correo, el estado de cada cuenta y los registros de sincronización y envío.',
   },
@@ -22,7 +22,7 @@ const pagesEsES: MailPagesResource = {
       },
     },
     settings: {
-      title: 'Correo',
+      title: 'Conexiones de buzones',
       actions: {
         read: 'Ver',
         manage:
@@ -113,7 +113,7 @@ const pagesEsES: MailPagesResource = {
       },
     },
     settings: {
-      title: 'Correo',
+      title: 'Conexiones de buzones',
       description:
         'Los proveedores de correo que pueden conectar los miembros y el estado de conexión, sincronización y envío de cada cuenta. Aquí no se muestra el contenido de ningún mensaje. Los correos de notificación del sistema se configuran en Notificaciones.',
       tabs: {

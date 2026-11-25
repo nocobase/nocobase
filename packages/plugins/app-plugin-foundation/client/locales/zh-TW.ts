@@ -52,7 +52,6 @@ const zhTW: LocaleResource<typeof enUS> = {
     skillsOnly: '已啟用 · 只含 Skill',
     enabledAttention: '已啟用 · 需要注意',
     disabled: '未啟用',
-    preinstalled: '未啟用 · 開發相依套件',
     disabledAttention: '未啟用 · 需要注意',
     unknown: '無法確認 · 需重新建置',
   },

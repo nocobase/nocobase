@@ -55,7 +55,6 @@ const jaJP: LocaleResource<typeof enUS> = {
     skillsOnly: '有効 · Skill のみ',
     enabledAttention: '有効 · 要注意',
     disabled: '未有効',
-    preinstalled: '未有効 · 開発用依存関係',
     disabledAttention: '未有効 · 要注意',
     unknown: '確認できません · 再ビルドが必要',
   },

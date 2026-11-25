@@ -56,7 +56,6 @@ const ptBR: LocaleResource<typeof enUS> = {
     skillsOnly: 'Ativado · Apenas Skills',
     enabledAttention: 'Ativado · Precisa de atenção',
     disabled: 'Não ativado',
-    preinstalled: 'Não ativado · Dependência de desenvolvimento',
     disabledAttention: 'Não ativado · Precisa de atenção',
     unknown: 'Não é possível saber · Recompilar',
   },
