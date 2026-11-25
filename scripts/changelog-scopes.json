@@ -145,14 +145,14 @@
     "ja": "同時実行制御"
   },
   "message-broker": {
-    "en": "Message integration",
-    "zh": "消息集成",
-    "ja": "メッセージ連携"
+    "en": "Message broker",
+    "zh": "消息代理",
+    "ja": "メッセージブローカー"
   },
   "app-plugin-message-broker": {
-    "en": "Message integration",
-    "zh": "消息集成",
-    "ja": "メッセージ連携"
+    "en": "Message broker",
+    "zh": "消息代理",
+    "ja": "メッセージブローカー"
   },
   "logging": { "en": "Logging", "zh": "日志", "ja": "ログ" },
   "lifecycle": {

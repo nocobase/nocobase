@@ -1,14 +1,14 @@
 # @nocobase/app-plugin-message-broker
 
-Transactional outbox, inbox and outbox relay for the application's message broker (`@nocobase/message-broker`). Register it with `MessageBrokerServiceProvider`; both templates do. It takes no backend of its own: the `messageBroker` section chooses the middleware, and this plugin makes `publish(message, { transaction })` and subscriptions with `inbox: true` work on any of them.
+Transactional outbox, inbox and outbox relay for the application's message broker (`@nocobase/message-broker`). Register it with `MessageBrokerServiceProvider`; both templates do. It takes no backend of its own: the `messageBroker` section chooses the middleware, and this plugin makes `publish(message, { transaction })` and subscriptions with `inbox: true` work on any of them. It serves business events within one application as much as messages exchanged with other systems.
 
 ## What it adds
 
 - `messageBrokerOutbox`: a message published inside a transaction, written in that transaction and sent after it commits. A rolled-back transaction leaves no row; a committed row survives a crash and is sent by the next instance that runs a relay round.
-- `messageBrokerInbox`: `(subscription, messageId)` of every message a subscription with `inbox: true` processed, written in the handler's transaction, so a redelivered message is acknowledged without running the handler again.
-- The relay, started in the provider's `start()` and stopped in its `shutdown()`, before the broker service closes. It runs after every commit that wrote outbox rows and every `pollInterval`, under the concurrency lock `message-broker:outbox`, so one instance at a time sends a given row. Several instances need a shared concurrency backend for that; with process-local locks each instance relays on its own and receivers see duplicates, which their `messageId` deduplication absorbs.
+- `messageBrokerInbox`: `(subscription, messageId)` of every message a subscription with `inbox: true` processed, written in the handler's transaction, so a redelivered message is acknowledged without running the handler again. Only writes the handler makes through `context.transaction` share that guarantee, and only within `inboxRetention`; external effects such as HTTP calls or emails need their own idempotency.
+- The relay, started in the provider's `start()` and stopped in its `shutdown()`, before the broker service closes. It runs after every commit that wrote outbox rows and every `pollInterval`. Each run first looks for a due row with one indexed query and no lock; only when one is due does it take the concurrency lock `message-broker:outbox`, so one instance at a time sends a given row. Hourly cleanup takes the lock separately. Several instances need a shared concurrency backend for that; with process-local locks each instance relays on its own and receivers see duplicates, which their `messageId` deduplication absorbs.
 
-Both tables live on the default database connection; publish inside a transaction on that connection. Times are stored as epoch milliseconds. Message bodies are limited to 64 KB on every database.
+Sending is at least once: a crash after the middleware confirmed a message and before the row is marked sent sends it again, so consumers deduplicate by `messageId`. The plugin makes a committed message durable in the database; it does not make an in-process backend such as `inMemory` durable. Both tables live on the default database connection; publish inside a transaction on that connection. Times are stored as epoch milliseconds. Message bodies are limited to 64 KB on every database.
 
 The `@nocobase/message-broker` README describes delivery semantics, costs and how this plugin fits the service.
 

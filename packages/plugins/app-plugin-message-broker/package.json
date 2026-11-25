@@ -11,11 +11,11 @@
   "nocobase": {
     "title": {
       "en-US": "Message broker",
-      "zh-CN": "消息集成"
+      "zh-CN": "消息代理"
     },
     "description": {
-      "en-US": "Transactional outbox and inbox for messages exchanged with external systems",
-      "zh-CN": "与外部系统交换消息的事务发件箱与收件箱"
+      "en-US": "Transactional outbox and inbox for publishing business events and consuming messages idempotently",
+      "zh-CN": "用于事务内发布业务事件与幂等消费消息的发件箱与收件箱"
     }
   },
   "sideEffects": false,

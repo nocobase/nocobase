@@ -26,7 +26,7 @@ These English references adapt the plugin development guide into task-specific i
 | Add business pages, menus, Tabs, route dialogs/drawers, child routes, or page overrides                 | [Client routing](references/client-routing.md)                       |
 | Design configuration entities, settings permissions, routed editors and safe saves                    | [System settings](references/system-settings.md)                     |
 | Define service contracts, Tokens, dependency injection, or lifecycle                                  | [Services and Providers](references/services.md)                     |
-| Add HTTP endpoints, authorization, Repository operations, background jobs, or queues                  | [Server development](references/server.md)                           |
+| Add HTTP endpoints, authorization, Repository operations, background jobs, queues, or messages        | [Server development](references/server.md)                           |
 | Name an `/api` path, choose its method, shape its response or error, or validate its input            | [HTTP API rules](references/http-api.md)                             |
 | Add migrations, seeds, or package resource/checksum handling                                          | [Database resources](references/database.md)                         |
 | Add or change text, locale resources, translated errors, or recipient-language messages               | [Internationalization](references/i18n.md)                           |

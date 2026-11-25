@@ -1,12 +1,39 @@
 # @nocobase/app-plugin-message-broker-example
 
-Message broker app plugin example. It publishes `order.placed` events to the logical publisher `orderEvents` and consumes them from the subscription of the same name, through the application's `MessageBrokerService`, which it resolves from `messageBrokerServiceToken` in `@nocobase/app-server/message-broker`. The examples template registers it with `@nocobase/app-plugin-message-broker`, which supplies the outbox and inbox it uses, on the in-memory backend; pointing `orderEvents` at a real middleware is a change to the `messageBroker` configuration only.
+Message broker app plugin example: a business event published in the business transaction and consumed by independent subscriptions that update business tables through the inbox, plus a message received from an external system. It uses the application's `MessageBrokerService`, resolved from `messageBrokerServiceToken` in `@nocobase/app-server/message-broker`, and the outbox and inbox of `@nocobase/app-plugin-message-broker`. The examples template registers both plugins on the in-memory backend.
 
-`server/service.ts` publishes. `publishOrderPlaced(order, transaction)` derives the `messageId` from the order, so every redelivery carries the same ID, and uses the order ID as the `key`. Inside a transaction the message is written to the outbox and sent once the transaction commits; without one it is sent at once.
+## The scenario
 
-`server/providers/message-broker-example.ts` consumes. `boot()` registers the handler before the broker is set up, so the subscription's options are checked against the backend's capabilities at startup. The subscription validates bodies with a zod schema, which dead-letters a malformed order without running the handler, and sets `inbox: true`, which skips a repeated `messageId`. The handler returns to acknowledge; a throw would retry the message up to `maxAttempts` and then dead-letter it. `shutdown()` awaits the unregister function.
+- `placeOrder()` in `server/service.ts` creates a row in `messageBrokerExampleOrders` and publishes `order.placed` to the logical publisher `orderEvents` with `{ transaction }`, in one transaction. A rollback leaves neither the order nor the message; a committed message is sent by the outbox relay. The `messageId` is `order-placed:<orderId>`, one ID per business event, and the order ID is the ordering `key`.
+- `orderShipments` and `customerOrderStats` are two independent subscriptions to the same events. Each runs its own retries and dead letters: a failure in one does not run the other again. Both set `inbox: true` and write through `context.transaction`, so their writes commit together with the inbox record. `orderShipments` creates a row in `messageBrokerExampleShipments`; `customerOrderStats` increments counters in `messageBrokerExampleCustomerStats`, an effect that would count twice on a redelivery without the inbox.
+- `paymentEvents` is published by an external payment provider. Its handler marks the order paid inside the inbox transaction and returns `reject()` for an order it does not know, which rolls the transaction back and dead-letters the message for an operator. In production, `orderEvents` can be read by other systems through the same middleware resource.
 
-The plugin has no routes; `tests/message-broker-example.test.ts` drives it against an in-memory broker, and the examples template's `tests/server/message-broker.test.ts` publishes inside a real database transaction.
+Each subscription validates bodies with a zod schema; a malformed message is dead-lettered without running the handler. Handlers are registered in the provider's `boot()` and unregistered in `shutdown()`.
+
+## Configuration
+
+The subscriptions read the topic the publisher writes, which the application maps in its `messageBroker` section; the examples template's `server/config/message-broker.ts` has:
+
+```ts
+{
+  default: 'memory',
+  backends: {
+    memory: {
+      adapter: 'inMemory',
+      subscriptions: {
+        orderShipments: { topic: 'orderEvents' },
+        customerOrderStats: { topic: 'orderEvents' },
+      },
+    },
+  },
+}
+```
+
+Moving to a real middleware changes this section only: map `orderEvents` to an exchange or topic, each subscription to its own queue or consumer group, and `paymentEvents` to the resource the payment provider publishes to. The plugin's migration creates its three tables; run `pnpm nocobase db apply` in the application.
+
+## Tests
+
+`tests/message-broker-example.test.ts` runs on a real database with the outbox plugin's and this plugin's migrations, composing the outbox plugin's provider with this plugin's provider on an in-memory backend. It covers a committed order reaching both subscriptions, a rolled-back transaction publishing nothing, a handler that fails after writing being rolled back and retried while the other subscription runs once, a redelivered event not counting twice, and the external payment's duplicate, unknown-order and malformed cases. The examples template's `tests/server/message-broker.test.ts` repeats the committed-order path in the started application.
 
 ## Verification
 
