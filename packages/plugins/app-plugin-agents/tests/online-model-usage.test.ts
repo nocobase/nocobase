@@ -89,13 +89,17 @@ describe('native online model usage', () => {
   const entries = () =>
     h.services.tx.read().repository('agModelUsage').findMany({});
 
-  async function createConversation(scope: string) {
-    h.services.onlineAgent.configurator.registerOnlineAgentScope(scope, {
-      tool: ['lookup'],
-    });
+  async function createConversation(scope?: string) {
+    if (scope)
+      h.services.onlineAgent.configurator.registerOnlineAgentScope(scope, {
+        tool: ['lookup'],
+      });
     const created = await h.request('POST', '/agents/conversations', {
       user: 'alice',
-      body: { config: { scope: [scope] }, selectedModel: modelRef },
+      body: {
+        ...(scope ? { config: { scope: [scope] } } : {}),
+        selectedModel: modelRef,
+      },
     });
     expect(created.status).toBe(201);
     return created.body.data.id as string;
@@ -121,15 +125,18 @@ describe('native online model usage', () => {
         streamed([toolCall(2), finish('tool-calls', 2)]),
         streamed(answer(3)),
         streamed(answer(1)),
+        streamed(answer(1)),
       ],
     });
     vi.spyOn(NativeFileInputs.prototype, 'model').mockResolvedValue(model);
     const ticket = await createConversation('ticket-helper');
-    const docs = await createConversation('docs-helper');
+    const scopedOnline = await createConversation('online');
+    const defaultOnline = await createConversation();
     expect((await send(ticket)).status).toBe(200);
-    expect((await send(docs)).status).toBe(200);
+    expect((await send(scopedOnline)).status).toBe(200);
+    expect((await send(defaultOnline)).status).toBe(200);
     expect(lookup).toHaveBeenCalledTimes(2);
-    expect(model.doStreamCalls).toHaveLength(4);
+    expect(model.doStreamCalls).toHaveLength(5);
     expect(await entries()).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
@@ -144,12 +151,16 @@ describe('native online model usage', () => {
           reasoningTokens: '12',
         }),
         expect.objectContaining({
-          source: 'agents.online:docs-helper',
+          source: 'agents.online:online',
+          ...storedCounts,
+        }),
+        expect.objectContaining({
+          source: 'agents.online',
           ...storedCounts,
         }),
       ]),
     );
-    expect(await entries()).toHaveLength(2);
+    expect(await entries()).toHaveLength(3);
 
     await h.services.prices.replace({
       prices: [
@@ -171,7 +182,12 @@ describe('native online model usage', () => {
     expect(report.status).toBe(200);
     expect(report.body.data.rows).toEqual([
       expect.objectContaining({
-        source: 'agents.online:docs-helper',
+        source: 'agents.online',
+        calls: 1,
+        cost: { USD: 20 },
+      }),
+      expect.objectContaining({
+        source: 'agents.online:online',
         calls: 1,
         cost: { USD: 20 },
       }),

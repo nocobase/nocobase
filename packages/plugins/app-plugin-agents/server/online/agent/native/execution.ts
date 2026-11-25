@@ -69,7 +69,7 @@ function usageSource(
   const source = scopes.length
     ? `agents.online:${scopes.map((scope) => scope.replaceAll('%', '%25').replaceAll('+', '%2B')).join('+')}`
     : conversationSource === 'panel' || conversationSource === 'chat'
-      ? 'agents.online:online'
+      ? 'agents.online'
       : `agents.online@${conversationSource}`;
   if (source.length <= 64) return source;
   const suffix = createHash('sha256').update(source).digest('hex').slice(0, 32);

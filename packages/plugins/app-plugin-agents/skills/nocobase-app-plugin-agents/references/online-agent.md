@@ -66,7 +66,7 @@ The resolved serializable snapshot is saved. Loading an existing session restore
 
 ## Model usage
 
-Usage groups native conversation turns by source under **Other model use**. Application-defined assistants appear as `agents.online:<scope>` using their selected scopes in order. Without a selected scope, an application-specific conversation source appears as `agents.online@<source>`, and ordinary panel conversations appear as `agents.online:online`. The report uses the selected model service and catalog model to look up the price. It includes any token usage the provider returned before a turn stopped or failed.
+Usage groups native conversation turns by source under **Other model use**. Application-defined assistants appear as `agents.online:<scope>` using their selected scopes in order. Without a selected scope, an application-specific conversation source appears as `agents.online@<source>`, and ordinary panel conversations appear as `agents.online`. Long source keys use a stable hash to fit the 64-character limit. The report uses the selected model service and catalog model to look up the price. It includes any token usage the provider returned before a turn stopped or failed.
 
 ## Thinking level
 
