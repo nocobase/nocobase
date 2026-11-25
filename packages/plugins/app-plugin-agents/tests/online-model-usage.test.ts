@@ -97,7 +97,7 @@ describe('native online model usage', () => {
       user: 'alice',
       body: { config: { scope: [scope] }, selectedModel: modelRef },
     });
-    expect(created.status, JSON.stringify(created.body)).toBe(201);
+    expect(created.status).toBe(201);
     return created.body.data.id as string;
   }
 
