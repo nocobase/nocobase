@@ -454,6 +454,37 @@ describe('reporting service', () => {
     ).toThrow(/from must not be after to/u);
   });
 
+  it('lets the application’s usage policy decide who sees every run', async () => {
+    // As Studio does: every run only for a reader of both usage and agents.
+    h = await createHarness({
+      usagePolicy: {
+        coversAllRuns: async (who) =>
+          (await who.can('agents.prices', 'read')) &&
+          (await who.can('agents.agents', 'read')),
+      },
+    });
+    await seed();
+    const runs = async (can: string, user: string) => {
+      const [report, models] = await Promise.all(
+        ['/agents/usage?groupBy=person', '/agents/usage/models'].map(
+          async (path) =>
+            (
+              await h.app.request(path, {
+                headers: { 'x-test-user': user, 'x-test-can': can },
+              })
+            ).json(),
+        ),
+      );
+      expect(models.data).toBeDefined();
+      return report.data.rows.map((row: { key: string }) => row.key);
+    };
+    expect(await runs('agents.prices/read', 'alice')).toEqual(['alice']);
+    expect(await runs('agents.agents/read', 'bob')).toEqual(['bob']);
+    expect(
+      await runs('agents.prices/read,agents.agents/read', 'carol'),
+    ).toEqual(['alice', 'bob']);
+  });
+
   it('works costs out from the prices as they are when read', async () => {
     h = await createHarness();
     const { agentId } = await seed();

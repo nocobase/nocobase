@@ -6,7 +6,7 @@ const pagesZhTW: MailPagesResource = {
     mailTeam: '團隊郵件',
     mailAccounts: '郵件帳戶',
     mailAccountsDescription: '連線你的信箱，管理簽名、模板和標籤。',
-    mailSettings: '信箱',
+    mailSettings: '信箱連接',
     mailSettingsDescription: '郵件提供者、各帳戶狀態、同步日誌和傳送日誌。',
   },
   access: {
@@ -20,7 +20,7 @@ const pagesZhTW: MailPagesResource = {
       },
     },
     settings: {
-      title: '信箱',
+      title: '信箱連接',
       actions: {
         read: '檢視',
         manage: '管理（重試和取消成員的同步與傳送）',
@@ -110,7 +110,7 @@ const pagesZhTW: MailPagesResource = {
       },
     },
     settings: {
-      title: '信箱',
+      title: '信箱連接',
       description:
         '成員可連線的郵件提供者，以及每個帳戶的連線、同步和傳送狀態。此處不會顯示任何郵件內容。系統通知郵件請在通知中設定。',
       tabs: {

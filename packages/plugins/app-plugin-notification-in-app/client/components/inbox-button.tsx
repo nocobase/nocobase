@@ -13,6 +13,7 @@ import { relativeTime } from '../inbox-page/model.js';
 import { usePendingTotal } from './inbox-badge.js';
 import { Button } from './ui/button.js';
 import { Popover, PopoverContent, PopoverTrigger } from './ui/popover.js';
+import { Tooltip, TooltipContent, TooltipTrigger } from './ui/tooltip.js';
 import { cn } from 'cn';
 
 /** How many recent messages the header popover lists. */
@@ -44,20 +45,26 @@ export function InboxButton({ path }: InboxButtonOptions): ReactElement {
   };
   return (
     <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger
-        render={
-          <Button
-            variant='outline'
-            size='icon'
-            className='size-10 rounded-xl border-border bg-background/60 text-foreground'
-            aria-label={label}
-            title={label}
-            data-testid='inbox-header-button'
-          />
-        }
-      >
-        <Inbox />
-      </PopoverTrigger>
+      <Tooltip disabled={open}>
+        <TooltipTrigger
+          render={
+            <PopoverTrigger
+              render={
+                <Button
+                  variant='outline'
+                  size='icon'
+                  className='size-10 rounded-xl border-border bg-background/60 text-foreground'
+                  aria-label={label}
+                  data-testid='inbox-header-button'
+                />
+              }
+            />
+          }
+        >
+          <Inbox />
+        </TooltipTrigger>
+        <TooltipContent side='bottom'>{label}</TooltipContent>
+      </Tooltip>
       <PopoverContent
         align='end'
         className='w-[min(22rem,calc(100vw-1rem))] gap-0 p-0'

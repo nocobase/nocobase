@@ -31,19 +31,19 @@ The settings item «Plugins · View» (`foundation.plugins`, action `read`, in t
 
 The page classifies each plugin the way `pnpm nocobase plugin inspect <name>` does; both call `classifyPluginRegistration` from `@nocobase/app-server/plugins`.
 
-| Page                           | `plugin inspect`                             | Meaning                                                                             |
-| ------------------------------ | -------------------------------------------- | ----------------------------------------------------------------------------------- |
-| Enabled                        | `registered`                                 | Registered and deployed with the application.                                       |
-| Enabled · Skills only          | `registered`, `skillsOnly`                   | Ships only Agent Skills; being in `dependencies` enables it.                        |
-| Not enabled                    | `unregistered`                               | In `dependencies`, not registered.                                                  |
-| Not enabled · Development only | `preinstalled`                               | In `devDependencies`; a deployed application does not have it.                      |
-| Enabled · Needs attention      | `inconsistent` (`PARTIALLY_REGISTERED`)      | Registered in only one of `client/plugins.ts` and `server/plugins.ts`.              |
-| Enabled · Needs attention      | `inconsistent` (`REGISTERED_DEV_DEPENDENCY`) | Registered but declared in `devDependencies`, so a deployment would miss it.        |
-| Enabled · Needs attention      | `registered`, with missing requirements      | A plugin it requires (a non-optional `@nocobase/app-plugin-*` peer) is not enabled. |
+| Page                                 | `plugin inspect`                             | Meaning                                                                             |
+| ------------------------------------ | -------------------------------------------- | ----------------------------------------------------------------------------------- |
+| Enabled                              | `registered`                                 | Registered and deployed with the application.                                       |
+| Enabled · Skills only                | `registered`, `skillsOnly`                   | Ships only Agent Skills; being in `dependencies` enables it.                        |
+| Not enabled                          | `unregistered`                               | In `dependencies`, not registered.                                                  |
+| Not enabled · Development dependency | `preinstalled`                               | In `devDependencies`; a deployed application does not have it.                      |
+| Enabled · Needs attention            | `inconsistent` (`PARTIALLY_REGISTERED`)      | Registered in only one of `client/plugins.ts` and `server/plugins.ts`.              |
+| Enabled · Needs attention            | `inconsistent` (`REGISTERED_DEV_DEPENDENCY`) | Registered but declared in `devDependencies`, so a deployment would miss it.        |
+| Enabled · Needs attention            | `registered`, with missing requirements      | A plugin it requires (a non-optional `@nocobase/app-plugin-*` peer) is not enabled. |
 
 Every situation needing attention is fixed by running `pnpm nocobase plugin register` again for the plugin, together with the plugins it requires: `pnpm nocobase plugin register agents knowledge`. Restart `pnpm dev` afterwards; a deployment is rebuilt with `pnpm build --tar` and upgraded with the installer.
 
-A deployed application (its `package.json` records `nocobase.builtAt`) lists only `dependencies`, and the page says so.
+A deployed application (its `package.json` records `nocobase.builtAt`) lists development plugins from the metadata recorded by the build in `nocobase.developmentPlugins`. To enable one, register it in the source project and redeploy. Older builds require a rebuild to list these plugins.
 
 ## Name and description
 

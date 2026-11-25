@@ -1,5 +1,11 @@
 # @nocobase/app-plugin-office-flows-example
 
+## 0.1.0-beta.15
+
+### Patch Changes
+
+- 8be5180: Show English and Simplified Chinese names and descriptions for example plugins in the plugin list.
+
 ## 0.1.0-beta.14
 
 ### Minor Changes

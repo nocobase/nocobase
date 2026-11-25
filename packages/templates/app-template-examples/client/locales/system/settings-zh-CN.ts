@@ -14,7 +14,7 @@ const settings = {
     invalid: '无法确认此前置配置，请应用维护者检查其配置声明。',
   },
 
-  permissionManagement: '角色和权限',
+  permissionManagement: '角色与权限',
   defaultAccess: {
     kindBusiness: '业务操作',
     kindTable: '数据表',

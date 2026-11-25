@@ -1,5 +1,26 @@
 # @nocobase/app-plugin-demo-mode
 
+## 0.2.0-beta.15
+
+### Patch Changes
+
+- 8e7f898: Complete the Agent and inbox translations and allow Demo Mode to start when hosted model services are disabled.
+- Updated dependencies [300f760]
+- Updated dependencies [29c62bd]
+- Updated dependencies [28a7606]
+- Updated dependencies [8e7f898]
+- Updated dependencies [f3ae984]
+- Updated dependencies [8ff2df3]
+- Updated dependencies [28a7606]
+  - @nocobase/app-client@4.0.0-beta.13
+  - @nocobase/app-plugin-agents@2.0.0-beta.20
+  - @nocobase/app-plugin-authentication@2.0.0-beta.25
+  - @nocobase/app-server@5.0.0-beta.10
+  - @nocobase/app-cli@1.0.0-beta.39
+  - @nocobase/jobs@1.0.0-beta.8
+  - @nocobase/app-plugin-authorization@1.0.0-beta.39
+  - @nocobase/app-plugin-users@2.0.0-beta.22
+
 ## 0.2.0-beta.14
 
 ### Patch Changes

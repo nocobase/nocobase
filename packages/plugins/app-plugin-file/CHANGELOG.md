@@ -1,5 +1,24 @@
 # @nocobase/app-plugin-file
 
+## 1.0.0-beta.34
+
+### Minor Changes
+
+- 5fcb0c8: Allow applications to disable the storage management endpoints while retaining file repository services.
+
+### Patch Changes
+
+- 6a3bb3e: Remove the distributed readiness plugin from the open-source templates. Existing applications can remove it with the plugin CLI or migrate to the Pro cluster readiness plugin.
+- Updated dependencies [300f760]
+- Updated dependencies [29c62bd]
+- Updated dependencies [28a7606]
+- Updated dependencies [8ff2df3]
+  - @nocobase/app-client@4.0.0-beta.13
+  - @nocobase/app-plugin-authentication@2.0.0-beta.25
+  - @nocobase/app-server@5.0.0-beta.10
+  - @nocobase/drive@0.1.0-beta.9
+  - @nocobase/app-plugin-authorization@1.0.0-beta.39
+
 ## 1.0.0-beta.33
 
 ### Minor Changes

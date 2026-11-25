@@ -34,6 +34,17 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { AppRouter } from '../../client/routing/app-router.tsx';
 import { AppThemeProvider } from '../../client/theme/index.ts';
 
+vi.mock('../../package.json', () => ({
+  default: {
+    name: 'team-portal',
+    version: '9.0.0',
+    nocobase: {
+      templatePackage: '@nocobase/app-template-enterprise',
+      defaultTemplateVersion: '1.2.3',
+    },
+  },
+}));
+
 afterEach(() => vi.unstubAllGlobals());
 
 /** The sidebar's entries; the header's breadcrumb names the current page as well. */
@@ -99,8 +110,9 @@ describe('application shell', () => {
     expect(
       screen.getByText('NocoBase', { selector: 'a' }).parentElement,
     ).toHaveTextContent('AI + NocoBase');
-    expect(screen.getByText('Examples Template')).toHaveClass('truncate');
-    expect(screen.getByText('v0.0.0')).toHaveClass('truncate');
+    expect(
+      screen.getByText('Based on the Enterprise template v1.2.3'),
+    ).toBeVisible();
     // shadcn's edge rail, with a translated label in place of its built-in one.
     expect(
       screen.getByRole('button', { name: 'Expand or collapse navigation' }),
@@ -110,7 +122,7 @@ describe('application shell', () => {
     ).toBeVisible();
   });
 
-  it('renders no Settings or Inbox entry in the header', async () => {
+  it('omits settings and inbox shortcuts when their routes are absent', async () => {
     renderApplication('/', true);
     await screen.findByRole('heading', { name: 'App client is ready' });
     expect(
@@ -205,11 +217,11 @@ describe('application shell', () => {
     ).toHaveAttribute('aria-pressed', 'true');
     // The footer keeps only its shield; focusing it shows the slogan, name and version.
     const footerIcon = screen.getByRole('img', {
-      name: 'AI + NocoBase Build reliable business systems Examples Template v0.0.0',
+      name: 'AI + NocoBase Build reliable business systems Based on the Enterprise template v1.2.3',
     });
     act(() => footerIcon.focus());
     expect(
-      await screen.findByText('Examples Template v0.0.0', {
+      await screen.findByText('Based on the Enterprise template v1.2.3', {
         selector: '[data-slot="tooltip-content"] span',
       }),
     ).toBeVisible();
@@ -236,7 +248,7 @@ describe('application shell', () => {
       ),
     );
     expect(
-      screen.queryByRole('img', { name: /Examples Template v/ }),
+      screen.queryByRole('img', { name: /AI \+ NocoBase/ }),
     ).not.toBeInTheDocument();
   });
 
@@ -256,8 +268,12 @@ describe('application shell', () => {
     fireEvent.click(
       await screen.findByRole('button', { name: 'Open navigation' }),
     );
+    const drawer = await screen.findByRole('dialog', {
+      name: 'Application navigation',
+    });
+    expect(drawer).toBeVisible();
     expect(
-      await screen.findByRole('dialog', { name: 'Application navigation' }),
+      within(drawer).getByText('Based on the Enterprise template v1.2.3'),
     ).toBeVisible();
     fireEvent.click(screen.getByRole('button', { name: 'Close navigation' }));
     await waitFor(() =>

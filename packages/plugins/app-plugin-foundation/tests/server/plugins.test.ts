@@ -170,7 +170,7 @@ describe('FoundationPluginCatalog', () => {
     ]);
   });
 
-  it('marks a deployed application, which lists only its dependencies', async () => {
+  it('supports an older deployment without development plugin metadata', async () => {
     const plugins = await catalog(
       {
         dependencies: [MAIL],
@@ -184,6 +184,48 @@ describe('FoundationPluginCatalog', () => {
 
     expect(meta).toEqual({ deployed: true });
     expect(data.map(({ packageName }) => packageName)).toEqual([MAIL]);
+  });
+
+  it('lists development plugins from the build without installing them, including transitive production packages', async () => {
+    const portal = '@acme/app-portal-help';
+    const plugins = await catalog(
+      {
+        dependencies: [MAIL, PUSH],
+        installed: [{ name: MAIL }],
+        builtAt: '2026-11-22T00:00:00.000Z',
+        developmentPlugins: {
+          [PUSH]: {
+            version: '2.0.0',
+            exports: { './client': true },
+            nocobase: { title: { 'zh-CN': '推送' } },
+            peerDependencies: { [MAIL]: '*' },
+          },
+          [portal]: { version: '1.0.0', exports: {} },
+        },
+        cli: { deployed: true },
+      },
+      [MAIL],
+    );
+    const { data } = await plugins.list([MAIL]);
+    expect(data).toHaveLength(3);
+    expect(data.filter((plugin) => !plugin.enabled)).toMatchObject([
+      {
+        packageName: portal,
+        dependencyField: 'devDependencies',
+        state: 'preinstalled',
+        skillsOnly: true,
+        issues: [],
+      },
+      {
+        packageName: PUSH,
+        dependencyField: 'devDependencies',
+        state: 'preinstalled',
+        version: '2.0.0',
+        title: { 'zh-CN': '推送' },
+        requires: [MAIL],
+        issues: [],
+      },
+    ]);
   });
 
   it('only answers for the plugins the application declares or registers, whatever the browser names', async () => {

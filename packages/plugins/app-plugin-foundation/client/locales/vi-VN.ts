@@ -22,7 +22,7 @@ const viVN: LocaleResource<typeof enUS> = {
     description:
       'Các plugin ứng dụng này đang dùng. Bật hoặc tắt một plugin sẽ thay đổi mã của ứng dụng và chỉ có hiệu lực sau khi khởi động lại, nên trang này đưa ra các lệnh cần chạy thay vì công tắc.',
     deployed:
-      'Đây là ứng dụng đã triển khai: chỉ liệt kê các plugin được triển khai cùng ứng dụng. Các plugin chỉ thấy khi phát triển không có ở đây.',
+      'Để bật plugin, hãy đăng ký plugin trong dự án nguồn rồi triển khai lại ứng dụng.',
     attention_one: '{{count}} plugin cần chú ý và được xếp lên đầu.',
     attention_other: '{{count}} plugin cần chú ý và được xếp lên đầu.',
     search: 'Tìm theo tên hoặc gói',
@@ -53,7 +53,6 @@ const viVN: LocaleResource<typeof enUS> = {
     skillsOnly: 'Đã bật · Chỉ có Skill',
     enabledAttention: 'Đã bật · Cần chú ý',
     disabled: 'Chưa bật',
-    preinstalled: 'Chưa bật · Chỉ khi phát triển',
     disabledAttention: 'Chưa bật · Cần chú ý',
     unknown: 'Không xác định · Cần build lại',
   },

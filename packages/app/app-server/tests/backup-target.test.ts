@@ -17,6 +17,7 @@ import { promisify } from 'node:util';
 import { createBackup, restoreBackup, verifyBackup } from '@nocobase/backup';
 import sqlite from '@nocobase/db-sqlite';
 import { createDriveManager, type AppDriveConfig } from '@nocobase/drive';
+import type { Knex } from 'knex';
 import { afterEach, beforeEach, expect, it } from 'vitest';
 import { Application } from '../src/application/index.js';
 import { resolveAppBackupTarget } from '../src/backup/target.js';
@@ -49,12 +50,13 @@ afterEach(async () => {
 });
 
 it.each([
-  { mode: 'embedded', configuredPackage: undefined, compatible: false },
-  { mode: 'standalone', configuredPackage: undefined, compatible: true },
-  { mode: 'embedded', configuredPackage: 'app', compatible: true },
+  { mode: 'embedded', configuredPackage: undefined },
+  { mode: 'standalone', configuredPackage: undefined },
+  { mode: 'embedded', configuredPackage: 'app' },
+  { mode: 'standalone', configuredPackage: 'app' },
 ] as const)(
   'checks migration identity after $mode startup with package override $configuredPackage',
-  async ({ mode, configuredPackage, compatible }) => {
+  async ({ mode, configuredPackage }) => {
     const revision = join(root, 'revision');
     const dist = join(revision, 'dist');
     const storageDir = join(root, 'volume');
@@ -132,7 +134,7 @@ export default defineMigration({
             history: [
               {
                 name: '001_rows',
-                packageName: mode === 'embedded' ? 'app' : packageName,
+                packageName: configuredPackage ?? packageName,
               },
             ],
           },
@@ -149,32 +151,6 @@ export default defineMigration({
       } finally {
         await db.destroy();
       }
-      if (!compatible) {
-        expect(await verifyBackup(file, { target })).toMatchObject({
-          ok: false,
-          problems: [{ code: 'RESTORE_MIGRATION_MISMATCH' }],
-        });
-        await expect(restoreBackup(file, target)).rejects.toMatchObject({
-          code: 'RESTORE_MIGRATION_MISMATCH',
-        });
-        const current = createAppDatabaseManager(
-          cli.config.get<AppDatabaseConfig>('database')!,
-          cli.paths,
-        )!;
-        try {
-          expect(
-            await current
-              .query('main')
-              .selectFrom('rows')
-              .selectAll()
-              .execute(),
-          ).toEqual([{ id: 1 }]);
-        } finally {
-          await current.destroy();
-        }
-        return;
-      }
-
       // A sealed build can still verify the same artifact's pre-sealing checksum.
       const sealed = source + '\n// @nocobase/task-manifest v1\n';
       await writeFile(migration, sealed);
@@ -210,6 +186,195 @@ export default defineMigration({
     }
   },
 );
+
+it('preserves and restores a database with the historical app migration identity', async () => {
+  const revision = join(root, 'revision');
+  const dist = join(revision, 'dist');
+  const storageDir = join(root, 'volume');
+  const migrations = join(dist, 'database/main/migrations');
+  const packageName = '@example/built-app';
+  await mkdir(migrations, { recursive: true });
+  await writeFile(
+    join(dist, 'package.json'),
+    JSON.stringify({ name: packageName, version: '1.0.0', type: 'module' }),
+  );
+  const migration = join(migrations, '001_rows.js');
+  const source = `import { defineMigration } from '@nocobase/db';
+export default defineMigration({
+  name: '001_rows',
+  async up({ builder }) {
+    await builder.createCollection('rows', (table) => table.increments('id'));
+  },
+  async down({ builder }) { await builder.dropCollection('rows'); }
+});`;
+  await writeFile(migration, source);
+  const definition = (configuredPackage?: string) =>
+    defineAppRuntime({
+      deploymentRootDir: '..',
+      plugins: defineServerPlugins([]),
+      routes: [],
+      serviceProviders: [DatabaseProvider],
+      createAppConfig: () =>
+        new AppConfig().load({
+          name: 'test',
+          read: async () => ({
+            kind: 'map',
+            value: {
+              app: { name: 'backup-test', publicBasePath: '' },
+              database: {
+                default: 'main',
+                drivers: { sqlite },
+                migrations: { packageName: configuredPackage },
+                connections: {
+                  main: {
+                    dialect: 'sqlite',
+                    filename: join(storageDir, 'data.sqlite'),
+                  },
+                },
+              },
+            },
+          }),
+        }),
+    });
+  const resolveEmbedded = () =>
+    resolveAppRuntime(definition(), {
+      mode: 'embedded',
+      id: 'backup-test',
+      basePath: '',
+      rootDir: revision,
+      dataDir: storageDir,
+      registerDisposer() {},
+    });
+  const defaultCliRuntime = await resolveStandaloneAppRuntime(definition(), {
+    rootDir: dist,
+    env: { APP_STORAGE_DIR: storageDir },
+  });
+  const matchingCliRuntime = await resolveStandaloneAppRuntime(
+    definition('app'),
+    {
+      rootDir: dist,
+      env: { APP_STORAGE_DIR: storageDir },
+    },
+  );
+  const defaultCli = createAppFromRuntime(defaultCliRuntime);
+  defaultCli.addRuntimeContributions(defaultCliRuntime);
+  const matchingCli = createAppFromRuntime(matchingCliRuntime);
+  matchingCli.addRuntimeContributions(matchingCliRuntime);
+  const defaultTarget = await resolveAppBackupTarget(defaultCli);
+  const matchingTarget = await resolveAppBackupTarget(matchingCli);
+
+  try {
+    const firstRuntime = await resolveEmbedded();
+    const firstApp = createAppFromRuntime(firstRuntime);
+    firstApp.addRuntimeContributions(firstRuntime);
+    await firstApp.start();
+    await firstApp.shutdown();
+
+    const database = createAppDatabaseManager(
+      defaultCli.config.get<AppDatabaseConfig>('database')!,
+      defaultCli.paths,
+    )!;
+    try {
+      const knex = await database.connection('main').client<Knex>();
+      await knex('__nocobase_migrations')
+        .where({ name: '001_rows' })
+        .update({ package_name: 'app' });
+    } finally {
+      await database.destroy();
+    }
+
+    const restartedRuntime = await resolveEmbedded();
+    const restartedApp = createAppFromRuntime(restartedRuntime);
+    restartedApp.addRuntimeContributions(restartedRuntime);
+    await restartedApp.start();
+    await restartedApp.shutdown();
+
+    const beforeRestore = createAppDatabaseManager(
+      defaultCli.config.get<AppDatabaseConfig>('database')!,
+      defaultCli.paths,
+    )!;
+    try {
+      expect(
+        await beforeRestore
+          .query('main')
+          .selectFrom('rows')
+          .selectAll()
+          .execute(),
+      ).toEqual([]);
+    } finally {
+      await beforeRestore.destroy();
+    }
+
+    const file = join(root, 'legacy-backup.tgz');
+    const saved = await createBackup(defaultTarget, { output: file });
+    expect(saved.manifest.connections[0]).toMatchObject({
+      migrations: {
+        history: [{ name: '001_rows', packageName: 'app' }],
+      },
+    });
+    const current = createAppDatabaseManager(
+      defaultCli.config.get<AppDatabaseConfig>('database')!,
+      defaultCli.paths,
+    )!;
+    try {
+      await current
+        .query('main')
+        .insertInto('rows')
+        .values({ id: 1 })
+        .execute();
+      expect(
+        await current.query('main').selectFrom('rows').selectAll().execute(),
+      ).toEqual([{ id: 1 }]);
+    } finally {
+      await current.destroy();
+    }
+
+    await expect(
+      verifyBackup(file, { target: defaultTarget }),
+    ).resolves.toMatchObject({
+      ok: false,
+      problems: [{ code: 'RESTORE_MIGRATION_MISMATCH' }],
+    });
+    await expect(restoreBackup(file, defaultTarget)).rejects.toMatchObject({
+      code: 'RESTORE_MIGRATION_MISMATCH',
+    });
+
+    const unchanged = createAppDatabaseManager(
+      defaultCli.config.get<AppDatabaseConfig>('database')!,
+      defaultCli.paths,
+    )!;
+    try {
+      expect(
+        await unchanged.query('main').selectFrom('rows').selectAll().execute(),
+      ).toEqual([{ id: 1 }]);
+    } finally {
+      await unchanged.destroy();
+    }
+
+    expect(await verifyBackup(file, { target: matchingTarget })).toMatchObject({
+      ok: true,
+    });
+    expect(await restoreBackup(file, matchingTarget)).toMatchObject({
+      connections: [{ name: 'main', status: 'restored' }],
+    });
+    const restored = createAppDatabaseManager(
+      matchingCli.config.get<AppDatabaseConfig>('database')!,
+      matchingCli.paths,
+    )!;
+    try {
+      expect(
+        await restored.query('main').selectFrom('rows').selectAll().execute(),
+      ).toEqual([]);
+    } finally {
+      await restored.destroy();
+    }
+  } finally {
+    await Promise.all([
+      defaultCliRuntime.scope.destroy(),
+      matchingCliRuntime.scope.destroy(),
+    ]);
+  }
+});
 
 async function application(disks?: AppDriveConfig['disks']) {
   const paths = createAppPaths({ rootDir: root });

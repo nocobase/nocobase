@@ -3,7 +3,7 @@ import type { LocaleResource } from '@nocobase/i18n';
 import type settingsEnUS from './settings-en-US.js';
 
 const settings: LocaleResource<typeof settingsEnUS> = {
-  permissionManagement: '角色和权限',
+  permissionManagement: '角色与权限',
   permissionManagementDescription:
     '设置每个角色能打开的页面、能做的操作和能看到的数据。',
   rolesDescription: '设置每个角色可访问的页面和可执行的操作。',

@@ -1,5 +1,11 @@
 # @nocobase/agent-runner
 
+## 0.1.0-beta.34
+
+### Patch Changes
+
+- 8138565: Allow benign linked-worktree metadata inside submodules, validate active submodule `core.worktree` settings, report concise Git errors without internal `-c` flags, and self-heal drifted permissions on owned run temporary directories with detailed diagnostics.
+
 ## 0.1.0-beta.33
 
 ### Patch Changes

@@ -182,7 +182,7 @@ const enUS = {
   rules: {
     newKeysOnly:
       'These rules apply to keys created or rotated from now on; existing keys keep their expiry. Who may open this page, manage system keys or create personal keys is set on roles.',
-    whoMay: 'Roles and permissions',
+    whoMay: 'Roles & permissions',
     sameAsMe: {
       title: 'Personal key permissions',
       description:

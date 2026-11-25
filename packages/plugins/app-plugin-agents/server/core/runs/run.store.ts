@@ -656,19 +656,15 @@ export async function openCounts(
   agentIds: readonly string[],
 ): Promise<Map<string, number>> {
   if (agentIds.length === 0) return new Map();
-  const records = await runsRepo(conn).findMany({
-    filter: (f) =>
-      f.and([
-        f.or(agentIds.map((id) => f.string('agentId').eq(id))),
-        f.or(
-          ['queued', ...ACTIVE].map((status) => f.string('status').eq(status)),
-        ),
-      ]),
-  });
-  const counts = new Map<string, number>();
-  for (const record of records)
-    counts.set(record.agentId, (counts.get(record.agentId) ?? 0) + 1);
-  return counts;
+  const counts = await conn.query
+    .selectFrom('agRuns')
+    .select(['agentId'])
+    .select((eb) => [eb.fn.countAll().as('total')])
+    .where('agentId', 'in', agentIds)
+    .where('status', 'in', ['queued', ...ACTIVE])
+    .groupBy('agentId')
+    .execute<{ agentId: string; total: string | number }>();
+  return new Map(counts.map(({ agentId, total }) => [agentId, Number(total)]));
 }
 
 /** A run's stored events after `afterSeq`, oldest first, at most `limit`. */

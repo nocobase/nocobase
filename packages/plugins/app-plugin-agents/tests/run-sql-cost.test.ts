@@ -2,6 +2,8 @@ import { appendFile } from 'node:fs/promises';
 import { afterEach, expect, it } from 'vitest';
 import type { Knex } from 'knex';
 import { claim, createHarness, type Harness } from './harness.js';
+import { openCounts } from '../server/core/runs/run.store.js';
+
 let h: Harness;
 afterEach(async () => h?.close());
 it('measures the existing lifecycle SQL on a warm migrated database', async () => {
@@ -114,4 +116,42 @@ it('measures the existing lifecycle SQL on a warm migrated database', async () =
     }),
   );
   expect(result.status).toBe('completed');
+});
+
+it('counts only open runs for each requested agent in one grouped read', async () => {
+  h = await createHarness();
+  const first = await h.createAgent();
+  const second = await h.createAgent();
+  const idle = await h.createAgent();
+  const conn = h.database.connection();
+  for (const [agent, status] of [
+    [first, 'running'],
+    [first, 'dispatched'],
+    [first, 'completed'],
+    [second, 'queued'],
+    [idle, 'failed'],
+  ] as const) {
+    const id = await h.enqueue(agent, `${agent}-${status}`);
+    await conn
+      .repository('agRuns')
+      .updateOne({ filter: { id }, values: { status } });
+  }
+  const client = await conn.client<Knex>();
+  const sql: string[] = [];
+  const record = (query: { sql: string }) => sql.push(query.sql);
+  client.on('query', record);
+  try {
+    expect(await openCounts(conn, [])).toEqual(new Map());
+    expect(sql).toHaveLength(0);
+    expect(await openCounts(conn, [first, second, idle])).toEqual(
+      new Map([
+        [first, 2],
+        [second, 1],
+      ]),
+    );
+    expect(sql.filter((query) => /group by/i.test(query))).toHaveLength(1);
+    expect(await openCounts(conn, [second])).toEqual(new Map([[second, 1]]));
+  } finally {
+    client.off('query', record);
+  }
 });

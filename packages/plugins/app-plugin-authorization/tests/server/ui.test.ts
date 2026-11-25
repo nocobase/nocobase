@@ -471,7 +471,7 @@ describe('options', () => {
       }),
     });
     // The inspector is not a grantable settings item; its routes admit only an unrestricted identity. Reading the
-    // Sign-in and authentication settings is declared here for the authentication plugin, which cannot depend on this one.
+    // Authentication settings is declared here for the authentication plugin, which cannot depend on this one.
     expect(administration[0]?.resources.map((resource) => resource.id)).toEqual(
       ['authorization.permission-sets', 'authentication.settings'],
     );

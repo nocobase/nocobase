@@ -1,5 +1,11 @@
 # @nocobase/queue
 
+## 1.0.0-beta.13
+
+### Patch Changes
+
+- 28a7606: Expose configured memory backend persistence paths so application backups can exclude runtime state.
+
 ## 1.0.0-beta.12
 
 ### Minor Changes

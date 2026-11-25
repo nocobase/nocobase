@@ -2,7 +2,7 @@
   "name": "@nocobase/app-plugin-authorization",
   "displayName": "Authorization App Plugin",
   "description": "Authorization integration and permission management UI for NocoBase applications.",
-  "version": "1.0.0-beta.39",
+  "version": "1.0.0-beta.40",
   "type": "module",
   "sideEffects": false,
   "prettier": "@nocobase/dev-config/prettier",
@@ -11,8 +11,8 @@
   },
   "nocobase": {
     "title": {
-      "en-US": "Roles and permissions",
-      "zh-CN": "角色和权限"
+      "en-US": "Roles & permissions",
+      "zh-CN": "角色与权限"
     },
     "description": {
       "en-US": "Roles, permissions and access checks",

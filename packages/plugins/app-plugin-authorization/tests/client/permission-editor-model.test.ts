@@ -51,7 +51,7 @@ const roles: PermissionObject = {
 };
 const page: PermissionSettingsPage = {
   id: 'permissions',
-  label: 'Roles and permissions',
+  label: 'Roles & permissions',
   objects: [roles],
 };
 const all = [customers, roles];
@@ -187,7 +187,7 @@ describe('permission editor rules', () => {
         tab: 'settings',
         kind: 'removed',
         label: 'Change roles',
-        owner: 'Roles and permissions',
+        owner: 'Roles & permissions',
       },
     ]);
   });

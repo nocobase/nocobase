@@ -355,6 +355,10 @@ export class FakeDocker implements DockerApi {
     return Promise.resolve();
   }
 
+  public volumeExists(name: string): Promise<boolean> {
+    return Promise.resolve(this.volumes.has(name));
+  }
+
   public ensureNetwork(
     name: string,
     options: { labels: Readonly<Record<string, string>> },

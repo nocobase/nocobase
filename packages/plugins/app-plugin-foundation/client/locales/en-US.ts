@@ -14,7 +14,7 @@ const enUS = {
     description:
       'Which plugins this application uses. Enabling or disabling one changes the application’s code and takes effect after a restart, so this page gives the commands to run rather than switches.',
     deployed:
-      'This is a deployed application: only the plugins deployed with it are listed. Plugins visible only during development are not here.',
+      'To enable a plugin, register it in the source project and redeploy the application.',
     attention_one: '{{count}} plugin needs attention and is listed first.',
     attention_other: '{{count}} plugins need attention and are listed first.',
     search: 'Search by name or package',
@@ -45,7 +45,6 @@ const enUS = {
     skillsOnly: 'Enabled · Skills only',
     enabledAttention: 'Enabled · Needs attention',
     disabled: 'Not enabled',
-    preinstalled: 'Not enabled · Development only',
     disabledAttention: 'Not enabled · Needs attention',
     unknown: "Can't tell · Rebuild",
   },
