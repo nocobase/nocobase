@@ -272,7 +272,8 @@ const deDE: LocaleResource<typeof enUS> = {
       optionalActions: 'Optionale Aktionen',
       optionalActionsHint:
         'Für alle Agents aus, bis Sie sie für diesen einschalten. Er handelt trotzdem nur, wo die Person, die ihn geweckt hat, es auch darf.',
-      optionalActionsFailed: 'Die optionalen Aktionen konnten nicht geändert werden.',
+      optionalActionsFailed:
+        'Die optionalen Aktionen konnten nicht geändert werden.',
       skillsHint:
         'Diese Standardfähigkeiten des Teams gelten für jeden Lauf aller Agenten. Sie können sie auf der Seite „Fähigkeiten“ ändern.',
       skillsNone: 'Noch keine Standardfähigkeiten für das Team.',

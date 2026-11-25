@@ -1023,13 +1023,18 @@ export function createSkillService(deps: SkillServiceDeps): SkillService {
       if (!input.skillId)
         return createWith(userId, { content, files }, input.note ?? null, via);
       const skill = await requireSkill(conn, input.skillId);
-      return saveWith(input.skillId, userId, {
-        content,
-        files,
-        note: input.note ?? 'Imported from an archive',
-        expectedRevision:
-          input.expectedRevision ?? Number(skill.currentVersion),
-      }, via);
+      return saveWith(
+        input.skillId,
+        userId,
+        {
+          content,
+          files,
+          note: input.note ?? 'Imported from an archive',
+          expectedRevision:
+            input.expectedRevision ?? Number(skill.currentVersion),
+        },
+        via,
+      );
     },
 
     async snapshot(slug, hash) {

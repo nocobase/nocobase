@@ -81,6 +81,49 @@ describe('skills written by an agent’s run', () => {
         })
       ).status,
     ).toBe(403);
+    // A run that may not even read the skill is refused the write (403), not told the skill is missing; a person
+    // without reading still gets 404, and a skill that does not exist is still 404 for a run that manages skills.
+    for (const [method, path, payload] of [
+      ['PATCH', `/agents/skills/${skill.id}`, body(1)],
+      [
+        'POST',
+        `/agents/skills/${skill.id}/versions/1/restore`,
+        { expectedRevision: 1 },
+      ],
+      [
+        'POST',
+        '/agents/skills/import',
+        { archive: 'a'.repeat(64), skillId: skill.id, expectedRevision: 1 },
+      ],
+    ] as const) {
+      const refusedRun = await h.request(method, path, {
+        user: 'bob',
+        can: [],
+        run,
+        body: payload,
+      });
+      expect(refusedRun.status, `${method} ${path}`).toBe(403);
+      expect(
+        (
+          await h.request(method, path, {
+            user: 'carol',
+            can: [],
+            body: payload,
+          })
+        ).status,
+        `${method} ${path}`,
+      ).toBe(404);
+    }
+    expect(
+      (
+        await h.request('PATCH', '/agents/skills/missing', {
+          user: 'bob',
+          can: MANAGE,
+          run,
+          body: body(1),
+        })
+      ).status,
+    ).toBe(404);
     // The same person editing it themselves still may, and is the only author.
     const own = await h.request('PATCH', `/agents/skills/${skill.id}`, {
       user: 'bob',

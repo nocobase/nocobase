@@ -252,6 +252,12 @@ async function mayEdit(
   return reaches(await who.scope('agents.agents/edit'), relatedTo);
 }
 
+/** An agent's run writes skills only with `agents.skills` manage: 403 otherwise, whatever skill it names. */
+async function requireRunManages(who: AdminCaller): Promise<void> {
+  if (who.run && !(await who.can('agents.skills', 'manage')))
+    throw forbidden(editRefusal(who));
+}
+
 /** Why `who` may not edit a skill. */
 function editRefusal(who: AdminCaller): string {
   return who.run
@@ -348,9 +354,13 @@ export function createAdminRoutes(
     (await services.people.names(services.tx.read(), [userId])).get(userId) ??
     userId;
 
-  /** Only a caller who may edit the skill of the path goes on: 404 when they may not read it, 403 when not edit it. */
+  /**
+   * Only a caller who may edit the skill of the path goes on: 404 when they may not read it, 403 when not edit it. An
+   * agent's run without `agents.skills` manage is refused 403 before the skill is looked up.
+   */
   const editableSkill: MiddlewareHandler<AdminEnv> = async (context, next) => {
     const who = caller(context);
+    await requireRunManages(who);
     const skill = await services.skills.get(context.req.param('skillId') ?? '');
     if (!(await mayEdit(who, skill.createdById))) {
       if (!(await who.can('agents.skills', 'read'))) throw notFound('Skill');
@@ -1296,6 +1306,7 @@ export function createAdminRoutes(
       const input = context.req.valid('json');
       const who = caller(context);
       if (input.skillId) {
+        await requireRunManages(who);
         const skill = await services.skills.get(input.skillId);
         if (!(await mayEdit(who, skill.createdById))) {
           if (!(await who.can('agents.skills', 'read')))
