@@ -152,25 +152,30 @@ export class WSServer extends EventEmitter {
     });
 
     this.on('message', async ({ client, message }) => {
-      const app = await AppSupervisor.getInstance().getApp(client.app);
-
-      if (!app) {
+      let parsedMessage: { type?: unknown; payload?: unknown } | null;
+      try {
+        parsedMessage = JSON.parse(message.toString());
+      } catch {
         return;
       }
 
-      const parsedMessage = JSON.parse(message.toString());
-
-      if (!parsedMessage.type) {
+      if (typeof parsedMessage?.type !== 'string' || !parsedMessage.type) {
         return;
       }
 
-      const eventName = `ws:message:${parsedMessage.type}`;
-
-      app.emit(eventName, {
-        clientId: client.id,
-        tags: [...client.tags],
-        payload: parsedMessage.payload,
-      });
+      const supervisor = AppSupervisor.getInstance();
+      try {
+        const app = await supervisor.getApp(client.app);
+        if (app) {
+          app.emit(`ws:message:${parsedMessage.type}`, {
+            clientId: client.id,
+            tags: [...client.tags],
+            payload: parsedMessage.payload,
+          });
+        }
+      } catch (error) {
+        supervisor.logger.error('Failed to handle websocket message', { appName: client.app, error });
+      }
     });
   }
 
