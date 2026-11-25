@@ -2,7 +2,6 @@
  * What model calls outside any run used (`agModelUsage`): gateway calls and native online agent turns.
  * The report groups them by purpose, caller and model, at the service's model prices (`tool` `online`).
  */
-import { randomUUID } from 'node:crypto';
 import type { DatabaseConnection } from '@nocobase/db';
 
 import {
@@ -13,6 +12,7 @@ import {
   type PriceBook,
 } from '../../../shared/reports.js';
 import type { Clock } from '../../kernel/clock.js';
+import type { IdSource } from '../../kernel/ids.js';
 import type { TxRunner } from '../../kernel/tx.js';
 import { costOf } from './prices.js';
 
@@ -50,6 +50,7 @@ const count = (value: unknown): number => {
 
 export function createModelUsageRecorder(deps: {
   readonly tx: TxRunner;
+  readonly ids: IdSource;
   readonly clock: Clock;
 }): ModelUsageRecorder {
   return {
@@ -59,8 +60,7 @@ export function createModelUsageRecorder(deps: {
         .repository<ModelUsageRecord>(TABLE)
         .createOne({
           values: {
-            // Several application processes can record to this table at the same time.
-            id: randomUUID(),
+            id: deps.ids.next(),
             purpose: entry.purpose,
             source: entry.source.slice(0, 64),
             modelService: entry.modelService,

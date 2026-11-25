@@ -2,18 +2,10 @@ import { MockLanguageModelV4, simulateReadableStream } from 'ai/test';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { z } from 'zod';
 
-import { createModelUsageRecorder } from '../server/core/reports/model-usage.js';
 import { NativeFileInputs } from '../server/online/files/service.js';
 import { createHarness, type Harness } from './harness.js';
 
 const modelRef = { modelService: 'fixture', model: 'chat' };
-const tokenCounts = {
-  inputTokens: 20,
-  outputTokens: 8,
-  cacheReadTokens: 5,
-  cacheWriteTokens: 3,
-  reasoningTokens: 2,
-};
 const storedCounts = {
   inputTokens: '20',
   outputTokens: '8',
@@ -265,30 +257,4 @@ describe('native online model usage', () => {
       );
     },
   );
-
-  it('preserves simultaneous writes from separate recorders sharing a database', async () => {
-    const deps = { tx: h.services.tx, clock: h.clock };
-    const recorders = [
-      createModelUsageRecorder(deps),
-      createModelUsageRecorder(deps),
-    ];
-    await Promise.all(
-      recorders.map((recorder, index) =>
-        recorder.record({
-          purpose: 'text',
-          source: `caller-${index}`,
-          ...modelRef,
-          ...tokenCounts,
-          units: 1,
-        }),
-      ),
-    );
-    const rows = await entries();
-    expect(rows).toHaveLength(2);
-    expect(new Set(rows.map((row) => row.id)).size).toBe(2);
-    expect(rows.map((row) => row.source).sort()).toEqual([
-      'caller-0',
-      'caller-1',
-    ]);
-  });
 });

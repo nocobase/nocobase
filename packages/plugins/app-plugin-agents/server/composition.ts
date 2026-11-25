@@ -390,7 +390,7 @@ export function createAgents(deps: AgentsDeps): Agents {
     clock,
     box: createSealer(deps.secrets, MODEL_SERVICE_KEY_SECRET_PURPOSE),
   });
-  const modelUsage = createModelUsageRecorder({ tx, clock });
+  const modelUsage = createModelUsageRecorder({ tx, ids, clock });
   const gateway = createModelGateway(modelServices, {
     usage: modelUsage,
     onError,
