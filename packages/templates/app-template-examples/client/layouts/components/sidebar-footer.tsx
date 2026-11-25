@@ -1,9 +1,9 @@
 import { Trans } from 'react-i18next';
-import { useClientApplication } from '@nocobase/app-client';
 import { useTranslation } from '@nocobase/i18n/client';
 import { ShieldCheck } from 'lucide-react';
 import type { ReactElement } from 'react';
 
+import manifest from '../../../package.json' with { type: 'json' };
 import { SidebarFooter, useSidebar } from '#components/ui/sidebar';
 import {
   Tooltip,
@@ -11,19 +11,39 @@ import {
   TooltipTrigger,
 } from '#components/ui/tooltip';
 
+// create-app records the original package before renaming the generated application.
+const metadata: typeof manifest.nocobase & { templatePackage?: string } =
+  manifest.nocobase;
+const templatePrefix = '@nocobase/app-template-';
+const isTemplatePackage = manifest.name.startsWith(templatePrefix);
+const sourcePackage =
+  metadata.templatePackage ?? (isTemplatePackage ? manifest.name : undefined);
+const shortName = sourcePackage?.startsWith(templatePrefix)
+  ? sourcePackage.slice(templatePrefix.length)
+  : '';
+const templateName = shortName
+  ? shortName.charAt(0).toUpperCase() + shortName.slice(1)
+  : sourcePackage;
+const templateVersion =
+  metadata.defaultTemplateVersion ??
+  (isTemplatePackage ? manifest.version : undefined);
+
 /**
- * The application's sidebar footer: the NocoBase slogan's two lines, then the template's name and its version, each
- * on its own line. In icon mode only the shield remains, and a tooltip carries the same text.
+ * The application's sidebar footer: the NocoBase slogan's two lines, then its source template and version.
+ * In icon mode only the shield remains, and a tooltip carries the same text.
  */
 export function AppSidebarFooter(): ReactElement {
   const { t } = useTranslation();
   const { isMobile, state } = useSidebar();
   const iconOnly = state === 'collapsed' && !isMobile;
-  // Published by the server from the application's package.json.
-  const publicConfig = useClientApplication().config.public;
-  const templateName = publicConfig.get('app.displayName', 'Examples Template');
-  const templateVersion = publicConfig.get('app.version', '0.0.0');
-  const versionLabel = `v${templateVersion}`;
+  const versionLabel =
+    templateName && templateVersion
+      ? t('shell.basedOnTemplate', {
+          defaultValue: `Based on the ${templateName} template v${templateVersion}`,
+          name: templateName,
+          version: templateVersion,
+        })
+      : `v${templateVersion ?? manifest.version}`;
   // The tooltip and the icon's accessible name have no link, so the brand's markup is dropped there.
   const brandPartnership = t('shell.brandPartnership', {
     defaultValue: 'AI + <brand>NocoBase</brand>',
@@ -53,7 +73,7 @@ export function AppSidebarFooter(): ReactElement {
               <span
                 aria-label={
                   iconOnly
-                    ? `${brandPartnership} ${buildReliableSystems} ${templateName} ${versionLabel}`
+                    ? `${brandPartnership} ${buildReliableSystems} ${versionLabel}`
                     : undefined
                 }
                 className='flex h-5 shrink-0 items-center rounded-sm text-sidebar-foreground/80 outline-none focus-visible:ring-2 focus-visible:ring-sidebar-ring'
@@ -71,9 +91,7 @@ export function AppSidebarFooter(): ReactElement {
           >
             <span className='font-medium'>{brandPartnership}</span>
             <span>{buildReliableSystems}</span>
-            <span className='mt-1 opacity-70'>
-              {templateName} {versionLabel}
-            </span>
+            <span className='mt-1 opacity-70'>{versionLabel}</span>
           </TooltipContent>
         </Tooltip>
         <div className='min-w-0 flex-1 group-data-[collapsible=icon]:hidden'>
@@ -90,14 +108,10 @@ export function AppSidebarFooter(): ReactElement {
           <p className='text-balance text-muted-foreground'>
             {buildReliableSystems}
           </p>
-          {/* Name and version stay on one line each; a long name is cut off, with the whole name as its title. */}
           <p
-            className='mt-1 truncate text-muted-foreground'
-            title={templateName}
+            className='mt-1 break-words text-muted-foreground'
+            title={versionLabel}
           >
-            {templateName}
-          </p>
-          <p className='truncate text-muted-foreground' title={versionLabel}>
             {versionLabel}
           </p>
         </div>

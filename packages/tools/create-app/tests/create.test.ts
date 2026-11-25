@@ -173,7 +173,8 @@ describe('JSON creation flow', () => {
       expect(await run(argv)).toBe(0);
       expect(downloadTemplate).toHaveBeenCalledWith({
         nocobaseRegistry: registry,
-        source: '@nocobase/app-template-multi-portal@beta',
+        source: '@nocobase/app-template-enterprise@beta',
+        preset: 'multi-portal',
       });
       expect(
         vi.mocked(installDependencies).mock.calls[0][0],

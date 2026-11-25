@@ -170,6 +170,7 @@ const systemEnUS = {
   'status.routeFailedDescription':
     'Route {{label}} from {{packageName}} could not be loaded.',
   shell: {
+    basedOnTemplate: 'Based on the {{name}} template v{{version}}',
     brandPartnership: 'AI + <brand>NocoBase</brand>',
     buildReliableSystems: 'Build reliable business systems',
   },

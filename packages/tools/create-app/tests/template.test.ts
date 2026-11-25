@@ -1,3 +1,5 @@
+import { createHash } from 'node:crypto';
+import { applyTemplatePreset } from '../src/lib/template-preset.ts';
 import { execFileSync } from 'node:child_process';
 import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { createServer } from 'node:http';
@@ -76,10 +78,10 @@ describe('TEMPLATE_ALIASES', () => {
 
   it('resolves multi-portal at the selected channel without rewriting explicit versions', () => {
     expect(resolveTemplateSource('multi-portal')).toBe(
-      '@nocobase/app-template-multi-portal@latest',
+      '@nocobase/app-template-enterprise@latest',
     );
     expect(resolveTemplateSource('multi-portal', { tag: 'beta' })).toBe(
-      '@nocobase/app-template-multi-portal@beta',
+      '@nocobase/app-template-enterprise@beta',
     );
     expect(
       resolveTemplateSource('@nocobase/app-template-multi-portal@0.1.0', {
@@ -91,10 +93,10 @@ describe('TEMPLATE_ALIASES', () => {
   it('resolves multi-app with the selected channel without changing explicit versions', () => {
     expect(isTemplateAlias('multi-app')).toBe(true);
     expect(resolveTemplateSource('multi-app')).toBe(
-      '@nocobase/app-template-multi-app@latest',
+      '@nocobase/app-template-enterprise@latest',
     );
     expect(resolveTemplateSource('multi-app', { tag: 'beta' })).toBe(
-      '@nocobase/app-template-multi-app@beta',
+      '@nocobase/app-template-enterprise@beta',
     );
     expect(
       resolveTemplateSource('@nocobase/app-template-multi-app@0.0.1', {
@@ -105,7 +107,7 @@ describe('TEMPLATE_ALIASES', () => {
   it('resolves the child template at the requested channel', () => {
     expect(isTemplateAlias('sub-app')).toBe(true);
     expect(resolveTemplateSource('sub-app', { tag: 'beta' })).toBe(
-      '@nocobase/app-template-sub-app@beta',
+      '@nocobase/app-template-enterprise@beta',
     );
   });
   it('maps the default name to the app template', () => {
@@ -321,6 +323,78 @@ describe('downloadTemplate', () => {
     },
   );
 
+  it('downloads the original scenario on the same channel when Enterprise predates presets', async () => {
+    const directory = await mkdtemp(
+      path.join(os.tmpdir(), 'create-app-old-edition-'),
+    );
+    created.push(directory);
+    const packageDir = path.join(directory, 'package');
+    await mkdir(packageDir);
+    const archives = new Map<string, Buffer>();
+    for (const suffix of ['enterprise', 'sub-app']) {
+      const name = '@nocobase/app-template-' + suffix;
+      await writeFile(
+        path.join(packageDir, 'package.json'),
+        JSON.stringify({ name, version: '1.0.0' }),
+      );
+      archives.set(
+        name,
+        execFileSync('tar', ['-czf', '-', '-C', directory, 'package']),
+      );
+    }
+    const registry = createServer((request, response) => {
+      const target = decodeURIComponent(request.url ?? '');
+      const name = target.slice(1).replace(/\.tgz$/u, '');
+      const archive = archives.get(name);
+      if (!archive) {
+        response.writeHead(404);
+        response.end();
+        return;
+      }
+      if (target.endsWith('.tgz')) {
+        response.end(archive);
+        return;
+      }
+      const url =
+        'http://127.0.0.1:' +
+        (registry.address() as AddressInfo).port +
+        target +
+        '.tgz';
+      response.setHeader('content-type', 'application/json');
+      response.end(
+        JSON.stringify({
+          name,
+          'dist-tags': { beta: '1.0.0' },
+          versions: {
+            '1.0.0': {
+              name,
+              version: '1.0.0',
+              dist: {
+                tarball: url,
+                shasum: createHash('sha1').update(archive).digest('hex'),
+              },
+            },
+          },
+        }),
+      );
+    });
+    await new Promise<void>((resolve) =>
+      registry.listen(0, '127.0.0.1', resolve),
+    );
+    try {
+      const result = await downloadTemplate({
+        source: '@nocobase/app-template-enterprise@beta',
+        preset: 'sub-app',
+        nocobaseRegistry:
+          'http://127.0.0.1:' + (registry.address() as AddressInfo).port + '/',
+      });
+      created.push(result.directory);
+      expect(result.name).toBe('@nocobase/app-template-sub-app');
+    } finally {
+      await new Promise<void>((resolve) => registry.close(() => resolve()));
+    }
+  });
+
   it('leaves no extract directory behind when it fails', async () => {
     const notAPackage = await mkdtemp(
       path.join(os.tmpdir(), 'create-app-not-a-package-'),
@@ -350,3 +424,50 @@ async function countTempDirectories(): Promise<number> {
   return entries.filter((entry) => entry.startsWith('nocobase-template-'))
     .length;
 }
+
+describe('Enterprise presets', () => {
+  it('materializes only the selected source and runtime plugins before scaffolding', async () => {
+    const root = await mkdtemp(path.join(os.tmpdir(), 'enterprise-preset-'));
+    created.push(root);
+    const content = "export default 'platform';";
+    const after = createHash('sha256').update(content).digest('hex');
+    await mkdir(path.join(root, 'presets/content'), { recursive: true });
+    await writeFile(path.join(root, 'presets/content', after), content);
+    await writeFile(
+      path.join(root, 'package.json'),
+      JSON.stringify({
+        nocobase: { presets: ['sub-app'] },
+        dependencies: {},
+        devDependencies: { sso: '1', cli: '2' },
+      }),
+    );
+    await writeFile(
+      path.join(root, 'presets/sub-app.json'),
+      JSON.stringify({
+        format: 1,
+        files: { 'client/login.ts': { before: null, after } },
+        dependencies: { sso: '1' },
+        devDependencies: {},
+      }),
+    );
+    expect(await applyTemplatePreset(root, 'multi-app')).toBe(false);
+    expect(await applyTemplatePreset(root, 'sub-app')).toBe(true);
+    expect(await readFile(path.join(root, 'client/login.ts'), 'utf8')).toBe(
+      content,
+    );
+    expect(
+      JSON.parse(await readFile(path.join(root, 'package.json'), 'utf8')),
+    ).toMatchObject({
+      nocobase: { capabilities: ['sub-app'] },
+      dependencies: { sso: '1' },
+      devDependencies: { cli: '2' },
+    });
+    expect(
+      JSON.parse(await readFile(path.join(root, 'package.json'), 'utf8'))
+        .devDependencies,
+    ).not.toHaveProperty('sso');
+    await expect(applyTemplatePreset(root, 'sub-app')).rejects.toThrow(
+      'Template and preset disagree',
+    );
+  });
+});
