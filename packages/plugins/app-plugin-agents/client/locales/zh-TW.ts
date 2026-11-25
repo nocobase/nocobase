@@ -408,7 +408,7 @@ const zhTW: LocaleResource<typeof enUS> = {
       purposes: {
         embedding: '嵌入',
         rerank: '重新排名',
-        text: '實用文本',
+        text: '文字生成',
       },
     },
     title: '使用量',

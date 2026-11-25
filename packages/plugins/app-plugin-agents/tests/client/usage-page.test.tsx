@@ -203,6 +203,55 @@ describe('Agent management › Usage', () => {
     expect(cells[2]).toHaveTextContent('—');
   });
 
+  it('shows online agent sources and their costs even without runs', async () => {
+    resetApi({
+      'agents/usage': () => ({
+        ...report('agent'),
+        rows: [],
+        daily: [],
+      }),
+      'agents/models': () => [{ name: 'local' }],
+      'agents/usage/models': () => ({
+        from: DAY,
+        to: DAY,
+        rows: [
+          {
+            purpose: 'text',
+            source: 'agents.online:ticket-helper',
+            modelService: 'local',
+            model: 'chat',
+            calls: 1,
+            units: 1,
+            inputTokens: 120,
+            outputTokens: 48,
+            cost: { USD: 180 },
+          },
+          {
+            purpose: 'text',
+            source: 'agents.online:docs-helper',
+            modelService: 'local',
+            model: 'chat',
+            calls: 1,
+            units: 1,
+            inputTokens: 20,
+            outputTokens: 8,
+            cost: { USD: 30 },
+          },
+        ],
+      }),
+      'agents/vocabulary': () => ({ subjects: [], sources: [], scopes: [] }),
+      agents: () => [],
+      'agents/users': () => [],
+    });
+    renderRoute(<UsagePage />, '/usage', '/usage');
+    expect(
+      await screen.findByRole('row', { name: /agents\.online:ticket-helper/u }),
+    ).toHaveTextContent('$180');
+    expect(
+      screen.getByRole('row', { name: /agents\.online:docs-helper/u }),
+    ).toHaveTextContent('$30');
+  });
+
   it('changes the grouping from the select, keeping it in the URL', async () => {
     renderRoute(<UsagePage />, '/usage', '/usage');
     await userEvent.click(

@@ -493,6 +493,24 @@ export function usageOf(usage: LanguageModelUsage | undefined): ModelUsage {
   };
 }
 
+/** The model usage ledger keeps inclusive totals alongside the token breakdown. */
+export function textTokensOf(usage: LanguageModelUsage): Required<ModelUsage> {
+  const {
+    inputTokens,
+    outputTokens,
+    cacheReadTokens = 0,
+    cacheWriteTokens = 0,
+    reasoningTokens = 0,
+  } = usageOf(usage);
+  return {
+    inputTokens: inputTokens + cacheReadTokens + cacheWriteTokens,
+    outputTokens,
+    cacheReadTokens,
+    cacheWriteTokens,
+    reasoningTokens,
+  };
+}
+
 function finishOf(
   reason: string | undefined,
   calls: number,
@@ -844,17 +862,12 @@ export function createModelGateway(
                 maxRetries: 0,
                 abortSignal: querySignal,
               });
-              const usage = usageOf(result.totalUsage);
               await record({
                 purpose: 'text',
                 source: 'agents.webSearch',
                 modelService: request.model.modelService,
                 model: request.model.model,
-                inputTokens:
-                  usage.inputTokens +
-                  (usage.cacheReadTokens ?? 0) +
-                  (usage.cacheWriteTokens ?? 0),
-                outputTokens: usage.outputTokens,
+                ...textTokensOf(result.totalUsage),
                 units: 1,
               });
               querySignal.throwIfAborted();
@@ -936,17 +949,12 @@ export function createModelGateway(
         maxRetries,
         ...(signal ? { abortSignal: signal } : {}),
       });
-      const usage = usageOf(result.totalUsage);
       await record({
         purpose: 'text',
         source: request.source,
         modelService: request.model.modelService,
         model: result.response.modelId || request.model.model,
-        inputTokens:
-          usage.inputTokens +
-          (usage.cacheReadTokens ?? 0) +
-          (usage.cacheWriteTokens ?? 0),
-        outputTokens: usage.outputTokens,
+        ...textTokensOf(result.totalUsage),
         units: 1,
       });
       return { text: result.text };

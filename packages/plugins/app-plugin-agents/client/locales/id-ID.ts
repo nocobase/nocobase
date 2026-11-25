@@ -422,7 +422,7 @@ const idID: LocaleResource<typeof enUS> = {
       purposes: {
         embedding: 'Penyematan',
         rerank: 'Pemeringkatan ulang',
-        text: 'Teks utilitas',
+        text: 'Pembuatan teks',
       },
     },
     title: 'Penggunaan',

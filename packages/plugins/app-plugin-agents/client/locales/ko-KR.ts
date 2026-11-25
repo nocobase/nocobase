@@ -412,7 +412,7 @@ const koKR: LocaleResource<typeof enUS> = {
       purposes: {
         embedding: '임베딩',
         rerank: '재순위',
-        text: '보조 텍스트',
+        text: '텍스트 생성',
       },
     },
     title: '사용량',

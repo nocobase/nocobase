@@ -1,3 +1,4 @@
+import type { ModelUsageRecorder } from '../../core/reports/model-usage.js';
 import {
   registerWebSearchTool,
   type OnlineAgentWebSearch,
@@ -45,6 +46,7 @@ export class OnlineAgentService {
       resolver?: ServiceResolver;
       webSearch?: OnlineAgentWebSearch;
       fileInputs?: NativeFileInputs;
+      modelUsage?: ModelUsageRecorder;
       model(ref: ModelRef, sessionId: string): Promise<LanguageModel>;
       defaultModel(): Promise<ModelRef | null>;
       uiStreams?: OnlineAgentUIStreams;

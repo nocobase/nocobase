@@ -386,7 +386,7 @@ const pages = {
       purposes: {
         embedding: 'Embeddings',
         rerank: 'Reranking',
-        text: 'Utility text',
+        text: 'Text generation',
       },
     },
     title: 'Usage',
