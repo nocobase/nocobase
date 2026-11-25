@@ -52,10 +52,9 @@ const trustedSessionPlugin = {
         body: z.object({ userId: z.string().min(1) }),
       },
       async (context) => {
-        const user: unknown =
-          await context.context.internalAdapter.findUserById(
-            context.body.userId,
-          );
+        const user = await context.context.internalAdapter.findUserById(
+          context.body.userId,
+        );
         if (!user || Reflect.get(user, 'deletedAt') != null)
           throw APIError.from('NOT_FOUND', {
             code: 'USER_NOT_FOUND',
@@ -336,7 +335,7 @@ export class Auth {
         observer({ userId: session.user.id, session });
       } else if (context.path === '/sign-up/email') {
         const returned: unknown = context.context.returned;
-        const user =
+        const user: unknown =
           returned && typeof returned === 'object'
             ? Reflect.get(returned, 'user')
             : undefined;

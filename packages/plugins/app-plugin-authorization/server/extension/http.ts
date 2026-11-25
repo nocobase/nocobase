@@ -186,10 +186,13 @@ export function createSettingsRouter(
   translate?: AuthorizationErrorTranslator,
 ): Hono<SettingsRouterEnv> {
   const routes = new Hono<SettingsRouterEnv>();
-  routes.use('*', async (context, next) => {
-    context.env.onContext?.(context);
-    await next();
-  });
+  routes.use(
+    '*',
+    createMiddleware<SettingsRouterEnv>(async (context, next) => {
+      context.env.onContext?.(context);
+      await next();
+    }),
+  );
   routes.onError((error, context) =>
     apiErrorHandler(
       translate?.(error) ?? toAuthorizationApiError(error) ?? error,

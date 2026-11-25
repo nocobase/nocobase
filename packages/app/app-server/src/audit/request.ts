@@ -158,7 +158,6 @@ function routeAudit(
     (item, index) => index >= context.req.routeIndex && item.method !== 'ALL',
   );
   if (!route) return undefined;
-  const spec = declaredRouteOf(context);
   let declaration: AuditRouteOptions | undefined;
   for (const [index, candidate] of routes.entries()) {
     if (candidate.method !== route.method || candidate.path !== route.path)
@@ -183,14 +182,10 @@ function routeAudit(
       context.req.routeIndex = previous;
     }
   }
-  if (
-    !declaration &&
-    (!autoDetect ||
-      !writes.has(context.req.method) ||
-      spec?.hide ||
-      !spec?.operationId)
-  )
+  if (!declaration && (!autoDetect || !writes.has(context.req.method)))
     return undefined;
+  const spec = declaredRouteOf(context);
+  if (!declaration && (spec?.hide || !spec?.operationId)) return undefined;
   const operationId =
     typeof spec?.operationId === 'string'
       ? spec.operationId
@@ -202,7 +197,7 @@ function routeAudit(
       operationId ??
       `${context.req.method} ${route.path}`,
     resource: declaration?.resource ?? spec?.tags?.[0] ?? route.path,
-    summary: spec?.hide ? undefined : spec?.summary?.trim(),
+    summary: spec?.summary?.trim(),
     options: declaration ?? {},
     context,
   };
@@ -318,7 +313,6 @@ export function auditMiddleware(options: {
 }): MiddlewareHandler {
   return async (context, next) => {
     const started = performance.now();
-    const occurredAt = new Date().toISOString();
     let route: RouteAudit | false | undefined;
     let before: AuditTargets | undefined;
     try {
@@ -341,6 +335,7 @@ export function auditMiddleware(options: {
     }
     if (!route) return next();
 
+    const occurredAt = new Date().toISOString();
     const declaration = route.options;
     const capture = declaration.captureBody !== false;
     const resultFrom = declaration.resolveTargets
