@@ -189,12 +189,12 @@ describe('authentication provider', () => {
       createAuthentication.mock.calls[0]?.[0].advanced?.database?.generateId;
     expect(generateId?.({ model: 'user', size: 12 })).toBe('generated-id');
 
-    const mapHttpRequest =
-      createAuthentication.mock.calls[0]?.[0].mapHttpRequest;
-    expect(
-      mapHttpRequest?.(new Request('http://localhost/api/auth/get-session'))
-        .url,
-    ).toBe('http://localhost/main/api/auth/get-session');
+    const response = await auth.handler(
+      new Request('http://localhost/api/auth/get-session'),
+    );
+    await expect(response.text()).resolves.toBe(
+      'http://localhost/main/api/auth/get-session',
+    );
   });
 
   it('freezes only sender settings at registration and reads later auth defaults lazily', async () => {

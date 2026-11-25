@@ -6,7 +6,7 @@ import type {
   DefaultAccessStore,
 } from '@nocobase/authorization/default-access';
 
-export const DEFAULT_ACCESS_COLLECTION = 'authorizationDefaultAccessRules';
+const RULES = 'authorizationDefaultAccessRules';
 const COLUMNS = ['key', 'resourceType', 'resourceId', 'actions'] as const;
 
 export class DatabaseDefaultAccessStore implements DefaultAccessStore<DatabaseConnection> {
@@ -20,7 +20,7 @@ export class DatabaseDefaultAccessStore implements DefaultAccessStore<DatabaseCo
 
   async list(): Promise<readonly DefaultAccessRule[]> {
     const rows = await this.connection()
-      .query.selectFrom(DEFAULT_ACCESS_COLLECTION)
+      .query.selectFrom(RULES)
       .select([...COLUMNS])
       .orderBy('key', 'asc')
       .execute();
@@ -29,7 +29,7 @@ export class DatabaseDefaultAccessStore implements DefaultAccessStore<DatabaseCo
 
   async get(key: string): Promise<DefaultAccessRule | undefined> {
     const row = await this.connection()
-      .query.selectFrom(DEFAULT_ACCESS_COLLECTION)
+      .query.selectFrom(RULES)
       .select([...COLUMNS])
       .where('key', '=', key)
       .executeTakeFirst();
@@ -39,7 +39,7 @@ export class DatabaseDefaultAccessStore implements DefaultAccessStore<DatabaseCo
   async create(rule: DefaultAccessRule): Promise<DefaultAccessRule> {
     const now = new Date();
     await this.connection()
-      .query.insertInto(DEFAULT_ACCESS_COLLECTION)
+      .query.insertInto(RULES)
       .values({
         id: crypto.randomUUID(),
         ...toValues(rule),
@@ -55,7 +55,7 @@ export class DatabaseDefaultAccessStore implements DefaultAccessStore<DatabaseCo
     rule: DefaultAccessRule,
   ): Promise<DefaultAccessRule> {
     await this.connection()
-      .query.updateTable(DEFAULT_ACCESS_COLLECTION)
+      .query.updateTable(RULES)
       .set({ ...toValues(rule), updatedAt: new Date() })
       .where('key', '=', key)
       .execute();
@@ -64,7 +64,7 @@ export class DatabaseDefaultAccessStore implements DefaultAccessStore<DatabaseCo
 
   async delete(key: string): Promise<void> {
     await this.connection()
-      .query.deleteFrom(DEFAULT_ACCESS_COLLECTION)
+      .query.deleteFrom(RULES)
       .where('key', '=', key)
       .execute();
   }

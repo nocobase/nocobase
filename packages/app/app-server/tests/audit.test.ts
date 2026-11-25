@@ -5,7 +5,7 @@ import { expect, it, vi } from 'vitest';
 
 import { Application } from '../src/application/index.js';
 import {
-  auditRoute,
+  describeAudit,
   auditServiceToken,
   type AuditEvent,
 } from '../src/audit/index.js';
@@ -16,21 +16,37 @@ import {
   describeRoute,
 } from '../src/router/index.js';
 
-async function appWithAudit(): Promise<{
+async function appWithAudit(
+  settings: { enabled?: boolean; autoDetect?: boolean } = {},
+): Promise<{
   app: Application;
   events: AuditEvent[];
 }> {
-  const config = new AppConfig();
-  await config.loadAll();
+  const values = {
+    audit: {
+      enabled: true,
+      ...settings,
+      transports: { capture: { driver: 'memory' } },
+    },
+  };
+  const config = {
+    get: <T>(key: string) => Reflect.get(values, key) as T | undefined,
+    raw: () => values,
+    reload: () => Promise.resolve({ changedNamespaces: [] }),
+    subscribe: () => () => undefined,
+  };
   const app = new Application({
     config,
     paths: createAppPaths({ rootDir: '/test/audit' }),
   });
   const events: AuditEvent[] = [];
-  app.container.instance(auditServiceToken, {
-    async record(event) {
-      events.push(event);
-    },
+  app.container.resolve(auditServiceToken).registerDriver({
+    name: 'memory',
+    createTransport: () => ({
+      write: (event) => {
+        events.push(event);
+      },
+    }),
   });
   return { app, events };
 }
@@ -52,12 +68,15 @@ it('masks entire sensitive fields on both snapshots and uses only a trusted peer
       const router = new Hono();
       router.post(
         '/settings/:id',
-        auditRoute({
+        describeAudit({
           target: (context) => ({
             collection: 'settings',
             key: context.req.param('id'),
           }),
-          redact: ['settings.privateFields'],
+          redact: [
+            { path: 'settings.privateFields' },
+            { field: 'privateMarker' },
+          ],
         }),
         describeRoute({ operationId: 'changeSettings', tags: ['Settings'] }),
         async (context) => context.json(await context.req.json()),
@@ -69,7 +88,11 @@ it('masks entire sensitive fields on both snapshots and uses only a trusted peer
     const json = {
       password: { visibleWithoutWholeFieldMask: 'never persist' },
       apiKey: ['never persist'],
-      settings: { privateFields: ['never persist'], visible: 'keep' },
+      settings: {
+        privateFields: ['never persist'],
+        other: { privateMarker: 'nested value' },
+        visible: 'keep',
+      },
       nested: {
         cookie: 'never persist',
         authorization: 'never persist',
@@ -88,7 +111,11 @@ it('masks entire sensitive fields on both snapshots and uses only a trusted peer
     const expected = {
       password: '******',
       apiKey: '******',
-      settings: { privateFields: '******', visible: 'keep' },
+      settings: {
+        privateFields: '******',
+        other: { privateMarker: '******' },
+        visible: 'keep',
+      },
       nested: { cookie: '******', authorization: '******', secret: '******' },
     };
     expect(events[0]).toMatchObject({
@@ -110,7 +137,7 @@ it('bounds raw and serialized body snapshots while preserving the response', asy
       const router = new Hono();
       router.post(
         '/large',
-        auditRoute({ action: 'test:large' }),
+        describeAudit({ action: 'test:large' }),
         async (context) => {
           const input = await context.req.json<{ value: string }>();
           return context.json({
@@ -172,7 +199,7 @@ it('matches baseline Repository responses and query operations with no audit pro
         // The same handler behavior the Repository route had before audit instrumentation.
         router.post(
           '/baseline',
-          auditRoute(auditDeclaration),
+          describeAudit(auditDeclaration),
           async (context) => {
             const { values } = await context.req.json<{
               values: { id: string; name: string };

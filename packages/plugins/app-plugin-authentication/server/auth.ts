@@ -1,12 +1,4 @@
 import {
-  auditEnabled,
-  recordAuditInTransaction,
-  setAuditActor,
-  setAuditSessionActor,
-  setAuditTarget,
-} from '@nocobase/app-server/audit';
-import { authAuditOptions, passwordResetAuditAction } from './audit.js';
-import {
   resolveMailSenderFactory,
   type MailSender,
 } from '@nocobase/app-server/mailers';
@@ -116,8 +108,6 @@ export interface AuthOptions extends Omit<BetterAuthOptions, 'database'> {
   email?: AuthEmailConfig;
   passwordReset?: PasswordResetConfig;
   passwordResetServices?: PasswordResetServices;
-  /** Restore the public URL of an app-local HTTP request. Connection bindings inherit this mapping. */
-  mapHttpRequest?: (request: Request) => Request;
 }
 
 export interface CreateAuthenticationOptions extends Omit<
@@ -162,7 +152,10 @@ export type AuthSession = {
 } | null;
 
 export interface AuthEnv {
-  Variables: { auth: AuthSession };
+  Variables: {
+    auth: AuthSession;
+    authHttpIdentity?: { readonly userId: string };
+  };
 }
 
 /** How `Auth.getSession()` resolves a request's credential. */
@@ -196,6 +189,11 @@ export interface AuthMiddlewareOptions {
 export interface AuthRequestOptions {
   /** The transport's real connection peer, never a client-supplied header. */
   readonly clientAddress?: string;
+  /** Observe the identity established by the native HTTP endpoint. */
+  readonly onIdentity?: (identity: {
+    readonly userId: string;
+    readonly session?: AuthSession;
+  }) => void;
 }
 
 export interface RequiredAuthMiddlewareOptions extends AuthMiddlewareOptions {
@@ -248,6 +246,10 @@ const serviceAccountRefusal = () =>
 
 export class Auth {
   private readonly auth;
+  private readonly httpObservers = new WeakMap<
+    Request,
+    NonNullable<AuthRequestOptions['onIdentity']>
+  >();
   private readonly connection: DatabaseConnection;
   private readonly options: AuthOptions;
   private readonly resetPolicy: PasswordResetPolicy;
@@ -283,7 +285,6 @@ export class Auth {
       email,
       passwordReset,
       passwordResetServices,
-      mapHttpRequest,
       ...config
     } = options;
     this.connection = connection;
@@ -305,11 +306,7 @@ export class Auth {
         legacySender: selection.legacy,
       };
     }
-    this.options = {
-      ...options,
-      mapHttpRequest,
-      passwordResetServices: resetServices,
-    };
+    this.options = { ...options, passwordResetServices: resetServices };
     this.resetPolicy = new PasswordResetPolicy(
       passwordReset ?? {},
       config,
@@ -329,19 +326,25 @@ export class Auth {
       config.hooks?.before ?? createAuthMiddleware(async () => undefined);
     const configuredAfter =
       config.hooks?.after ?? createAuthMiddleware(async () => undefined);
-    const auditAfter = createAuthMiddleware(async (context) => {
-      const route = authAuditOptions(context.path ?? '');
-      if (
-        !route ||
-        route.action === passwordResetAuditAction ||
-        !auditEnabled(route.action)
-      )
-        return;
+    const observeIdentity = createAuthMiddleware(async (context) => {
+      const observer =
+        context.request && this.httpObservers.get(context.request);
+      if (!observer) return;
       const session = context.context.newSession ?? context.context.session;
-      if (!session) return;
-      setAuditSessionActor(session.user.id, session.session.id);
-      if (route.resource === 'user')
-        setAuditTarget({ collection: 'user', key: session.user.id });
+      if (session) {
+        observer({ userId: session.user.id, session });
+      } else if (context.path === '/sign-up/email') {
+        const returned: unknown = context.context.returned;
+        const user =
+          returned && typeof returned === 'object'
+            ? Reflect.get(returned, 'user')
+            : undefined;
+        const id: unknown =
+          user && typeof user === 'object'
+            ? Reflect.get(user, 'id')
+            : undefined;
+        if (typeof id === 'string') observer({ userId: id });
+      }
     });
     const resetGate = createAuthMiddleware(async (context) =>
       this.resetPolicy.prepareRequest(context),
@@ -378,8 +381,6 @@ export class Auth {
         initializeUser: async (user, transaction) => {
           for (const initialize of this.userInitializers)
             await initialize(user, transaction);
-          if (auditEnabled('auth:signUp') && typeof user.id === 'string')
-            setAuditTarget({ collection: 'user', key: user.id });
         },
       }),
       plugins: [
@@ -399,7 +400,7 @@ export class Auth {
         ),
         after: Object.assign(
           async (...args: Parameters<typeof configuredAfter>) => {
-            await auditAfter(...args);
+            await observeIdentity(...args);
             return configuredAfter(...args);
           },
           configuredAfter,
@@ -407,6 +408,11 @@ export class Auth {
       },
       emailAndPassword: {
         ...config.emailAndPassword,
+        onPasswordReset: async (data, request) => {
+          if (request)
+            this.httpObservers.get(request)?.({ userId: data.user.id });
+          await config.emailAndPassword?.onPasswordReset?.(data, request);
+        },
         enabled: config.emailAndPassword?.enabled ?? true,
         ...(this.resetPolicy.available
           ? { sendResetPassword: this.resetPolicy.send }
@@ -478,13 +484,10 @@ export class Auth {
           delete: {
             ...config.databaseHooks?.session?.delete,
             before: async (session, context) => {
-              if (
-                context?.path === '/sign-out' &&
-                auditEnabled('auth:signOut')
-              ) {
-                setAuditSessionActor(session.userId, session.id);
-                setAuditTarget({ collection: 'user', key: session.userId });
-              }
+              if (context?.path === '/sign-out' && context.request)
+                this.httpObservers.get(context.request)?.({
+                  userId: session.userId,
+                });
               return config.databaseHooks?.session?.delete?.before?.(
                 session,
                 context,
@@ -566,36 +569,18 @@ export class Auth {
     });
   }
 
-  handler(
+  async handler(
     request: Request,
     options: AuthRequestOptions = {},
   ): Promise<Response> {
-    return this.resetPolicy.runRequest(options.clientAddress, () =>
-      this.auth.handler(this.options.mapHttpRequest?.(request) ?? request),
-    );
-  }
-
-  /** Keep database-backed account changes and their audit event in the same transaction. */
-  async handleAudited(
-    request: Request,
-    options: AuthRequestOptions = {},
-  ): Promise<Response> {
-    // Key creation runs host policy callbacks. Password reset audits through its native password transaction.
-    if (
-      !auditEnabled() ||
-      auditEnabled('auth:createApiKey') ||
-      auditEnabled(passwordResetAuditAction)
-    )
-      return this.handler(request, options);
-    return this.connection.transaction(async (connection) => {
-      const response = await this.forConnection(connection).handler(
-        request,
-        options,
+    if (options.onIdentity) this.httpObservers.set(request, options.onIdentity);
+    try {
+      return await this.resetPolicy.runRequest(options.clientAddress, () =>
+        this.auth.handler(request),
       );
-      // Better Auth can persist security effects, such as rate-limit counters, for unsuccessful requests.
-      await recordAuditInTransaction(connection, { status: response.status });
-      return response;
-    });
+    } finally {
+      this.httpObservers.delete(request);
+    }
   }
 
   /**
@@ -913,19 +898,6 @@ export class Auth {
     return false;
   }
 
-  private auditSession(auth: AuthSession): void {
-    if (!auth || !auditEnabled()) return;
-    if (auth.credential?.type === 'run') {
-      setAuditActor({
-        type: 'agentRun',
-        userId: auth.user.id,
-        runId: auth.credential.id,
-      });
-    } else {
-      setAuditSessionActor(auth.user.id, auth.session.id);
-    }
-  }
-
   optional(options: AuthMiddlewareOptions = {}): MiddlewareHandler<AuthEnv> {
     return async (context, next) => {
       const originFailure = await this.checkCookieWriteOrigin(context);
@@ -942,7 +914,7 @@ export class Auth {
           return rejectedCredential(context, error);
         throw error;
       }
-      this.auditSession(auth);
+      context.set('auth', auth);
       const admission = auth?.credential
         ? await this.credentialRouteDecision(context, auth.credential)
         : undefined;
@@ -951,7 +923,6 @@ export class Auth {
         !(admission ?? routeAcceptsScheme(context, auth.credential.scheme))
       )
         return credentialNotAccepted(context);
-      context.set('auth', auth);
       await next();
     };
   }
@@ -986,7 +957,7 @@ export class Auth {
           context,
         );
       }
-      this.auditSession(auth);
+      context.set('auth', auth);
       const admission = auth.credential
         ? await this.credentialRouteDecision(context, auth.credential)
         : undefined;
@@ -1011,7 +982,6 @@ export class Auth {
           context,
         );
       }
-      context.set('auth', auth);
       await next();
     };
   }

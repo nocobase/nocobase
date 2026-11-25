@@ -43,7 +43,6 @@ const credentials = {
   password: 'some-password-for-the-audit-test',
 };
 const events: AuditEvent[] = [];
-const transactional = new Set<AuditEvent>();
 let rejectAudit = false;
 let directory: string;
 let databases: ProvisionedTestDatabases;
@@ -83,12 +82,16 @@ beforeAll(async () => {
     },
     auth: {
       secret: 'audit-fixture-authentication-secret-over-32-bytes',
-      plugins: [apiKey()],
+      plugins: [apiKey({ apiKeyHeaders: ['x-api-key', 'x-test-api-key'] })],
       emailAndPassword: { enabled: true, autoSignIn: false },
       session: { storeSessionInDatabase: true },
       rateLimit: { enabled: true, storage: 'database' },
     },
-    api: { trustedProxies: ['192.0.2.0/24'] },
+    audit: {
+      enabled: true,
+      autoDetect: true,
+      transports: { capture: { driver: 'memory' } },
+    },
     caching: { default: 'memory', providers: { memory: { driver: 'memory' } } },
     database: {
       default: 'main',
@@ -118,18 +121,14 @@ beforeAll(async () => {
       defineServerPlugins([authentication, authorization, apiKeys]),
     ),
   );
-  app.container.instance(auditServiceToken, {
-    async record(event, options) {
-      if (!options?.connection) {
+  app.container.resolve(auditServiceToken).registerDriver({
+    name: 'memory',
+    createTransport: () => ({
+      write(event) {
+        if (rejectAudit) throw new Error('Audit storage failed');
         events.push(event);
-        return;
-      }
-      options.connection.afterCommit(() => {
-        transactional.add(event);
-        events.push(event);
-      });
-      if (rejectAudit) throw new Error('Audit storage failed');
-    },
+      },
+    }),
   });
   const repository = defineRepositoryApiRoutes({
     repositories: [
@@ -197,7 +196,7 @@ afterAll(async () => {
   if (directory) rmSync(directory, { recursive: true, force: true });
 });
 
-it('attributes and commits native audit events without retaining credentials or duplicating retries', async () => {
+it('attributes native audit events without retaining credentials or duplicating retries', async () => {
   const signup = await request('POST', '/api/auth/sign-up/email', {
     name: 'Audit Owner',
     ...credentials,
@@ -255,13 +254,12 @@ it('attributes and commits native audit events without retaining credentials or 
   });
   expect(signIn.status).toBe(200);
   const actor = { type: 'user', userId: user.id };
-  expect(transactional.has(events.at(-1)!)).toBe(true);
   expect(events.at(-1)).toMatchObject({
     action: 'auth:signIn',
     actor,
     outcome: 'success',
     requestId: 'audit-integration-request',
-    ip: '198.51.100.42',
+    ip: '192.0.2.5',
     userAgent: 'audit integration',
     targets: [{ collection: 'user', key: user.id }],
   });
@@ -337,12 +335,12 @@ it('attributes and commits native audit events without retaining credentials or 
     actor,
     outcome: 'success',
     targets: [{ collection: 'apikey', key: key.id }],
-    response: { data: { key: '******', secret: '******' } },
+    response: undefined,
   });
   const id = 'audit-order';
   const repositoryActor = { type: 'apiKey', userId: user.id, apiKeyId: key.id };
   const headers = {
-    'x-api-key': secret,
+    'x-test-api-key': secret,
     'idempotency-key': `${Date.now()}.${randomUUID()}`,
   };
   const input = {
@@ -370,7 +368,7 @@ it('attributes and commits native audit events without retaining credentials or 
     actor: repositoryActor,
     outcome: 'success',
     targets: [{ collection: 'auditOrders', key: { id } }],
-    request: { values: { password: '******' } },
+    request: undefined,
   });
   const filter = { id };
   const update = await request(
@@ -404,32 +402,33 @@ it('attributes and commits native audit events without retaining credentials or 
   expect(events).toHaveLength(countBefore);
 
   rejectAudit = true;
-  const rolledBack = await request(
+  const createdDespiteAudit = await request(
     'POST',
     '/api/auditOrders/createOne',
     { values: { id } },
     { cookie },
   );
   rejectAudit = false;
-  expect(rolledBack.status).toBe(500);
+  expect(createdDespiteAudit.status).toBe(200);
+  const duplicate = await request(
+    'POST',
+    '/api/auditOrders/createOne',
+    { values: { id } },
+    { cookie },
+  );
+  expect(duplicate.ok).toBe(false);
   expect(
     await app.container
       .resolve(databaseManagerToken)
       .repository('auditOrders')
       .count(),
-  ).toBe(0);
+  ).toBe(1);
   expect(events.at(-1)).toMatchObject({
     action: 'auditOrders:createOne',
     actor,
     outcome: 'failure',
-    status: 500,
+    status: duplicate.status,
   });
-  expect(
-    events.filter(
-      ({ action, outcome }) =>
-        action === 'auditOrders:createOne' && outcome === 'success',
-    ),
-  ).toHaveLength(1);
 
   expect(
     (await request('DELETE', `/api/apiKeys/${key.id}`, undefined, { cookie }))
@@ -441,7 +440,6 @@ it('attributes and commits native audit events without retaining credentials or 
     outcome: 'success',
     targets: [{ collection: 'apikey', key: key.id }],
   });
-  expect(transactional.has(events.at(-1)!)).toBe(true);
   const rules = await request(
     'PUT',
     '/api/apiKeys/rules',
@@ -459,7 +457,6 @@ it('attributes and commits native audit events without retaining credentials or 
     actor,
     targets: [{ collection: 'apiKeyRules', key: 'default' }],
   });
-  expect(transactional.has(events.at(-1)!)).toBe(true);
 
   const system = await request(
     'POST',
@@ -480,7 +477,6 @@ it('attributes and commits native audit events without retaining credentials or 
     actor,
     targets: [{ collection: 'apikey', key: systemData.key.id }],
   });
-  expect(transactional.has(events.at(-1)!)).toBe(true);
   const revokeSystem = await request(
     'DELETE',
     `/api/systemApiKeys/${systemData.key.identityId}`,
@@ -491,9 +487,10 @@ it('attributes and commits native audit events without retaining credentials or 
   expect(events.at(-1)).toMatchObject({
     action: 'apiKeysDeleteSystemKey',
     actor,
-    targets: [{ collection: 'apikey', key: systemData.key.id }],
+    targets: [
+      { collection: 'apiKeySystemKeys', key: systemData.key.identityId },
+    ],
   });
-  expect(transactional.has(events.at(-1)!)).toBe(true);
 
   const native = await request(
     'POST',
@@ -520,7 +517,6 @@ it('attributes and commits native audit events without retaining credentials or 
     actor,
     targets: [{ collection: 'apikey', key: nativeKey.id }],
   });
-  expect(transactional.has(events.at(-1)!)).toBe(true);
   const signOut = await request('POST', '/api/auth/sign-out', {}, { cookie });
   if (signOut.status !== 200) throw new Error(await signOut.text());
   expect(events.at(-1)).toMatchObject({
@@ -528,7 +524,6 @@ it('attributes and commits native audit events without retaining credentials or 
     actor,
     targets: [{ collection: 'user', key: user.id }],
   });
-  expect(transactional.has(events.at(-1)!)).toBe(true);
   const serialized = JSON.stringify(events);
   for (const value of [
     credentials.password,

@@ -1,4 +1,3 @@
-import { auditRoute } from '@nocobase/app-server/audit';
 import { Hono, type MiddlewareHandler } from 'hono';
 import { createMiddleware } from 'hono/factory';
 import {
@@ -24,6 +23,7 @@ import {
 export interface SettingsRouterEnv {
   Bindings: {
     authorization: AuthorizationContext;
+    onContext?: (context: import('hono').Context) => void;
   };
 }
 
@@ -186,6 +186,10 @@ export function createSettingsRouter(
   translate?: AuthorizationErrorTranslator,
 ): Hono<SettingsRouterEnv> {
   const routes = new Hono<SettingsRouterEnv>();
+  routes.use('*', async (context, next) => {
+    context.env.onContext?.(context);
+    await next();
+  });
   routes.onError((error, context) =>
     apiErrorHandler(
       translate?.(error) ?? toAuthorizationApiError(error) ?? error,
@@ -203,16 +207,10 @@ export function settingsAccess(
   id: string,
   action: string,
 ): MiddlewareHandler<SettingsRouterEnv> {
-  return auditRoute(
-    (context) =>
-      ['POST', 'PUT', 'PATCH', 'DELETE'].includes(context.req.method)
-        ? { action, resource: `settings:${id}` }
-        : undefined,
-    createMiddleware<SettingsRouterEnv>(async (context, next) => {
-      await requireSettings(context.env.authorization, id, action);
-      await next();
-    }),
-  );
+  return createMiddleware<SettingsRouterEnv>(async (context, next) => {
+    await requireSettings(context.env.authorization, id, action);
+    await next();
+  });
 }
 
 /**
@@ -264,6 +262,7 @@ export function createRouteHandler(
     Promise.resolve(
       routes.fetch(atPath(input.request, input.path), {
         authorization: input.authorization,
+        onContext: input.onContext,
       }),
     );
   settingsRouters.set(handler, routes);

@@ -19,7 +19,7 @@ A few routes keep their own shape. The data endpoints `defineRepositoryApiRoutes
 
 Every route in this repository follows the specification, and `ApiClientError` reads only the standard error body. A route that does not follow it is a defect, not a legacy form to preserve.
 
-For important operations, declare the action and targets with [the audit contract](../../packages/app/app-skills/skills/nocobase-app-plugin-development/references/services.md#audit-events) and record successful mutations on the business transaction.
+For important operations, declare the action and targets with [the audit contract](../../packages/app/app-skills/skills/nocobase-app-plugin-development/references/services.md#audit-events) with `describeAudit()`. Capture follows the HTTP outcome and uses the configured destinations.
 
 ### API documentation
 

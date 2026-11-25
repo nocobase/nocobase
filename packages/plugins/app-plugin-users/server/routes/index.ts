@@ -1,9 +1,4 @@
-import {
-  auditEnabled,
-  auditRoute,
-  recordAuditInTransaction,
-  setAuditTarget,
-} from '@nocobase/app-server/audit';
+import { auditRecordKey, describeAudit } from '@nocobase/app-server/audit';
 import {
   authenticationToken,
   UserAdministrationError,
@@ -32,7 +27,7 @@ import {
   type ApiErrorStatus,
   type AppApiRouteContribution,
 } from '@nocobase/app-server/router';
-import { databaseManagerToken, type DatabaseConnection } from '@nocobase/db';
+import { databaseManagerToken } from '@nocobase/db';
 import { AuthorizationDeniedError } from '@nocobase/authorization/core';
 import { PermissionSetLastAssignmentError } from '@nocobase/authorization/permission-sets';
 import { Hono, type Context, type MiddlewareHandler } from 'hono';
@@ -91,40 +86,36 @@ export const apiRoutes: AppApiRouteContribution<AppPluginApplication> =
     const authentication = container.resolve(authenticationToken);
     const authorization = container.resolve(authorizationToken);
     const users = container.resolve(userManagementServiceToken);
-    const userAudit = auditRoute({
+    const userAudit = describeAudit({
       resource: 'user',
       target: (context) => ({
         collection: 'user',
         key: context.req.param('userId'),
+      }),
+      resolveTargets: ({ response }, context) => ({
+        collection: 'user',
+        key:
+          context.req.param('userId') ?? auditRecordKey(response, 'data', 'id'),
+      }),
+    });
+    const invitationAudit = describeAudit({
+      redact: [{ field: 'inviteUrl' }],
+      target: (context) => ({
+        collection: 'userInvitations',
+        key: context.req.param('invitationId'),
+      }),
+      resolveTargets: ({ response }, context) => ({
+        collection: 'userInvitations',
+        key:
+          context.req.param('invitationId') ??
+          auditRecordKey(response, 'data', 'id'),
       }),
     });
     const submit = async <T>(
       context: import('hono').Context<AuthorizationEnv>,
       input: unknown,
       execute: (service: typeof users) => Promise<T>,
-      status?: number,
     ): Promise<T> => {
-      const executeBound = async (
-        transaction: DatabaseConnection,
-      ): Promise<T> => {
-        const data = await execute(users.withConnection(transaction));
-        if (auditEnabled()) {
-          const key =
-            context.req.param('userId') ??
-            (data &&
-            typeof data === 'object' &&
-            'id' in data &&
-            typeof data.id === 'string'
-              ? data.id
-              : undefined);
-          setAuditTarget({ collection: 'user', key });
-          await recordAuditInTransaction(transaction, {
-            status: status ?? (data === null ? 204 : 200),
-            response: data === null ? undefined : { data },
-          });
-        }
-        return data;
-      };
       const protection = container.has(repositoryIdempotencyToken)
         ? container.resolve(repositoryIdempotencyToken)
         : undefined;
@@ -137,12 +128,7 @@ export const apiRoutes: AppApiRouteContribution<AppPluginApplication> =
             reason: 'IDEMPOTENCY_UNAVAILABLE',
             message: 'Operation receipts are unavailable.',
           });
-        return auditEnabled()
-          ? container
-              .resolve(databaseManagerToken)
-              .connection()
-              .transaction(executeBound)
-          : execute(users);
+        return execute(users);
       }
       if (!key)
         throw new ApiError({
@@ -202,7 +188,7 @@ export const apiRoutes: AppApiRouteContribution<AppPluginApplication> =
             }
           }
         },
-        execute: executeBound,
+        execute: (transaction) => execute(users.withConnection(transaction)),
       });
       context.header('Idempotency-Replayed', String(result.replayed));
       return result.data;
@@ -260,7 +246,7 @@ export const apiRoutes: AppApiRouteContribution<AppPluginApplication> =
 
     routes.post(
       '/invitations',
-      auditRoute({ redactFields: ['inviteUrl'] }),
+      invitationAudit,
       allowed('invite', '*'),
       describeRoute({
         tags,
@@ -313,13 +299,7 @@ export const apiRoutes: AppApiRouteContribution<AppPluginApplication> =
 
     routes.post(
       '/invitations/:invitationId/resend',
-      auditRoute({
-        redactFields: ['inviteUrl'],
-        target: (context) => ({
-          collection: 'userInvitations',
-          key: context.req.param('invitationId'),
-        }),
-      }),
+      invitationAudit,
       allowed('invite', '*'),
       describeRoute({
         tags,
@@ -489,11 +469,8 @@ export const apiRoutes: AppApiRouteContribution<AppPluginApplication> =
       apiValidator('json', CreateUserInput),
       async (context) => {
         const input = context.req.valid('json');
-        const user = await submit(
-          context,
-          input,
-          (service) => service.create(input),
-          201,
+        const user = await submit(context, input, (service) =>
+          service.create(input),
         );
         logSecurityEvent(securityLogger, context, 'user.create', user.id, {
           roleScopes: Object.keys(input.roleScopes ?? {}).sort(),
@@ -890,7 +867,7 @@ export const apiRoutes: AppApiRouteContribution<AppPluginApplication> =
     );
     invitations.post(
       '/lookup',
-      auditRoute(false),
+      describeAudit(false),
       describeRoute({
         tags,
         summary: 'Look up an invitation by its token',

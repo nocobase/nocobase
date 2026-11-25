@@ -1,6 +1,6 @@
 import path from 'node:path';
 
-import type { AuditService } from '@nocobase/app-server/audit';
+import type { AuditTransport } from '@nocobase/app-server/audit';
 import { auditServiceToken } from '@nocobase/app-server/audit';
 import {
   defineStandaloneServer,
@@ -16,7 +16,7 @@ import { createApp } from './app.js';
 import appRuntime from './runtime.js';
 
 export function resetServerFactory(
-  audit?: AuditService,
+  audit?: AuditTransport,
 ): (options?: StandaloneServerOptions) => Promise<StandaloneServer> {
   return defineStandaloneServer({
     rootDir: path.resolve(import.meta.dirname, '..'),
@@ -24,7 +24,11 @@ export function resetServerFactory(
     async createServer(scope) {
       const runtime = await resolveAppRuntime(appRuntime, scope);
       const app = createApp(runtime);
-      if (audit) app.container.instance(auditServiceToken, audit);
+      if (audit)
+        app.container.resolve(auditServiceToken).registerDriver({
+          name: 'memory',
+          createTransport: () => audit,
+        });
       return startApplicationInScope(scope, app);
     },
   }).create;

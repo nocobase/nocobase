@@ -1,8 +1,8 @@
-import type { DatabaseConnection } from '@nocobase/db';
-import {
-  createServiceToken,
-  type ServiceToken,
-} from '@nocobase/service-provider';
+/** Translation descriptor used by NocoBase labels (namespace and key). */
+export interface AuditTranslation {
+  readonly ns: string;
+  readonly key: string;
+}
 
 export type AuditActor =
   | { readonly type: 'anonymous' }
@@ -28,6 +28,8 @@ export interface AuditEvent {
   readonly requestId: string;
   readonly resource: string;
   readonly action: string;
+  readonly operationName: string;
+  readonly operationNameI18n?: AuditTranslation;
   readonly source?: AuditTarget;
   readonly targets: readonly AuditTarget[];
   readonly actor: AuditActor;
@@ -43,27 +45,25 @@ export interface AuditEvent {
   readonly metadata?: unknown;
 }
 
-export interface AuditService {
-  /** When a connection is supplied, persist on that exact transaction and propagate write failures. */
-  record(
-    event: AuditEvent,
-    options?: { readonly connection?: DatabaseConnection },
-  ): Promise<void>;
-}
-
-export const auditServiceToken: ServiceToken<AuditService> =
-  createServiceToken<AuditService>('@nocobase/app-server/audit');
-
 export {
-  addAuditMetadata,
-  auditEnabled,
-  auditRoute,
-  auditRouteContext,
-  markAuditApiKeySession,
-  recordAuditInTransaction,
-  setAuditActor,
-  setAuditRoles,
-  setAuditSessionActor,
-  setAuditTarget,
+  auditServiceToken,
+  type AuditService,
+  type AuditActorResolver,
+  type AuditTransport,
+  type AuditTransportDriver,
+  type AuditTransportContext,
+} from './service.js';
+export {
+  defineAuditConfig,
+  type AuditConfig,
+  type AuditDestinationConfig,
+} from './config.js';
+export {
+  describeAudit,
+  auditRecordKey,
+  forwardedAuditContext,
   type AuditRouteOptions,
+  type AuditExecutionResult,
+  type AuditTargets,
 } from './request.js';
+export type { AuditRedactRule } from './redact.js';

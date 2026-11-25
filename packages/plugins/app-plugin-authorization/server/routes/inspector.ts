@@ -1,4 +1,4 @@
-import { auditRoute } from '@nocobase/app-server/audit';
+import { describeAudit } from '@nocobase/app-server/audit';
 import type {
   Authorization,
   AuthorizationContext,
@@ -147,7 +147,7 @@ export function createInspectorHandler(
   );
   routes.post(
     '/inspector/decide',
-    auditRoute(false),
+    describeAudit(false),
     inspectorAccess,
     describeRoute({
       tags,
@@ -171,7 +171,7 @@ export function createInspectorHandler(
   );
   routes.post(
     '/inspector/batchDecide',
-    auditRoute(false),
+    describeAudit(false),
     inspectorAccess,
     describeRoute({
       tags,
@@ -205,7 +205,7 @@ export function createInspectorHandler(
   );
   routes.post(
     '/inspector/records',
-    auditRoute(false),
+    describeAudit(false),
     inspectorAccess,
     describeRoute({
       tags,

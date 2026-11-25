@@ -45,15 +45,21 @@ describe('@nocobase/app-plugin-users API routes', () => {
     vi.mocked(service.invite).mockResolvedValue([result]);
     const config = new AppConfig();
     await config.loadAll();
+    config.mergeDefaults({
+      audit: { enabled: true, transports: { capture: { driver: 'memory' } } },
+    });
     const app = new Application({
       config,
       paths: createAppPaths({ rootDir: import.meta.dirname }),
     });
     const events: AuditEvent[] = [];
-    app.container.instance(auditServiceToken, {
-      async record(event) {
-        events.push(event);
-      },
+    app.container.resolve(auditServiceToken).registerDriver({
+      name: 'memory',
+      createTransport: () => ({
+        write: (event) => {
+          events.push(event);
+        },
+      }),
     });
     app.addRoutes(
       defineApiRoutes(() =>

@@ -1,5 +1,9 @@
 import { sensitiveParameterName } from '../secrets/sensitive-name.js';
 
+export type AuditRedactRule =
+  | { readonly field: string; readonly path?: never }
+  | { readonly path: string; readonly field?: never };
+
 const rawLimit = 256 * 1024;
 const snapshotLimit = 16 * 1024;
 // A JSON stream may never finish. Collection must not hold the HTTP response open indefinitely.
@@ -61,10 +65,11 @@ export async function readAuditBody(
 /** Replace sensitive values before applying the serialized size limit. */
 export function auditSnapshot(
   value: unknown,
-  fields: ReadonlySet<string>,
-  paths: ReadonlySet<string>,
+  rules: readonly AuditRedactRule[] = [],
 ): unknown {
   if (value === undefined) return undefined;
+  const fields = new Set(rules.map((rule) => rule.field));
+  const paths = new Set(rules.map((rule) => rule.path));
   let budget = snapshotLimit;
   const seen = new Set<object>();
   const visit = (node: unknown, path: string, depth: number): unknown => {

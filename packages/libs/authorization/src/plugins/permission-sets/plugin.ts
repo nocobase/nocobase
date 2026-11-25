@@ -444,8 +444,12 @@ class PermissionSetService<
   ): AuthorizationGrantService {
     // One store read per request: every derived answer comes from this promise.
     let sets: Promise<readonly PermissionSet[]> | undefined;
+    let resolved: readonly PermissionSet[] = [];
     const effective = (): Promise<readonly PermissionSet[]> => {
-      sets ??= this.getEffective(identity);
+      sets ??= this.getEffective(identity).then((sets) => {
+        resolved = sets;
+        return sets;
+      });
       return sets;
     };
     let grants: Promise<readonly AuthorizationGrant[]> | undefined;
@@ -463,6 +467,12 @@ class PermissionSetService<
           )
           .map((grant) => ({ ...grant, resource: input.resource })),
       resolveAll,
+      resolvedSources: () =>
+        resolved.map(({ key, title }) => ({
+          plugin: 'permission-sets',
+          id: key,
+          ...(title === undefined ? {} : { title }),
+        })),
       unrestricted: async () =>
         this.hasUnrestrictedSets() &&
         this.setsAreUnrestricted(await effective()),

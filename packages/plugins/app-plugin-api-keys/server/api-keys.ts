@@ -1,10 +1,4 @@
 import {
-  auditEnabled,
-  markAuditApiKeySession,
-  setAuditSessionActor,
-  setAuditTarget,
-} from '@nocobase/app-server/audit';
-import {
   apiKey as betterAuthApiKey,
   type ApiKeyConfigurationOptions,
 } from '@better-auth/api-key';
@@ -147,28 +141,10 @@ function createApiKeysPlugin(
       ...plugin.hooks,
       after: [
         {
-          matcher: (ctx: { path?: string }) => ctx.path === '/api-key/delete',
-          handler: createAuthMiddleware(async (ctx) => {
-            if (!auditEnabled('auth:revokeApiKey')) return;
-            const body: unknown = ctx.body;
-            const keyId: unknown =
-              body && typeof body === 'object'
-                ? Reflect.get(body, 'keyId')
-                : undefined;
-            if (typeof keyId === 'string')
-              setAuditTarget({ collection: 'apikey', key: keyId });
-          }),
-        },
-        {
           matcher: (ctx: { path?: string }) => ctx.path === '/api-key/create',
           handler: createAuthMiddleware(async (ctx) => {
-            const key = ctx.context.returned as Partial<ApiKey> | null;
-            if (
-              auditEnabled('auth:createApiKey') &&
-              typeof key?.id === 'string'
-            )
-              setAuditTarget({ collection: 'apikey', key: key.id });
             if (!policy.applyIdleRule || !(ctx.request || ctx.headers)) return;
+            const key = ctx.context.returned as Partial<ApiKey> | null;
             if (
               !key ||
               typeof key.id !== 'string' ||
@@ -197,41 +173,7 @@ function createApiKeysPlugin(
         },
       ],
       before: [
-        ...plugin.hooks.before.map(({ matcher, handler }) => ({
-          matcher,
-          handler: Object.assign(
-            async (...args: Parameters<typeof handler>) => {
-              const result = await handler(...args);
-              if (auditEnabled()) {
-                // The upstream key hook returns a session from get-session and attaches it to the endpoint context otherwise.
-                const outcome = (result as { response?: unknown } | undefined)
-                  ?.response as
-                  | {
-                      session?: { id: string; userId: string };
-                      context?: {
-                        context?: {
-                          session?: {
-                            session?: { id: string; userId: string };
-                          };
-                        };
-                      };
-                    }
-                  | undefined;
-                const session =
-                  outcome?.session ??
-                  outcome?.context?.context?.session?.session;
-                if (
-                  session &&
-                  typeof session.id === 'string' &&
-                  typeof session.userId === 'string'
-                )
-                  markAuditApiKeySession(session.userId, session.id);
-              }
-              return result;
-            },
-            handler,
-          ),
-        })),
+        ...plugin.hooks.before,
         {
           // Runs after Better Auth has turned the key into a session. No key manages keys: every `/api-key/*`
           // endpoint takes a sign-in, and so does approving a device's sign-in (`/device/*`), which issues a session. A scoped key, and any key of a service account, reaches no account endpoint at
@@ -243,8 +185,6 @@ function createApiKeysPlugin(
             const key = presentedKey(ctx.headers);
             const session = ctx.context.session;
             if (!key || !session || session.session.token !== key) return;
-            if (auditEnabled())
-              setAuditSessionActor(session.user.id, session.session.id);
             if (isKeyManagementPath(ctx.path))
               throw APIError.from('FORBIDDEN', {
                 code: 'API_KEY_SESSION_FORBIDDEN',
@@ -285,8 +225,6 @@ function createApiKeysPlugin(
               return;
             const session = await getSessionFromCtx(ctx);
             if (!session) return;
-            if (auditEnabled('auth:createApiKey'))
-              setAuditSessionActor(session.user.id, session.session.id);
             if (check && !(await check(session.user.id)))
               throw APIError.from('FORBIDDEN', {
                 code: 'API_KEY_CREATION_FORBIDDEN',

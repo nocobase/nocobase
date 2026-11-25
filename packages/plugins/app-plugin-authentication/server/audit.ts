@@ -1,52 +1,51 @@
 import {
-  auditEnabled,
-  recordAuditInTransaction,
-  setAuditActor,
-  setAuditTarget,
+  auditRecordKey,
   type AuditRouteOptions,
 } from '@nocobase/app-server/audit';
-import { authTransactionConnection } from './better-auth/database-adapter.js';
+import type { Context } from 'hono';
+import type { AuthEnv } from './auth.js';
 
-export const passwordResetAuditAction = 'auth:resetPassword';
-
-/** Record the reset inside Better Auth's password transaction, before its post-reset callback. */
-export async function recordPasswordResetAudit(userId: string): Promise<void> {
-  if (!auditEnabled(passwordResetAuditAction)) return;
-  setAuditActor({ type: 'user', userId });
-  setAuditTarget({ collection: 'user', key: userId });
-  const connection = await authTransactionConnection();
-  if (connection) await recordAuditInTransaction(connection);
-}
-
-const actions: ReadonlyMap<string, string> = new Map([
-  ['/sign-in/email', 'auth:signIn'],
-  ['/sign-in/username', 'auth:signIn'],
-  ['/sign-up/email', 'auth:signUp'],
-  ['/sign-out', 'auth:signOut'],
-  ['/change-password', 'auth:changePassword'],
-  ['/reset-password', passwordResetAuditAction],
-  ['/update-user', 'auth:updateProfile'],
-]);
+const operations: ReadonlyMap<string, readonly [string, string, boolean?]> =
+  new Map([
+    ['/sign-in/email', ['auth:signIn', 'Sign in', true]],
+    ['/sign-in/username', ['auth:signIn', 'Sign in', true]],
+    ['/sign-up/email', ['auth:signUp', 'Sign up', true]],
+    ['/sign-out', ['auth:signOut', 'Sign out']],
+    ['/change-password', ['auth:changePassword', 'Change password']],
+    ['/reset-password', ['auth:resetPassword', 'Reset password', true]],
+    ['/update-user', ['auth:updateProfile', 'Update profile']],
+  ]);
 
 export function authAuditOptions(path: string): AuditRouteOptions | false {
-  const action = actions.get(path);
   if (path === '/api-key/create' || path === '/api-key/delete') {
+    const create = path === '/api-key/create';
     return {
-      action:
-        path === '/api-key/create' ? 'auth:createApiKey' : 'auth:revokeApiKey',
+      action: create ? 'auth:createApiKey' : 'auth:revokeApiKey',
+      operationName: create ? 'Create an API key' : 'Revoke an API key',
       resource: 'apikey',
       captureBody: false,
       target: () => ({ collection: 'apikey' }),
+      resolveTargets: ({ request, response }) => ({
+        collection: 'apikey',
+        key: create
+          ? auditRecordKey(response, 'id')
+          : auditRecordKey(request, 'keyId'),
+      }),
     };
   }
-  return action
-    ? {
-        action,
-        resource: 'user',
-        captureBody: false,
-        authenticationAttempt:
-          action === 'auth:signIn' || action === passwordResetAuditAction,
-        target: () => ({ collection: 'user' }),
-      }
-    : false;
+  const operation = operations.get(path);
+  if (!operation) return false;
+  const [action, operationName, authenticationAttempt] = operation;
+  return {
+    action,
+    operationName,
+    resource: 'user',
+    captureBody: false,
+    authenticationAttempt,
+    target: () => ({ collection: 'user' }),
+    resolveTargets: (_result, context) => ({
+      collection: 'user',
+      key: (context as Context<AuthEnv>).get('authHttpIdentity')?.userId,
+    }),
+  };
 }

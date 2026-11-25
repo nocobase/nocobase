@@ -323,19 +323,13 @@ it.each([false, true])(
       .mockResolvedValue(new Response(JSON.stringify({ id: 'synthetic-id' })));
     vi.stubGlobal('fetch', fetch);
     const events: AuditEvent[] = [];
-    const transactional: AuditEvent[] = [];
     // Also keep the legacy delivery variant as a no-audit control.
     const app = await createTestApp({
       createServer: legacy
         ? createStandaloneServer
         : resetServerFactory({
-            async record(event, options) {
-              if (event.action !== 'auth:resetPassword') return;
-              if (options?.connection) {
-                options.connection.afterCommit(() => {
-                  transactional.push(event);
-                });
-              } else events.push(event);
+            write(event) {
+              if (event.action === 'auth:resetPassword') events.push(event);
             },
           }),
       config: legacy
@@ -344,7 +338,13 @@ it.each([false, true])(
               channels: { 'system-email': { ...email, type: 'resend' } },
             },
           }
-        : { auth: { email } },
+        : {
+            auth: { email },
+            audit: {
+              enabled: true,
+              transports: { capture: { driver: 'memory' } },
+            },
+          },
     });
     try {
       expect((await app.request('/authentication/capabilities')).status).toBe(
@@ -393,7 +393,7 @@ it.each([false, true])(
         ).status,
       ).toBe(200);
       if (!legacy) {
-        expect(transactional).toMatchObject([
+        expect(events).toMatchObject([
           {
             action: 'auth:resetPassword',
             actor: { type: 'user', userId: user.id },
@@ -407,7 +407,7 @@ it.each([false, true])(
           json({ token, newPassword: 'second-replacement-password' }),
         );
         expect(replay.status).toBe(400);
-        expect(events).toMatchObject([
+        expect(events.slice(1)).toMatchObject([
           {
             action: 'auth:resetPassword',
             actor: { type: 'anonymous' },
@@ -416,7 +416,7 @@ it.each([false, true])(
             status: 400,
           },
         ]);
-        const serialized = JSON.stringify([...transactional, ...events]);
+        const serialized = JSON.stringify(events);
         expect(serialized).not.toContain(token!);
         expect(serialized).not.toContain('replacement-password');
       }

@@ -39,10 +39,8 @@ const rules = [
   ],
 ] as const;
 
-it('audits settings writes in the rule transactions and records a default-access receipt only once', async () => {
+it('audits forwarded settings writes and records a default-access receipt only once', async () => {
   const events: AuditEvent[] = [];
-  const committed: AuditEvent[] = [];
-  let rejectAudit = false;
   const app = await createTestApp({
     createServer: defineStandaloneServer({
       rootDir: path.resolve(import.meta.dirname, '../..'),
@@ -50,28 +48,26 @@ it('audits settings writes in the rule transactions and records a default-access
       async createServer(scope) {
         const runtime = await resolveAppRuntime(appRuntime, scope);
         const app = createApp(runtime);
-        app.container.instance(auditServiceToken, {
-          async record(event, options) {
-            if (
-              !rules.some(
-                ([, settings]) =>
-                  event.resource === `settings:authorization.${settings}`,
+        app.container.resolve(auditServiceToken).registerDriver({
+          name: 'memory',
+          createTransport: () => ({
+            write(event) {
+              if (
+                rules.some(
+                  ([, settings]) =>
+                    event.resource === `settings:authorization.${settings}`,
+                )
               )
-            )
-              return;
-            if (options?.connection) {
-              options.connection.afterCommit(() => {
-                committed.push(event);
-              });
-              if (rejectAudit) throw new Error('Test audit write failed.');
-            } else events.push(event);
-          },
+                events.push(event);
+            },
+          }),
         });
         return startApplicationInScope(scope, app);
       },
     }).create,
     config: {
       app: { publicOrigin: 'http://localhost' },
+      audit: { enabled: true, transports: { capture: { driver: 'memory' } } },
       auth: { secret: 'test-auth-secret-at-least-32-characters' },
     },
   });
@@ -110,24 +106,6 @@ it('audits settings writes in the rule transactions and records a default-access
           : {}),
       });
       const countRules = () => connection.repository(collection).count();
-      rejectAudit = true;
-      const failed = await admin.fetch(url, create);
-      rejectAudit = false;
-      expect(failed.status).toBe(500);
-      expect(await countRules()).toBe(0);
-      if (assignmentCollection)
-        expect(await connection.repository(assignmentCollection).count()).toBe(
-          0,
-        );
-      expect(committed.filter((event) => event.resource === resource)).toEqual(
-        [],
-      );
-      expect(events.at(-1)).toMatchObject({
-        action: 'create',
-        resource,
-        outcome: 'failure',
-      });
-
       const created = await admin.fetch(url, create);
       if (!created.ok) throw new Error(await created.text());
       expect(created.status).toBe(201);
@@ -159,7 +137,9 @@ it('audits settings writes in the rule transactions and records a default-access
         ).toBe(404);
       }
       expect(
-        committed.filter((event) => event.resource === resource),
+        events.filter(
+          (event) => event.resource === resource && event.outcome === 'success',
+        ),
       ).toMatchObject([
         { action: 'create', status: 201, targets: [{ collection, key }] },
         {

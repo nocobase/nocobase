@@ -1,4 +1,5 @@
-import { auditRoute } from '@nocobase/app-server/audit';
+import { describeAudit } from '@nocobase/app-server/audit';
+import type { AuthEnv } from '../auth.js';
 import { authAuditOptions } from '../audit.js';
 import type { AppPluginApplication } from '@nocobase/app-server/plugins';
 import {
@@ -12,7 +13,7 @@ import {
   getClientAddress,
   type AppApiRouteContribution,
 } from '@nocobase/app-server/router';
-import { Hono } from 'hono';
+import { Hono, type Context } from 'hono';
 
 import type { MiddlewareHandler } from 'hono';
 
@@ -39,7 +40,7 @@ export const apiRoutes: AppApiRouteContribution<
   router.on(
     ['GET', 'POST'],
     '/auth/*',
-    auditRoute((context) =>
+    describeAudit((context) =>
       context.req.method === 'POST'
         ? authAuditOptions(
             context.req.path.slice(context.req.routePath.indexOf('*') - 1),
@@ -50,8 +51,13 @@ export const apiRoutes: AppApiRouteContribution<
     // generator, through the fragment the provider adds.
     describeRoute({ hide: true }),
     (context) =>
-      auth.handleAudited(context.req.raw, {
+      auth.handler(context.req.raw, {
         clientAddress: getClientAddress(context),
+        onIdentity: ({ userId, session }) => {
+          const authContext = context as Context<AuthEnv>;
+          if (session) authContext.set('auth', session);
+          authContext.set('authHttpIdentity', { userId });
+        },
       }),
   );
   router.get(

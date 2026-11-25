@@ -38,6 +38,7 @@ import {
 import {
   createAuthentication,
   type Auth,
+  type AuthRequestOptions,
   type CreateAuthenticationOptions,
 } from '../auth.js';
 import {
@@ -265,7 +266,7 @@ export class AuthenticationProvider<
         'The auth section is not declared with defineAuthConfig, so its settings are not validated and the browser cannot tell whether sign-up is open. Declare it with defineAuthConfig from @nocobase/app-plugin-authentication/server in server/config/auth.ts.',
       );
     }
-    return createAuthentication({
+    const auth = createAuthentication({
       connection: database?.connection(),
       secondaryStorage: createAuthStorage(caching),
       appName: app.name,
@@ -300,7 +301,6 @@ export class AuthenticationProvider<
           : undefined),
       baseURL: app.publicOrigin,
       basePath: resolvePublicPath('/api/auth', app.publicBasePath),
-      mapHttpRequest: (request) => toPublicRequest(request, app.publicBasePath),
       advanced: {
         cookiePrefix: createCookiePrefix(app.name, {
           publicBasePath: app.publicBasePath,
@@ -327,6 +327,16 @@ export class AuthenticationProvider<
         },
       },
     });
+    const originalAuthHandler = auth.handler.bind(auth);
+    auth.handler = (
+      request: Request,
+      options?: AuthRequestOptions,
+    ): Promise<Response> =>
+      originalAuthHandler(
+        toPublicRequest(request, app.publicBasePath),
+        options,
+      );
+    return auth;
   }
 }
 

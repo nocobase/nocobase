@@ -1,4 +1,5 @@
-import { auditServiceToken } from '../audit/index.js';
+import { auditServiceToken, AuditCoordinator } from '../audit/service.js';
+import type { AuditConfig } from '../audit/config.js';
 import { auditMiddleware } from '../audit/request.js';
 import { createTrustedAuditProxies } from '../audit/ip.js';
 import { enterRunningApplication } from '../backup/runtime-guard.js';
@@ -146,6 +147,18 @@ export class Application<
   };
   public readonly websocket: AppWebSocketHandler;
 
+  private readonly audit: AuditCoordinator = new AuditCoordinator(
+    (message, destination) => {
+      const logger = this.container
+        .resolveIfCreated(loggingToken)
+        ?.getLogger('audit');
+      if (logger) logger.error({ destination }, message);
+      else
+        console.error(
+          destination ? `${message} Destination: ${destination}.` : message,
+        );
+    },
+  );
   private readonly providerRegistry: ServiceProviderRegistry =
     new ServiceProviderRegistry();
   private readonly websocketFactory: ApplicationWebSocketFactory;
@@ -189,6 +202,7 @@ export class Application<
     this.paths = options.paths;
     this.configurationFile = options.configurationFile;
     this.container = new ServiceContainer();
+    this.container.instance(auditServiceToken, this.audit);
     this.usesDefaultWebSocket = options.websocket === undefined;
     this.websocketFactory = options.websocket ?? createRealtimeWebSocketHandler;
     this.websocket = async (request, env) => {
@@ -364,6 +378,7 @@ export class Application<
   private async shutdownProviders(): Promise<void> {
     await this.startPromise?.catch(() => undefined);
     try {
+      await this.audit.close();
       await this.providerRegistry.shutdown();
     } finally {
       this.releaseStorage?.();
@@ -481,23 +496,29 @@ export class Application<
     const api = new Hono();
     api.use('*', requestIdMiddleware());
     const apiConfig = this.config.get<ApiConfig>('api');
-    if (this.container.has(auditServiceToken)) {
+    const auditConfig = this.config.get<AuditConfig>('audit');
+    if (await this.audit.start(auditConfig, this.paths)) {
       api.use(
         '*',
         auditMiddleware({
-          service: this.container.resolve(auditServiceToken),
+          service: this.audit,
+          autoDetect: auditConfig?.autoDetect === true,
           forwarded: () => this.forwardedApiRoutes.routers,
-          proxies: createTrustedAuditProxies(
-            apiConfig?.trustedProxies ??
-              this.config.get('auth.advanced.ipAddress.trustedProxies'),
-          ),
+          proxies: createTrustedAuditProxies(undefined),
+          translate: ({ ns, key }, fallback) => {
+            const runtime = this.container.resolveIfCreated(i18nToken);
+            return (
+              runtime?.getFixedT(ns, runtime.getDefaultLocale())(key, {
+                defaultValue: fallback,
+              }) ?? fallback
+            );
+          },
           report: () => {
-            if (this.container.has(loggingToken))
-              this.container
-                .resolve(loggingToken)
-                .getLogger('audit')
-                .error('Could not record an audit event.');
-            else console.error('Could not record an audit event.');
+            const logger = this.container
+              .resolveIfCreated(loggingToken)
+              ?.getLogger('audit');
+            if (logger) logger.error('Could not collect audit event.');
+            else console.error('Could not collect audit event.');
           },
         }),
       );

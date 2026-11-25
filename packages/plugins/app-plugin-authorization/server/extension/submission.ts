@@ -1,4 +1,3 @@
-import { auditEnabled } from '@nocobase/app-server/audit';
 import { AsyncLocalStorage } from 'node:async_hooks';
 import type { Context } from 'hono';
 import type { DatabaseConnection } from '@nocobase/db';
@@ -28,16 +27,6 @@ export function withSettingsSubmission(
   });
 }
 
-/** Transaction for a settings write that does not implement operation receipts. */
-export function withSettingsAuditTransaction<T>(
-  execute: (transaction?: DatabaseConnection) => Promise<T>,
-): Promise<T> {
-  const scope = requestScope.getStore();
-  return scope && auditEnabled()
-    ? scope.connection.transaction(execute)
-    : execute();
-}
-
 /** Called after the route's native write guard; bound APIs keep writes inside the receipt transaction. */
 export async function submitSettingsMutation<T>(
   input: unknown,
@@ -54,7 +43,7 @@ export async function submitSettingsMutation<T>(
         domain: 'authorization',
         message: 'Operation receipts are unavailable.',
       });
-    return withSettingsAuditTransaction(execute);
+    return execute();
   }
   if (!key)
     throw new ApiError({

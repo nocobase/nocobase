@@ -1,4 +1,4 @@
-import { auditRoute, setAuditTarget } from '@nocobase/app-server/audit';
+import { auditRecordKey, describeAudit } from '@nocobase/app-server/audit';
 import { authenticationToken } from '@nocobase/app-plugin-authentication/server';
 import {
   authorizationOptions,
@@ -317,9 +317,14 @@ export const apiRoutes: AppApiRouteContribution<AppPluginApplication> =
     );
     routes.post(
       '/',
-      auditRoute({
+      describeAudit({
         resource: 'apikey',
         target: () => ({ collection: 'apikey' }),
+        captureBody: false,
+        resolveTargets: ({ response }) => ({
+          collection: 'apikey',
+          key: auditRecordKey(response, 'data', 'key', 'id'),
+        }),
       }),
       mayCreate,
       describeRoute({
@@ -356,7 +361,6 @@ export const apiRoutes: AppApiRouteContribution<AppPluginApplication> =
           context.req.valid('json'),
           await identity(context),
         );
-        setAuditTarget({ collection: 'apikey', key: data.key.id });
         return context.json({ data }, 201);
       },
     );
@@ -407,8 +411,21 @@ export const apiRoutes: AppApiRouteContribution<AppPluginApplication> =
     );
     routes.post(
       '/:keyId/rotate',
-      auditRoute({
+      describeAudit({
         resource: 'apikey',
+        captureBody: false,
+        resolveTargets: ({ response }, context) => {
+          const key = auditRecordKey(response, 'data', 'key', 'id');
+          return key === undefined
+            ? undefined
+            : {
+                source: {
+                  collection: 'apikey',
+                  key: context.req.param('keyId'),
+                },
+                targets: [{ collection: 'apikey', key }],
+              };
+        },
         target: (context) => ({
           collection: 'apikey',
           key: context.req.param('keyId'),
@@ -445,7 +462,7 @@ export const apiRoutes: AppApiRouteContribution<AppPluginApplication> =
     );
     routes.delete(
       '/:keyId',
-      auditRoute({
+      describeAudit({
         resource: 'apikey',
         target: (context) => ({
           collection: 'apikey',

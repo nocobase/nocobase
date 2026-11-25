@@ -1,8 +1,3 @@
-import {
-  auditEnabled,
-  recordAuditInTransaction,
-  setAuditTarget,
-} from '@nocobase/app-server/audit';
 /**
  * System keys: API keys that act as an identity of their own rather than as a member. Each one is a service account
  * this plugin creates for it, a hidden Permission Set that account holds (`system-key-<account id>`), and one API key
@@ -712,100 +707,56 @@ export class SystemApiKeys {
       identity,
     );
     if (input.ownerId) await this.requirePerson(input.ownerId);
-    const create = async (transaction?: DatabaseConnection) => {
-      const users = transaction
-        ? this.options.users().withConnection(transaction)
-        : this.options.users();
-      const keys = transaction
-        ? this.options.keys.withConnection(transaction)
-        : this.options.keys;
-      const sets = transaction
-        ? authz.permissionSets.withTransaction(transaction)
-        : authz.permissionSets;
-      const db = transaction ?? this.db;
-      const account = await users.createServiceAccount({
+    const account = await this.options.users().createServiceAccount({
+      name,
+      description: input.description ?? null,
+    });
+    const set = systemKeySet(account.id);
+    let setCreated = false;
+    try {
+      await this.requireFreeSetName(this.db, authz, set);
+      await authz.permissionSets.create({
+        key: set,
+        title: name,
+        grants: permissions.grants,
+      });
+      setCreated = true;
+      await authz.permissionSets.assign({
+        subject: { type: 'user', id: account.id },
+        permissionSet: set,
+      });
+      const created = await this.options.keys.issueChecked(account.id, {
         name,
         description: input.description ?? null,
+        scope: { groups: {} },
+        permissions,
+        expiresInDays: input.expiresInDays,
       });
-      const set = systemKeySet(account.id);
-      let setCreated = false;
-      try {
-        await this.requireFreeSetName(db, authz, set);
-        await sets.create({
-          key: set,
-          title: name,
-          grants: permissions.grants,
-        });
-        setCreated = true;
-        await sets.assign({
-          subject: { type: 'user', id: account.id },
-          permissionSet: set,
-        });
-        const created = await keys.issueChecked(account.id, {
-          name,
-          description: input.description ?? null,
-          scope: { groups: {} },
-          permissions,
-          expiresInDays: input.expiresInDays,
-        });
-        const now = new Date();
-        await db.query
-          .insertInto('apiKeySystemKeys')
-          .values({
-            identityId: account.id,
-            keyId: created.key.id,
-            ownerId: input.ownerId ?? null,
-            managedBy: managedBy ? JSON.stringify(managedBy) : null,
-            createdById: actorId,
-            remindedAt: null,
-            createdAt: now,
-            updatedAt: now,
-          })
-          .execute();
-        await keys.applyIdleRule(created.key.id);
-        await this.record(
-          account.id,
-          'create',
-          actorId,
-          {
-            expiresInDays: input.expiresInDays,
-            permissions,
-            ...(managedBy ? { managedBy } : {}),
-          },
-          new Date(),
-          db,
-        );
-        const service = transaction
-          ? new SystemApiKeys({
-              ...this.options,
-              connection: () => db,
-              keys,
-              users: () => users,
-            })
-          : this;
-        const data = {
-          key: await service.get(account.id),
-          secret: created.secret,
-        };
-        if (transaction) {
-          setAuditTarget(
-            { collection: 'apikey', key: created.key.id },
-            { collection: 'apiKeySystemKeys', key: account.id },
-          );
-          await recordAuditInTransaction(transaction, {
-            status: 201,
-            response: { data },
-          });
-        }
-        return data;
-      } catch (error) {
-        if (!transaction) await this.discard(account.id, actorId, setCreated);
-        throw error;
-      }
-    };
-    return auditEnabled('apiKeysCreateSystemKey')
-      ? this.db.transaction(create)
-      : create();
+      const now = new Date();
+      await this.db.query
+        .insertInto('apiKeySystemKeys')
+        .values({
+          identityId: account.id,
+          keyId: created.key.id,
+          ownerId: input.ownerId ?? null,
+          managedBy: managedBy ? JSON.stringify(managedBy) : null,
+          createdById: actorId,
+          remindedAt: null,
+          createdAt: now,
+          updatedAt: now,
+        })
+        .execute();
+      await this.options.keys.applyIdleRule(created.key.id);
+      await this.record(account.id, 'create', actorId, {
+        expiresInDays: input.expiresInDays,
+        permissions,
+        ...(managedBy ? { managedBy } : {}),
+      });
+      return { key: await this.get(account.id), secret: created.secret };
+    } catch (error) {
+      await this.discard(account.id, actorId, setCreated);
+      throw error;
+    }
   }
 
   /** Removes what a failed creation left behind: the set only when this creation made it, never a role of the name. */
@@ -1207,7 +1158,6 @@ export class SystemApiKeys {
       );
     }
     const row = registered;
-    const audited = auditEnabled('apiKeysDeleteSystemKey');
     const sets = this.requireAuthorization().permissionSets;
     const noticeId = await this.db.transaction(async (connection) => {
       await connection.query
@@ -1222,32 +1172,19 @@ export class SystemApiKeys {
         .deleteFrom('apiKeySystemKeys')
         .where('identityId', '=', identityId)
         .execute();
-      if (audited) {
-        await this.options
-          .users()
-          .withConnection(connection)
-          .remove(identityId, actorId);
-        setAuditTarget(
-          { collection: 'apikey', key: row.keyId },
-          { collection: 'apiKeySystemKeys', key: identityId },
-        );
-        await recordAuditInTransaction(connection, { status: 204 });
-      }
       await this.record(
         identityId,
         'delete',
         actorId,
-        audited ? { accountRemoved: true } : null,
+        null,
         new Date(),
         connection,
       );
       return this.storeNotice(connection, row, actorId, 'deleted');
     });
-    if (!audited) {
-      const eventId = await this.deleteEventOf(identityId);
-      await this.options.users().remove(identityId, actorId);
-      if (eventId) await this.markAccountRemoved(eventId);
-    }
+    const eventId = await this.deleteEventOf(identityId);
+    await this.options.users().remove(identityId, actorId);
+    if (eventId) await this.markAccountRemoved(eventId);
     await this.deliver(noticeId);
   }
 

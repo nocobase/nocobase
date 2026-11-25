@@ -1,3 +1,8 @@
+import { auditServiceToken } from '@nocobase/app-server/audit';
+import type { Context } from 'hono';
+import type { AuthEnv } from '@nocobase/app-plugin-authentication/server';
+import { isApiKeySession } from '../key-sessions.js';
+import { requestApiKeyHeaders, type ApiKeysPlugin } from '../api-keys.js';
 import {
   authenticationToken,
   signInMethodsToken,
@@ -180,6 +185,29 @@ export class ApiKeysProvider extends ServiceProvider<AppPluginApplication> {
     }
     const keys = container.resolve(scopedApiKeysToken);
     const auth = container.resolve(authenticationToken);
+    const keyPlugin = this.app.config
+      .get<AuthConfig>('auth')
+      ?.plugins?.find(
+        (plugin): plugin is ApiKeysPlugin =>
+          plugin.id === 'api-key' &&
+          typeof plugin.options === 'object' &&
+          plugin.options !== null &&
+          Array.isArray(Reflect.get(plugin.options, 'configurations')),
+      );
+    const keyHeaders = keyPlugin ? requestApiKeyHeaders(keyPlugin) : undefined;
+    if (container.has(auditServiceToken))
+      container.resolve(auditServiceToken).registerActorResolver((context) => {
+        const session = (context as Context<AuthEnv>).get('auth');
+        return session &&
+          isApiKeySession(session, context.req.raw.headers, keyHeaders)
+          ? {
+              type: 'apiKey',
+              userId: session.user.id,
+              apiKeyId: session.session.id,
+            }
+          : undefined;
+      });
+
     this.releases.push(await connectOwnKeyPolicy(auth, keys));
     this.releases.push(
       auth.addScopedCredentialCheck(

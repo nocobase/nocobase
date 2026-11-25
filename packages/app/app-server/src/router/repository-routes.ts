@@ -1,14 +1,9 @@
-import {
-  auditEnabled,
-  auditRoute,
-  recordAuditInTransaction,
-  setAuditTarget,
-} from '../audit/index.js';
+import { describeAudit } from '../audit/index.js';
+import { setApiExecutionResult } from './execution-result.js';
 import {
   databaseManagerToken,
   getRepositoryMutationIdentity,
   normalizeRepositoryPolicy,
-  type DatabaseConnection,
   type NormalizedReadNode,
   type NormalizedRepositoryPolicy,
   type PolicyRef,
@@ -360,15 +355,19 @@ export function defineRepositoryApiRoutes<P = unknown>(
           action === 'createOne' ||
           action === 'updateOne' ||
           action === 'deleteOne';
+        const collection = entry.collection;
         router.post(
           `/${entry.name}/${action}`,
-          auditRoute(
+          describeAudit(
             write
               ? {
                   action: `${entry.name}:${action}`,
                   resource: entry.name,
-                  target: () => ({ collection: entry.collection }),
-                  captureBody: 'transaction',
+                  operationName: `${action === 'createOne' ? 'Create' : action === 'updateOne' ? 'Update' : 'Delete'} a record in ${entry.name}`,
+                  target: () => ({ collection }),
+                  resolveTargets: ({ value }) => ({ collection, key: value }),
+                  // Collection values and filter operands can contain application secrets under arbitrary names.
+                  captureBody: false,
                 }
               : false,
           ),
@@ -545,28 +544,20 @@ export function defineRepositoryApiRoutes<P = unknown>(
                     data && typeof data === 'object'
                       ? getRepositoryMutationIdentity(data)
                       : undefined;
-                  // A scoped deleted row cannot be checked again. Return the same confirmation on first execution and replay.
-                  const visible =
-                    action === 'deleteOne' && policy.read !== true
-                      ? { deleted: true }
-                      : data;
-                  if (auditEnabled())
-                    await recordRepositoryAudit(
-                      transaction,
-                      entry.collection,
-                      locator,
-                      input,
-                      visible,
-                    );
                   return {
                     policy: mutationDigest(policy),
                     locator,
-                    data: visible,
+                    // A scoped deleted row cannot be checked again. Return the same confirmation on first execution and replay.
+                    data:
+                      action === 'deleteOne' && policy.read !== true
+                        ? { deleted: true }
+                        : data,
                   };
                 },
               });
               context.header('Idempotency-Replayed', String(result.replayed));
               data = result.data.data;
+              setApiExecutionResult(context, result.data.locator);
             } else {
               if (write && key && !protection)
                 fail(
@@ -574,32 +565,12 @@ export function defineRepositoryApiRoutes<P = unknown>(
                   'IDEMPOTENCY_UNAVAILABLE',
                   'This server has not enabled operation receipts.',
                 );
-              if (write && auditEnabled()) {
-                const connection = app.container
-                  .resolve(databaseManagerToken)
-                  .connection(entry.connection);
-                data = await connection.transaction(async (transaction) => {
-                  const result = await execute(
-                    transaction
-                      .repository(entry.collection)
-                      .withPolicy(scoped.explainPolicy() as RepositoryPolicy),
-                    action,
-                    input,
-                  );
-                  const locator =
-                    result && typeof result === 'object'
-                      ? getRepositoryMutationIdentity(result)
-                      : undefined;
-                  await recordRepositoryAudit(
-                    transaction,
-                    entry.collection,
-                    locator,
-                    input,
-                    result,
-                  );
-                  return result;
-                });
-              } else data = await execute(scoped, action, input);
+              data = await execute(scoped, action, input);
+              if (write && data && typeof data === 'object')
+                setApiExecutionResult(
+                  context,
+                  getRepositoryMutationIdentity(data),
+                );
             }
             if (action === 'aggregate' || action === 'groupBy') {
               return context.body(
@@ -617,26 +588,6 @@ export function defineRepositoryApiRoutes<P = unknown>(
     }
     return router;
   }
-}
-
-async function recordRepositoryAudit(
-  transaction: DatabaseConnection,
-  collection: string,
-  key: Readonly<RepositoryRecord> | undefined,
-  input: RepositoryRecord,
-  data: unknown,
-): Promise<void> {
-  setAuditTarget({ collection, key });
-  const definition = await transaction.collections.get(collection);
-  const redactFields = definition?.fields
-    ?.filter((field) => field.target || /password|encrypted/iu.test(field.type))
-    .map((field) => field.name);
-  await recordAuditInTransaction(transaction, {
-    // A filter can carry a secret as an operand without its field name.
-    request: { values: input.values },
-    response: { data },
-    redactFields,
-  });
 }
 
 /** Validate an exposure's `computedFields` declaration, returning it frozen, or an empty record when absent. */

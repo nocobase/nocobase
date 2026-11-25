@@ -59,4 +59,3 @@ export {
   submitSettingsMutation,
   withSettingsSubmission,
 } from './submission.js';
-export { recordRuleAudit } from './rule-audit.js';

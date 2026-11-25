@@ -17,6 +17,7 @@ import { CredentialCatalog } from './credentials.js';
 import type {
   AuthorizationGrant,
   AuthorizationGrantService,
+  AuthorizationGrantSource,
   AuthorizationGrantsChangedListener,
 } from './grants.js';
 import {
@@ -82,6 +83,8 @@ export interface AuthorizationContext {
     request: AuthorizationCheckRequest<TParams>,
   ): Promise<void>;
   snapshot(): Promise<AuthorizationSnapshot>;
+  /** The sources resolved while checking this context, without running another check. */
+  resolvedGrantSources?(): readonly AuthorizationGrantSource[];
 }
 
 export interface AuthorizationEnv {
@@ -236,8 +239,9 @@ export class Authorization {
       identity.keyScope,
       this.recordAccess,
     );
+    const provider = this.provider.for?.(identity) ?? this.provider;
     const grants = composedGrants(
-      this.provider.for?.(identity) ?? this.provider,
+      provider,
       this.compositeResourceRegistry,
       constraints,
     );
@@ -278,6 +282,9 @@ export class Authorization {
       ));
     return {
       identity,
+      ...(provider.resolvedSources
+        ? { resolvedGrantSources: () => provider.resolvedSources!() }
+        : {}),
       authorize: authorize as AuthorizationContext['authorize'],
       can: async (input) =>
         !outOfScope(input) &&
