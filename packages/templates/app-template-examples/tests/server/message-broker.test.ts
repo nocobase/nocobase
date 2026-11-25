@@ -3,7 +3,12 @@ import { createAppTest } from '@nocobase/app-testing/server';
 import { messageBrokerServiceToken } from '@nocobase/app-server/message-broker';
 import { databaseManagerToken } from '@nocobase/db';
 import type { BrokerMessage } from '@nocobase/message-broker';
-import { messageBrokerExampleServiceToken } from '@nocobase/app-plugin-message-broker-example/server';
+import {
+  CUSTOMER_STATS_COLLECTION,
+  messageBrokerExampleServiceToken,
+  SHIPMENTS_COLLECTION,
+  type CustomerStats,
+} from '@nocobase/app-plugin-message-broker-example/server';
 import { createStandaloneServer } from '../../server/standalone.js';
 
 const test = createAppTest({
@@ -21,7 +26,15 @@ test('the template composes an in-memory broker with the outbox and inbox', asyn
   const broker = app.container.resolve(messageBrokerServiceToken);
   expect(app.config.get('messageBroker')).toEqual({
     default: 'memory',
-    backends: { memory: { adapter: 'inMemory' } },
+    backends: {
+      memory: {
+        adapter: 'inMemory',
+        subscriptions: {
+          orderShipments: { topic: 'orderEvents' },
+          customerOrderStats: { topic: 'orderEvents' },
+        },
+      },
+    },
   });
   expect(broker.describe()).toMatchObject({
     default: 'memory',
@@ -79,16 +92,27 @@ test('a message published in a committed transaction reaches its subscriber; a r
   }
 });
 
-test('the example plugin handles an order placed in a committed transaction', async ({
+test('the example plugin updates the tables of both subscriptions once for a committed order', async ({
   app,
 }) => {
   const example = app.container.resolve(messageBrokerExampleServiceToken);
   const database = app.container.resolve(databaseManagerToken);
-  const order = { orderId: 'example-1', total: 10 };
-  await expect(
-    database.transaction((transaction) =>
-      example.publishOrderPlaced(order, transaction),
+  await database.transaction((transaction) =>
+    example.placeOrder(
+      { id: 'template-order', customer: 'template-customer', total: 10 },
+      transaction,
     ),
-  ).resolves.toEqual({ messageId: 'order-placed:example-1', deferred: true });
-  await vi.waitFor(() => expect(example.handled()).toContainEqual(order));
+  );
+  await vi.waitFor(async () =>
+    expect(
+      await database.repository(SHIPMENTS_COLLECTION).findMany({}),
+    ).toEqual([{ orderId: 'template-order', customer: 'template-customer' }]),
+  );
+  await vi.waitFor(async () =>
+    expect(
+      await database
+        .repository<CustomerStats>(CUSTOMER_STATS_COLLECTION)
+        .findOne({ filter: { customer: 'template-customer' } }),
+    ).toMatchObject({ orderCount: 1, totalSpent: 10 }),
+  );
 });

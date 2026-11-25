@@ -1,8 +1,22 @@
 export { default } from './plugin.js';
 export {
+  CUSTOMER_ORDER_STATS,
+  CUSTOMER_STATS_COLLECTION,
   messageBrokerExampleServiceToken,
   ORDER_EVENTS,
+  ORDER_SHIPMENTS,
+  ORDERS_COLLECTION,
+  orderPlacedMessageId,
   orderPlacedSchema,
-  type OrderPlaced,
+  PAYMENT_EVENTS,
+  paymentSucceededSchema,
+  SHIPMENTS_COLLECTION,
+  type CustomerStats,
   type MessageBrokerExampleService,
+  type Order,
+  type OrderPlaced,
+  type PaymentOutcome,
+  type PaymentSucceeded,
+  type PlaceOrderInput,
+  type Shipment,
 } from './service.js';

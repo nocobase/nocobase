@@ -11,6 +11,9 @@ const messageBrokerExamplePlugin: AppServerPlugin = defineServerPlugin({
   baseDir: path.resolve(import.meta.dirname, '..'),
   packageName: '@nocobase/app-plugin-message-broker-example',
   serviceProviders,
+  database: {
+    migrations: './database/migrations',
+  },
 });
 
 export default messageBrokerExamplePlugin;

@@ -1,7 +1,7 @@
 {
   "name": "@nocobase/app-plugin-message-broker-example",
   "displayName": "Message Broker Example App Plugin",
-  "description": "Example app plugin that publishes order events through the transactional outbox and consumes them with inbox deduplication.",
+  "description": "Example app plugin that publishes an order event in the business transaction and consumes it in independent subscriptions that update business tables through the inbox.",
   "version": "0.0.1",
   "type": "module",
   "prettier": "@nocobase/dev-config/prettier",
@@ -29,7 +29,7 @@
     "dist"
   ],
   "scripts": {
-    "build": "tsc -p tsconfig.json",
+    "build": "tsc -p tsconfig.json && nocobase-db-manifests",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "vitest run --passWithNoTests",
     "lint": "eslint . --max-warnings 0",
@@ -43,6 +43,7 @@
     "zod": "catalog:"
   },
   "devDependencies": {
+    "@nocobase/app-testing": "workspace:*",
     "@nocobase/dev-config": "workspace:*",
     "@types/node": "catalog:",
     "eslint": "catalog:",
@@ -54,6 +55,7 @@
   "peerDependencies": {
     "@nocobase/app-plugin-message-broker": "workspace:^",
     "@nocobase/app-server": "workspace:^",
+    "@nocobase/db": "workspace:^",
     "@nocobase/message-broker": "workspace:^",
     "@nocobase/service-provider": "workspace:^"
   }
