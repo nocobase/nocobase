@@ -257,6 +257,10 @@ const zhTW: LocaleResource<typeof enUS> = {
       actionsHint:
         '應用允許這個 Agent 在業務資料裡做的事。只有喚起它的人也有許可權時，它才會執行。',
       actionsNone: '這個 Agent 沒有業務操作。',
+      optionalActions: '可選操作',
+      optionalActionsHint:
+        '預設對所有 Agent 關閉，需要為這個 Agent 單獨開啟。開啟後，它仍只能在喚起它的人也有權限時執行。',
+      optionalActionsFailed: '無法修改可選操作。',
       skillsHint:
         '每個 Agent 的每次執行都會帶上的團隊預設技能，在「技能」頁修改。',
       skillsNone: '還沒有團隊預設技能。',
@@ -1691,6 +1695,7 @@ const zhTW: LocaleResource<typeof enUS> = {
       title: '版本',
       description: '每次儲存都會建立新版本；Agents一律取得最新版本。',
       current: '當前',
+      via: '{{author}} 經由 {{agent}}',
       compare: '比較',
       compareTitle: '版本 {{version}} → 版本 {{current}}',
       compareDescription: '從那時起，紅色線被刪除，綠色線被新增。',

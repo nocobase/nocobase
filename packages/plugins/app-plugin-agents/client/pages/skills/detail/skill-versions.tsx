@@ -113,7 +113,15 @@ export function SkillVersions({
                 {version.note || '—'}
               </span>
               <span className='text-xs text-muted-foreground'>
-                {[version.createdByName, format.relative(version.createdAt)]
+                {[
+                  version.viaAgentId
+                    ? t('skills.versions.via', {
+                        author: version.createdByName ?? '—',
+                        agent: version.viaAgentName ?? version.viaAgentId,
+                      })
+                    : version.createdByName,
+                  format.relative(version.createdAt),
+                ]
                   .filter(Boolean)
                   .join(' · ')}
               </span>

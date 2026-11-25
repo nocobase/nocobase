@@ -7,7 +7,9 @@
  * reporting hundreds of models once created hundreds of pending agents nobody wanted. Someone who manages agents
  * writes what an agent discovered from runners is good at, chooses its default reasoning effort and enables or
  * disables it (`update`); everything else about it is the application's, the same for each (`setDefaults`: its
- * instructions and business actions). Who may change an agent is the route's concern; the service checks the values
+ * instructions and business actions), except the optional actions (`AgentDefaults.optionalActions`) each agent has only
+ * once someone who manages agents turns them on for it (`update`'s `optionalActions`). Who may change an agent is the
+ * route's concern; the service checks the values
  * and the revision an edit was made against, and keeps the history of every change (`agent.history.ts`).
  *
  * Disabling an agent withdraws its queued runs and announces `agent.removed`, so the application lets go of the work
@@ -89,6 +91,14 @@ export const AgentPatchSchema: z.ZodType<AgentPatch> = z.strictObject({
       description:
         'Who may chat with it: null or an empty list for every signed-in person, else the keys of the permission sets (roles) whose members may. Managers of agents always may.',
     }),
+  optionalActions: z
+    .array(z.string().trim().min(1).max(255))
+    .max(100)
+    .optional()
+    .meta({
+      description:
+        'The optional business actions it has (`GET /api/agents/actions`, `optional`), replacing its current choice; off for a new agent. Others are refused with 400 `ACTION_NOT_OPTIONAL`.',
+    }),
   expectedRevision: z
     .number()
     .int()
@@ -100,6 +110,11 @@ export const AgentPatchSchema: z.ZodType<AgentPatch> = z.strictObject({
 export interface AgentDefaults {
   readonly instructions: string | null;
   readonly actions: readonly string[];
+  /**
+   * Business actions no discovered agent has until someone who manages agents turns them on for it (`AgentPatch.
+   * optionalActions`); each agent keeps its own choice when the defaults are applied again. Never in `actions`.
+   */
+  readonly optionalActions?: readonly string[];
   /** Suggested descriptions by tool and normalized model id; never written by applyDefaults. */
   readonly modelDescriptions?: Readonly<
     Partial<Record<AgentTool, Readonly<Record<string, CatalogModel['goodAt']>>>>
@@ -308,12 +323,27 @@ export function createAgentService(deps: AgentServiceDeps): AgentService {
     });
 
   /** The defaults as stored: the instructions, and the actions each once. */
-  const currentDefaults = (): AgentDefaults => {
+  const currentDefaults = (): AgentDefaults & {
+    readonly optionalActions: readonly string[];
+  } => {
     const value = defaults();
+    const optionalActions = cleanList(value.optionalActions ?? []);
     return {
       instructions: value.instructions,
-      actions: cleanList(value.actions),
+      actions: cleanList(value.actions).filter(
+        (key) => !optionalActions.includes(key),
+      ),
+      optionalActions,
     };
+  };
+
+  /** The defaults' actions and, of the optional ones, those `chosen` turns on, in the defaults' order. */
+  const actionsWith = (chosen: readonly string[]): string[] => {
+    const { actions, optionalActions } = currentDefaults();
+    return [
+      ...actions,
+      ...optionalActions.filter((key) => chosen.includes(key)),
+    ];
   };
 
   /** The name a new agent of `tool` and `model` is saved with (`uniqueAgentName`), against the non-removed agents. */
@@ -418,6 +448,17 @@ export function createAgentService(deps: AgentServiceDeps): AgentService {
           { reason: 'AGENT_MANAGED' },
         );
       const effort = patch.effort === undefined ? undefined : patch.effort;
+      if (patch.optionalActions !== undefined) {
+        const { optionalActions } = currentDefaults();
+        const unknown = patch.optionalActions.filter(
+          (key) => !optionalActions.includes(key),
+        );
+        if (unknown.length > 0)
+          throw invalid(
+            `Not an optional action: ${unknown.join(', ')}. Optional actions: ${optionalActions.join(', ') || 'none'}.`,
+            { field: 'optionalActions', reason: 'ACTION_NOT_OPTIONAL' },
+          );
+      }
       const entry = current.modelEntries[0];
       if (effort && entry && !effortsFor(entry).includes(effort))
         throw invalid(
@@ -481,6 +522,9 @@ export function createAgentService(deps: AgentServiceDeps): AgentService {
               ...(patch.chatRoles === undefined
                 ? {}
                 : { chatRoles: normalizeChatRoles(patch.chatRoles) }),
+              ...(patch.optionalActions === undefined
+                ? {}
+                : { actions: actionsWith(patch.optionalActions) }),
               updatedAt: now,
             }))
           )
@@ -747,7 +791,7 @@ export function createAgentService(deps: AgentServiceDeps): AgentService {
       });
     },
     async applyDefaults(options = {}) {
-      const { instructions, actions } = currentDefaults();
+      const { instructions, optionalActions } = currentDefaults();
       return tx.run(async ({ conn, emit }) => {
         const records = await agentsRepo(conn).findMany({
           filter: (f) =>
@@ -759,6 +803,10 @@ export function createAgentService(deps: AgentServiceDeps): AgentService {
         let changed = 0;
         for (const record of records) {
           const agent = (await findAgent(conn, record.id))!;
+          // Each agent keeps the optional actions someone turned on for it.
+          const actions = actionsWith(
+            agent.actions.filter((key) => optionalActions.includes(key)),
+          );
           if (
             (options.preserveInstructions ||
               agent.instructions === instructions) &&

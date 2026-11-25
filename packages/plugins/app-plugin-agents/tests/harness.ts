@@ -199,6 +199,8 @@ export interface RequestOptions {
   readonly can?: readonly string[];
   /** For the people's routes: the levels of business actions (`agents.agents/edit=related`). */
   readonly scope?: readonly string[];
+  /** For the people's routes: the caller is an agent's run for `user` (`AdminCaller.run`). */
+  readonly run?: { readonly id: string; readonly agentId: string };
   readonly headers?: Readonly<Record<string, string>>;
   /** A multipart body in place of `body`. */
   readonly form?: FormData;
@@ -457,8 +459,22 @@ export async function createHarness(
         .filter(Boolean)
         .map((entry) => entry.split('=') as [string, string]),
     );
+    // `x-test-run: <run id>:<agent id>`: the caller is that agent's run for `user`.
+    const [runId, runAgentId] = (context.req.header('x-test-run') ?? '').split(
+      ':',
+    );
     context.set('caller', {
       userId: user,
+      ...(runId && runAgentId
+        ? {
+            run: {
+              id: runId,
+              agentId: runAgentId,
+              subjectKind: 'conversation',
+              subjectId: 'conversation-1',
+            },
+          }
+        : {}),
       onlineContext: {
         user: { id: user },
         credentials: { kind: 'test-session', userId: user },
@@ -572,6 +588,8 @@ export async function createHarness(
     if (options.user) headers['x-test-user'] = options.user;
     if (options.can) headers['x-test-can'] = options.can.join(',');
     if (options.scope) headers['x-test-scope'] = options.scope.join(',');
+    if (options.run)
+      headers['x-test-run'] = `${options.run.id}:${options.run.agentId}`;
     const response = await app.request(url, {
       method,
       headers,

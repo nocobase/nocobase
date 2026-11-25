@@ -259,6 +259,10 @@ const koKR: LocaleResource<typeof enUS> = {
       actionsHint:
         '이 에이전트가 업무 데이터에 수행할 수 있는 작업입니다. 에이전트를 실행한 사용자에게도 해당 권한이 있어야 합니다.',
       actionsNone: '이 에이전트에는 업무 작업이 없습니다.',
+      optionalActions: '선택 작업',
+      optionalActionsHint:
+        '모든 에이전트에서 기본적으로 꺼져 있으며 이 에이전트에만 켤 수 있습니다. 켜도 깨운 사람에게 권한이 있을 때만 실행합니다.',
+      optionalActionsFailed: '선택 작업을 변경하지 못했습니다.',
       skillsHint:
         '모든 에이전트가 실행할 때마다 사용하는 팀 기본 스킬입니다. 스킬 페이지에서 변경할 수 있습니다.',
       skillsNone: '팀 기본 스킬이 아직 없습니다.',
@@ -1757,6 +1761,7 @@ const koKR: LocaleResource<typeof enUS> = {
       description:
         '저장할 때마다 새 버전이 되며 Agent는 항상 최신 버전을 받습니다.',
       current: '현재',
+      via: '{{author}} ({{agent}} 경유)',
       compare: '비교',
       compareTitle: '버전 {{version}} → 버전 {{current}}',
       compareDescription:

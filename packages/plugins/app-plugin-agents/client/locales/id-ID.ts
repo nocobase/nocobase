@@ -264,6 +264,10 @@ const idID: LocaleResource<typeof enUS> = {
       actionsHint:
         'Tindakan yang diizinkan aplikasi untuk dilakukan agen ini pada data bisnis. Pengguna yang menjalankan agen juga harus memiliki izin untuk tindakan tersebut.',
       actionsNone: 'Agen ini tidak memiliki tindakan bisnis.',
+      optionalActions: 'Tindakan opsional',
+      optionalActionsHint:
+        'Nonaktif untuk semua agen sampai Anda mengaktifkannya untuk agen ini. Agen tetap hanya bertindak jika orang yang membangunkannya juga berwenang.',
+      optionalActionsFailed: 'Tidak dapat mengubah tindakan opsional.',
       skillsHint:
         'Keterampilan bawaan tim yang digunakan pada setiap eksekusi semua agen. Ubah di halaman Keterampilan.',
       skillsNone: 'Belum ada keterampilan bawaan tim.',
@@ -1786,6 +1790,7 @@ const idID: LocaleResource<typeof enUS> = {
       description:
         'Setiap penyimpanan membuat versi baru; Agent selalu mendapatkan versi terbaru.',
       current: 'Saat ini',
+      via: '{{author}} melalui {{agent}}',
       compare: 'Bandingkan',
       compareTitle: 'Versi {{version}} → versi {{current}}',
       compareDescription:

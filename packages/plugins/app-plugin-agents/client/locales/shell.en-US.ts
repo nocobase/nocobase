@@ -29,6 +29,10 @@ const shellEnUS = {
       actionsHint:
         'What the application lets this agent do in business data. It acts only where the person who woke it may act too.',
       actionsNone: 'This agent has no business actions.',
+      optionalActions: 'Optional actions',
+      optionalActionsHint:
+        'Off for every agent until you turn them on for this one. It still acts only where the person who woke it may act too.',
+      optionalActionsFailed: 'Could not change the optional actions.',
       skillsHint:
         'The team default skills every run of every agent gets. Change them on the Skills page.',
       skillsNone: 'No team default skills yet.',

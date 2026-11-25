@@ -958,6 +958,10 @@ export const AgentActionOptionSchema: z.ZodType<AgentActionOption> = z.object({
   groupTitle: I18nTextSchema.optional(),
   description: I18nTextSchema.optional(),
   defaultOn: z.boolean().optional(),
+  optional: z.boolean().optional().meta({
+    description:
+      'Off for every agent until someone who manages agents turns it on for one (`optionalActions` of `PATCH /api/agents/{agentId}`).',
+  }),
   grantable: z.boolean().optional(),
   reason: I18nTextSchema.optional(),
 });
@@ -1155,6 +1159,12 @@ const skillVersionObject = z.object({
   note: z.string().nullable(),
   createdById: z.string().nullable(),
   createdByName: z.string().nullable(),
+  viaAgentId: z.string().nullable().meta({
+    description:
+      'The agent that wrote it for `createdById` in one of its runs (`viaRunId`); null for a person’s own change.',
+  }),
+  viaAgentName: z.string().nullable(),
+  viaRunId: z.string().nullable(),
   createdAt: dateTime,
 });
 

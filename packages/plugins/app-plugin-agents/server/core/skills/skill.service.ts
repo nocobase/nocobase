@@ -47,6 +47,7 @@ import {
   type SkillUpload,
   type SkillVersion,
   type SkillVersionDetail,
+  type SkillVia,
 } from '../../../shared/skills.js';
 import type { Clock } from '../../kernel/clock.js';
 import {
@@ -175,7 +176,12 @@ export interface SkillService {
   /** Every skill, or only those with these ids (unknown ids are left out): two queries whatever their number. */
   list(ids?: readonly string[]): Promise<Skill[]>;
   get(id: string): Promise<SkillDetail>;
-  create(userId: string | null, input: SkillInput): Promise<SkillDetail>;
+  /** With `via`, the agent's run that made it for `userId`, recorded on the version (`SkillVersion.viaAgentId`). */
+  create(
+    userId: string | null,
+    input: SkillInput,
+    via?: SkillVia | null,
+  ): Promise<SkillDetail>;
   /**
    * A new version with everything given, when the skill is still at `save.expectedRevision` (its revision is its
    * current version): 409 `REVISION_CONFLICT` with the current `metadata.revision` otherwise.
@@ -184,6 +190,7 @@ export interface SkillService {
     id: string,
     userId: string | null,
     save: SkillSave,
+    via?: SkillVia | null,
   ): Promise<SkillDetail>;
   remove(id: string): Promise<void>;
   versions(id: string): Promise<SkillVersion[]>;
@@ -194,6 +201,7 @@ export interface SkillService {
     version: number,
     userId: string | null,
     expectedRevision: number,
+    via?: SkillVia | null,
   ): Promise<SkillDetail>;
   validateIds(
     conn: DatabaseConnection,
@@ -239,6 +247,7 @@ export interface SkillService {
   importArchive(
     userId: string | null,
     input: SkillImport,
+    via?: SkillVia | null,
   ): Promise<SkillDetail>;
   /**
    * A version of one of a run's skills, as an online run reads it: `SKILL.md` and its files, text read, by the
@@ -270,6 +279,11 @@ export interface SkillServiceDeps {
   readonly clock: Clock;
   readonly people: People;
   readonly blobs: SkillBlobs;
+  /** The names of agents by id, for the versions an agent wrote (`SkillVersion.viaAgentName`); none when absent. */
+  readonly agentNames?: (
+    conn: DatabaseConnection,
+    ids: readonly string[],
+  ) => Promise<ReadonlyMap<string, string>>;
 }
 
 const ManifestSchema = z.array(
@@ -363,6 +377,19 @@ function skillOfArchive(entries: readonly ZipEntry[]): {
       .filter((entry) => entry !== markdown)
       .map((entry) => ({ ...entry, name: entry.name.slice(prefix.length) }))
       .sort((a, b) => a.name.localeCompare(b.name)),
+  };
+}
+
+/** Who a version was written through: the agent and its run, with the agent's name when it is known. */
+function viaOf(
+  row: Pick<SkillVersionRecord, 'viaAgentId' | 'viaRunId'>,
+  agents: ReadonlyMap<string, string>,
+): Pick<SkillVersion, 'viaAgentId' | 'viaAgentName' | 'viaRunId'> {
+  const agentId = row.viaAgentId ?? null;
+  return {
+    viaAgentId: agentId,
+    viaAgentName: agentId ? (agents.get(agentId) ?? null) : null,
+    viaRunId: row.viaRunId ?? null,
   };
 }
 
@@ -555,6 +582,7 @@ export function createSkillService(deps: SkillServiceDeps): SkillService {
     },
     userId: string | null,
     now: string,
+    via: SkillVia | null = null,
   ): Promise<void> => {
     await requireFreeName(conn, values.name, skillId);
     await versionsRepo(conn).createOne({
@@ -572,6 +600,8 @@ export function createSkillService(deps: SkillServiceDeps): SkillService {
           values.manifest,
         ),
         createdById: userId,
+        viaAgentId: via?.agentId ?? null,
+        viaRunId: via?.runId ?? null,
         createdAt: now,
       },
     });
@@ -593,6 +623,21 @@ export function createSkillService(deps: SkillServiceDeps): SkillService {
       throw revisionConflict(
         Number((await requireSkill(conn, skillId)).currentVersion),
       );
+  };
+
+  /** The names of the agents that wrote `rows`: one query, none when no agent wrote any. */
+  const agentNamesOf = async (
+    conn: DatabaseConnection,
+    rows: readonly SkillVersionRecord[],
+  ): Promise<ReadonlyMap<string, string>> => {
+    const ids = [
+      ...new Set(
+        rows.flatMap((row) => (row.viaAgentId ? [row.viaAgentId] : [])),
+      ),
+    ];
+    return ids.length > 0 && deps.agentNames
+      ? deps.agentNames(conn, ids)
+      : new Map();
   };
 
   /** Refuses a change made against a revision the skill has left. */
@@ -656,6 +701,7 @@ export function createSkillService(deps: SkillServiceDeps): SkillService {
     userId: string | null,
     input: SkillInput,
     note: string | null = null,
+    via: SkillVia | null = null,
   ): Promise<SkillDetail> => {
     const checked = checkedSkill(input.content);
     await requireFreeName(tx.read(), checked.name, null);
@@ -683,6 +729,7 @@ export function createSkillService(deps: SkillServiceDeps): SkillService {
         { ...checked, manifest, note },
         userId,
         now,
+        via,
       );
       return detail(conn, id);
     });
@@ -692,6 +739,7 @@ export function createSkillService(deps: SkillServiceDeps): SkillService {
     id: string,
     userId: string | null,
     save: SkillSave,
+    via: SkillVia | null = null,
   ): Promise<SkillDetail> => {
     const checked = checkedSkill(save.content);
     requireRevision(await requireSkill(tx.read(), id), save.expectedRevision);
@@ -707,6 +755,7 @@ export function createSkillService(deps: SkillServiceDeps): SkillService {
         { ...checked, manifest, note: save.note ?? null },
         userId,
         clock.now().toISOString(),
+        via,
       );
       return detail(conn, id);
     });
@@ -734,9 +783,9 @@ export function createSkillService(deps: SkillServiceDeps): SkillService {
 
     get: (id) => detail(tx.read(), id),
 
-    create: (userId, input) => createWith(userId, input),
+    create: (userId, input, via = null) => createWith(userId, input, null, via),
 
-    save: (id, userId, save) => saveWith(id, userId, save),
+    save: (id, userId, save, via = null) => saveWith(id, userId, save, via),
 
     remove: (id) =>
       tx.run(async ({ conn }) => {
@@ -757,6 +806,7 @@ export function createSkillService(deps: SkillServiceDeps): SkillService {
         conn,
         rows.map((row) => row.createdById),
       );
+      const agents = await agentNamesOf(conn, rows);
       return rows.map((row) => ({
         version: Number(row.version),
         name: row.name,
@@ -766,6 +816,7 @@ export function createSkillService(deps: SkillServiceDeps): SkillService {
         createdByName: row.createdById
           ? (names.get(row.createdById) ?? null)
           : null,
+        ...viaOf(row, agents),
         createdAt: row.createdAt,
       }));
     },
@@ -775,6 +826,7 @@ export function createSkillService(deps: SkillServiceDeps): SkillService {
       const skill = await requireSkill(conn, id);
       const row = await versionOf(conn, id, version);
       const names = await people.names(conn, [row.createdById]);
+      const agents = await agentNamesOf(conn, [row]);
       return {
         version: Number(row.version),
         name: row.name,
@@ -784,13 +836,14 @@ export function createSkillService(deps: SkillServiceDeps): SkillService {
         createdByName: row.createdById
           ? (names.get(row.createdById) ?? null)
           : null,
+        ...viaOf(row, agents),
         createdAt: row.createdAt,
         content: deliveredMarkdown(skill.slug, row.description, row.content),
         files: await entriesOf(manifestOf(row.manifest)),
       };
     },
 
-    restore: (id, version, userId, expectedRevision) =>
+    restore: (id, version, userId, expectedRevision, via = null) =>
       tx.run(async ({ conn }) => {
         const skill = await requireSkill(conn, id);
         requireRevision(skill, expectedRevision);
@@ -815,6 +868,7 @@ export function createSkillService(deps: SkillServiceDeps): SkillService {
           },
           userId,
           clock.now().toISOString(),
+          via,
         );
         return detail(conn, id);
       }),
@@ -926,7 +980,7 @@ export function createSkillService(deps: SkillServiceDeps): SkillService {
       };
     },
 
-    async importArchive(userId, input) {
+    async importArchive(userId, input, via = null) {
       const conn = tx.read();
       if (!(await blobs.info(conn, [input.archive])).has(input.archive))
         throw invalid('The archive is not uploaded; upload it first.');
@@ -967,7 +1021,7 @@ export function createSkillService(deps: SkillServiceDeps): SkillService {
         });
       }
       if (!input.skillId)
-        return createWith(userId, { content, files }, input.note ?? null);
+        return createWith(userId, { content, files }, input.note ?? null, via);
       const skill = await requireSkill(conn, input.skillId);
       return saveWith(input.skillId, userId, {
         content,
@@ -975,7 +1029,7 @@ export function createSkillService(deps: SkillServiceDeps): SkillService {
         note: input.note ?? 'Imported from an archive',
         expectedRevision:
           input.expectedRevision ?? Number(skill.currentVersion),
-      });
+      }, via);
     },
 
     async snapshot(slug, hash) {

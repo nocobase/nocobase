@@ -59,6 +59,7 @@ import {
   SKILL_UPLOAD_MAX_BYTES,
   type Skill,
   type SkillView,
+  type SkillVia,
 } from '../../shared/skills.js';
 import { CONVERSATION_SUBJECT } from '../../shared/conversations.js';
 import type { ChatAudience } from '../../shared/agents.js';
@@ -210,6 +211,8 @@ export interface AdminCaller {
   /** Set when a run's token authenticated the request: the subject the run works on. */
   readonly run?: {
     readonly id: string;
+    /** The agent whose run it is. */
+    readonly agentId?: string;
     readonly subjectKind: string;
     readonly subjectId: string;
   } | null;
@@ -243,7 +246,17 @@ async function mayEdit(
   relatedTo: string | null,
 ): Promise<boolean> {
   if (await who.can('agents.skills', 'manage')) return true;
+  // An agent's run writes skills only where it may manage them: the application decides that for the agent and the
+  // person who woke it, so the edit action alone does not let a run write.
+  if (who.run) return false;
   return reaches(await who.scope('agents.agents/edit'), relatedTo);
+}
+
+/** The agent's run a change is made in, recorded on the version it writes (`SkillVersion.viaAgentId`). */
+function viaOf(who: AdminCaller): SkillVia | null {
+  return who.run?.agentId
+    ? { agentId: who.run.agentId, runId: who.run.id }
+    : null;
 }
 
 const RunPosition = z.object({ createdAt: z.string(), id: z.string() });
@@ -404,7 +417,7 @@ export function createAdminRoutes(
       operationId: 'agentsListActions',
       ...cliRoute({
         command: 'agent action list',
-        columns: ['key', 'group', 'defaultOn', 'grantable', 'types'],
+        columns: ['key', 'group', 'defaultOn', 'optional', 'grantable', 'types'],
       }),
       description:
         'As the application offers them. Needs `agents.agents` read.',
@@ -957,6 +970,7 @@ export function createAdminRoutes(
           data: await services.skills.create(
             caller(context).userId,
             context.req.valid('json'),
+            viaOf(caller(context)),
           ),
         },
         201,
@@ -1009,7 +1023,7 @@ export function createAdminRoutes(
         examples: ['skill update <skill> --content-file SKILL.md --revision 3'],
       }),
       description:
-        "Saves a new version with everything it holds, its SKILL.md checked as a new skill's is; a new front matter `name` renames the skill. Its creator (at the related level of `agents.agents` edit) or a manager of skills may. A skill the application protects is refused with 403 `SKILL_PROTECTED`.",
+        "Saves a new version with everything it holds, its SKILL.md checked as a new skill's is; a new front matter `name` renames the skill. Its creator (at the related level of `agents.agents` edit) or a manager of skills may; an agent’s run only with `agents.skills` manage, and the version records the agent (`viaAgentId`, `viaRunId`). A skill the application protects is refused with 403 `SKILL_PROTECTED`.",
       responses: {
         200: dataResponse(SkillViewSchema),
         404: noSkill,
@@ -1024,6 +1038,7 @@ export function createAdminRoutes(
         context.req.valid('param').skillId,
         caller(context).userId,
         context.req.valid('json'),
+        viaOf(caller(context)),
       );
       return context.json({ data: await viewOf(context, saved.id) });
     },
@@ -1136,7 +1151,7 @@ export function createAdminRoutes(
         confirm: 'Make this version the current one?',
       }),
       description:
-        'The version becomes current again, as a new version. Its creator (at the related level of `agents.agents` edit) or a manager of skills may. A skill the application protects is refused with 403 `SKILL_PROTECTED`.',
+        'The version becomes current again, as a new version. Its creator (at the related level of `agents.agents` edit) or a manager of skills may; an agent’s run only with `agents.skills` manage, and the version records the agent. A skill the application protects is refused with 403 `SKILL_PROTECTED`.',
       responses: {
         200: dataResponse(SkillViewSchema),
         400: apiErrorResponse(
@@ -1157,6 +1172,7 @@ export function createAdminRoutes(
         version,
         caller(context).userId,
         context.req.valid('json').expectedRevision,
+        viaOf(caller(context)),
       );
       return context.json({ data: await viewOf(context, restored.id) });
     },
@@ -1167,7 +1183,7 @@ export function createAdminRoutes(
     const who = caller(context);
     if (
       !(await who.can('agents.skills', 'manage')) &&
-      (await who.scope('agents.agents/edit')) === 'none'
+      (who.run || (await who.scope('agents.agents/edit')) === 'none')
     )
       throw forbidden(
         'This needs agents.skills manage, or the edit action on skills.',
@@ -1183,7 +1199,7 @@ export function createAdminRoutes(
       summary: 'Upload a skill file or archive',
       operationId: 'agentsUploadSkillFile',
       ...cliRoute({ command: 'skill upload' }),
-      description: `Stores one file (the \`file\` field of a multipart body, at most ${SKILL_UPLOAD_MAX_BYTES} bytes) once per content and answers its SHA-256 as \`id\`: a save names it as a file's \`hash\`, an import as its \`archive\`. What no version names is deleted after an hour. Needs \`agents.agents\` manage, or the edit action on skills.`,
+      description: `Stores one file (the \`file\` field of a multipart body, at most ${SKILL_UPLOAD_MAX_BYTES} bytes) once per content and answers its SHA-256 as \`id\`: a save names it as a file's \`hash\`, an import as its \`archive\`. What no version names is deleted after an hour. Needs \`agents.skills\` manage, or the edit action on skills; an agent’s run, \`agents.skills\` manage.`,
       requestBody: skillUploadBody,
       responses: {
         201: dataResponse(SkillUploadSchema, 'Stored.'),
@@ -1255,7 +1271,7 @@ export function createAdminRoutes(
         ],
       }),
       description:
-        'A zip in the Agent Skills layout, uploaded first (`agentsUploadSkillFile`): a new skill named by its front matter, or with `skillId` a new version of that skill, checked as a save is. Executable files stay executable. A new skill needs `agents.skills` manage; a new version, the right to edit the skill. A skill the application protects is refused with 403 `SKILL_PROTECTED`.',
+        'A zip in the Agent Skills layout, uploaded first (`agentsUploadSkillFile`): a new skill named by its front matter, or with `skillId` a new version of that skill, checked as a save is. Executable files stay executable. A new skill needs `agents.skills` manage; a new version, the right to edit the skill (for an agent’s run, `agents.skills` manage). A version an agent’s run writes records the agent. A skill the application protects is refused with 403 `SKILL_PROTECTED`.',
       responses: {
         201: dataResponse(SkillViewSchema, 'Imported.'),
         404: noSkill,
@@ -1279,7 +1295,11 @@ export function createAdminRoutes(
         if (!(await policyAllows('canEdit', skill)))
           throw protectedSkill('edited');
       } else await requireCan(context, 'agents.skills', 'manage');
-      const imported = await services.skills.importArchive(who.userId, input);
+      const imported = await services.skills.importArchive(
+        who.userId,
+        input,
+        viaOf(who),
+      );
       return context.json({ data: await viewOf(context, imported.id) }, 201);
     },
   );
@@ -2131,15 +2151,16 @@ export function createAdminRoutes(
         examples: [
           'agent update <agent> --good-at "Code review" --enabled --expected-revision 2',
           'agent update <agent> --no-enabled --expected-revision 3',
+          'agent update <agent> --optional-actions agents.skills/read --expected-revision 4',
         ],
       }),
       description:
-        "Writes what an agent discovered from runners is good at, its default reasoning effort, and enables or disables it, against the revision the edit was made from. An agent is enabled only with a description. Disabling withdraws its queued runs. An application's own agent is changed through the application. Needs `agents.agents` manage.",
+        "Writes what an agent discovered from runners is good at, its default reasoning effort, and enables or disables it, against the revision the edit was made from. An agent is enabled only with a description. Disabling withdraws its queued runs. `optionalActions` replaces which optional business actions it has (`GET /api/agents/actions`, `optional`); a new agent has none, and applying the application's defaults keeps the choice. An application's own agent is changed through the application. Needs `agents.agents` manage.",
       responses: {
         200: dataResponse(AgentSchema),
         400: apiErrorResponse(
           400,
-          'Enabling without a description (`GOOD_AT_REQUIRED`), an effort its tool does not take (`EFFORT_UNSUPPORTED`), or an application’s own agent (`AGENT_MANAGED`).',
+          'Enabling without a description (`GOOD_AT_REQUIRED`), an effort its tool does not take (`EFFORT_UNSUPPORTED`), an action that is not optional (`ACTION_NOT_OPTIONAL`), or an application’s own agent (`AGENT_MANAGED`).',
         ),
         404: noAgent,
         409: apiErrorResponse(

@@ -154,6 +154,7 @@ const skillsEnUS = {
       title: 'Versions',
       description: 'Every save is a new version; agents always get the latest.',
       current: 'Current',
+      via: '{{author}} via {{agent}}',
       compare: 'Compare',
       compareTitle: 'Version {{version}} → version {{current}}',
       compareDescription: 'Lines removed since then in red, added in green.',

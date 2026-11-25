@@ -265,6 +265,10 @@ const jaJP: LocaleResource<typeof enUS> = {
       actionsHint:
         'このエージェントが業務データに対して実行できる操作です。起動したユーザーにもその操作を行う権限が必要です。',
       actionsNone: 'このエージェントには業務アクションがありません。',
+      optionalActions: 'オプションの操作',
+      optionalActionsHint:
+        'すべてのエージェントで既定はオフです。このエージェントだけでオンにできます。オンにしても、起動した人に権限がある場合にのみ実行します。',
+      optionalActionsFailed: 'オプションの操作を変更できませんでした。',
       skillsHint:
         'すべてのエージェントの各実行に適用されるチーム既定のスキルです。スキルページで変更できます。',
       skillsNone: 'チーム既定のスキルはまだありません。',
@@ -1790,6 +1794,7 @@ const jaJP: LocaleResource<typeof enUS> = {
       description:
         '保存するたびに新しいバージョンが作成され、Agentsには常に最新のバージョンが渡されます。',
       current: '現在',
+      via: '{{author}}（{{agent}} 経由）',
       compare: '比較する',
       compareTitle: 'バージョン{{version}} → バージョン{{current}}',
       compareDescription: 'それ以降削除された行は赤、追加された行は緑です。',

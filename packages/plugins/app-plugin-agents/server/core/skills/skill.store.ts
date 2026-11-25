@@ -29,6 +29,8 @@ export interface SkillVersionRecord {
   readonly note: string | null;
   readonly contentHash: string;
   readonly createdById: string | null;
+  readonly viaAgentId?: string | null;
+  readonly viaRunId?: string | null;
   readonly createdAt: string;
 }
 

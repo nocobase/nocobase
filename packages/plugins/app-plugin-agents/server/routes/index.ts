@@ -82,6 +82,7 @@ export const apiRoutes: AppApiRouteContribution<AppPluginApplication> =
         run: run
           ? {
               id: run.id,
+              agentId: run.agentId,
               subjectKind: run.subjectKind,
               subjectId: run.subjectId,
             }
