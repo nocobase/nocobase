@@ -3434,18 +3434,29 @@ describe('plugin-ui-layout mobile models', () => {
             parentId: 'home-page',
             subKey: 'page',
           });
-          vi.spyOn(page, 'renderFirstTab').mockReturnValue(React.createElement('div', null, 'Existing block'));
+          vi.spyOn(page, 'renderFirstTab').mockImplementation(() =>
+            React.createElement(
+              'section',
+              {
+                'aria-label': 'Existing block',
+                'data-has-float-menu': flowEngine.context.flowSettingsEnabled || undefined,
+              },
+              React.createElement('div', { className: 'nb-ui-layout-mobile-surface' }, 'Embedded page'),
+            ),
+          );
           vi.spyOn(flowEngine, 'loadOrCreateModel').mockResolvedValue(page);
         },
       });
 
-      const block = await screen.findByText('Existing block');
+      const block = await screen.findByRole('region', { name: 'Existing block' });
       expect(block.closest('[data-has-float-menu]')).toBeNull();
 
       fireEvent.click(screen.getByTestId('ui-editor-button'));
       await waitFor(() => {
-        const pageHost = screen.getByText('Existing block').closest('[data-has-float-menu]');
-        expect(pageHost).toHaveStyle({ height: '100%' });
+        const block = screen.getByRole('region', { name: 'Existing block' });
+        expect(block).toHaveAttribute('data-has-float-menu', 'true');
+        expect(block.parentElement?.closest('[data-has-float-menu]')).toHaveStyle({ height: '100%' });
+        expect(block).not.toHaveStyle({ height: '100%' });
       });
     } finally {
       restoreBreakpoint();

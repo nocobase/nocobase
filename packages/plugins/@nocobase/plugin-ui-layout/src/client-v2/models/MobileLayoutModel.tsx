@@ -1714,7 +1714,7 @@ const MobileHomePlaceholder = observer(
         }
 
         /* The page surface is absolutely positioned inside its settings host. */
-        .nb-ui-layout-mobile-page-slot [data-has-float-menu]:has(.nb-ui-layout-mobile-surface) {
+        .nb-ui-layout-mobile-page-slot .nb-flow-route-page > [data-has-float-menu] {
           height: 100%;
         }
 

@@ -32,10 +32,14 @@ export function useRouteContentRequest(
   return { model: current?.model, error, loading, needsConfirmation };
 }
 
-export function RouteContent({ pending, children }: React.PropsWithChildren<{ pending: boolean }>) {
+export function RouteContent({
+  pending,
+  className,
+  children,
+}: React.PropsWithChildren<{ pending: boolean; className?: string }>) {
   // React 18 forwards inert as a string attribute. Keep the same DOM and component state during initialization.
   return (
-    <div style={{ display: 'contents' }} {...(pending ? { inert: '' } : {})}>
+    <div className={className} style={{ display: 'contents' }} {...(pending ? { inert: '' } : {})}>
       {children}
     </div>
   );
