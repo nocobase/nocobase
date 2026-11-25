@@ -56,7 +56,7 @@ const ISSUE_TABS: Record<
 };
 
 /**
- * System settings › Accounts › Sign-in and authentication: the effective sign-in settings, where each comes from and
+ * System settings › Accounts › Authentication: the effective sign-in settings, where each comes from and
  * what to fix. Read-only: every change is made in configuration and takes effect after a restart.
  */
 export default function AuthenticationSettingsPage(): ReactElement {

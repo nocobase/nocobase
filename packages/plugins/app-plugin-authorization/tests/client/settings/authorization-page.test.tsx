@@ -140,7 +140,7 @@ it('switches between the page tabs by address under one heading and keeps keyboa
   ]);
   await screen.findByRole('tab', { name: 'Data rules' });
   expect(
-    screen.getByRole('heading', { name: 'Roles and permissions' }),
+    screen.getByRole('heading', { name: 'Roles & permissions' }),
   ).toBeVisible();
   expect(screen.getAllByRole('tab').map((tab) => tab.textContent)).toEqual([
     'Roles',
@@ -174,7 +174,7 @@ it('shows the one tab a viewer may open without a tab bar', async () => {
   const view = await mount('/settings/default-access', [
     'authorization.default-access',
   ]);
-  await screen.findByRole('heading', { name: 'Roles and permissions' });
+  await screen.findByRole('heading', { name: 'Roles & permissions' });
   // The other tab is listed only once it is known to open, so wait for that answer.
   await settled(view);
   expect(screen.queryByRole('tab')).not.toBeInTheDocument();
@@ -190,7 +190,7 @@ it('uses the agreed Chinese heading and tab names', async () => {
     'zh-CN',
   );
   expect(await screen.findByRole('tab', { name: '数据规则' })).toBeVisible();
-  expect(screen.getByRole('heading', { name: '角色和权限' })).toBeVisible();
+  expect(screen.getByRole('heading', { name: '角色与权限' })).toBeVisible();
   expect(screen.getByRole('tab', { name: '角色' })).toBeVisible();
 });
 
@@ -259,7 +259,7 @@ it('hides Data rules while no rule plugin is installed and lists it once one is'
     'en-US',
     [],
   );
-  await screen.findByRole('heading', { name: 'Roles and permissions' });
+  await screen.findByRole('heading', { name: 'Roles & permissions' });
   await settled(view);
   expect(screen.queryByRole('tab')).not.toBeInTheDocument();
   const settings = view.app.container.resolve(authorizationSettingsToken);
@@ -288,7 +288,7 @@ it('hides Data rules when the viewer may open none of the installed kinds of rul
     'en-US',
     ['sharing-rules'],
   );
-  await screen.findByRole('heading', { name: 'Roles and permissions' });
+  await screen.findByRole('heading', { name: 'Roles & permissions' });
   await settled(view);
   expect(
     screen.queryByRole('tab', { name: 'Data rules' }),

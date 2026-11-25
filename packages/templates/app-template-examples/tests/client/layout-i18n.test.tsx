@@ -22,6 +22,8 @@ import type { ReactNode } from 'react';
 import { Link, MemoryRouter, Route, Routes } from 'react-router';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
+import { resolveHeaderActions } from '@nocobase/app-client/plugins';
+import { headerActions } from '../../client/header-actions.js';
 import locales from '../../client/locales/index.js';
 import { AppLayout } from '../../client/layouts/app-layout.js';
 import { inApplication } from '../../client/routing/settings-shell.js';
@@ -99,7 +101,11 @@ async function setup(children: ReactNode, initialEntry = '/') {
   });
   const app = {
     config: createAppClientConfig({ rawConfig: {} }),
-    runtime: {},
+    runtime: {
+      headerActions: resolveHeaderActions([
+        { packageName: 'test', source: 'application', headerActions },
+      ]),
+    },
   } as unknown as ClientApplication;
   render(
     <I18nProvider runtime={runtime}>
@@ -208,25 +214,24 @@ it('opens the settings navigation from the Settings entry and leads back', async
       within(navigation).getByRole('link', { name: 'Projects' }),
     ).toHaveAttribute('aria-current', 'page'),
   );
-  // The Settings entry stands apart from the application's menu, pinned below it outside the scrolling content.
-  const entries = within(
-    screen.getByRole('complementary', { name: 'Application navigation' }),
-  ).getAllByRole('link');
-  const entry = entries.find((link) => link.textContent === 'System settings');
+  const entry = within(screen.getByTestId('header-actions')).getByRole('link', {
+    name: 'System settings',
+  });
   expect(entry).toHaveAttribute('href', '/settings');
-  expect(entry?.closest('[data-slot="sidebar-content"]')).toBeNull();
-  expect(entry?.closest('[data-sidebar="sidebar"]')).not.toBeNull();
-  expect(within(navigation).queryByText('System settings')).toBeNull();
+  expect(
+    within(navigation).queryByRole('link', { name: 'System settings' }),
+  ).toBeNull();
   expect(
     screen.queryByRole('navigation', { name: 'Resources' }),
   ).not.toBeInTheDocument();
 
-  fireEvent.click(entry!);
+  fireEvent.click(entry);
   const menu = await screen.findByRole('navigation', {
     name: 'Settings navigation',
   });
+  expect(entry).toHaveAttribute('aria-current', 'location');
   // Categories head their modules; the application's own menu is gone.
-  expect(within(menu).getByText('Accounts and permissions')).toBeVisible();
+  expect(within(menu).getByText('Accounts & permissions')).toBeVisible();
   const users = within(menu).getByRole('link', { name: 'Users' });
   expect(users).toHaveAttribute('href', '/settings/users');
   expect(screen.queryByRole('link', { name: 'Projects' })).toBeNull();
@@ -257,13 +262,11 @@ it('opens the settings navigation from the Settings entry and leads back', async
 it('shows the settings navigation in the mobile drawer', async () => {
   vi.stubGlobal('innerWidth', 375);
   await setup(<AppLayout routes={settingsFixture()} />);
-  fireEvent.click(screen.getByRole('button', { name: 'Open navigation' }));
-  const drawer = await screen.findByRole('dialog');
   fireEvent.click(
-    within(drawer).getByRole('link', { name: 'System settings' }),
+    within(screen.getByTestId('header-actions')).getByRole('link', {
+      name: 'System settings',
+    }),
   );
-  // Opening a page closes the drawer; opened again, it holds the settings menu.
-  await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
   fireEvent.click(screen.getByRole('button', { name: 'Open navigation' }));
   const menu = await screen.findByRole('navigation', {
     name: 'Settings navigation',
@@ -352,7 +355,12 @@ it('shows personal settings in their own navigation and keeps the way back acros
     within(menu).getByRole('link', { name: 'Preferences' }),
   ).toHaveAttribute('aria-current', 'page');
   expect(screen.getByText('Ada Lovelace')).toBeVisible();
-  expect(screen.queryByRole('link', { name: 'System settings' })).toBeNull();
+  const shortcut = within(screen.getByTestId('header-actions')).getByRole(
+    'link',
+    { name: 'System settings' },
+  );
+  expect(shortcut).toHaveAttribute('href', '/settings');
+  expect(shortcut).not.toHaveAttribute('aria-current');
   expect(screen.getByRole('link', { name: 'Back' })).toHaveAttribute(
     'href',
     '/projects',

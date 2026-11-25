@@ -133,9 +133,7 @@ describe('plugins page', () => {
     ]);
     // Without a title, the short name.
     expect(disabled[2]).toHaveTextContent('template-print');
-    expect(disabled[2]).toHaveTextContent(
-      'Not enabled · Development dependency',
-    );
+    expect(within(disabled[2]).getByText('Not enabled')).toBeVisible();
     expect(disabled[1]).toHaveTextContent(
       'Enable first: Agents (the enable command includes it)',
     );
@@ -465,15 +463,14 @@ describe('plugins page', () => {
       screen.getByText(/register it in the source project/),
     ).toBeInTheDocument();
     expect(
-      within(group(/Not enabled/)).getByText(
-        'Not enabled · Development dependency',
-      ),
+      within(rowOf('template-print')).getByText('Not enabled'),
     ).toBeInTheDocument();
   });
 
   it('shows the names and descriptions in the current language', async () => {
     await renderPage({ locale: 'zh-CN' });
 
+    expect(within(rowOf('template-print')).getByText('未启用')).toBeVisible();
     expect(rowOf('邮件')).toHaveTextContent('团队邮件');
     expect(rowOf('知识库')).toHaveTextContent('需要先启用：Agents');
     // A plugin without Chinese text falls back to English.

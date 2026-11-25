@@ -122,7 +122,7 @@ describe('application shell', () => {
     ).toBeVisible();
   });
 
-  it('renders no Settings or Inbox entry in the header', async () => {
+  it('omits settings and inbox shortcuts when their routes are absent', async () => {
     renderApplication('/', true);
     await screen.findByRole('heading', { name: 'App client is ready' });
     expect(

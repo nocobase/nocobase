@@ -57,7 +57,6 @@ const frFR: LocaleResource<typeof enUS> = {
     skillsOnly: 'Activé · Skills uniquement',
     enabledAttention: 'Activé · À vérifier',
     disabled: 'Non activé',
-    preinstalled: 'Non activé · Dépendance de développement',
     disabledAttention: 'Non activé · À vérifier',
     unknown: 'Indéterminé · Reconstruire',
   },

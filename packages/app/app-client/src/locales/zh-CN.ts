@@ -4,7 +4,7 @@ export default {
     categories: {
       account: '账号与权限',
       automation: '流程与自动化',
-      messages: '消息',
+      messages: '通信',
       ai: 'AI',
       data: '数据与文件',
       system: '系统',

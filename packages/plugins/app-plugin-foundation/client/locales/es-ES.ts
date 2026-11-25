@@ -54,7 +54,6 @@ const esES: LocaleResource<typeof enUS> = {
     skillsOnly: 'Habilitado · Solo Skills',
     enabledAttention: 'Habilitado · Requiere atención',
     disabled: 'No habilitado',
-    preinstalled: 'No habilitado · Dependencia de desarrollo',
     disabledAttention: 'No habilitado · Requiere atención',
     unknown: 'No se puede saber · Recompilar',
   },

@@ -45,7 +45,6 @@ const enUS = {
     skillsOnly: 'Enabled · Skills only',
     enabledAttention: 'Enabled · Needs attention',
     disabled: 'Not enabled',
-    preinstalled: 'Not enabled · Development dependency',
     disabledAttention: 'Not enabled · Needs attention',
     unknown: "Can't tell · Rebuild",
   },

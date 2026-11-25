@@ -55,7 +55,6 @@ const deDE: LocaleResource<typeof enUS> = {
     skillsOnly: 'Aktiviert · Nur Skills',
     enabledAttention: 'Aktiviert · Braucht Aufmerksamkeit',
     disabled: 'Nicht aktiviert',
-    preinstalled: 'Nicht aktiviert · Entwicklungsabhängigkeit',
     disabledAttention: 'Nicht aktiviert · Braucht Aufmerksamkeit',
     unknown: 'Unbekannt · Neu bauen',
   },

@@ -7,7 +7,7 @@ const pagesViVN: MailPagesResource = {
     mailAccounts: 'Tài khoản thư',
     mailAccountsDescription:
       'Kết nối hộp thư của bạn và quản lý chữ ký, mẫu và nhãn.',
-    mailSettings: 'Thư',
+    mailSettings: 'Kết nối hộp thư',
     mailSettingsDescription:
       'Nhà cung cấp thư, trạng thái của từng tài khoản, nhật ký đồng bộ và nhật ký gửi.',
   },
@@ -22,7 +22,7 @@ const pagesViVN: MailPagesResource = {
       },
     },
     settings: {
-      title: 'Thư',
+      title: 'Kết nối hộp thư',
       actions: {
         read: 'Xem',
         manage: 'Quản lý (thử lại và hủy đồng bộ, gửi thư của thành viên)',
@@ -112,7 +112,7 @@ const pagesViVN: MailPagesResource = {
       },
     },
     settings: {
-      title: 'Thư',
+      title: 'Kết nối hộp thư',
       description:
         'Các nhà cung cấp thư mà thành viên có thể kết nối, cùng trạng thái kết nối, đồng bộ và gửi thư của từng tài khoản. Không hiển thị nội dung thư nào ở đây. Email thông báo hệ thống được cấu hình trong Thông báo.',
       tabs: {

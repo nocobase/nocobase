@@ -53,7 +53,7 @@ const TABS = [
 const ATTENTION = ['reauthorizationRequired', 'revoked'];
 
 /**
- * System settings › Messages › Mail (route `mailSettings`): the Providers members can connect, every member's accounts,
+ * System settings › Communications › Mailbox connections (route `mailSettings`): the Providers members can connect, every member's accounts,
  * synchronizations and sends, and the runtime configuration. No subject or body of any message is shown, because the
  * server never answers one here. Retrying and cancelling other members' work needs `settings:mail.admin/manage`; the
  * server marks each row it allows.
@@ -120,14 +120,18 @@ export default function MailSettingsPage(): ReactElement {
   return (
     <PageContainer>
       <PageHeader
-        title={t('pages.settings.title', { defaultValue: 'Mail' })}
+        title={t('pages.settings.title', {
+          defaultValue: 'Mailbox connections',
+        })}
         description={t('pages.settings.description', {
           defaultValue:
             'The mail Providers members can connect, and the connection, synchronization and sending status of every account. No message content is shown here. System notification emails are configured in Notifications.',
         })}
       />
       <MailPageTabs
-        label={t('pages.settings.title', { defaultValue: 'Mail' })}
+        label={t('pages.settings.title', {
+          defaultValue: 'Mailbox connections',
+        })}
         onChange={(key) => {
           setAccountFilter(undefined);
           setTab(key);

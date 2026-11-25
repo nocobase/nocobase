@@ -53,7 +53,6 @@ const viVN: LocaleResource<typeof enUS> = {
     skillsOnly: 'Đã bật · Chỉ có Skill',
     enabledAttention: 'Đã bật · Cần chú ý',
     disabled: 'Chưa bật',
-    preinstalled: 'Chưa bật · Phụ thuộc phát triển',
     disabledAttention: 'Chưa bật · Cần chú ý',
     unknown: 'Không xác định · Cần build lại',
   },

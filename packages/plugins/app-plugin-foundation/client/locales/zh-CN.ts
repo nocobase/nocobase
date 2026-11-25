@@ -46,7 +46,6 @@ const zhCN: FoundationResource = {
     skillsOnly: '已启用 · 只含 Skill',
     enabledAttention: '已启用 · 需要注意',
     disabled: '未启用',
-    preinstalled: '未启用 · 开发依赖',
     disabledAttention: '未启用 · 需要注意',
     unknown: '无法确认 · 需重新构建',
   },

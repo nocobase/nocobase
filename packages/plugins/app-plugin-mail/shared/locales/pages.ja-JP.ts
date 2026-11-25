@@ -7,7 +7,7 @@ const pagesJaJP: MailPagesResource = {
     mailAccounts: 'メールアカウント',
     mailAccountsDescription:
       'メールボックスを接続し、署名、テンプレート、ラベルを管理します。',
-    mailSettings: 'メール',
+    mailSettings: 'メールボックス接続',
     mailSettingsDescription:
       'メールプロバイダー、各アカウントの状態、同期ログと送信ログ。',
   },
@@ -22,7 +22,7 @@ const pagesJaJP: MailPagesResource = {
       },
     },
     settings: {
-      title: 'メール',
+      title: 'メールボックス接続',
       actions: {
         read: '表示',
         manage: '管理（メンバーの同期と送信の再試行・キャンセル）',
@@ -112,7 +112,7 @@ const pagesJaJP: MailPagesResource = {
       },
     },
     settings: {
-      title: 'メール',
+      title: 'メールボックス接続',
       description:
         'メンバーが接続できるメールプロバイダーと、各アカウントの接続・同期・送信の状態です。メッセージの内容はここには表示されません。システム通知メールは「通知」で設定します。',
       tabs: {

@@ -11,8 +11,8 @@
   },
   "nocobase": {
     "title": {
-      "en-US": "Sign-in and authentication",
-      "zh-CN": "登录与认证"
+      "en-US": "Authentication",
+      "zh-CN": "身份认证"
     },
     "description": {
       "en-US": "Sign-in methods, sessions and account security",
