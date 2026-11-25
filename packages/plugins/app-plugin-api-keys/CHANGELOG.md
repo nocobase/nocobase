@@ -1,5 +1,20 @@
 # @nocobase/app-plugin-api-keys
 
+## 1.0.0-beta.28
+
+### Minor Changes
+
+- e444ed6: Allow applications to disable member API key and rule administration endpoints.
+
+### Patch Changes
+
+- Updated dependencies [019d5ec]
+- Updated dependencies [fcc0c18]
+  - @nocobase/app-plugin-authorization@1.0.0-beta.40
+  - @nocobase/app-server@5.0.0-beta.11
+  - @nocobase/app-plugin-scheduler@1.0.0-beta.27
+  - @nocobase/app-plugin-authentication@2.0.0-beta.25
+
 ## 1.0.0-beta.27
 
 ### Minor Changes

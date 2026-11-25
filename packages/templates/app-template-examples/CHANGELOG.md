@@ -1,5 +1,27 @@
 # @nocobase/app-template-examples
 
+## 2.0.0-beta.2
+
+### Patch Changes
+
+- 63100e7: Include the PostgreSQL 17, MySQL 8.4 and MariaDB client tools in the production image, on amd64 and arm64, so that application backups can dump and restore those databases, and create `/app/backups` for a deployment host's backup volume.
+- Updated dependencies [019d5ec]
+- Updated dependencies [fcc0c18]
+- Updated dependencies [3635b25]
+- Updated dependencies [e444ed6]
+  - @nocobase/app-plugin-authorization@1.0.0-beta.40
+  - @nocobase/app-server@5.0.0-beta.11
+  - @nocobase/app-plugin-mail@1.0.0-beta.29
+  - @nocobase/app-plugin-api-keys@1.0.0-beta.28
+  - @nocobase/app-plugin-template-print-example@1.0.0-beta.12
+  - @nocobase/app-plugin-notification-web-push@0.1.0-beta.10
+  - @nocobase/app-plugin-scheduler@1.0.0-beta.27
+  - @nocobase/app-plugin-file-example@1.0.0-beta.27
+  - @nocobase/app-plugin-notification-example@1.0.0-beta.19
+  - @nocobase/app-plugin-authentication@2.0.0-beta.25
+  - @nocobase/app-plugin-file@1.0.0-beta.34
+  - @nocobase/app-plugin-agents@2.0.0-beta.20
+
 ## 2.0.0-beta.1
 
 ### Patch Changes

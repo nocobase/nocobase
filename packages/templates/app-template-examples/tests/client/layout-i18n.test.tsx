@@ -123,9 +123,11 @@ describe('shell translations', () => {
       screen.getByRole('navigation', { name: 'Breadcrumb' }),
     ).toHaveTextContent('Overview');
     expect(screen.getByText('Build reliable business systems')).toBeVisible();
+    expect(screen.getByText(/^Based on the .+ template v/)).toBeVisible();
     await act(() => runtime.changeLanguage('zh-CN'));
     expect(screen.getByRole('navigation', { name: '面包屑' })).toBeVisible();
     expect(screen.getByText('Build reliable business systems')).toBeVisible();
+    expect(screen.getByText(/^基于 .+ 模板 v/)).toBeVisible();
     expect(
       screen.getByRole('link', { name: 'NocoBase' }).parentElement,
     ).toHaveTextContent('AI + NocoBase');

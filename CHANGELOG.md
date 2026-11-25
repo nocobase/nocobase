@@ -2,6 +2,23 @@
 
 All notable changes to NocoBase 3 are documented in this file, one section per release: `nocobase-v3-beta/<date>.<n>` for a beta and `nocobase-v3/<date>.<n>` for a stable release. The versions each release published are on its GitHub Release, and every package's own changes are in its CHANGELOG.md.
 
+## [nocobase-v3-beta/2026-11-24.2](https://github.com/nocobase/nocobase/releases/tag/nocobase-v3-beta%2F2026-11-24.2)
+
+### 🎉 New Features
+
+- **[App host]** A managed App Host can back up and restore its Apps, both in-process and on Docker, using each App's own backup commands, and the application images (amd64 and arm64) now include the PostgreSQL, MySQL and MariaDB client tools they need. ([#11668](https://github.com/nocobase/nocobase/pull/11668))
+
+### 🚀 Improvements
+
+- **[API keys]** Applications can turn off member key and rule administration while keeping personal and system key management available. ([#11696](https://github.com/nocobase/nocobase/pull/11696))
+
+### 🐛 Bug Fixes
+
+- **[Mail]** Saving a mail template under a name you already use now reports that the name is taken instead of a server error. ([#11682](https://github.com/nocobase/nocobase/pull/11682))
+- **[Permissions]** Assigning a permission set that a user already holds now reports a conflict instead of a server error. ([#11683](https://github.com/nocobase/nocobase/pull/11683))
+- **[Server]** Apps loaded in-process by the Host now record their migrations under the app's package name, like standalone, Docker and CLI runs, so version checks and backup restore work across entries. ([#11692](https://github.com/nocobase/nocobase/pull/11692))
+- **[Agent runner]** Stop rejecting task checkouts with benign linked-worktree metadata inside submodules, validate active submodule `core.worktree` settings with concise Git errors, and self-heal drifted permissions on owned run temporary directories with detailed diagnostics. ([#11701](https://github.com/nocobase/nocobase/pull/11701))
+
 ## [nocobase-v3-beta/2026-11-24.1](https://github.com/nocobase/nocobase/releases/tag/nocobase-v3-beta%2F2026-11-24.1)
 
 ### 🎉 New Features
