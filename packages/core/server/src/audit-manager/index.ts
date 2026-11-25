@@ -65,12 +65,22 @@ type Action =
       getSourceAndTarget?: (ctx: Context) => Promise<SourceAndTarget>;
     };
 
+type MetadataSanitizer = (metadata: NonNullable<AuditLog['metadata']>) => NonNullable<AuditLog['metadata']>;
+
 export class AuditManager {
+  private readonly metadataSanitizers = new Map<string, MetadataSanitizer>();
+
   logger: AuditLogger;
   resources: Map<string, Map<string, Action>>;
 
   constructor() {
     this.resources = new Map();
+  }
+
+  registerMetadataSanitizer(dataSource: string, resource: string, actions: string[], sanitize: MetadataSanitizer) {
+    for (const action of actions) {
+      this.metadataSanitizers.set(`${dataSource}:${resource}:${action}`, sanitize);
+    }
   }
 
   public setLogger(logger: AuditLogger) {
@@ -327,6 +337,10 @@ export class AuditManager {
             auditLog.targetRecordUK = sourceAndTarget.targetRecordUK;
           }
         }
+      }
+      const sanitize = this.metadataSanitizers.get(`${ctx.dataSource?.name || 'main'}:${resourceName}:${actionName}`);
+      if (sanitize) {
+        auditLog.metadata = sanitize(auditLog.metadata);
       }
       this.logger.log(auditLog);
     } catch (err) {
