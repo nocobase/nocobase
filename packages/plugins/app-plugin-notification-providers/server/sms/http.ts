@@ -1,5 +1,9 @@
 import { providerErrorCode } from '../error.js';
-import { SmsProviderError } from './errors.js';
+import {
+  SmsProviderError,
+  smsErrorCodeForStatus,
+  type SmsErrorCode,
+} from './errors.js';
 
 /** Errors that happen before the request leaves this machine: nothing was submitted. */
 const PRE_SUBMISSION_ERRORS = new Set([
@@ -54,14 +58,14 @@ export async function postToProvider(
   let body: unknown;
   try {
     body = await response.json();
-  } catch (error) {
+  } catch {
+    // The parse error is not kept: it can quote the start of the provider's answer.
     await response.body?.cancel().catch(() => undefined);
     throw new SmsProviderError(
       response.status === 429 ? 'SMS_RATE_LIMITED' : 'SMS_PROVIDER_UNAVAILABLE',
       {
-        providerCode: `HTTP ${response.status}`,
+        providerCode: `HTTP-${response.status}`,
         retryAfterMs,
-        cause: error,
       },
     );
   }
@@ -87,4 +91,17 @@ export function text(value: unknown): string | undefined {
   return typeof value === 'string' || typeof value === 'number'
     ? String(value)
     : undefined;
+}
+
+/**
+ * The stable code of a provider's refusal: its known business code first, and the HTTP status only when the answer has
+ * no business code or one this package does not know.
+ */
+export function refusalCode(
+  known: SmsErrorCode | undefined,
+  status: number,
+): SmsErrorCode {
+  return known && known !== 'SMS_REJECTED'
+    ? known
+    : smsErrorCodeForStatus(status);
 }

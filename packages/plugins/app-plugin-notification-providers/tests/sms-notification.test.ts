@@ -45,6 +45,22 @@ const channels: Record<string, NotificationChannelConfigInput> = {
       },
     },
   } as never,
+  'sms-tencent': {
+    type: 'sms',
+    service: 'tencent',
+    signName: 'Example',
+    tencent: {
+      secretId: 'AKIDexample',
+      secretKey: 'tencent-secret-never-logged',
+      sdkAppId: '1400000001',
+    },
+    templates: {
+      notification: {
+        templateId: '123456',
+        params: { title: 'title', body: 'body' },
+      },
+    },
+  } as never,
 };
 
 let db: TestDatabase;
@@ -72,7 +88,7 @@ afterEach(async () => {
   await db.destroy();
 });
 
-async function harness() {
+async function harness(retry?: { maxAttempts: number; intervalMs: number }) {
   const registry = createNotificationRegistry();
   registerBuiltInNotificationProviders(registry);
   const kinds = new NotificationTemplateRegistry();
@@ -117,7 +133,7 @@ async function harness() {
     kinds,
     container,
     defaultLocale: () => 'en-US',
-    config: { channels },
+    config: { channels, ...(retry ? { retry } : {}) },
   });
   return manager;
 }
@@ -186,6 +202,119 @@ describe('SMS through the notification manager', () => {
       await manager.close();
     }
   });
+
+  async function everythingStored(): Promise<string> {
+    const connection = db.database.connection();
+    const rows: unknown[] = [];
+    for (const table of [
+      'notificationDispatches',
+      'notificationDeliveries',
+      'notificationDeliveryAttempts',
+    ])
+      rows.push(await connection.query.selectFrom(table).selectAll().execute());
+    return JSON.stringify(rows);
+  }
+
+  it('keeps variables a provider echoes out of the test result, the delivery record and the logs', async () => {
+    fetchMock.mockResolvedValue(
+      Response.json({
+        Code: 'isv.SOMETHING_NEW',
+        Message: 'rejected ECHO246810 and ECHOAB12CD',
+        RequestId: 'ECHO-246810 not an id',
+      }),
+    );
+    const manager = await harness();
+    try {
+      const sent = await manager.testChannel('sms', {
+        userId: 'alice',
+        title: 'Test',
+        body: 'It works.',
+      });
+      const status = await manager.getNotification(sent.notificationId);
+      expect(status!.deliveries[0]!.error).toMatchObject({
+        code: 'SMS_REJECTED',
+        message:
+          'The provider rejected the message. (provider code isv.SOMETHING_NEW)',
+      });
+      const everything = JSON.stringify([
+        sent,
+        status,
+        await everythingStored(),
+        logs,
+      ]);
+      expect(everything).not.toMatch(/ECHO/u);
+    } finally {
+      await manager.close();
+    }
+  });
+
+  it('does not retry a country or region the provider blocks', async () => {
+    fetchMock.mockResolvedValue(
+      Response.json({
+        Response: {
+          SendStatusSet: [
+            { Code: 'LimitExceeded.AppCountryOrRegionInBlacklist' },
+          ],
+          RequestId: 'req-3',
+        },
+      }),
+    );
+    const manager = await harness();
+    try {
+      const sent = await manager.testChannel('sms-tencent', {
+        userId: 'alice',
+        title: 'Test',
+        body: 'It works.',
+      });
+      const delivery = (await manager.getNotification(sent.notificationId))!
+        .deliveries[0]!;
+      expect(delivery).toMatchObject({
+        status: 'failed',
+        attemptCount: 1,
+        error: { code: 'SMS_REGION_NOT_ALLOWED', category: 'configuration' },
+      });
+      expect(delivery.nextRunAt).toBeUndefined();
+      expect(fetchMock).toHaveBeenCalledOnce();
+    } finally {
+      await manager.close();
+    }
+  });
+
+  it.each([
+    ['aliyun', 'sms'],
+    ['tencent', 'sms-tencent'],
+  ])(
+    'schedules a retry for an HTTP 429 from %s that carries no business code',
+    async (_service, channel) => {
+      fetchMock.mockResolvedValue(
+        new Response('{}', {
+          status: 429,
+          headers: {
+            'content-type': 'application/json',
+            'retry-after': '60',
+          },
+        }),
+      );
+      const manager = await harness({ maxAttempts: 3, intervalMs: 60_000 });
+      try {
+        const sent = await manager.testChannel(channel, {
+          userId: 'alice',
+          title: 'Test',
+          body: 'It works.',
+        });
+        const delivery = (await manager.getNotification(sent.notificationId))!
+          .deliveries[0]!;
+        expect(delivery).toMatchObject({
+          status: 'retrying',
+          attemptCount: 1,
+          error: { code: 'SMS_RATE_LIMITED', category: 'rate_limit' },
+        });
+        expect(delivery.nextRunAt).toEqual(expect.any(String));
+      } finally {
+        await manager.close();
+      }
+    },
+  );
 
   it('notifies the users a kind selects the sms channel for, skipping those without a phone', async () => {
     const manager = await harness();

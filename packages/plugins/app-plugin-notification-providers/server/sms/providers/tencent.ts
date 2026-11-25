@@ -5,7 +5,7 @@ import type { ChannelConfigSummaryItem } from '@nocobase/app-plugin-notification
 import { validateHttpUrl } from '../../http.js';
 import { maskedSecret } from '../../summary.js';
 import { SmsProviderError, type SmsErrorCode } from '../errors.js';
-import { field, postToProvider, text } from '../http.js';
+import { field, postToProvider, refusalCode, text } from '../http.js';
 import type {
   SmsProvider,
   SmsProviderDefinition,
@@ -73,6 +73,9 @@ export function tencentAuthorization(input: {
 export function tencentErrorCode(code: string): SmsErrorCode {
   if (/^AuthFailure|^UnauthorizedOperation|^InvalidCredential/i.test(code))
     return 'SMS_AUTH_FAILED';
+  // A country or region the account may not send to: an account setting, not a frequency limit.
+  if (/CountryOrRegion.*(Blacklist|NotSupport|Forbid)/i.test(code))
+    return 'SMS_REGION_NOT_ALLOWED';
   if (/Signature|SignName/i.test(code)) return 'SMS_SIGNATURE_INVALID';
   if (/TemplateParam|ParameterFormat/i.test(code)) return 'SMS_PARAMS_INVALID';
   if (/Template/i.test(code)) return 'SMS_TEMPLATE_INVALID';
@@ -137,33 +140,32 @@ export function createTencentSmsProvider(
       const requestId = text(field(result, 'RequestId'));
       const failure = field(result, 'Error');
       if (failure || !result) {
-        const code = text(field(failure, 'Code')) ?? `HTTP ${response.status}`;
-        const mapped = tencentErrorCode(code);
-        throw new SmsProviderError(mapped, {
-          providerCode: code,
-          requestId,
-          retryAfterMs: response.retryAfterMs,
-          detail:
-            mapped === 'SMS_REJECTED'
-              ? text(field(failure, 'Message'))
-              : undefined,
-        });
+        const code = text(field(failure, 'Code'));
+        throw new SmsProviderError(
+          refusalCode(
+            code ? tencentErrorCode(code) : undefined,
+            response.status,
+          ),
+          {
+            providerCode: code ?? `HTTP-${response.status}`,
+            requestId,
+            retryAfterMs: response.retryAfterMs,
+          },
+        );
       }
       const statuses = field(result, 'SendStatusSet');
       const status: unknown = Array.isArray(statuses) ? statuses[0] : undefined;
       const code = text(field(status, 'Code'));
       if (code?.toLowerCase() === 'ok')
         return { messageId: text(field(status, 'SerialNo')) };
-      const providerCode = code ?? 'MISSING_STATUS';
-      const mapped = tencentErrorCode(providerCode);
-      throw new SmsProviderError(mapped, {
-        providerCode,
-        requestId,
-        detail:
-          mapped === 'SMS_REJECTED'
-            ? text(field(status, 'Message'))
-            : undefined,
-      });
+      throw new SmsProviderError(
+        refusalCode(code ? tencentErrorCode(code) : undefined, response.status),
+        {
+          providerCode: code ?? 'MISSING_STATUS',
+          requestId,
+          retryAfterMs: response.retryAfterMs,
+        },
+      );
     },
   };
 }

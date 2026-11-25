@@ -74,19 +74,20 @@ A notification kind selects SMS in its `channels` (policies): `channels: { sms: 
 
 ## Errors
 
-| Code                       | Meaning and remedy                                                                 | Retried                   |
-| -------------------------- | ---------------------------------------------------------------------------------- | ------------------------- |
-| `SMS_SIGNATURE_INVALID`    | The signature does not exist or is not approved. Check `signName` and its review.  | No                        |
-| `SMS_TEMPLATE_INVALID`     | The template does not exist, is not approved, or does not fit. Check `templateId`. | No                        |
-| `SMS_PARAMS_INVALID`       | A template variable is missing or rejected. Check the template's `params`.         | No                        |
-| `SMS_INVALID_PHONE`        | The number is not accepted, or is blocked.                                         | No                        |
-| `SMS_AUTH_FAILED`          | The credentials are wrong or may not send SMS. Check the access key and its role.  | No                        |
-| `SMS_INSUFFICIENT_BALANCE` | The account has no balance or SMS package. Top it up.                              | No                        |
-| `SMS_RATE_LIMITED`         | The provider limited the frequency for this number or account.                     | Yes                       |
-| `SMS_PROVIDER_UNAVAILABLE` | The provider did not answer. The message may have been sent.                       | No (`submission_unknown`) |
-| `SMS_REJECTED`             | Any other refusal; the message adds the provider's text without numbers or links.  | No                        |
+| Code                       | Meaning and remedy                                                                                      | Retried                   |
+| -------------------------- | ------------------------------------------------------------------------------------------------------- | ------------------------- |
+| `SMS_SIGNATURE_INVALID`    | The signature does not exist or is not approved. Check `signName` and its review.                       | No                        |
+| `SMS_TEMPLATE_INVALID`     | The template does not exist, is not approved, or does not fit. Check `templateId`.                      | No                        |
+| `SMS_PARAMS_INVALID`       | A template variable is missing or rejected. Check the template's `params`.                              | No                        |
+| `SMS_INVALID_PHONE`        | The number is not accepted, or is blocked.                                                              | No                        |
+| `SMS_AUTH_FAILED`          | The credentials are wrong or may not send SMS. Check the access key and its role.                       | No                        |
+| `SMS_REGION_NOT_ALLOWED`   | The account may not send to this country or region. Change the allowed regions in the provider console. | No                        |
+| `SMS_INSUFFICIENT_BALANCE` | The account has no balance or SMS package. Top it up.                                                   | No                        |
+| `SMS_RATE_LIMITED`         | The provider limited the frequency for this number or account.                                          | Yes                       |
+| `SMS_PROVIDER_UNAVAILABLE` | The provider did not answer. The message may have been sent.                                            | No (`submission_unknown`) |
+| `SMS_REJECTED`             | Any other refusal.                                                                                      | No                        |
 
-The message of an error ends with the provider's own code and request id, which the provider's support asks for. It never contains template variables, so it never contains a verification code.
+An error's message is written by this package, never copied from the provider, because a provider's text can echo the template variables and so a verification code. It ends with the provider's own code and request id when they are plain identifiers (letters, digits and `. _ : -`, at most 64 characters), which the provider's support asks for. A known provider business code decides the stable code; the HTTP status decides only when the answer has no business code or one this package does not know (429 is retried, 401 and 403 are credentials, 5xx is `SMS_PROVIDER_UNAVAILABLE`).
 
 ## Register another service
 

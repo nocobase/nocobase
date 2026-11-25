@@ -228,7 +228,7 @@ export class SmsChannel implements ChannelInstance<
           if (value === undefined)
             return smsErrorResult(
               new SmsProviderError('SMS_PARAMS_INVALID', {
-                detail: `The message has no variable "${messageName}" for the template variable "${providerName}".`,
+                variable: messageName,
               }),
             );
           params[providerName] = value;

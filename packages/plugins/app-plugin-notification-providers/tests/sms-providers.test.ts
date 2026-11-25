@@ -153,20 +153,70 @@ describe('Alibaba Cloud SMS', () => {
     );
   });
 
-  it('shows the provider text of an unknown rejection without numbers or links', async () => {
+  it('writes every error message itself, never echoing the provider text', async () => {
     stubFetch(
       Response.json({
         Code: 'isv.SOMETHING_NEW',
-        Message: 'blocked 13800138000 see https://example.test/x',
+        Message: 'rejected code 246810 for 13800138000 {"code":"AB12CD"}',
+        RequestId: 'req 246810 with spaces',
       }),
     );
     const error = (await provider
       .send(send)
       .catch((e: unknown) => e)) as SmsProviderError;
     expect(error.code).toBe('SMS_REJECTED');
-    expect(error.message).toContain('blocked [number] see [link]');
-    expect(error.message).not.toContain('13800138000');
+    expect(error.message).toBe(
+      'The provider rejected the message. (provider code isv.SOMETHING_NEW)',
+    );
+    expect(error.requestId).toBeUndefined();
+    for (const leaked of ['246810', '13800138000', 'AB12CD'])
+      expect(JSON.stringify(error)).not.toContain(leaked);
   });
+
+  it('drops a provider code that is not shaped like one', async () => {
+    stubFetch(Response.json({ Code: 'bad 246810 code', RequestId: 'r-1' }));
+    const error = (await provider
+      .send(send)
+      .catch((e: unknown) => e)) as SmsProviderError;
+    expect(error.providerCode).toBeUndefined();
+    expect(error.message).not.toContain('246810');
+  });
+
+  it.each([
+    [429, {}, 'SMS_RATE_LIMITED', 'retryable'],
+    [429, { Code: 'isv.SOMETHING_NEW' }, 'SMS_RATE_LIMITED', 'retryable'],
+    [403, {}, 'SMS_AUTH_FAILED', 'permanent'],
+    [503, {}, 'SMS_PROVIDER_UNAVAILABLE', 'unknown'],
+    [400, {}, 'SMS_REJECTED', 'permanent'],
+    // A known business code beats the status.
+    [
+      429,
+      { Code: 'isv.SMS_SIGNATURE_ILLEGAL' },
+      'SMS_SIGNATURE_INVALID',
+      'permanent',
+    ],
+    [
+      500,
+      { Code: 'isv.MOBILE_NUMBER_ILLEGAL' },
+      'SMS_INVALID_PHONE',
+      'permanent',
+    ],
+  ] as const)(
+    'maps HTTP %s with body %j to %s when the business code is missing or unknown',
+    async (status, body, code, outcome) => {
+      stubFetch(
+        new Response(JSON.stringify(body), {
+          status,
+          headers: { 'content-type': 'application/json', 'retry-after': '30' },
+        }),
+      );
+      const error = (await provider
+        .send(send)
+        .catch((e: unknown) => e)) as SmsProviderError;
+      expect(error).toMatchObject({ code, outcome });
+      if (code === 'SMS_RATE_LIMITED') expect(error.retryAfterMs).toBe(30_000);
+    },
+  );
 
   it('keeps the verification code out of every error', async () => {
     stubFetch(Response.json({ Code: 'isv.SMS_TEMPLATE_ILLEGAL' }));
@@ -300,6 +350,7 @@ describe('Tencent Cloud SMS', () => {
       'FailedOperation.InsufficientBalanceInSmsPackage',
       'SMS_INSUFFICIENT_BALANCE',
     ],
+    ['LimitExceeded.AppCountryOrRegionInBlacklist', 'SMS_REGION_NOT_ALLOWED'],
     ['LimitExceeded.PhoneNumberDailyLimit', 'SMS_RATE_LIMITED'],
     ['LimitExceeded.PhoneNumberThirtySecondLimit', 'SMS_RATE_LIMITED'],
     ['AuthFailure.SecretIdNotFound', 'SMS_AUTH_FAILED'],
@@ -338,5 +389,80 @@ describe('Tencent Cloud SMS', () => {
       outcome: 'retryable',
       requestId: 'req-10',
     });
+  });
+
+  it('treats a country or region blacklist as a configuration error that is not retried', async () => {
+    stubFetch(
+      Response.json({
+        Response: {
+          SendStatusSet: [
+            {
+              Code: 'LimitExceeded.AppCountryOrRegionInBlacklist',
+              Message: 'blocked 246810',
+            },
+          ],
+          RequestId: 'req-11',
+        },
+      }),
+    );
+    const error = (await provider
+      .send(send)
+      .catch((e: unknown) => e)) as SmsProviderError;
+    expect(error).toMatchObject({
+      code: 'SMS_REGION_NOT_ALLOWED',
+      category: 'configuration',
+      outcome: 'permanent',
+    });
+    expect(error.message).not.toContain('246810');
+  });
+
+  it.each([
+    [429, '{}', 'SMS_RATE_LIMITED', 'retryable'],
+    [
+      429,
+      '{"Response":{"Error":{"Code":"FailedOperation.New"}}}',
+      'SMS_RATE_LIMITED',
+      'retryable',
+    ],
+    [401, '{}', 'SMS_AUTH_FAILED', 'permanent'],
+    [502, '{}', 'SMS_PROVIDER_UNAVAILABLE', 'unknown'],
+    [
+      429,
+      '{"Response":{"Error":{"Code":"FailedOperation.SignatureIncorrectOrUnapproved"}}}',
+      'SMS_SIGNATURE_INVALID',
+      'permanent',
+    ],
+  ] as const)(
+    'maps HTTP %s with body %s to %s when the business code is missing or unknown',
+    async (status, body, code, outcome) => {
+      stubFetch(
+        new Response(body, {
+          status,
+          headers: { 'content-type': 'application/json', 'retry-after': '30' },
+        }),
+      );
+      const error = (await provider
+        .send(send)
+        .catch((e: unknown) => e)) as SmsProviderError;
+      expect(error).toMatchObject({ code, outcome });
+    },
+  );
+
+  it('writes the error message itself for an unknown refusal', async () => {
+    stubFetch(
+      Response.json({
+        Response: {
+          SendStatusSet: [
+            { Code: 'FailedOperation.New', Message: 'code 246810' },
+          ],
+          RequestId: 'req-12',
+        },
+      }),
+    );
+    const error = (await provider
+      .send(send)
+      .catch((e: unknown) => e)) as SmsProviderError;
+    expect(error.code).toBe('SMS_REJECTED');
+    expect(JSON.stringify(error)).not.toContain('246810');
   });
 });

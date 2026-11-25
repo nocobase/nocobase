@@ -10,6 +10,7 @@ export const SMS_ERROR_CODES = [
   'SMS_PARAMS_INVALID',
   'SMS_INVALID_PHONE',
   'SMS_AUTH_FAILED',
+  'SMS_REGION_NOT_ALLOWED',
   'SMS_INSUFFICIENT_BALANCE',
   'SMS_RATE_LIMITED',
   'SMS_PROVIDER_UNAVAILABLE',
@@ -60,6 +61,12 @@ const descriptions: Readonly<Record<SmsErrorCode, SmsErrorDescription>> = {
     message:
       'The provider rejected the credentials. Check the access key and secret and their permission to send SMS.',
   },
+  SMS_REGION_NOT_ALLOWED: {
+    category: 'configuration',
+    outcome: 'permanent',
+    message:
+      'The provider does not allow sending SMS to this country or region. Change the allowed countries or regions in the provider console.',
+  },
   SMS_INSUFFICIENT_BALANCE: {
     category: 'provider',
     outcome: 'permanent',
@@ -93,8 +100,8 @@ export interface SmsProviderErrorOptions {
   readonly retryAfterMs?: number | undefined;
   /** Overrides the default of the code, for a network failure known to precede the submission. */
   readonly outcome?: SmsErrorOutcome | undefined;
-  /** The provider's own message, shown only for `SMS_REJECTED`. */
-  readonly detail?: string | undefined;
+  /** The name of the message variable a template needs and the message lacks. It comes from configuration. */
+  readonly variable?: string | undefined;
   readonly cause?: unknown;
 }
 
@@ -112,15 +119,17 @@ export class SmsProviderError extends Error {
     options: SmsProviderErrorOptions = {},
   ) {
     const description = descriptions[code];
+    // The message is written here and nowhere else. A provider's own text can echo the template variables, which
+    // include verification codes, so only identifiers of a restricted format are taken from a response.
+    const providerCode = safeIdentifier(options.providerCode);
+    const requestId = safeIdentifier(options.requestId);
+    const variable = safeIdentifier(options.variable);
     const reference = [
-      options.providerCode ? `provider code ${options.providerCode}` : '',
-      options.requestId ? `request ${options.requestId}` : '',
+      providerCode ? `provider code ${providerCode}` : '',
+      requestId ? `request ${requestId}` : '',
     ].filter(Boolean);
-    const detail = options.detail
-      ? ` ${sanitizeSmsDetail(options.detail)}`
-      : '';
     super(
-      `${description.message}${detail}${
+      `${description.message}${variable ? ` Missing message variable: ${variable}.` : ''}${
         reference.length ? ` (${reference.join(', ')})` : ''
       }`,
       options.cause === undefined ? undefined : { cause: options.cause },
@@ -129,21 +138,31 @@ export class SmsProviderError extends Error {
     this.code = code;
     this.category = description.category;
     this.outcome = options.outcome ?? description.outcome;
-    this.providerCode = options.providerCode;
-    this.requestId = options.requestId;
+    this.providerCode = providerCode;
+    this.requestId = requestId;
     this.retryAfterMs = options.retryAfterMs;
   }
 }
 
-/** A provider's free text without phone numbers, links or control characters, and short enough for a log line. */
-export function sanitizeSmsDetail(value: string): string {
-  const text = value
-    .replace(/[\r\n\t]+/g, ' ')
-    .replace(/https?:\/\/\S+/gi, '[link]')
-    .replace(/\+?\d[\d\s-]{5,}\d/g, '[number]')
-    .replace(/\s{2,}/g, ' ')
-    .trim();
-  return text.length <= 200 ? text : `${text.slice(0, 199)}…`;
+const IDENTIFIER = /^[A-Za-z0-9][A-Za-z0-9._:-]{0,63}$/;
+
+/**
+ * An error code, request id or variable name, when it has the plain shape of one: letters, digits and `. _ : -` only,
+ * at most 64 characters. Anything else is dropped rather than shown.
+ */
+export function safeIdentifier(value: string | undefined): string | undefined {
+  return value !== undefined && IDENTIFIER.test(value) ? value : undefined;
+}
+
+/**
+ * The stable code for an HTTP status, for an answer that carries no business error code. A known business code wins
+ * over this.
+ */
+export function smsErrorCodeForStatus(status: number): SmsErrorCode {
+  if (status === 429) return 'SMS_RATE_LIMITED';
+  if (status === 401 || status === 403) return 'SMS_AUTH_FAILED';
+  if (status >= 500 || status === 408) return 'SMS_PROVIDER_UNAVAILABLE';
+  return 'SMS_REJECTED';
 }
 
 /** The notification result of a refused or failed submission. */

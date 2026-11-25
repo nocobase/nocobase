@@ -5,7 +5,7 @@ import type { ChannelConfigSummaryItem } from '@nocobase/app-plugin-notification
 import { validateHttpUrl } from '../../http.js';
 import { maskedSecret } from '../../summary.js';
 import { SmsProviderError, type SmsErrorCode } from '../errors.js';
-import { field, postToProvider, text } from '../http.js';
+import { field, postToProvider, refusalCode, text } from '../http.js';
 import type {
   SmsProvider,
   SmsProviderDefinition,
@@ -153,16 +153,14 @@ export function createAliyunSmsProvider(
       const requestId = text(field(response.body, 'RequestId'));
       if (code === 'OK')
         return { messageId: text(field(response.body, 'BizId')) };
-      const mapped = aliyunErrorCode(code ?? `HTTP ${response.status}`);
-      throw new SmsProviderError(mapped, {
-        providerCode: code ?? `HTTP ${response.status}`,
-        requestId,
-        retryAfterMs: response.retryAfterMs,
-        detail:
-          mapped === 'SMS_REJECTED'
-            ? text(field(response.body, 'Message'))
-            : undefined,
-      });
+      throw new SmsProviderError(
+        refusalCode(code ? aliyunErrorCode(code) : undefined, response.status),
+        {
+          providerCode: code ?? `HTTP-${response.status}`,
+          requestId,
+          retryAfterMs: response.retryAfterMs,
+        },
+      );
     },
   };
 }
