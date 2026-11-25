@@ -71,6 +71,11 @@ type FieldInterfaceManager = {
 const relationTypes = new Set(['hasOne', 'hasMany', 'belongsToMany', 'belongsTo']);
 const internalPreviewName = '__sqlPreview';
 
+// Date and datetime strings as the database drivers return them, e.g. `2024-01-02`, `2024-01-02T03:04:05.000Z` or
+// `2024-01-02 03:04:05.123 +00:00`. `dayjs(value).isValid()` alone also accepts numeric and plain text values such as
+// `48000.00` (a PostgreSQL NUMERIC), `12` or `Room 5`, which would then be inferred as datetime fields.
+const datePattern = /^\d{4}-\d{2}-\d{2}(?:[T ]\d{2}:\d{2}(?::\d{2}(?:\.\d+)?)?(?: ?(?:Z|[+-]\d{2}(?::?\d{2})?))?)?$/;
+
 function normalizeListResponse(response: unknown) {
   const payload = get(response, 'data.data');
   if (Array.isArray(payload)) {
@@ -127,7 +132,7 @@ function inferFieldInterface(field: string, value: unknown) {
   if (typeof value === 'boolean') {
     return 'checkbox';
   }
-  if (typeof value === 'string' && dayjs(value).isValid()) {
+  if (typeof value === 'string' && datePattern.test(value) && dayjs(value).isValid()) {
     return 'datetime';
   }
   return 'input';

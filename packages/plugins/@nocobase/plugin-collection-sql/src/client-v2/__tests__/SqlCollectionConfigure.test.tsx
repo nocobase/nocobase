@@ -990,6 +990,41 @@ describe('SqlFieldsConfigureItem', () => {
     );
     expect(await screen.findByText('total')).toBeInTheDocument();
   });
+
+  it('infers datetime only for date strings, not for numeric or text values', async () => {
+    const { form } = renderConfigureItem(SqlFieldsConfigureItem, {
+      initialValues: {
+        [previewName]: {
+          data: [
+            {
+              // PostgreSQL NUMERIC and MariaDB BIGINT values arrive as strings.
+              amount: '48000.00',
+              total: '12',
+              room: 'Room 5',
+              createdAt: '2024-01-02T03:04:05.000Z',
+              updatedAt: '2024-01-02 03:04:05.123 +00:00',
+              day: '2024-01-02',
+            },
+          ],
+          sources: ['orders'],
+        },
+        sources: ['orders'],
+        fields: [],
+      },
+      registerNames: [previewName, 'sources', 'fields'],
+    });
+
+    await waitFor(() =>
+      expect(form.getFieldValue('fields')).toEqual([
+        expect.objectContaining({ name: 'amount', interface: 'input' }),
+        expect.objectContaining({ name: 'total', interface: 'input' }),
+        expect.objectContaining({ name: 'room', interface: 'input' }),
+        expect.objectContaining({ name: 'createdAt', interface: 'datetime' }),
+        expect.objectContaining({ name: 'updatedAt', interface: 'datetime' }),
+        expect.objectContaining({ name: 'day', interface: 'datetime' }),
+      ]),
+    );
+  });
 });
 
 describe('SqlPreviewConfigureItem', () => {
