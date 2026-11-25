@@ -14,6 +14,13 @@ export interface AuditConfig {
   readonly transports?: Readonly<Record<string, AuditDestinationConfig>>;
 }
 
+export const auditDefaults: Required<
+  Pick<AuditConfig, 'enabled' | 'autoDetect'>
+> = {
+  enabled: true,
+  autoDetect: false,
+};
+
 const validName = /^[a-zA-Z0-9][a-zA-Z0-9_.-]{0,63}$/u;
 
 export function isAuditName(value: unknown): value is string {
@@ -70,7 +77,7 @@ export function defineAuditConfig(
   defaults: AuditConfig = {},
 ): AppConfigFactory<AuditConfig> {
   return defineAppConfig({
-    defaults,
+    defaults: { ...auditDefaults, ...defaults },
     validate: (value, context) =>
       validateAuditConfig(value, (path, message) =>
         context.error(path, message),

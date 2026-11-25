@@ -13,4 +13,4 @@
 "@nocobase/app-skills": patch
 ---
 
-Configure audit capture for application operations and send events to multiple named destinations, including JSON Lines files.
+Configure audit capture for application operations and send events to multiple named destinations, including JSON Lines files. Configuring a destination enables explicitly declared audit operations by default. Audit uses the application authentication settings for its trusted proxy list.

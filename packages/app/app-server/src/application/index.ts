@@ -1,5 +1,5 @@
 import { auditServiceToken, AuditCoordinator } from '../audit/service.js';
-import type { AuditConfig } from '../audit/config.js';
+import { auditDefaults, type AuditConfig } from '../audit/config.js';
 import { auditMiddleware } from '../audit/request.js';
 import auditLocales from '../audit/locales/index.js';
 import { createTrustedAuditProxies } from '../audit/ip.js';
@@ -505,9 +505,11 @@ export class Application<
         '*',
         auditMiddleware({
           service: this.audit,
-          autoDetect: auditConfig?.autoDetect === true,
+          autoDetect: auditConfig?.autoDetect ?? auditDefaults.autoDetect,
           forwarded: () => this.forwardedApiRoutes.routers,
-          proxies: createTrustedAuditProxies(undefined),
+          proxies: createTrustedAuditProxies(
+            this.config.get('auth.advanced.ipAddress.trustedProxies'),
+          ),
           translate: ({ ns, key }, fallback, context) => {
             const runtime = this.container.resolveIfCreated(i18nToken);
             const locale =

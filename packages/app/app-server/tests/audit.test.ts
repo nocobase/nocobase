@@ -7,6 +7,7 @@ import { Application } from '../src/application/index.js';
 import {
   describeAudit,
   auditServiceToken,
+  type AuditConfig,
   type AuditEvent,
 } from '../src/audit/index.js';
 import { readAuditBody } from '../src/audit/redact.js';
@@ -24,24 +25,23 @@ import {
 } from '../src/router/index.js';
 
 async function appWithAudit(
-  settings: { enabled?: boolean; autoDetect?: boolean } = {},
+  settings: AuditConfig = {},
+  trustedProxies?: readonly string[],
 ): Promise<{
   app: Application;
   events: AuditEvent[];
 }> {
-  const values = {
+  const config = new AppConfig();
+  await config.loadAll();
+  config.mergeDefaults({
     audit: {
-      enabled: true,
-      ...settings,
       transports: { capture: { driver: 'memory' } },
+      ...settings,
     },
-  };
-  const config = {
-    get: <T>(key: string) => Reflect.get(values, key) as T | undefined,
-    raw: () => values,
-    reload: () => Promise.resolve({ changedNamespaces: [] }),
-    subscribe: () => () => undefined,
-  };
+    ...(trustedProxies === undefined
+      ? {}
+      : { auth: { advanced: { ipAddress: { trustedProxies } } } }),
+  });
   const app = new Application({
     config,
     paths: createAppPaths({ rootDir: '/test/audit' }),
@@ -68,7 +68,7 @@ function request(path: string, json: unknown, headers?: HeadersInit): Request {
   });
 }
 
-it('masks entire sensitive fields on both snapshots and uses only a trusted peer', async () => {
+it('masks entire sensitive fields on both snapshots and ignores forwarding without a trust list', async () => {
   const { app, events } = await appWithAudit();
   app.addRoutes(
     defineApiRoutes(() => {
@@ -153,6 +153,53 @@ it('masks entire sensitive fields on both snapshots and uses only a trusted peer
       request: expected,
       response: expected,
     });
+  } finally {
+    await app.shutdown();
+  }
+});
+
+it.each([
+  {
+    name: 'uses the nearest untrusted address along a trusted proxy chain',
+    trustedProxies: ['192.0.2.0/24', '203.0.113.9'],
+    peer: '192.0.2.10',
+    forwarded: '198.51.100.99, 198.51.100.42, 203.0.113.9',
+    expected: '198.51.100.42',
+  },
+  {
+    name: 'ignores a forged chain from an untrusted peer',
+    trustedProxies: ['192.0.2.0/24'],
+    peer: '198.51.100.10',
+    forwarded: '198.51.100.99, 192.0.2.20',
+    expected: '198.51.100.10',
+  },
+  {
+    name: 'takes the socket peer when the trust list is empty',
+    trustedProxies: [],
+    peer: '192.0.2.10',
+    forwarded: '198.51.100.99',
+    expected: '192.0.2.10',
+  },
+])('$name', async ({ trustedProxies, peer, forwarded, expected }) => {
+  const { app, events } = await appWithAudit({}, trustedProxies);
+  app.addRoutes(
+    defineApiRoutes(() => {
+      const router = new Hono();
+      router.post('/example', describeAudit({ action: 'example' }), (context) =>
+        context.body(null, 204),
+      );
+      return router;
+    }),
+  );
+  try {
+    const response = await app.fetch(
+      request('example', {}, { 'x-forwarded-for': forwarded }),
+      {
+        incoming: { socket: { remoteAddress: peer } },
+      },
+    );
+    expect(response.status).toBe(204);
+    expect(events).toMatchObject([{ ip: expected }]);
   } finally {
     await app.shutdown();
   }
@@ -305,8 +352,9 @@ it('matches baseline Repository responses and query operations with no audit pro
 
 it('honors explicit declarations before guards and uses inference only for supported routes', async () => {
   const first = await appWithAudit({ autoDetect: true });
-  const second = await appWithAudit({ autoDetect: false });
+  const second = await appWithAudit();
   const disabled = await appWithAudit({ enabled: false, autoDetect: true });
+  const noDestinations = await appWithAudit({ transports: {} });
   const resolve = vi.fn(() => undefined);
   const declared = {
     action: 'explicit',
@@ -334,21 +382,27 @@ it('honors explicit declarations before guards and uses inference only for suppo
     describeRoute({ operationId: 'hidden', hide: true }),
     (context) => context.body(null, 204),
   );
+  child.post(
+    '/documented',
+    describeRoute({ operationId: 'documented' }),
+    (context) => context.body(null, 204),
+  );
   child.post('/unsupported', (context) => context.body(null, 204));
   child.get('/read', describeRoute({ operationId: 'read' }), (context) =>
     context.body(null, 204),
   );
   router.route('/mounted', child);
-  for (const { app } of [first, second, disabled])
+  for (const { app } of [first, second, disabled, noDestinations])
     app.addRoutes(defineApiRoutes(() => router));
   try {
     await Promise.all(
-      [first, second, disabled].map(async ({ app }) => {
+      [first, second, disabled, noDestinations].map(async ({ app }) => {
         for (const suffix of [
           'action/example',
           'dynamic',
           'opt-out',
           'hidden',
+          'documented',
           'unsupported',
         ])
           await app.fetch(request(`mounted/${suffix}`, {}));
@@ -374,14 +428,17 @@ it('honors explicit declarations before guards and uses inference only for suppo
         operationName: 'Documented operation',
         outcome: 'success',
       },
+      { action: 'documented', operationName: 'documented', outcome: 'success' },
     ]);
     expect(second.events.map(({ action }) => action)).toEqual(['explicit']);
     expect(disabled.events).toEqual([]);
+    expect(noDestinations.events).toEqual([]);
   } finally {
     await Promise.all([
       first.app.shutdown(),
       second.app.shutdown(),
       disabled.app.shutdown(),
+      noDestinations.app.shutdown(),
     ]);
   }
 });

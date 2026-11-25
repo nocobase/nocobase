@@ -6,6 +6,7 @@ import type { Context } from 'hono';
 
 import type { AppPaths } from '../config/paths.js';
 import {
+  auditDefaults,
   isAuditName,
   validateAuditConfig,
   type AuditConfig,
@@ -99,7 +100,7 @@ export class AuditCoordinator implements AuditService {
     validateAuditConfig(config, (path, message) => {
       throw new Error(`audit${path ? `.${path}` : ''} ${message}`);
     });
-    if (config.enabled !== true) return false;
+    if (!(config.enabled ?? auditDefaults.enabled)) return false;
     const definitions = Object.entries(config.transports ?? {});
     for (const [name, definition] of definitions) {
       if (!this.drivers.has(definition.driver))

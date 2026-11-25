@@ -71,7 +71,6 @@ it('appends complete private JSON lines to multiple named destinations under con
   const absolute = path.join(root, 'other', 'audit.jsonl');
   const relative = path.join(root, 'storage', 'audit', 'events.jsonl');
   const app = await start(root, {
-    enabled: true,
     transports: {
       relative: { driver: 'file', options: { path: 'audit/events.jsonl' } },
       sameFile: { driver: 'file', options: { path: relative } },
