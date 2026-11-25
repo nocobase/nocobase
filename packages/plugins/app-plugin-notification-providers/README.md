@@ -1,6 +1,6 @@
 # Notification Providers App Plugin
 
-Built-in channel types are `email`, `smtp`, `resend`, `feishu-webhook`, and `dingtalk-webhook`. Their classes are `EmailChannel`, `SmtpChannel`, `ResendChannel`, `FeishuWebhookChannel` and `DingTalkWebhookChannel`. Email and IM validation helpers are shared internally; only the concrete class is registered. Register the Server plugin after the core notification plugin, or call `registerBuiltInNotificationProviders(registry)` in a custom host.
+Built-in channel types are `email`, `smtp`, `resend`, `feishu-webhook`, `dingtalk-webhook` and `sms`. Their classes are `EmailChannel`, `SmtpChannel`, `ResendChannel`, `FeishuWebhookChannel`, `DingTalkWebhookChannel` and `SmsChannel`. Email and IM validation helpers are shared internally; only the concrete class is registered. Register the Server plugin after the core notification plugin, or call `registerBuiltInNotificationProviders(registry)` in a custom host.
 
 ```yaml
 mailers:
@@ -62,3 +62,24 @@ The Server plugin also installs the legacy `email` and `im` message handlers fro
 Legacy helpers such as `defineSmtpProviderConfig` still produce supported `provider` configurations, and the old `create*Definition` exports remain available for existing extensions. The built-in bootstrap now uses class registration exclusively.
 
 Prefer `type: email` with application mailers. Declare `defineMailersConfig` and explicit `mailerEnvironment` mappings from `@nocobase/app-server/mailers/config`. Restart to apply sender changes. Every email Channel, including legacy inline SMTP/Resend Channels and their mappings, creates an exclusive sender through the application's `MailSenderFactory` when it is constructed and closes it in `close()`; closing one Channel never affects another or Auth and Users.
+
+## SMS
+
+The `sms` channel sends template messages to E.164 phone numbers through Alibaba Cloud (`service: aliyun`) or Tencent Cloud (`service: tencent`); another service registers with `smsProviderRegistryToken`. The `provider` alias already means `type`, so the service is named `service`.
+
+```yaml
+notification:
+  channels:
+    system-sms:
+      type: sms
+      service: aliyun
+      signName: Example
+      templates:
+        code: { templateId: SMS_123456789, params: { code: code } }
+        notification:
+          { templateId: SMS_987654321, params: { title: title, body: body } }
+```
+
+`defineMailChannelsConfig` maps the private variables `SMS_ALIYUN_ACCESS_KEY_ID`, `SMS_ALIYUN_ACCESS_KEY_SECRET`, `SMS_TENCENT_SECRET_ID`, `SMS_TENCENT_SECRET_KEY` and the public `SMS_SIGN_NAME` onto a channel named `system-sms`. Credentials are never public configuration, never appear in the settings page summary, and are not logged. Both services call the provider's signed HTTPS API directly, without its SDK.
+
+Send a one-time code with `notification.sendTransient()`, never `send()`, so it is not stored or logged. A failure carries a stable code (`SMS_SIGNATURE_INVALID`, `SMS_TEMPLATE_INVALID`, `SMS_RATE_LIMITED`, `SMS_INSUFFICIENT_BALANCE` and others) and a readable message. The channel's test send reaches the administrator's verified phone, and a notification kind selects SMS with `channels: { sms: 'on' }`; both resolve phones through `userPhoneDirectoryToken`, which the verification plugin provides. The package's Skill, `nocobase-app-plugin-notification-providers`, has the details.

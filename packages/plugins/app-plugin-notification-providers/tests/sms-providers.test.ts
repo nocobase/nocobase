@@ -7,7 +7,6 @@ import {
   aliyunErrorCode,
   aliyunPercentEncode,
   aliyunPhone,
-  aliyunSignature,
   createAliyunSmsProvider,
   createTencentSmsProvider,
   tencentAuthorization,

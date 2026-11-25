@@ -22,7 +22,8 @@
   "files": [
     "dist",
     "CHANGELOG.md",
-    "README.md"
+    "README.md",
+    "skills"
   ],
   "main": "./dist/server/index.js",
   "types": "./dist/server/index.d.ts",

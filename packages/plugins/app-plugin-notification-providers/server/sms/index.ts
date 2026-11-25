@@ -19,3 +19,4 @@ export {
   tencentSmsService,
   type TencentSmsOptions,
 } from './providers/tencent.js';
+export { maskedSecret } from '../summary.js';
