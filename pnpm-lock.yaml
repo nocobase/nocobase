@@ -5161,9 +5161,21 @@ importers:
         specifier: workspace:^
         version: link:../../libs/service-provider
     devDependencies:
+      '@nocobase/app-testing':
+        specifier: workspace:*
+        version: link:../../tools/app-testing
+      '@nocobase/db':
+        specifier: workspace:*
+        version: link:../../libs/db
       '@nocobase/dev-config':
         specifier: workspace:*
         version: link:../../tools/dev-config
+      '@nocobase/jobs':
+        specifier: workspace:*
+        version: link:../../libs/jobs
+      '@nocobase/logging':
+        specifier: workspace:*
+        version: link:../../libs/logging
       '@types/node':
         specifier: 'catalog:'
         version: 24.13.3

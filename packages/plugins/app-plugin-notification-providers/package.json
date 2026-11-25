@@ -47,6 +47,10 @@
     "./config": {
       "types": "./server/email/config.ts",
       "import": "./server/email/config.ts"
+    },
+    "./sms": {
+      "types": "./server/sms/index.ts",
+      "import": "./server/sms/index.ts"
     }
   },
   "publishConfig": {
@@ -72,6 +76,10 @@
       "./config": {
         "types": "./dist/server/email/config.d.ts",
         "import": "./dist/server/email/config.js"
+      },
+      "./sms": {
+        "types": "./dist/server/sms/index.d.ts",
+        "import": "./dist/server/sms/index.js"
       }
     }
   },
@@ -99,13 +107,17 @@
     "@nocobase/service-provider": "workspace:^"
   },
   "devDependencies": {
+    "@nocobase/app-testing": "workspace:*",
+    "@nocobase/db": "workspace:*",
     "@nocobase/dev-config": "workspace:*",
+    "@nocobase/jobs": "workspace:*",
+    "@nocobase/logging": "workspace:*",
     "@types/node": "catalog:",
     "eslint": "catalog:",
-    "prettier": "catalog:",
-    "typescript": "catalog:",
-    "vitest": "catalog:",
     "nodemailer": "^10.1.4",
-    "resend": "^6.22.1"
+    "prettier": "catalog:",
+    "resend": "^6.22.1",
+    "typescript": "catalog:",
+    "vitest": "catalog:"
   }
 }
