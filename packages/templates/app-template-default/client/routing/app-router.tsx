@@ -7,6 +7,7 @@ import { useMemo, type ReactElement } from 'react';
 import { Navigate, Outlet, Route, Routes, useLocation } from 'react-router';
 
 import { AppLayout } from '../layouts/app-layout.js';
+import { RouteTreeProvider } from './route-context.js';
 import { withSettingsShell } from './settings-shell.js';
 import { filterRouteTree, matchRouteTree } from './route-navigation.js';
 import { renderRouteTree } from './route-tree.js';
@@ -39,7 +40,14 @@ function RequiredPageLayout({
   const standalone = matchRouteTree(routes, pathname)?.some(
     ({ route }) => route.componentLoader && route.layout === 'none',
   );
-  return standalone ? <StandalonePageLayout /> : <AppLayout routes={routes} />;
+  // Pages without the application layout still know the route tree, so a child page can find its parent (`BackButton`).
+  return standalone ? (
+    <RouteTreeProvider routes={routes}>
+      <StandalonePageLayout />
+    </RouteTreeProvider>
+  ) : (
+    <AppLayout routes={routes} />
+  );
 }
 
 export function AppRouter({ clientRoutes }: AppRouterProps): ReactElement {

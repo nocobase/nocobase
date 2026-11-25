@@ -30,6 +30,7 @@ import type { ComponentType, ReactElement } from 'react';
 import { Link, Outlet, MemoryRouter, useLocation } from 'react-router';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { BackButton } from '#components/back-button';
 import { AppRouter } from '../../client/routing/app-router.tsx';
 import { AppThemeProvider } from '../../client/theme/index.ts';
 
@@ -344,6 +345,51 @@ describe('application shell', () => {
     expect(
       screen.getByRole('complementary', { name: 'Application navigation' }),
     ).toBeVisible();
+  });
+
+  it('lets a child page of a standalone page go back without the application shell', async () => {
+    const parent = standaloneReport();
+    const child = {
+      ...createRoute('report-detail', '/report/detail', 'required', () => (
+        <>
+          <h2>Report detail</h2>
+          <BackButton />
+        </>
+      )),
+      layout: 'none' as const,
+    };
+    const page = {
+      ...parent,
+      componentLoader: async () => ({
+        default: () => (
+          <>
+            <h2>Print report</h2>
+            <Outlet />
+          </>
+        ),
+      }),
+      children: [child],
+    };
+    renderApplication('/report/detail', true, [page], {
+      authorization: { can: async () => true },
+    });
+
+    const back = await screen.findByRole('link', { name: 'Back' });
+    expect(
+      screen.getByRole('heading', { name: 'Report detail' }),
+    ).toBeVisible();
+    expect(screen.queryByRole('banner')).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('complementary', { name: 'Application navigation' }),
+    ).not.toBeInTheDocument();
+    fireEvent.click(back);
+    expect(
+      await screen.findByRole('heading', { name: 'Print report' }),
+    ).toBeVisible();
+    expect(
+      screen.queryByRole('heading', { name: 'Report detail' }),
+    ).not.toBeInTheDocument();
+    expect(screen.queryByRole('banner')).not.toBeInTheDocument();
   });
 });
 
