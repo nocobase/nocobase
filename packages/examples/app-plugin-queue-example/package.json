@@ -12,7 +12,7 @@
       "zh-CN": "向应用队列投递消息，再由消费者处理。"
     }
   },
-  "version": "1.0.0-beta.16",
+  "version": "1.0.0-beta.17",
   "type": "module",
   "prettier": "@nocobase/dev-config/prettier",
   "engines": {

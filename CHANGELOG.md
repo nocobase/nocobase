@@ -2,6 +2,17 @@
 
 All notable changes to NocoBase 3 are documented in this file, one section per release: `nocobase-v3-beta/<date>.<n>` for a beta and `nocobase-v3/<date>.<n>` for a stable release. The versions each release published are on its GitHub Release, and every package's own changes are in its CHANGELOG.md.
 
+## [nocobase-v3-beta/2026-11-25.1](https://github.com/nocobase/nocobase/releases/tag/nocobase-v3-beta%2F2026-11-25.1)
+
+### 🚀 Improvements
+
+- **[Create app]** The multi-app, sub-app and multi-portal creation aliases can now enable their respective capabilities in Enterprise applications. ([#11702](https://github.com/nocobase/nocobase/pull/11702))
+- **[Interface]** Default lifecycle diagrams to compact process mode and support folding shared early-termination final states into node hover notes and execution outcome badges. ([#11707](https://github.com/nocobase/nocobase/pull/11707))
+
+### 🐛 Bug Fixes
+
+- **[App foundation]** Deployed applications now list development dependency plugins under Not enabled in Settings. ([#11704](https://github.com/nocobase/nocobase/pull/11704))
+
 ## [nocobase-v3-beta/2026-11-24.2](https://github.com/nocobase/nocobase/releases/tag/nocobase-v3-beta%2F2026-11-24.2)
 
 ### 🎉 New Features

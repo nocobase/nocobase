@@ -1,5 +1,38 @@
 # @nocobase/app-template-examples
 
+## 2.0.0-beta.3
+
+### Minor Changes
+
+- 6cb232f: Change `LifecycleDiagram` to default to compact `process` presentation (previously `classic`) with inline pill actions, and add explicit `exitStates` support for multi-stage early-termination outcomes.
+
+  Behavior change for newly created applications and code regenerated from the updated Skill (existing applications retain their copied component source): callers that omit `presentation` now render in `process` mode, where backward and self-transitions move from canvas edges into node hover/focus notes, `revealEdges` and `auxiliaryEdges` props are ignored in favor of process routes, and `initialMinZoom` defaults to `0.1` instead of `0.7`. Pass `presentation="classic"` to keep the previous full-edge card layout. Folded `exitStates` appear in each source stage's hover/focus notes and mark execution termination directly on the stopping stage.
+
+### Patch Changes
+
+- f5b066d: Show the source template name and version together in the application sidebar.
+- Updated dependencies [89c4785]
+- Updated dependencies [6cb232f]
+- Updated dependencies [8be5180]
+  - @nocobase/app-cli@1.0.0-beta.40
+  - @nocobase/app-plugin-foundation@0.1.0-beta.22
+  - @nocobase/app-plugin-lifecycle-example@0.1.0-beta.21
+  - @nocobase/app-plugin-authorization-example@1.0.0-beta.28
+  - @nocobase/app-plugin-cli-example@0.1.0-beta.8
+  - @nocobase/app-plugin-database-example@0.1.0-beta.12
+  - @nocobase/app-plugin-file-example@1.0.0-beta.28
+  - @nocobase/app-plugin-jobs-example@1.0.0-beta.15
+  - @nocobase/app-plugin-mail-example@1.0.0-beta.15
+  - @nocobase/app-plugin-notification-example@1.0.0-beta.20
+  - @nocobase/app-plugin-office-flows-example@0.1.0-beta.15
+  - @nocobase/app-plugin-queue-example@1.0.0-beta.17
+  - @nocobase/app-plugin-realtime-example@0.1.0-beta.18
+  - @nocobase/app-plugin-repository-example@2.0.0-beta.10
+  - @nocobase/app-plugin-routes-example@1.0.0-beta.28
+  - @nocobase/app-plugin-service-provider-example@1.0.0-beta.13
+  - @nocobase/app-plugin-skills-example@1.0.0-beta.12
+  - @nocobase/app-plugin-template-print-example@1.0.0-beta.13
+
 ## 2.0.0-beta.2
 
 ### Patch Changes

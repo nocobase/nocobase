@@ -12,7 +12,7 @@
       "zh-CN": "将按需加载的前端页面连接到服务端路由。"
     }
   },
-  "version": "1.0.0-beta.27",
+  "version": "1.0.0-beta.28",
   "type": "module",
   "sideEffects": false,
   "prettier": "@nocobase/dev-config/prettier",

@@ -2,6 +2,17 @@
 
 本文件记录 NocoBase 3 的所有重要变更，每次发布一节：`nocobase-v3-beta/<日期>.<序号>` 是预览版，`nocobase-v3/<日期>.<序号>` 是正式版。每次发布的包版本见对应的 GitHub Release，各个包自己的变更见包内的 CHANGELOG.md。
 
+## [nocobase-v3-beta/2026-11-25.1](https://github.com/nocobase/nocobase/releases/tag/nocobase-v3-beta%2F2026-11-25.1)
+
+### 🚀 优化
+
+- **[创建应用]** 创建应用时，可以通过原有的多应用、子应用和多门户别名启用对应的企业版能力。 ([#11702](https://github.com/nocobase/nocobase/pull/11702))
+- **[界面]** 生命周期流程图默认采用精简流程视图，并支持将多节点共享的提前终止终态收口至节点悬停浮卡与执行终止结果徽标。 ([#11707](https://github.com/nocobase/nocobase/pull/11707))
+
+### 🐛 修复
+
+- **[应用基础]** 部署后的应用现在会在系统设置的「未启用」列表中显示开发依赖插件。 ([#11704](https://github.com/nocobase/nocobase/pull/11704))
+
 ## [nocobase-v3-beta/2026-11-24.2](https://github.com/nocobase/nocobase/releases/tag/nocobase-v3-beta%2F2026-11-24.2)
 
 ### 🎉 新特性

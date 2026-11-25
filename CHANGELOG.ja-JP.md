@@ -2,6 +2,17 @@
 
 このファイルには NocoBase 3 の主な変更を、リリースごとに 1 セクションずつ記録します。`nocobase-v3-beta/<日付>.<連番>` はベータ版、`nocobase-v3/<日付>.<連番>` は正式版です。各リリースで公開されたパッケージのバージョンは対応する GitHub Release を、各パッケージ自体の変更はパッケージ内の CHANGELOG.md を参照してください。
 
+## [nocobase-v3-beta/2026-11-25.1](https://github.com/nocobase/nocobase/releases/tag/nocobase-v3-beta%2F2026-11-25.1)
+
+### 🚀 改善
+
+- **[アプリ作成]** マルチアプリ、子アプリ、マルチポータルの既存の作成エイリアスで、Enterprise アプリの各機能を有効にできます。 ([#11702](https://github.com/nocobase/nocobase/pull/11702))
+- **[インターフェース]** ライフサイクル図をコンパクトなプロセス表示デフォルトにし、複数ステージ共通の早期終了ステータスをホバー詳細と実行結果バッジに集約できるようになりました。 ([#11707](https://github.com/nocobase/nocobase/pull/11707))
+
+### 🐛 不具合修正
+
+- **[アプリ基盤]** デプロイ済みのアプリケーションで、開発用依存関係のプラグインがシステム設定の未有効一覧に表示されるようになりました。 ([#11704](https://github.com/nocobase/nocobase/pull/11704))
+
 ## [nocobase-v3-beta/2026-11-24.2](https://github.com/nocobase/nocobase/releases/tag/nocobase-v3-beta%2F2026-11-24.2)
 
 ### 🎉 新機能

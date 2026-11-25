@@ -12,7 +12,7 @@
       "zh-CN": "了解角色、共享规则和限制规则如何控制销售记录的访问范围。"
     }
   },
-  "version": "1.0.0-beta.27",
+  "version": "1.0.0-beta.28",
   "type": "module",
   "prettier": "@nocobase/dev-config/prettier",
   "engines": {
