@@ -12,6 +12,7 @@ import {
   APIClient,
   BaseLayoutModel,
   ChildPageModel,
+  FlowPage,
   KeepAlive,
   linkageSetMenuItemProps,
   menuLinkageRules,
@@ -3404,6 +3405,62 @@ describe('plugin-ui-layout mobile models', () => {
       .map((style) => style.textContent || '')
       .join('\n');
     expect(styleText).toMatch(/\.nb-ui-layout-mobile-page-slot\s*>\s*div\s*>\s*div\s*>\s*\[data-has-float-menu\]/);
+  });
+
+  it('should keep the mobile route page stretched when UI configuration is enabled', async () => {
+    const restoreBreakpoint = mockDesktopBreakpoint();
+    writeMobileFlowSettingsPreference(false);
+
+    const route = { id: 1, type: NocoBaseDesktopRouteType.flowPage, title: 'Home', schemaUid: 'home-page' };
+    const routeRepository = { listAccessible: () => [route], getRouteBySchemaUid: () => route };
+
+    try {
+      renderMobileLayoutWithRouteRepository(routeRepository, {
+        initialEntries: ['/v/mobile/home-page'],
+        // Embedded views mount the route page inside a scrollable body.
+        outletElement: React.createElement(
+          'div',
+          { style: { flex: 1, overflowY: 'auto' } },
+          React.createElement(FlowPage, { parentId: 'home-page', pageModelClass: 'MobileRootPageModel' }),
+        ),
+        beforeRender: ({ flowEngine }) => {
+          flowEngine.registerModels({ MobileRootPageModel });
+          flowEngine.context.defineProperty('view', { value: { type: 'embed', inputArgs: {} } });
+          flowEngine.context.defineProperty('pageActive', { value: { value: true } });
+          flowEngine.createModel({ uid: 'home-page', use: RouteModel });
+          const page = flowEngine.createModel<MobileRootPageModel>({
+            uid: 'mobile-page',
+            use: MobileRootPageModel,
+            parentId: 'home-page',
+            subKey: 'page',
+          });
+          vi.spyOn(page, 'renderFirstTab').mockImplementation(() =>
+            React.createElement(
+              'section',
+              {
+                'aria-label': 'Existing block',
+                'data-has-float-menu': flowEngine.context.flowSettingsEnabled || undefined,
+              },
+              React.createElement('div', { className: 'nb-ui-layout-mobile-surface' }, 'Embedded page'),
+            ),
+          );
+          vi.spyOn(flowEngine, 'loadOrCreateModel').mockResolvedValue(page);
+        },
+      });
+
+      const block = await screen.findByRole('region', { name: 'Existing block' });
+      expect(block.closest('[data-has-float-menu]')).toBeNull();
+
+      fireEvent.click(screen.getByTestId('ui-editor-button'));
+      await waitFor(() => {
+        const block = screen.getByRole('region', { name: 'Existing block' });
+        expect(block).toHaveAttribute('data-has-float-menu', 'true');
+        expect(block.parentElement?.closest('[data-has-float-menu]')).toHaveStyle({ height: '100%' });
+        expect(block).not.toHaveStyle({ height: '100%' });
+      });
+    } finally {
+      restoreBreakpoint();
+    }
   });
 
   it('should keep the layout content route host inside mobile page routes', async () => {

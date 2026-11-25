@@ -164,7 +164,13 @@ export const FlowPage = observer((props: FlowPageProps & Record<string, unknown>
     return <SkeletonFallback style={{ margin: ctx?.isMobileLayout ? 8 : ctx?.themeToken.marginBlock }} />;
   }
   const page = <InternalFlowPage uid={model.uid} {...rest} />;
-  return isRoute ? <RouteContent pending={needsConfirmation}>{page}</RouteContent> : page;
+  return isRoute ? (
+    <RouteContent className="nb-flow-route-page" pending={needsConfirmation}>
+      {page}
+    </RouteContent>
+  ) : (
+    page
+  );
 });
 
 FlowPage.displayName = 'FlowPage';
