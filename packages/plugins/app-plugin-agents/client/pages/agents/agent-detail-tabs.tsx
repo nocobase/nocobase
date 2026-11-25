@@ -6,7 +6,7 @@
  */
 import { useTranslation } from '@nocobase/i18n/client';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import type { ReactElement } from 'react';
+import { useState, type ReactElement } from 'react';
 
 import type { AgentView } from '../../../shared/agents.js';
 import { agentModelOf } from '../../../shared/model-catalog.js';
@@ -95,11 +95,17 @@ export function AgentSummary({
  * ones, each a switch for whoever may change the agent (`AgentActionOption.optional`, saved as `optionalActions`).
  */
 export function AgentActionsTab({
-  agent,
+  agent: opened,
 }: {
   readonly agent: AgentView;
 }): ReactElement {
   const { t } = useTranslation();
+  // The dialog keeps the agent it opened with: show what a switch saved, until a newer revision comes in.
+  const [saved, setSaved] = useState<AgentView | null>(null);
+  const agent =
+    saved && saved.id === opened.id && saved.revision > opened.revision
+      ? saved
+      : opened;
   const text = useText();
   const api = useAgentsApi();
   const notify = useNotify();
@@ -111,11 +117,12 @@ export function AgentActionsTab({
         optionalActions: [...optionalActions],
         expectedRevision: agent.revision,
       }),
-    onSuccess: async (saved) => {
+    onSuccess: async (result) => {
+      setSaved({ ...agent, ...result });
       await queryClient.cancelQueries({ queryKey: agentsKeys.agents });
       queryClient.setQueryData<AgentView[]>(agentsKeys.agents, (current) =>
         current?.map((item) =>
-          item.id === saved.id ? { ...item, ...saved } : item,
+          item.id === result.id ? { ...item, ...result } : item,
         ),
       );
       void queryClient.invalidateQueries({ queryKey: agentsKeys.agents });

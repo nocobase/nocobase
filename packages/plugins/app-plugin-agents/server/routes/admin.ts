@@ -252,6 +252,13 @@ async function mayEdit(
   return reaches(await who.scope('agents.agents/edit'), relatedTo);
 }
 
+/** Why `who` may not edit a skill. */
+function editRefusal(who: AdminCaller): string {
+  return who.run
+    ? 'An agent’s run edits skills only with agents.skills manage, for its agent and the person who woke it.'
+    : 'Only its creator (with the related level of agents.agents edit) or a manager of skills may edit this skill.';
+}
+
 /** The agent's run a change is made in, recorded on the version it writes (`SkillVersion.viaAgentId`). */
 function viaOf(who: AdminCaller): SkillVia | null {
   return who.run?.agentId
@@ -347,9 +354,7 @@ export function createAdminRoutes(
     const skill = await services.skills.get(context.req.param('skillId') ?? '');
     if (!(await mayEdit(who, skill.createdById))) {
       if (!(await who.can('agents.skills', 'read'))) throw notFound('Skill');
-      throw forbidden(
-        'Only its creator (with the related level of agents.agents edit) or a manager of skills may edit this skill.',
-      );
+      throw forbidden(editRefusal(who));
     }
     if (!(await policyAllows('canEdit', skill))) throw protectedSkill('edited');
     await next();
@@ -417,7 +422,14 @@ export function createAdminRoutes(
       operationId: 'agentsListActions',
       ...cliRoute({
         command: 'agent action list',
-        columns: ['key', 'group', 'defaultOn', 'optional', 'grantable', 'types'],
+        columns: [
+          'key',
+          'group',
+          'defaultOn',
+          'optional',
+          'grantable',
+          'types',
+        ],
       }),
       description:
         'As the application offers them. Needs `agents.agents` read.',
@@ -1288,9 +1300,7 @@ export function createAdminRoutes(
         if (!(await mayEdit(who, skill.createdById))) {
           if (!(await who.can('agents.skills', 'read')))
             throw notFound('Skill');
-          throw forbidden(
-            'Only its creator (with the related level of agents.agents edit) or a manager of skills may edit this skill.',
-          );
+          throw forbidden(editRefusal(who));
         }
         if (!(await policyAllows('canEdit', skill)))
           throw protectedSkill('edited');

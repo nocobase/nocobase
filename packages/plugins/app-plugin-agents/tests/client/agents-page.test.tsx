@@ -1196,6 +1196,69 @@ describe('the Agent page', () => {
     expect(screen.queryByTestId('agent-edit-kimi')).not.toBeInTheDocument();
   });
 
+  it('turns an optional action on and off for one agent, one revision after another', async () => {
+    agents = agents.map((each) => ({
+      ...each,
+      actions: ['crm.deals/comment'],
+    }));
+    api.routes['agents/actions'] = () => [
+      { key: 'crm.deals/comment', group: 'crm.deals' },
+      {
+        key: 'crm.skills/read',
+        group: 'crm.skills',
+        title: { key: 'Read skills', ns: 'crm' },
+        optional: true,
+      },
+    ];
+    api.routes['agents/skillAttachments/global/default'] = () => ({
+      skillIds: [],
+    });
+    api.routes['agents/skills'] = () => [];
+    api.routes['agents/runs'] = () => [];
+    let revision = 1;
+    api.routes['PATCH agents/sonnet'] = (request) => {
+      const body = request.json as {
+        optionalActions: string[];
+        expectedRevision: number;
+      };
+      expect(body.expectedRevision).toBe(revision);
+      revision += 1;
+      return {
+        ...agents.find((each) => each.id === 'sonnet')!,
+        revision,
+        actions: ['crm.deals/comment', ...body.optionalActions],
+      };
+    };
+    renderPage(<AgentsPage />);
+    fireEvent.click(await screen.findByTestId('agent-edit-sonnet'));
+    const sheet = await screen.findByTestId('agent-dialog');
+    const user = userEvent.setup();
+    await user.click(within(sheet).getByTestId('agent-tab-actions'));
+    const toggle = await within(sheet).findByTestId(
+      'agent-optional-crm.skills/read',
+    );
+    expect(toggle).toHaveAttribute('aria-checked', 'false');
+    // Held optional actions are switches, never tags.
+    expect(
+      within(await within(sheet).findByTestId('agent-actions')).getAllByText(
+        'Read skills',
+      ),
+    ).toHaveLength(1);
+    await user.click(toggle);
+    await vi.waitFor(() =>
+      expect(toggle).toHaveAttribute('aria-checked', 'true'),
+    );
+    await vi.waitFor(() => expect(toggle).not.toHaveAttribute('data-disabled'));
+    await user.click(toggle);
+    await vi.waitFor(() =>
+      expect(toggle).toHaveAttribute('aria-checked', 'false'),
+    );
+    expect(callsTo('PATCH', 'agents/sonnet').map((call) => call.json)).toEqual([
+      { optionalActions: ['crm.skills/read'], expectedRevision: 1 },
+      { optionalActions: [], expectedRevision: 2 },
+    ]);
+  });
+
   it('shows a reader an agent’s settings, business actions, default skills and runs without a way to change them', async () => {
     agents = agents.map((each) => ({
       ...each,
