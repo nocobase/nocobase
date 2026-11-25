@@ -55,13 +55,18 @@ import {
   type SettingsAction,
   type SettingsItem,
 } from '../../shared/access.js';
-import { SKILL_UPLOAD_MAX_BYTES, type SkillView } from '../../shared/skills.js';
+import {
+  SKILL_UPLOAD_MAX_BYTES,
+  type Skill,
+  type SkillView,
+} from '../../shared/skills.js';
 import { CONVERSATION_SUBJECT } from '../../shared/conversations.js';
 import type { ChatAudience } from '../../shared/agents.js';
 import type { Run } from '../../shared/runs.js';
 import type { VariableScope } from '../../shared/variables.js';
 import type { AgentsVocabulary } from '../../shared/vocabulary.js';
 import type { Agents } from '../composition.js';
+import type { SkillPolicy } from '../tokens.js';
 import {
   AgentPatchSchema,
   agentViews,
@@ -80,7 +85,12 @@ import {
   SkillInputSchema,
   SkillSaveSchema,
 } from '../core/skills/index.js';
-import { forbidden, invalid, notFound } from '../kernel/errors.js';
+import {
+  forbidden,
+  invalid,
+  notFound,
+  precondition,
+} from '../kernel/errors.js';
 import {
   decodePageToken,
   domainRouter,
@@ -252,8 +262,24 @@ export function createAdminRoutes(
   services: Agents,
   guard: MiddlewareHandler<AdminEnv>,
   scoped: MiddlewareHandler<AdminEnv> = guard,
+  /** The application's skill policy, read on each request: it may be bound after the routes are made. */
+  skillPolicy: () => SkillPolicy | undefined = () => undefined,
 ): Hono<AdminEnv> {
   const router = domainRouter<AdminEnv>();
+
+  /** Whether the skill policy lets `action` happen to the skill; no policy, or no method, allows. */
+  const policyAllows = async (
+    action: 'canEdit' | 'canDelete',
+    skill: Skill,
+  ): Promise<boolean> => {
+    const check = skillPolicy()?.[action];
+    return check ? await check(skill) : true;
+  };
+  const protectedSkill = (what: string) =>
+    precondition(
+      'SKILL_PROTECTED',
+      `This skill is protected by the application: it may not be ${what}.`,
+    );
 
   /** Lets the request through when the caller holds `action` on `item`. */
   const can =
@@ -312,6 +338,7 @@ export function createAdminRoutes(
         'Only its creator (with the related level of agents.agents edit) or a manager of skills may edit this skill.',
       );
     }
+    if (!(await policyAllows('canEdit', skill))) throw protectedSkill('edited');
     await next();
   };
 
@@ -871,7 +898,12 @@ export function createAdminRoutes(
         ...item,
         ...names.get(item.scope)?.get(item.scopeId),
       })),
-      canEdit: await mayEdit(caller(context), skill.createdById),
+      canEdit:
+        (await mayEdit(caller(context), skill.createdById)) &&
+        (await policyAllows('canEdit', skill)),
+      canDelete:
+        (await caller(context).can('agents.skills', 'manage')) &&
+        (await policyAllows('canDelete', skill)),
     };
   };
   const skillParam = apiValidator('param', SkillParams);
@@ -977,7 +1009,7 @@ export function createAdminRoutes(
         examples: ['skill update <skill> --content-file SKILL.md --revision 3'],
       }),
       description:
-        "Saves a new version with everything it holds, its SKILL.md checked as a new skill's is; a new front matter `name` renames the skill. Its creator (at the related level of `agents.agents` edit) or a manager of skills may.",
+        "Saves a new version with everything it holds, its SKILL.md checked as a new skill's is; a new front matter `name` renames the skill. Its creator (at the related level of `agents.agents` edit) or a manager of skills may. A skill the application protects is refused with 403 `SKILL_PROTECTED`.",
       responses: {
         200: dataResponse(SkillViewSchema),
         404: noSkill,
@@ -1010,7 +1042,8 @@ export function createAdminRoutes(
         flags: { skillId: { name: 'skill' } },
         confirm: 'Delete this skill from the library?',
       }),
-      description: 'Needs `agents.skills` manage.',
+      description:
+        'Needs `agents.skills` manage. A skill the application protects is refused with 403 `SKILL_PROTECTED`.',
       responses: {
         204: emptyResponse(),
         404: noSkill,
@@ -1019,7 +1052,12 @@ export function createAdminRoutes(
     }),
     skillParam,
     async (context) => {
-      await services.skills.remove(context.req.valid('param').skillId);
+      const { skillId } = context.req.valid('param');
+      if (
+        !(await policyAllows('canDelete', await services.skills.get(skillId)))
+      )
+        throw protectedSkill('deleted');
+      await services.skills.remove(skillId);
       return context.body(null, 204);
     },
   );
@@ -1098,7 +1136,7 @@ export function createAdminRoutes(
         confirm: 'Make this version the current one?',
       }),
       description:
-        'The version becomes current again, as a new version. Its creator (at the related level of `agents.agents` edit) or a manager of skills may.',
+        'The version becomes current again, as a new version. Its creator (at the related level of `agents.agents` edit) or a manager of skills may. A skill the application protects is refused with 403 `SKILL_PROTECTED`.',
       responses: {
         200: dataResponse(SkillViewSchema),
         400: apiErrorResponse(
@@ -1217,7 +1255,7 @@ export function createAdminRoutes(
         ],
       }),
       description:
-        'A zip in the Agent Skills layout, uploaded first (`agentsUploadSkillFile`): a new skill named by its front matter, or with `skillId` a new version of that skill, checked as a save is. Executable files stay executable. A new skill needs `agents.skills` manage; a new version, the right to edit the skill.',
+        'A zip in the Agent Skills layout, uploaded first (`agentsUploadSkillFile`): a new skill named by its front matter, or with `skillId` a new version of that skill, checked as a save is. Executable files stay executable. A new skill needs `agents.skills` manage; a new version, the right to edit the skill. A skill the application protects is refused with 403 `SKILL_PROTECTED`.',
       responses: {
         201: dataResponse(SkillViewSchema, 'Imported.'),
         404: noSkill,
@@ -1238,6 +1276,8 @@ export function createAdminRoutes(
             'Only its creator (with the related level of agents.agents edit) or a manager of skills may edit this skill.',
           );
         }
+        if (!(await policyAllows('canEdit', skill)))
+          throw protectedSkill('edited');
       } else await requireCan(context, 'agents.skills', 'manage');
       const imported = await services.skills.importArchive(who.userId, input);
       return context.json({ data: await viewOf(context, imported.id) }, 201);
@@ -1414,7 +1454,7 @@ export function createAdminRoutes(
         ],
       }),
       description:
-        'Makes `skillIds` the skills attached to the scope. Global accepts only default and requires agents.skills manage; other scopes need the right to change that scope. An empty skillIds array clears attachments. Agent attachments are refused.',
+        'Makes `skillIds` the skills attached to the scope. Global accepts only default and requires agents.skills manage; other scopes need the right to change that scope. An empty skillIds array clears attachments. Agent attachments are refused. A skill the application keeps out of the scope is refused with 403 `SKILL_PROTECTED` when newly attached.',
       responses: {
         200: dataResponse(SkillAttachmentsSchema),
         400: apiErrorResponse(
@@ -1427,15 +1467,22 @@ export function createAdminRoutes(
     }),
     scopeParam,
     apiValidator('json', SkillIdsSchema),
-    async (context) =>
-      context.json({
-        data: {
-          skillIds: await services.skills.attach(
-            context.get('target'),
-            context.req.valid('json').skillIds,
-          ),
-        },
-      }),
+    async (context) => {
+      const target = context.get('target');
+      const { skillIds } = context.req.valid('json');
+      const canAttach = skillPolicy()?.canAttach;
+      if (canAttach) {
+        const before = new Set(await services.skills.attached(target));
+        const added = new Set(skillIds.filter((id) => !before.has(id)));
+        // Only the newly attached skills are read, whatever the library's size.
+        for (const skill of await services.skills.list([...added]))
+          if (!(await canAttach(skill, target)))
+            throw protectedSkill(`attached here (${skill.slug})`);
+      }
+      return context.json({
+        data: { skillIds: await services.skills.attach(target, skillIds) },
+      });
+    },
   );
 
   // Runs.

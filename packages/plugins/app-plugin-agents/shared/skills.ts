@@ -29,6 +29,11 @@ export interface Skill {
   /** The front matter's `compatibility`, what the skill needs of its environment; null when it says nothing. */
   readonly compatibility: string | null;
   /**
+   * The front matter's `metadata`: string keys and values the specification leaves to clients, which an application
+   * may read to classify the skill; empty when it has none.
+   */
+  readonly metadata: Readonly<Record<string, string>>;
+  /**
    * The current version, from 1, and the skill's revision: a save or a restore names the version it was made against
    * (`expectedRevision`) and is refused with 409 when another save came first.
    */
@@ -42,6 +47,11 @@ export interface Skill {
   readonly scripts: readonly string[];
 
   readonly createdById: string | null;
+  /**
+   * Who wrote the current version: null when the application did (a seed or a plugin), so an application can tell
+   * content it installed from content a person saved, restored or imported since.
+   */
+  readonly updatedById: string | null;
   readonly createdAt: string;
   readonly updatedAt: string;
 }
@@ -109,6 +119,8 @@ export interface SkillDetail extends Skill {
 /** A skill as its page reads it (`GET /skills/:id`): with whether the caller may edit it. */
 export interface SkillView extends SkillDetail {
   readonly canEdit: boolean;
+  /** Whether the caller may delete it: a manager of skills, unless the application's skill policy protects it. */
+  readonly canDelete: boolean;
 }
 
 export interface SkillVersion {

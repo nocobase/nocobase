@@ -69,6 +69,7 @@ import {
 import {
   attachedSkillIds,
   attachmentsRepo,
+  currentSkillRows,
   replaceAttachments,
   runSkillRows,
   type RunSkillRow,
@@ -171,7 +172,8 @@ export interface SkillTarget {
 }
 
 export interface SkillService {
-  list(): Promise<Skill[]>;
+  /** Every skill, or only those with these ids (unknown ids are left out): two queries whatever their number. */
+  list(ids?: readonly string[]): Promise<Skill[]>;
   get(id: string): Promise<SkillDetail>;
   create(userId: string | null, input: SkillInput): Promise<SkillDetail>;
   /**
@@ -477,28 +479,32 @@ export function createSkillService(deps: SkillServiceDeps): SkillService {
 
   const summary = (
     skill: SkillRecord,
-    current: SkillVersionRecord | undefined,
+    current:
+      | Pick<SkillVersionRecord, 'content' | 'manifest' | 'createdById'>
+      | undefined,
   ): Skill => {
     const manifest = manifestOf(current?.manifest);
     const scripts = manifest
       .filter((entry) => isSkillScript(entry))
       .map((entry) => entry.path)
       .sort((a, b) => a.localeCompare(b));
+    const frontMatter = current
+      ? parseSkillMarkdown(current.content).frontMatter
+      : {};
     return {
       id: skill.id,
       slug: skill.slug,
       name: skill.name,
       description: skill.description,
-      compatibility: current
-        ? (parseSkillMarkdown(current.content).frontMatter.compatibility ??
-          null)
-        : null,
+      compatibility: frontMatter.compatibility ?? null,
+      metadata: frontMatter.metadata ?? {},
       version: Number(skill.currentVersion),
       fileCount: manifest.length,
       size: current ? sizeOf(current.content, manifest) : 0,
       scriptCount: scripts.length,
       scripts,
       createdById: skill.createdById,
+      updatedById: current?.createdById ?? null,
       createdAt: skill.createdAt,
       updatedAt: skill.updatedAt,
     };
@@ -707,19 +713,23 @@ export function createSkillService(deps: SkillServiceDeps): SkillService {
   };
 
   return {
-    async list() {
-      const conn = tx.read();
-      const skills = await skillsRepo(conn).findMany({
-        sort: (sort) => [sort.field('name').asc(), sort.field('id').asc()],
-      });
-      const result: Skill[] = [];
-      for (const skill of skills) {
-        const current = await versionsRepo(conn).findOne({
-          filter: { skillId: skill.id, version: skill.currentVersion },
-        });
-        result.push(summary(skill, current));
-      }
-      return result;
+    async list(ids) {
+      const rows = await currentSkillRows(
+        tx.read(),
+        ids ? [...new Set(ids)] : undefined,
+      );
+      return rows.map((row) =>
+        summary(
+          row,
+          row.content === null
+            ? undefined
+            : {
+                content: row.content,
+                manifest: row.manifest,
+                createdById: row.versionCreatedById,
+              },
+        ),
+      );
     },
 
     get: (id) => detail(tx.read(), id),

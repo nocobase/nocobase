@@ -2,7 +2,12 @@
 import { fireEvent, screen, waitFor, within } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import type { SkillInput, SkillSave, SkillView } from '../../shared/skills.js';
+import type {
+  Skill,
+  SkillInput,
+  SkillSave,
+  SkillView,
+} from '../../shared/skills.js';
 import {
   draftOf,
   entryProblem,
@@ -18,6 +23,12 @@ import {
   granted,
   resetApi,
 } from './fake-client.js';
+import { useTranslation } from '@nocobase/i18n/client';
+
+import {
+  SkillSettingsContext,
+  type SkillListExtension,
+} from '../../client/lib/skill-settings-context.js';
 import { skill, skillDetail } from './fixtures.js';
 import { renderPage, renderRoute } from './render.js';
 
@@ -87,6 +98,40 @@ describe('skill workbench model', () => {
     ]);
   });
 });
+
+/** An application's settings for a skill, naming what it was given. */
+function ShownSettings({
+  skillId,
+  skill,
+}: {
+  readonly skillId: string;
+  readonly skill: { readonly name: string };
+}) {
+  return <p>{`settings ${skillId} ${skill.name}`}</p>;
+}
+
+function PurposeCell({ skill: shown }: { readonly skill: Skill }) {
+  return <span>purpose of {shown.name}</span>;
+}
+
+/** An application's list additions, translated like a real one's. */
+function useTestSkillList(): SkillListExtension {
+  const { t } = useTranslation();
+  return {
+    filters: [
+      { key: 'all', label: t('All'), match: () => true },
+      {
+        key: 'scripts',
+        label: t('With scripts'),
+        match: (shown) => shown.scriptCount > 0,
+      },
+      { key: 'none', label: t('None'), match: () => false },
+    ],
+    column: { header: t('Purpose'), Cell: PurposeCell },
+    title: (shown) =>
+      shown.name === 'pr-etiquette' ? 'Pull request etiquette' : undefined,
+  };
+}
 
 describe('skill pages', () => {
   let current: SkillView;
@@ -202,6 +247,39 @@ describe('skill pages', () => {
     expect(
       within(row).getByText('skills.compatibility(value=Needs git)'),
     ).toBeInTheDocument();
+  });
+
+  it('lets the application add filters with counts and a column to the list', async () => {
+    renderPage(
+      <SkillSettingsContext.Provider
+        value={{
+          Settings: ShownSettings,
+          useList: useTestSkillList,
+        }}
+      >
+        <SkillsPage />
+      </SkillSettingsContext.Provider>,
+    );
+    const row = await screen.findByTestId('skill-s1');
+    expect(
+      within(row).getByText('purpose of pr-etiquette'),
+    ).toBeInTheDocument();
+    // The application's title leads, with the name under it.
+    expect(
+      within(row).getByRole('link', { name: 'Pull request etiquette' }),
+    ).toBeInTheDocument();
+    expect(within(row).getByText('pr-etiquette')).toBeInTheDocument();
+    expect(
+      screen.getByRole('columnheader', { name: 'Purpose' }),
+    ).toBeInTheDocument();
+    expect(screen.getByTestId('skill-filter-scripts')).toHaveTextContent(
+      'With scripts1',
+    );
+    expect(screen.getByTestId('skill-filter-none')).toHaveTextContent('None0');
+    fireEvent.click(screen.getByTestId('skill-filter-none'));
+    await waitFor(() => expect(screen.queryByTestId('skill-s1')).toBeNull());
+    fireEvent.click(screen.getByTestId('skill-filter-scripts'));
+    expect(await screen.findByTestId('skill-s1')).toBeInTheDocument();
   });
 
   it('shows a skill as a tree of files beside the one selected', async () => {
@@ -480,6 +558,62 @@ describe('skill pages', () => {
     expect(await screen.findByText('Pull requests')).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'skills.edit' })).toBeNull();
     expect(screen.getByText('skills.readOnly')).toBeInTheDocument();
+  });
+
+  it('says why a skill is read only when the application explains it, and keeps the generic note otherwise', async () => {
+    current = { ...current, canEdit: false };
+    renderRoute(
+      <SkillSettingsContext.Provider
+        value={{
+          Settings: ShownSettings,
+          // A stand-in for the application's hook, which translates its note.
+          // eslint-disable-next-line @eslint-react/no-unnecessary-use-prefix
+          useReadOnlyNote: (shown) =>
+            shown.id === 's1' ? 'Built in: read only.' : undefined,
+        }}
+      >
+        <SkillDetailPage />
+      </SkillSettingsContext.Provider>,
+      '/skills/:skillId',
+      '/skills/s1',
+    );
+    expect(await screen.findByText('Built in: read only.')).toBeInTheDocument();
+    expect(screen.queryByText('skills.readOnly')).toBeNull();
+  });
+
+  it('hides deleting a skill the server says may not be deleted, even from a manager', async () => {
+    current = { ...current, canDelete: false };
+    renderRoute(<SkillDetailPage />, '/skills/:skillId', '/skills/s1');
+    expect(
+      await screen.findByRole('button', { name: 'skills.edit' }),
+    ).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'skills.delete' })).toBeNull();
+  });
+
+  it('lets the application hide the global mount and render its own settings with the skill', async () => {
+    const seen: string[] = [];
+    renderRoute(
+      <SkillSettingsContext.Provider
+        value={{
+          Settings: ShownSettings,
+          showGlobalMount: (shown) => {
+            seen.push(shown.id);
+            return false;
+          },
+        }}
+      >
+        <SkillDetailPage />
+      </SkillSettingsContext.Provider>,
+      '/skills/:skillId',
+      '/skills/s1',
+    );
+    expect(
+      await screen.findByText(`settings s1 ${current.name}`),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole('switch', { name: 'skills.globalMount' }),
+    ).toBeNull();
+    expect(seen).toContain('s1');
   });
 
   it('compares an older version with the current one and restores it', async () => {
