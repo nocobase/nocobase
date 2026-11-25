@@ -34,6 +34,28 @@ export class AppVolumeManager {
     return storageDir;
   }
 
+  /** Where `writeConfig` keeps an App's configuration of one revision. */
+  managedConfigPath(appId: string, revision: string): string {
+    this.assertAppId(appId);
+    this.assertAppId(revision);
+    return path.join(
+      this.volumesDir,
+      appId,
+      'configs',
+      `config.${revision}.yml`,
+    );
+  }
+
+  /** Writes configuration to a file of its own under `<appId>/preflight/`, which the caller removes. */
+  async writeIsolatedConfig(appId: string, content: string): Promise<string> {
+    this.assertAppId(appId);
+    const directory = path.join(this.volumesDir, appId, 'preflight');
+    await mkdir(directory, { recursive: true, mode: 0o700 });
+    const target = path.join(directory, `config.${randomUUID()}.yml`);
+    await writeFile(target, content, { mode: 0o600, flag: 'wx' });
+    return target;
+  }
+
   async writeConfig(
     appId: string,
     revision: string,

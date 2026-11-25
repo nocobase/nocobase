@@ -14,6 +14,7 @@
 // to a deployment. Their compiled output is copied into `dist/vendor` and referenced by a `file:` path, so a plugin
 // developed in this repository deploys the same way as one installed from a registry.
 import fs from 'node:fs';
+import { createRequire } from 'node:module';
 import path from 'node:path';
 
 import { parse, stringify } from 'yaml';
@@ -76,6 +77,12 @@ const isWorkspaceVersion = (version) => version?.startsWith('workspace:');
 const getVendorPackagePath = (packageName) =>
   path.join(vendorDir, ...packageName.split('/'));
 
+// Keep this rule aligned with isPluginPackageName in src/lib/plugin-package-name.ts.
+const isPluginPackageName = (name) =>
+  /^@[a-z0-9][a-z0-9-]*\/app-(?:plugin|portal)-[a-z0-9]+(?:-[a-z0-9]+)*$/u.test(
+    name,
+  );
+
 /**
  * The other application plugins a plugin builds on, kept so a deployment can still tell which plugin another one
  * needs, with the ones marked optional still marked so. The range is `*`: a `workspace:` range means nothing outside
@@ -83,13 +90,7 @@ const getVendorPackagePath = (packageName) =>
  */
 const pluginPeerDependencies = (packageJson) => {
   const peers = Object.keys(packageJson.peerDependencies ?? {})
-    // Official and third-party scopes alike: the rule `isPluginPackageName` in `src/lib/plugin-package-name.ts`
-    // applies, which these plain Node scripts cannot import.
-    .filter((name) =>
-      /^@[a-z0-9][a-z0-9-]*\/app-(?:plugin|portal)-[a-z0-9]+(?:-[a-z0-9]+)*$/u.test(
-        name,
-      ),
-    )
+    .filter(isPluginPackageName)
     .sort();
   if (peers.length === 0) return {};
   const optional = peers.filter(
@@ -417,6 +418,36 @@ const dependencies = Object.fromEntries([
   ...Object.entries(workspaceDependencies),
 ]);
 
+// Capture display and registration metadata while the development packages are available.
+const applicationRequire = createRequire(rootPackagePath);
+const developmentPlugins = {};
+for (const name of Object.keys(rootPackage.devDependencies ?? {})
+  .filter(isPluginPackageName)
+  .sort()) {
+  if (Object.hasOwn(rootPackage.dependencies ?? {}, name)) continue;
+  const manifestPath = applicationRequire.resolve
+    .paths(name)
+    .map((directory) => path.join(directory, name, 'package.json'))
+    .find((file) => fs.existsSync(file));
+  if (!manifestPath) {
+    developmentPlugins[name] = null;
+    continue;
+  }
+  const manifest = readJson(manifestPath);
+  const { title, description, docs } = manifest.nocobase ?? {};
+  const entries = manifest.publishConfig?.exports ?? manifest.exports ?? {};
+  developmentPlugins[name] = {
+    version: manifest.version,
+    nocobase: { title, description, docs },
+    exports: Object.fromEntries(
+      ['./client', './server', './cli']
+        .filter((entry) => Object.hasOwn(entries, entry))
+        .map((entry) => [entry, true]),
+    ),
+    ...pluginPeerDependencies(manifest),
+  };
+}
+
 const distPackage = {
   name: rootPackage.name,
   // The server publishes both to the client, which shows them as the application's name and version.
@@ -424,7 +455,7 @@ const distPackage = {
   version: rootPackage.version ?? '0.0.0',
   private: true,
   type: 'module',
-  nocobase: rootPackage.nocobase,
+  nocobase: { ...rootPackage.nocobase, developmentPlugins },
   main: './server/embedded.js',
   exports: {
     '.': './server/embedded.js',

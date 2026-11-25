@@ -21,6 +21,8 @@ are Better Auth's, and Better Auth's documentation applies unchanged.
 
 Set `apiKeys.systemApiKeyRoutes: false` to omit the `/api/systemApiKeys` management endpoints. They are enabled by default. Personal key management, key rules, authentication of existing system keys and scheduled maintenance continue to work. To restore HTTP rotation or revocation for an existing system key, re-enable the routes.
 
+Set `apiKeys.keyAdministrationRoutes: false` to omit the member key and rule administration endpoints under `/api/apiKeys/members` and `/api/apiKeys/rules`. They are enabled by default. Previously saved rules still apply and take precedence over application configuration.
+
 - Server plugin: default export of `@nocobase/app-plugin-api-keys/server`.
   Contributes the `apikey` table migration and nothing else.
 - `apiKey(options?)`, plus `API_KEY_TABLE_NAME`, `API_KEY_ERROR_CODES` and the
@@ -40,7 +42,7 @@ Set `apiKeys.systemApiKeyRoutes: false` to omit the `/api/systemApiKeys` managem
   `POST /api/auth/api-key/delete`. All five act only on the caller's own keys.
 
 The plugin contributes no NocoBase route of its own. The endpoints above are
-Better Auth's, mounted by Authentication's `/api/auth/*` handler. Its server registers the access check that lets a valid key read the App's API document, and, through the authentication plugin's `signInMethodsToken`, the API keys row on System settings › Sign-in and authentication: `On` while `apiKey()` is among `auth.plugins`, `Not configured` otherwise. Removing the plugin removes the row.
+Better Auth's, mounted by Authentication's `/api/auth/*` handler. Its server registers the access check that lets a valid key read the App's API document, and, through the authentication plugin's `signInMethodsToken`, the API keys row on System settings › Authentication: `On` while `apiKey()` is among `auth.plugins`, `Not configured` otherwise. Removing the plugin removes the row.
 
 ## Register it
 

@@ -2,7 +2,7 @@
   "name": "@nocobase/app-plugin-authentication",
   "displayName": "Authentication App Plugin",
   "description": "Authentication plugin for NocoBase applications.",
-  "version": "2.0.0-beta.24",
+  "version": "2.0.0-beta.25",
   "type": "module",
   "sideEffects": false,
   "prettier": "@nocobase/dev-config/prettier",
@@ -11,8 +11,8 @@
   },
   "nocobase": {
     "title": {
-      "en-US": "Sign-in and authentication",
-      "zh-CN": "登录与认证"
+      "en-US": "Authentication",
+      "zh-CN": "身份认证"
     },
     "description": {
       "en-US": "Sign-in methods, sessions and account security",

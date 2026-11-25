@@ -31,7 +31,7 @@ describe('the settings pages the authentication plugin registers', () => {
   );
   const byId = (id: string) => routes.find((route) => route.id === id);
 
-  it('puts Sign-in and authentication in System settings › Accounts, behind its settings item', () => {
+  it('puts Authentication in System settings › Accounts, behind its settings item', () => {
     expect(byId(AUTHENTICATION_SETTINGS_ROUTE_ID)).toMatchObject({
       path: '/settings/authentication',
       surface: 'systemSettings',

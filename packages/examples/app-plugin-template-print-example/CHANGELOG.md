@@ -1,5 +1,13 @@
 # @nocobase/app-plugin-template-print-example
 
+## 1.0.0-beta.13
+
+### Patch Changes
+
+- 8be5180: Show English and Simplified Chinese names and descriptions for example plugins in the plugin list.
+- Updated dependencies [8be5180]
+  - @nocobase/app-plugin-authorization-example@1.0.0-beta.28
+
 ## 1.0.0-beta.12
 
 ### Patch Changes

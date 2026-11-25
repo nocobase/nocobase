@@ -3,6 +3,7 @@ import { fireEvent, screen, waitFor, within } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import type { SkillInput, SkillSave, SkillView } from '../../shared/skills.js';
+import { SkillSettingsContext } from '../../client/lib/skill-settings-context.js';
 import {
   draftOf,
   entryProblem,
@@ -87,6 +88,17 @@ describe('skill workbench model', () => {
     ]);
   });
 });
+
+/** An application's settings for a skill, naming what it was given. */
+function ShownSettings({
+  skillId,
+  skill,
+}: {
+  readonly skillId: string;
+  readonly skill: { readonly name: string };
+}) {
+  return <p>{`settings ${skillId} ${skill.name}`}</p>;
+}
 
 describe('skill pages', () => {
   let current: SkillView;
@@ -193,10 +205,12 @@ describe('skill pages', () => {
     );
   });
 
-  it('lists skills with their compatibility, version and scope defaults', async () => {
+  it('lists skills with links, compatibility and version', async () => {
     renderPage(<SkillsPage />);
     const row = await screen.findByTestId('skill-s1');
-    expect(within(row).getByText('pr-etiquette')).toBeInTheDocument();
+    expect(
+      within(row).getByRole('link', { name: 'pr-etiquette' }),
+    ).toHaveAttribute('href', '/s1');
     expect(within(row).getByText('v2')).toBeInTheDocument();
     expect(within(row).queryByText('skills.scriptsNote')).toBeNull();
     expect(
@@ -480,6 +494,62 @@ describe('skill pages', () => {
     expect(await screen.findByText('Pull requests')).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'skills.edit' })).toBeNull();
     expect(screen.getByText('skills.readOnly')).toBeInTheDocument();
+  });
+
+  it('says why a skill is read only when the application explains it, and keeps the generic note otherwise', async () => {
+    current = { ...current, canEdit: false };
+    renderRoute(
+      <SkillSettingsContext.Provider
+        value={{
+          Settings: ShownSettings,
+          // A stand-in for the application's hook, which translates its note.
+          // eslint-disable-next-line @eslint-react/no-unnecessary-use-prefix
+          useReadOnlyNote: (shown) =>
+            shown.id === 's1' ? 'Built in: read only.' : undefined,
+        }}
+      >
+        <SkillDetailPage />
+      </SkillSettingsContext.Provider>,
+      '/skills/:skillId',
+      '/skills/s1',
+    );
+    expect(await screen.findByText('Built in: read only.')).toBeInTheDocument();
+    expect(screen.queryByText('skills.readOnly')).toBeNull();
+  });
+
+  it('hides deleting a skill the server says may not be deleted, even from a manager', async () => {
+    current = { ...current, canDelete: false };
+    renderRoute(<SkillDetailPage />, '/skills/:skillId', '/skills/s1');
+    expect(
+      await screen.findByRole('button', { name: 'skills.edit' }),
+    ).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'skills.delete' })).toBeNull();
+  });
+
+  it('lets the application hide the global mount and render its own settings with the skill', async () => {
+    const seen: string[] = [];
+    renderRoute(
+      <SkillSettingsContext.Provider
+        value={{
+          Settings: ShownSettings,
+          showGlobalMount: (shown) => {
+            seen.push(shown.id);
+            return false;
+          },
+        }}
+      >
+        <SkillDetailPage />
+      </SkillSettingsContext.Provider>,
+      '/skills/:skillId',
+      '/skills/s1',
+    );
+    expect(
+      await screen.findByText(`settings s1 ${current.name}`),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole('switch', { name: 'skills.globalMount' }),
+    ).toBeNull();
+    expect(seen).toContain('s1');
   });
 
   it('compares an older version with the current one and restores it', async () => {

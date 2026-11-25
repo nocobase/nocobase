@@ -1,5 +1,11 @@
 # @nocobase/create-app
 
+## 0.1.0-beta.41
+
+### Minor Changes
+
+- e376f8a: Create Main, child and multi-portal applications from the Enterprise edition's optional capabilities while preserving the existing creation aliases.
+
 ## 0.1.0-beta.40
 
 ### Minor Changes

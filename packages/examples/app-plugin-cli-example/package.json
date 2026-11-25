@@ -2,7 +2,17 @@
   "name": "@nocobase/app-plugin-cli-example",
   "displayName": "CLI Example App Plugin",
   "description": "Example app plugin that contributes commands to the app's nocobase CLI.",
-  "version": "0.1.0-beta.7",
+  "nocobase": {
+    "title": {
+      "en-US": "CLI commands example",
+      "zh-CN": "命令行示例"
+    },
+    "description": {
+      "en-US": "Add custom commands to the application CLI.",
+      "zh-CN": "为应用的命令行工具添加自定义命令。"
+    }
+  },
+  "version": "0.1.0-beta.8",
   "type": "module",
   "prettier": "@nocobase/dev-config/prettier",
   "engines": {

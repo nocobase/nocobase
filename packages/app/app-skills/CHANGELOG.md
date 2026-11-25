@@ -1,5 +1,20 @@
 # @nocobase/app-skills
 
+## 0.1.0-beta.73
+
+### Minor Changes
+
+- 6cb232f: Change `LifecycleDiagram` to default to compact `process` presentation (previously `classic`) with inline pill actions, and add explicit `exitStates` support for multi-stage early-termination outcomes.
+
+  Behavior change for newly created applications and code regenerated from the updated Skill (existing applications retain their copied component source): callers that omit `presentation` now render in `process` mode, where backward and self-transitions move from canvas edges into node hover/focus notes, `revealEdges` and `auxiliaryEdges` props are ignored in favor of process routes, and `initialMinZoom` defaults to `0.1` instead of `0.7`. Pass `presentation="classic"` to keep the previous full-edge card layout. Folded `exitStates` appear in each source stage's hover/focus notes and mark execution termination directly on the stopping stage.
+
+## 0.1.0-beta.72
+
+### Patch Changes
+
+- 300f760: Allow applications to exclude contributed routes by ID and hide toolbar shortcuts linked to excluded or inaccessible pages.
+- 8ff2df3: Applications can disable system settings, personal settings, chat, inbox and mail workspace routes independently. All five are enabled by default, so existing applications keep their pages when upgrading. Plugins can turn off their own pages with `{ disabled: true }` on `defineAppRoutes()` and the settings route helpers; disabled routes behave like `excludedRouteIds`, so overrides and header actions that target them no longer fail.
+
 ## 0.1.0-beta.71
 
 ### Minor Changes

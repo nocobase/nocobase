@@ -173,7 +173,7 @@ describe('runtime default locale', () => {
     vi.stubGlobal('localStorage', { getItem: () => null });
     const runtime = await resolveAppRuntime(definition, { rawConfig: {} });
     const t = runtime.i18n.getFixedT(APP_CLIENT_NAMESPACE);
-    expect(t('settings.categories.data')).toBe('Data and files');
+    expect(t('settings.categories.data')).toBe('Data & files');
     expect(t('settings.personal.categories.account')).toBe('Account');
     expect(t('settings.personal.categories.integrations')).toBe('Integrations');
     await runtime.i18n.changeLanguage('zh-CN');

@@ -79,6 +79,7 @@ export const systemRoutes: AppClientRouteContribution =
       authz: { resource: API_KEYS, action: 'read' },
       navigation: {
         title: 'navigation.system',
+        order: 200,
         description: 'system.description',
         relatedSettings: ['personalApiKeys'],
         icon: KeyRound,

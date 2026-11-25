@@ -167,6 +167,7 @@ export interface DockerApi {
     labels: Readonly<Record<string, string>>,
   ): Promise<void>;
   removeVolume(name: string): Promise<void>;
+  volumeExists(name: string): Promise<boolean>;
   /** Creates the network unless it exists. */
   ensureNetwork(
     name: string,
@@ -411,6 +412,15 @@ export function wrapDockerode(docker: Docker): DockerApi {
     },
     async removeVolume(name) {
       await docker.getVolume(name).remove().catch(ignore(404));
+    },
+    async volumeExists(name) {
+      try {
+        await docker.getVolume(name).inspect();
+        return true;
+      } catch (error) {
+        if (statusOf(error) === 404) return false;
+        throw error;
+      }
     },
     async ensureNetwork(name, options) {
       try {

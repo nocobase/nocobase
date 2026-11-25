@@ -1,5 +1,11 @@
 # @nocobase/app-plugin-foundation
 
+## 0.1.0-beta.22
+
+### Patch Changes
+
+- 89c4785: List development dependency plugins under Not enabled in deployed applications without installing them as production dependencies.
+
 ## 0.1.0-beta.21
 
 ### Minor Changes

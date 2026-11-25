@@ -1,5 +1,13 @@
 # @nocobase/app-plugin-realtime-example
 
+## 0.1.0-beta.18
+
+### Patch Changes
+
+- 8be5180: Show English and Simplified Chinese names and descriptions for example plugins in the plugin list.
+- Updated dependencies [8be5180]
+  - @nocobase/app-plugin-notification-example@1.0.0-beta.20
+
 ## 0.1.0-beta.17
 
 ### Patch Changes

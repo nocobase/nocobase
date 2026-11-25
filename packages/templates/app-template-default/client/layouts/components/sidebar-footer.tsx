@@ -1,9 +1,9 @@
 import { Trans } from 'react-i18next';
-import { useClientApplication } from '@nocobase/app-client';
 import { useTranslation } from '@nocobase/i18n/client';
 import { ShieldCheck } from 'lucide-react';
 import type { ReactElement } from 'react';
 
+import manifest from '../../../package.json' with { type: 'json' };
 import { SidebarFooter, useSidebar } from '#components/ui/sidebar';
 import {
   Tooltip,
@@ -11,18 +11,39 @@ import {
   TooltipTrigger,
 } from '#components/ui/tooltip';
 
+// create-app records the original package before renaming the generated application.
+const metadata: typeof manifest.nocobase & { templatePackage?: string } =
+  manifest.nocobase;
+const templatePrefix = '@nocobase/app-template-';
+const isTemplatePackage = manifest.name.startsWith(templatePrefix);
+const sourcePackage =
+  metadata.templatePackage ?? (isTemplatePackage ? manifest.name : undefined);
+const shortName = sourcePackage?.startsWith(templatePrefix)
+  ? sourcePackage.slice(templatePrefix.length)
+  : '';
+const templateName = shortName
+  ? shortName.charAt(0).toUpperCase() + shortName.slice(1)
+  : sourcePackage;
+const templateVersion =
+  metadata.defaultTemplateVersion ??
+  (isTemplatePackage ? manifest.version : undefined);
+
 /**
- * The application's sidebar footer: the NocoBase slogan's two lines, then the application's version.
+ * The application's sidebar footer: the NocoBase slogan's two lines, then its source template and version.
  * In icon mode only the shield remains, and a tooltip carries the same text.
  */
 export function AppSidebarFooter(): ReactElement {
   const { t } = useTranslation();
   const { isMobile, state } = useSidebar();
   const iconOnly = state === 'collapsed' && !isMobile;
-  // Published by the server from the application's package.json.
-  const publicConfig = useClientApplication().config.public;
-  const templateVersion = publicConfig.get('app.version', '0.0.0');
-  const versionLabel = `v${templateVersion}`;
+  const versionLabel =
+    templateName && templateVersion
+      ? t('shell.basedOnTemplate', {
+          defaultValue: `Based on the ${templateName} template v${templateVersion}`,
+          name: templateName,
+          version: templateVersion,
+        })
+      : `v${templateVersion ?? manifest.version}`;
   // The tooltip and the icon's accessible name have no link, so the brand's markup is dropped there.
   const brandPartnership = t('shell.brandPartnership', {
     defaultValue: 'AI + <brand>NocoBase</brand>',
@@ -88,7 +109,7 @@ export function AppSidebarFooter(): ReactElement {
             {buildReliableSystems}
           </p>
           <p
-            className='mt-1 truncate text-muted-foreground'
+            className='mt-1 break-words text-muted-foreground'
             title={versionLabel}
           >
             {versionLabel}

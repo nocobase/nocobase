@@ -993,6 +993,38 @@ describe('MailClient → HTTP routes → service → database and jobs', () => {
     await alice.deleteTemplate(template.id);
     expect(await client('alice').listTemplates()).toEqual([]);
   });
+
+  it('answers 409 to a template name the caller already uses, on create and rename', async () => {
+    const welcome = await alice.saveTemplate({ name: 'Welcome', subject: 'A' });
+    const other = await alice.saveTemplate({ name: 'Other', subject: 'B' });
+    const conflict = {
+      status: 409,
+      reason: 'MAIL_TEMPLATE_ALREADY_EXISTS',
+      message: 'Mail template name is already in use.',
+    };
+    await expect(
+      alice.saveTemplate({ name: ' Welcome ', subject: 'C' }),
+    ).rejects.toMatchObject(conflict);
+    await expect(
+      alice.saveTemplate({ id: other.id, name: 'Welcome', subject: 'B' }),
+    ).rejects.toMatchObject(conflict);
+    // Another user's name and template stay out of reach: the same name is free for Bob, and his attempt on Alice's
+    // template still reads as missing rather than as a conflict.
+    const bobs = await bob.saveTemplate({ name: 'Other', subject: 'Mine' });
+    await expect(
+      bob.saveTemplate({ id: welcome.id, name: 'Other', subject: 'Mine' }),
+    ).rejects.toMatchObject({ status: 404, reason: 'MAIL_TEMPLATE_NOT_FOUND' });
+    expect(
+      (await client('alice').listTemplates()).map(({ id, name }) => ({
+        id,
+        name,
+      })),
+    ).toEqual([
+      { id: other.id, name: 'Other' },
+      { id: welcome.id, name: 'Welcome' },
+    ]);
+    expect(await bob.listTemplates()).toEqual([bobs]);
+  });
 });
 
 /** The rows of one page of the caller's send log, 20 to a page unless the request says otherwise. */

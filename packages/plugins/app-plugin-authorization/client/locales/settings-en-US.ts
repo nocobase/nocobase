@@ -1,6 +1,6 @@
 // The Roles and permissions pages: the role list and editor, data rules and their shared components.
 const settings = {
-  permissionManagement: 'Roles and permissions',
+  permissionManagement: 'Roles & permissions',
   permissionManagementDescription:
     'Set what each role can open and do, and the data it can see.',
   rolesDescription: 'Choose which pages and actions each role can access.',
@@ -44,7 +44,7 @@ const settings = {
     chooseResource: 'Choose a business object',
     action: 'Operation',
     scope: 'Data scope',
-    scopes: 'Operations and data scopes',
+    scopes: 'Operations & data scopes',
     none: 'No default scope',
     all: 'All records',
     custom: 'Custom filter',
@@ -220,7 +220,7 @@ const settings = {
   },
   unnamedPage: 'Unnamed page ({{path}})',
   keyConflict: 'This role key is already in use.',
-  userPermissions: 'Users and accounts',
+  userPermissions: 'Users & accounts',
   readUsers: 'View users',
   createUsers: 'Create users',
   updateUsers: 'Edit users',

@@ -58,9 +58,6 @@ export function AppLayout({
   const routes = useMemo(() => withSettingsShell(registered), [registered]);
   const { items, denied, loading } = useRouteNavigation(routes);
   const access = useMemo(() => ({ denied, loading }), [denied, loading]);
-  // System and personal settings pages replace the application's menu with their own, the way back first; elsewhere
-  // the single System settings entry stands apart at the bottom of the menu, and personal settings open from the
-  // account menu.
   const hasPersonalSettings = routes.some(
     (route) => route.surface === 'personalSettings',
   );
@@ -69,10 +66,10 @@ export function AppLayout({
     : Fragment;
   const inPersonalSettings =
     hasPersonalSettings && isPersonalSettingsPath(pathname);
-  const inSettings =
-    (routes.some((route) => route.surface === 'systemSettings') &&
-      isSettingsPath(pathname)) ||
-    inPersonalSettings;
+  const inSystemSettings =
+    routes.some((route) => route.surface === 'systemSettings') &&
+    isSettingsPath(pathname);
+  const inSettings = inSystemSettings || inPersonalSettings;
   const settingsItems = useMemo(
     () =>
       !inSettings || loading
@@ -81,9 +78,6 @@ export function AppLayout({
           ? buildPersonalSettingsNavigation(routes, denied)
           : buildSettingsNavigation(routes, denied),
     [inSettings, inPersonalSettings, loading, routes, denied],
-  );
-  const settingsEntry = items.filter(
-    (item) => item.route.name === SETTINGS_HOME,
   );
   const menuItems = inSettings
     ? settingsItems
@@ -107,24 +101,7 @@ export function AppLayout({
       <RouteTreeProvider routes={routes} access={access}>
         <PageBreadcrumbProvider>
           <AppSidebarProvider>
-            <AppSidebar
-              label={navigationLabel}
-              footer={
-                <>
-                  {/* The System settings entry stays in view at the bottom of the sidebar, outside the scrolling menu. */}
-                  {!inSettings && settingsEntry.length ? (
-                    <div className='shrink-0 border-t border-sidebar-border'>
-                      <NavigationMenu
-                        items={settingsEntry}
-                        label={t('settings.title')}
-                        selectedKey={undefined}
-                      />
-                    </div>
-                  ) : null}
-                  <AppSidebarFooter />
-                </>
-              }
-            >
+            <AppSidebar label={navigationLabel} footer={<AppSidebarFooter />}>
               {inSettings ? <SettingsBack /> : null}
               {inPersonalSettings ? <PersonalSettingsIdentity /> : null}
               <NavigationMenu

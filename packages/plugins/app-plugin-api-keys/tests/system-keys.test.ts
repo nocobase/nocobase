@@ -232,16 +232,25 @@ describe('system keys', () => {
         resolve: (token: unknown) => services.get(token),
       },
     };
-    const router = (systemApiKeyRoutes?: boolean) =>
+    const router = (
+      options: {
+        systemApiKeyRoutes?: boolean;
+        keyAdministrationRoutes?: boolean;
+      } = {},
+    ) =>
       apiRoutes.createRouter({
         ...host,
-        config: { get: () => ({ systemApiKeyRoutes }) },
+        config: { get: () => options },
       } as unknown as AppPluginApplication);
     const routes = new Hono<{
       Variables: AuthEnv['Variables'] & AuthorizationEnv['Variables'];
     }>();
     routes.route('/api', await router());
-    routes.route('/api/disabled', await router(false));
+    routes.route('/api/disabled', await router({ systemApiKeyRoutes: false }));
+    routes.route(
+      '/api/no-admin',
+      await router({ keyAdministrationRoutes: false }),
+    );
     routes.get(
       '/settings/:id/:action',
       auth.required({ scopedKeys: true }),
@@ -267,6 +276,23 @@ describe('system keys', () => {
 
   afterAll(async () => {
     await testDatabase.destroy();
+  });
+
+  it('can omit member and rule administration independently of system and personal keys', async () => {
+    for (const [method, path] of [
+      ['GET', '/apiKeys/members'],
+      ['DELETE', '/apiKeys/members/missing-key'],
+      ['GET', '/apiKeys/rules'],
+      ['PUT', '/apiKeys/rules'],
+    ]) {
+      expect((await call('/no-admin' + path, adminCookie, method)).status).toBe(
+        404,
+      );
+    }
+    expect((await call('/no-admin/apiKeys', adminCookie)).status).toBe(200);
+    expect((await call('/no-admin/systemApiKeys', adminCookie)).status).toBe(
+      200,
+    );
   });
 
   it('omits only system key management routes when disabled', async () => {
@@ -1179,6 +1205,15 @@ describe('system keys', () => {
       await keys.identityOf(memberId),
     );
     expect((await save({ personalMaxDays: 30 })).status).toBe(200);
+    const rejected = await call('/no-admin/apiKeys', adminCookie, 'POST', {
+      name: 'too long',
+      expiresInDays: 60,
+      permissions: readOrders,
+    });
+    expect(rejected.status).toBe(400);
+    expect(await rejected.json()).toMatchObject({
+      error: { reason: 'INVALID_EXPIRY' },
+    });
     // A key that exists keeps its expiry.
     expect((await keys.get(memberId, before.key.id)).expiresAt).toBe(
       before.key.expiresAt,

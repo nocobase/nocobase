@@ -58,6 +58,8 @@ export const DEFAULT_SCOPED_KEY_DAYS = 90;
 
 /** `apiKeys` in the application's configuration. */
 export interface ApiKeysConfig {
+  /** Mount the member key and rule administration HTTP API. Defaults to true. */
+  readonly keyAdministrationRoutes?: boolean;
   /** Mount the system key management HTTP API. Defaults to true. */
   readonly systemApiKeyRoutes?: boolean;
   /** The longest a scoped key may live, in days. Unset allows "never expires". */

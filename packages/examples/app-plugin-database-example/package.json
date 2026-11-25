@@ -2,7 +2,17 @@
   "name": "@nocobase/app-plugin-database-example",
   "displayName": "Database Example App Plugin",
   "description": "Example app plugin with a migration and seed.",
-  "version": "0.1.0-beta.11",
+  "nocobase": {
+    "title": {
+      "en-US": "Database migration example",
+      "zh-CN": "数据库迁移示例"
+    },
+    "description": {
+      "en-US": "Create a table with a migration and populate it with seed data.",
+      "zh-CN": "通过迁移创建数据表，再用种子数据填充记录。"
+    }
+  },
+  "version": "0.1.0-beta.12",
   "type": "module",
   "prettier": "@nocobase/dev-config/prettier",
   "engines": {
