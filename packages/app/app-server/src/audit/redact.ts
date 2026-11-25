@@ -9,6 +9,7 @@ const snapshotLimit = 16 * 1024;
 // A JSON stream may never finish. Collection must not hold the HTTP response open indefinitely.
 const snapshotReadTimeout = 1000;
 const masked = '******';
+const arrayIndexSegment = /^(?:0|[1-9]\d*)(?:\.|$)/u;
 const truncated = Object.freeze({ truncated: true });
 
 /** Capture a bounded JSON copy without consuming or changing the handler's body. */
@@ -62,6 +63,17 @@ export async function readAuditBody(
   }
 }
 
+function pathsBelow(
+  paths: readonly string[],
+  segment: string,
+): readonly string[] {
+  if (paths.length === 0) return paths;
+  const prefix = `${segment}.`;
+  return paths
+    .filter((path) => path.startsWith(prefix))
+    .map((path) => path.slice(prefix.length));
+}
+
 /** Replace sensitive values before applying the serialized size limit. */
 export function auditSnapshot(
   value: unknown,
@@ -69,10 +81,14 @@ export function auditSnapshot(
 ): unknown {
   if (value === undefined) return undefined;
   const fields = new Set(rules.map((rule) => rule.field));
-  const paths = new Set(rules.map((rule) => rule.path));
+  const paths = rules.flatMap(({ path }) => (path === undefined ? [] : [path]));
   let budget = snapshotLimit;
   const seen = new Set<object>();
-  const visit = (node: unknown, path: string, depth: number): unknown => {
+  const visit = (
+    node: unknown,
+    paths: readonly string[],
+    depth: number,
+  ): unknown => {
     if (depth > 32 || budget <= 0) return truncated;
     if (node === null || typeof node !== 'object') {
       if (typeof node === 'function' || typeof node === 'symbol')
@@ -87,11 +103,25 @@ export function auditSnapshot(
       if (node instanceof Date) return node.toJSON();
       if (Array.isArray(node)) {
         const values: unknown[] = [];
+        // A named segment crosses an array; a numeric segment selects its position here.
+        const unindexed = paths.length
+          ? paths.filter((path) => !arrayIndexSegment.test(path))
+          : paths;
         for (const [index, item] of (node as unknown[]).entries()) {
           budget -= 1;
           if (budget <= 0) break;
+          const position = String(index);
+          const indexed = pathsBelow(paths, position);
           values.push(
-            visit(item, path ? `${path}.${index}` : String(index), depth + 1),
+            paths.includes(position)
+              ? masked
+              : visit(
+                  item,
+                  indexed.length
+                    ? [...new Set([...unindexed, ...indexed])]
+                    : unindexed,
+                  depth + 1,
+                ),
           );
         }
         return values;
@@ -102,13 +132,12 @@ export function auditSnapshot(
       )) {
         budget -= name.length + 1;
         if (budget <= 0) break;
-        const key = path ? `${path}.${name}` : name;
         result[name] =
           sensitiveParameterName.test(name) ||
           fields.has(name) ||
-          paths.has(key)
+          paths.includes(name)
             ? masked
-            : visit(entry, key, depth + 1);
+            : visit(entry, pathsBelow(paths, name), depth + 1);
       }
       return result;
     } finally {
@@ -116,7 +145,7 @@ export function auditSnapshot(
     }
   };
   try {
-    const copy = visit(value, '', 0);
+    const copy = visit(value, paths, 0);
     const json = JSON.stringify(copy);
     return budget <= 0 || (json && Buffer.byteLength(json) > snapshotLimit)
       ? truncated

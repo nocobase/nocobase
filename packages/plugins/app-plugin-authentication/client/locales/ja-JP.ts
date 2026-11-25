@@ -1,9 +1,11 @@
+import auditLabels from '../../locales/ja-JP.js';
 import type { LocaleResource } from '@nocobase/i18n';
 
 import { withPluralForms } from '../plural-forms.js';
 import enUS from './en-US.js';
 
 const jaJP: LocaleResource<typeof enUS> = {
+  ...auditLabels,
   errors: {
     generic: '問題が発生しました。もう一度試してください。',
     network:

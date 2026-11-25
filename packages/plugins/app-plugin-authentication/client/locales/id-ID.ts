@@ -1,9 +1,11 @@
+import auditLabels from '../../locales/id-ID.js';
 import type { LocaleResource } from '@nocobase/i18n';
 
 import { withPluralForms } from '../plural-forms.js';
 import enUS from './en-US.js';
 
 const idID: LocaleResource<typeof enUS> = {
+  ...auditLabels,
   errors: {
     generic: 'Ada yang tidak beres. Silakan coba lagi.',
     network:

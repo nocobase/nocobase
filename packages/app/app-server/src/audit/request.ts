@@ -59,8 +59,6 @@ export interface AuditRouteOptions {
   readonly redact?: readonly AuditRedactRule[];
   /** Set to false to omit both snapshots. A target resolver can still read bounded JSON. */
   readonly captureBody?: boolean;
-  /** Project the request body before recording it. */
-  readonly requestSnapshot?: (request: unknown) => unknown;
   /** Classify credential validation errors as failures and omit identity and snapshots on failure. */
   readonly authenticationAttempt?: boolean;
 }
@@ -308,7 +306,11 @@ export function auditMiddleware(options: {
   readonly autoDetect: boolean;
   readonly proxies: BlockList;
   readonly forwarded: () => readonly ApiForwardedRouter[];
-  readonly translate: (text: AuditTranslation, fallback: string) => string;
+  readonly translate: (
+    text: AuditTranslation,
+    fallback: string,
+    context: Context,
+  ) => string;
   readonly report: () => void;
 }): MiddlewareHandler {
   return async (context, next) => {
@@ -423,7 +425,7 @@ export function auditMiddleware(options: {
             requestId: getRequestId(context),
             action: route.action,
             operationName: operationNameI18n
-              ? options.translate(operationNameI18n, fallback)
+              ? options.translate(operationNameI18n, fallback, context)
               : fallback,
             operationNameI18n,
             resource: route.resource,
@@ -450,13 +452,7 @@ export function auditMiddleware(options: {
             durationMs,
             occurredAt,
             request:
-              capture && !failedAuthentication
-                ? snapshot(
-                    declaration.requestSnapshot
-                      ? declaration.requestSnapshot(request)
-                      : request,
-                  )
-                : undefined,
+              capture && !failedAuthentication ? snapshot(request) : undefined,
             response: capture && success ? snapshot(response) : undefined,
           });
         } catch {

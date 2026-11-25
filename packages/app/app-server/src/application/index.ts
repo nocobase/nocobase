@@ -1,6 +1,7 @@
 import { auditServiceToken, AuditCoordinator } from '../audit/service.js';
 import type { AuditConfig } from '../audit/config.js';
 import { auditMiddleware } from '../audit/request.js';
+import auditLocales from '../audit/locales/index.js';
 import { createTrustedAuditProxies } from '../audit/ip.js';
 import { enterRunningApplication } from '../backup/runtime-guard.js';
 import type { ReleaseStorageLock } from '@nocobase/drive';
@@ -65,6 +66,7 @@ import {
 } from '../plugins/index.js';
 import type { AppDatabaseTaskContributions } from '../database/types.js';
 import { resolveLocalesContribution } from '@nocobase/i18n';
+import { getRequestLocale } from '@nocobase/i18n/server';
 import { i18nToken, registerAppLocales } from '../i18n/index.js';
 import { sampleDataToken } from '../sample-data/token.js';
 
@@ -462,6 +464,7 @@ export class Application<
     }
 
     const runtime = this.container.resolve(i18nToken);
+    runtime.registerNamespace('@nocobase/app-server', auditLocales);
     const sources = [
       ...(this.applicationLocales
         ? [
@@ -505,13 +508,14 @@ export class Application<
           autoDetect: auditConfig?.autoDetect === true,
           forwarded: () => this.forwardedApiRoutes.routers,
           proxies: createTrustedAuditProxies(undefined),
-          translate: ({ ns, key }, fallback) => {
+          translate: ({ ns, key }, fallback, context) => {
             const runtime = this.container.resolveIfCreated(i18nToken);
-            return (
-              runtime?.getFixedT(ns, runtime.getDefaultLocale())(key, {
-                defaultValue: fallback,
-              }) ?? fallback
-            );
+            const locale =
+              getRequestLocale(context) ?? runtime?.getDefaultLocale();
+            const translated = runtime?.getFixedT(ns, locale)(key, {
+              defaultValue: fallback,
+            });
+            return translated?.trim() || fallback;
           },
           report: () => {
             const logger = this.container

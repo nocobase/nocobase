@@ -1,9 +1,11 @@
+import auditLabels from '../../locales/pt-BR.js';
 import type { LocaleResource } from '@nocobase/i18n';
 
 import { withPluralForms } from '../plural-forms.js';
 import enUS from './en-US.js';
 
 const ptBR: LocaleResource<typeof enUS> = {
+  ...auditLabels,
   errors: {
     generic: 'Algo correu mal. Por favor, tente novamente.',
     network:

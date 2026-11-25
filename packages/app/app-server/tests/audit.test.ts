@@ -11,7 +11,11 @@ import {
 } from '../src/audit/index.js';
 import { readAuditBody } from '../src/audit/redact.js';
 import { AuditCoordinator } from '../src/audit/service.js';
-import { I18nProvider, i18nToken } from '../src/i18n/index.js';
+import {
+  I18nProvider,
+  i18nHttpMiddleware,
+  i18nToken,
+} from '../src/i18n/index.js';
 import { AppConfig, createAppPaths } from '../src/config/index.js';
 import {
   defineApiRoutes,
@@ -79,6 +83,9 @@ it('masks entire sensitive fields on both snapshots and uses only a trusted peer
           redact: [
             { path: 'settings.privateFields' },
             { path: 'team.0.mobile' },
+            { path: 'members.mobile' },
+            { path: 'groups.0.members.mobile' },
+            { path: 'matrix.0.mobile' },
             { field: 'privateMarker' },
           ],
         }),
@@ -91,6 +98,15 @@ it('masks entire sensitive fields on both snapshots and uses only a trusted peer
   try {
     const json = {
       team: [{ mobile: 'private' }, { mobile: 'public' }],
+      matrix: [[{ mobile: 'private' }], [{ mobile: 'public' }]],
+      members: [
+        { mobile: 'private first', label: 'keep' },
+        { mobile: 'private second' },
+      ],
+      groups: [
+        { members: [{ mobile: 'private' }, { mobile: 'private' }] },
+        { members: [{ mobile: 'public' }] },
+      ],
       password: { visibleWithoutWholeFieldMask: 'never persist' },
       apiKey: ['never persist'],
       settings: {
@@ -115,6 +131,12 @@ it('masks entire sensitive fields on both snapshots and uses only a trusted peer
     expect(events).toHaveLength(1);
     const expected = {
       team: [{ mobile: '******' }, { mobile: 'public' }],
+      matrix: [[{ mobile: '******' }], [{ mobile: 'public' }]],
+      members: [{ mobile: '******', label: 'keep' }, { mobile: '******' }],
+      groups: [
+        { members: [{ mobile: '******' }, { mobile: '******' }] },
+        { members: [{ mobile: 'public' }] },
+      ],
       password: '******',
       apiKey: '******',
       settings: {
@@ -368,10 +390,19 @@ it('stores a localized label with its descriptor and preserves a readable fallba
   const { app, events } = await appWithAudit();
   app.addServiceProvider(I18nProvider);
   app.registerProviders();
-  app.container.resolve(i18nToken).registerNamespace('@example/audit', {
-    'en-US': () =>
-      Promise.resolve({ actions: { create: 'Create an audit example' } }),
+  const runtime = app.container.resolve(i18nToken);
+  runtime.registerApplicationNamespace('@example/app', {
+    'en-US': () => Promise.resolve({}),
+    'zh-CN': () => Promise.resolve({}),
   });
+  runtime.registerNamespace('@example/audit', {
+    'en-US': () =>
+      Promise.resolve({
+        actions: { create: 'Create an audit example', blank: ' ' },
+      }),
+    'zh-CN': () => Promise.resolve({ actions: { create: '创建审计示例' } }),
+  });
+  app.addHttpMiddleware(i18nHttpMiddleware);
   app.addRoutes(
     defineApiRoutes(() => {
       const router = new Hono();
@@ -392,14 +423,33 @@ it('stores a localized label with its descriptor and preserves a readable fallba
         describeRoute({ summary: 'Update an audit example' }),
         (context) => context.body(null, 204),
       );
-      router.post('/delete', describeAudit({ action: 'delete' }), (context) =>
-        context.body(null, 204),
+      router.post(
+        '/delete',
+        describeAudit({
+          action: 'delete',
+          operationName: { ns: '@example/audit', key: 'actions.delete' },
+        }),
+        (context) => context.body(null, 204),
+      );
+      router.post(
+        '/blank',
+        describeAudit({
+          action: 'blank',
+          operationName: {
+            ns: '@example/audit',
+            key: 'actions.blank',
+            defaultValue: 'Default operation name',
+          },
+        }),
+        describeRoute({ summary: 'Unused API summary' }),
+        (context) => context.body(null, 204),
       );
       return router;
     }),
   );
   try {
-    for (const action of ['create', 'update', 'delete'])
+    await app.fetch(request('create', {}, { 'accept-language': 'zh-CN' }));
+    for (const action of ['update', 'delete', 'blank'])
       await app.fetch(request(action, {}));
     expect(
       events.map(({ operationName, operationNameI18n }) => ({
@@ -408,14 +458,21 @@ it('stores a localized label with its descriptor and preserves a readable fallba
       })),
     ).toEqual([
       {
-        operationName: 'Create an audit example',
+        operationName: '创建审计示例',
         operationNameI18n: { ns: '@example/audit', key: 'actions.create' },
       },
       {
         operationName: 'Update an audit example',
         operationNameI18n: { ns: '@example/audit', key: 'actions.missing' },
       },
-      { operationName: 'delete', operationNameI18n: undefined },
+      {
+        operationName: 'delete',
+        operationNameI18n: { ns: '@example/audit', key: 'actions.delete' },
+      },
+      {
+        operationName: 'Default operation name',
+        operationNameI18n: { ns: '@example/audit', key: 'actions.blank' },
+      },
     ]);
   } finally {
     await app.shutdown();

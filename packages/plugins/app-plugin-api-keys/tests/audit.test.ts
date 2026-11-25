@@ -9,6 +9,7 @@ import authentication, {
 import authorization, {
   authorizationToken,
 } from '@nocobase/app-plugin-authorization/server';
+import { I18nProvider } from '@nocobase/app-server/i18n';
 import { Application } from '@nocobase/app-server/application';
 import { auditServiceToken, type AuditEvent } from '@nocobase/app-server/audit';
 import { CachingProvider } from '@nocobase/app-server/caching';
@@ -87,6 +88,7 @@ beforeAll(async () => {
       session: { storeSessionInDatabase: true },
       rateLimit: { enabled: true, storage: 'database' },
     },
+    i18n: { defaultLocale: 'zh-CN' },
     audit: {
       enabled: true,
       autoDetect: true,
@@ -113,6 +115,7 @@ beforeAll(async () => {
     paths: createAppPaths({ rootDir: directory }),
   });
   app.addServiceProvider(DatabaseProvider);
+  app.addServiceProvider(I18nProvider);
   app.addServiceProvider(CachingProvider);
   app.addServiceProvider(IdGeneratorProvider);
   app.addServerPlugins(
@@ -205,6 +208,11 @@ it('attributes native audit events without retaining credentials or duplicating 
   const { user } = (await signup.json()) as { user: { id: string } };
   expect(events.at(-1)).toMatchObject({
     action: 'auth:signUp',
+    operationName: '注册',
+    operationNameI18n: {
+      ns: '@nocobase/app-plugin-authentication',
+      key: 'audit.operations.signUp',
+    },
     targets: [{ collection: 'user', key: user.id }],
   });
   app.container
@@ -243,6 +251,11 @@ it('attributes native audit events without retaining credentials or duplicating 
   ).toBe(2);
   expect(events.at(-1)).toMatchObject({
     action: 'auth:signIn',
+    operationName: '登录',
+    operationNameI18n: {
+      ns: '@nocobase/app-plugin-authentication',
+      key: 'audit.operations.signIn',
+    },
     actor: { type: 'anonymous' },
     outcome: 'failure',
     status: 401,
@@ -256,6 +269,11 @@ it('attributes native audit events without retaining credentials or duplicating 
   const actor = { type: 'user', userId: user.id };
   expect(events.at(-1)).toMatchObject({
     action: 'auth:signIn',
+    operationName: '登录',
+    operationNameI18n: {
+      ns: '@nocobase/app-plugin-authentication',
+      key: 'audit.operations.signIn',
+    },
     actor,
     outcome: 'success',
     requestId: 'audit-integration-request',
@@ -279,6 +297,11 @@ it('attributes native audit events without retaining credentials or duplicating 
   expect(changed.status).toBe(200);
   expect(events.at(-1)).toMatchObject({
     action: 'auth:changePassword',
+    operationName: '修改密码',
+    operationNameI18n: {
+      ns: '@nocobase/app-plugin-authentication',
+      key: 'audit.operations.changePassword',
+    },
     actor,
     outcome: 'success',
   });
@@ -379,6 +402,11 @@ it('attributes native audit events without retaining credentials or duplicating 
   ).toHaveLength(1);
   expect(events.at(-1)).toMatchObject({
     action: 'auditOrders:createOne',
+    operationName: '创建记录',
+    operationNameI18n: {
+      ns: '@nocobase/app-server',
+      key: 'audit.operations.createOne',
+    },
     actor: repositoryActor,
     outcome: 'success',
     targets: [{ collection: 'auditOrders', key: { id } }],
@@ -439,6 +467,11 @@ it('attributes native audit events without retaining credentials or duplicating 
   ).toBe(1);
   expect(events.at(-1)).toMatchObject({
     action: 'auditOrders:createOne',
+    operationName: '创建记录',
+    operationNameI18n: {
+      ns: '@nocobase/app-server',
+      key: 'audit.operations.createOne',
+    },
     actor,
     outcome: 'failure',
     status: duplicate.status,
@@ -516,6 +549,11 @@ it('attributes native audit events without retaining credentials or duplicating 
   const nativeKey = (await native.json()) as { id: string; key: string };
   expect(events.at(-1)).toMatchObject({
     action: 'auth:createApiKey',
+    operationName: '创建 API 密钥',
+    operationNameI18n: {
+      ns: '@nocobase/app-plugin-authentication',
+      key: 'audit.operations.createApiKey',
+    },
     actor,
     targets: [{ collection: 'apikey', key: nativeKey.id }],
   });
@@ -528,6 +566,11 @@ it('attributes native audit events without retaining credentials or duplicating 
   if (nativeDelete.status !== 200) throw new Error(await nativeDelete.text());
   expect(events.at(-1)).toMatchObject({
     action: 'auth:revokeApiKey',
+    operationName: '撤销 API 密钥',
+    operationNameI18n: {
+      ns: '@nocobase/app-plugin-authentication',
+      key: 'audit.operations.revokeApiKey',
+    },
     actor,
     targets: [{ collection: 'apikey', key: nativeKey.id }],
   });
@@ -535,6 +578,11 @@ it('attributes native audit events without retaining credentials or duplicating 
   if (signOut.status !== 200) throw new Error(await signOut.text());
   expect(events.at(-1)).toMatchObject({
     action: 'auth:signOut',
+    operationName: '退出登录',
+    operationNameI18n: {
+      ns: '@nocobase/app-plugin-authentication',
+      key: 'audit.operations.signOut',
+    },
     actor,
     targets: [{ collection: 'user', key: user.id }],
   });

@@ -396,6 +396,11 @@ it.each([false, true])(
         expect(events).toMatchObject([
           {
             action: 'auth:resetPassword',
+            operationName: 'Reset password',
+            operationNameI18n: {
+              ns: '@nocobase/app-plugin-authentication',
+              key: 'audit.operations.resetPassword',
+            },
             actor: { type: 'user', userId: user.id },
             targets: [{ collection: 'user', key: user.id }],
             outcome: 'success',
@@ -410,6 +415,11 @@ it.each([false, true])(
         expect(events.slice(1)).toMatchObject([
           {
             action: 'auth:resetPassword',
+            operationName: 'Reset password',
+            operationNameI18n: {
+              ns: '@nocobase/app-plugin-authentication',
+              key: 'audit.operations.resetPassword',
+            },
             actor: { type: 'anonymous' },
             targets: [{ collection: 'user' }],
             outcome: 'failure',

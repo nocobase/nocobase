@@ -1,4 +1,5 @@
 import { describeAudit } from '../audit/index.js';
+import auditLabels from '../audit/locales/en-US.js';
 import { setApiExecutionResult } from './execution-result.js';
 import {
   databaseManagerToken,
@@ -363,7 +364,11 @@ export function defineRepositoryApiRoutes<P = unknown>(
               ? {
                   action: `${entry.name}:${action}`,
                   resource: entry.name,
-                  operationName: `${action === 'createOne' ? 'Create' : action === 'updateOne' ? 'Update' : 'Delete'} a record in ${entry.name}`,
+                  operationName: {
+                    ns: '@nocobase/app-server',
+                    key: `audit.operations.${action}`,
+                    defaultValue: auditLabels.audit.operations[action],
+                  },
                   target: () => ({ collection }),
                   resolveTargets: ({ value }) => ({ collection, key: value }),
                   // Collection values and filter operands can contain application secrets under arbitrary names.

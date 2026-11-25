@@ -3,25 +3,39 @@ import {
   type AuditRouteOptions,
 } from '@nocobase/app-server/audit';
 import type { Context } from 'hono';
+import auditLabels from '../locales/en-US.js';
 import type { AuthEnv } from './auth.js';
 
-const operations: ReadonlyMap<string, readonly [string, string, boolean?]> =
-  new Map([
-    ['/sign-in/email', ['auth:signIn', 'Sign in', true]],
-    ['/sign-in/username', ['auth:signIn', 'Sign in', true]],
-    ['/sign-up/email', ['auth:signUp', 'Sign up', true]],
-    ['/sign-out', ['auth:signOut', 'Sign out']],
-    ['/change-password', ['auth:changePassword', 'Change password']],
-    ['/reset-password', ['auth:resetPassword', 'Reset password', true]],
-    ['/update-user', ['auth:updateProfile', 'Update profile']],
-  ]);
+const labels = auditLabels.audit.operations;
+type Operation = keyof typeof labels;
+const operations: ReadonlyMap<string, readonly [Operation, boolean?]> = new Map(
+  [
+    ['/sign-in/email', ['signIn', true]],
+    ['/sign-in/username', ['signIn', true]],
+    ['/sign-up/email', ['signUp', true]],
+    ['/sign-out', ['signOut']],
+    ['/change-password', ['changePassword']],
+    ['/reset-password', ['resetPassword', true]],
+    ['/update-user', ['updateProfile']],
+  ],
+);
+
+function operationName(
+  operation: Operation,
+): NonNullable<AuditRouteOptions['operationName']> {
+  return {
+    ns: '@nocobase/app-plugin-authentication',
+    key: `audit.operations.${operation}`,
+    defaultValue: labels[operation],
+  };
+}
 
 export function authAuditOptions(path: string): AuditRouteOptions | false {
   if (path === '/api-key/create' || path === '/api-key/delete') {
     const create = path === '/api-key/create';
     return {
       action: create ? 'auth:createApiKey' : 'auth:revokeApiKey',
-      operationName: create ? 'Create an API key' : 'Revoke an API key',
+      operationName: operationName(create ? 'createApiKey' : 'revokeApiKey'),
       resource: 'apikey',
       captureBody: false,
       resultFrom: create ? 'response' : 'request',
@@ -36,10 +50,10 @@ export function authAuditOptions(path: string): AuditRouteOptions | false {
   }
   const operation = operations.get(path);
   if (!operation) return false;
-  const [action, operationName, authenticationAttempt] = operation;
+  const [name, authenticationAttempt] = operation;
   return {
-    action,
-    operationName,
+    action: `auth:${name}`,
+    operationName: operationName(name),
     resource: 'user',
     captureBody: false,
     resultFrom: 'context',

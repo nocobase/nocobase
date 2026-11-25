@@ -1,9 +1,11 @@
+import auditLabels from '../../locales/de-DE.js';
 import type { LocaleResource } from '@nocobase/i18n';
 
 import { withPluralForms } from '../plural-forms.js';
 import enUS from './en-US.js';
 
 const deDE: LocaleResource<typeof enUS> = {
+  ...auditLabels,
   errors: {
     generic: 'Etwas ist schief gelaufen. Bitte versuchen Sie es erneut.',
     network:
