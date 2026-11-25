@@ -9,8 +9,6 @@ export {
 } from './lib/action-catalog.js';
 export {
   SkillSettingsContext,
-  type SkillListExtension,
-  type SkillListFilter,
   type SkillSettings,
 } from './lib/skill-settings-context.js';
 export { SkillMountToggle } from './lib/skill-settings.js';
