@@ -8,6 +8,7 @@
  */
 
 import { mockServer, startServerWithRandomPort, supertest, waitSecond } from '@nocobase/test';
+import { EventEmitter } from 'events';
 import { vi } from 'vitest';
 console.log('before import');
 import ws from 'ws';
@@ -316,6 +317,45 @@ describe('gateway', () => {
       gateway.addAppSelectorMiddleware(fn);
       gateway.addAppSelectorMiddleware(fn);
       expect(gateway.getAppSelectorMiddlewares().nodes.length).toBe(2);
+    });
+  });
+
+  describe('websocket messages', () => {
+    it('skips invalid messages and dispatches the next valid message from the same client', async () => {
+      const app = mockServer();
+      const getApp = vi.spyOn(AppSupervisor.getInstance(), 'getApp').mockResolvedValue(app);
+      const received = vi.fn();
+      app.on('ws:message:example', received);
+      const server = new WSServer();
+
+      const socket = Object.assign(new EventEmitter(), { send: vi.fn() });
+      server.wss.emit('connection', socket, { url: '/ws', headers: {} });
+      await new Promise((resolve) => setImmediate(resolve));
+      const [clientId] = server.webSocketClients.keys();
+
+      for (const message of ['ping', '{', 'null', '[]', '{}', '{"type":1}', '{"type":""}']) {
+        socket.emit('message', Buffer.from(message));
+      }
+      expect(getApp).not.toHaveBeenCalled();
+
+      socket.emit('message', Buffer.from('{"type":"example","payload":{"value":1}}'));
+      await new Promise((resolve) => setImmediate(resolve));
+      expect(getApp).toHaveBeenCalledTimes(1);
+      expect(received).toHaveBeenCalledWith({ clientId, tags: ['app#main'], payload: { value: 1 } });
+      socket.emit('close');
+    });
+
+    it('logs application lookup failures while handling a message', async () => {
+      const supervisor = AppSupervisor.getInstance();
+      const client = { app: 'main' };
+      const error = new Error('Application unavailable');
+      vi.spyOn(supervisor, 'getApp').mockRejectedValueOnce(error);
+      const log = vi.spyOn(supervisor.logger, 'error');
+      const server = new WSServer();
+
+      server.emit('message', { client, message: Buffer.from('{"type":"example"}') });
+      await new Promise((resolve) => setImmediate(resolve));
+      expect(log).toHaveBeenCalledWith('Failed to handle websocket message', { appName: client.app, error });
     });
   });
 
