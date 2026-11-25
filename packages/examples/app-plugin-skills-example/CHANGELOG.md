@@ -1,5 +1,11 @@
 # @nocobase/app-plugin-skills-example
 
+## 1.0.0-beta.12
+
+### Patch Changes
+
+- 8be5180: Show English and Simplified Chinese names and descriptions for example plugins in the plugin list.
+
 ## 1.0.0-beta.11
 
 ### Patch Changes

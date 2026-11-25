@@ -12,7 +12,7 @@
       "zh-CN": "通过模拟邮件服务体验邮箱、签名、模板和邮件投递。"
     }
   },
-  "version": "1.0.0-beta.14",
+  "version": "1.0.0-beta.15",
   "type": "module",
   "prettier": "@nocobase/dev-config/prettier",
   "engines": {

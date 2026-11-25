@@ -2,7 +2,7 @@
   "name": "@nocobase/app-plugin-foundation",
   "displayName": "Plugins",
   "description": "Lists the plugins an application uses, their versions and states, with the commands that enable, update or disable each one.",
-  "version": "0.1.0-beta.21",
+  "version": "0.1.0-beta.22",
   "type": "module",
   "prettier": "@nocobase/dev-config/prettier",
   "engines": {

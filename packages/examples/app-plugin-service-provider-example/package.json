@@ -12,7 +12,7 @@
       "zh-CN": "通过服务提供方注册服务并管理其生命周期。"
     }
   },
-  "version": "1.0.0-beta.12",
+  "version": "1.0.0-beta.13",
   "type": "module",
   "prettier": "@nocobase/dev-config/prettier",
   "engines": {

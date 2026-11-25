@@ -1,5 +1,11 @@
 # @nocobase/app-cli
 
+## 1.0.0-beta.40
+
+### Patch Changes
+
+- 89c4785: List development dependency plugins under Not enabled in deployed applications without installing them as production dependencies.
+
 ## 1.0.0-beta.39
 
 ### Minor Changes
