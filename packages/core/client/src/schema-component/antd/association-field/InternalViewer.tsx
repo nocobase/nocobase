@@ -13,6 +13,7 @@ import _ from 'lodash';
 import React, { FC, Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { usePopupSettings } from '../../';
 import { WithoutTableFieldResource } from '../../../block-provider';
+import { useBlockContext } from '../../../block-provider/BlockProvider';
 import {
   CollectionRecordProvider,
   DataBlockProvider,
@@ -71,7 +72,7 @@ export interface ButtonListProps {
 const RenderRecord = React.memo(
   ({
     fieldNames,
-    isTreeCollection,
+    showTreePath,
     compile,
     getLabelUiSchema,
     collectionField,
@@ -89,7 +90,7 @@ const RenderRecord = React.memo(
     ellipsis,
   }: {
     fieldNames: any;
-    isTreeCollection: boolean;
+    showTreePath: boolean;
     compile: (source: any, ext?: any) => any;
     getLabelUiSchema;
     collectionField: any;
@@ -121,7 +122,7 @@ const RenderRecord = React.memo(
     useEffect(() => {
       const result = toArr(value).map((record, index, arr) => {
         const value = record?.[fieldNames?.label || 'label'];
-        const label = isTreeCollection
+        const label = showTreePath
           ? transformNestedData(record)
               .map((o) => o?.[fieldNames?.label || 'label'])
               .join(' / ')
@@ -201,7 +202,7 @@ const RenderRecord = React.memo(
       getLabelUiSchema,
       onClick,
       insertViewer,
-      isTreeCollection,
+      showTreePath,
       openPopup,
       recordData,
       setBtnHover,
@@ -231,7 +232,8 @@ const ButtonLinkList: FC<ButtonListProps> = observer((props) => {
   const { designable } = useDesignable();
   const { snapshot } = useActionContext();
   const targetCollection = cm.getCollection(collectionField?.target);
-  const isTreeCollection = targetCollection?.template === 'tree';
+  const block = useBlockContext();
+  const showTreePath = targetCollection?.template === 'tree' && block?.name !== 'table-selector';
   const ellipsisWithTooltipRef = useRef<IEllipsisWithTooltipRef>();
   const getLabelUiSchema = useLabelUiSchemaV2();
   const { openPopup } = usePopupUtils();
@@ -240,7 +242,7 @@ const ButtonLinkList: FC<ButtonListProps> = observer((props) => {
   return (
     <RenderRecord
       fieldNames={fieldNames}
-      isTreeCollection={isTreeCollection}
+      showTreePath={showTreePath}
       compile={compile}
       getLabelUiSchema={getLabelUiSchema}
       collectionField={collectionField}
