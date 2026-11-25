@@ -141,7 +141,9 @@ export class DefaultMessageBrokerExampleService implements MessageBrokerExampleS
             total: order.total,
           },
           messageId: orderPlacedMessageId(order.id),
-          // Messages with the same key stay in order on backends that declare `orderedByKey`.
+          // The ordering key. Order per key holds only for a subscription configured with `ordered: true` on a backend
+          // that declares `orderedByKey`; this example's subscriptions keep the default `ordered: false`. Even then,
+          // the outbox does not keep strict order across its retry rounds.
           key: order.id,
           type: 'order.placed',
         },

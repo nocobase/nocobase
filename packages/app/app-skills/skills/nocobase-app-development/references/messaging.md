@@ -6,14 +6,14 @@ Read this before publishing an event from a business change, consuming one idemp
 
 ## Choose between jobs, queue and message-broker
 
-The three overlap: each runs code outside the request, retries, and can fan out. Choose by the semantics the work needs.
+The three overlap: each runs code outside the request and retries. They differ in who consumes what. One `JobExecutor.addJob()` runs one Job class. A queue job is consumed by every handler registered on that queue, on the instance that claimed it, and completes only when all of them succeed; one failure retries the whole set. Each message-broker subscription receives every message and acknowledges, retries and dead-letters it on its own. Choose by the semantics the work needs.
 
 | Need                                                                | `@nocobase/jobs` (`JobExecutor`)                      | `@nocobase/queue`                                                                                          | `@nocobase/message-broker`                                                                                   |
 | ------------------------------------------------------------------- | ----------------------------------------------------- | ---------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------ |
 | What it centers on                                                  | Executing a piece of background work                  | Queuing this application's work with execution control                                                     | Delivering messages to independent subscribers, consistently with the business transaction                   |
 | Submit only if the business transaction commits                     | No; submit after the commit and accept the gap        | No; publish after the commit and accept the gap                                                            | `publish(message, { transaction })` writes the outbox in that transaction                                    |
-| Several consumers of one message                                    | No                                                    | Every handler of a queue runs; the job completes only when all succeed, and a retry runs all of them again | Each subscription acknowledges, retries and dead-letters on its own; a failing one does not rerun the others |
-| Deduplication                                                       | None: each `addJob` is a task; use `jobId` in effects | A job ID that still exists adds nothing; once the job is removed from history it can be added again        | Inbox: `(subscription, messageId)` recorded in the handler's transaction, for the inbox retention (7 days)   |
+| Several consumers of one message                                    | No; one submission runs one Job class                 | Every handler of a queue runs; the job completes only when all succeed, and a retry runs all of them again | Each subscription acknowledges, retries and dead-letters on its own; a failing one does not rerun the others |
+| Deduplication                                                       | None: `addJob` takes no ID; deduplicate at the effect | A job ID that still exists adds nothing; once the job is removed from history it can be added again        | Inbox: `(subscription, messageId)` recorded in the handler's transaction, for the inbox retention (7 days)   |
 | Delay, priority, rate limit, cancelling a running job, atomic batch | No                                                    | Yes                                                                                                        | Only a delayed retry, where the backend declares `delayedRetry`                                              |
 | Physical resource names                                             | Derived                                               | Derived; JSON messages in a private envelope                                                               | Configured per logical name; Buffer bodies with content type, headers, key, correlation ID                   |
 | Other systems produce or consume                                    | No                                                    | No                                                                                                         | Yes, through the middleware's own resources                                                                  |
@@ -26,7 +26,12 @@ The three overlap: each runs code outside the request, retries, and can fan out.
 
 ### Combining message-broker with jobs or a queue
 
-A handler may hand long work to a job or a queue, but the inbox transaction and the enqueue are not atomic. Enqueue inside the handler and the message can be retried after the job was already submitted, so submit with a stable ID derived from the message (a queue `jobIdProducer` returning it, or a check in the job's effect). Enqueue after the inbox commits and a crash in between loses the hand-over. A reliable pattern records the work in a business table inside the inbox transaction and lets a job or schedule pick pending rows; do not describe the combination as exactly once.
+A handler may hand long work to a job or a queue, but the inbox transaction and the enqueue are not atomic. Enqueue inside the handler and the message can be retried after the job was already submitted, so make the hand-over idempotent:
+
+- A queue: publish with a job ID derived from the message, which must satisfy the queue's job ID rules (not an integer, and no `:` unless it has exactly three parts). `order-placed:o-1` is rejected, so map it, for example ``jobIdProducer: () => `ship-${message.messageId.replaceAll(':', '-')}` `` gives `ship-order-placed-o-1`. A repeat is dropped only while that job still exists in the queue's history.
+- A job: `addJob()` takes no ID and every call is a new task, so deduplicate at the job's business effect, for example a unique key on the row it writes or a state check before it acts, keyed by the `messageId` carried in the payload.
+
+Enqueue after the inbox commits and a crash in between loses the hand-over. A reliable pattern records the work in a business table inside the inbox transaction and lets a job or schedule pick pending rows; do not describe the combination as exactly once.
 
 ## Prerequisites in the application
 
@@ -120,9 +125,9 @@ With `inbox: true`, the service runs the handler inside a transaction that also 
 
 ## Event IDs, versions and order
 
-- `messageId` identifies one business event. Derive it from the event (`order-placed:<orderId>`, `order-status:<orderId>:<version>`), never a random value, so every redelivery carries the same ID. Two different events must not share an ID: a later version of the same record gets its own, or the inbox drops it as a repeat.
+- `messageId` identifies one business event and must be the same on every redelivery. Derive it from the event (`order-placed:<orderId>`, `order-status:<orderId>:<version>`), or use a UUID generated once for the event, stored with it and reused. When `messageId` is omitted the service generates a UUID: a transactional publish stores it in the outbox row, so resends keep it, but calling a direct `publish()` again generates a new one. Two different events must not share an ID: a later version of the same record gets its own, or the inbox drops it as a repeat.
 - For state snapshots ("the order's current status"), carry a version and let the consumer ignore a version older than what it stored.
-- For incremental events that must apply in sequence, design the order explicitly (a sequence number per key, held back until the gap fills). `ordered: true` keeps per-`key` order only on backends that declare `orderedByKey`, and the outbox keeps a failed message's later messages with the same key from overtaking it within one relay round but not across rounds. Neither provides strict order across outbox retries.
+- For incremental events that must apply in sequence, design the order explicitly (a sequence number per key, held back until the gap fills). Per-`key` order needs both a subscription configured with `ordered: true` and a backend that declares `orderedByKey`; without `ordered: true` (the default) messages with the same key may be handled concurrently or overtake each other on retry, and the outbox keeps a failed message's later messages with the same key from overtaking it within one relay round but not across rounds. Neither provides strict order across outbox retries.
 
 ## Dev and production backends
 
