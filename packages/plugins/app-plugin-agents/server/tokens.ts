@@ -6,7 +6,12 @@ import {
   type ServiceToken,
 } from '@nocobase/service-provider';
 
-import type { BusinessKey, Scope } from '../shared/access.js';
+import type {
+  BusinessKey,
+  Scope,
+  SettingsAction,
+  SettingsItem,
+} from '../shared/access.js';
 import type { Skill, SkillScope } from '../shared/skills.js';
 import type { Agents } from './composition.js';
 
@@ -204,3 +209,18 @@ export interface SkillPolicy {
 
 export const skillPolicyToken: ServiceToken<SkillPolicy> =
   createServiceToken<SkillPolicy>('@nocobase/app-plugin-agents/skill-policy');
+
+/**
+ * Who sees every run in the usage reports (`GET /api/agents/usage` and `/usage/models`), on top of the caller's own
+ * permissions. `coversAllRuns` answers for one caller, given its settings checks; everyone it refuses sees the runs
+ * they started or own. Unbound, a reader of usage (`agents.prices` read) sees every run.
+ */
+export interface UsagePolicy {
+  readonly coversAllRuns: (caller: {
+    readonly userId: string;
+    can(item: SettingsItem, action: SettingsAction): Promise<boolean>;
+  }) => boolean | Promise<boolean>;
+}
+
+export const usagePolicyToken: ServiceToken<UsagePolicy> =
+  createServiceToken<UsagePolicy>('@nocobase/app-plugin-agents/usage-policy');

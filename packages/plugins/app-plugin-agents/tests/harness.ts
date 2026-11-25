@@ -77,7 +77,7 @@ import type {
   SubjectScope,
 } from '../server/core/runs/index.js';
 import { createAdminRoutes, type AdminEnv } from '../server/routes/admin.js';
-import type { SkillPolicy } from '../server/tokens.js';
+import type { SkillPolicy, UsagePolicy } from '../server/tokens.js';
 import { createChatRoutes } from '../server/routes/chat.js';
 import { createModelRoutes } from '../server/online/routes.js';
 import { createRunRoutes } from '../server/routes/run.js';
@@ -310,6 +310,7 @@ export async function createHarness(
     readonly claimPause?: (ms: number, signal?: AbortSignal) => Promise<void>;
     /** The application's skill policy the admin routes enforce. */
     readonly skillPolicy?: SkillPolicy;
+    readonly usagePolicy?: UsagePolicy;
   } = {},
 ): Promise<Harness> {
   const { database, drop } = await openDatabase();
@@ -574,7 +575,13 @@ export async function createHarness(
   app.route('/agents', createModelRoutes(services, guard));
   app.route(
     '/agents',
-    createAdminRoutes(services, guard, guard, () => options.skillPolicy),
+    createAdminRoutes(
+      services,
+      guard,
+      guard,
+      () => options.skillPolicy,
+      () => options.usagePolicy,
+    ),
   );
 
   const request: Harness['request'] = async (method, url, options = {}) => {

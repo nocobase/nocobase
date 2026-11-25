@@ -34,7 +34,12 @@ import { Hono, type MiddlewareHandler } from 'hono';
 import { every } from 'hono/combine';
 
 import { type ChatAudience, chatAudienceOf } from '../../shared/agents.js';
-import { agentsAccessToken, agentsToken, skillPolicyToken } from '../tokens.js';
+import {
+  agentsAccessToken,
+  agentsToken,
+  skillPolicyToken,
+  usagePolicyToken,
+} from '../tokens.js';
 import { createAdminRoutes, type AdminEnv } from './admin.js';
 import { createChatRoutes } from './chat.js';
 import { createChatRoleRoutes } from './chat-roles.js';
@@ -233,10 +238,18 @@ export const apiRoutes: AppApiRouteContribution<AppPluginApplication> =
     // Last: it holds `/agents/:agentId`.
     router.route(
       '/agents',
-      createAdminRoutes(services, person, personOrScopedKey, () =>
-        container.has(skillPolicyToken)
-          ? container.resolve(skillPolicyToken)
-          : undefined,
+      createAdminRoutes(
+        services,
+        person,
+        personOrScopedKey,
+        () =>
+          container.has(skillPolicyToken)
+            ? container.resolve(skillPolicyToken)
+            : undefined,
+        () =>
+          container.has(usagePolicyToken)
+            ? container.resolve(usagePolicyToken)
+            : undefined,
       ),
     );
     return router;
