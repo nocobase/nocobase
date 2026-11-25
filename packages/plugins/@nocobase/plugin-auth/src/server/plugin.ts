@@ -251,26 +251,19 @@ export class PluginAuthServer extends Plugin {
     this.app.auditManager.registerActions([
       {
         name: 'auth:signIn',
-        getMetaData: async (ctx: any) => {
-          let body = {};
-          if (ctx.status === 200) {
-            body = {
-              data: {
-                ...ctx.body.data,
-                token: undefined,
-              },
-            };
-          } else {
-            body = ctx.body;
-          }
-          return {
-            request: {
-              body: {
-                ...ctx.request?.body,
-                password: undefined,
-              },
+        getMetaData: async (ctx: Context) => {
+          const request = {
+            body: {
+              ...(ctx.request?.body as Record<string, unknown>),
+              password: undefined,
             },
           };
+          if (ctx.body?.data?.token === undefined) {
+            return { request };
+          }
+          const data = { ...ctx.body.data };
+          delete data.token;
+          return { request, response: { body: { ...ctx.body, data } } };
         },
         getUserInfo: async (ctx: any) => {
           if (!ctx.body?.data?.user) {

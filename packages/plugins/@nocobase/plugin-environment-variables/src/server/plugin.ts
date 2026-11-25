@@ -9,6 +9,7 @@
 
 import type { Filter } from '@nocobase/database';
 import { Plugin } from '@nocobase/server';
+import { sanitizeVariableAuditMetadata } from './audit';
 
 const FILTER_LOGIC_OPERATORS = ['$and', '$or'] as const;
 
@@ -58,6 +59,12 @@ export class PluginEnvironmentVariablesServer extends Plugin {
   }
 
   async load() {
+    this.app.auditManager.registerMetadataSanitizer(
+      'main',
+      'environmentVariables',
+      ['create', 'update', 'firstOrCreate', 'updateOrCreate'],
+      sanitizeVariableAuditMetadata,
+    );
     this.registerACL();
     this.onEnvironmentSaved();
     await this.loadVariables();

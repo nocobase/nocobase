@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 import { MockServer, mockServer } from '@nocobase/test';
-import { SourceAndTarget, UserInfo } from '../audit-manager';
+import { AuditLog, SourceAndTarget, UserInfo } from '../audit-manager';
 
 async function createApp(options: any = {}) {
   const app = mockServer({
@@ -343,6 +343,42 @@ describe('audit manager', () => {
         "name": "update",
       }
     `);
+  });
+
+  it('applies a scoped metadata sanitizer after the action metadata is assembled', async () => {
+    const { auditManager } = app;
+    const records: AuditLog[] = [];
+    auditManager.setLogger({
+      log: async (record) => {
+        records.push(record);
+      },
+    });
+    auditManager.registerAction({ name: 'create', getMetaData: async () => ({ custom: true }) });
+    auditManager.registerAction('update');
+    auditManager.registerMetadataSanitizer('main', 'items', ['create'], ({ custom }) => ({ custom }));
+    for (const [name, resourceName, actionName] of [
+      ['main', 'items', 'create'],
+      ['other', 'items', 'create'],
+      ['main', 'other', 'create'],
+      ['main', 'items', 'update'],
+    ]) {
+      await auditManager.output(
+        {
+          dataSource: { name },
+          action: { resourceName, actionName },
+          request: { headers: {}, header: {}, body: { value: 'sample' } },
+          response: { status: 400 },
+          status: 400,
+        },
+        'request-id',
+        { errMsg: 'sample' },
+      );
+    }
+    expect(records).toHaveLength(4);
+    expect(records[0].metadata).toEqual({ custom: true });
+    for (const record of records.slice(1)) {
+      expect(record.metadata).toMatchObject({ request: { body: { value: 'sample' } }, errMsg: 'sample' });
+    }
   });
 
   it('includes CLI request source in audit log output', async () => {
