@@ -670,6 +670,20 @@ export class ManagedReconciler {
     });
   }
 
+  /** Read an in-process source's current configuration without rewriting its file or storage. */
+  backupSourceDefinition(spec: HostDeploymentSpec): Promise<AppDefinition> {
+    return this.enqueue(async () => {
+      const registered = this.registry.definition(spec.appId);
+      if (registered) return registered;
+      const configPath = await this.currentConfig(spec);
+      if (spec.config?.content !== undefined && !configPath)
+        throw new Error('The source App configuration is unavailable.');
+      return this.definitionFor(spec, configPath ?? spec.config?.path, {
+        prepareStorage: false,
+      });
+    });
+  }
+
   /**
    * The definition to check a restore with before the App stops: the spec's inline configuration is written to a
    * file of its own rather than where the running App reads it, so a refused restore never changes that. `dispose`
@@ -707,6 +721,7 @@ export class ManagedReconciler {
   private async definitionFor(
     spec: HostDeploymentSpec,
     configPath: string | undefined,
+    options: { prepareStorage?: boolean } = {},
   ): Promise<AppDefinition> {
     if (spec.backend !== 'in-process')
       return this.serviceDefinition(spec, configPath);
@@ -719,7 +734,10 @@ export class ManagedReconciler {
       appName: spec.appId,
       backend: spec.backend,
       isolation: spec.backend,
-      dataDir: await this.volumes.prepareStorageDir(spec.appId),
+      dataDir:
+        options.prepareStorage === false
+          ? this.volumes.storageDir(spec.appId)
+          : await this.volumes.prepareStorageDir(spec.appId),
       configPath,
       env: spec.env ? { ...spec.env } : undefined,
     };

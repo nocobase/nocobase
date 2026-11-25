@@ -65,6 +65,28 @@ export class InProcessCommandRunner implements AppCommandRunner {
       );
     }
     await mkdir(this.backupsDir, { recursive: true, mode: 0o700 });
+    return this.runProcess(rootDir, [cli, ...args]);
+  }
+
+  /** Run against the installed release using the same environment as its backup CLI. */
+  inspectStorage(
+    program: string,
+    checkDatabaseOwner: boolean,
+  ): Promise<AppCommandOutput> {
+    const rootDir = this.definition.rootDir;
+    if (!rootDir) throw new Error('The application has no release directory.');
+    return this.runProcess(path.join(rootDir, 'dist'), [
+      '--input-type=module',
+      '-e',
+      program,
+      ...(checkDatabaseOwner ? ['target'] : []),
+    ]);
+  }
+
+  private async runProcess(
+    cwd: string,
+    args: readonly string[],
+  ): Promise<AppCommandOutput> {
     const env: Record<string, string> = {};
     for (const name of INHERITED_ENV) {
       const value = process.env[name];
@@ -80,8 +102,8 @@ export class InProcessCommandRunner implements AppCommandRunner {
         : {}),
     });
     return await new Promise<AppCommandOutput>((resolve, reject) => {
-      const child = spawn(process.execPath, ['-e', SUPERVISE, cli, ...args], {
-        cwd: rootDir,
+      const child = spawn(process.execPath, ['-e', SUPERVISE, '--', ...args], {
+        cwd,
         env,
         stdio: ['pipe', 'pipe', 'pipe'],
       });

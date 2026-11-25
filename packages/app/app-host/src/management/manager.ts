@@ -355,9 +355,7 @@ export class HostManager implements HostManagementService {
       throw new Error('Deployments require managed host mode');
     }
     this.state.scopes.assertAccepting();
-    const status = await this.state.reconciler.removeDeployment(appId, options);
-    this.state.scopes.forget(appId);
-    return status;
+    return this.state.scopes.removeDeployment(appId, options);
   }
 
   getOperation(

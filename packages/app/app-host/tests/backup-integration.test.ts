@@ -431,6 +431,229 @@ describe.runIf(ARTIFACT)('backups with a real release', () => {
     ).resolves.toEqual({ deleted: false });
   });
 
+  it('copies a SQLite backup into isolated storage and keeps the source unchanged', async () => {
+    const sourceAppId = 'copy_sqlite_source';
+    const appId = 'copy_sqlite_target';
+    const content = config(SQLITE);
+    await host.applyDeployment(spec(sourceAppId, 'd-copy-sqlite', content));
+    const database = await sqliteFile(sourceAppId);
+    const sourceFile = path.join(await uploads(sourceAppId), 'marker.txt');
+    marker(database, 'snapshot');
+    await writeFile(sourceFile, 'snapshot file');
+    const backup = await host.createBackup!(sourceAppId, {
+      operationId: 'b-copy-sqlite',
+      scope,
+    });
+    const archive = path.join(
+      volumesDir,
+      sourceAppId,
+      'backups',
+      'b-copy-sqlite.tar.gz',
+    );
+    const sourceArchive = await readFile(archive);
+    marker(database, 'live');
+    await writeFile(sourceFile, 'live file');
+
+    const targetStorage = path.join(volumesDir, appId, 'storage');
+    await mkdir(targetStorage, { recursive: true });
+    const targetDatabase = path.join(targetStorage, 'database.sqlite');
+    new DatabaseSync(targetDatabase).close();
+    const base = {
+      scope,
+      sourceAppId,
+      backupId: backup.backupId,
+      sha256: backup.sha256,
+    };
+
+    await expect(
+      host.restoreBackup!(appId, {
+        ...base,
+        operationId: 'r-copy-sqlite-shared',
+        deployment: spec(
+          appId,
+          'r-copy-sqlite-shared',
+          content.replace(
+            'database: database.sqlite',
+            `database: ${JSON.stringify(database)}`,
+          ),
+        ),
+      }),
+    ).rejects.toMatchObject({ code: 'BACKUP_TARGET_UNSAFE' });
+    expect(await healthy(sourceAppId)).toBe(true);
+    expect(marker(database)).toBe('live');
+    expect(await healthy(appId)).toBe(false);
+
+    const request = {
+      ...base,
+      operationId: 'r-copy-sqlite',
+      deployment: spec(appId, 'r-copy-sqlite', content, {
+        desiredState: 'stopped',
+      }),
+    };
+    const restored = await host.restoreBackup!(appId, request);
+    expect(restored.status.deployments).toMatchObject([
+      { appId, observedState: 'stopped' },
+    ]);
+    expect(restored.restore).toMatchObject({
+      connections: [{ status: 'restored' }],
+      disks: [{ status: 'restored' }],
+    });
+    expect(marker(targetDatabase)).toBe('snapshot');
+    expect(
+      await readFile(path.join(targetStorage, 'uploads/marker.txt'), 'utf8'),
+    ).toBe('snapshot file');
+    marker(targetDatabase, 'target edit');
+    await expect(host.restoreBackup!(appId, request)).resolves.toEqual(
+      restored,
+    );
+    expect(marker(targetDatabase)).toBe('target edit');
+    await expect(
+      host.restoreBackup!(appId, { ...request, sourceAppId: 'another_source' }),
+    ).rejects.toMatchObject({ code: 'OPERATION_CONFLICT' });
+
+    await host.removeDeployment(appId, { scope, purgeData: true });
+    await expect(stat(targetStorage)).rejects.toMatchObject({ code: 'ENOENT' });
+    expect(await healthy(sourceAppId)).toBe(true);
+    expect(marker(database)).toBe('live');
+    expect(await readFile(sourceFile, 'utf8')).toBe('live file');
+    expect(await readFile(archive)).toEqual(sourceArchive);
+  }, 300_000);
+
+  it.runIf(POSTGRES)(
+    'copies a PostgreSQL backup into a dedicated database with a restricted owner',
+    async () => {
+      const sourceAppId = 'copy_pg_source';
+      const appId = 'copy_pg_target';
+      const admin = new URL(POSTGRES!);
+      const source = new URL(admin);
+      source.pathname = '/copy_pg_source';
+      const target = new URL(admin);
+      target.pathname = '/copy_pg_target';
+      target.username = appId;
+      const password = randomBytes(16).toString('hex');
+      target.password = password;
+      const tools = PG_BIN
+        ? `backup:
+  tools:
+    pgDump: ${path.join(PG_BIN, 'pg_dump')}
+    pgRestore: ${path.join(PG_BIN, 'pg_restore')}
+    psql: ${path.join(PG_BIN, 'psql')}`
+        : '';
+      // The controller allocates the dedicated database and role; Host only restores and purges its managed volume.
+      psql(POSTGRES!, 'CREATE DATABASE copy_pg_source');
+      psql(
+        POSTGRES!,
+        `CREATE ROLE copy_pg_target LOGIN PASSWORD '${password}'`,
+      );
+      psql(POSTGRES!, 'CREATE DATABASE copy_pg_target OWNER copy_pg_target');
+      try {
+        const sourceConfig = config(postgres(source), tools);
+        const targetConfig = sourceConfig.replace(
+          postgres(source),
+          postgres(target),
+        );
+        await host.applyDeployment(
+          spec(sourceAppId, 'd-copy-pg', sourceConfig),
+        );
+        expect(await healthy(sourceAppId)).toBe(true);
+        psql(
+          source.href,
+          "CREATE TABLE it_marker (value text); INSERT INTO it_marker VALUES ('snapshot'); GRANT SELECT ON it_marker TO PUBLIC",
+        );
+        const sourceFile = path.join(await uploads(sourceAppId), 'marker.txt');
+        await writeFile(sourceFile, 'snapshot file');
+        const backup = await host.createBackup!(sourceAppId, {
+          operationId: 'b-copy-pg',
+          scope,
+        });
+        const archive = path.join(
+          volumesDir,
+          sourceAppId,
+          'backups',
+          'b-copy-pg.tar.gz',
+        );
+        const sourceArchive = await readFile(archive);
+        psql(source.href, "UPDATE it_marker SET value = 'live'");
+        await writeFile(sourceFile, 'live file');
+
+        const base = { scope, sourceAppId, backupId: backup.backupId };
+        await expect(
+          host.restoreBackup!(appId, {
+            ...base,
+            operationId: 'r-copy-pg-shared',
+            deployment: spec(appId, 'r-copy-pg-shared', sourceConfig),
+          }),
+        ).rejects.toMatchObject({ code: 'BACKUP_TARGET_UNSAFE' });
+        expect(await healthy(sourceAppId)).toBe(true);
+        expect(psql(source.href, 'SELECT value FROM it_marker')).toBe('live');
+
+        const request = {
+          ...base,
+          operationId: 'r-copy-pg',
+          deployment: spec(appId, 'r-copy-pg', targetConfig, {
+            desiredState: 'stopped',
+          }),
+        };
+        await expect(
+          host.restoreBackup!(appId, {
+            ...request,
+            operationId: 'r-copy-pg-bad-checksum',
+            sha256: '0'.repeat(64),
+          }),
+        ).rejects.toMatchObject({ code: 'BACKUP_DIGEST_MISMATCH' });
+        expect(psql(target.href, "SELECT to_regclass('it_marker')")).toBe('');
+        await expect(
+          host.restoreBackup!(appId, request),
+        ).resolves.toMatchObject({
+          restore: {
+            connections: [{ status: 'restored' }],
+            disks: [{ status: 'restored' }],
+          },
+          status: { deployments: [{ appId, observedState: 'stopped' }] },
+        });
+        expect(psql(target.href, 'SELECT value FROM it_marker')).toBe(
+          'snapshot',
+        );
+        expect(
+          psql(
+            target.href,
+            "SELECT tableowner FROM pg_tables WHERE schemaname = 'public' AND tablename = 'it_marker'",
+          ),
+        ).toBe(appId);
+        expect(
+          psql(
+            target.href,
+            "SELECT EXISTS (SELECT 1 FROM pg_class, LATERAL aclexplode(relacl) acl WHERE oid = 'public.it_marker'::regclass AND acl.grantee = 0 AND acl.privilege_type = 'SELECT')",
+          ),
+        ).toBe('f');
+        const targetStorage = path.join(volumesDir, appId, 'storage');
+        expect(
+          await readFile(
+            path.join(targetStorage, 'uploads/marker.txt'),
+            'utf8',
+          ),
+        ).toBe('snapshot file');
+
+        await host.removeDeployment(appId, { scope, purgeData: true });
+        await expect(stat(targetStorage)).rejects.toMatchObject({
+          code: 'ENOENT',
+        });
+        psql(POSTGRES!, 'DROP DATABASE copy_pg_target');
+        expect(await healthy(sourceAppId)).toBe(true);
+        expect(psql(source.href, 'SELECT value FROM it_marker')).toBe('live');
+        expect(await readFile(sourceFile, 'utf8')).toBe('live file');
+        expect(await readFile(archive)).toEqual(sourceArchive);
+      } finally {
+        await host.removeDeployment(appId, { scope, purgeData: true });
+        await host.removeDeployment(sourceAppId, { scope, purgeData: true });
+        psql(POSTGRES!, 'DROP DATABASE IF EXISTS copy_pg_target');
+        psql(POSTGRES!, 'DROP ROLE IF EXISTS copy_pg_target');
+        psql(POSTGRES!, 'DROP DATABASE IF EXISTS copy_pg_source');
+      }
+    },
+    300_000,
+  );
+
   it.runIf(POSTGRES)(
     'backs a PostgreSQL App up and restores its database',
     async () => {

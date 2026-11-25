@@ -443,9 +443,22 @@ export class ManagedScopes {
     options: HostRestoreOptions,
   ): Promise<HostRestoreResult> {
     const scopeId = await this.taskScope(appId, options.scope);
-    const deployment = options.scope
-      ? { ...options.deployment, scope: options.scope }
-      : options.deployment;
+    if (options.sourceAppId !== undefined) {
+      if (
+        typeof options.sourceAppId !== 'string' ||
+        !options.sourceAppId ||
+        options.sourceAppId === appId
+      )
+        throw new HostManagementError(
+          'The restore source must name a different App.',
+          'BACKUP_INVALID_SOURCE',
+        );
+      this.assertOwnership(scopeId, [options.sourceAppId]);
+    }
+    const deployment =
+      options.scope || options.sourceAppId !== undefined
+        ? { ...options.deployment, scope: options.scope }
+        : options.deployment;
     const { scope: _scope, ...target } = options.deployment;
     return await this.task(
       'restore',
@@ -454,6 +467,9 @@ export class ManagedScopes {
       options.operationId,
       requestDigest({
         backupId: options.backupId,
+        ...(options.sourceAppId !== undefined
+          ? { sourceAppId: options.sourceAppId }
+          : {}),
         sha256: options.sha256 ?? null,
         deployment: target,
       }),
@@ -462,6 +478,7 @@ export class ManagedScopes {
         if (options.scope) this.assertBackend(deployment);
         return this.backups.restore(appId, {
           backupId: options.backupId,
+          sourceAppId: options.sourceAppId,
           sha256: options.sha256,
           deployment,
           checkpoint,
@@ -554,9 +571,19 @@ export class ManagedScopes {
     return await readJournal(directory, query);
   }
 
-  /** Forgets a removed App's scope. */
-  forget(appId: string): void {
-    this.owners.delete(appId);
+  /** Keep an archive and its target volume available while a restore holds them. */
+  removeDeployment(
+    appId: string,
+    options: { purgeData?: boolean },
+  ): Promise<HostStatus> {
+    return this.backups.withAppLock(appId, async () => {
+      const status = await this.options.reconciler.removeDeployment(
+        appId,
+        options,
+      );
+      this.owners.delete(appId);
+      return status;
+    });
   }
 
   /** Refuses an App of another scope. */

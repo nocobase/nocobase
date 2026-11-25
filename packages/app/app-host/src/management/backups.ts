@@ -10,7 +10,14 @@
  * `HostBackup` it is answered, restores by ID and deletes by ID.
  */
 import { randomUUID } from 'node:crypto';
-import { mkdir, readFile, rename, rm, writeFile } from 'node:fs/promises';
+import {
+  lstat,
+  mkdir,
+  readFile,
+  rename,
+  rm,
+  writeFile,
+} from 'node:fs/promises';
 import path from 'node:path';
 
 import type { AppRuntimeRegistry } from '../app-registry.ts';
@@ -21,6 +28,7 @@ import {
   type BackupArchiveLocation,
 } from '../service-backend.ts';
 import { InProcessCommandRunner } from './app-command.ts';
+import { assertCopyStorage, managedVolume } from './copy-restore-storage.ts';
 import type { ManagedReconciler } from './managed-reconciler.ts';
 import { assertOperationId } from './operation-log.ts';
 import { HostManagementError, type OperationCheckpoint } from './scopes.ts';
@@ -71,7 +79,7 @@ export class HostBackups {
   ): Promise<HostBackup> {
     assertAppId(appId);
     assertOperationId(backupId);
-    return this.locked(appId, async () => {
+    return this.withAppLock(appId, async () => {
       const spec = this.options.reconciler.specOf(appId);
       if (!spec)
         throw new HostManagementError(
@@ -153,6 +161,7 @@ export class HostBackups {
     appId: string,
     options: {
       readonly backupId: string;
+      readonly sourceAppId?: string;
       readonly sha256?: string;
       readonly deployment: HostDeploymentSpec;
       readonly checkpoint?: OperationCheckpoint;
@@ -166,7 +175,16 @@ export class HostBackups {
       throw new Error(
         `The deployment to restore must be one of App "${appId}"`,
       );
-    return this.locked(appId, async () => {
+    const sourceAppId = options.sourceAppId;
+    if (sourceAppId !== undefined) {
+      assertAppId(sourceAppId);
+      if (sourceAppId === appId)
+        throw new HostManagementError(
+          'The restore source must name a different App.',
+          'BACKUP_INVALID_SOURCE',
+        );
+    }
+    const restore = async (): Promise<HostRestoreResult> => {
       const previous = options.checkpoint?.previous;
       const restore =
         previous?.name === RESTORED
@@ -184,22 +202,29 @@ export class HostBackups {
           { restore, deployment: deployed ?? null },
         );
       return { restore, status };
-    });
+    };
+    if (!sourceAppId) return this.withAppLock(appId, restore);
+    // A fixed lock order also lets two Apps request opposite-direction copies without deadlocking.
+    const [first, second] =
+      sourceAppId < appId ? [sourceAppId, appId] : [appId, sourceAppId];
+    return this.withAppLock(first, () => this.withAppLock(second, restore));
   }
 
   private async restoreData(
     appId: string,
     options: {
       readonly backupId: string;
+      readonly sourceAppId?: string;
       readonly sha256?: string;
       readonly deployment: HostDeploymentSpec;
       readonly checkpoint?: OperationCheckpoint;
     },
   ): Promise<Record<string, unknown>> {
-    const backup = await this.read(appId, options.backupId);
+    const sourceAppId = options.sourceAppId ?? appId;
+    const backup = await this.readRecord(sourceAppId, options.backupId);
     if (!backup)
       throw new HostManagementError(
-        `App "${appId}" has no backup "${options.backupId}" on this Host`,
+        `App "${sourceAppId}" has no backup "${options.backupId}" on this Host`,
         'BACKUP_NOT_FOUND',
       );
     if (!backup.complete)
@@ -208,6 +233,18 @@ export class HostBackups {
         'BACKUP_INCOMPLETE',
         { limitations: backup.manifest.limitations ?? [] },
       );
+    if (
+      options.sourceAppId &&
+      options.sha256 !== undefined &&
+      options.sha256 !== backup.sha256
+    )
+      throw new HostManagementError(
+        'The requested checksum does not match the recorded source archive.',
+        'BACKUP_DIGEST_MISMATCH',
+      );
+    const copyArchive = options.sourceAppId
+      ? await this.copyArchive(appId, sourceAppId, backup, options.deployment)
+      : undefined;
     // Checked with the deployment's configuration in a file of its own: refused, the App keeps running as it was,
     // with the configuration it runs with now.
     const preflight = await this.options.reconciler.preflightDefinition(
@@ -223,11 +260,25 @@ export class HostBackups {
           'BACKUP_ARTIFACT_MISMATCH',
           { backup: backup.artifact, deployment: target },
         );
+      if (copyArchive) {
+        if (!(runner instanceof InProcessCommandRunner))
+          throw new HostManagementError(
+            'Cross-instance restore requires in-process Apps on the same Host.',
+            'BACKUP_UNSUPPORTED',
+          );
+        await assertCopyStorage(
+          appId,
+          path.join(copyArchive.targetVolume, 'storage'),
+          copyArchive.source,
+          runner,
+        );
+      }
       // The archive is missing, damaged or not this release's.
       await runCommand(runner, [
         'backup',
         'verify',
-        `${runner.backupsDir}/${archiveName(backup.backupId)}`,
+        copyArchive?.path ??
+          `${runner.backupsDir}/${archiveName(backup.backupId)}`,
         '--sha256',
         sha256,
         '--json',
@@ -242,13 +293,78 @@ export class HostBackups {
     const restore = (await runCommand(runner, [
       'backup',
       'restore',
-      `${runner.backupsDir}/${archiveName(backup.backupId)}`,
+      copyArchive?.path ??
+        `${runner.backupsDir}/${archiveName(backup.backupId)}`,
       '--sha256',
       sha256,
+      ...(copyArchive && backupUsesPostgres(backup)
+        ? ['--postgres-target-owner']
+        : []),
       '--json',
     ])) as Record<string, unknown>;
     await options.checkpoint?.save(RESTORED, { restore });
     return restore;
+  }
+
+  private async copyArchive(
+    appId: string,
+    sourceAppId: string,
+    backup: BackupRecord,
+    deployment: HostDeploymentSpec,
+  ): Promise<{
+    path: string;
+    source: InProcessCommandRunner;
+    targetVolume: string;
+  }> {
+    const sourceSpec = this.options.reconciler.specOf(sourceAppId);
+    if (!sourceSpec)
+      throw new HostManagementError(
+        'The restore source is not deployed on this Host.',
+        'APP_NOT_FOUND',
+      );
+    if (sourceSpec.scope?.id !== deployment.scope?.id)
+      throw new HostManagementError(
+        'The source App must belong to the target scope.',
+        'APP_OWNED_BY_OTHER_SCOPE',
+      );
+    if (
+      sourceSpec.backend !== 'in-process' ||
+      deployment.backend !== 'in-process' ||
+      backup.location
+    )
+      throw new HostManagementError(
+        'Cross-instance restore requires in-process Apps on the same Host.',
+        'BACKUP_UNSUPPORTED',
+      );
+    if (
+      this.options.reconciler.specOf(appId) ||
+      this.options.registry.definition(appId)
+    )
+      throw new HostManagementError(
+        'Cross-instance restore requires a new target App.',
+        'BACKUP_TARGET_EXISTS',
+      );
+
+    const sourceRoot = await managedVolume(
+      this.options.volumesDir,
+      sourceAppId,
+    );
+    // Validate the volume before preflight writes configuration or creates storage in it.
+    const targetVolume = await managedVolume(this.options.volumesDir, appId);
+    const dir = path.join(sourceRoot, 'backups');
+    const file = path.join(dir, archiveName(backup.backupId));
+    if (!(await lstat(dir)).isDirectory() || !(await lstat(file)).isFile())
+      throw new HostManagementError(
+        'The source archive must be a regular local file.',
+        'BACKUP_INVALID_SOURCE',
+      );
+    const source =
+      await this.options.reconciler.backupSourceDefinition(sourceSpec);
+    return {
+      path: file,
+      source: new InProcessCommandRunner(source, dir),
+      targetVolume,
+    };
   }
 
   /**
@@ -259,7 +375,7 @@ export class HostBackups {
   delete(appId: string, backupId: string): Promise<boolean> {
     assertAppId(appId);
     assertOperationId(backupId);
-    return this.locked(appId, async () => {
+    return this.withAppLock(appId, async () => {
       const record = await this.readRecord(appId, backupId);
       if (!record) return false;
       const name = archiveName(backupId);
@@ -353,7 +469,7 @@ export class HostBackups {
     }
   }
 
-  private async locked<T>(appId: string, work: () => Promise<T>): Promise<T> {
+  async withAppLock<T>(appId: string, work: () => Promise<T>): Promise<T> {
     const previous = this.locks.get(appId) ?? Promise.resolve();
     const run = previous.catch(() => undefined).then(work);
     const settled = run.catch(() => undefined);
@@ -364,6 +480,20 @@ export class HostBackups {
       if (this.locks.get(appId) === settled) this.locks.delete(appId);
     }
   }
+}
+
+function backupUsesPostgres(backup: HostBackup): boolean {
+  const { connections } = backup.manifest;
+  return (
+    Array.isArray(connections) &&
+    connections.some(
+      (item: unknown) =>
+        typeof item === 'object' &&
+        item !== null &&
+        'dialect' in item &&
+        item.dialect === 'postgres',
+    )
+  );
 }
 
 /**

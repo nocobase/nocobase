@@ -15,6 +15,7 @@ import type {
   DatabaseEngine,
   DatabaseExport,
   EngineContext,
+  RestoreEngineContext,
   SnapshotData,
 } from './engines.js';
 import { asBackupError, BackupError, checkAbort, problem } from './errors.js';
@@ -64,7 +65,7 @@ interface BoundEngine {
   restore(
     file: string,
     server: ServerInfo,
-    context: EngineContext,
+    context: RestoreEngineContext,
   ): Promise<void>;
   read<T>(use: (reader: BackupReader) => Promise<T>): Promise<T>;
 }
@@ -934,7 +935,7 @@ async function restoreVerified(
             item.engine.restore(
               join(backup.directory, item.archive.path),
               item.archive.server,
-              context,
+              { ...context, postgresTargetOwner: options.postgresTargetOwner },
             ),
           ),
         options.signal,

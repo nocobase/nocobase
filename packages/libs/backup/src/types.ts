@@ -141,6 +141,8 @@ export interface RestoreBackupOptions {
   allowPartial?: boolean;
   /** Restore archived filesystem disks while leaving database contents intact. */
   filesOnly?: boolean;
+  /** Import PostgreSQL objects as the connected role without replaying the archive's privileges. */
+  postgresTargetOwner?: boolean;
   sha256?: string;
   tmpDir?: string;
   signal?: AbortSignal;

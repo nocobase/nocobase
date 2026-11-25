@@ -20,6 +20,7 @@ export default class BackupRestore extends AppCommand {
     connection: Interfaces.OptionFlag<string[] | undefined>;
     'allow-partial': Interfaces.BooleanFlag<boolean>;
     'files-only': Interfaces.BooleanFlag<boolean>;
+    'postgres-target-owner': Interfaces.BooleanFlag<boolean>;
   } = {
     sha256: Flags.string({
       description: 'Expected SHA-256 of the complete archive.',
@@ -34,6 +35,10 @@ export default class BackupRestore extends AppCommand {
     'files-only': Flags.boolean({
       description: 'Restore only local files and leave databases unchanged.',
     }),
+    'postgres-target-owner': Flags.boolean({
+      description:
+        "Restore PostgreSQL objects as the target role and omit the source's grants.",
+    }),
   };
 
   public async run(): Promise<RestoreBackupResult> {
@@ -45,6 +50,7 @@ export default class BackupRestore extends AppCommand {
           connections: flags.connection,
           allowPartial: flags['allow-partial'],
           filesOnly: flags['files-only'],
+          postgresTargetOwner: flags['postgres-target-owner'],
           signal,
         }),
       ),

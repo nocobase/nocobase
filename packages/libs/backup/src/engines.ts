@@ -14,6 +14,10 @@ export interface EngineContext {
   signal?: AbortSignal;
 }
 
+export interface RestoreEngineContext extends EngineContext {
+  postgresTargetOwner?: boolean;
+}
+
 export interface SnapshotData {
   migrations: readonly MigrationFingerprint[];
   references: FileReference[];
@@ -43,7 +47,7 @@ export interface DatabaseEngine<Connection extends BackupConnection> {
     connection: Connection,
     file: string,
     server: ServerInfo,
-    context: EngineContext,
+    context: RestoreEngineContext,
   ): Promise<void>;
   read<Output>(
     connection: Connection,

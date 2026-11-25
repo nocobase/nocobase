@@ -196,7 +196,15 @@ export const postgresEngine: DatabaseEngine<PostgresBackupConnection> = {
     const script = join(context.directory, 'transaction.sql');
     await runClient(
       context.tools.pgRestore ?? 'pg_restore',
-      ['--clean', '--if-exists', '--file=-', file],
+      [
+        '--clean',
+        '--if-exists',
+        ...(context.postgresTargetOwner
+          ? ['--no-owner', '--no-privileges']
+          : []),
+        '--file=-',
+        file,
+      ],
       {
         output: sql,
         signal: context.signal,

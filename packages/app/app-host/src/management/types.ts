@@ -270,6 +270,8 @@ export interface HostRestoreOptions {
   operationId: string;
   scope?: HostScope;
   backupId: string;
+  /** Read the backup of another in-process App of this scope on this Host. */
+  sourceAppId?: string;
   /** The archive checksum to require; the one recorded with the backup by default. */
   sha256?: string;
   /**
