@@ -4,11 +4,11 @@ import {
 } from '@nocobase/app-plugin-authentication/client';
 import type { AppClientRegisteredRoute } from '@nocobase/app-client/plugins';
 import { useMemo, type ReactElement } from 'react';
-import { Navigate, Outlet, Route, Routes } from 'react-router';
+import { Navigate, Outlet, Route, Routes, useLocation } from 'react-router';
 
 import { AppLayout } from '../layouts/app-layout.js';
 import { withSettingsShell } from './settings-shell.js';
-import { filterRouteTree } from './route-navigation.js';
+import { filterRouteTree, matchRouteTree } from './route-navigation.js';
 import { renderRouteTree } from './route-tree.js';
 import { StandalonePageLayout } from './standalone-page-layout.js';
 import { SessionPreparation } from './session-preparation.js';
@@ -19,14 +19,42 @@ export interface AppRouterProps {
   readonly clientRoutes: readonly AppClientRegisteredRoute[];
 }
 
+function hasStandaloneRoutes(
+  routes: readonly AppClientRegisteredRoute[],
+): boolean {
+  return routes.some(
+    (route) =>
+      route.layout === 'none' ||
+      (route.children && hasStandaloneRoutes(route.children)),
+  );
+}
+
+function RequiredPageLayout({
+  routes,
+}: {
+  readonly routes: readonly AppClientRegisteredRoute[];
+}): ReactElement {
+  const { pathname } = useLocation();
+  // Select the layout from the same route tree that renders the pages, preserving match priority across layouts.
+  const standalone = matchRouteTree(routes, pathname)?.some(
+    ({ route }) => route.componentLoader && route.layout === 'none',
+  );
+  return standalone ? <StandalonePageLayout /> : <AppLayout routes={routes} />;
+}
+
 export function AppRouter({ clientRoutes }: AppRouterProps): ReactElement {
   const routeGroups = useMemo(() => {
     // Settings pages render in the same shell, under the application's own Settings group.
     const routes = withSettingsShell(clientRoutes);
+    const required = filterRouteTree(
+      routes,
+      (route) => route.auth === 'required',
+    );
     return {
       guest: routes.filter((route) => route.auth === 'guest'),
       optional: routes.filter((route) => route.auth === 'optional'),
-      required: filterRouteTree(routes, (route) => route.auth === 'required'),
+      required,
+      hasStandalone: hasStandaloneRoutes(required),
     };
   }, [clientRoutes]);
 
@@ -41,7 +69,15 @@ export function AppRouter({ clientRoutes }: AppRouterProps): ReactElement {
           </RequiredAuthentication>
         }
       >
-        <Route element={<AppLayout routes={routeGroups.required} />}>
+        <Route
+          element={
+            routeGroups.hasStandalone ? (
+              <RequiredPageLayout routes={routeGroups.required} />
+            ) : (
+              <AppLayout routes={routeGroups.required} />
+            )
+          }
+        >
           {renderRouteTree(routeGroups.required)}
         </Route>
       </Route>

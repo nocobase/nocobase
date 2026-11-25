@@ -27,7 +27,7 @@ import {
   within,
 } from '@testing-library/react';
 import type { ComponentType, ReactElement } from 'react';
-import { Outlet, MemoryRouter } from 'react-router';
+import { Link, Outlet, MemoryRouter, useLocation } from 'react-router';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { AppRouter } from '../../client/routing/app-router.tsx';
@@ -295,7 +295,72 @@ describe('application shell', () => {
       screen.queryByRole('button', { name: 'Theme' }),
     ).not.toBeInTheDocument();
   });
+
+  it('redirects a signed-out visitor from a standalone page to sign in', async () => {
+    const route = standaloneReport();
+    renderApplication('/report?format=print', false, [
+      route,
+      createRoute('login', '/login', 'guest', () => {
+        const { pathname, search } = useLocation();
+        return <p>{pathname + search}</p>;
+      }),
+    ]);
+
+    expect(await screen.findByText(/^\/login\?/)).toHaveTextContent(
+      encodeURIComponent('/report?format=print'),
+    );
+    expect(route.componentLoader).not.toHaveBeenCalled();
+  });
+
+  it('denies access to a protected standalone page before loading it', async () => {
+    const route = standaloneReport();
+    renderApplication('/report', true, [route], {
+      authorization: { can: async () => false },
+    });
+
+    expect(
+      await screen.findByRole('heading', { name: 'Access denied' }),
+    ).toBeVisible();
+    expect(route.componentLoader).not.toHaveBeenCalled();
+    expect(screen.queryByRole('banner')).not.toBeInTheDocument();
+  });
+
+  it('shows the standalone page and restores the application shell on an ordinary route', async () => {
+    const route = standaloneReport();
+    renderApplication('/report', true, [route], {
+      authorization: { can: async () => true },
+    });
+
+    expect(
+      await screen.findByRole('heading', { name: 'Print report' }),
+    ).toBeVisible();
+    expect(screen.queryByRole('banner')).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('complementary', { name: 'Application navigation' }),
+    ).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole('link', { name: 'Back to home' }));
+    expect(await screen.findByText('App client is ready')).toBeVisible();
+    expect(screen.getByRole('banner')).toBeVisible();
+    expect(
+      screen.getByRole('complementary', { name: 'Application navigation' }),
+    ).toBeVisible();
+  });
 });
+
+function standaloneReport() {
+  const report = createRoute('report', '/report', 'required', () => (
+    <>
+      <h2>Print report</h2>
+      <Link to='/'>Back to home</Link>
+    </>
+  ));
+  return {
+    ...report,
+    layout: 'none' as const,
+    authz: { resource: { type: 'page', id: 'report' }, action: 'access' },
+    componentLoader: vi.fn(report.componentLoader),
+  };
+}
 
 function renderApplication(
   initialEntry: string,

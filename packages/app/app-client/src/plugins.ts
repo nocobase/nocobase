@@ -26,6 +26,7 @@ const RESERVED_APPLICATION_ROUTE_PATHS = new Set([
 ]);
 
 export type AppClientRouteAuth = 'required' | 'guest' | 'optional';
+export type AppClientRouteLayout = 'none';
 
 /**
  * Authorization checked before this page loads. `skip` opts out and does not
@@ -244,6 +245,8 @@ export interface AppClientRoutePageDefinition {
   readonly name: string;
   readonly path: string;
   readonly auth?: AppClientRouteAuth;
+  /** Omit the application shell on a signed-in App Route. Children share a page's layout. */
+  readonly layout?: AppClientRouteLayout;
   /** Omitted: inherited from the nearest ancestor page, else an auth-based default. Declare it on the first page. */
   readonly authz?: AppClientRouteAuthz;
   readonly breadcrumb?: AppClientRouteBreadcrumb;
@@ -259,6 +262,8 @@ export interface AppClientRouteGroupDefinition {
   readonly name: string;
   readonly path?: string;
   readonly auth?: AppClientRouteAuth;
+  /** Omit the application shell on this signed-in App Route group's descendants. */
+  readonly layout?: AppClientRouteLayout;
   readonly breadcrumb?: AppClientRouteBreadcrumb;
   readonly navigation: AppClientRouteNavigation;
   readonly children: readonly AppClientRouteDefinition[];
@@ -284,6 +289,7 @@ export interface AppClientRegisteredRoute {
   readonly path: string;
   readonly auth: AppClientRouteAuth;
   readonly authz: AppClientRouteAuthz;
+  readonly layout?: AppClientRouteLayout;
   readonly breadcrumb?: AppClientRouteBreadcrumb;
   readonly navigation?: AppClientRouteNavigation;
   readonly presentation?: AppClientRoutePresentation;
@@ -356,6 +362,7 @@ export interface AppClientRouteBreadcrumb {
 export interface AppClientAppRoutesContribution {
   readonly parent: 'app';
   readonly routes: readonly AppClientRouteDefinition[];
+  readonly layout?: AppClientRouteLayout;
   /** Set by `{ disabled: true }`: the routes are not registered, and references to their IDs are treated as excluded. */
   readonly disabled?: boolean;
 }
@@ -368,6 +375,11 @@ export interface AppClientRouteContributionOptions {
    * option that turns off its own pages, such as `agents({ chatRoutes: false })`.
    */
   readonly disabled?: boolean;
+}
+
+export interface AppClientAppRouteContributionOptions extends AppClientRouteContributionOptions {
+  /** Default layout for the contribution's signed-in routes. */
+  readonly layout?: AppClientRouteLayout;
 }
 
 export interface AppClientSystemSettingsRoutesContribution {
@@ -627,11 +639,12 @@ function resolveServiceProviders<TOptions>(
 
 export function defineAppRoutes(
   routes: readonly AppClientRouteDefinition[],
-  options: AppClientRouteContributionOptions = {},
+  options: AppClientAppRouteContributionOptions = {},
 ): AppClientAppRoutesContribution {
   return Object.freeze({
     parent: 'app',
     routes: freezeNavigationRoutes(routes),
+    ...(options.layout !== undefined ? { layout: options.layout } : {}),
     ...(options.disabled ? { disabled: true } : {}),
   });
 }
@@ -869,6 +882,11 @@ export function resolveAppClientContributions(
           `Plugin "${packageName}" contributed routes to unsupported parent "${String(surface)}"; declare them with defineAppRoutes(), defineSystemSettingsRoutes() or definePersonalSettingsRoutes().`,
         );
       }
+      const layout = normalizeRouteLayout(
+        'layout' in routeContribution ? routeContribution.layout : undefined,
+        surface,
+        `Route contribution from "${packageName}"`,
+      );
       if (routeContribution.disabled)
         rememberDisabledIds(packageName, routeContribution.routes);
       if (
@@ -893,6 +911,7 @@ export function resolveAppClientContributions(
         packageName,
         source,
         surface,
+        layout,
         ...(categories ? { categories } : {}),
       });
     }
@@ -970,6 +989,7 @@ interface RouteInput {
   packageName: string;
   source: AppClientContributionSource;
   surface: AppClientRouteSurface;
+  layout?: AppClientRouteLayout;
   categories?: AppClientSettingsCategoryOverrides;
 }
 
@@ -978,6 +998,7 @@ interface RouteNode {
   packageName: string;
   source: AppClientContributionSource;
   surface: AppClientRouteSurface;
+  contributionLayout?: AppClientRouteLayout;
   children?: RouteNode[];
   /** The category id of a settings category group. */
   category?: string;
@@ -1081,6 +1102,7 @@ function assembleRoutes(
         packageName: input.packageName,
         source: input.source,
         surface: input.surface,
+        contributionLayout: input.layout,
         ...(definition.children
           ? { children: definition.children.map((child) => copy(child, true)) }
           : {}),
@@ -1498,6 +1520,8 @@ interface RouteResolveContext {
   parentAuth?: AppClientRouteAuth;
   /** Effective authz of the nearest ancestor page; groups pass it through. */
   ancestorAuthz?: AppClientRouteAuthz;
+  parentLayout?: AppClientRouteLayout;
+  hasAncestorPage?: boolean;
   ids: Map<string, string>;
   claimed: Map<string, ClaimedPath>;
 }
@@ -1548,6 +1572,23 @@ function resolveRouteTree(
       packageName,
       name,
     );
+    const declaredLayout = normalizeRouteLayout(
+      route.layout,
+      context.surface,
+      `Client route "${id}"`,
+    );
+    if (declaredLayout && auth !== 'required')
+      throw new Error(
+        `Client route "${id}" requires auth "required" to declare layout.`,
+      );
+    const layout =
+      auth === 'required'
+        ? (declaredLayout ?? context.parentLayout ?? node.contributionLayout)
+        : undefined;
+    if (context.hasAncestorPage && layout !== context.parentLayout)
+      throw new Error(
+        `Client route "${id}" must share its ancestor page's layout.`,
+      );
     if (isPage && path === '/' && source !== 'application')
       throw new Error(
         `Client route "${name}" from plugin "${packageName}" cannot use reserved application root path "/".`,
@@ -1612,6 +1653,7 @@ function resolveRouteTree(
       name,
       path,
       auth,
+      ...(layout ? { layout } : {}),
       packageName,
       source,
       ...(context.surface !== 'app' ? { surface: context.surface } : {}),
@@ -1638,12 +1680,27 @@ function resolveRouteTree(
               ...context,
               parentPath: path,
               parentAuth: auth,
+              parentLayout: layout,
+              hasAncestorPage: isPage || context.hasAncestorPage,
               ancestorAuthz: isPage ? authz : context.ancestorAuthz,
             }),
           }
         : {}),
     });
   }
+}
+
+function normalizeRouteLayout(
+  layout: unknown,
+  surface: AppClientRouteSurface,
+  label: string,
+): AppClientRouteLayout | undefined {
+  if (layout === undefined) return undefined;
+  if (surface !== 'app')
+    throw new Error(`${label} can only declare layout in defineAppRoutes().`);
+  if (layout !== 'none')
+    throw new Error(`${label} must use layout "none" or leave it out.`);
+  return layout;
 }
 
 function normalizeRouteAuthz(
