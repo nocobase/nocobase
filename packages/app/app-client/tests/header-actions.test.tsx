@@ -109,7 +109,12 @@ describe('header actions', () => {
     const replaced = await runtimeWith({
       headerActions: [{ name: 'assistant', order: 10, component: Assistant }],
       headerActionOverrides: [
-        { name: 'inbox', component: OtherInbox, order: 0 },
+        {
+          name: 'inbox',
+          component: OtherInbox,
+          order: 0,
+          placement: 'beforeAccount',
+        },
       ],
     });
     expect(replaced.headerActions?.map((action) => action.name)).toEqual([
@@ -118,6 +123,7 @@ describe('header actions', () => {
     ]);
     expect(replaced.headerActions?.[0]).toMatchObject({
       component: OtherInbox,
+      placement: 'beforeAccount',
       badge: useUnread,
       packageName: '@example/inbox',
     });

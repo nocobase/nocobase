@@ -156,6 +156,7 @@ describe('header actions', () => {
           action('assistant'),
           action('inbox', () => ({ count: 3, tone: 'attention' })),
           action('mail', mail.useBadge),
+          { ...action('settings'), placement: 'beforeAccount' },
         ]}
       />,
       { wrapper: I18n },
@@ -163,6 +164,7 @@ describe('header actions', () => {
     expect(screen.getByRole('button', { name: 'assistant' })).toBeVisible();
     expect(screen.queryByRole('button', { name: /^inbox/ })).toBeNull();
     const more = screen.getByRole('button', { name: 'More actions' });
+    expect(slotOf('settings').previousElementSibling).toContainElement(more);
     const moreBadge = more.querySelector('[data-slot="header-action-badge"]');
     expect(moreBadge).toHaveTextContent('5');
     expect(moreBadge).toHaveAttribute('data-tone', 'attention');
@@ -443,9 +445,14 @@ describe('signed-in state', () => {
   });
 });
 
-it('registers no header action of its own, so the header shows only the account menu', async () => {
-  const { headerActions, headerActionOverrides } =
+it('registers the pinned settings shortcut for the application’s own route', async () => {
+  const { createHeaderActions } =
     await import('../../client/header-actions.js');
-  expect(headerActions).toEqual([]);
-  expect(headerActionOverrides).toEqual([]);
+  expect(createHeaderActions('my-app')).toMatchObject([
+    {
+      name: 'system-settings',
+      placement: 'beforeAccount',
+      routeId: 'my-app:settingsHome',
+    },
+  ]);
 });

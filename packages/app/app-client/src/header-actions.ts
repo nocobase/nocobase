@@ -29,6 +29,8 @@ export function badgeCount(badge: AppClientBadge | undefined): number {
     : 0;
 }
 
+type HeaderActionPlacement = 'auto' | 'beforeAccount';
+
 /**
  * A button in the header's right-hand area, left of the account menu, such as an inbox or an assistant. The
  * application renders the component as it is, sized like the header's other buttons, and the badge on its corner.
@@ -41,6 +43,8 @@ export interface AppClientHeaderActionDefinition {
   readonly name: string;
   /** Lower values appear further left; defaults to 0, with ties in registration order. */
   readonly order?: number;
+  /** beforeAccount keeps the action inline next to the account menu, including on phones. */
+  readonly placement?: HeaderActionPlacement;
   /** The button. It renders nothing when it has nothing to offer, such as a feature the viewer cannot use. */
   readonly component: ComponentType;
   /**
@@ -61,6 +65,7 @@ export interface AppClientHeaderActionDefinition {
 export interface AppClientRegisteredHeaderAction {
   readonly name: string;
   readonly order: number;
+  readonly placement?: HeaderActionPlacement;
   readonly component: ComponentType;
   readonly auth: 'required' | 'optional';
   readonly badge?: AppClientBadgeHook;
@@ -81,6 +86,7 @@ export type AppClientHeaderActionOverride =
       readonly hidden?: false;
       readonly component?: ComponentType;
       readonly order?: number;
+      readonly placement?: HeaderActionPlacement;
       readonly badge?: AppClientBadgeHook;
     };
 
@@ -109,6 +115,7 @@ export function defineHeaderActions(
           `Header action "${name}" auth must be "required" or "optional".`,
         );
       assertOrder(action.order, name);
+      assertPlacement(action.placement, name);
       assertBadge(action.badge, name);
       const routeId = action.routeId?.trim();
       if (action.routeId !== undefined && !routeId)
@@ -149,6 +156,7 @@ export function defineHeaderActionOverrides(
             `Header action override "${name}" component must be a component.`,
           );
         assertOrder(override.order, name);
+        assertPlacement(override.placement, name);
         assertBadge(override.badge, name);
       }
       return Object.freeze({ ...override, name });
@@ -182,6 +190,7 @@ export function resolveHeaderActions(
         Object.freeze({
           name: action.name,
           order: action.order ?? 0,
+          ...(action.placement ? { placement: action.placement } : {}),
           component: action.component,
           auth: action.auth ?? 'required',
           ...(action.routeId ? { routeId: action.routeId } : {}),
@@ -221,6 +230,7 @@ export function applyHeaderActionOverrides(
       Object.freeze({
         ...action,
         ...(override.component ? { component: override.component } : {}),
+        ...(override.placement ? { placement: override.placement } : {}),
         ...(override.order !== undefined ? { order: override.order } : {}),
         ...(override.badge ? { badge: override.badge } : {}),
       }),
@@ -249,6 +259,15 @@ function normalizeHeaderActionName(name: unknown): string {
       `Header action name "${normalized}" contains unsupported characters.`,
     );
   return normalized;
+}
+
+function assertPlacement(placement: unknown, name: string): void {
+  if (
+    placement !== undefined &&
+    placement !== 'auto' &&
+    placement !== 'beforeAccount'
+  )
+    throw new Error(`Header action "${name}" has an unsupported placement.`);
 }
 
 function assertOrder(order: unknown, name: string): void {

@@ -47,11 +47,7 @@ const PHONE_INLINE_ACTIONS = 2;
  * The header's right-hand actions: the buttons the application and its plugins register (`headerActions`) that the
  * viewer may see, in their order, then the account menu, always last.
  */
-export function HeaderActions({
-  children,
-}: {
-  readonly children?: ReactNode;
-}): ReactElement {
+export function HeaderActions(): ReactElement {
   const { session } = useAuthentication();
   const actions = useHeaderActions({ signedIn: Boolean(session?.user) });
   const routes = useRouteTree();
@@ -70,7 +66,6 @@ export function HeaderActions({
   }, [actions, denied, loading, routes]);
   return (
     <HeaderActionBar actions={visible}>
-      {children}
       <UserMenu />
     </HeaderActionBar>
   );
@@ -135,12 +130,25 @@ export function HeaderActionBar({
     moreRef.current?.focus();
   });
   const shown = actions.filter((action) => rendered[action.name]);
+  const regular = shown.filter(
+    (action) => action.placement !== 'beforeAccount',
+  );
+  const pinned = shown.filter((action) => action.placement === 'beforeAccount');
   const inlineCount =
-    isMobile && shown.length > PHONE_INLINE_ACTIONS
+    isMobile && regular.length > PHONE_INLINE_ACTIONS
       ? PHONE_INLINE_ACTIONS - 1
-      : shown.length;
-  const inline = shown.slice(0, inlineCount);
-  const overflow = shown.slice(inlineCount);
+      : regular.length;
+  const inline = regular.slice(0, inlineCount);
+  const overflow = regular.slice(inlineCount);
+  const renderSlot = (action: AppClientRegisteredHeaderAction) => (
+    <HeaderActionSlot
+      key={action.name}
+      name={action.name}
+      host={hostOf(action.name)}
+      badge={badges[action.name]}
+      onFocusedDetach={onFocusedDetach}
+    />
+  );
   return (
     <TooltipProvider>
       <div
@@ -165,15 +173,7 @@ export function HeaderActionBar({
             />
           ) : null,
         )}
-        {inline.map((action) => (
-          <HeaderActionSlot
-            key={action.name}
-            name={action.name}
-            host={hostOf(action.name)}
-            badge={badges[action.name]}
-            onFocusedDetach={onFocusedDetach}
-          />
-        ))}
+        {inline.map(renderSlot)}
         {overflow.length ? (
           <MoreActions
             actions={overflow}
@@ -182,6 +182,7 @@ export function HeaderActionBar({
             triggerRef={moreRef}
           />
         ) : null}
+        {pinned.map(renderSlot)}
         {children}
       </div>
     </TooltipProvider>

@@ -1,16 +1,9 @@
 import { useSyncServerLocale } from '@nocobase/app-plugin-i18n/client';
 import { Fragment, useMemo, type ReactElement } from 'react';
 import type { AppClientRegisteredRoute } from '@nocobase/app-client/plugins';
-import { Settings } from 'lucide-react';
-import { Link, Outlet, useLocation } from 'react-router';
+import { Outlet, useLocation } from 'react-router';
 
 import { BrandWatermark } from '#components/brand-watermark';
-import { buttonVariants } from '#components/ui/button';
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from '#components/ui/tooltip';
 import { Breadcrumbs } from '#components/breadcrumbs';
 
 import { PersonalSettingsDialog } from '../routing/personal-settings-dialog.js';
@@ -86,7 +79,6 @@ export function AppLayout({
           : buildSettingsNavigation(routes, denied),
     [inSettings, inPersonalSettings, loading, routes, denied],
   );
-  const settingsEntry = items.find((item) => item.route.name === SETTINGS_HOME);
   const menuItems = inSettings
     ? settingsItems
     : items.filter((item) => item.route.name !== SETTINGS_HOME);
@@ -126,26 +118,7 @@ export function AppLayout({
                   {/* The current page's trail: the route tree's, or the one the page declares (`usePageBreadcrumb`). */}
                   <Breadcrumbs denied={denied} />
                 </div>
-                <HeaderActions>
-                  {!loading && settingsEntry && (
-                    <Tooltip>
-                      <TooltipTrigger
-                        render={<Link to={settingsEntry.route.path} />}
-                        className={buttonVariants({
-                          variant: inSystemSettings ? 'secondary' : 'ghost',
-                          size: 'icon',
-                        })}
-                        aria-current={inSystemSettings ? 'location' : undefined}
-                        aria-label={t('settings.title')}
-                      >
-                        <Settings />
-                      </TooltipTrigger>
-                      <TooltipContent side='bottom'>
-                        {t('settings.title')}
-                      </TooltipContent>
-                    </Tooltip>
-                  )}
-                </HeaderActions>
+                <HeaderActions />
               </LayoutHeader>
               {/* The content row: the page, and beside it the asides plugins register (such as the Agent panel),
             which take the width they need while the page narrows. */}
