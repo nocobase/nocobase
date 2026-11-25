@@ -253,20 +253,26 @@ function withRouteParams<T>(context: Context, resolve: () => T): T {
   }
 }
 
-function clientIp(context: Context, proxies: BlockList): string | undefined {
+function clientIp(
+  context: Context,
+  proxies: BlockList,
+  ipAddressHeaders: readonly string[],
+): string | undefined {
   const peer = getClientAddress(context);
   if (!peer) return undefined;
   const parsed = parseAuditAddress(peer);
   if (!parsed || !proxies.check(parsed.address, parsed.family)) return peer;
-  const forwarded = context.req.header('x-forwarded-for')?.split(',') ?? [];
-  let current = parsed;
-  for (const value of forwarded.reverse()) {
-    const upstream = parseAuditAddress(value.trim());
-    if (!upstream || upstream.port) break;
-    current = upstream;
-    if (!proxies.check(upstream.address, upstream.family)) break;
+  for (const name of ipAddressHeaders) {
+    const forwarded = context.req.header(name)?.split(',');
+    if (!forwarded) continue;
+    for (const value of forwarded.reverse()) {
+      const upstream = parseAuditAddress(value.trim());
+      if (!upstream || upstream.port) break;
+      if (!proxies.check(upstream.address, upstream.family))
+        return upstream.address;
+    }
   }
-  return current.address;
+  return peer;
 }
 
 interface SessionContext {
@@ -305,6 +311,7 @@ export function auditMiddleware(options: {
   readonly service: AuditCoordinator;
   readonly autoDetect: boolean;
   readonly proxies: BlockList;
+  readonly ipAddressHeaders: readonly string[];
   readonly forwarded: () => readonly ApiForwardedRouter[];
   readonly translate: (
     text: AuditTranslation,
@@ -441,7 +448,7 @@ export function auditMiddleware(options: {
                 ].slice(0, 256),
             source: targets?.source && safeTarget(targets.source),
             targets: targets?.targets.slice(0, 64).map(safeTarget) ?? [],
-            ip: clientIp(context, options.proxies),
+            ip: clientIp(context, options.proxies, options.ipAddressHeaders),
             userAgent: context.req.header('user-agent')?.slice(0, 512),
             outcome: success
               ? 'success'

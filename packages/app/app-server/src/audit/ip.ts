@@ -5,26 +5,40 @@ export function parseAuditAddress(value: string): SocketAddress | undefined {
   return SocketAddress.parse(value) ?? SocketAddress.parse(`[${value}]:0`);
 }
 
-export function createTrustedAuditProxies(entries: unknown): BlockList {
+export function createTrustedAuditProxies(
+  entries: unknown,
+  warn: (message: string) => void,
+): BlockList {
   const list = new BlockList();
   if (entries === undefined || entries === null) return list;
-  if (!Array.isArray(entries))
-    throw new Error('must be a list of IP addresses or CIDR ranges.');
-  for (const entry of entries as unknown[]) {
-    if (typeof entry !== 'string')
-      throw new Error('must contain only IP addresses or CIDR ranges.');
-    const [ip = '', prefix, extra] = entry.split('/');
+  const setting = 'auth.advanced.ipAddress.trustedProxies';
+  if (!Array.isArray(entries)) {
+    warn(
+      `Ignoring ${setting}: expected a list of IP addresses or CIDR ranges.`,
+    );
+    return list;
+  }
+  for (const [index, entry] of (entries as unknown[]).entries()) {
+    const [ip = '', prefix, extra] =
+      typeof entry === 'string' ? entry.split('/') : [];
     const parsed = parseAuditAddress(ip);
+    const prefixLength = prefix === undefined ? undefined : Number(prefix);
     if (
       !parsed ||
       parsed.port ||
       extra !== undefined ||
-      (prefix !== undefined && !/^\d{1,3}$/u.test(prefix))
+      (prefix !== undefined && !/^\d+$/u.test(prefix)) ||
+      (prefixLength !== undefined &&
+        prefixLength > (parsed.family === 'ipv4' ? 32 : 128))
     ) {
-      throw new Error('must contain only IP addresses or CIDR ranges.');
+      warn(
+        `Ignoring ${setting}[${index}]: expected an IP address or CIDR range.`,
+      );
+      continue;
     }
-    if (prefix === undefined) list.addAddress(parsed.address, parsed.family);
-    else list.addSubnet(parsed.address, Number(prefix), parsed.family);
+    if (prefixLength === undefined)
+      list.addAddress(parsed.address, parsed.family);
+    else list.addSubnet(parsed.address, prefixLength, parsed.family);
   }
   return list;
 }

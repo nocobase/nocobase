@@ -501,6 +501,9 @@ export class Application<
     const apiConfig = this.config.get<ApiConfig>('api');
     const auditConfig = this.config.get<AuditConfig>('audit');
     if (await this.audit.start(auditConfig, this.paths)) {
+      const logger = this.container
+        .resolveIfCreated(loggingToken)
+        ?.getLogger('audit');
       api.use(
         '*',
         auditMiddleware({
@@ -509,7 +512,14 @@ export class Application<
           forwarded: () => this.forwardedApiRoutes.routers,
           proxies: createTrustedAuditProxies(
             this.config.get('auth.advanced.ipAddress.trustedProxies'),
+            (message) => {
+              if (logger) logger.warn(message);
+              else console.warn(message);
+            },
           ),
+          ipAddressHeaders: this.config.get<readonly string[]>(
+            'auth.advanced.ipAddress.ipAddressHeaders',
+          ) ?? ['x-forwarded-for'],
           translate: ({ ns, key }, fallback, context) => {
             const runtime = this.container.resolveIfCreated(i18nToken);
             const locale =

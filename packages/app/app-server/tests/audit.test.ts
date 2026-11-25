@@ -26,7 +26,10 @@ import {
 
 async function appWithAudit(
   settings: AuditConfig = {},
-  trustedProxies?: readonly string[],
+  ipAddress?: {
+    readonly trustedProxies: readonly unknown[];
+    readonly ipAddressHeaders?: readonly string[];
+  },
 ): Promise<{
   app: Application;
   events: AuditEvent[];
@@ -38,9 +41,7 @@ async function appWithAudit(
       transports: { capture: { driver: 'memory' } },
       ...settings,
     },
-    ...(trustedProxies === undefined
-      ? {}
-      : { auth: { advanced: { ipAddress: { trustedProxies } } } }),
+    ...(ipAddress && { auth: { advanced: { ipAddress } } }),
   });
   const app = new Application({
     config,
@@ -158,52 +159,133 @@ it('masks entire sensitive fields on both snapshots and ignores forwarding witho
   }
 });
 
-it.each([
+it.each<{
+  name: string;
+  trustedProxies: readonly unknown[];
+  ipAddressHeaders?: readonly string[];
+  peer: string;
+  headers: Record<string, string>;
+  expected: string;
+  invalidEntries?: readonly number[];
+}>([
   {
     name: 'uses the nearest untrusted address along a trusted proxy chain',
     trustedProxies: ['192.0.2.0/24', '203.0.113.9'],
     peer: '192.0.2.10',
-    forwarded: '198.51.100.99, 198.51.100.42, 203.0.113.9',
+    headers: { 'x-forwarded-for': '198.51.100.99, 198.51.100.42, 203.0.113.9' },
     expected: '198.51.100.42',
   },
   {
-    name: 'ignores a forged chain from an untrusted peer',
+    name: 'uses the first configured header that resolves a client',
+    trustedProxies: ['192.0.2.0/24', '203.0.113.9'],
+    ipAddressHeaders: ['X-Real-IP', 'X-Forwarded-For'],
+    peer: '192.0.2.10',
+    headers: {
+      'x-real-ip': '198.51.100.99, 198.51.100.42, 203.0.113.9',
+      'x-forwarded-for': '198.51.100.123',
+    },
+    expected: '198.51.100.42',
+  },
+  {
+    name: 'tries the next configured header when the preferred chain is unusable',
     trustedProxies: ['192.0.2.0/24'],
+    ipAddressHeaders: ['X-Client-IP', 'X-Real-IP', 'X-Forwarded-For'],
+    peer: '192.0.2.10',
+    headers: {
+      'x-real-ip': '198.51.100.99, invalid, 192.0.2.20',
+      'x-forwarded-for': '198.51.100.42',
+    },
+    expected: '198.51.100.42',
+  },
+  {
+    name: 'ignores forged headers from an untrusted peer',
+    trustedProxies: ['192.0.2.0/24'],
+    ipAddressHeaders: ['X-Real-IP', 'X-Forwarded-For'],
     peer: '198.51.100.10',
-    forwarded: '198.51.100.99, 192.0.2.20',
+    headers: {
+      'x-real-ip': '198.51.100.123',
+      'x-forwarded-for': '198.51.100.99, 192.0.2.20',
+    },
     expected: '198.51.100.10',
   },
   {
     name: 'takes the socket peer when the trust list is empty',
     trustedProxies: [],
     peer: '192.0.2.10',
-    forwarded: '198.51.100.99',
+    headers: { 'x-forwarded-for': '198.51.100.99' },
     expected: '192.0.2.10',
   },
-])('$name', async ({ trustedProxies, peer, forwarded, expected }) => {
-  const { app, events } = await appWithAudit({}, trustedProxies);
-  app.addRoutes(
-    defineApiRoutes(() => {
-      const router = new Hono();
-      router.post('/example', describeAudit({ action: 'example' }), (context) =>
-        context.body(null, 204),
-      );
-      return router;
-    }),
-  );
-  try {
-    const response = await app.fetch(
-      request('example', {}, { 'x-forwarded-for': forwarded }),
-      {
-        incoming: { socket: { remoteAddress: peer } },
-      },
+  {
+    name: 'falls back to the peer when forwarding does not identify a client',
+    trustedProxies: ['192.0.2.0/24'],
+    ipAddressHeaders: ['X-Real-IP'],
+    peer: '192.0.2.10',
+    headers: {
+      'x-real-ip': '192.0.2.20',
+      'x-forwarded-for': '198.51.100.99',
+    },
+    expected: '192.0.2.10',
+  },
+  {
+    name: 'warns about invalid proxies while keeping valid entries',
+    trustedProxies: ['invalid', '192.0.2.0/33', '192.0.2.0/24'],
+    peer: '192.0.2.10',
+    headers: { 'x-forwarded-for': '198.51.100.42' },
+    expected: '198.51.100.42',
+    invalidEntries: [0, 1],
+  },
+  {
+    name: 'ignores forwarding when all proxy entries are invalid',
+    trustedProxies: [42, '2001:db8::/129', '192.0.2.10/'],
+    ipAddressHeaders: ['X-Real-IP'],
+    peer: '192.0.2.10',
+    headers: { 'x-real-ip': '198.51.100.99' },
+    expected: '192.0.2.10',
+    invalidEntries: [0, 1, 2],
+  },
+])(
+  '$name',
+  async ({
+    trustedProxies,
+    ipAddressHeaders,
+    peer,
+    headers,
+    expected,
+    invalidEntries = [],
+  }) => {
+    const { app, events } = await appWithAudit(
+      {},
+      { trustedProxies, ipAddressHeaders },
     );
-    expect(response.status).toBe(204);
-    expect(events).toMatchObject([{ ip: expected }]);
-  } finally {
-    await app.shutdown();
-  }
-});
+    app.addRoutes(
+      defineApiRoutes(() => {
+        const router = new Hono();
+        router.post(
+          '/example',
+          describeAudit({ action: 'example' }),
+          (context) => context.body(null, 204),
+        );
+        return router;
+      }),
+    );
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    try {
+      const response = await app.fetch(request('example', {}, headers), {
+        incoming: { socket: { remoteAddress: peer } },
+      });
+      expect(response.status).toBe(204);
+      expect(events).toMatchObject([{ ip: expected }]);
+      expect(warn.mock.calls).toEqual(
+        invalidEntries.map((index) => [
+          `Ignoring auth.advanced.ipAddress.trustedProxies[${index}]: expected an IP address or CIDR range.`,
+        ]),
+      );
+    } finally {
+      warn.mockRestore();
+      await app.shutdown();
+    }
+  },
+);
 
 it('bounds raw and serialized body snapshots while preserving the response', async () => {
   const { app, events } = await appWithAudit();
