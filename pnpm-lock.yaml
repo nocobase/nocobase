@@ -3805,6 +3805,9 @@ importers:
       eslint:
         specifier: 'catalog:'
         version: 10.8.1(jiti@2.7.0)
+      hono:
+        specifier: 'catalog:'
+        version: 4.13.2
       prettier:
         specifier: 'catalog:'
         version: 3.9.6

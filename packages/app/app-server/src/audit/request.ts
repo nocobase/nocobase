@@ -54,6 +54,8 @@ export interface AuditRouteOptions {
     result: AuditExecutionResult,
     context: Context,
   ) => AuditTarget | AuditTargets | undefined;
+  /** Select the data the target resolver needs when body snapshots are disabled. Defaults to the response. */
+  readonly resultFrom?: 'request' | 'response' | 'context';
   readonly redact?: readonly AuditRedactRule[];
   /** Set to false to omit both snapshots. A target resolver can still read bounded JSON. */
   readonly captureBody?: boolean;
@@ -90,15 +92,18 @@ interface AuditEnv {
 export function describeAudit(
   declaration: Declaration | Resolver,
 ): MiddlewareHandler {
-  const resolve: Resolver =
-    typeof declaration === 'function' ? declaration : () => captured;
-  const captured =
+  const resolve =
     typeof declaration === 'function'
-      ? undefined
-      : copyDeclaration(declaration);
+      ? declaration
+      : staticResolver(declaration);
   const middleware: MiddlewareHandler = async (_context, next) => next();
   Object.defineProperty(middleware, auditDeclaration, { value: resolve });
   return middleware;
+}
+
+function staticResolver(declaration: Declaration): Resolver {
+  const captured = copyDeclaration(declaration);
+  return () => captured;
 }
 
 /** Let a dispatcher pass its child context to the request collector. */
@@ -154,7 +159,6 @@ function routeAudit(
   );
   if (!route) return undefined;
   const spec = declaredRouteOf(context);
-  const cliAction = declaredRouteActionOf(context);
   let declaration: AuditRouteOptions | undefined;
   for (const [index, candidate] of routes.entries()) {
     if (candidate.method !== route.method || candidate.path !== route.path)
@@ -194,7 +198,7 @@ function routeAudit(
   return {
     action:
       declaration?.action ??
-      cliAction ??
+      declaredRouteActionOf(context) ??
       operationId ??
       `${context.req.method} ${route.path}`,
     resource: declaration?.resource ?? spec?.tags?.[0] ?? route.path,
@@ -339,8 +343,11 @@ export function auditMiddleware(options: {
 
     const declaration = route.options;
     const capture = declaration.captureBody !== false;
+    const resultFrom = declaration.resolveTargets
+      ? (declaration.resultFrom ?? 'response')
+      : undefined;
     const body =
-      capture || declaration.resolveTargets
+      capture || resultFrom === 'request'
         ? readAuditBody(context.req.raw)
         : undefined;
     if (declaration.resolveTargets) enableApiExecutionResult(context);
@@ -366,7 +373,7 @@ export function auditMiddleware(options: {
           const actual = forwarding.context ?? context;
           const request = failedAuthentication ? undefined : await body;
           const response =
-            success && (capture || declaration.resolveTargets)
+            success && (capture || resultFrom === 'response')
               ? await readAuditBody(context.res)
               : undefined;
           const captured =

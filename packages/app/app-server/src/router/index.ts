@@ -13,6 +13,7 @@ export * from './api-error.js';
 export * from './api-limits.js';
 export * from './health.js';
 export * from './routes.js';
+export { isApiExecutionResultObserved } from './execution-result.js';
 export * from './repository-routes.js';
 export * from './openapi/index.js';
 export * from './cli/index.js';

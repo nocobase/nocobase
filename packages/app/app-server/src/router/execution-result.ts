@@ -14,6 +14,13 @@ export function setApiExecutionResult(context: Context, result: unknown): void {
   if (slot) slot.value = result;
 }
 
+/** Whether post-handler middleware is observing this request's result. */
+export function isApiExecutionResultObserved(context: Context): boolean {
+  return (
+    (context as Context<ExecutionEnv>).get('apiExecutionResult') !== undefined
+  );
+}
+
 export function apiExecutionResultOf(context: Context): unknown {
   return (context as Context<ExecutionEnv>).get('apiExecutionResult')?.value;
 }

@@ -12,6 +12,7 @@ import {
   resolveAppRuntime,
   startApplicationInScope,
 } from '@nocobase/app-server/runtime';
+import { mutationReceiptCollection } from '@nocobase/app-server/router';
 import { createTestApp } from '@nocobase/app-testing/server';
 import { expect, it } from 'vitest';
 
@@ -132,9 +133,19 @@ it('audits forwarded settings writes and records a default-access receipt only o
           expect(replay.headers.get('Idempotency-Replayed')).toBe('true');
           expect(await replay.text()).toEqual(await first.text());
         }
+        const receipts = connection.repository(mutationReceiptCollection);
+        const before = await receipts.count();
         expect(
           (await admin.fetch(`${url}/renamed-rule`, mutation('DELETE'))).status,
         ).toBe(404);
+        expect(await receipts.count()).toBe(before);
+        expect(events.at(-1)).toMatchObject({
+          action: 'delete',
+          resource,
+          outcome: 'failure',
+          status: 404,
+          targets: [{ collection, key: 'renamed-rule' }],
+        });
       }
       expect(
         events.filter(

@@ -24,6 +24,7 @@ export function authAuditOptions(path: string): AuditRouteOptions | false {
       operationName: create ? 'Create an API key' : 'Revoke an API key',
       resource: 'apikey',
       captureBody: false,
+      resultFrom: create ? 'response' : 'request',
       target: () => ({ collection: 'apikey' }),
       resolveTargets: ({ request, response }) => ({
         collection: 'apikey',
@@ -41,6 +42,7 @@ export function authAuditOptions(path: string): AuditRouteOptions | false {
     operationName,
     resource: 'user',
     captureBody: false,
+    resultFrom: 'context',
     authenticationAttempt,
     target: () => ({ collection: 'user' }),
     resolveTargets: (_result, context) => ({

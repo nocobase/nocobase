@@ -9,6 +9,8 @@ import {
   auditServiceToken,
   type AuditEvent,
 } from '../src/audit/index.js';
+import { AuditCoordinator } from '../src/audit/service.js';
+import { I18nProvider, i18nToken } from '../src/i18n/index.js';
 import { AppConfig, createAppPaths } from '../src/config/index.js';
 import {
   defineApiRoutes,
@@ -250,4 +252,256 @@ it('matches baseline Repository responses and query operations with no audit pro
     await fixture.destroy();
     await databases.drop();
   }
+});
+
+it('honors explicit declarations before guards and uses inference only for supported routes', async () => {
+  const first = await appWithAudit({ autoDetect: true });
+  const second = await appWithAudit({ autoDetect: false });
+  const disabled = await appWithAudit({ enabled: false, autoDetect: true });
+  const resolve = vi.fn(() => undefined);
+  const declared = {
+    action: 'explicit',
+    operationName: 'A readable operation',
+  };
+  const explicit = describeAudit(declared);
+  declared.action = 'mutated';
+  const router = new Hono();
+  const child = new Hono();
+  child.post('/action/:id', explicit, (context) => context.body(null, 403));
+  child.post(
+    '/dynamic',
+    describeAudit(resolve),
+    describeRoute({ operationId: 'inferred', summary: 'Documented operation' }),
+    (context) => context.body(null, 204),
+  );
+  child.post(
+    '/opt-out',
+    describeAudit(false),
+    describeRoute({ operationId: 'excluded' }),
+    (context) => context.body(null, 204),
+  );
+  child.post(
+    '/hidden',
+    describeRoute({ operationId: 'hidden', hide: true }),
+    (context) => context.body(null, 204),
+  );
+  child.post('/unsupported', (context) => context.body(null, 204));
+  child.get('/read', describeRoute({ operationId: 'read' }), (context) =>
+    context.body(null, 204),
+  );
+  router.route('/mounted', child);
+  for (const { app } of [first, second, disabled])
+    app.addRoutes(defineApiRoutes(() => router));
+  try {
+    await Promise.all(
+      [first, second, disabled].map(async ({ app }) => {
+        for (const suffix of [
+          'action/example',
+          'dynamic',
+          'opt-out',
+          'hidden',
+          'unsupported',
+        ])
+          await app.fetch(request(`mounted/${suffix}`, {}));
+        await app.fetch(new Request('http://localhost/api/mounted/read'));
+        await app.fetch(request('mounted/missing', {}));
+      }),
+    );
+    expect(resolve).toHaveBeenCalledTimes(2);
+    expect(
+      first.events.map(({ action, operationName, outcome }) => ({
+        action,
+        operationName,
+        outcome,
+      })),
+    ).toEqual([
+      {
+        action: 'explicit',
+        operationName: 'A readable operation',
+        outcome: 'denied',
+      },
+      {
+        action: 'inferred',
+        operationName: 'Documented operation',
+        outcome: 'success',
+      },
+    ]);
+    expect(second.events.map(({ action }) => action)).toEqual(['explicit']);
+    expect(disabled.events).toEqual([]);
+  } finally {
+    await Promise.all([
+      first.app.shutdown(),
+      second.app.shutdown(),
+      disabled.app.shutdown(),
+    ]);
+  }
+});
+
+it('stores a localized label with its descriptor and preserves a readable fallback', async () => {
+  const { app, events } = await appWithAudit();
+  app.addServiceProvider(I18nProvider);
+  app.registerProviders();
+  app.container.resolve(i18nToken).registerNamespace('@example/audit', {
+    'en-US': () =>
+      Promise.resolve({ actions: { create: 'Create an audit example' } }),
+  });
+  app.addRoutes(
+    defineApiRoutes(() => {
+      const router = new Hono();
+      router.post(
+        '/create',
+        describeAudit({
+          action: 'create',
+          operationName: { ns: '@example/audit', key: 'actions.create' },
+        }),
+        (context) => context.body(null, 204),
+      );
+      router.post(
+        '/update',
+        describeAudit({
+          action: 'update',
+          operationName: { ns: '@example/audit', key: 'actions.missing' },
+        }),
+        describeRoute({ summary: 'Update an audit example' }),
+        (context) => context.body(null, 204),
+      );
+      router.post('/delete', describeAudit({ action: 'delete' }), (context) =>
+        context.body(null, 204),
+      );
+      return router;
+    }),
+  );
+  try {
+    for (const action of ['create', 'update', 'delete'])
+      await app.fetch(request(action, {}));
+    expect(
+      events.map(({ operationName, operationNameI18n }) => ({
+        operationName,
+        operationNameI18n,
+      })),
+    ).toEqual([
+      {
+        operationName: 'Create an audit example',
+        operationNameI18n: { ns: '@example/audit', key: 'actions.create' },
+      },
+      {
+        operationName: 'Update an audit example',
+        operationNameI18n: { ns: '@example/audit', key: 'actions.missing' },
+      },
+      { operationName: 'delete', operationNameI18n: undefined },
+    ]);
+  } finally {
+    await app.shutdown();
+  }
+});
+
+it('delivers in parallel, isolates mutation and failures, and closes every instance', async () => {
+  const coordinator = new AuditCoordinator(vi.fn());
+  const blocked = Promise.withResolvers<void>();
+  const observed = Promise.withResolvers<AuditEvent>();
+  const close = vi.fn();
+  coordinator.registerDriver({
+    name: 'test',
+    createTransport: (_options, { name }) => ({
+      close,
+      write: async (event) => {
+        if (name === 'slow') {
+          (event.request as { data: string }).data = 'changed';
+          await blocked.promise;
+          throw new Error('write failure');
+        }
+        observed.resolve(event);
+      },
+    }),
+  });
+  await coordinator.start(
+    {
+      enabled: true,
+      transports: { slow: { driver: 'test' }, parallel: { driver: 'test' } },
+    },
+    createAppPaths({ rootDir: '/test/audit' }),
+  );
+  const writing = coordinator.record({
+    requestId: 'example',
+    action: 'save',
+    resource: 'settings',
+    operationName: 'Save settings',
+    actor: { type: 'anonymous' },
+    roles: [],
+    targets: [],
+    status: 200,
+    outcome: 'success',
+    durationMs: 1,
+    occurredAt: '2026-01-01T00:00:00.000Z',
+    request: { data: 'original' },
+  });
+  try {
+    await expect(observed.promise).resolves.toMatchObject({
+      request: { data: 'original' },
+    });
+    blocked.resolve();
+    await writing;
+  } finally {
+    blocked.resolve();
+    await coordinator.close();
+  }
+  expect(close).toHaveBeenCalledTimes(2);
+});
+
+it('refuses unknown active destinations and aborts timed-out writes', async () => {
+  const report = vi.fn();
+  const coordinator = new AuditCoordinator(report);
+  const paths = createAppPaths({ rootDir: '/test/audit' });
+  await expect(
+    coordinator.start(
+      {
+        enabled: true,
+        transports: { history: { driver: 'unknown' } },
+      },
+      paths,
+    ),
+  ).rejects.toThrow('unregistered driver');
+  await coordinator.close();
+
+  const bounded = new AuditCoordinator(report);
+  const abort = vi.fn();
+  bounded.registerDriver({
+    name: 'blocked',
+    createTransport: () => ({
+      write: (_event, { signal }) =>
+        new Promise<void>((resolve) => {
+          signal.addEventListener(
+            'abort',
+            () => {
+              abort();
+              resolve();
+            },
+            { once: true },
+          );
+        }),
+    }),
+  });
+  await bounded.start(
+    { enabled: true, transports: { slow: { driver: 'blocked' } } },
+    paths,
+  );
+  await bounded.record({
+    requestId: 'example',
+    action: 'save',
+    resource: 'settings',
+    operationName: 'Save settings',
+    actor: { type: 'anonymous' },
+    roles: [],
+    targets: [],
+    status: 200,
+    outcome: 'success',
+    durationMs: 1,
+    occurredAt: '2026-01-01T00:00:00.000Z',
+  });
+  expect(abort).toHaveBeenCalledOnce();
+  expect(report).toHaveBeenCalledWith(
+    'Audit destination write timed out.',
+    'slow',
+  );
+  await bounded.close();
 });

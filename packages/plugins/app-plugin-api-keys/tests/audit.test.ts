@@ -337,6 +337,20 @@ it('attributes native audit events without retaining credentials or duplicating 
     targets: [{ collection: 'apikey', key: key.id }],
     response: undefined,
   });
+  const competingCredentials = await request(
+    'POST',
+    '/api/auditRun',
+    {},
+    {
+      cookie,
+      'x-test-run': 'valid-test-run',
+      'x-test-api-key': secret,
+    },
+  );
+  expect(competingCredentials.status).toBe(200);
+  expect(events.at(-1)).toMatchObject({
+    actor: { type: 'agentRun', userId: user.id, runId: 'run-1' },
+  });
   const id = 'audit-order';
   const repositoryActor = { type: 'apiKey', userId: user.id, apiKeyId: key.id };
   const headers = {

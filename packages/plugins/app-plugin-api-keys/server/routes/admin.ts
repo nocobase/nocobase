@@ -387,8 +387,16 @@ export function installSystemKeys(
         data: await systemKeys.get(context.req.valid('param').identityId),
       }),
   );
+  const systemKeyAudit = describeAudit({
+    resource: 'apikey',
+    target: (context) => ({
+      collection: 'apiKeySystemKeys',
+      key: context.req.param('identityId'),
+    }),
+  });
   routes.patch(
     '/:identityId',
+    systemKeyAudit,
     access('manage'),
     describeRoute({
       ...offCommandLine,
@@ -415,6 +423,7 @@ export function installSystemKeys(
   );
   routes.put(
     '/:identityId/permissions',
+    systemKeyAudit,
     access('manage'),
     describeRoute({
       ...offCommandLine,
@@ -441,6 +450,26 @@ export function installSystemKeys(
   );
   routes.post(
     '/:identityId/rotate',
+    describeAudit({
+      resource: 'apikey',
+      captureBody: false,
+      target: (context) => ({
+        collection: 'apiKeySystemKeys',
+        key: context.req.param('identityId'),
+      }),
+      resolveTargets: ({ response }, context) => ({
+        source: {
+          collection: 'apiKeySystemKeys',
+          key: context.req.param('identityId'),
+        },
+        targets: [
+          {
+            collection: 'apikey',
+            key: auditRecordKey(response, 'data', 'key', 'id'),
+          },
+        ],
+      }),
+    }),
     access('manage'),
     describeRoute({
       ...offCommandLine,
@@ -471,6 +500,7 @@ export function installSystemKeys(
   ] as const)
     routes.post(
       `/:identityId/${path}`,
+      systemKeyAudit,
       access('manage'),
       describeRoute({
         ...offCommandLine,
@@ -500,13 +530,7 @@ export function installSystemKeys(
     );
   routes.delete(
     '/:identityId',
-    describeAudit({
-      resource: 'apikey',
-      target: (context) => ({
-        collection: 'apiKeySystemKeys',
-        key: context.req.param('identityId'),
-      }),
-    }),
+    systemKeyAudit,
     access('manage'),
     describeRoute({
       ...offCommandLine,

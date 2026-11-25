@@ -52,9 +52,10 @@ const trustedSessionPlugin = {
         body: z.object({ userId: z.string().min(1) }),
       },
       async (context) => {
-        const user = await context.context.internalAdapter.findUserById(
-          context.body.userId,
-        );
+        const user: unknown =
+          await context.context.internalAdapter.findUserById(
+            context.body.userId,
+          );
         if (!user || Reflect.get(user, 'deletedAt') != null)
           throw APIError.from('NOT_FOUND', {
             code: 'USER_NOT_FOUND',
@@ -579,7 +580,7 @@ export class Auth {
         this.auth.handler(request),
       );
     } finally {
-      this.httpObservers.delete(request);
+      if (options.onIdentity) this.httpObservers.delete(request);
     }
   }
 

@@ -11,6 +11,7 @@ import {
   defineApiRoutes,
   describeRoute,
   getClientAddress,
+  isApiExecutionResultObserved,
   type AppApiRouteContribution,
 } from '@nocobase/app-server/router';
 import { Hono, type Context } from 'hono';
@@ -50,14 +51,15 @@ export const apiRoutes: AppApiRouteContribution<
     // A catch-all handing every request to Better Auth; its endpoints are documented one by one from Better Auth's own
     // generator, through the fragment the provider adds.
     describeRoute({ hide: true }),
-    (context) =>
+    (context: Context<AuthEnv>) =>
       auth.handler(context.req.raw, {
         clientAddress: getClientAddress(context),
-        onIdentity: ({ userId, session }) => {
-          const authContext = context as Context<AuthEnv>;
-          if (session) authContext.set('auth', session);
-          authContext.set('authHttpIdentity', { userId });
-        },
+        onIdentity: isApiExecutionResultObserved(context)
+          ? ({ userId, session }) => {
+              if (session) context.set('auth', session);
+              context.set('authHttpIdentity', { userId });
+            }
+          : undefined,
       }),
   );
   router.get(

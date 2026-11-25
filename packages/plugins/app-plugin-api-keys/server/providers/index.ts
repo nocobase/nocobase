@@ -185,17 +185,11 @@ export class ApiKeysProvider extends ServiceProvider<AppPluginApplication> {
     }
     const keys = container.resolve(scopedApiKeysToken);
     const auth = container.resolve(authenticationToken);
-    const keyPlugin = this.app.config
-      .get<AuthConfig>('auth')
-      ?.plugins?.find(
-        (plugin): plugin is ApiKeysPlugin =>
-          plugin.id === 'api-key' &&
-          typeof plugin.options === 'object' &&
-          plugin.options !== null &&
-          Array.isArray(Reflect.get(plugin.options, 'configurations')),
-      );
-    const keyHeaders = keyPlugin ? requestApiKeyHeaders(keyPlugin) : undefined;
-    if (container.has(auditServiceToken))
+    if (container.has(auditServiceToken)) {
+      const keyPlugin = auth.plugin<ApiKeysPlugin>('api-key');
+      const keyHeaders = keyPlugin?.options?.configurations
+        ? requestApiKeyHeaders(keyPlugin)
+        : undefined;
       container.resolve(auditServiceToken).registerActorResolver((context) => {
         const session = (context as Context<AuthEnv>).get('auth');
         return session &&
@@ -207,7 +201,7 @@ export class ApiKeysProvider extends ServiceProvider<AppPluginApplication> {
             }
           : undefined;
       });
-
+    }
     this.releases.push(await connectOwnKeyPolicy(auth, keys));
     this.releases.push(
       auth.addScopedCredentialCheck(
