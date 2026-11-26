@@ -1,3 +1,8 @@
+import type { DatabaseWrite } from '../../../database/connection.js';
+import {
+  physicalWriteTable,
+  type DatabaseWriteCheckBinding,
+} from '../../../database/internal/write-checks.js';
 import {
   prepareResultRowMapper,
   type ResultMap,
@@ -78,6 +83,8 @@ export class KnexQueryAdapter implements QueryAdapter {
     private readonly naming: NamingStrategy,
     private readonly lookup: CollectionLookup | undefined = undefined,
     readonly runtime: DatabaseDriverRuntime | undefined = undefined,
+    private readonly writeChecks:
+      DatabaseWriteCheckBinding | undefined = undefined,
   ) {}
 
   selectFrom<TRecord extends Row = Row>(
@@ -99,6 +106,7 @@ export class KnexQueryAdapter implements QueryAdapter {
       table,
       undefined,
       this.lookup,
+      this.writeChecks,
     );
   }
 
@@ -110,6 +118,7 @@ export class KnexQueryAdapter implements QueryAdapter {
       undefined,
       emptyMutationState(),
       this.lookup,
+      this.writeChecks,
     );
   }
 
@@ -120,6 +129,7 @@ export class KnexQueryAdapter implements QueryAdapter {
       table,
       emptyMutationState(),
       this.lookup,
+      this.writeChecks,
     );
   }
 }
@@ -709,6 +719,26 @@ class KnexSelectQuery<
   }
 }
 
+function executeQueryWrite<T>(
+  checks: DatabaseWriteCheckBinding | undefined,
+  operation: DatabaseWrite['operation'],
+  tableExpression: string,
+  naming: NamingStrategy,
+  getClient: () => Knex,
+  query: PromiseLike<T>,
+): PromiseLike<T> {
+  if (!checks || checks.registry.empty) return query;
+  const table = physicalWriteTable(
+    mapTableSourceExpression(tableExpression, naming),
+  );
+  return checks.registry
+    .run(
+      { connection: checks.connectionName, table, operation, source: 'query' },
+      checks.connectionFor(getClient()),
+    )
+    .then(() => query);
+}
+
 class KnexInsertQuery<
   TRecord extends Row = Row,
 > implements InsertQuery<TRecord> {
@@ -718,6 +748,7 @@ class KnexInsertQuery<
     private readonly tableName: string,
     private readonly data?: TRecord | readonly TRecord[],
     private readonly lookup?: CollectionLookup,
+    private readonly writeChecks?: DatabaseWriteCheckBinding,
   ) {}
 
   values(data: TRecord | readonly TRecord[]): InsertQuery<TRecord> {
@@ -727,6 +758,7 @@ class KnexInsertQuery<
       this.tableName,
       data,
       this.lookup,
+      this.writeChecks,
     );
   }
 
@@ -743,10 +775,26 @@ class KnexInsertQuery<
         collection,
       );
     if (fallback) {
-      for (const item of data) await this.buildQuery(item, fields);
+      for (const item of data) {
+        await executeQueryWrite(
+          this.writeChecks,
+          'insert',
+          this.tableName,
+          this.naming,
+          this.getClient,
+          this.buildQuery(item, fields),
+        );
+      }
       return { insertedCount: data.length };
     }
-    const result = await this.buildQuery(data, fields);
+    const result = await executeQueryWrite(
+      this.writeChecks,
+      'insert',
+      this.tableName,
+      this.naming,
+      this.getClient,
+      this.buildQuery(data, fields),
+    );
     return normalizeInsertResult(result, data);
   }
 
@@ -785,6 +833,7 @@ class KnexUpdateQuery<
     private readonly data?: Partial<TRecord>,
     private readonly state: MutationState = emptyMutationState(),
     private readonly lookup?: CollectionLookup,
+    private readonly writeChecks?: DatabaseWriteCheckBinding,
   ) {}
 
   set(data: Partial<TRecord>): UpdateQuery<TRecord> {
@@ -795,6 +844,7 @@ class KnexUpdateQuery<
       data,
       this.state,
       this.lookup,
+      this.writeChecks,
     );
   }
 
@@ -845,9 +895,17 @@ class KnexUpdateQuery<
 
   async execute(): Promise<UpdateResult> {
     const collection = await mutationCollection(this.lookup, this.tableName);
-    const result = await this.buildQuery(
+    const query = this.buildQuery(
       writeFieldsOf(collection?.definition),
       collection?.scope,
+    );
+    const result = await executeQueryWrite(
+      this.writeChecks,
+      'update',
+      this.tableName,
+      this.naming,
+      this.getClient,
+      query,
     );
     return normalizeUpdateResult(result);
   }
@@ -871,6 +929,7 @@ class KnexUpdateQuery<
         allowAllRows: patch.allowAllRows ?? this.state.allowAllRows,
       },
       this.lookup,
+      this.writeChecks,
     );
   }
 
@@ -925,6 +984,7 @@ class KnexDeleteQuery<
     private readonly tableName: string,
     private readonly state: MutationState = emptyMutationState(),
     private readonly lookup?: CollectionLookup,
+    private readonly writeChecks?: DatabaseWriteCheckBinding,
   ) {}
 
   where(
@@ -974,7 +1034,15 @@ class KnexDeleteQuery<
 
   async execute(): Promise<DeleteResult> {
     const collection = await mutationCollection(this.lookup, this.tableName);
-    const result = await this.buildQuery(collection?.scope);
+    const query = this.buildQuery(collection?.scope);
+    const result = await executeQueryWrite(
+      this.writeChecks,
+      'delete',
+      this.tableName,
+      this.naming,
+      this.getClient,
+      query,
+    );
     return normalizeDeleteResult(result);
   }
 
@@ -996,6 +1064,7 @@ class KnexDeleteQuery<
         allowAllRows: patch.allowAllRows ?? this.state.allowAllRows,
       },
       this.lookup,
+      this.writeChecks,
     );
   }
 

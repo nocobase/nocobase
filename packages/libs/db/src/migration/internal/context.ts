@@ -5,9 +5,8 @@ import {
   type DatabaseTaskConfig,
 } from '../../task-config.js';
 import type { DatabaseConnection } from '../../database/connection.js';
-import type { Repository, RepositoryRecord } from '../../repository/types.js';
 import type { MigrationContext, MigrationConnection } from '../types.js';
-import { unobservedRepository } from '../../repository/internal/events/unobserved.js';
+import { databaseTaskData } from '../../database/internal/task-data.js';
 import { TASK_LOCK_SCOPE } from './lock.js';
 
 export function createMigrationContext(
@@ -19,7 +18,7 @@ export function createMigrationContext(
     config,
     container,
     builder: connection.builder,
-    query: connection.query,
+    query: createTaskQuery(connection),
     repository: createTaskRepositoryAccessor(connection),
     connection: createMigrationConnection(connection),
   };
@@ -39,16 +38,16 @@ export function createMigrationContext(
 export function createTaskRepositoryAccessor(
   connection: DatabaseConnection,
 ): MigrationContext['repository'] {
-  return function repository<
-    TRecord extends object = RepositoryRecord,
-    TCreate extends object = Partial<TRecord>,
-    TUpdate extends object = Partial<TRecord>,
-  >(collectionName: string): Repository<TRecord, TCreate, TUpdate> {
-    return unobservedRepository<TRecord, TCreate, TUpdate>(
-      connection,
-      collectionName,
-    );
-  };
+  const task = databaseTaskData.get(connection);
+  return task
+    ? task.repository.bind(task)
+    : connection.repository.bind(connection);
+}
+
+export function createTaskQuery(
+  connection: DatabaseConnection,
+): MigrationContext['query'] {
+  return databaseTaskData.get(connection)?.query() ?? connection.query;
 }
 
 export function createMigrationConnection(

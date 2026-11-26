@@ -3,7 +3,12 @@ import { setTimeout as delay } from 'node:timers/promises';
 import type { Knex } from 'knex';
 
 import type { Row } from '../query/types.js';
-import type { DatabaseConnection } from './connection.js';
+import type { DatabaseConnection, DatabaseWrite } from './connection.js';
+import {
+  DatabaseWriteCheckRejection,
+  physicalWriteTable,
+  writeChecksByConnection,
+} from './internal/write-checks.js';
 import { isUniqueConstraintViolation } from './unique-constraint.js';
 
 export interface UpsertPhysicalRowOptions {
@@ -37,6 +42,27 @@ export async function upsertPhysicalRow(
   if (keys.some((key) => key in options.create || key in options.update)) {
     throw new Error('Physical row upsert values must not replace key columns.');
   }
+  const checks = writeChecksByConnection.get(connection);
+  const checkWrite = (
+    client: Knex.Transaction,
+    operation: DatabaseWrite['operation'],
+  ): Promise<void> | undefined => {
+    if (!checks || checks.registry.empty) return undefined;
+    const table = physicalWriteTable(options.table);
+    return checks.registry
+      .run(
+        {
+          connection: checks.connectionName,
+          table,
+          operation,
+          source: 'query',
+        },
+        checks.connectionFor(client),
+      )
+      .catch((error: unknown) => {
+        throw new DatabaseWriteCheckRejection(error);
+      });
+  };
   const execute = async (transaction: Knex.Transaction): Promise<void> => {
     const lock = () =>
       transaction(options.table).where(options.key).select(keys).forUpdate();
@@ -45,6 +71,8 @@ export async function upsertPhysicalRow(
         // A savepoint keeps databases such as PostgreSQL usable after a
         // concurrent insert wins the unique key race.
         await transaction.transaction(async (savepoint) => {
+          const approval = checkWrite(savepoint, 'insert');
+          if (approval) await approval;
           await savepoint(options.table).insert({
             ...options.create,
             ...options.key,
@@ -61,6 +89,8 @@ export async function upsertPhysicalRow(
       }
     }
     if (Object.keys(options.update).length > 0) {
+      const approval = checkWrite(transaction, 'update');
+      if (approval) await approval;
       await transaction(options.table)
         .where(options.key)
         .update(options.update);
@@ -68,13 +98,19 @@ export async function upsertPhysicalRow(
   };
   const client = await connection.client<Knex>();
   if (client.isTransaction) {
-    await execute(client as Knex.Transaction);
+    try {
+      await execute(client as Knex.Transaction);
+    } catch (error) {
+      if (error instanceof DatabaseWriteCheckRejection) throw error.error;
+      throw error;
+    }
   } else {
     for (let attempt = 0; ; attempt++) {
       try {
         await client.transaction(execute);
         return;
       } catch (error) {
+        if (error instanceof DatabaseWriteCheckRejection) throw error.error;
         // A deadlock can roll back the entire transaction, not just its
         // savepoint. Restart only a transaction owned by this operation.
         if (attempt >= 5 || !isDeadlock(error)) throw error;

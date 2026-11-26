@@ -35,6 +35,6 @@ Query chains are immutable. Derive queries from an existing chain or use the `cl
 
 Execution can inspect resolved numeric field metadata for precision handling. This differs from applying Collection-level naming overrides or Repository policies. Output type arguments such as `execute<MyRow>()` are caller assertions; they do not validate a selected row's shape. The default query result is a general `Row`, and selecting fields does not provide Repository-style projection inference.
 
-Query does not enforce Repository policies, perform relation-aware mutation planning or emit Repository events. Obtain the Query handle from a transaction connection when it must participate in that transaction. See [query signatures](./signatures/query.md), [Transactions](./transactions.md) and [Events](./events.md).
+Query does not enforce Repository policies, perform relation-aware mutation planning or emit Repository events. Obtain the Query handle from a transaction connection when it must participate in that transaction. Execution runs any registered [connection-wide write checks](./permissions.md#connection-wide-write-checks). See [query signatures](./signatures/query.md), [Transactions](./transactions.md) and [Events](./events.md).
 
 [Contents](./README.md) · [Previous: Collection and Schema](./collection-and-schema.md) · [Next: Repository](./repository.md)

@@ -6,18 +6,19 @@ A DatabaseConnection exposes the handles and lifecycle for one configured connec
 
 ## Handles and lifecycle
 
-On a [DatabaseConnection](./signatures/connection.md#databaseconnection), `builder`, `query`, `collections`, `collectionMetadata`, `schemaInspector` and `schema` are **properties**, while `repository()` is a method. Identity/capability properties are `name`, `driver`, `dialect`, `schemaManagement`, `capabilities` and `runtime`. It also exposes `restrict()`, `withPolicies()`, transaction callbacks and mutation subscriptions.
+On a [DatabaseConnection](./signatures/connection.md#databaseconnection), `builder`, `query`, `collections`, `collectionMetadata`, `schemaInspector` and `schema` are **properties**, while `repository()` is a method. Identity/capability properties are `name`, `driver`, `dialect`, `schemaManagement`, `capabilities` and `runtime`. It also exposes `restrict()`, `withPolicies()`, transaction callbacks, write checks and mutation subscriptions.
 
 Connection lifecycle methods are `connect()`, `disconnect()`, `reconnect()` and `resetManagedSchema()`. The last operation destructively clears managed objects. `client<T>()` exposes the underlying adapter client. `schema` exposes low-level schema-adapter operations; application schema work normally uses `builder` in migrations. A connection configured with `schemaManagement: 'external'` restricts schema management and requires an explicit metadata store.
 
-| Handle                                                            | Detailed chapter                                    |
-| ----------------------------------------------------------------- | --------------------------------------------------- |
-| `builder`, `collections`, `collectionMetadata`, `schemaInspector` | [Collection and Schema](./collection-and-schema.md) |
-| `query`                                                           | [Query](./query.md)                                 |
-| `repository()`                                                    | [Repository](./repository.md)                       |
-| `restrict()`, `withPolicies()`                                    | [Permissions](./permissions.md)                     |
-| `transaction()`, `afterCommit()`, `afterRollback()`               | [Transactions](./transactions.md)                   |
-| `onRepositoryMutation()`, `explainRepositoryEvents()`             | [Events](./events.md)                               |
+| Handle                                                            | Detailed chapter                                                              |
+| ----------------------------------------------------------------- | ----------------------------------------------------------------------------- |
+| `builder`, `collections`, `collectionMetadata`, `schemaInspector` | [Collection and Schema](./collection-and-schema.md)                           |
+| `query`                                                           | [Query](./query.md)                                                           |
+| `repository()`                                                    | [Repository](./repository.md)                                                 |
+| `restrict()`, `withPolicies()`                                    | [Permissions](./permissions.md)                                               |
+| `transaction()`, `afterCommit()`, `afterRollback()`               | [Transactions](./transactions.md)                                             |
+| `addWriteCheck()`                                                 | [Connection-wide write checks](./permissions.md#connection-wide-write-checks) |
+| `onRepositoryMutation()`, `explainRepositoryEvents()`             | [Events](./events.md)                                                         |
 
 ## Configuration, naming and schema management
 

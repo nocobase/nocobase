@@ -336,6 +336,12 @@ A bulk `updateMany` or `deleteMany` observed by a subscription that wants keys l
 
 Events cover Repository writes only: not `query`, `client()`, `upsertPhysicalRow()`, database cascades, or anything a migration or seed writes. They are delivered in the writing process only and lost if it crashes before delivery, so durable consumers write an outbox row in `inTransaction` instead.
 
+### Check runtime writes before execution
+
+Register `db.connection().addWriteCheck((write, connection) => …)` in each writing process when the application must deny writes across a connection, including background jobs and tables created after startup. Throw to deny. Match `write.table` against the physical table name and use the supplied connection to read state inside the active transaction. Repository writes include the logical `write.collection` and check the actual target of relation and through-table writes. QueryAdapter and `upsertPhysicalRow()` use `write.source === 'query'`. Call the returned function to remove the check.
+
+The hook covers runtime row writes, including bulk statements. Migration and seed handles, schema and metadata management, native SQL through `client()`, and database-side triggers and cascades are outside its scope.
+
 ## 6. Collections
 
 A Collection is what the database resolves to once physical schema and metadata are combined. There are two ways to reach it, and they answer different questions.

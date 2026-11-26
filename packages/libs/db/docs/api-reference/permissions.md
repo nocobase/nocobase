@@ -41,6 +41,24 @@ Mutation options can carry a server-side `writePolicy` independently of a bound 
 
 `buildWritePolicy()` and `buildUpsertWritePolicy()` build these inputs. `writePolicyProblems()` checks a policy against Collection metadata and returns structured problems; it does not execute a write or grant permissions. See [write-policy signatures](./signatures/policies.md#buildwritepolicy), [metadata validation signatures](./signatures/values.md#writepolicyproblems) and [write-policy examples](../zh-CN/repository/write-policy.md).
 
+## Connection-wide write checks
+
+Register `connection.addWriteCheck(check)` when an application needs to deny runtime writes across a connection, including writes from background jobs and to tables created after startup. Register in every process and on each named connection that performs the protected writes. The callback can use application state or read through the supplied connection, which is bound to the active transaction or savepoint when the statement runs inside one.
+
+```ts
+const remove = db.connection().addWriteCheck(async (write, connection) => {
+  if (isProtectedTable(write.table) && (await isReadOnly(connection))) {
+    throw new Error('This table is read-only');
+  }
+});
+```
+
+Checks run in registration order immediately before each covered statement. Throw or reject to prevent the statement and surface that error to the caller. A bulk statement is checked once, while operations that issue several statements are checked before each one. If a multi-statement operation fails in a caller-owned transaction, let its error escape the transaction callback or use a savepoint to roll back earlier statements. Keep checks read-only and call the returned `remove` function when the registration should end.
+
+`DatabaseWrite` identifies the connection, physical table without a schema or alias, and operation (`insert`, `update` or `delete`). Repository writes also identify the logical Collection, including the relation target or through Collection when that table is written. QueryAdapter writes and `upsertPhysicalRow()` use the `query` source. Checks follow the root connection into transactions, policy bindings, restricted repositories and mutation listener handles. `compile()` and read APIs do not invoke them.
+
+Migration and seed context handles, schema and metadata management, native client access such as `connection.client()` and raw SQL, and database-side trigger or cascade effects are outside this runtime hook. Use database permissions or database-side enforcement when those paths also need protection. See the [write check signatures](./signatures/connection.md#databasewritecheck).
+
 ## Transactions and event boundaries
 
 A restricted database transaction retains the same policy bindings. See [Transactions](./transactions.md) for propagation and callbacks. A restricted database has no mutation subscription API; subscriptions belong to the full connection and are covered in [Events](./events.md).

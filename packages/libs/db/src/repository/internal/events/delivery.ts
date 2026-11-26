@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import type { Knex } from 'knex';
 import type { DatabaseConnection } from '../../../database/connection.js';
+import type { DatabaseWriteCheckBinding } from '../../../database/internal/write-checks.js';
 import type { TransactionCallbacks } from '../../../database/internal/transaction-callbacks.js';
 import { RepositoryError } from '../../errors.js';
 import type {
@@ -45,6 +46,7 @@ export interface RepositoryEventsBinding {
     execute: (
       binding: RepositoryEventsBinding,
       client: Knex.Transaction,
+      writeChecks: DatabaseWriteCheckBinding,
     ) => Promise<T>,
   ): Promise<T>;
   /** The connection an `inTransaction` listener of `parent` receives. */

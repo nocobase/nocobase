@@ -164,10 +164,15 @@ describeIntegrationDatabases(
     });
 
     it.each([true, false])(
-      'emits nothing for migration and seed writes with transaction=%s',
+      'keeps migration and seed data access independent of runtime hooks with transaction=%s',
       async (transaction) => {
         await createEventsFixture(context);
         const seen = collectEvents();
+        const denied = new Error('Runtime writes are disabled');
+        const check = context.connection.addWriteCheck(() => {
+          throw denied;
+        });
+        subscriptions.push(check);
         subscriptions.push(
           context.connection.onRepositoryMutation(
             { collections: ['notes', 'tasks'] },
@@ -185,8 +190,9 @@ export default defineMigration({
   name: '${migration}',
   transaction: ${transaction},
   irreversible: true,
-  async up({ repository }) {
+  async up({ repository, query }) {
     await repository('notes').createOne({ values: { body: 'migrated' } });
+    await query.insertInto('notes').values({ body: 'migrated with query' }).execute();
     await repository('tasks').updateMany({ all: true, values: { status: 'migrated' } });
   },
 });
@@ -198,8 +204,9 @@ export default defineMigration({
 export default defineSeed({
   name: '${seed}',
   transaction: ${transaction},
-  async run({ repository }) {
+  async run({ repository, query }) {
     await repository('notes').createMany({ values: [{ body: 'seeded' }] });
+    await query.insertInto('notes').values({ body: 'seeded with query' }).execute();
     await repository('tasks').deleteMany({ filter: { projectId: 'project-other' } });
   },
 });
@@ -225,7 +232,7 @@ export default defineSeed({
           })
           .run();
 
-        expect(await context.connection.repository('notes').count()).toBe(4);
+        expect(await context.connection.repository('notes').count()).toBe(6);
         expect(
           await context.connection
             .repository('tasks')
@@ -234,6 +241,12 @@ export default defineSeed({
         expect(seen.inTransaction).toEqual([]);
         expect(seen.batches).toEqual([]);
 
+        await expect(
+          context.connection
+            .repository('notes')
+            .createOne({ values: { body: 'denied' } }),
+        ).rejects.toBe(denied);
+        check();
         // The same connection still reports ordinary writes.
         await context.connection
           .repository('notes')

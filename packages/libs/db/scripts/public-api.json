@@ -157,6 +157,8 @@
         "DatabaseSchemaRuntimeStrategy",
         "DatabaseSeederOptions",
         "DatabaseTaskConfig",
+        "DatabaseWrite",
+        "DatabaseWriteCheck",
         "DateFilterOperators",
         "DecodedPhysicalCollectionCursor",
         "DeleteManyOptions",

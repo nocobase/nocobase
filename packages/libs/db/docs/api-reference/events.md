@@ -8,6 +8,8 @@ Repository mutation events observe writes performed through application Reposito
 
 `onRepositoryMutation(options, listeners)` returns an unsubscribe function. Listeners are `inTransaction` and `afterCommit`; use `explainRepositoryEvents()` to inspect matching subscriptions and execution strategy. Events carry operation identities, row changes or counts, metadata and ancestry. Listener connections retain the event parent and recursion limit. Subscriptions belong to the root connection, even when registered through a transaction. Delivery is local to the process performing the Repository write. Raw SQL, QueryAdapter writes, migration/seed task writes and database-side effects such as cascading deletes do not produce these events. Full [event contracts](./signatures/events.md) include phases, strategies, options and error contexts.
 
+To reject runtime writes before they execute across both Repository and QueryAdapter, register a [connection-wide write check](./permissions.md#connection-wide-write-checks).
+
 ## Listener phases and errors
 
 `inTransaction` listeners execute within the write's transaction; listener failure can reject the write. `afterCommit` listeners execute after the write commits; their failure does not undo the committed write. Configure `onRepositoryEventError` to receive after-commit listener failures; otherwise the connection reports a `REPOSITORY_EVENT_LISTENER_FAILED` process warning.

@@ -17,6 +17,23 @@ import type { DatabaseDriverRuntime } from './runtime.js';
 import type { RestrictedDatabase } from './restricted-database.js';
 import type { DatabasePolicyMap } from './policy-map.js';
 
+/** The target of a Repository or low-level write statement. */
+export interface DatabaseWrite {
+  readonly connection: string;
+  /** Physical table name without a schema qualifier or alias. */
+  readonly table: string;
+  /** Logical Collection name for a Repository write. */
+  readonly collection?: string;
+  readonly operation: 'insert' | 'update' | 'delete';
+  readonly source: 'repository' | 'query';
+}
+
+/** Reject a write by throwing or rejecting before the statement is executed. */
+export type DatabaseWriteCheck = (
+  write: DatabaseWrite,
+  connection: DatabaseConnection,
+) => void | Promise<void>;
+
 export interface DatabaseConnection {
   name: string;
   driver: DatabaseDriver;
@@ -102,6 +119,14 @@ export interface DatabaseConnection {
    * enclosing transaction rolls back. Ignored outside a transaction.
    */
   afterRollback(callback: (error: unknown) => void | Promise<void>): void;
+
+  /**
+   * Check writes to all current and future tables on this connection.
+   * Checks are shared by the root and its derived connections in this process.
+   * The callback receives the connection executing the statement, including its
+   * transaction when present. Returns a function that removes this check.
+   */
+  addWriteCheck(check: DatabaseWriteCheck): () => void;
 
   /**
    * Observe the rows Repository writes change: every write method, nested

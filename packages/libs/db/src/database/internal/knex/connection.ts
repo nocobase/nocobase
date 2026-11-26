@@ -39,7 +39,6 @@ import type {
 } from '../../../repository/internal/events/delivery.js';
 import { RepositoryMutationRegistry } from '../../../repository/internal/events/registry.js';
 import { explainStrategy } from '../../../repository/internal/events/strategy.js';
-import { registerUnobservedRepositories } from '../../../repository/internal/events/unobserved.js';
 import type { NormalizedRepositoryPolicy } from '../../../repository/policy/types.js';
 import { KnexSchemaAdapter } from '../../../schema/internal/knex/adapter.js';
 import type {
@@ -63,6 +62,7 @@ import type {
 } from '../../config.js';
 import type {
   DatabaseConnection,
+  DatabaseWriteCheck,
   ScopedDatabaseConnection,
 } from '../../connection.js';
 import { SchemaManagementSchemaAdapter } from '../../schema-management.js';
@@ -73,6 +73,12 @@ import {
   type AfterRollbackCallback,
   type TransactionCallbackPhase,
 } from '../transaction-callbacks.js';
+import { databaseTaskData } from '../task-data.js';
+import {
+  DatabaseWriteCheckRegistry,
+  writeChecksByConnection,
+  type DatabaseWriteCheckBinding,
+} from '../write-checks.js';
 import { createKnexClient } from './client.js';
 import {
   resolveKnexConnectionConfig,
@@ -86,8 +92,8 @@ const defaultRepositoryEventMaxDepth = 8;
 export interface RepositoryEventScope {
   /** The event whose `inTransaction` listener is making this write. */
   readonly parent?: RepositoryOperationParent;
-  /** False for a migration or seed task's Repository: nothing is recorded or delivered. */
-  readonly observed?: boolean;
+  /** True for task writes, which have their own authorization and lifecycle. */
+  readonly task?: boolean;
 }
 
 export class KnexDatabaseConnection implements DatabaseConnection {
@@ -106,6 +112,8 @@ export class KnexDatabaseConnection implements DatabaseConnection {
   private knexInstance?: Knex;
   private readonly config: KnexConnectionConfig;
   private readonly metadataStore: CollectionMetadataStore;
+  private readonly writeChecks: DatabaseWriteCheckBinding;
+  private writeConnections?: WeakMap<Knex, KnexDatabaseConnection>;
 
   constructor(
     readonly name: string,
@@ -134,9 +142,13 @@ export class KnexDatabaseConnection implements DatabaseConnection {
       );
     }
     this.knexInstance = knexInstance;
-    registerUnobservedRepositories(this, (collection) =>
-      this.createRepository(collection, undefined, { observed: false }),
-    );
+    this.writeChecks = {
+      registry:
+        rootConnection?.writeChecks.registry ??
+        new DatabaseWriteCheckRegistry(),
+      connectionName: name,
+      connectionFor: (client) => this.writeConnectionFor(client),
+    };
     this.config = resolveKnexConnectionConfig(sourceConfig, dialectDriver);
     this.metadataStore =
       metadataStore ??
@@ -196,15 +208,6 @@ export class KnexDatabaseConnection implements DatabaseConnection {
         mode: this.schemaManagement,
       },
     );
-    this.query = new KnexQueryAdapter(
-      () => this.getClient(),
-      new DefaultNamingStrategy({
-        underscored: this.config.naming?.underscored,
-        tablePrefix: this.config.naming?.tablePrefix,
-      }),
-      (name) => collections.getForQuery(name),
-      this.runtime,
-    );
     const collections = new CollectionRegistry({
       inspector: this.schemaInspector,
       metadataStore: this.metadataStore,
@@ -216,6 +219,28 @@ export class KnexDatabaseConnection implements DatabaseConnection {
           this.metadataStore.isInternalPhysicalCollection(identity)),
     });
     this.collections = collections;
+    const naming = new DefaultNamingStrategy({
+      underscored: this.config.naming?.underscored,
+      tablePrefix: this.config.naming?.tablePrefix,
+    });
+    const createQuery = (
+      writeChecks?: DatabaseWriteCheckBinding,
+    ): QueryAdapter =>
+      new KnexQueryAdapter(
+        () => this.getClient(),
+        naming,
+        (name) => collections.getForQuery(name),
+        this.runtime,
+        writeChecks,
+      );
+    this.query = createQuery(this.writeChecks);
+    writeChecksByConnection.set(this, this.writeChecks);
+    let taskQuery: QueryAdapter | undefined;
+    databaseTaskData.set(this, {
+      repository: (collection) =>
+        this.createRepository(collection, undefined, { task: true }),
+      query: () => (taskQuery ??= createQuery()),
+    });
     const invalidator = transactionInvalidations
       ? new TransactionCollectionInvalidator(
           collections,
@@ -287,11 +312,14 @@ export class KnexDatabaseConnection implements DatabaseConnection {
         () => this.getClient(),
         (name) => this.collections.get(name),
         this.runtime,
-        events.observed === false
-          ? undefined
-          : this.repositoryEvents(events.parent),
+        events.task ? undefined : this.repositoryEvents(events.parent),
+        events.task ? undefined : this.writeChecks,
       ),
     });
+  }
+
+  addWriteCheck(check: DatabaseWriteCheck): () => void {
+    return this.writeChecks.registry.add(check);
   }
 
   onRepositoryMutation(
@@ -342,6 +370,7 @@ export class KnexDatabaseConnection implements DatabaseConnection {
           return execute(
             transaction.repositoryEvents(parent),
             transaction.getClient() as Knex.Transaction,
+            transaction.writeChecks,
           );
         }),
       listenerConnection: (operation) =>
@@ -483,6 +512,33 @@ export class KnexDatabaseConnection implements DatabaseConnection {
       await callbacks.commit(report);
     }
     return result;
+  }
+
+  private writeConnectionFor(client: Knex): KnexDatabaseConnection {
+    if (client === this.getClient()) return this;
+    // Repository writes can open a Knex transaction or savepoint directly.
+    // Bind the check's reads to it only if a check actually runs.
+    const connections = (this.writeConnections ??= new WeakMap());
+    let connection = connections.get(client);
+    if (!connection) {
+      const metadataStore =
+        this.metadataStore instanceof DatabaseCollectionMetadataStore
+          ? this.metadataStore.withClient(async () => client)
+          : this.metadataStore;
+      connection = new KnexDatabaseConnection(
+        this.name,
+        this.sourceConfig,
+        metadataStore,
+        client,
+        undefined,
+        this.dialectDriver,
+        undefined,
+        this.mutationRegistry,
+        this.rootConnection ?? this,
+      );
+      connections.set(client, connection);
+    }
+    return connection;
   }
 
   private getClient(): Knex {

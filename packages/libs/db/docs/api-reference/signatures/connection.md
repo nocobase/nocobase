@@ -15,6 +15,8 @@ Signatures below are extracted from declaration output. Generic parameters, over
 | [DatabaseConnection](#databaseconnection)                                         | `@nocobase/db` type  |
 | [DatabaseDialect](#databasedialect)                                               | `@nocobase/db` type  |
 | [DatabaseDriver](#databasedriver)                                                 | `@nocobase/db` type  |
+| [DatabaseWrite](#databasewrite)                                                   | `@nocobase/db` type  |
+| [DatabaseWriteCheck](#databasewritecheck)                                         | `@nocobase/db` type  |
 | [DirectoryCollectionMetadataStoreConfig](#directorycollectionmetadatastoreconfig) | `@nocobase/db` type  |
 | [SchemaManagementMode](#schemamanagementmode)                                     | `@nocobase/db` type  |
 | [SchemaManagementNotAllowedError](#schemamanagementnotallowederror)               | `@nocobase/db` value |
@@ -212,6 +214,13 @@ export interface DatabaseConnection {
    */
   afterRollback(callback: (error: unknown) => void | Promise<void>): void;
   /**
+   * Check writes to all current and future tables on this connection.
+   * Checks are shared by the root and its derived connections in this process.
+   * The callback receives the connection executing the statement, including its
+   * transaction when present. Returns a function that removes this check.
+   */
+  addWriteCheck(check: DatabaseWriteCheck): () => void;
+  /**
    * Observe the rows Repository writes change: every write method, nested
    * relation writes included, reports one event per call.
    *
@@ -240,7 +249,7 @@ export interface DatabaseConnection {
 }
 ```
 
-Related declarations: [CollectionBuilder](./builder.md#collectionbuilder), [CollectionMetadataService](./metadata.md#collectionmetadataservice), [ConnectionCollections](./collections.md#connectioncollections), [DatabaseCapabilities](./drivers.md#databasecapabilities), [DatabaseDriver](./connection.md#databasedriver), [DatabaseDriverRuntime](./drivers.md#databasedriverruntime), [DatabasePolicyMap](./policies.md#databasepolicymap), [ExplainRepositoryEventsOptions](./events.md#explainrepositoryeventsoptions), [QueryAdapter](./query.md#queryadapter), [Repository](./repository.md#repository), [RepositoryEventsExplanation](./events.md#repositoryeventsexplanation), [RepositoryMutationListeners](./events.md#repositorymutationlisteners), [RepositoryMutationSubscriptionOptions](./events.md#repositorymutationsubscriptionoptions), [RepositoryRecord](./inputs.md#repositoryrecord), [RestrictedDatabase](./policies.md#restricteddatabase), [SchemaAdapter](./drivers.md#schemaadapter), [SchemaInspector](./schema.md#schemainspector), [SchemaManagementMode](./connection.md#schemamanagementmode), [ScopedDatabaseConnection](./policies.md#scopeddatabaseconnection).
+Related declarations: [CollectionBuilder](./builder.md#collectionbuilder), [CollectionMetadataService](./metadata.md#collectionmetadataservice), [ConnectionCollections](./collections.md#connectioncollections), [DatabaseCapabilities](./drivers.md#databasecapabilities), [DatabaseDriver](./connection.md#databasedriver), [DatabaseDriverRuntime](./drivers.md#databasedriverruntime), [DatabasePolicyMap](./policies.md#databasepolicymap), [DatabaseWriteCheck](./connection.md#databasewritecheck), [ExplainRepositoryEventsOptions](./events.md#explainrepositoryeventsoptions), [QueryAdapter](./query.md#queryadapter), [Repository](./repository.md#repository), [RepositoryEventsExplanation](./events.md#repositoryeventsexplanation), [RepositoryMutationListeners](./events.md#repositorymutationlisteners), [RepositoryMutationSubscriptionOptions](./events.md#repositorymutationsubscriptionoptions), [RepositoryRecord](./inputs.md#repositoryrecord), [RestrictedDatabase](./policies.md#restricteddatabase), [SchemaAdapter](./drivers.md#schemaadapter), [SchemaInspector](./schema.md#schemainspector), [SchemaManagementMode](./connection.md#schemamanagementmode), [ScopedDatabaseConnection](./policies.md#scopeddatabaseconnection).
 
 ## DatabaseDialect
 
@@ -267,6 +276,45 @@ Native driver identifier supplied by a dialect package.
 /** Native driver identifier supplied by a dialect package. */
 export type DatabaseDriver = string;
 ```
+
+## DatabaseWrite
+
+[Source](../../../src/database/connection.ts)
+
+Import: `import type { DatabaseWrite } from '@nocobase/db'`.
+
+The target of a Repository or low-level write statement.
+
+```ts
+/** The target of a Repository or low-level write statement. */
+export interface DatabaseWrite {
+  readonly connection: string;
+  /** Physical table name without a schema qualifier or alias. */
+  readonly table: string;
+  /** Logical Collection name for a Repository write. */
+  readonly collection?: string;
+  readonly operation: 'insert' | 'update' | 'delete';
+  readonly source: 'repository' | 'query';
+}
+```
+
+## DatabaseWriteCheck
+
+[Source](../../../src/database/connection.ts)
+
+Import: `import type { DatabaseWriteCheck } from '@nocobase/db'`.
+
+Reject a write by throwing or rejecting before the statement is executed.
+
+```ts
+/** Reject a write by throwing or rejecting before the statement is executed. */
+export type DatabaseWriteCheck = (
+  write: DatabaseWrite,
+  connection: DatabaseConnection,
+) => void | Promise<void>;
+```
+
+Related declarations: [DatabaseConnection](./connection.md#databaseconnection), [DatabaseWrite](./connection.md#databasewrite).
 
 ## DirectoryCollectionMetadataStoreConfig
 

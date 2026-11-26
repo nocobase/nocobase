@@ -1,3 +1,4 @@
+import { inheritWriteChecks } from '../write-checks.js';
 import type { DatabasePolicyMap } from '../../policy-map.js';
 import type { CollectionBuilder } from '../../../collection/builder/builder.js';
 import type { ConnectionCollections } from '../../../collection/registry/types.js';
@@ -23,6 +24,7 @@ import type {
 import type { SchemaInspector } from '../../../schema/inspector/types.js';
 import type {
   DatabaseConnection,
+  DatabaseWriteCheck,
   ScopedDatabaseConnection,
 } from '../../connection.js';
 import type { DatabaseDriver, SchemaManagementMode } from '../../config.js';
@@ -57,7 +59,9 @@ export class PolicyBoundConnection implements ScopedDatabaseConnection {
     private readonly policies: Readonly<
       Record<string, NormalizedRepositoryPolicy>
     >,
-  ) {}
+  ) {
+    inheritWriteChecks(this, inner);
+  }
 
   get name(): string {
     return this.inner.name;
@@ -145,6 +149,10 @@ export class PolicyBoundConnection implements ScopedDatabaseConnection {
 
   afterRollback(callback: (error: unknown) => void | Promise<void>): void {
     this.inner.afterRollback(callback);
+  }
+
+  addWriteCheck(check: DatabaseWriteCheck): () => void {
+    return this.inner.addWriteCheck(check);
   }
 
   /** Registers on the connection underneath; bindings do not narrow what is observed. */

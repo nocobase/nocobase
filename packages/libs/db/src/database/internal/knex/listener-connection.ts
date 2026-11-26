@@ -1,3 +1,4 @@
+import { inheritWriteChecks } from '../write-checks.js';
 import type { CollectionBuilder } from '../../../collection/builder/builder.js';
 import type { ConnectionCollections } from '../../../collection/registry/types.js';
 import type { CollectionMetadataService } from '../../../metadata/service.js';
@@ -22,6 +23,7 @@ import type { SchemaInspector } from '../../../schema/inspector/types.js';
 import type { DatabaseDriver, SchemaManagementMode } from '../../config.js';
 import type {
   DatabaseConnection,
+  DatabaseWriteCheck,
   ScopedDatabaseConnection,
 } from '../../connection.js';
 import type { DatabaseDriverRuntime } from '../../runtime.js';
@@ -46,7 +48,9 @@ export class RepositoryListenerConnection implements PolicyBindableConnection {
   constructor(
     private readonly inner: KnexDatabaseConnection,
     private readonly parent: RepositoryOperationParent,
-  ) {}
+  ) {
+    inheritWriteChecks(this, inner);
+  }
 
   get name(): string {
     return this.inner.name;
@@ -166,6 +170,10 @@ export class RepositoryListenerConnection implements PolicyBindableConnection {
 
   afterRollback(callback: (error: unknown) => void | Promise<void>): void {
     this.inner.afterRollback(callback);
+  }
+
+  addWriteCheck(check: DatabaseWriteCheck): () => void {
+    return this.inner.addWriteCheck(check);
   }
 
   onRepositoryMutation(

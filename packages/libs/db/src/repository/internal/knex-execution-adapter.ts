@@ -1,3 +1,9 @@
+import type { DatabaseWrite } from '../../database/connection.js';
+import {
+  DatabaseWriteCheckRejection,
+  physicalWriteTable,
+  type DatabaseWriteCheckBinding,
+} from '../../database/internal/write-checks.js';
 import { isUniqueConstraintViolation } from '../../database/unique-constraint.js';
 import { decimalString } from '../../numeric/decimal.js';
 import {
@@ -135,12 +141,41 @@ export class KnexRepositoryExecutionAdapter implements RepositoryExecutionAdapte
      * through; absent where writes must stay silent.
      */
     private readonly events: RepositoryEventsBinding | undefined = undefined,
+    private readonly writeChecks:
+      DatabaseWriteCheckBinding | undefined = undefined,
     /**
      * Present only while a call some subscription observes is running. Every
      * write site records into it; without it they run exactly as before.
      */
     private readonly recorder: MutationRecorder | undefined = undefined,
+    private readonly inUpsertInsert = false,
   ) {}
+
+  private executeWrite<T>(
+    collection: CollectionDefinition,
+    operation: DatabaseWrite['operation'],
+    query: PromiseLike<T>,
+  ): PromiseLike<T> {
+    const checks = this.writeChecks;
+    if (!checks || checks.registry.empty) return query;
+    const approval = checks.registry.run(
+      {
+        connection: checks.connectionName,
+        table: physicalWriteTable(tableName(collection)),
+        collection: collection.name!,
+        operation,
+        source: 'repository',
+      },
+      checks.connectionFor(this.getClient()),
+    );
+    return approval.then(
+      () => query,
+      (error: unknown) => {
+        if (this.inUpsertInsert) throw new DatabaseWriteCheckRejection(error);
+        throw error;
+      },
+    );
+  }
 
   async findMany(plan: RepositoryReadPlan): Promise<RepositoryRecord[]> {
     this.assertReadable();
@@ -663,8 +698,12 @@ export class KnexRepositoryExecutionAdapter implements RepositoryExecutionAdapte
         const client = adapter.getClient();
         const encodeRow = prepareWrite(client, plan.collection);
         for (const record of plan.records)
-          await tableQuery(client, plan.collection).insert(
-            encodeRow(withInitialVersion(plan.collection, record)),
+          await adapter.executeWrite(
+            plan.collection,
+            'insert',
+            tableQuery(client, plan.collection).insert(
+              encodeRow(withInitialVersion(plan.collection, record)),
+            ),
           );
         return { count: plan.records.length };
       });
@@ -673,9 +712,11 @@ export class KnexRepositoryExecutionAdapter implements RepositoryExecutionAdapte
     const records = plan.records.map((record) =>
       encodeRow(withInitialVersion(plan.collection, record)),
     );
-    const result = (await tableQuery(this.getClient(), plan.collection).insert(
-      records,
-    )) as unknown;
+    const result: unknown = await this.executeWrite(
+      plan.collection,
+      'insert',
+      tableQuery(this.getClient(), plan.collection).insert(records),
+    );
     return { count: insertedCount(result, records.length) };
   }
 
@@ -775,7 +816,9 @@ export class KnexRepositoryExecutionAdapter implements RepositoryExecutionAdapte
     );
     applyVersion(query, plan.collection, plan.ifVersion);
     incrementVersion(query, plan.collection);
-    const count = affectedCount(await query);
+    const count = affectedCount(
+      await this.executeWrite(plan.collection, 'update', query),
+    );
     if (count > 1) {
       throw new RepositoryError(
         'MULTIPLE_RECORDS_MATCHED',
@@ -842,7 +885,12 @@ export class KnexRepositoryExecutionAdapter implements RepositoryExecutionAdapte
       );
       applyUnique(query, plan.collection, unique);
       applyVersion(query, plan.collection, plan.ifVersion);
-      if (affectedCount(await query) === 0) return 'conflict';
+      if (
+        affectedCount(
+          await this.executeWrite(plan.collection, 'update', query),
+        ) === 0
+      )
+        return 'conflict';
       Object.assign(
         current,
         await this.refreshAtomicValues(plan.collection, unique, plan.values),
@@ -936,18 +984,21 @@ export class KnexRepositoryExecutionAdapter implements RepositoryExecutionAdapte
     const selected = await this.lockByUnique(plan.collection, plan.by);
     if (selected === 'missing') {
       try {
-        return await this.inSavepoint((adapter) =>
-          adapter.executeCreateOne({
-            collection: plan.collection,
-            fields: plan.fields,
-            values: plan.createValues,
-            relations: plan.createRelations,
-            select: plan.select,
-            scopeCheck: plan.createScopeCheck,
-            relationScopes: plan.createRelationScopes,
-          }),
+        return await this.inSavepoint(
+          (adapter) =>
+            adapter.executeCreateOne({
+              collection: plan.collection,
+              fields: plan.fields,
+              values: plan.createValues,
+              relations: plan.createRelations,
+              select: plan.select,
+              scopeCheck: plan.createScopeCheck,
+              relationScopes: plan.createRelationScopes,
+            }),
+          true,
         );
       } catch (error) {
+        if (error instanceof DatabaseWriteCheckRejection) throw error.error;
         if (!isUniqueConstraintViolation(error)) throw error;
         const concurrent = await this.lockByUnique(plan.collection, plan.by);
         if (concurrent === 'missing') throw error;
@@ -1068,7 +1119,11 @@ export class KnexRepositoryExecutionAdapter implements RepositoryExecutionAdapte
       );
     }
     incrementVersion(query, plan.collection);
-    return { count: affectedCount(await query) };
+    return {
+      count: affectedCount(
+        await this.executeWrite(plan.collection, 'update', query),
+      ),
+    };
   }
 
   private async executeUpdateManyReturning(
@@ -1090,7 +1145,9 @@ export class KnexRepositoryExecutionAdapter implements RepositoryExecutionAdapte
       );
       applySelectors(query, plan.collection, batch);
       incrementVersion(query, plan.collection);
-      count += affectedCount(await query);
+      count += affectedCount(
+        await this.executeWrite(plan.collection, 'update', query),
+      );
     }
     assertBulkMutationCount('updateMany', count, selected.length);
     if (this.recorder && eventIdentityFields(plan.collection)) {
@@ -1187,7 +1244,10 @@ export class KnexRepositoryExecutionAdapter implements RepositoryExecutionAdapte
     const query = tableQuery(this.getClient(), plan.collection).delete();
     applyUnique(query, plan.collection, selected.unique);
     applyVersion(query, plan.collection, plan.ifVersion);
-    if (affectedCount(await query) > 0) {
+    if (
+      affectedCount(await this.executeWrite(plan.collection, 'delete', query)) >
+      0
+    ) {
       this.recordRow(plan.collection, 'deleted', selected.unique);
       return snapshot ? { record: snapshot } : 'deleted';
     }
@@ -1254,7 +1314,9 @@ export class KnexRepositoryExecutionAdapter implements RepositoryExecutionAdapte
     for (const batch of selectorBatches(selectors)) {
       const query = tableQuery(this.getClient(), plan.collection).delete();
       applySelectors(query, plan.collection, batch);
-      count += affectedCount(await query);
+      count += affectedCount(
+        await this.executeWrite(plan.collection, 'delete', query),
+      );
     }
     if (
       count < selected.length &&
@@ -1298,7 +1360,11 @@ export class KnexRepositoryExecutionAdapter implements RepositoryExecutionAdapte
         this.getClient(),
       );
     }
-    return { count: affectedCount(await query) };
+    return {
+      count: affectedCount(
+        await this.executeWrite(plan.collection, 'delete', query),
+      ),
+    };
   }
 
   private async executeDeleteManyReturning(
@@ -1319,7 +1385,9 @@ export class KnexRepositoryExecutionAdapter implements RepositoryExecutionAdapte
     for (const batch of selectorBatches(selectors)) {
       const query = tableQuery(this.getClient(), plan.collection).delete();
       applySelectors(query, plan.collection, batch);
-      count += affectedCount(await query);
+      count += affectedCount(
+        await this.executeWrite(plan.collection, 'delete', query),
+      );
     }
     if (
       count < selected.length &&
@@ -1888,9 +1956,11 @@ export class KnexRepositoryExecutionAdapter implements RepositoryExecutionAdapte
         }) ?? physicalValues;
     }
     const query = tableQuery(client, collection).insert(physicalValues);
-    const returned = (await query.returning(
-      fields.map((field) => column(collection, field)),
-    )) as unknown;
+    const returned: unknown = await this.executeWrite(
+      collection,
+      'insert',
+      query.returning(fields.map((field) => column(collection, field))),
+    );
     const returnedRow = firstReturnedRow(returned);
     if (returnedRow) {
       const repositoryRuntime = getDatabaseDriverRuntime(client)?.repository;
@@ -2225,7 +2295,12 @@ export class KnexRepositoryExecutionAdapter implements RepositoryExecutionAdapte
     );
     const query = tableQuery(this.getClient(), resolved.target).delete();
     applyUnique(query, resolved.target, selected.unique);
-    if (affectedCount(await query) === 0) relationTargetNotFound(resolved);
+    if (
+      affectedCount(
+        await this.executeWrite(resolved.target, 'delete', query),
+      ) === 0
+    )
+      relationTargetNotFound(resolved);
     this.recordRow(resolved.target, 'deleted', selected.unique);
   }
 
@@ -2242,7 +2317,11 @@ export class KnexRepositoryExecutionAdapter implements RepositoryExecutionAdapte
         [resolved.sourceColumn]: null,
       });
       applyUnique(query, resolved.source, sourceUnique);
-      if (affectedCount(await query) > 0) {
+      if (
+        affectedCount(
+          await this.executeWrite(resolved.source, 'update', query),
+        ) > 0
+      ) {
         this.recordForeignKey(resolved.source, sourceUnique, resolved, null);
       }
       return;
@@ -2258,7 +2337,7 @@ export class KnexRepositoryExecutionAdapter implements RepositoryExecutionAdapte
         ),
       );
       if (!this.recorder) {
-        await edges.delete();
+        await this.executeWrite(resolved.through, 'delete', edges.delete());
         return;
       }
       // Every edge to the deleted target goes, other sources' included, so
@@ -2272,7 +2351,7 @@ export class KnexRepositoryExecutionAdapter implements RepositoryExecutionAdapte
         )
         .forUpdate()) as Array<{ source: unknown }>;
       if (sources.length === 0) return;
-      await edges.delete();
+      await this.executeWrite(resolved.through, 'delete', edges.delete());
       for (const edge of sources) {
         this.recordEdge(
           resolved,
@@ -2301,7 +2380,10 @@ export class KnexRepositoryExecutionAdapter implements RepositoryExecutionAdapte
         ),
       );
       applyUnique(query, collection, selected.unique);
-      if (affectedCount(await query) === 0) {
+      if (
+        affectedCount(await this.executeWrite(collection, 'update', query)) ===
+        0
+      ) {
         throw new RepositoryError(
           'RELATION_TARGET_NOT_FOUND',
           'Relation target was not found while updating.',
@@ -2564,9 +2646,13 @@ export class KnexRepositoryExecutionAdapter implements RepositoryExecutionAdapte
     }
     await this.applyRelationScope(existing, resolved.target, scope);
     const detached = affectedCount(
-      await existing.update({
-        [column(resolved.target, resolved.targetForeignKey)]: null,
-      }),
+      await this.executeWrite(
+        resolved.target,
+        'update',
+        existing.update({
+          [column(resolved.target, resolved.targetForeignKey)]: null,
+        }),
+      ),
     );
     if (detached === 0) relationTargetNotFound(resolved);
   }
@@ -2589,7 +2675,11 @@ export class KnexRepositoryExecutionAdapter implements RepositoryExecutionAdapte
         ),
       });
       applyUnique(query, resolved.source, sourceUnique);
-      if (affectedCount(await query) > 0) {
+      if (
+        affectedCount(
+          await this.executeWrite(resolved.source, 'update', query),
+        ) > 0
+      ) {
         this.recordForeignKey(
           resolved.source,
           sourceUnique,
@@ -2627,14 +2717,19 @@ export class KnexRepositoryExecutionAdapter implements RepositoryExecutionAdapte
       }
       const query = tableQuery(this.getClient(), resolved.target);
       applyUnique(query, resolved.target, targetUnique);
-      const attached = await query.update({
-        [column(resolved.target, resolved.targetForeignKey)]: relationKeyValue(
-          this.getClient(),
-          resolved.source,
-          resolved.sourceKey,
-          sourceValue,
-        ),
-      });
+      const attached = await this.executeWrite(
+        resolved.target,
+        'update',
+        query.update({
+          [column(resolved.target, resolved.targetForeignKey)]:
+            relationKeyValue(
+              this.getClient(),
+              resolved.source,
+              resolved.sourceKey,
+              sourceValue,
+            ),
+        }),
+      );
       if (affectedCount(attached) > 0) {
         this.recordRow(
           resolved.target,
@@ -2693,7 +2788,11 @@ export class KnexRepositoryExecutionAdapter implements RepositoryExecutionAdapte
         ...mapWrite(this.getClient(), resolved.through, values),
         ...edge,
       };
-      await tableQuery(this.getClient(), resolved.through).insert(inserted);
+      await this.executeWrite(
+        resolved.through,
+        'insert',
+        tableQuery(this.getClient(), resolved.through).insert(inserted),
+      );
       if (this.recorder) {
         this.recordEdge(
           resolved,
@@ -2717,9 +2816,13 @@ export class KnexRepositoryExecutionAdapter implements RepositoryExecutionAdapte
           '?? + 1',
           [column(resolved.through, version)],
         );
-      const updated = await tableQuery(this.getClient(), resolved.through)
-        .where(edge)
-        .update(changes);
+      const updated = await this.executeWrite(
+        resolved.through,
+        'update',
+        tableQuery(this.getClient(), resolved.through)
+          .where(edge)
+          .update(changes),
+      );
       if (this.recorder && affectedCount(updated) > 0) {
         this.recordEdge(
           resolved,
@@ -2762,7 +2865,11 @@ export class KnexRepositoryExecutionAdapter implements RepositoryExecutionAdapte
         [resolved.sourceColumn]: null,
       });
       applyUnique(query, resolved.source, sourceUnique);
-      if (affectedCount(await query) > 0) {
+      if (
+        affectedCount(
+          await this.executeWrite(resolved.source, 'update', query),
+        ) > 0
+      ) {
         this.recordForeignKey(resolved.source, sourceUnique, resolved, null);
       }
       return;
@@ -2790,9 +2897,13 @@ export class KnexRepositoryExecutionAdapter implements RepositoryExecutionAdapte
       );
       return;
     }
-    await clearQuery.update({
-      [column(resolved.target, resolved.targetForeignKey)]: null,
-    });
+    await this.executeWrite(
+      resolved.target,
+      'update',
+      clearQuery.update({
+        [column(resolved.target, resolved.targetForeignKey)]: null,
+      }),
+    );
   }
 
   /** Narrow a relation query by the Policy scope that governs its target. */
@@ -2820,7 +2931,7 @@ export class KnexRepositoryExecutionAdapter implements RepositoryExecutionAdapte
     target: RepositoryRecord,
   ): Promise<void> {
     if (resolved.type === 'belongsToMany') {
-      const removed = await tableQuery(this.getClient(), resolved.through)
+      const query = tableQuery(this.getClient(), resolved.through)
         .where(
           column(resolved.through, resolved.throughSourceForeignKey),
           relationKeyValue(
@@ -2840,6 +2951,11 @@ export class KnexRepositoryExecutionAdapter implements RepositoryExecutionAdapte
           ),
         )
         .delete();
+      const removed = await this.executeWrite(
+        resolved.through,
+        'delete',
+        query,
+      );
       if (affectedCount(removed) > 0) {
         this.recordEdge(
           resolved,
@@ -2856,7 +2972,7 @@ export class KnexRepositoryExecutionAdapter implements RepositoryExecutionAdapte
     const query = tableQuery(this.getClient(), resolved.target);
     const targetUnique = selectorFromRecord(resolved.target, target);
     applyUnique(query, resolved.target, targetUnique);
-    const detached = await query
+    query
       .where(
         column(resolved.target, resolved.targetForeignKey),
         relationKeyValue(
@@ -2867,6 +2983,7 @@ export class KnexRepositoryExecutionAdapter implements RepositoryExecutionAdapte
         ),
       )
       .update({ [column(resolved.target, resolved.targetForeignKey)]: null });
+    const detached = await this.executeWrite(resolved.target, 'update', query);
     // The foreign key condition matches nothing when the target belongs to
     // another source; only a row that was detached is reported.
     if (affectedCount(detached) > 0) {
@@ -2936,7 +3053,7 @@ export class KnexRepositoryExecutionAdapter implements RepositoryExecutionAdapte
             ? decodeBooleanValue(keyField, edge.target)
             : edge.target;
         if (!desiredValues.has(associationKey(targetKey))) {
-          await tableQuery(this.getClient(), resolved.through)
+          const query = tableQuery(this.getClient(), resolved.through)
             .where(
               column(resolved.through, resolved.throughSourceForeignKey),
               relationKeyValue(
@@ -2951,6 +3068,7 @@ export class KnexRepositoryExecutionAdapter implements RepositoryExecutionAdapte
               edge.target as Knex.Value,
             )
             .delete();
+          await this.executeWrite(resolved.through, 'delete', query);
           this.recordEdge(
             resolved,
             'deleted',
@@ -2988,9 +3106,13 @@ export class KnexRepositoryExecutionAdapter implements RepositoryExecutionAdapte
           await this.lockKeys(resolved.target, remaining),
         );
       } else {
-        await remaining.update({
-          [column(resolved.target, resolved.targetForeignKey)]: null,
-        });
+        await this.executeWrite(
+          resolved.target,
+          'update',
+          remaining.update({
+            [column(resolved.target, resolved.targetForeignKey)]: null,
+          }),
+        );
       }
     }
     for (const target of desired) {
@@ -3017,7 +3139,9 @@ export class KnexRepositoryExecutionAdapter implements RepositoryExecutionAdapte
           this.getCollection,
           this.runtime,
           this.events,
+          this.writeChecks,
           this.recorder,
+          this.inUpsertInsert,
         ),
       );
     });
@@ -3025,6 +3149,7 @@ export class KnexRepositoryExecutionAdapter implements RepositoryExecutionAdapte
 
   private async inSavepoint<TResult>(
     execute: (adapter: KnexRepositoryExecutionAdapter) => Promise<TResult>,
+    inUpsertInsert = this.inUpsertInsert,
   ): Promise<TResult> {
     // Rows written in a savepoint that rolls back were never written, so the
     // savepoint records apart and its rows join the call only on release.
@@ -3037,7 +3162,9 @@ export class KnexRepositoryExecutionAdapter implements RepositoryExecutionAdapte
           this.getCollection,
           this.runtime,
           this.events,
+          this.writeChecks,
           recorder,
+          inUpsertInsert,
         ),
       );
     });
@@ -3077,6 +3204,7 @@ export class KnexRepositoryExecutionAdapter implements RepositoryExecutionAdapte
       binding: RepositoryEventsBinding,
       getClient: () => Knex,
       scope: RepositoryMutationCall['scope'],
+      writeChecks: DatabaseWriteCheckBinding | undefined,
     ): Promise<TResult> => {
       const call = beginRepositoryMutationCall(
         binding,
@@ -3095,6 +3223,7 @@ export class KnexRepositoryExecutionAdapter implements RepositoryExecutionAdapte
           this.getCollection,
           this.runtime,
           binding,
+          writeChecks,
           recorder,
         ),
       );
@@ -3113,11 +3242,11 @@ export class KnexRepositoryExecutionAdapter implements RepositoryExecutionAdapte
     };
     const events = this.events!;
     if (isTransaction(this.getClient())) {
-      return run(events, this.getClient, 'transaction');
+      return run(events, this.getClient, 'transaction', this.writeChecks);
     }
-    return events.transaction((binding, transaction) => {
+    return events.transaction((binding, transaction, writeChecks) => {
       if (this.runtime) attachDatabaseDriverRuntime(transaction, this.runtime);
-      return run(binding, () => transaction, 'connection');
+      return run(binding, () => transaction, 'connection', writeChecks);
     });
   }
 
@@ -3263,11 +3392,14 @@ export class KnexRepositoryExecutionAdapter implements RepositoryExecutionAdapte
       encodeRow(withInitialVersion(plan.collection, record)),
     );
     const names = scalarFields(plan.collection).map((field) => field.name);
-    const returned = (await tableQuery(client, plan.collection)
+    const query = tableQuery(client, plan.collection)
       .insert(rows)
-      .returning(
-        names.map((field) => column(plan.collection, field)),
-      )) as unknown;
+      .returning(names.map((field) => column(plan.collection, field)));
+    const returned: unknown = await this.executeWrite(
+      plan.collection,
+      'insert',
+      query,
+    );
     if (
       !Array.isArray(returned) ||
       returned.length !== rows.length ||
@@ -3478,9 +3610,13 @@ export class KnexRepositoryExecutionAdapter implements RepositoryExecutionAdapte
     for (const batch of selectorBatches(keys)) {
       const query = tableQuery(this.getClient(), resolved.target);
       applySelectors(query, resolved.target, batch);
-      await query.update({
-        [column(resolved.target, resolved.targetForeignKey)]: null,
-      });
+      await this.executeWrite(
+        resolved.target,
+        'update',
+        query.update({
+          [column(resolved.target, resolved.targetForeignKey)]: null,
+        }),
+      );
     }
     for (const key of keys) {
       this.recordRow(

@@ -6,7 +6,7 @@ This index covers every name exported by the two package entries. A value can be
 
 ## @nocobase/db
 
-424 exports: 72 values and 352 types.
+426 exports: 72 values and 354 types.
 
 | Export                                                                                                        | Kind  | Topic                                                        |
 | ------------------------------------------------------------------------------------------------------------- | ----- | ------------------------------------------------------------ |
@@ -100,6 +100,8 @@ This index covers every name exported by the two package entries. A value can be
 | [DatabaseSchemaRuntimeStrategy](./signatures/drivers.md#databaseschemaruntimestrategy)                        | type  | [Driver and runtime extension](./driver-extension.md)        |
 | [DatabaseSeederOptions](./signatures/seed.md#databaseseederoptions)                                           | type  | [Seeds and sample data](./migration-and-seed.md)             |
 | [DatabaseTaskConfig](./signatures/migration.md#databasetaskconfig)                                            | type  | [Migrations and task locks](./migration-and-seed.md)         |
+| [DatabaseWrite](./signatures/connection.md#databasewrite)                                                     | type  | [Connection](./connection.md)                                |
+| [DatabaseWriteCheck](./signatures/connection.md#databasewritecheck)                                           | type  | [Connection](./connection.md)                                |
 | [DateFilterOperators](./signatures/inputs.md#datefilteroperators)                                             | type  | [Repository inputs and result types](./repository.md)        |
 | [DecodedPhysicalCollectionCursor](./signatures/schema.md#decodedphysicalcollectioncursor)                     | type  | [Physical schema inspection](./collection-and-schema.md)     |
 | [DeleteManyOptions](./signatures/repository.md#deletemanyoptions)                                             | type  | [Repository operations](./repository.md)                     |
