@@ -12,7 +12,7 @@ Use this Skill when an application built on `@nocobase/app-plugin-notification-p
 
 Declare the application's `notification` section with `defineMailChannelsConfig` from `@nocobase/app-plugin-notification-providers/config`. It validates the built-in channels at startup and maps the private environment variables (`SMTP_PASSWORD`, `RESEND_API_KEY` and the `SMS_*` variables below) onto the conventional channels `system-email` and `system-sms`.
 
-Register the server plugin after the core notification plugin. This package only supplies and configures channels. A verification code lifecycle, verified phone binding and step-up confirmation belong to the `nocobase-app-plugin-verification` Skill, which uses the `system-sms` channel configured here; it is available only when `@nocobase/app-plugin-verification` is installed. Installing this package does not add sign-in by SMS or any page.
+Register the server plugin after the core notification plugin. This package only supplies and configures channels. A verification code lifecycle, verified phone binding and step-up confirmation belong to the `nocobase-app-plugin-verification` Skill, which sends through the SMS channel selected by `verification.bindPhone.channel` and `verification.stepUp.channel` (`system-sms` is the conventional name configured here, not a fixed requirement); it is available only when `@nocobase/app-plugin-verification` is installed. Installing this package does not add sign-in by SMS or any page.
 
 ## SMS
 
