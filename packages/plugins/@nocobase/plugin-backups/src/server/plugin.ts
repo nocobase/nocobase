@@ -223,7 +223,7 @@ export class PluginBackupsServer extends Plugin {
       logger: this.app.logger,
     };
     const restoreManager = new RestoreManager(ctx, this.app.db.options);
-    await restoreManager.restoreCLI(backupFilePath, null, true);
+    await restoreManager.restoreCLI(backupFilePath, null, true, options?.skipRevertOnError);
   }
 
   static async staticImport() {

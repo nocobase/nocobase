@@ -7,6 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import type { Cache } from '@nocobase/cache';
 import { ResourcerContext } from '@nocobase/resourcer';
 import * as crypto from 'crypto';
 import fs from 'fs-extra';
@@ -16,7 +17,7 @@ import { storagePathJoin } from '@nocobase/utils';
 import semver from 'semver';
 import { Readable } from 'stream';
 import { promisify } from 'util';
-import { DBAdapter, DBBackupToolchain, getDBAdapter } from '../adapters/database';
+import { DBAdapter, DBBackupToolchain, DBRestoreOptions, getDBAdapter } from '../adapters/database';
 import {
   Extractor,
   BACKUP_EXTENSION,
@@ -48,6 +49,12 @@ interface Metadata {
     version: string;
     packageName: string;
   }>;
+}
+
+interface PreparedRestore {
+  directory: string;
+  metadata: Metadata;
+  uploadsExist: boolean;
 }
 
 export interface RestoreOptions {
@@ -126,42 +133,8 @@ export class RestoreManager {
     skipRevertOnError?: boolean,
     options?: RestoreOptions,
   ) {
-    await this.#dbAdapter.check('restore');
-    const extractedDir = await this.#decompressFiles(filePath, password);
-    const backupFiles = await fsPromises.readdir(extractedDir);
-    const dbFile = backupFiles.find((file) => file === 'data');
-    const metadataFile = backupFiles.find((file) => file === '_metadata.json');
-    const uploadsExist = backupFiles.includes('uploads');
-    if (!dbFile || !metadataFile) {
-      this.ctx.logger.error('Not a valid backup file', { module: BACKUPS });
-      throw new Error(this.#t('Not a valid backup file'));
-    }
-    // check the metadata file
-    const metadata = await this.#parseMetadataFile(path.join(extractedDir, metadataFile), tolerentMode, options);
-    try {
-      await this.#restoreDataCLI(extractedDir, dbFile, uploadsExist, metadata, options);
-    } catch (error) {
-      const dbVersion = await getDBVersion(this.ctx.app.db);
-      const restoreClientVersion = await this.#dbAdapter.clientVersion('restore');
-      this.ctx.logger.error(
-        `Error restoring backup: "${error.message}".
-        Database Version: backup[${metadata.database.version}], current[${dbVersion}],
-        Client Version: backup[${metadata.database.backupClientVersion}], restore[${restoreClientVersion}]
-        `,
-        { module: BACKUPS },
-      );
-      if (tolerentMode && error.message.includes('ignored')) {
-        // if the error was ignored by db client
-        this.ctx.logger.warn('Tolerent mode enabled, ignoring the error and continue the upgrade.', {
-          module: BACKUPS,
-        });
-        await this.#restoreFilesAndCleanup(uploadsExist, extractedDir);
-        // await sleep(5000); // wait for the client to show the error message, for debug
-        await this.ctx.app.upgrade();
-      } else if (!skipRevertOnError) {
-        await this.#revertDbRestore();
-      }
-    }
+    const backup = await this.#prepareRestore(filePath, password, tolerentMode, options);
+    await this.#restoreData(backup, options, tolerentMode, skipRevertOnError);
   }
 
   #getValidatedBackupFilePath(backupFileName: string): string {
@@ -176,37 +149,6 @@ export class RestoreManager {
     }
 
     return filePath;
-  }
-
-  async #restoreDataCLI(
-    extractedDir: string,
-    dbFile: string,
-    restoreUploads: boolean,
-    metadata: Metadata,
-    options?: RestoreOptions,
-  ): Promise<void> {
-    const tmpBackupDir = path.join(this.#tempDir, 'before-restore');
-    try {
-      await fs.mkdir(tmpBackupDir, { recursive: true });
-      // ensure the app cleaned before restoring the database
-      await this.ctx.app.emitAsync('beforeStop');
-      await this.ctx.app.emitAsync('afterStop');
-      await this.#dbAdapter.restore({
-        filePath: path.join(extractedDir, dbFile),
-        schema: metadata.database.schema,
-        skipDropAllTables: options?.skipDropAllTables === true,
-        restoreMode: options?.restoreMode,
-        toolchain: this.#resolveRestoreToolchain(metadata),
-      });
-      this.ctx.logger.info('Database restored successfully', { module: BACKUPS });
-      // copy the uploads directory
-      await this.#restoreFilesAndCleanup(restoreUploads, extractedDir);
-    } catch (error) {
-      this.ctx.logger.error(`Error restoring backup: ${error.message}. Trying to revert the backup process`, {
-        module: BACKUPS,
-      });
-      throw error;
-    }
   }
 
   protected async getStatusCache() {
@@ -230,58 +172,35 @@ export class RestoreManager {
     skipRevertOnError?: boolean,
     options?: RestoreOptions,
   ): Promise<void> {
-    await this.#dbAdapter.check('restore');
-    const extractedDir = await this.#decompressFiles(filePath, password);
-    const backupFiles = await fsPromises.readdir(extractedDir);
-    const dbFile = backupFiles.find((file) => file === 'data');
-    const metadataFile = backupFiles.find((file) => file === '_metadata.json');
-    const uploadsExist = backupFiles.includes('uploads');
-    if (!dbFile || !metadataFile) {
-      this.ctx.logger.error('Not a valid backup file', { module: BACKUPS });
-      throw new Error(this.#t('Not a valid backup file'));
-    }
-    // check the metadata file
-    const metadata = await this.#parseMetadataFile(path.join(extractedDir, metadataFile), tolerentMode, options);
-    this.#restoreData(extractedDir, dbFile, uploadsExist, taskId, metadata, options).catch(async (error) => {
-      try {
-        const dbVersion = await getDBVersion(this.ctx.app.db);
-        const restoreClientVersion = await this.#dbAdapter.clientVersion('restore');
-        this.ctx.logger.error(
-          `Error restoring backup: "${error.message}".
-          Database Version: backup[${metadata.database.version}], current[${dbVersion}],
-          Client Version: backup[${metadata.database.backupClientVersion}], restore[${restoreClientVersion}]
-          `,
-          { module: BACKUPS },
-        );
-        if (tolerentMode && error.message.includes('ignored')) {
-          // if the error was ignored by db client
-          this.ctx.logger.warn('Tolerent mode enabled, ignoring the error and continue the upgrade.', {
-            module: BACKUPS,
-          });
-          await this.#restoreFilesAndCleanup(uploadsExist, extractedDir);
-          // await sleep(5000); // wait for the client to show the error message, for debug
-          await this.ctx.app.runCommand('upgrade');
-        } else {
-          if (!tolerentMode && this.#isPostgresLikeDialect(this.#dbAdapter.dbOpts.dialect)) {
-            const backupClientVersion = Number(toMajorVersion(metadata.database.backupClientVersion));
-            const dbServerVersion = Number(toMajorVersion(dbVersion));
-            if (backupClientVersion > 16 && dbServerVersion <= 16) {
-              // pg_dump 17 introduced some incompatible options, give user a friendly message
-              const statusCache = await this.getStatusCache();
-              await statusCache.set(taskId, {
-                message: this.#t('ERROR_PG_DUMP_LT_17'),
-              });
-            }
-          }
-          if (!skipRevertOnError) {
-            await this.#revertDbRestore();
-          }
-          await this.ctx.app.runCommand('upgrade');
-        }
-      } catch (err) {
-        this.ctx.logger.error(`Error handling restore failure: ${err.message}`, { module: BACKUPS });
-      }
+    const cache = await this.getStatusCache();
+    const backup = await this.#prepareRestore(filePath, password, tolerentMode, options);
+    this.#restoreData(backup, options, tolerentMode, skipRevertOnError, { id: taskId, cache }).catch((error) => {
+      this.ctx.logger.error(`Error restoring backup: ${error.message}`, { module: BACKUPS });
     });
+  }
+
+  async #prepareRestore(
+    filePath: string,
+    password: string | undefined,
+    tolerentMode: boolean | undefined,
+    options?: RestoreOptions,
+  ): Promise<PreparedRestore> {
+    await this.#dbAdapter.check('restore');
+    await fsPromises.mkdir(this.#tempDir, { recursive: true });
+    const directory = await fsPromises.mkdtemp(path.join(this.#tempDir, 'restore-'));
+    const extractedDir = path.join(directory, 'archive');
+    try {
+      await this.#decompressFiles(filePath, extractedDir, password);
+      const files = await fsPromises.readdir(extractedDir);
+      if (!files.includes('data') || !files.includes('_metadata.json')) {
+        throw new Error(this.#t('Not a valid backup file'));
+      }
+      const metadata = await this.#parseMetadataFile(path.join(extractedDir, '_metadata.json'), tolerentMode, options);
+      return { directory, metadata, uploadsExist: files.includes('uploads') };
+    } catch (error) {
+      await fs.remove(directory);
+      throw error;
+    }
   }
 
   async #parseMetadataFile(filePath: string, tolerentMode: boolean, options?: RestoreOptions) {
@@ -324,6 +243,19 @@ export class RestoreManager {
           restoreClientVersion: restoreMajorVersion,
         }),
       );
+    }
+
+    const localDumpVersion = await this.#dbAdapter.clientVersion('backup');
+    const localDumpMajor =
+      typeof localDumpVersion === 'string' &&
+      localDumpVersion.trim().match(/^pg_dump \(PostgreSQL\) (\d+)(?:\.\d+)*(?=\s|$)/)?.[1];
+    const serverVersion = await this.#dbAdapter.serverVersion?.();
+    const serverMajor = serverVersion?.trim().match(/^(\d+)(?:\.|\s|$)/)?.[1];
+    if (!localDumpMajor || !serverMajor) {
+      throw new Error(this.#t('ERROR_PG_SAFETY_BACKUP_VERSION_UNKNOWN'));
+    }
+    if (Number(localDumpMajor) < Number(serverMajor)) {
+      throw new Error(this.#t('ERROR_PG_SAFETY_BACKUP_VERSION', { localDumpMajor, serverMajor }));
     }
   }
 
@@ -417,9 +349,7 @@ export class RestoreManager {
     return this.#dbAdapter.backupToolchain;
   }
 
-  async #decompressFiles(filePath: string, password?: string): Promise<string> {
-    const fileBaseName = path.basename(filePath, `.${BACKUP_EXTENSION}`);
-    const outputDir = path.join(this.#tempDir, fileBaseName);
+  async #decompressFiles(filePath: string, outputDir: string, password?: string): Promise<void> {
     const inputFileStream = fs.createReadStream(filePath);
     let inputStream: Readable | null = null;
 
@@ -450,7 +380,6 @@ export class RestoreManager {
         inputStream.destroy();
       }
     }
-    return outputDir;
   }
 
   async #createDecryptedStream(input: fs.ReadStream, password?: string): Promise<Readable> {
@@ -508,59 +437,116 @@ export class RestoreManager {
     }
   }
 
-  async #restoreData(
-    extractedDir: string,
-    dbFile: string,
-    restoreUploads: boolean,
-    taskId: string,
-    metadata: Metadata,
-    options?: RestoreOptions,
-  ): Promise<void> {
-    this.#notify(RESTORE_STEPS.BEGIN);
-    // restore the database
-    this.#notify(RESTORE_STEPS.DATABASE);
-    const statusCache = await this.getStatusCache();
-    const tmpBackupDir = path.join(this.#tempDir, 'before-restore');
-    try {
-      await fsPromises.mkdir(tmpBackupDir, { recursive: true });
-      await this.#dbAdapter.backup({ dir: tmpBackupDir });
+  async #validateRestore(options: DBRestoreOptions) {
+    const file = await fsPromises.stat(options.filePath);
+    if (!file.isFile() || !file.size) {
+      throw new Error(this.#t('Not a valid backup file'));
+    }
+    await this.#dbAdapter.validateRestore?.(options);
+  }
 
-      // ensure the app cleaned before restoring the database
+  async #restoreData(
+    { directory, metadata, uploadsExist }: PreparedRestore,
+    options?: RestoreOptions,
+    tolerentMode?: boolean,
+    skipRevertOnError?: boolean,
+    task?: { id: string; cache: Cache },
+  ): Promise<void> {
+    const extractedDir = path.join(directory, 'archive');
+    const rollbackDir = path.join(directory, 'before-restore');
+    const rollback = { filePath: path.join(rollbackDir, 'data'), schema: this.#dbAdapter.dbOpts.schema };
+    const incoming = {
+      filePath: path.join(extractedDir, 'data'),
+      schema: metadata.database.schema,
+      skipDropAllTables: options?.skipDropAllTables === true,
+      restoreMode: options?.restoreMode,
+      toolchain: this.#resolveRestoreToolchain(metadata),
+    };
+    let restoreStarted = false;
+    let keepRollbackFile = false;
+    try {
+      if (task) {
+        this.#notify(RESTORE_STEPS.BEGIN);
+        this.#notify(RESTORE_STEPS.DATABASE);
+      }
+      await this.#validateRestore(incoming);
+      await fsPromises.mkdir(rollbackDir);
+      await this.#dbAdapter.backup({ dir: rollbackDir });
+      await this.#validateRestore(rollback);
       await this.ctx.app.emitAsync('beforeStop');
       await this.ctx.app.emitAsync('afterStop');
 
-      await this.#dbAdapter.restore({
-        filePath: path.join(extractedDir, dbFile),
-        schema: metadata.database.schema,
-        skipDropAllTables: options?.skipDropAllTables === true,
-        restoreMode: options?.restoreMode,
-        toolchain: this.#resolveRestoreToolchain(metadata),
-      });
+      restoreStarted = true;
+      await this.#dbAdapter.restore(incoming);
       this.ctx.logger.info('Database restored successfully', { module: BACKUPS });
-      // copy the uploads directory
-      if (restoreUploads) {
+      if (task && uploadsExist) {
         this.#notify(RESTORE_STEPS.UPLOADS);
       }
-      await this.#restoreFilesAndCleanup(restoreUploads, extractedDir);
+      await this.#restoreFiles(uploadsExist, extractedDir);
+      if (task) {
+        await task.cache.set(task.id, { inProgress: false });
+        await this.ctx.app.runCommand('upgrade');
+      }
     } catch (error) {
-      await statusCache.set(taskId, {
-        inProgress: false,
-        message: error.message,
-      });
-      this.ctx.logger.error(`Error restoring backup: ${error.message}. Trying to revert the backup process`, {
-        module: BACKUPS,
-      });
+      if (task) {
+        await task.cache.set(task.id, { inProgress: false, message: error.message }).catch((cacheError) => {
+          this.ctx.logger.warn(`Failed to publish restore status: ${cacheError.message}`, { module: BACKUPS });
+        });
+      }
+      if (!restoreStarted) {
+        throw error;
+      }
+
+      this.ctx.logger.error(`Error restoring backup: ${error.message}`, { module: BACKUPS });
+      if (tolerentMode && error.message.includes('ignored')) {
+        await this.#restoreFiles(uploadsExist, extractedDir);
+        if (task) {
+          await this.ctx.app.runCommand('upgrade');
+        } else {
+          await this.ctx.app.upgrade();
+        }
+        return;
+      }
+
+      if (skipRevertOnError) {
+        keepRollbackFile = true;
+        this.ctx.logger.info(`Rollback backup retained at ${rollback.filePath}`, { module: BACKUPS });
+      } else {
+        try {
+          await this.#validateRestore(rollback);
+          await this.#dbAdapter.restore(rollback);
+        } catch (rollbackError) {
+          keepRollbackFile = true;
+          this.ctx.logger.error(`Could not revert the database from ${rollback.filePath}: ${rollbackError.message}`, {
+            module: BACKUPS,
+          });
+          throw error;
+        }
+      }
+      if (task) {
+        if (!tolerentMode && this.#isPostgresLikeDialect(this.#dbAdapter.dbOpts.dialect)) {
+          const backupMajor = Number(toMajorVersion(metadata.database.backupClientVersion));
+          const serverMajor = Number(toMajorVersion(await getDBVersion(this.ctx.app.db)));
+          if (backupMajor > 16 && serverMajor <= 16) {
+            await task.cache.set(task.id, { inProgress: false, message: this.#t('ERROR_PG_DUMP_LT_17') });
+          }
+        }
+        await this.ctx.app.runCommand('upgrade');
+      }
       throw error;
     } finally {
-      this.#notify(RESTORE_STEPS.END);
+      if (task) {
+        this.#notify(RESTORE_STEPS.END);
+      }
+      await fs.remove(keepRollbackFile ? extractedDir : directory).catch((cleanupError) => {
+        this.ctx.logger.warn(`Failed to clean up restore directory ${directory}: ${cleanupError.message}`, {
+          module: BACKUPS,
+        });
+      });
     }
-    await statusCache.set(taskId, {
-      inProgress: false,
-    });
-    await this.ctx.app.runCommand('upgrade');
   }
 
-  async #restoreFilesAndCleanup(restoreUploads: boolean, extractedDir: string) {
+  async #restoreFiles(restoreUploads: boolean, extractedDir: string) {
     if (restoreUploads) {
       const uploadsDir = path.join(extractedDir, 'uploads');
       await fsPromises.mkdir(this.#uploadDir, { recursive: true });
@@ -571,24 +557,6 @@ export class RestoreManager {
     const aesKeyPath = path.join(extractedDir, 'aes_key.dat');
     if (await fs.pathExists(aesKeyPath)) {
       await fs.copy(aesKeyPath, this.#aesKeyPath, { overwrite: true });
-    }
-    // cleanup the temp directory
-    fs.rm(extractedDir, { recursive: true }).catch((e) => {
-      this.ctx.logger.error(`Error cleaning up the temp directory: ${e.message}`, { module: BACKUPS });
-    });
-  }
-
-  async #revertDbRestore() {
-    this.ctx.logger.info('Reverting the database restore process', { module: BACKUPS });
-    const dbFile = path.join(this.#tempDir, 'before-restore', 'data');
-    if (await fs.pathExists(dbFile)) {
-      try {
-        await this.#dbAdapter.restore({ filePath: dbFile, schema: this.#dbAdapter.dbOpts.schema });
-      } catch (error) {
-        this.ctx.logger.error('Error reverting the database restore process', { module: BACKUPS });
-      }
-    } else {
-      this.ctx.logger.error('Database backup file for revert restore process not found', { module: BACKUPS });
     }
   }
 

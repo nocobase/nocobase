@@ -9,6 +9,7 @@
 
 import * as cp from 'child_process';
 import os from 'os';
+import path from 'path';
 import { getDBAdapter } from '../../adapters/database';
 import { Mock } from 'vitest';
 import * as fsPromises from 'fs/promises';
@@ -433,6 +434,24 @@ describe('DatabaseAdapter', () => {
       await adapter.backup({ dir });
       fs.promises.unlink(`${dir}/data`).catch(() => {});
       expect(mockedSpawn).toHaveBeenCalledWith('mysqldump', expect.anything(), expect.anything());
+    });
+
+    it('rejects a dump that exits unsuccessfully after writing its output', async () => {
+      const child = Object.assign(new EventEmitter(), {
+        stdout: Readable.from(['partial dump']),
+        stderr: Readable.from([]),
+      });
+      vi.mocked(cp.spawn).mockReturnValueOnce(child as unknown as ReturnType<typeof cp.spawn>);
+      const dir = await fs.promises.mkdtemp(path.join(os.tmpdir(), 'backup-exit-'));
+      try {
+        const backup = getDBAdapter(dbOpts).backup({ dir });
+        await vi.waitFor(() => expect(child.listenerCount('close')).toBe(1));
+        child.emit('exit', 1);
+        child.emit('close', 1);
+        await expect(backup).rejects.toThrow('mysqldump exited with code 1');
+      } finally {
+        await fs.promises.rm(dir, { recursive: true, force: true });
+      }
     });
 
     it('backup function with included and excluded tables', async () => {

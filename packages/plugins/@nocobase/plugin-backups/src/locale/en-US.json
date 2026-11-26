@@ -28,6 +28,8 @@
   "ERROR_RESTORING_BACKUP": "Error restoring backup: {{detail}}",
   "ERROR_SAVING_MEATADATA": "Error saving metadata: {{detail}}",
   "ERROR_TRIGGERING_BACKUP": "Error backing up: {{detail}}",
+  "ERROR_PG_SAFETY_BACKUP_VERSION_UNKNOWN": "Cannot verify the local pg_dump and target PostgreSQL server versions before creating the rollback backup.",
+  "ERROR_PG_SAFETY_BACKUP_VERSION": "The local pg_dump {{localDumpMajor}} cannot back up PostgreSQL {{serverMajor}}. Install pg_dump {{serverMajor}} or later before restoring.",
   "ERROR_PG_RESTORE_VERSION_UNKNOWN": "Cannot verify PostgreSQL backup compatibility. The backup must record a valid pg_dump version and pg_restore must return a valid version.",
   "ERROR_PG_RESTORE_VERSION_MISMATCH": "This backup was created with pg_dump {{backupClientVersion}}, which is newer than pg_restore {{restoreClientVersion}}. Install pg_restore {{backupClientVersion}} or later before restoring.",
   "ERROR_UPLOADING_FILES": "Error uploading files: {{detail}}",

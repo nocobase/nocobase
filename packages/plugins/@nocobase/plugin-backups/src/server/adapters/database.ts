@@ -9,6 +9,7 @@
 
 import { DatabaseOptions } from '@nocobase/database';
 import { exec as execCallback, execSync, spawn, spawnSync } from 'child_process';
+import { once } from 'events';
 import { createWriteStream } from 'fs';
 import * as fsPromises from 'fs/promises';
 import os from 'os';
@@ -44,6 +45,8 @@ export type DBBackupToolchain = 'postgres' | 'kingbase';
 export interface DBAdapter {
   dbOpts: DatabaseOptions;
   backupToolchain?: DBBackupToolchain;
+  serverVersion?(): Promise<string>;
+  validateRestore?(options: DBRestoreOptions): Promise<void>;
   backup(options: DBBackupOptions): Promise<void>;
   restore(options: DBRestoreOptions): Promise<void>;
   check(op: 'backup' | 'restore'): Promise<void>;
@@ -231,48 +234,35 @@ class MySQLAdapter extends BaseDBAdapter {
       mysqldumpArgs.push(...includeOption);
     }
 
-    // Stream mysqldump output directly to final file (no intermediate file)
-    return new Promise((resolve, reject) => {
-      const mysqldumpProcess = spawn(this.#backupCmd, mysqldumpArgs, {
-        env: { ...process.env, MYSQL_PWD: password },
-        stdio: ['pipe', 'pipe', 'pipe'],
-      });
-
-      const writeStream = createWriteStream(filePath, {
-        highWaterMark: STREAM_BUFFER_SIZE,
-      });
-
-      const escapeTransform = new EscapeQuoteTransform();
-
-      // Handle errors
-      mysqldumpProcess.on('error', reject);
-      mysqldumpProcess.on('exit', (code) => {
-        if (code !== 0) {
-          reject(new Error(`mysqldump exited with code ${code}`));
-        }
-      });
-
-      // Write SQL headers first
-      writeStream.write('/*!40101 SET @OLD_CHARACTER_SET_CLIENT=@@CHARACTER_SET_CLIENT */;\n');
-      writeStream.write('/*!40101 SET @OLD_CHARACTER_SET_RESULTS=@@CHARACTER_SET_RESULTS */;\n');
-      writeStream.write('/*!40101 SET @OLD_COLLATION_CONNECTION=@@COLLATION_CONNECTION */;\n');
-      writeStream.write('/*!40101 SET NAMES utf8mb4 */;\n\n');
-
-      if (createServerSQL) {
-        writeStream.write(`${createServerSQL}\n\n`);
-      }
-
-      // Direct streaming: mysqldump stdout -> transform -> final file
-      pipeline(mysqldumpProcess.stdout, escapeTransform, writeStream)
-        .then(() => {
-          // Add SQL footers
-          writeStream.write('\n/*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;\n');
-          writeStream.write('/*!40101 SET CHARACTER_SET_RESULTS=@OLD_CHARACTER_SET_RESULTS */;\n');
-          writeStream.write('/*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;\n');
-          writeStream.end(() => resolve());
-        })
-        .catch(reject);
+    const child = spawn(this.#backupCmd, mysqldumpArgs, {
+      env: { ...process.env, MYSQL_PWD: password },
+      stdio: ['ignore', 'pipe', 'pipe'],
     });
+    child.stderr.resume();
+    const exited = once(child, 'close').then(([code]) => {
+      if (code !== 0) throw new Error(`mysqldump exited with code ${code}`);
+    });
+    const output = createWriteStream(filePath, { highWaterMark: STREAM_BUFFER_SIZE });
+    output.write('/*!40101 SET @OLD_CHARACTER_SET_CLIENT=@@CHARACTER_SET_CLIENT */;\n');
+    output.write('/*!40101 SET @OLD_CHARACTER_SET_RESULTS=@@CHARACTER_SET_RESULTS */;\n');
+    output.write('/*!40101 SET @OLD_COLLATION_CONNECTION=@@COLLATION_CONNECTION */;\n');
+    output.write('/*!40101 SET NAMES utf8mb4 */;\n\n');
+    if (createServerSQL) {
+      output.write(`${createServerSQL}\n\n`);
+    }
+
+    const written = pipeline(
+      child.stdout,
+      new EscapeQuoteTransform(),
+      async function* (chunks) {
+        yield* chunks;
+        yield '\n/*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;\n';
+        yield '/*!40101 SET CHARACTER_SET_RESULTS=@OLD_CHARACTER_SET_RESULTS */;\n';
+        yield '/*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;\n';
+      },
+      output,
+    );
+    await Promise.all([written, exited]);
   }
 
   async #getFederatedServerSQL(
@@ -533,6 +523,16 @@ class PostgresAdapter extends BaseDBAdapter {
     }
   }
 
+  async serverVersion() {
+    return this.runSql('SHOW server_version', ['-X', '-At']);
+  }
+
+  async validateRestore({ filePath, schema, toolchain = this.backupToolchain }: DBRestoreOptions) {
+    this.getTargetSchema(schema);
+    // Read the data blocks as well as the table of contents, without connecting to the database.
+    await this.runRestore(['-f', os.devNull, filePath], toolchain);
+  }
+
   async backup({ dir, includeTables, excludeTables }: DBBackupOptions): Promise<void> {
     const { database, password } = this.dbOpts;
     const filePath = `${dir}/data`;
@@ -644,16 +644,7 @@ class PostgresAdapter extends BaseDBAdapter {
     restoreMode,
     toolchain = this.backupToolchain,
   }: DBRestoreOptions): Promise<void> {
-    let schemaOption = this.dbOpts.schema;
-    if (schema && !schemaOption) {
-      schemaOption = 'public'; // if schema is provided, but schemaOption is not, set it to public
-    }
-    if (schema) {
-      assertPostgresSchemaIdentifier(schema);
-    }
-    if (schemaOption) {
-      assertPostgresSchemaIdentifier(schemaOption);
-    }
+    const schemaOption = this.getTargetSchema(schema);
     const cpuCores = os.cpus().length; // get the number of CPU cores, so we can use it to parallelize the restore
     const j = Math.max(1, Math.floor(cpuCores / 2)); // use half of the cores
     const schemaNameCondition = schemaOption
@@ -765,6 +756,13 @@ class PostgresAdapter extends BaseDBAdapter {
       const pgRestoreArgs = this.buildSchemaRestoreArgs(srcSchema, schemaOption, filePath, j, toolchain);
       await this.restoreSchema(srcSchema, schemaOption, pgRestoreArgs, toolchain);
     }
+  }
+
+  private getTargetSchema(sourceSchema?: string) {
+    const targetSchema = this.dbOpts.schema || (sourceSchema ? 'public' : undefined);
+    if (sourceSchema) assertPostgresSchemaIdentifier(sourceSchema);
+    if (targetSchema) assertPostgresSchemaIdentifier(targetSchema);
+    return targetSchema;
   }
 
   protected async createRestoreListWithoutSchema(
