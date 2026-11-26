@@ -1,4 +1,7 @@
-import { mkdtemp, rm, writeFile } from 'node:fs/promises';
+import { createHash } from 'node:crypto';
+import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
+import { findPackageJSON } from 'node:module';
+import { pathToFileURL } from 'node:url';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import type { DatabaseConnection, DatabaseManager } from '@nocobase/db';
@@ -202,6 +205,33 @@ export function describeCollectionCache(
       );
     });
 
+    it('falls back to fresh physical inspection when the version is missing', async () => {
+      const read = () =>
+        reader.transaction(async (connection) =>
+          connection.collections.get('tasks'),
+        );
+      expect((await read())?.fields).toHaveLength(2);
+      const metadata = '__nocobase_collection_metadata';
+      const hash = createHash('sha256')
+        .update(metadata)
+        .digest('hex')
+        .slice(0, 8);
+      const client = await writer.client<Knex>();
+      await client(`${metadata}_cache_${hash}`).where({ id: 1 }).delete();
+      await client.schema.alterTable('tasks', (table) => table.string('added'));
+      await client.schema.alterTable('members', (table) =>
+        table.string('added'),
+      );
+      expect((await read())?.fields?.map((field) => field.name)).toContain(
+        'added',
+      );
+      expect(
+        (await reader.collections.get('members'))?.fields?.map(
+          (field) => field.name,
+        ),
+      ).toContain('added');
+    });
+
     it('keeps rollback local and still inspects raw DDL with reuse disabled', async () => {
       const read = () =>
         reader.transaction(async (transaction) =>
@@ -351,6 +381,7 @@ export function describeCollectionCache(
           );
         await read();
         try {
+          const moduleUrl = await databaseModuleUrl();
           const write = async (
             name: string,
             transaction: boolean,
@@ -359,7 +390,7 @@ export function describeCollectionCache(
             await writeFile(
               join(directory, `${name}.mjs`),
               `
-            import { defineMigration } from ${JSON.stringify(import.meta.resolve('@nocobase/db'))};
+            import { defineMigration } from ${JSON.stringify(moduleUrl)};
             export default defineMigration({ name: '${name}', transaction: ${transaction}, irreversible: true, async up({ connection }) {
               const client = await connection.client();
               ${code}
@@ -406,4 +437,13 @@ function deferred(): {
     reject = failed;
   });
   return { promise, resolve, reject };
+}
+
+async function databaseModuleUrl(): Promise<string> {
+  const manifest = findPackageJSON('@nocobase/db', import.meta.url);
+  if (!manifest) throw new Error('Cannot locate the @nocobase/db package.');
+  const parsed = JSON.parse(await readFile(manifest, 'utf8')) as {
+    exports: { '.': { import: string } };
+  };
+  return new URL(parsed.exports['.'].import, pathToFileURL(manifest)).href;
 }

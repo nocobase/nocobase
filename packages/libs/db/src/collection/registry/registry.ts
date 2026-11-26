@@ -364,10 +364,12 @@ export class CollectionRegistry
     await this.initialize();
     const generation = store.cacheGeneration;
     const version = await store.readSchemaVersion();
-    if (!version || generation !== store.cacheGeneration)
-      return this.load(name);
-    const shared = cache.observe(version);
-    if (!shared) return this.load(name);
+    const shared =
+      version && generation === store.cacheGeneration
+        ? cache.observe(version)
+        : undefined;
+    if (!version || !shared)
+      return this.load(name, await this.createTransactionIndex(store));
     const index =
       shared.index ?? (await this.createTransactionIndex(store, version));
     const result = await this.load(name, index);
