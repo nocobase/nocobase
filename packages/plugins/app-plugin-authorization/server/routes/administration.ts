@@ -2,6 +2,7 @@ import { AUTHENTICATION_SETTINGS_ID } from '@nocobase/app-plugin-authentication'
 import type { Authorization } from '@nocobase/authorization/core';
 import type { PermissionSetsAuthorizationApi } from '@nocobase/authorization/permission-sets';
 import { AUTHORIZATION_NAMESPACE } from '../../shared.js';
+import type { PermissionSetMutationChecks } from '../permission-set-mutations.js';
 import type { AuthorizationExtensionHost } from '../host.js';
 import type { SettingsAuthorizationApi } from '../settings.js';
 import { AUTHORIZATION_SETTINGS_SECTION } from '../ui.js';
@@ -26,6 +27,7 @@ export function installAuthorizationAdministration(
     AuthorizationExtensionHost &
     SettingsAuthorizationApi &
     PermissionSetsAuthorizationApi,
+  mutationChecks: PermissionSetMutationChecks,
 ): void {
   authz.settings.add({
     id: PERMISSION_SETS_SETTINGS,
@@ -50,7 +52,7 @@ export function installAuthorizationAdministration(
   );
   authz.routes.add(
     '/permissionSets',
-    createPermissionSetHandler(authz, authz.permissionSets),
+    createPermissionSetHandler(authz, authz.permissionSets, mutationChecks),
   );
   authz.routes.add(
     '/inspector',

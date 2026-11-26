@@ -21,6 +21,10 @@ import {
   pagesPlugin,
   type PagesAuthorizationApi,
 } from './pages-authorization.js';
+import {
+  PermissionSetMutationChecks,
+  type PermissionSetMutationCheck,
+} from './permission-set-mutations.js';
 import { installAuthorizationAdministration } from './routes/administration.js';
 import { settingsPlugin, type SettingsAuthorizationApi } from './settings.js';
 import { uiPlugin, type UiAuthorizationApi } from './ui.js';
@@ -59,6 +63,10 @@ export type AppAuthorization = Authorization &
   UiAuthorizationApi & {
     /** Kinds of subject the permission inspector checks besides users, such as API keys. */
     readonly inspector: InspectorApi;
+    /** Registers a check for generic Permission Set create, update and delete requests. Returns an unregister function. */
+    addPermissionSetMutationCheck(
+      check: PermissionSetMutationCheck,
+    ): () => void;
   };
 
 const DEFAULT_ROOT_SET = 'root';
@@ -74,12 +82,14 @@ export function createAppAuthorization(
     'Permission Sets',
     options.connection,
   );
+  const store = new DatabasePermissionSetStore(connection.resolve);
+  const mutationChecks = new PermissionSetMutationChecks(store);
   const created = createAuthorization({
     connection: options.connection,
     onInvalidGrant: (grant) => options.onInvalidGrant?.(grant),
     plugins: [
       permissionSetsPlugin<DatabaseConnection>({
-        store: new DatabasePermissionSetStore(connection.resolve),
+        store,
         rootSet: {
           key: sets?.rootSet ?? DEFAULT_ROOT_SET,
           // `user` is this host's principal type: a superuser is an account.
@@ -97,6 +107,7 @@ export function createAppAuthorization(
   });
   const authz: AppAuthorization = Object.assign(created, {
     inspector: createInspectorApi(),
+    addPermissionSetMutationCheck: mutationChecks.add,
   });
   if ((sets?.rootSet ?? DEFAULT_ROOT_SET) === MEMBER_SET) {
     throw new Error(
@@ -131,7 +142,7 @@ export function createAppAuthorization(
     // owner can enumerate, so every client refreshes.
     else await options.onAuthenticatedPermissionsChanged?.();
   });
-  installAuthorizationAdministration(authz);
+  installAuthorizationAdministration(authz, mutationChecks);
   return authz;
 }
 

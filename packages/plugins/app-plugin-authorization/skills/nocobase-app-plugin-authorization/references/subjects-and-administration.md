@@ -145,3 +145,9 @@ Follow the bundled [client and settings workflow](client-development.md#settings
 5. Inspect workflow state and relation target constraints separately from the grant decision.
 
 The inspector API admits only an unrestricted identity, such as a holder of the root Permission Set; anyone else gets `403`, whatever settings they hold. It is not a settings item, role editors never offer it, and applications ship no permission check page. It reports decisions and sources, not accessible-record counts. Client snapshots and configured-permission shields indicate visibility/configuration, not proof that a particular record can be changed. Include direct API denials, revocation, rollback, session switching and pending checks in acceptance evidence.
+
+## Check generic role edits
+
+For an application policy that also applies to administrator-created roles, resolve `authorizationToken` in provider boot and register `authz.addPermissionSetMutationCheck(check)`. Dispose of the registration on shutdown. The generic Permission Set API invokes the check on create, update and delete after its existing permission and protection checks. Compare `previous?.grants ?? []` with `next?.grants ?? []` for the resources the policy governs. Include additions, removals, policy changes and wildcards, and allow unchanged grants to save alongside unrelated edits.
+
+Use the `transaction` in the check context for same-database policy reads. A host `ApiError` with status `PERMISSION_DENIED` rolls back the save. Keep checks free of side effects. Apply the host's policy at the operation boundary for its own programmatic changes and for subject membership changes.

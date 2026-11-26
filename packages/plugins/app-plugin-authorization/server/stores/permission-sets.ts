@@ -17,10 +17,12 @@ import type {
 } from '@nocobase/authorization/permission-sets';
 import type { PermissionSetStore } from '@nocobase/authorization/permission-sets';
 
+const permissionSetColumns = ['key', 'title', 'grants', 'revision'] as const;
+
 export class DatabasePermissionSetStore implements PermissionSetStore<DatabaseConnection> {
   constructor(
     private readonly connection: DatabaseConnectionSource,
-    private lockTableName?: string,
+    private readonly lockTable: { name?: string } = {},
   ) {}
 
   transaction<T>(
@@ -31,16 +33,14 @@ export class DatabasePermissionSetStore implements PermissionSetStore<DatabaseCo
     );
   }
 
-  withTransaction(
-    connection: DatabaseConnection,
-  ): PermissionSetStore<DatabaseConnection> {
-    return new DatabasePermissionSetStore(() => connection, this.lockTableName);
+  withTransaction(connection: DatabaseConnection): DatabasePermissionSetStore {
+    return new DatabasePermissionSetStore(() => connection, this.lockTable);
   }
 
   async list(): Promise<readonly PermissionSet[]> {
     const rows = await this.connection()
       .query.selectFrom('authorizationPermissionSets')
-      .select(['key', 'title', 'grants', 'revision'])
+      .select(permissionSetColumns)
       .orderBy('key', 'asc')
       .execute();
     return rows.map((row) => permissionSetFromRow(row));
@@ -77,18 +77,29 @@ export class DatabasePermissionSetStore implements PermissionSetStore<DatabaseCo
   async get(key: string): Promise<PermissionSet | undefined> {
     const row = await this.connection()
       .query.selectFrom('authorizationPermissionSets')
-      .select(['key', 'title', 'grants', 'revision'])
+      .select(permissionSetColumns)
       .where('key', '=', key)
       .executeTakeFirst();
     if (!row) return undefined;
     return permissionSetFromRow(row);
   }
 
+  /** Reads the current state while serializing edits to this set in the caller's transaction. */
+  async getForMutation(key: string): Promise<PermissionSet | undefined> {
+    if (this.connection().dialect === 'sqlite') {
+      await this.lock(key);
+      return this.get(key);
+    }
+    // Use a current read on dialects that distinguish locking reads from snapshot reads.
+    const [row] = await this.selectLocked(key, permissionSetColumns);
+    return row ? permissionSetFromRow(row) : undefined;
+  }
+
   async getMany(keys: readonly string[]): Promise<readonly PermissionSet[]> {
     if (keys.length === 0) return [];
     const rows = await this.connection()
       .query.selectFrom('authorizationPermissionSets')
-      .select(['key', 'title', 'grants', 'revision'])
+      .select(permissionSetColumns)
       .where('key', 'in', [...new Set(keys)])
       .execute();
     return rows.map(permissionSetFromRow);
@@ -235,20 +246,30 @@ export class DatabasePermissionSetStore implements PermissionSetStore<DatabaseCo
         .execute();
       return;
     }
+    await this.selectLocked(key, ['id']);
+  }
+
+  private async selectLocked(
+    key: string,
+    columns: readonly string[],
+  ): Promise<Record<string, unknown>[]> {
     const tableName = await this.resolveLockTable();
     const knex = await this.connection().client<Knex>();
-    await knex(tableName).where({ key }).select('id').forUpdate();
+    return knex<Record<string, unknown>>(tableName)
+      .where({ key })
+      .select(...columns)
+      .forUpdate();
   }
 
   private async resolveLockTable(): Promise<string> {
     // Resolve metadata before opening an owned transaction: even a metadata
     // SELECT can establish an old repeatable-read snapshot before the guard.
-    if (this.lockTableName) return this.lockTableName;
+    if (this.lockTable.name) return this.lockTable.name;
     const physical = await this.connection().collections.getPhysical(
       'authorizationPermissionSets',
     );
     if (!physical) throw new Error('Permission Set schema is unavailable');
-    return (this.lockTableName = physical.tableName);
+    return (this.lockTable.name = physical.tableName);
   }
 
   async listAssignments(

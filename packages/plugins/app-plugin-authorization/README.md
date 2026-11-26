@@ -419,6 +419,28 @@ defineRoutes([
 
 Declare `authz` on every entry client route: there is no `page:<route.name>` inference. A nested page that omits it inherits its nearest ancestor page's value; an entry page that omits it defaults to `'unrestricted'` on protected App routes, which `useCan('unrestricted')` and `client.can('unrestricted')` pass only for an unrestricted snapshot such as root's, and to `'skip'` on guest and optional routes. Unrestricted-only routes are never offered as page grants. A permission management page lists these pages in the `pages.page` subsection, under their navigation groups as resource groups, from the client route tree sorted by `navigation.order` the way the menu sorts them.
 
+## Check generic Permission Set changes
+
+Resolve `authorizationToken` from `@nocobase/app-plugin-authorization/server` and call `authz.addPermissionSetMutationCheck(check)` when the host boots. Register the check in every server process that serves the settings API. Call the returned function when the registration is no longer needed.
+
+The check receives `operation`, `previous`, `next`, the request's `authorization`, and the mutation's `transaction`. A create has no previous set, an update includes the entire proposed set even when the request changes only one field, and a delete has no proposed set. Compare the grants for the resource types your policy owns, accounting for equivalent ordering and any wildcard grants your application supports. Throw an `ApiError` with status `PERMISSION_DENIED` to refuse the change.
+
+```ts
+const unregister = authz.addPermissionSetMutationCheck(async (change) => {
+  const before = change.previous?.grants ?? [];
+  const after = change.next?.grants ?? [];
+  for (const resource of changedFeatureGrants(before, after)) {
+    await featurePolicy.requireGrantEditing(resource, change.transaction);
+  }
+});
+```
+
+Here `changedFeatureGrants` and `featurePolicy` are supplied by the host. The host can allow other role edits by returning when the feature grants are unchanged.
+
+The check runs after the generic API's authentication, action permission, input validation and set protection. It runs before the new grants, role details and assignment changes are saved. Checks are awaited in registration order and receive independent snapshots. Use the supplied transaction for policy reads on the same database, and keep the callback free of side effects. Rejection rolls back the transaction, including the operation receipt when enabled. A replay of a committed operation checks the caller's current API permissions and returns the saved result.
+
+This registration covers generic create, patch and delete requests under `/api/authorization/permissionSets`. Programmatic writes and membership assignment APIs use their own operation boundaries. Hosts with no registered checks keep the original transaction path.
+
 ## HTTP API
 
 Every path is under `/api/authorization` and requires a signed-in user. Settings checks use `{ resource: { type: 'settings', id }, action }`, and run before the request is validated, so a caller without the permission gets `403` whatever the request holds. Successful responses wrap results in `{ data }`; a paged list adds `meta: { page, pageSize, total }`; creation answers `201` and deletion `204` with no body. Every input is validated: an invalid or unknown field answers `400 INVALID_ARGUMENT` with reason `INVALID_INPUT` and a `fieldViolations` entry for each problem. Failures use the standard error body, `{ error: { code, status, reason, domain, message, requestId } }`; branch on `error.reason`, never on `message`.
@@ -503,7 +525,9 @@ The root entry `@nocobase/app-plugin-authorization` exports exactly the same nam
 | `AuthorizationConfig`                 | type     | `{ permissionSets?: AppPermissionSetsConfig; plugins?: readonly AuthorizationPlugin[] }`                                                                                    | The application's authorization configuration.                                                            |
 | `AppPermissionSetsConfig`             | type     | `{ rootSet?: string; defaultSet?: string }`                                                                                                                                 | Names of the unrestricted and default sets.                                                               |
 | `authorizationToken`                  | const    | `ServiceToken<AppAuthorization>`                                                                                                                                            | The only service token.                                                                                   |
-| `AppAuthorization`                    | type     | `Authorization & { permissionSets, database, pages, settings, composites, ui }`                                                                                             | The registered instance.                                                                                  |
+| `AppAuthorization`                    | type     | `Authorization & { permissionSets, database, pages, settings, composites, ui, inspector, addPermissionSetMutationCheck }`                                                   | The registered instance.                                                                                  |
+| `PermissionSetMutationCheck`          | type     | `(context: PermissionSetMutationContext) => void \| Promise<void>`                                                                                                          | Checks a generic Permission Set write.                                                                    |
+| `PermissionSetMutationContext`        | type     | `{ operation, previous, next, authorization, transaction }`                                                                                                                 | The input to a registered write check.                                                                    |
 | `AuthorizationProvider`               | class    | `ServiceProvider`                                                                                                                                                           | Registers the instance; other providers order themselves after it.                                        |
 | `databasePlugin`                      | function | `databasePlugin(database?: DatabaseManager): DatabasePlugin`                                                                                                                | Registers `database.collection` and `authz.database`.                                                     |
 | `DatabasePlugin`                      | type     | `AuthorizationPlugin<{ database: DatabaseApi }, DatabaseConnection>`                                                                                                        | What `databasePlugin` returns.                                                                            |

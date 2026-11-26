@@ -1,4 +1,9 @@
 import { z } from 'zod';
+import type { DatabaseConnection } from '@nocobase/db';
+import type {
+  PermissionSetMutationChecks,
+  PermissionSetMutationValidator,
+} from '../permission-set-mutations.js';
 import { submitSettingsMutation } from '../extension/submission.js';
 import {
   ApiError,
@@ -12,6 +17,7 @@ import {
 } from '@nocobase/app-server/router';
 import {
   parseAuthorizationTitle,
+  type AuthorizationContext,
   type AuthorizationRouteHandler,
   type AuthorizationTitle,
   dataScopeTarget,
@@ -76,12 +82,13 @@ export interface PermissionSetSummary extends PermissionSet {
 
 export const PERMISSION_SETS_SETTINGS = 'authorization.permission-sets';
 
-type Api = PermissionSetsApi;
+type Api = PermissionSetsApi<DatabaseConnection>;
 
 /** Every `/permissionSets` route, gated by `settings:authorization.permission-sets`. */
 export function createPermissionSetHandler(
   host: AuthorizationExtensionHost,
   api: Api,
+  mutationChecks?: PermissionSetMutationChecks,
 ): AuthorizationRouteHandler {
   const routes = createSettingsRouter();
   const notFound = (key: string) =>
@@ -91,6 +98,37 @@ export function createPermissionSetHandler(
       domain: AUTHORIZATION_ERROR_DOMAIN,
       message: `Permission Set ${key} was not found.`,
     });
+
+  function submitPermissionSetMutation<T>(
+    authorization: AuthorizationContext,
+    input: unknown,
+    key: string | undefined,
+    save: (
+      bound: Api,
+      check?: PermissionSetMutationValidator,
+      previous?: PermissionSet,
+    ) => Promise<T>,
+  ): Promise<T> {
+    return submitSettingsMutation(
+      input,
+      (transaction) => {
+        const execute = (
+          connection?: DatabaseConnection,
+          check?: PermissionSetMutationValidator,
+          previous?: PermissionSet,
+        ): Promise<T> =>
+          save(
+            connection ? api.withTransaction(connection) : api,
+            check,
+            previous,
+          );
+        return mutationChecks
+          ? mutationChecks.run(transaction, key, authorization, execute)
+          : execute(transaction);
+      },
+      () => requireSettings(authorization, PERMISSION_SETS_SETTINGS, 'read'),
+    );
+  }
 
   // Fixed segments are registered before `/permissionSets/:key`, which would otherwise match them.
   routes.get(
@@ -195,7 +233,7 @@ export function createPermissionSetHandler(
       tags,
       summary: 'Create a Permission Set',
       operationId: 'authorizationCreatePermissionSet',
-      description: `A grant the registered resource types do not accept answers \`400\` with reason \`INVALID_AUTHORIZATION_INPUT\`, naming each offending field where it can. ${protectedDescription} Requires \`settings:authorization.permission-sets\` \`create\`.`,
+      description: `A grant the registered resource types do not accept answers \`400\` with reason \`INVALID_AUTHORIZATION_INPUT\`, naming each offending field where it can. ${protectedDescription} Requires \`settings:authorization.permission-sets\` \`create\`. A host policy may deny this mutation.`,
       responses: {
         201: dataResponse(PermissionSetSchema, 'The created Permission Set.'),
         ...apiErrorResponses,
@@ -226,18 +264,18 @@ export function createPermissionSetHandler(
       validateGrants(host, input);
       await validateWriteGrants(host, input.grants);
       api.assertWritable(input.key, 'create');
-      const data = await submitSettingsMutation(
+      const data = await submitPermissionSetMutation(
+        context.env.authorization,
         input,
-        async (transaction) => {
-          const bound = transaction ? api.withTransaction(transaction) : api;
+        undefined,
+        async (bound, check) => {
+          await check?.({
+            operation: 'create',
+            previous: undefined,
+            next: input,
+          });
           return summarize(bound, await bound.create(input));
         },
-        () =>
-          requireSettings(
-            context.env.authorization,
-            PERMISSION_SETS_SETTINGS,
-            'read',
-          ),
       );
       return context.json({ data }, 201);
     },
@@ -384,7 +422,7 @@ export function createPermissionSetHandler(
       tags,
       summary: 'Update a Permission Set',
       operationId: 'authorizationUpdatePermissionSet',
-      description: `Changes only the fields the body names: \`key\` renames the set, \`title: null\` clears its title and \`grants\` replaces every grant. A protected set cannot be renamed. ${protectedDescription} Requires \`settings:authorization.permission-sets\` \`update\`.`,
+      description: `Changes only the fields the body names: \`key\` renames the set, \`title: null\` clears its title and \`grants\` replaces every grant. A protected set cannot be renamed. ${protectedDescription} Requires \`settings:authorization.permission-sets\` \`update\`. A host policy may deny this mutation.`,
       responses: {
         200: dataResponse(PermissionSetSchema),
         ...apiErrorResponses,
@@ -418,11 +456,12 @@ export function createPermissionSetHandler(
     async (context) => {
       const { key } = context.req.valid('param');
       const changes = context.req.valid('json');
-      const data = await submitSettingsMutation(
+      const data = await submitPermissionSetMutation(
+        context.env.authorization,
         changes,
-        async (transaction) => {
-          const bound = transaction ? api.withTransaction(transaction) : api;
-          const existing = await bound.get(key);
+        key,
+        async (bound, check, previous) => {
+          const existing = check ? previous : await bound.get(key);
           if (!existing) throw notFound(key);
           const input = permissionSetInput({
             key: changes.key ?? existing.key,
@@ -451,17 +490,16 @@ export function createPermissionSetHandler(
                   'update',
                 );
             }
+          await check?.({
+            operation: 'update',
+            previous: existing,
+            next: input,
+          });
           return summarize(
             bound,
             await bound.update(key, input, changes.expectedRevision),
           );
         },
-        () =>
-          requireSettings(
-            context.env.authorization,
-            PERMISSION_SETS_SETTINGS,
-            'read',
-          ),
       );
       return context.json({ data });
     },
@@ -473,7 +511,7 @@ export function createPermissionSetHandler(
       tags,
       summary: 'Delete a Permission Set',
       operationId: 'authorizationDeletePermissionSet',
-      description: `${protectedDescription} Requires \`settings:authorization.permission-sets\` \`delete\`.`,
+      description: `${protectedDescription} Requires \`settings:authorization.permission-sets\` \`delete\`. A host policy may deny this mutation.`,
       responses: {
         204: emptyResponse('The Permission Set was deleted.'),
         ...apiErrorResponses,
@@ -495,20 +533,21 @@ export function createPermissionSetHandler(
     async (context) => {
       const { key } = context.req.valid('param');
       api.assertWritable(key, 'delete');
-      await submitSettingsMutation(
+      await submitPermissionSetMutation(
+        context.env.authorization,
         { key },
-        async (transaction) => {
-          const bound = transaction ? api.withTransaction(transaction) : api;
-          if (!(await bound.get(key))) throw notFound(key);
+        key,
+        async (bound, check, previous) => {
+          const existing = check ? previous : await bound.get(key);
+          if (!existing) throw notFound(key);
+          await check?.({
+            operation: 'delete',
+            previous: existing,
+            next: undefined,
+          });
           await bound.delete(key);
           return null;
         },
-        () =>
-          requireSettings(
-            context.env.authorization,
-            PERMISSION_SETS_SETTINGS,
-            'read',
-          ),
       );
       return context.body(null, 204);
     },

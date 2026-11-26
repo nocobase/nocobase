@@ -6,6 +6,10 @@ export {
   type AuthorizationConfig,
   type CreateAppAuthorizationOptions,
 } from './authorization.js';
+export type {
+  PermissionSetMutationCheck,
+  PermissionSetMutationContext,
+} from './permission-set-mutations.js';
 export { authorizationToken } from './tokens.js';
 export { AuthorizationProvider } from './providers/authorization.js';
 export { databasePlugin, type DatabasePlugin } from './database/plugin.js';
