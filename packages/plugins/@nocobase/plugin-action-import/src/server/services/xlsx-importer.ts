@@ -59,7 +59,6 @@ export type ImporterOptions = {
   explain?: string;
   repository?: any;
   logger?: Logger;
-  rowDefaultValues?: Record<string, any>;
 };
 
 export type RunOptions = {
@@ -457,10 +456,7 @@ export class XlsxImporter extends EventEmitter {
         const row = chunkRows[i];
         const rowValues = {};
         await this.handleRowValuesWithColumns(row, rowValues, chunkRunOptions, columns, chunkStartRowIndex + i);
-        rows.push({
-          ...(this.options.rowDefaultValues || {}),
-          ...rowValues,
-        });
+        rows.push(rowValues);
       }
 
       await this.loggerService.measureExecutedTime(
