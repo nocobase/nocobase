@@ -2,7 +2,14 @@ import { isE164 } from '@nocobase/app-plugin-notification-providers/sms';
 import { z } from 'zod';
 
 import { nameSchema } from '../config.js';
-import type { CodeTiming, PhoneView, StepUpCredential } from '../contracts.js';
+import type {
+  BindPhoneInput,
+  CodeTiming,
+  IssueStepUpTokenInput,
+  PhoneView,
+  SendVerificationCodeInput,
+  StepUpCredential,
+} from '../../shared/contracts.js';
 
 const otp = z
   .string()
@@ -11,11 +18,7 @@ const otp = z
     description: 'The six-digit code received over the registered channel.',
   });
 
-export const sendInput: z.ZodType<{
-  scene: string;
-  phone?: string;
-  purpose?: string;
-}> = z.strictObject({
+export const sendInput: z.ZodType<SendVerificationCodeInput> = z.strictObject({
   scene: nameSchema,
   phone: z.string().min(1).max(256).optional().meta({
     description:
@@ -25,13 +28,14 @@ export const sendInput: z.ZodType<{
     .optional()
     .meta({ description: 'The registered purpose, required for stepUp.' }),
 });
-export const stepUpInput: z.ZodType<{ purpose: string; code: string }> =
-  z.strictObject({ purpose: nameSchema, code: otp });
-export const phoneInput: z.ZodType<{ phone: string; code: string }> =
-  z.strictObject({
-    phone: z.string().refine(isE164, 'Expected an E.164 phone number.'),
-    code: otp,
-  });
+export const stepUpInput: z.ZodType<IssueStepUpTokenInput> = z.strictObject({
+  purpose: nameSchema,
+  code: otp,
+});
+export const phoneInput: z.ZodType<BindPhoneInput> = z.strictObject({
+  phone: z.string().refine(isE164, 'Expected an E.164 phone number.'),
+  code: otp,
+});
 export const timingSchema: z.ZodType<CodeTiming> = z.object({
   expiresAt: z.iso.datetime(),
   resendAt: z.iso.datetime(),

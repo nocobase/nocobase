@@ -1,4 +1,15 @@
-export const changePhonePurpose = 'verification.changePhone';
+import type {
+  CodeTiming,
+  PhoneView,
+  StepUpCredential,
+} from '../shared/contracts.js';
+
+export { changePhonePurpose } from '../shared/contracts.js';
+export type {
+  CodeTiming,
+  PhoneView,
+  StepUpCredential,
+} from '../shared/contracts.js';
 
 export interface CodePolicy {
   readonly ttlSeconds: number;
@@ -47,20 +58,6 @@ export interface VerifyCodeInput {
 export interface StepUpScope {
   readonly userId: string;
   readonly purpose: string;
-}
-
-export interface CodeTiming {
-  readonly expiresAt: string;
-  readonly resendAt: string;
-}
-
-export interface StepUpCredential {
-  readonly token: string;
-  readonly expiresAt: string;
-}
-
-export interface PhoneView {
-  readonly phone: string | null;
 }
 
 export interface VerificationService {

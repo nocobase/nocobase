@@ -88,6 +88,7 @@
     "zh": "通知",
     "ja": "通知"
   },
+  "verification": { "en": "Verification", "zh": "验证码", "ja": "認証コード" },
   "scheduler": {
     "en": "Scheduler",
     "zh": "定时任务",
