@@ -2467,6 +2467,9 @@ importers:
       '@nocobase/i18n':
         specifier: workspace:^
         version: link:../i18n
+      '@nocobase/logging':
+        specifier: workspace:^
+        version: link:../logging
       '@nocobase/secrets':
         specifier: workspace:^
         version: link:../secrets

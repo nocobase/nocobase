@@ -58,6 +58,7 @@ export {
   type AuditConfig,
   type AuditConfigFactory,
   type AuditDestinationConfig,
+  type AuditFileOptions,
 } from './config.js';
 export {
   describeAudit,

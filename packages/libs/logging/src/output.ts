@@ -1,8 +1,10 @@
 import { Writable } from 'node:stream';
-import { readdirSync, statSync } from 'node:fs';
+import { lstatSync, readdirSync, statSync } from 'node:fs';
 import path from 'node:path';
 import {
   appendJournal,
+  appendPrivateJournalLine,
+  assertJournalDirectory,
   pruneJournals,
   sanitizeLog,
   serializeJournalEntry,
@@ -155,12 +157,208 @@ function prettyEntry(entry: JournalEntry, color: boolean): string {
     : `${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}:${String(date.getSeconds()).padStart(2, '0')}.${String(date.getMilliseconds()).padStart(3, '0')}`;
   return `${clock} ${shown} [${scope}] ${msg}${typeof durationMs === 'number' ? ` ${durationMs}ms` : ''}${details ? ` ${details}` : ''}${err ? `\n${JSON.stringify(err, null, 2)}` : ''}\n`;
 }
+interface LogSegment {
+  date: string;
+  part: number;
+  filename: string;
+}
+
+function selectLogSegment(
+  directory: string,
+  name: string,
+  extension: '.log' | '.jsonl',
+  maxBytes: number,
+  bytes: number,
+  active?: LogSegment,
+): LogSegment {
+  const date = new Date().toISOString().slice(0, 10);
+  const prefix = `${name}.${date}.`;
+  let part = 0;
+  if (active?.date === date) {
+    part = active.part;
+  } else {
+    try {
+      for (const existing of readdirSync(directory)) {
+        if (!existing.startsWith(prefix) || !existing.endsWith(extension))
+          continue;
+        const suffix = existing.slice(prefix.length, -extension.length);
+        const index = Number(suffix);
+        const validPart =
+          extension === '.jsonl'
+            ? journalPart.test(suffix)
+            : /^\d+$/.test(suffix);
+        if (validPart && Number.isSafeInteger(index))
+          part = Math.max(part, index);
+      }
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw error;
+    }
+  }
+  for (;;) {
+    const filename = path.join(
+      directory,
+      `${prefix}${String(part).padStart(6, '0')}${extension}`,
+    );
+    const stats =
+      extension === '.jsonl'
+        ? lstatSync(filename, { throwIfNoEntry: false })
+        : statSync(filename, { throwIfNoEntry: false });
+    if (extension === '.jsonl' && stats && !stats.isFile())
+      throw new Error('Log destination must be a regular file');
+    // A record larger than the limit gets its own segment.
+    if (
+      !stats?.size ||
+      (stats.size < maxBytes && stats.size + bytes <= maxBytes)
+    )
+      return { date, part, filename };
+    if (part === Number.MAX_SAFE_INTEGER)
+      throw new Error('Log segment number exhausted');
+    part++;
+  }
+}
+
+const cleanupInterval = 60_000;
+const bytesPerMB = 1024 * 1024;
+const journalPart = /^(?:\d{6}|[1-9]\d{6,})$/;
+
+export interface JsonLinesLogOptions {
+  /** Existing canonical directory for a single writer process. */
+  directory: string;
+  name: string;
+  maxFileSizeMB: number;
+  retentionDays: number;
+  onCleanupError?: (error: unknown) => void;
+}
+
+export interface JsonLinesLogOutput {
+  /** Append one serialized record with its trailing newline. Throws on I/O failure. */
+  writeLine(line: string): void;
+  /** Await scheduled retention work and release this output. */
+  close(): Promise<void>;
+}
+
+interface JsonLinesTarget {
+  references: number;
+  retentionDays: number;
+  maxFileSizeMB: number;
+  active?: LogSegment;
+  lastCleanup?: number;
+  cleanup?: Promise<void>;
+  cleanupRequested: boolean;
+}
+
+const jsonLinesTargets = new Map<string, JsonLinesTarget>();
+
+/** Use the rolling journal with caller-serialized records and target-scoped retention. */
+export function createJsonLinesLogOutput(
+  options: JsonLinesLogOptions,
+): JsonLinesLogOutput {
+  const { name, directory } = options;
+  if (!/^[a-zA-Z0-9_-]+$/.test(name)) throw new Error('Invalid log file name');
+  validateJournalPolicy({
+    retentionDays: options.retentionDays,
+    maxSizeMB: options.maxFileSizeMB,
+  });
+  const key = path.join(directory, name);
+  const state = jsonLinesTargets.get(key) ?? {
+    references: 0,
+    retentionDays: options.retentionDays,
+    maxFileSizeMB: options.maxFileSizeMB,
+    cleanupRequested: false,
+  };
+  // Share segment selection and honor the longest retention and smallest size limit
+  // registered for the target until the last writer closes.
+  state.references++;
+  state.retentionDays = Math.max(state.retentionDays, options.retentionDays);
+  state.maxFileSizeMB = Math.min(state.maxFileSizeMB, options.maxFileSizeMB);
+  jsonLinesTargets.set(key, state);
+  const archive = new RegExp(
+    `^${name}\\.(\\d{4}-\\d{2}-\\d{2})\\.(\\d+)\\.jsonl$`,
+  );
+  const scope = {
+    matches(filename: string) {
+      const match = archive.exec(filename);
+      if (
+        !match ||
+        !journalPart.test(match[2]) ||
+        !Number.isSafeInteger(Number(match[2]))
+      )
+        return false;
+      const date = new Date(match[1]);
+      return (
+        Number.isFinite(date.getTime()) &&
+        date.toISOString().startsWith(match[1])
+      );
+    },
+    isActive(filename: string) {
+      return (
+        !!state.active && path.basename(state.active.filename) === filename
+      );
+    },
+  };
+  let closing: Promise<void> | undefined;
+  return {
+    writeLine(line) {
+      if (closing) throw new Error('Log output is closed');
+      if (
+        line.length < 2 ||
+        !line.endsWith('\n') ||
+        /[\r\n]/.test(line.slice(0, -1))
+      )
+        throw new Error('Log output requires one complete line');
+      assertJournalDirectory(directory);
+      const segment = selectLogSegment(
+        directory,
+        name,
+        '.jsonl',
+        state.maxFileSizeMB * bytesPerMB,
+        Buffer.byteLength(line),
+        state.active,
+      );
+      appendPrivateJournalLine(segment.filename, line);
+      const rotated = state.active?.filename !== segment.filename;
+      state.active = segment;
+      const now = Date.now();
+      if (!rotated && now - (state.lastCleanup ?? -Infinity) < cleanupInterval)
+        return;
+      state.lastCleanup = now;
+      state.cleanupRequested = true;
+      state.cleanup ??= Promise.resolve()
+        .then(async () => {
+          do {
+            state.cleanupRequested = false;
+            try {
+              await pruneJournals(directory, state, undefined, {
+                scope,
+                retentionOnly: true,
+              });
+            } catch (error) {
+              if (options.onCleanupError) options.onCleanupError(error);
+              else reportLoggingFailure('Log cleanup failed', error);
+            }
+          } while (state.cleanupRequested);
+        })
+        .catch((error: unknown) =>
+          reportLoggingFailure('Log cleanup reporting failed', error),
+        )
+        .finally(() => {
+          state.cleanup = undefined;
+        });
+    },
+    close() {
+      return (closing ??= (state.cleanup ?? Promise.resolve()).then(() => {
+        if (--state.references === 0) jsonLinesTargets.delete(key);
+      }));
+    },
+  };
+}
+
 interface DirectoryWriter {
   references: number;
   cleanup: Promise<void>;
   lastCleanup: number;
   lastFile?: string;
-  files: Map<string, { date: string; part: number }>;
+  files: Map<string, LogSegment>;
 }
 const directories = new Map<string, DirectoryWriter>();
 /** Shared across named loggers and hosted lifecycle writers in the same process. */
@@ -188,9 +386,7 @@ export function createLogOutput(
     manager.references++;
     directories.set(directory, manager);
   }
-  let filename = '';
-  let part = 0;
-  let date = '';
+  let filename: string | undefined;
   const writeEntry = (entry: JournalEntry) => {
     try {
       let line: string | undefined;
@@ -200,81 +396,29 @@ export function createLogOutput(
           let rotated = false;
           appendJournal((serialized) => {
             line = serialized;
-            const today = new Date().toISOString().slice(0, 10);
-            const shared = owner.files.get(file.name!);
-            if (shared) {
-              date = shared.date;
-              part = shared.part;
-            }
-            if (date !== today) {
-              date = today;
-              part = 0;
-              // Resume the newest segment after restart; older segments may be intentionally under the size limit.
-              try {
-                const prefix = `${file.name}.${date}.`;
-                for (const existing of readdirSync(directory)) {
-                  if (
-                    existing.startsWith(prefix) &&
-                    existing.endsWith('.log')
-                  ) {
-                    const suffix = existing.slice(prefix.length, -4);
-                    if (/^\d+$/.test(suffix))
-                      part = Math.max(part, Number(suffix));
-                  }
-                }
-              } catch (error) {
-                if ((error as NodeJS.ErrnoException).code !== 'ENOENT')
-                  throw error;
-              }
-              filename = '';
-            }
-            rotated = !filename;
-            filename = path.join(
-              directory,
-              `${file.name}.${date}.${String(part).padStart(6, '0')}.log`,
-            );
-            for (;;) {
-              try {
-                if (statSync(filename).size < file.maxFileSizeMB! * 1024 * 1024)
-                  break;
-              } catch (error) {
-                if ((error as NodeJS.ErrnoException).code !== 'ENOENT')
-                  throw error;
-                break;
-              }
-              filename = path.join(
-                directory,
-                `${file.name}.${date}.${String(++part).padStart(6, '0')}.log`,
-              );
-              rotated = true;
-            }
-            // Rotate before a complete record would overflow; never discard the boundary record.
+            const name = file.name!;
             const bytes = Buffer.byteLength(serialized);
-            let size = 0;
-            try {
-              size = statSync(filename).size;
-            } catch (error) {
-              if ((error as NodeJS.ErrnoException).code !== 'ENOENT')
-                throw error;
-            }
-            if (size && size + bytes > file.maxFileSizeMB! * 1024 * 1024) {
-              filename = path.join(
-                directory,
-                `${file.name}.${date}.${String(++part).padStart(6, '0')}.log`,
-              );
-              rotated = true;
-            }
-            owner.files.set(file.name!, { date, part });
+            const segment = selectLogSegment(
+              directory,
+              name,
+              '.log',
+              file.maxFileSizeMB! * bytesPerMB,
+              bytes,
+              owner.files.get(name),
+            );
+            rotated = filename !== segment.filename;
+            filename = segment.filename;
+            owner.files.set(name, segment);
             owner.lastFile = path.basename(filename);
             return {
               file: filename,
               maxSizeMB: Math.max(
                 file.maxFileSizeMB!,
-                bytes / 1024 / 1024 + 0.001,
+                bytes / bytesPerMB + 0.001,
               ),
             };
           }, entry);
-          if (rotated || Date.now() - manager.lastCleanup > 60000) {
+          if (rotated || Date.now() - manager.lastCleanup > cleanupInterval) {
             manager.lastCleanup = Date.now();
             const owner = manager;
             manager.cleanup = manager.cleanup

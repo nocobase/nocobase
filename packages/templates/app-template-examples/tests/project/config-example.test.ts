@@ -3,6 +3,7 @@ import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { defineAuditConfig } from '@nocobase/audit';
 import { AppConfig } from '@nocobase/app-server/config';
 import { describe, expect, it } from 'vitest';
 
@@ -28,6 +29,48 @@ describe('config.example.yml', () => {
         '      key: replace-with-a-unique-secret',
       ].join('\n'),
     );
+  });
+
+  it('keeps audit opt-in and ships a valid rolling file example', async () => {
+    const exampleFile = fileURLToPath(
+      new URL('../../config.example.yml', import.meta.url),
+    );
+    const active = new AppConfig().loadFile(exampleFile);
+    await active.loadAll();
+    expect(active.get('audit')).toBeUndefined();
+    const example = (await read()).match(/^# audit:\n(?:# {2,}.*\n)+/m)?.[0];
+    expect(example).toBeDefined();
+    const directory = await mkdtemp(
+      path.join(os.tmpdir(), 'audit-config-example-'),
+    );
+    try {
+      const file = path.join(directory, 'config.yml');
+      await writeFile(file, example!.replace(/^# ?/gm, ''));
+      const config = new AppConfig().loadFile(file);
+      await config.loadAll();
+      const audit = config.get('audit');
+      const error = (field: string, message: string) => {
+        throw new Error(`${field} ${message}`);
+      };
+      for (const validate of defineAuditConfig().rules.validators)
+        validate(audit, { error });
+      expect(audit).toEqual({
+        enabled: true,
+        autoDetect: false,
+        transports: {
+          localFile: {
+            driver: 'file',
+            options: {
+              path: 'logs/audit.jsonl',
+              maxFileSizeMB: 50,
+              retentionDays: 180,
+            },
+          },
+        },
+      });
+    } finally {
+      await rm(directory, { recursive: true, force: true });
+    }
   });
   it('keeps Knowledge opt-in and ships a parseable SQLite and PostgreSQL instance example', async () => {
     const active = new AppConfig().loadFile(
