@@ -402,12 +402,19 @@ describe.runIf(IMAGE)(
         { appId: 'shop', observedState: 'running' },
       ]);
 
+      // Removing the App without purging its data still allows deletion by backup ID.
+      await service.removeDeployment('shop', { purgeData: false });
+      expect(await inBackups()).toEqual(['b-1.tar.gz']);
       await expect(
         service.deleteBackup!('shop', 'b-1', { scope: scope() }),
       ).resolves.toEqual({ deleted: true });
       await expect(
         service.deleteBackup!('shop', 'b-1', { scope: scope() }),
       ).resolves.toEqual({ deleted: false });
+      expect(await inBackups()).toEqual([]);
+      expect(
+        (await service.applyDeployment(deployment('d-2'))).deployments[0],
+      ).toMatchObject({ observedState: 'running' });
 
       const kept = await service.createBackup!('shop', {
         operationId: 'b-2',
@@ -459,7 +466,7 @@ describe.runIf(IMAGE)(
       expect(await inBackups()).toEqual(['b-3.tar.gz']);
 
       expect(
-        (await service.applyDeployment(deployment('d-2'))).deployments[0],
+        (await service.applyDeployment(deployment('d-3'))).deployments[0],
       ).toMatchObject({ observedState: 'running' });
       expect(JSON.parse(await inStorage(MARKER()))).toEqual({
         marker: null,
@@ -476,6 +483,9 @@ describe.runIf(IMAGE)(
       await expect(stat(record('b-3'))).rejects.toMatchObject({
         code: 'ENOENT',
       });
+      await expect(
+        service.deleteBackup!('shop', 'b-3', { scope: scope() }),
+      ).resolves.toEqual({ deleted: false });
     }, 900_000);
   },
 );
