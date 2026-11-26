@@ -422,7 +422,7 @@ const viVN: LocaleResource<typeof enUS> = {
       purposes: {
         embedding: 'Nhúng',
         rerank: 'Sắp xếp lại',
-        text: 'Văn bản tiện ích',
+        text: 'Tạo văn bản',
       },
     },
     title: 'Mức sử dụng',

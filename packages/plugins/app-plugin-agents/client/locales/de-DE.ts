@@ -434,7 +434,7 @@ const deDE: LocaleResource<typeof enUS> = {
       purposes: {
         embedding: 'Einbettungen',
         rerank: 'Neue Rangfolge',
-        text: 'Utility-Text',
+        text: 'Texterzeugung',
       },
     },
     title: 'Verwendung',

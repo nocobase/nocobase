@@ -390,9 +390,9 @@ export function createAgents(deps: AgentsDeps): Agents {
     clock,
     box: createSealer(deps.secrets, MODEL_SERVICE_KEY_SECRET_PURPOSE),
   });
-  // Embeddings, reranking and utility texts the application asks for are recorded apart from runs (`agModelUsage`).
+  const modelUsage = createModelUsageRecorder({ tx, ids, clock });
   const gateway = createModelGateway(modelServices, {
-    usage: createModelUsageRecorder({ tx, ids, clock }),
+    usage: modelUsage,
     onError,
   });
   const actions = createAgentActionCatalog();
@@ -634,6 +634,7 @@ export function createAgents(deps: AgentsDeps): Agents {
       search: (request) => gateway.search(request),
     },
     fileInputs,
+    modelUsage,
     model: (ref, sessionId) => fileInputs.model(ref, sessionId),
     defaultModel: async () =>
       (await modelServices.catalog()).defaultModel ?? null,
