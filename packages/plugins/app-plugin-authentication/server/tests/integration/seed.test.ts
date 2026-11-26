@@ -1,15 +1,15 @@
 // @vitest-environment node
+// db-test-portability: sqlite-only — the credential rollback case uses a SQLite trigger in its own fixture.
 import { fileURLToPath } from 'node:url';
+import { createSeeder, type DatabaseManager } from '@nocobase/db';
 import {
-  createSeeder,
-  type DatabaseConnection,
-  type DatabaseManager,
-} from '@nocobase/db';
-import {
+  TEST_DATABASE_DIALECT_VARIABLE,
   createTestDatabase,
+  type CreateTestDatabaseOptions,
   type TestDatabase,
 } from '@nocobase/app-testing/server';
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import type { Knex } from 'knex';
+import { afterEach, describe, expect, it } from 'vitest';
 import { Auth } from '../../auth.js';
 
 const sources = (kind: string) => [
@@ -24,13 +24,13 @@ const sources = (kind: string) => [
 describe('configured initial administrator', () => {
   const databases: TestDatabase[] = [];
   afterEach(async () => {
-    vi.restoreAllMocks();
     await Promise.all(
       databases.splice(0).map((testDatabase) => testDatabase.destroy()),
     );
   });
-  async function setup() {
+  async function setup(env?: CreateTestDatabaseOptions['env']) {
     const testDatabase = await createTestDatabase({
+      env,
       migrations: sources('migrations'),
     });
     databases.push(testDatabase);
@@ -174,43 +174,47 @@ describe('configured initial administrator', () => {
   );
 
   it('rolls back the user if credential insertion fails and can retry', async () => {
-    const database = await setup();
+    const database = await setup({
+      ...process.env,
+      [TEST_DATABASE_DIALECT_VARIABLE]: 'sqlite',
+    });
     const connection = database.connection();
-    // The seed writes the user and then its credential in one transaction;
-    // make the credential insert fail inside the transactions it opens.
-    const transaction = connection.transaction.bind(connection);
-    const failCredentialInsert = vi
-      .spyOn(connection, 'transaction')
-      .mockImplementation(((
-        fn: (trx: DatabaseConnection) => Promise<unknown>,
-      ) =>
-        transaction(async (trx) => {
-          const insertInto = trx.query.insertInto.bind(trx.query);
-          const failInsert = vi
-            .spyOn(trx.query, 'insertInto')
-            .mockImplementation(((table: string) => {
-              if (table === 'account') {
-                throw new Error('credential insert failed');
-              }
-              return insertInto(table);
-            }) as typeof trx.query.insertInto);
-          try {
-            return await fn(trx);
-          } finally {
-            failInsert.mockRestore();
-          }
-        })) as typeof connection.transaction);
-    await expect(
-      seed(database, { username: 'admin', password: 'custom-password' }),
-    ).rejects.toThrow('credential insert failed');
-    expect(
-      await connection.query.selectFrom('user').selectAll().execute(),
-    ).toEqual([]);
-    failCredentialInsert.mockRestore();
-    await seed(database, { username: 'admin', password: 'custom-password' });
-    expect(
-      await connection.query.selectFrom('account').selectAll().execute(),
-    ).toHaveLength(1);
+    const client = await connection.client<Knex>();
+    const initialAdmin = { username: 'admin', password: 'custom-password' };
+    await client.raw(`
+      CREATE TRIGGER fail_credential_insert
+      BEFORE INSERT ON account
+      WHEN EXISTS (SELECT 1 FROM "user" WHERE id = NEW.user_id)
+      BEGIN
+        SELECT RAISE(ABORT, 'credential insert failed');
+      END
+    `);
+    try {
+      await expect(seed(database, initialAdmin)).rejects.toThrow(
+        'credential insert failed',
+      );
+      expect(
+        await connection.query.selectFrom('user').selectAll().execute(),
+      ).toEqual([]);
+      expect(
+        await connection.query.selectFrom('account').selectAll().execute(),
+      ).toEqual([]);
+    } finally {
+      await client.raw('DROP TRIGGER fail_credential_insert');
+    }
+
+    await seed(database, initialAdmin);
+    const users = await connection.query
+      .selectFrom('user')
+      .selectAll()
+      .execute();
+    const accounts = await connection.query
+      .selectFrom('account')
+      .selectAll()
+      .execute();
+    expect(users).toHaveLength(1);
+    expect(accounts).toHaveLength(1);
+    expect(accounts[0]?.userId).toBe(users[0]?.id);
   });
 
   it('does not reset an existing account when credentials are configured', async () => {

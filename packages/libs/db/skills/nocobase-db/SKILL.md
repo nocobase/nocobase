@@ -338,7 +338,9 @@ Events cover Repository writes only: not `query`, `client()`, `upsertPhysicalRow
 
 ### Check runtime writes before execution
 
-Register `db.connection().addWriteCheck((write, connection) => …)` in each writing process when the application must deny writes across a connection, including background jobs and tables created after startup. Throw to deny. Match `write.table` against the physical table name and use the supplied connection to read state inside the active transaction. Repository writes include the logical `write.collection` and check the actual target of relation and through-table writes. QueryAdapter and `upsertPhysicalRow()` use `write.source === 'query'`. Call the returned function to remove the check.
+Register `db.connection().addWriteCheck((write, connection) => …)` in each writing process when the application must deny writes across a connection, including background jobs and tables created after startup. Throw to deny. Match `write.table` against the physical table name and use the supplied connection's `query` or Repository to read state inside the active transaction. Repository writes include the logical `write.collection` and check the actual target of relation and through-table writes. QueryAdapter and `upsertPhysicalRow()` use `write.source === 'query'`. Call the returned function to remove the check.
+
+Keep checks read-only. Register `afterCommit` and `afterRollback` outside the check on the caller's explicit transaction connection. When the Repository opens an implicit transaction or savepoint, the connection supplied to the check can run `afterCommit` immediately and ignore `afterRollback`.
 
 The hook covers runtime row writes, including bulk statements. Migration and seed handles, schema and metadata management, native SQL through `client()`, and database-side triggers and cascades are outside its scope.
 

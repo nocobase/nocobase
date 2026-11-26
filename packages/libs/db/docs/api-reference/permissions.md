@@ -43,7 +43,7 @@ Mutation options can carry a server-side `writePolicy` independently of a bound 
 
 ## Connection-wide write checks
 
-Register `connection.addWriteCheck(check)` when an application needs to deny runtime writes across a connection, including writes from background jobs and to tables created after startup. Register in every process and on each named connection that performs the protected writes. The callback can use application state or read through the supplied connection, which is bound to the active transaction or savepoint when the statement runs inside one.
+Register `connection.addWriteCheck(check)` when an application needs to deny runtime writes across a connection, including writes from background jobs and to tables created after startup. Register in every process and on each named connection that performs the protected writes. Use the supplied connection's `query` or Repository to read database state. The supplied connection shares the statement's transaction or savepoint, so those reads can see changes made earlier in the same transaction.
 
 ```ts
 const remove = db.connection().addWriteCheck(async (write, connection) => {
@@ -54,6 +54,8 @@ const remove = db.connection().addWriteCheck(async (write, connection) => {
 ```
 
 Checks run in registration order immediately before each covered statement. Throw or reject to prevent the statement and surface that error to the caller. A bulk statement is checked once, while operations that issue several statements are checked before each one. If a multi-statement operation fails in a caller-owned transaction, let its error escape the transaction callback or use a savepoint to roll back earlier statements. Keep checks read-only and call the returned `remove` function when the registration should end.
+
+Register `afterCommit` and `afterRollback` on the caller's explicit transaction connection outside the check. A connection supplied to a check for an implicit Repository transaction or savepoint can run `afterCommit` immediately and ignore `afterRollback`.
 
 `DatabaseWrite` identifies the connection, physical table without a schema or alias, and operation (`insert`, `update` or `delete`). Repository writes also identify the logical Collection, including the relation target or through Collection when that table is written. QueryAdapter writes and `upsertPhysicalRow()` use the `query` source. Checks follow the root connection into transactions, policy bindings, restricted repositories and mutation listener handles. `compile()` and read APIs do not invoke them.
 
