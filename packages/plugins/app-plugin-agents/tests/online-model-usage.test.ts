@@ -1,8 +1,10 @@
+import type { ModelMessage } from 'ai';
 import { MockLanguageModelV4, simulateReadableStream } from 'ai/test';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { z } from 'zod';
 
 import { NativeFileInputs } from '../server/online/files/service.js';
+import { ModelError } from '../server/online/gateway.js';
 import { createHarness, type Harness } from './harness.js';
 
 const modelRef = { modelService: 'fixture', model: 'chat' };
@@ -68,7 +70,7 @@ describe('native online model usage', () => {
     h.services.onlineAgent.configurator.registerTool('lookup', {
       version: '1',
       definition: {
-        inputSchema: z.object({}),
+        inputSchema: z.object({ note: z.string().optional() }),
         execute: (_input, { context }) => lookup(context.signal),
       },
     });
@@ -81,7 +83,7 @@ describe('native online model usage', () => {
   const entries = () =>
     h.services.tx.read().repository('agModelUsage').findMany({});
 
-  async function createConversation(scope?: string) {
+  async function createConversation(scope?: string, webSearch = false) {
     if (scope)
       h.services.onlineAgent.configurator.registerOnlineAgentScope(scope, {
         tool: ['lookup'],
@@ -89,7 +91,7 @@ describe('native online model usage', () => {
     const created = await h.request('POST', '/agents/conversations', {
       user: 'alice',
       body: {
-        ...(scope ? { config: { scope: [scope] } } : {}),
+        config: { ...(scope ? { scope: [scope] } : {}), webSearch },
         selectedModel: modelRef,
       },
     });
@@ -166,40 +168,295 @@ describe('native online model usage', () => {
     release();
   });
 
-  it('falls back before output and charges usage to the backup model', async () => {
-    await h.services.models.services.update('fixture', {
-      models: [{ value: 'chat' }, { value: 'backup' }],
+  it('transforms the system message, tool input and fresh tool result before each provider call', async () => {
+    const configurator = h.services.onlineAgent.configurator;
+    configurator.registerOnlineAgentGlobalScope({
+      systemPromptTemplate: 'The system contains private-system.',
+    });
+    lookup.mockResolvedValue('Tool returned private-result.');
+    const model = new MockLanguageModelV4({
+      doStream: [
+        streamed([
+          { ...toolCall(1), input: '{"note":"private-argument"}' },
+          finish('tool-calls', 1),
+        ]),
+        streamed(answer(1)),
+      ],
+    });
+    vi.spyOn(NativeFileInputs.prototype, 'model').mockResolvedValue(model);
+    const transform = vi.fn((messages: ModelMessage[]) =>
+      messages.map((message) =>
+        Object.assign(
+          message,
+          JSON.parse(JSON.stringify(message).replaceAll('private-', 'masked-')),
+        ),
+      ),
+    );
+    configurator.provideNativeTurn(async () => ({ messages: transform }));
+    const id = await createConversation('ticket-helper');
+    expect((await send(id)).status).toBe(200);
+    expect(transform).toHaveBeenCalledTimes(2);
+    expect(model.doStreamCalls).toHaveLength(2);
+    const second = JSON.stringify(model.doStreamCalls[1].prompt);
+    expect(second).toContain('masked-system');
+    expect(second).toContain('masked-argument');
+    expect(second).toContain('masked-result');
+    expect(second).toContain('lookup-1');
+    expect(second).not.toContain('private-');
+    const messages = await h.services.tx
+      .read()
+      .repository('agConversationMessages')
+      .findMany({ filter: { conversationId: id } });
+    const stored = JSON.stringify(messages);
+    expect(stored).toContain('private-result');
+    expect(stored).toContain('private-argument');
+  });
+
+  it.each([
+    'error chunk',
+    'closed stream',
+    'rejected read',
+    'connection setup',
+  ])(
+    'falls back before output after %s and charges usage to the backup',
+    async (failureMode) => {
+      await h.services.models.services.update('fixture', {
+        models: [{ value: 'chat' }, { value: 'backup' }],
+      });
+      const failure = new ModelError('network', 'The model is not reachable.');
+      const prelude = [
+        { type: 'stream-start' as const, warnings: [] },
+        { type: 'response-metadata' as const, modelId: 'failed-primary' },
+        { type: 'reasoning-start' as const, id: 'thinking' },
+        { type: 'reasoning-end' as const, id: 'thinking' },
+        { type: 'text-start' as const, id: 'failed-start' },
+        { type: 'text-delta' as const, id: 'failed-start', delta: '' },
+      ];
+      const primary = new MockLanguageModelV4({
+        doStream: [
+          failureMode === 'rejected read'
+            ? {
+                stream: new ReadableStream({
+                  start(controller) {
+                    controller.enqueue(prelude[0]);
+                  },
+                  pull(controller) {
+                    controller.error(failure);
+                  },
+                }),
+              }
+            : streamed([
+                ...prelude,
+                ...(failureMode === 'error chunk'
+                  ? [{ type: 'error' as const, error: failure }]
+                  : []),
+              ]),
+        ],
+      });
+      const backup = new MockLanguageModelV4({
+        doStream: [streamed(answer(1))],
+      });
+      const resolveModel = vi
+        .spyOn(NativeFileInputs.prototype, 'model')
+        .mockImplementation(async ({ model }) => {
+          if (model === 'backup') return backup;
+          return primary;
+        });
+      const id = await createConversation();
+      if (failureMode === 'connection setup')
+        resolveModel.mockRejectedValueOnce(failure);
+      const recorded = vi.fn(async () => {});
+      const fallback = vi.fn(async () => 'network');
+      h.services.onlineAgent.configurator.provideNativeTurn(async () => ({
+        models: ['fixture/chat', 'fixture/backup'],
+        fallback,
+        usage: recorded,
+      }));
+      const sent = await send(id);
+      expect(sent.status).toBe(200);
+      expect(sent.body).toContain('"fallbackReason":"network"');
+      expect(sent.body).not.toContain('failed-start');
+      expect(fallback).toHaveBeenCalledExactlyOnceWith(
+        expect.objectContaining({ code: 'network' }),
+        modelRef,
+      );
+      expect(backup.doStreamCalls).toHaveLength(1);
+      expect(recorded).toHaveBeenCalledExactlyOnceWith(
+        expect.objectContaining({ inputTokens: 20, outputTokens: 8 }),
+        { modelService: 'fixture', model: 'backup' },
+      );
+      const history = await h.request(
+        'GET',
+        `/agents/conversations/${id}/messages`,
+        { user: 'alice' },
+      );
+      expect(JSON.stringify(history.body)).toContain('Hello.');
+      expect(JSON.stringify(history.body)).toContain(
+        '"fallbackReason":"network"',
+      );
+      expect(await entries()).toEqual([
+        expect.objectContaining({ model: 'backup', ...storedCounts }),
+      ]);
+    },
+  );
+
+  it.each([true, false])(
+    'classifies backup resolution failures against the backup (initial connection failure: %s)',
+    async (initialConnectionFailure) => {
+      const primaryError = new ModelError('network', 'Primary offline.');
+      const backupError = new ModelError('config', 'Backup secret is missing.');
+      const primary = new MockLanguageModelV4({
+        doStream: [streamed([{ type: 'error', error: primaryError }])],
+      });
+      const resolveModel = vi
+        .spyOn(NativeFileInputs.prototype, 'model')
+        .mockResolvedValue(primary);
+      const id = await createConversation();
+      resolveModel.mockImplementation(async ({ model }) => {
+        if (model === 'backup') throw backupError;
+        if (initialConnectionFailure) throw primaryError;
+        return primary;
+      });
+      const failure = vi.fn(async () => ({ unavailableReason: 'missing' }));
+      const fallback = vi.fn(async () => 'network');
+      h.services.onlineAgent.configurator.provideNativeTurn(async () => ({
+        models: ['fixture/chat', 'fixture/backup'],
+        fallback,
+        failure,
+      }));
+      const sent = await send(id);
+      expect(sent.status).toBe(initialConnectionFailure ? 400 : 200);
+      expect(JSON.stringify(sent.body)).toContain('unavailableReason');
+      expect(JSON.stringify(sent.body)).not.toContain(backupError.message);
+      expect(fallback).toHaveBeenCalledExactlyOnceWith(primaryError, modelRef);
+      expect(failure).toHaveBeenCalledExactlyOnceWith(backupError, {
+        modelService: 'fixture',
+        model: 'backup',
+      });
+      expect(await entries()).toEqual([]);
+    },
+  );
+
+  it('checks the backup can run the search tool before sending it a prompt', async () => {
+    const service = await h.services.models.services.create({
+      title: 'Backup proxy',
+      provider: 'openai',
+      baseUrl: 'https://proxy.example/v1',
+      apiKey: 'fixture-key',
+      models: [{ value: 'chat' }],
     });
     const primary = new MockLanguageModelV4({
       doStream: [
         streamed([
-          { type: 'error' as const, error: new Error('not reachable') },
+          { type: 'error', error: new ModelError('network', 'Offline.') },
         ]),
       ],
     });
-    const backup = new MockLanguageModelV4({ doStream: [streamed(answer(1))] });
-    vi.spyOn(NativeFileInputs.prototype, 'model').mockImplementation(
-      async ({ model }) => (model === 'backup' ? backup : primary),
+    const resolveModel = vi
+      .spyOn(NativeFileInputs.prototype, 'model')
+      .mockResolvedValue(primary);
+    const id = await createConversation(undefined, true);
+    const failure = vi.fn(async () => ({ unavailableReason: 'modelFailed' }));
+    h.services.onlineAgent.configurator.provideNativeTurn(async () => ({
+      models: ['fixture/chat', `${service.name}/chat`],
+      fallback: async () => 'network',
+      failure,
+    }));
+    const sent = await send(id);
+    expect(sent.status).toBe(200);
+    expect(sent.body).toContain('"unavailableReason":"modelFailed"');
+    expect(failure).toHaveBeenCalledExactlyOnceWith(
+      expect.objectContaining({
+        message: expect.stringContaining('Web search is unavailable'),
+      }),
+      { modelService: service.name, model: 'chat' },
     );
-    const recorded = vi.fn(async () => {});
+    expect(resolveModel).not.toHaveBeenCalledWith(
+      { modelService: service.name, model: 'chat' },
+      id,
+    );
+  });
+
+  it.each([
+    { type: 'text-start' as const, id: 'answer' },
+    { type: 'tool-input-start' as const, id: 'lookup-1', toolName: 'lookup' },
+  ])('keeps the primary after committing $type', async (part) => {
+    const failure = new ModelError('quota', 'Provider quota exhausted.');
+    const primary = new MockLanguageModelV4({
+      doStream: [
+        streamed([
+          part,
+          ...(part.type === 'text-start'
+            ? [{ type: 'text-delta' as const, id: part.id, delta: 'Partial' }]
+            : []),
+          { type: 'error' as const, error: failure },
+        ]),
+      ],
+    });
+    const resolveModel = vi
+      .spyOn(NativeFileInputs.prototype, 'model')
+      .mockResolvedValue(primary);
+    const id = await createConversation('ticket-helper');
+    const fallback = vi.fn(async () => 'quotaExceeded');
+    const classify = vi.fn(async () => ({
+      unavailableReason: 'quotaExceeded',
+    }));
     h.services.onlineAgent.configurator.provideNativeTurn(async () => ({
       models: ['fixture/chat', 'fixture/backup'],
-      fallback: async () => 'network',
-      usage: recorded,
+      fallback,
+      failure: classify,
     }));
-    const id = await createConversation();
-    expect((await send(id)).status).toBe(200);
-    expect(backup.doStreamCalls).toHaveLength(1);
-    expect(recorded).toHaveBeenCalledExactlyOnceWith(
-      expect.objectContaining({ inputTokens: 20, outputTokens: 8 }),
+    const sent = await send(id);
+    expect(sent.status).toBe(200);
+    expect(sent.body).toContain('"unavailableReason":"quotaExceeded"');
+    if (part.type === 'text-start') expect(sent.body).toContain('Partial');
+    expect(fallback).not.toHaveBeenCalled();
+    expect(classify).toHaveBeenCalledExactlyOnceWith(failure, modelRef);
+    expect(resolveModel).not.toHaveBeenCalledWith(
       { modelService: 'fixture', model: 'backup' },
+      id,
+    );
+  });
+
+  it('retains the original provider failure when host usage recording fails', async () => {
+    const failure = new ModelError('auth', 'Raw provider credentials error.');
+    const model = new MockLanguageModelV4({
+      doStream: [
+        streamed([toolCall(1), finish('tool-calls', 1)]),
+        streamed([{ type: 'error', error: failure }]),
+      ],
+    });
+    vi.spyOn(NativeFileInputs.prototype, 'model').mockResolvedValue(model);
+    const classify = vi.fn(async () => ({
+      unavailableReason: 'invalidKey',
+      settingsPath: '/settings/ai',
+    }));
+    const usage = vi.fn(async () => {
+      throw new Error('Host usage store unreachable.');
+    });
+    h.services.onlineAgent.configurator.provideNativeTurn(async () => ({
+      failure: classify,
+      usage,
+    }));
+    const id = await createConversation('ticket-helper');
+    const sent = await send(id);
+    expect(sent.status).toBe(200);
+    const notice =
+      '"params":{"unavailableReason":"invalidKey","settingsPath":"/settings/ai"}';
+    expect(sent.body).toContain(notice);
+    expect(sent.body).not.toContain(failure.message);
+    expect(classify).toHaveBeenCalledExactlyOnceWith(failure, modelRef);
+    expect(usage).toHaveBeenCalledExactlyOnceWith(
+      expect.objectContaining({ inputTokens: 20, outputTokens: 8 }),
+      modelRef,
     );
     const history = await h.request(
       'GET',
       `/agents/conversations/${id}/messages`,
       { user: 'alice' },
     );
-    expect(JSON.stringify(history.body)).toContain('Hello.');
+    expect(JSON.stringify(history.body)).toContain(notice);
+    expect(await entries()).toEqual([expect.objectContaining(storedCounts)]);
   });
 
   it('stores one row per turn and prices all steps under their agent source', async () => {

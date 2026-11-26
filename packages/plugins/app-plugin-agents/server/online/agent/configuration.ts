@@ -79,16 +79,16 @@ export interface OnlineAgentNativeTurn {
 export interface OnlineAgentNativeTurnPolicy {
   /** Replace the persisted model candidates for this admission. The first is the selected candidate. */
   readonly models?: readonly [string, ...string[]];
-  /** Transform only model-facing copies. The original messages and tool results stay intact. */
+  /** Transform copies of the system instructions and all role messages before each model step, including tool results. */
   readonly messages?: (messages: ModelMessage[]) => ModelMessage[];
   /** Aggregate provider-reported usage for this execution, including interrupted turns. */
   readonly usage?: (usage: ModelUsage, model: ModelRef) => Promise<void>;
-  /** Return a safe reason to switch to the next candidate before the first text-only response produces output. */
+  /** Return a safe reason to switch after a connection failure or before the first response commits output or tools. */
   readonly fallback?: (
     error: unknown,
     model: ModelRef,
   ) => Promise<string | undefined>;
-  /** Safe, application-owned failure parameters to expose on the execution notice. */
+  /** Safe parameters for the execution notice or a pre-admission MODEL_UNAVAILABLE error. */
   readonly failure?: (
     error: unknown,
     model: ModelRef,

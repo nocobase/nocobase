@@ -3,39 +3,61 @@ import {
   type LanguageModel,
   type LanguageModelMiddleware,
 } from 'ai';
+import { ModelError } from '../../gateway.js';
 
 type StreamWrapper = NonNullable<LanguageModelMiddleware['wrapStream']>;
 type StreamResult = Awaited<ReturnType<StreamWrapper>>;
 type StreamPart =
   StreamResult['stream'] extends ReadableStream<infer Part> ? Part : never;
 
-/** Inspect only the initial protocol prelude. A visible result or a tool call commits the model. */
+function commitsResponse(part: StreamPart): boolean {
+  switch (part.type) {
+    case 'stream-start':
+    case 'response-metadata':
+    case 'raw':
+    case 'text-start':
+    case 'text-end':
+    case 'reasoning-start':
+    case 'reasoning-end':
+      return false;
+    case 'text-delta':
+    case 'reasoning-delta':
+      return part.delta.length > 0;
+    default:
+      // A tool may already have caused an effect. A finish can carry billable usage.
+      return true;
+  }
+}
+
+/** Keep protocol markers private until there is visible content, a tool event, or a finish. */
 async function initialResponse(result: StreamResult): Promise<StreamResult> {
   const reader = result.stream.getReader();
   const prelude: StreamPart[] = [];
   try {
-    while (prelude.length < 4) {
+    while (true) {
       const part = await reader.read();
-      if (part.done) break;
+      if (part.done)
+        throw new ModelError(
+          'network',
+          'The model stream closed before responding.',
+        );
       if (part.value.type === 'error') throw part.value.error;
       prelude.push(part.value);
-      if (
-        part.value.type !== 'stream-start' &&
-        part.value.type !== 'response-metadata'
-      )
-        break;
+      if (commitsResponse(part.value)) break;
     }
   } catch (error) {
-    await reader.cancel().catch(() => {});
+    void reader.cancel().catch(() => {});
     reader.releaseLock();
     throw error;
   }
+  let emitted = 0;
   return {
     ...result,
     stream: new ReadableStream<StreamPart>({
       async pull(controller) {
-        if (prelude.length) {
-          controller.enqueue(prelude.shift()!);
+        if (emitted < prelude.length) {
+          controller.enqueue(prelude[emitted++]);
+          if (emitted === prelude.length) prelude.length = 0;
           return;
         }
         try {
@@ -82,6 +104,7 @@ export function nativeModelFallback(
           if (params.abortSignal?.aborted) throw error;
           const replacement = await recover(error);
           if (!replacement || typeof replacement === 'string') throw error;
+          params.abortSignal?.throwIfAborted();
           backup = wrapLanguageModel({ model: replacement, middleware: [] });
           return backup.doStream(params);
         }
