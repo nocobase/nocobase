@@ -62,8 +62,7 @@ export interface AppDatabaseTaskResult {
   skippedSamples?: string[];
   /**
    * Seeds only: whether this run installed the connection — it held no
-   * migration or seed history before the run, or a fresh run rebuilt it. Sample
-   * data loads only then, and only with `app.sampleData` set.
+   * migration or seed history before the run, or a fresh run rebuilt it.
    */
   freshInstall?: boolean;
   fresh?: boolean;

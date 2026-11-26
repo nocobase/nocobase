@@ -50,10 +50,9 @@ export interface SeedDefinition {
   readonly name: string;
   readonly transaction?: SeedTransactionMode;
   /**
-   * Sample data rather than data the application needs. It runs only when the
-   * Seeder is told to load sample data, which an application does on a fresh
-   * install with `app.sampleData` set; otherwise it is recorded as skipped and
-   * never runs on its own, though `Seeder.runSamples()` may run it later.
+   * Optional sample data. When sample loading is enabled, the Seeder runs
+   * unrecorded and previously skipped sample seeds. While disabled, it records
+   * new samples as skipped. `Seeder.runSamples()` can also run skipped samples.
    */
   readonly sample?: boolean;
   run(context: SeedContext): Promise<void>;

@@ -198,10 +198,9 @@ export interface SeedDefinition {
   readonly name: string;
   readonly transaction?: SeedTransactionMode;
   /**
-   * Sample data rather than data the application needs. It runs only when the
-   * Seeder is told to load sample data, which an application does on a fresh
-   * install with `app.sampleData` set; otherwise it is recorded as skipped and
-   * never runs on its own, though `Seeder.runSamples()` may run it later.
+   * Optional sample data. When sample loading is enabled, the Seeder runs
+   * unrecorded and previously skipped sample seeds. While disabled, it records
+   * new samples as skipped. `Seeder.runSamples()` can also run skipped samples.
    */
   readonly sample?: boolean;
   run(context: SeedContext): Promise<void>;
@@ -330,10 +329,10 @@ Related declarations: [ChecksumMismatch](./migration.md#checksummismatch).
 
 Import: `import type { SeedSampleOptions } from '@nocobase/db'`.
 
-Whether pending sample seeds run, or are recorded as skipped.
+Whether unrecorded and previously skipped sample seeds run.
 
 ```ts
-/** Whether pending sample seeds run, or are recorded as skipped. */
+/** Whether unrecorded and previously skipped sample seeds run. */
 export interface SeedSampleOptions {
   readonly enabled: boolean;
 }
@@ -396,9 +395,9 @@ Executes pending seed definitions for one database connection.
 /** Executes pending seed definitions for one database connection. */
 export interface Seeder {
   /**
-   * Executes every seed that has no matching history record. A sample seed
-   * runs only when `sample.enabled` is set; otherwise it is recorded as
-   * skipped, and a later run leaves it alone.
+   * Executes unrecorded seeds and, when `sample.enabled` is set, previously
+   * skipped sample seeds. When disabled, unrecorded sample seeds are recorded
+   * as skipped.
    */
   run(): Promise<SeedRunResult>;
   /**
