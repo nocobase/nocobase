@@ -86,12 +86,15 @@ describe('xlsx importer', () => {
 
     XLSX.utils.sheet_add_aoa(worksheet, [['f1', 'f2', 'f3', 'f4', 'f5']], { origin: 'A2' });
 
-    const importer = new XlsxImporter({
+    const options = {
       collectionManager: app.mainDataSource.collectionManager,
       collection: Test,
       columns,
       workbook: template,
-    });
+      // Older JavaScript callers may still pass this option.
+      rowDefaultValues: { f2: 'legacy default' },
+    };
+    const importer = new XlsxImporter(options);
 
     await importer.run({
       context: {
@@ -154,7 +157,6 @@ describe('xlsx importer', () => {
           type: 'string',
           name: 'content',
         },
-        { type: 'string', name: 'source' },
       ],
     });
 
@@ -187,7 +189,6 @@ describe('xlsx importer', () => {
       collection: Test,
       columns,
       workbook: template,
-      rowDefaultValues: { source: 'server', title: 'default title' },
     });
 
     await importer.run({
@@ -207,6 +208,5 @@ describe('xlsx importer', () => {
     const record = await Test.repository.findOne();
     expect(record.title).toBe('hello');
     expect(record.content).toBe('world');
-    expect(record.source).toBe('server');
   });
 });
