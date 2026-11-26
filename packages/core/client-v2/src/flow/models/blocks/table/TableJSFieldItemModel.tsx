@@ -23,6 +23,7 @@ export class TableJSFieldItemModel extends TableCustomColumnModel {
     return buildJSFieldMenuChildren(ctx, {
       useModel: 'TableColumnModel',
       fieldUseModel: 'JSFieldModel',
+      filterField: (field) => !field.options?.treeChildren,
       refreshTargets: ['TableColumnModel'],
       associationProvider: (inner) => TableAssociationFieldGroupModel.defineChildren(inner) as SubModelItem[],
     });

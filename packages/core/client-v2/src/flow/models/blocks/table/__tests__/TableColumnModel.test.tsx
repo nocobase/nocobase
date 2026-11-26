@@ -7,12 +7,31 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { FlowEngine } from '@nocobase/flow-engine';
+import { FlowEngine, type FlowModelContext } from '@nocobase/flow-engine';
 import { describe, expect, it, vi } from 'vitest';
 // Prime the model module graph so the editable field bindings used by the quick edit data scope setting are registered.
 import '../../../index';
 import { RecordSelectFieldModel } from '../../../fields/AssociationFieldModel/RecordSelectFieldModel';
 import { TableColumnModel } from '../TableColumnModel';
+import { TableJSFieldItemModel } from '../TableJSFieldItemModel';
+
+describe('table JS field menu', () => {
+  it('excludes the tree children relationship by metadata and keeps ordinary associations', async () => {
+    const collection = {
+      getFields: () => [
+        { name: 'descendants', options: { interface: 'o2m', treeChildren: true } },
+        { name: 'children', options: { interface: 'o2m' } },
+        { name: 'title', options: { interface: 'input' } },
+      ],
+      getToOneAssociationFields: () => [],
+    };
+    const ctx = { model: { collection }, collection, t: (label: string) => label } as unknown as FlowModelContext;
+
+    const items = await TableJSFieldItemModel.defineChildren(ctx);
+
+    expect(items.map((item) => item.key)).toEqual(['children', 'title']);
+  });
+});
 
 const createQuickEditDataScopeCtx = (
   overrides: { associationPathName?: string; editable?: boolean; isAssociation?: boolean } = {},

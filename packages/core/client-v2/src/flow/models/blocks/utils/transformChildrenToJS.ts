@@ -7,7 +7,13 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { tExpr, buildWrapperFieldChildren, type FlowModelContext, type SubModelItem } from '@nocobase/flow-engine';
+import {
+  tExpr,
+  buildWrapperFieldChildren,
+  type BuildFieldChildrenOptions,
+  type FlowModelContext,
+  type SubModelItem,
+} from '@nocobase/flow-engine';
 import { AssociationFieldGroupModel } from '../../base/AssociationFieldGroupModel';
 
 export interface TransformOptions {
@@ -118,11 +124,9 @@ export function buildFormAssociationChildren(ctx: FlowModelContext) {
 // Higher-level builder for JS field menus
 // =========================
 
-export interface JSFieldMenuChildrenOptions {
-  useModel: string;
+export interface JSFieldMenuChildrenOptions extends BuildFieldChildrenOptions {
   fieldUseModel: string;
   refreshTargets: string[];
-  associationPathName?: string;
   /**
    * 仅在需要“关系字段”入口时传入（例如 Table / Details 区块）；
    * 表单的 JS field 菜单默认不展示关系字段。
@@ -131,13 +135,8 @@ export interface JSFieldMenuChildrenOptions {
 }
 
 export async function buildJSFieldMenuChildren(ctx: FlowModelContext, opts: JSFieldMenuChildrenOptions) {
-  const { useModel, fieldUseModel, refreshTargets, associationPathName, associationProvider } = opts;
-  const groups = buildWrapperFieldChildren(ctx, {
-    useModel,
-    fieldUseModel,
-    associationPathName,
-    refreshTargets,
-  });
+  const { fieldUseModel, refreshTargets, associationProvider } = opts;
+  const groups = buildWrapperFieldChildren(ctx, opts);
   let directChildren: SubModelItem[] = [];
   const maybeChildren = groups?.[0]?.children;
   if (Array.isArray(maybeChildren)) {

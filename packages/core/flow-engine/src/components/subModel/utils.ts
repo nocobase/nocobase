@@ -8,7 +8,7 @@
  */
 
 import _ from 'lodash';
-import type { Collection } from '../../data-source';
+import type { Collection, CollectionField } from '../../data-source';
 import { FlowModelContext } from '../../flowContext';
 import { FlowModelMeta, ModelConstructor } from '../../types';
 import { isInheritedFrom, resolveCreateModelOptions } from '../../utils';
@@ -231,6 +231,7 @@ export interface BuildFieldChildrenOptions {
   useModel: string;
   fieldUseModel?: string | ((field: any) => string);
   collection?: Collection;
+  filterField?: (field: CollectionField) => boolean;
   associationPathName?: string;
   maxAssociationFieldDepth?: number;
   /**
@@ -247,7 +248,7 @@ export function buildWrapperFieldChildren(ctx: FlowModelContext, options: BuildF
   const children: SubModelItem[] = [];
   const associationDepth = associationPathName ? associationPathName.split('.').filter(Boolean).length : 0;
   for (const f of fields) {
-    if (!f?.options?.interface) continue;
+    if (!f?.options?.interface || (options.filterField && !options.filterField(f))) continue;
     if (associationDepth >= maxAssociationFieldDepth && (f.isAssociationField?.() || f.target || f.targetCollection)) {
       continue;
     }
