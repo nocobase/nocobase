@@ -48,6 +48,7 @@ import type {
 
 export interface CollectionBuilderOptions {
   schemaAdapter?: SchemaAdapter;
+  executeSchemaChange?: (operation: () => Promise<void>) => Promise<void>;
   collections?: Pick<ConnectionCollections, 'get' | 'scan'>;
   collectionMetadata?: CollectionMetadataService;
   schemaInvalidator?: CollectionMetadataInvalidator;
@@ -141,6 +142,7 @@ export class CollectionRenameUnsupportedKindError extends Error {
 
 export class CollectionBuilder {
   private readonly schemaAdapter: SchemaAdapter;
+  private readonly executeSchemaChange?: CollectionBuilderOptions['executeSchemaChange'];
   private readonly collections?: Pick<ConnectionCollections, 'get' | 'scan'>;
   private readonly collectionMetadata?: CollectionMetadataService;
   private readonly schemaInvalidator?: CollectionMetadataInvalidator;
@@ -150,6 +152,7 @@ export class CollectionBuilder {
   constructor(options: CollectionBuilderOptions = {}) {
     assertSupportedBuilderOptions(options);
     this.schemaAdapter = options.schemaAdapter ?? new NoopSchemaAdapter();
+    this.executeSchemaChange = options.executeSchemaChange;
     this.collections = options.collections;
     this.collectionMetadata = options.collectionMetadata;
     this.schemaInvalidator = options.schemaInvalidator;
@@ -414,13 +417,20 @@ export class CollectionBuilder {
       );
       assertMetadataFieldChanges(executedOperations, compilerContext);
       await this.assertDocumentMetadataWritable(executedOperations);
-      await this.schemaAdapter.execute(schemaOperations);
-      this.updatePlannedCollections(executedOperations, compilerContext);
-      this.invalidatePhysicalSchema(effectiveOperations);
-      await this.applyDocumentMetadataChanges(
-        executedOperations,
-        compilerContext,
-      );
+      const execute = async (): Promise<void> => {
+        await this.schemaAdapter.execute(schemaOperations);
+        this.updatePlannedCollections(executedOperations, compilerContext);
+        this.invalidatePhysicalSchema(effectiveOperations);
+        await this.applyDocumentMetadataChanges(
+          executedOperations,
+          compilerContext,
+        );
+      };
+      if (schemaOperations.length > 0 && this.executeSchemaChange) {
+        await this.executeSchemaChange(execute);
+      } else {
+        await execute();
+      }
     }
 
     return {

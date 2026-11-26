@@ -34,6 +34,7 @@ export interface MigrationConnection {
   readonly capabilities: DatabaseCapabilities;
 
   client<T = unknown>(): Promise<T>;
+  notifySchemaChange<T>(operation: () => Promise<T>): Promise<T>;
 }
 
 /** Services available while applying or rolling back a migration. */

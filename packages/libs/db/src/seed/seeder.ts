@@ -366,15 +366,18 @@ class DefaultSeeder implements Seeder {
       return;
     }
 
-    await connection.transaction(async (trxConnection) => {
-      const context = createSeedContext(
-        trxConnection,
-        this.options.config,
-        this.options.container,
-      );
-      const startedAt = Date.now();
-      await loaded.seed.run(context);
-      await recordRun(context.connection, Date.now() - startedAt);
-    });
+    await connection.transaction(
+      async (trxConnection) => {
+        const context = createSeedContext(
+          trxConnection,
+          this.options.config,
+          this.options.container,
+        );
+        const startedAt = Date.now();
+        await loaded.seed.run(context);
+        await recordRun(context.connection, Date.now() - startedAt);
+      },
+      { collectionCache: 'isolated' },
+    );
   }
 }
