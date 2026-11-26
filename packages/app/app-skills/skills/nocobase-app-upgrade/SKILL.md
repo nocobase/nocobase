@@ -82,7 +82,7 @@ COMMERCIAL_SCOPE=(--@nocobase:registry=https://pkg-v3.nocobase.com/)
 BASE_REGISTRY_ARGS=()
 TARGET_REGISTRY_ARGS=()
 case "$BASE_PACKAGE" in
-  @nocobase/app-template-pro|@nocobase/app-template-enterprise) BASE_REGISTRY_ARGS=("${COMMERCIAL_SCOPE[@]}") ;;
+  @nocobase/app-template-pro|@nocobase/app-template-enterprise|@nocobase/app-template-multi-app|@nocobase/app-template-sub-app|@nocobase/app-template-multi-portal) BASE_REGISTRY_ARGS=("${COMMERCIAL_SCOPE[@]}") ;;
 esac
 case "$TARGET_PACKAGE" in
   @nocobase/app-template-pro|@nocobase/app-template-enterprise) TARGET_REGISTRY_ARGS=("${COMMERCIAL_SCOPE[@]}") ;;
@@ -233,7 +233,7 @@ For a notification contract change, complete the applicable [notification accept
 
 Before declaring completion, verify that the resolved runtime exports the target contracts, installed component copies and all request owners are connected, and applicable target acceptance checks pass with preserved customizations and data. Include both template-provided and application-owned lists and installed Registry copies. Compare retained business records, approval history, permissions and executed migration sources against the recovery checkpoint. If any required check fails, retain BASE and report the failure with recovery instructions.
 
-Only after those checks pass, record the accepted template identity. For an edition change, set `templatePackage` to TARGET_PACKAGE and `edition` to the value in TARGET. Set `defaultTemplateVersion` to the exact TARGET selected in step 3. For an edition template, copy its `upstreamTemplateVersion` and `upstreamTemplateCommit` from that same TARGET. Verify the final manifest and lockfile and commit the reconciled source, dependencies and markers together. Report the registry/channel, exact source and guidance package versions and integrity, range merged, how each contested file was decided, manual actions and their validation, and how to roll back. State whether the target is a local candidate or a publicly released package.
+Only after those checks pass, record the accepted template identity. For an edition change, set `templatePackage` to TARGET_PACKAGE and `edition` to the value in TARGET. Set `defaultTemplateVersion` to the exact TARGET selected in step 3. For an edition template, copy its `upstreamTemplateVersion` and `upstreamTemplateCommit` from that same TARGET, and for Enterprise also its `nocobase.presets` list. Verify the final manifest and lockfile and commit the reconciled source, dependencies and markers together. Report the registry/channel, exact source and guidance package versions and integrity, range merged, how each contested file was decided, manual actions and their validation, and how to roll back. State whether the target is a local candidate or a publicly released package.
 
 ## Crossing several releases
 
