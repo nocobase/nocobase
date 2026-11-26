@@ -3,7 +3,8 @@ import type { AuditLocaleResource } from './en-US.js';
 const viVN: AuditLocaleResource = {
   audit: {
     operations: {
-      signIn: 'Đăng nhập bằng email',
+      signIn: 'Đăng nhập',
+      signInWithEmail: 'Đăng nhập bằng email',
       signInWithUsername: 'Đăng nhập bằng tên người dùng',
       signUp: 'Đăng ký',
       signOut: 'Đăng xuất',

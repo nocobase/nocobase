@@ -3,7 +3,8 @@ import type { AuditLocaleResource } from './en-US.js';
 const frFR: AuditLocaleResource = {
   audit: {
     operations: {
-      signIn: 'Se connecter par e-mail',
+      signIn: 'Se connecter',
+      signInWithEmail: 'Se connecter par e-mail',
       signInWithUsername: 'Se connecter avec un nom d’utilisateur',
       signUp: 'Créer un compte',
       signOut: 'Se déconnecter',

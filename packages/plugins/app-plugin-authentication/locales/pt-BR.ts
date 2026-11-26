@@ -3,7 +3,8 @@ import type { AuditLocaleResource } from './en-US.js';
 const ptBR: AuditLocaleResource = {
   audit: {
     operations: {
-      signIn: 'Entrar com e-mail',
+      signIn: 'Entrar',
+      signInWithEmail: 'Entrar com e-mail',
       signInWithUsername: 'Entrar com nome de usuário',
       signUp: 'Criar conta',
       signOut: 'Sair',

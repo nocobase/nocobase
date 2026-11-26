@@ -3,7 +3,8 @@ import type { AuditLocaleResource } from './en-US.js';
 const zhCN: AuditLocaleResource = {
   audit: {
     operations: {
-      signIn: '使用邮箱登录',
+      signIn: '登录',
+      signInWithEmail: '使用邮箱登录',
       signInWithUsername: '使用用户名登录',
       signUp: '注册',
       signOut: '退出登录',

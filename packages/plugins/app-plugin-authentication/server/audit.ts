@@ -13,7 +13,7 @@ const operations: ReadonlyMap<
     label?: Operation,
   ]
 > = new Map([
-  ['/sign-in/email', ['signIn', true]],
+  ['/sign-in/email', ['signIn', true, 'signInWithEmail']],
   ['/sign-in/username', ['signIn', true, 'signInWithUsername']],
   ['/sign-up/email', ['signUp', true]],
   ['/sign-out', ['signOut']],

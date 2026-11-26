@@ -269,7 +269,7 @@ it('attributes native audit events without retaining credentials or duplicating 
     operationName: '使用邮箱登录',
     operationNameI18n: {
       ns: '@nocobase/app-plugin-authentication',
-      key: 'audit.operations.signIn',
+      key: 'audit.operations.signInWithEmail',
     },
     actor: { type: 'anonymous' },
     outcome: 'failure',
@@ -287,7 +287,7 @@ it('attributes native audit events without retaining credentials or duplicating 
     operationName: '使用邮箱登录',
     operationNameI18n: {
       ns: '@nocobase/app-plugin-authentication',
-      key: 'audit.operations.signIn',
+      key: 'audit.operations.signInWithEmail',
     },
     actor,
     outcome: 'success',

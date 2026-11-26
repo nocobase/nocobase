@@ -3,7 +3,8 @@ import type { AuditLocaleResource } from './en-US.js';
 const zhTW: AuditLocaleResource = {
   audit: {
     operations: {
-      signIn: '使用電子郵件登入',
+      signIn: '登入',
+      signInWithEmail: '使用電子郵件登入',
       signInWithUsername: '使用使用者名稱登入',
       signUp: '註冊',
       signOut: '登出',
