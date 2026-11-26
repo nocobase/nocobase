@@ -610,19 +610,18 @@ export function createSnapshots(deps: {
     async record(conn, composed, request) {
       const { hash, docs, omitted } = composed;
       const seriesKey = sha256(request.seriesKey);
-      const previous = (
-        await snapshotsRepo(conn).findMany({
-          filter: { seriesKey },
-          sort: (sort) => [
-            sort.field('createdAt').desc(),
-            sort.field('id').desc(),
-          ],
-          limit: 1,
-        })
-      )[0];
+      const recent = await conn.query
+        .selectFrom('kbSnapshots')
+        .select(['id', 'docs', 'createdAt'])
+        .where('seriesKey', '=', seriesKey)
+        .orderBy('createdAt', 'desc')
+        .orderBy('id', 'desc')
+        .limit(4)
+        .execute();
+      const id = deps.newId();
       await snapshotsRepo(conn).createOne({
         values: {
-          id: deps.newId(),
+          id,
           snapshotKey: request.key,
           seriesKey,
           hash,
@@ -631,25 +630,25 @@ export function createSnapshots(deps: {
           createdAt: deps.now().toISOString(),
         },
       });
-      // Keep the last few per series: enough to tell a later one what changed.
-      await conn.query
-        .deleteFrom('kbSnapshots')
-        .where('seriesKey', '=', seriesKey)
-        .where((eb) =>
-          eb(
-            'id',
-            'not in',
-            eb
-              .selectFrom('kbSnapshots')
-              .select('id')
-              .where('seriesKey', '=', seriesKey)
-              .orderBy('createdAt', 'desc')
-              .orderBy('id', 'desc')
-              .limit(5),
-          ),
-        )
-        .execute();
+      // Keep this dispatch and the four latest previous ones. A concurrent snapshot newer than the cutoff also stays.
+      const cutoff = recent[3];
+      if (cutoff)
+        await conn.query
+          .deleteFrom('kbSnapshots')
+          .where('seriesKey', '=', seriesKey)
+          .where('id', '!=', id)
+          .where((eb) =>
+            eb.or([
+              eb('createdAt', '<', cutoff.createdAt),
+              eb.and([
+                eb('createdAt', '=', cutoff.createdAt),
+                eb('id', '<', cutoff.id),
+              ]),
+            ]),
+          )
+          .execute();
 
+      const previous = recent[0];
       return {
         hash,
         docs,

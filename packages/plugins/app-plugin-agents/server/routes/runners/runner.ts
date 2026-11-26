@@ -170,18 +170,12 @@ const LenientHeartbeatSchema: z.ZodType<HeartbeatRequest> = z.preprocess(
 // The runner's HTTP timeout adds 10 seconds to its poll. Use only half of that margin in the server.
 const CLAIM_MARGIN_MS = 5_000;
 
-type ClaimRouteEnv = RunnerEnv & {
-  Variables: {
-    claimBudget: { readonly deadline: number; readonly signal: AbortSignal };
-  };
-};
-
 export function createRunnerRoutes(
   services: Agents,
   options: RunnerRoutesOptions = {},
 ): Hono<RunnerEnv> {
   const pollTimeoutMs = options.pollTimeoutMs ?? TIMINGS.pollTimeoutMs;
-  const router = domainRouter<ClaimRouteEnv>();
+  const router = domainRouter<RunnerEnv>();
 
   const authenticate = (context: Context<RunnerEnv>, touch: boolean) => {
     const protocolVersion = protocolOf(context);
@@ -467,7 +461,7 @@ export function createRunnerRoutes(
     }),
     apiValidator('query', ClaimQuery),
     async (context) => {
-      const { deadline, signal } = context.get('claimBudget');
+      const { deadline, signal } = context.get('claimBudget')!;
       const runner = context.get('runner');
       const wait = context.req.valid('query').wait === true;
       if (runner.status === 'upgrade_required') {

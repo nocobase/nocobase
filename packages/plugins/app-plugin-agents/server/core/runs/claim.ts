@@ -207,12 +207,13 @@ export interface ClaimService {
     scan?: ClaimScan,
     signal?: AbortSignal,
   ): Promise<RunPayload[]>;
-  /** The skills a run gets, worked out the way its claim works them out. The caller checks who holds the run. */
+  /** Read-only sample of prospective work on one subject, sharing compatibility and runner occupancy. */
   diagnoseRoster(
     conn: DatabaseConnection,
     run: Run,
     agentIds: readonly string[],
   ): Promise<ReadonlyMap<string, ModelSelectionWait | null>>;
+  /** The skills a run gets, worked out the way its claim works them out. The caller checks who holds the run. */
   runSkills(runner: Runner, runId: string): Promise<RunSkill[]>;
 }
 
@@ -1421,7 +1422,7 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
     // A kept session that cannot be resumed: the new one is told what came before, as a first one is. The history
     // is outside the fingerprint, so it does not change.
     let recoveryContext: string | undefined;
-    if (session && !strict) {
+    if (session && !strict && !binding.context.recoveryIndependent) {
       const fresh = await binding.context.assemble(
         conn,
         { ...claim, freshSession: true },
