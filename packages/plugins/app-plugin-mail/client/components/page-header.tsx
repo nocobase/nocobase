@@ -16,7 +16,7 @@ export function PageHeader({
       {title || description ? (
         <div className='min-w-0'>
           {title ? (
-            <h1 className='font-heading text-3xl font-semibold tracking-[-0.035em]'>
+            <h1 className='font-heading text-2xl font-semibold tracking-[-0.035em]'>
               {title}
             </h1>
           ) : null}
