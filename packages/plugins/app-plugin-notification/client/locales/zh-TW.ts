@@ -151,6 +151,7 @@ const zhTW: LocaleResource<typeof enUS> = {
       'feishu-webhook': 'Feishu group',
       'dingtalk-webhook': 'DingTalk group',
       'web-push': 'Browser push',
+      sms: '簡訊',
       retry: 'Retry policy',
     },
     title: '管道',
@@ -207,6 +208,7 @@ const zhTW: LocaleResource<typeof enUS> = {
     'in-app': '站內信',
     email: '郵件',
     'web-push': '瀏覽器推播',
+    sms: '簡訊',
     im: '群組聊天',
   },
   deliveries: {

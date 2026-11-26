@@ -8,6 +8,7 @@ const frFR: LocaleResource<typeof enUS> = {
     resend: 'Renvoyer',
     feishuWebhook: 'Webhook Feishu',
     dingtalkWebhook: 'DingTalk',
+    sms: 'SMS',
   },
 };
 

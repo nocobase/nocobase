@@ -150,6 +150,7 @@ const zhCN: NotificationResource = {
       'feishu-webhook': '飞书群',
       'dingtalk-webhook': '钉钉群',
       'web-push': '浏览器推送',
+      sms: '短信',
       retry: '修改重试策略',
     },
     title: '渠道',
@@ -206,6 +207,7 @@ const zhCN: NotificationResource = {
     'in-app': '站内信',
     email: '邮件',
     'web-push': '浏览器推送',
+    sms: '短信',
     im: '群聊',
   },
   deliveries: {

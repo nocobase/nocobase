@@ -6,6 +6,7 @@ const zhCN: NotificationProvidersResource = {
     resend: 'Resend',
     feishuWebhook: '飞书 Webhook',
     dingtalkWebhook: '钉钉 Webhook',
+    sms: '短信',
   },
 };
 

@@ -8,6 +8,7 @@ const viVN: LocaleResource<typeof enUS> = {
     resend: 'Gửi lại',
     feishuWebhook: 'Feishu',
     dingtalkWebhook: 'Webhook DingTalk',
+    sms: 'SMS',
   },
 };
 
