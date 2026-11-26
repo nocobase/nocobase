@@ -373,8 +373,24 @@ it('reports a selected missing program without starting anything', async () => {
   });
 });
 
+/** What the dsh Web settings write: the key under `refs` of `<harness home>/.credentials.yaml`. */
+async function saveDshWebKey(
+  dshHome: string,
+  content = 'version: 1\nrefs:\n  DEEPSEEK_API_KEY: sk-web-secret-value\n',
+) {
+  await mkdir(dshHome, { recursive: true });
+  await writeFile(path.join(dshHome, '.credentials.yaml'), content, {
+    mode: 0o600,
+  });
+}
+
+async function expectNoHandshake(f: Awaited<ReturnType<typeof dshFixture>>) {
+  // The fake dsh would answer the handshake with models; none was asked, so none could stand in for a credential.
+  expect(existsSync(f.trace)).toBe(false);
+}
+
 it.each(['', '   '])(
-  'reports dsh as needing its runner API key when the key is %s',
+  'reports dsh as needing login when neither the key variable (%j) nor a saved key exists',
   async (key) => {
     const f = await dshFixture({
       ...(key === '' ? {} : { DEEPSEEK_API_KEY: key }),
@@ -388,13 +404,145 @@ it.each(['', '   '])(
       status: 'needsLogin',
       statusReason: 'notLoggedIn',
     });
+    expect(detected.models).toBeUndefined();
+    expect(detected.statusDetail).toContain('dsh Web');
     expect(detected.statusDetail).toContain('--pass-env DEEPSEEK_API_KEY');
-    expect(existsSync(f.trace)).toBe(false);
+    expect(detected.statusDetail).toContain(
+      path.join(f.root, '.dsh', '.credentials.yaml'),
+    );
+    await expectNoHandshake(f);
     await expect(readFile(versionTrace, 'utf8')).rejects.toMatchObject({
       code: 'ENOENT',
     });
   },
 );
+
+it.each([
+  ['an empty home directory', undefined],
+  ['no refs section', 'version: 1\n'],
+  ['an empty file', ''],
+  ['another key only', 'version: 1\nrefs:\n  OPENAI_API_KEY: sk-other\n'],
+  ['a blank value', "version: 1\nrefs:\n  DEEPSEEK_API_KEY: '  '\n"],
+])(
+  'reports dsh as needing login when the saved credentials hold no DeepSeek key (%s)',
+  async (_name, content) => {
+    const f = await dshFixture();
+    if (content !== undefined)
+      await saveDshWebKey(path.join(f.root, '.dsh'), content);
+    expect(await f.adapter.detect()).toMatchObject({
+      status: 'needsLogin',
+      statusReason: 'notLoggedIn',
+      authenticated: false,
+    });
+    await expectNoHandshake(f);
+  },
+);
+
+it('detects dsh as ready from the key saved in its Web settings, without the key variable', async () => {
+  const f = await dshFixture();
+  await saveDshWebKey(path.join(f.root, '.dsh'));
+  const detected = await f.adapter.detect();
+  expect(detected).toMatchObject({
+    installed: true,
+    authenticated: true,
+    status: 'ready',
+    version: '0.2.1-rc.5',
+    models: [
+      { id: 'one', name: 'Model One' },
+      { id: 'two', name: 'Model Two' },
+    ],
+  });
+  expect(JSON.stringify(detected)).not.toContain('sk-web-secret-value');
+  const methods = (await f.messages()).map(({ method }) => method);
+  expect(methods[0]).toBe('initialize');
+  expect(methods).not.toContain('session/prompt');
+});
+
+it.each([
+  ['an absolute path', (root: string) => path.join(root, 'custom-home')],
+  ['a path below the home directory', () => '~/custom-home'],
+])(
+  'reads the saved key from a custom DSH_HOME given as %s',
+  async (_name, home) => {
+    const f = await dshFixture();
+    f.env.DSH_HOME = home(f.root);
+    await saveDshWebKey(path.join(f.root, 'custom-home'));
+    expect(await f.adapter.detect()).toMatchObject({
+      authenticated: true,
+      status: 'ready',
+    });
+  },
+);
+
+it('looks only in the DSH_HOME it passes to dsh, not in the default home', async () => {
+  const f = await dshFixture();
+  await saveDshWebKey(path.join(f.root, '.dsh'));
+  f.env.DSH_HOME = path.join(f.root, 'elsewhere');
+  const detected = await f.adapter.detect();
+  expect(detected).toMatchObject({
+    authenticated: false,
+    status: 'needsLogin',
+    statusReason: 'notLoggedIn',
+  });
+  expect(detected.statusDetail).toContain(
+    path.join(f.root, 'elsewhere', '.credentials.yaml'),
+  );
+  await expectNoHandshake(f);
+});
+
+it('treats a blank DSH_HOME as unset', async () => {
+  const f = await dshFixture({ DSH_HOME: '  ' });
+  await saveDshWebKey(path.join(f.root, '.dsh'));
+  expect(await f.adapter.detect()).toMatchObject({ status: 'ready' });
+});
+
+it('does not read the saved credentials when the key variable is set', async () => {
+  const f = await dshFixture({ DEEPSEEK_API_KEY: 'test-key' });
+  // A directory at the file's path would fail any read; the variable alone is enough.
+  await mkdir(path.join(f.root, '.dsh', '.credentials.yaml'), {
+    recursive: true,
+  });
+  expect(await f.adapter.detect()).toMatchObject({
+    authenticated: true,
+    status: 'ready',
+  });
+});
+
+it('tells how to fix a saved credential file the Runner cannot read', async () => {
+  const f = await dshFixture();
+  const file = path.join(f.root, '.dsh', '.credentials.yaml');
+  // Whatever the account (root reads a mode 000 file), a directory in its place is never readable as a file.
+  await mkdir(file, { recursive: true });
+  const detected = await f.adapter.detect();
+  expect(detected).toMatchObject({
+    installed: true,
+    authenticated: false,
+    status: 'failed',
+    statusReason: 'startFailed',
+  });
+  expect(detected.statusDetail).toContain(file);
+  expect(detected.statusDetail).toContain('EISDIR');
+  expect(detected.statusDetail).toContain('account that saved the key');
+  expect(detected.statusDetail).toContain('--pass-env DEEPSEEK_API_KEY');
+  await expectNoHandshake(f);
+});
+
+it('reports an invalid credential file without quoting its content', async () => {
+  const f = await dshFixture();
+  await saveDshWebKey(
+    path.join(f.root, '.dsh'),
+    'refs:\n  DEEPSEEK_API_KEY: sk-web-secret-value\n  - broken: [\n',
+  );
+  const detected = await f.adapter.detect();
+  expect(detected).toMatchObject({
+    authenticated: false,
+    status: 'failed',
+    statusReason: 'startFailed',
+  });
+  expect(detected.statusDetail).toContain('not valid');
+  expect(JSON.stringify(detected)).not.toContain('sk-web-secret-value');
+  await expectNoHandshake(f);
+});
 
 it('detects dsh only with the passed key and prefers the CLI prerelease version to ACP metadata', async () => {
   const root = await mkdtemp(path.join(os.tmpdir(), 'runner-dsh-version-'));

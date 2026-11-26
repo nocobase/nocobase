@@ -23,6 +23,7 @@ import type { SessionNotification } from '@nocobase/acp-bridge/client';
 import { programFingerprint } from './program-fingerprint.ts';
 import { withDetectionEnvironment } from './detection.ts';
 import { detectExec } from './detect-exec.ts';
+import { DSH_KEY_NAME, inspectDshWebKey } from './dsh-credentials.ts';
 import { EventQueue } from './echo.ts';
 import { capInput, capText } from './codex/util.ts';
 import type {
@@ -158,6 +159,42 @@ async function dshVersion(
   }
 }
 
+/**
+ * What detection reports when dsh has no key to use, or undefined when it has one. dsh takes its key from the
+ * environment the runner passes it (`DEEPSEEK_API_KEY`) or from the one saved in its Web settings, in
+ * `$DSH_HOME/.credentials.yaml`. Its handshake succeeds and lists models without either, and a paid test message is
+ * not an option for a background probe, so the credential has to be looked for before the handshake. With the
+ * variable set the file is not read at all.
+ */
+async function dshMissingCredential(
+  env: Record<string, string>,
+  command: string,
+): Promise<(ToolDetection & ToolCapabilities) | undefined> {
+  if (env[DSH_KEY_NAME]?.trim()) return undefined;
+  const web = await inspectDshWebKey(env);
+  if (web.state === 'present') return undefined;
+  const found = { installed: true, path: command, authenticated: false };
+  if (web.state === 'absent')
+    return {
+      ...found,
+      status: 'needsLogin',
+      statusReason: 'notLoggedIn',
+      statusDetail: statusDetailOf(
+        `No DeepSeek API key found. Save one in the dsh Web as the account that runs the Runner (stored in ${web.file}), or set ${DSH_KEY_NAME} and pass it with --pass-env ${DSH_KEY_NAME}. Then detect again.`,
+      ),
+    };
+  return {
+    ...found,
+    status: 'failed',
+    statusReason: 'startFailed',
+    statusDetail: statusDetailOf(
+      web.state === 'unreadable'
+        ? `Cannot read the dsh credential file ${web.file} (${web.cause}). Run the Runner as the account that saved the key, or fix the file's owner and mode (600), or pass ${DSH_KEY_NAME} with --pass-env ${DSH_KEY_NAME}. Then detect again.`
+        : `The dsh credential file ${web.file} is not valid (${web.cause}). Save the key again in the dsh Web, or pass ${DSH_KEY_NAME} with --pass-env ${DSH_KEY_NAME}. Then detect again.`,
+    ),
+  };
+}
+
 async function inspect(
   spec: AgentSpec,
   env: Record<string, string>,
@@ -179,17 +216,10 @@ async function inspect(
         `${resolved.command} answers to ${spec.identify!.args.join(' ')} like a different program.`,
       ),
     };
-  if (spec.id === 'dsh' && !env.DEEPSEEK_API_KEY?.trim())
-    return {
-      installed: true,
-      path: resolved.command,
-      authenticated: false,
-      status: 'needsLogin',
-      statusReason: 'notLoggedIn',
-      statusDetail: statusDetailOf(
-        'Set DEEPSEEK_API_KEY and pass it to the runner with --pass-env DEEPSEEK_API_KEY, then detect again.',
-      ),
-    };
+  if (spec.id === 'dsh') {
+    const missing = await dshMissingCredential(env, resolved.command);
+    if (missing) return missing;
+  }
   const cliVersion =
     spec.id === 'dsh'
       ? await dshVersion(resolved.command, env, signal)
