@@ -262,6 +262,11 @@ export class OpencodeAdapter implements AgentAdapter {
             password: server.password,
             fetch: this.fetchFn,
           });
+          if (
+            detection.version &&
+            compareVersions(detection.version, '2.4.0') >= 0
+          )
+            await client.waitForPlugins(signal);
           const models = await client.listModels(signal);
           if (
             models.some(
