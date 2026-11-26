@@ -24,7 +24,10 @@ import type {
   CollectionSchemaVersion,
   DatabaseCollectionMetadataStore,
 } from '../../metadata/internal/database-document-store.js';
-import type { TransactionCollectionCache } from './transaction-cache.js';
+import type {
+  CommittedCollectionCache,
+  TransactionCollectionCache,
+} from './transaction-cache.js';
 import { CollectionNamingIndex } from './naming-index.js';
 import { CollectionRelationValidator } from './relation-validator.js';
 import type {
@@ -49,7 +52,10 @@ export interface CollectionRegistryOptions {
     readonly store: DatabaseCollectionMetadataStore;
     readonly cache: TransactionCollectionCache;
   };
-  readonly onInvalidateAll?: () => void;
+  readonly committedCache?: {
+    readonly store: DatabaseCollectionMetadataStore;
+    readonly cache: CommittedCollectionCache;
+  };
   readonly transactional?: boolean;
   readonly isInternalPhysicalCollection?: (identity: {
     readonly tableName: string;
@@ -142,7 +148,7 @@ export class CollectionRegistry
     if (loading) return loading;
 
     const token = this.generationToken(name);
-    const promise = this.load(name).then((result) => {
+    const promise = this.loadRootOrLocal(name, token).then((result) => {
       if (result && this.sameGeneration(name, token)) {
         this.cache.set(name, result);
       }
@@ -268,7 +274,7 @@ export class CollectionRegistry
   invalidateAll(): void {
     if (!this.options.transactional)
       invalidateMetadataNamingSnapshot(this.options.metadataStore);
-    this.options.onInvalidateAll?.();
+    this.options.committedCache?.cache.reset();
     this.invalidateLocal();
   }
 
@@ -346,6 +352,42 @@ export class CollectionRegistry
       (version) => this.createTransactionIndex(store, version),
       (logicalName, index) => this.load(logicalName, index),
     );
+  }
+
+  private async loadRootOrLocal(
+    name: string,
+    token: readonly [number, number],
+  ): Promise<CollectionResolutionResult | undefined> {
+    const committed = this.options.committedCache;
+    if (!committed) return this.load(name);
+    const { cache, store } = committed;
+    await this.initialize();
+    const generation = store.cacheGeneration;
+    const version = await store.readSchemaVersion();
+    if (!version || generation !== store.cacheGeneration)
+      return this.load(name);
+    const shared = cache.observe(version);
+    if (!shared) return this.load(name);
+    const index =
+      shared.index ?? (await this.createTransactionIndex(store, version));
+    const result = await this.load(name, index);
+    // Root reads run in separate autocommit statements even on SQLite.
+    const verified = await store.readSchemaVersion();
+    if (verified && generation === store.cacheGeneration) {
+      cache.observe(verified);
+      if (
+        this.sameGeneration(name, token) &&
+        verified.sequence === version.sequence &&
+        verified.version === version.version
+      ) {
+        cache.publish({
+          version,
+          index,
+          collections: new Map([[name, result]]),
+        });
+      }
+    }
+    return result;
   }
 
   private async load(

@@ -521,6 +521,7 @@ class DefaultMigrator implements Migrator {
         throw new AggregateError(
           [error, notificationError],
           'Migration and schema invalidation both failed.',
+          { cause: notificationError },
         );
       }
       throw error;

@@ -230,7 +230,16 @@ export class KnexDatabaseConnection implements DatabaseConnection {
             },
           }
         : {}),
-      onInvalidateAll: () => this.committedCollections.reset(),
+      ...(!transactionInvalidations &&
+      this.reusesTransactionCollections &&
+      this.metadataStore instanceof DatabaseCollectionMetadataStore
+        ? {
+            committedCache: {
+              store: this.metadataStore,
+              cache: this.committedCollections,
+            },
+          }
+        : {}),
       transactional: Boolean(transactionInvalidations),
       isInternalPhysicalCollection: (identity) =>
         isNocoBaseInternalTable(identity.tableName) ||
@@ -491,10 +500,7 @@ export class KnexDatabaseConnection implements DatabaseConnection {
         ? await this.metadataStore.prepareTransaction(isolated)
         : undefined;
     const root = this.rootConnection ?? this;
-    const cacheEnabled =
-      !isolated &&
-      (this.config.transactionCollectionCache ??
-        this.schemaManagement === 'managed');
+    const cacheEnabled = !isolated && this.reusesTransactionCollections;
     const dialect = this.dialect;
     const cacheGeneration =
       this.metadataStore instanceof DatabaseCollectionMetadataStore
@@ -567,6 +573,14 @@ export class KnexDatabaseConnection implements DatabaseConnection {
       await callbacks.commit(report);
     }
     return result;
+  }
+
+  private get reusesTransactionCollections(): boolean {
+    return (
+      (this.dialect === 'postgres' || this.dialect === 'sqlite') &&
+      (this.config.transactionCollectionCache ??
+        this.schemaManagement === 'managed')
+    );
   }
 
   private getClient(): Knex {

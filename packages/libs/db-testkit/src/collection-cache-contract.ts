@@ -83,6 +83,29 @@ export function describeCollectionCache(
       expect(statements.at(-1)).toMatch(/^commit/i);
     });
 
+    it('uses root-prewarmed definitions in the first transaction', async () => {
+      for (const name of ['tasks', 'members'])
+        await reader.collections.get(name);
+      const client = await reader.client<Knex>();
+      const statements: string[] = [];
+      client.on('query', (query: { sql: string }) =>
+        statements.push(query.sql),
+      );
+      await reader.transaction(async (transaction) => {
+        for (const name of ['tasks', 'members']) {
+          expect(await transaction.collections.get(name)).toMatchObject({
+            name,
+          });
+        }
+      });
+      expect(statements).toHaveLength(2 + versionQueries);
+      expect(
+        statements
+          .slice(1, -1)
+          .every((sql) => sql.includes('collection_metadata_cache_')),
+      ).toBe(true);
+    });
+
     it('keeps a root write with an inTransaction listener within its query budget', async () => {
       const client = await reader.client<Knex>();
       const statements: string[] = [];
@@ -90,6 +113,11 @@ export function describeCollectionCache(
         { collections: ['tasks'] },
         {
           async inTransaction(_event, connection) {
+            expect(await connection.repository('members').findMany()).toEqual(
+              [],
+            );
+          },
+          async afterCommit(_events, connection) {
             expect(await connection.repository('members').findMany()).toEqual(
               [],
             );

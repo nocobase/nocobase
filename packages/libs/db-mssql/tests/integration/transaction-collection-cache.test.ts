@@ -50,6 +50,10 @@ it('reads an unrelated Collection within one second while the version row is loc
           .where({ id: 1 })
           .update({ version: 'locked' });
         reading = reader.transaction(async (connection) => {
+          const transactionClient = await connection.client<Knex>();
+          await transactionClient.raw(
+            'SET TRANSACTION ISOLATION LEVEL READ COMMITTED',
+          );
           expect(await connection.collections.get('orders')).toMatchObject({
             name: 'orders',
           });

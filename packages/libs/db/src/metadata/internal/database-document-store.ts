@@ -377,12 +377,24 @@ export class DatabaseCollectionMetadataStore implements CollectionMetadataStore 
       return operation();
     }
     await this.updateSchemaChanges(client, 1);
+    let result: T;
     try {
-      return await operation();
-    } finally {
+      result = await operation();
+    } catch (error) {
       // A failed operation may already have committed some of its DDL.
-      await this.updateSchemaChanges(client, -1);
+      try {
+        await this.updateSchemaChanges(client, -1);
+      } catch (notificationError) {
+        throw new AggregateError(
+          [error, notificationError],
+          'Schema change and schema invalidation both failed.',
+          { cause: notificationError },
+        );
+      }
+      throw error;
     }
+    await this.updateSchemaChanges(client, -1);
+    return result;
   }
 
   private async updateSchemaChanges(
