@@ -11,6 +11,8 @@ metadata:
 
 # NocoBase 3 application development
 
+The “3” in NocoBase 3 identifies the product generation. The `@nocobase/app-template-*` and `@nocobase/app-plugin-*` prefixes identify NocoBase 3 application templates and plugins, respectively. Each package has its own version. When describing a project, label the value as the template version or plugin version and name the package it belongs to.
+
 When the task creates or maintains a plugin under this App's `packages/`, read `<app-root>/.agents/skills/nocobase-app-plugin-development/SKILL.md` by its explicit project path. It ships alongside this Skill in `@nocobase/app-skills`. Use this application's guidance for App-owned features and the plugin Skill for plugin-owned contracts and packaging; do not install the older global plugin development Skill.
 
 Use this Skill when building a complete application or an individual feature: business and administration pages, endpoints, data, services and their tests.
