@@ -31,6 +31,8 @@ O anexo é adequado para estes cenários de negócio:
 
 ## Criação e configuração
 
+Estas etapas se aplicam à interface clássica. Na interface v2, o menu «Add field» já não oferece o campo de anexo.
+
 Na página «Configure fields» da tabela de dados, clique em «Add field» e selecione «Anexo» para criar um campo de anexo.
 
 ![20240512180916](https://static-docs.nocobase.com/20251031000729.png)

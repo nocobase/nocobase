@@ -31,6 +31,8 @@ Das Anhang-Feld eignet sich für folgende Geschäftsszenarien:
 
 ## Konfiguration erstellen
 
+Die folgenden Schritte gelten für die frühere Oberfläche. In der v2-Oberfläche steht das Anhang-Feld im Menü „Add field“ nicht mehr zur Auswahl.
+
 Klicken Sie auf der Seite „Configure fields“ der Datentabelle auf „Add field“ und wählen Sie „Anhang“, um ein Anhang-Feld zu erstellen.
 
 ![20240512180916](https://static-docs.nocobase.com/20251031000729.png)

@@ -4,9 +4,15 @@ description: "The Attachment field uploads files and relates file records to the
 keywords: "Attachment,attachment,field,Field interface,NocoBase"
 ---
 
-# Attachment
+# Attachment (deprecated)
 
 ## Introduction
+
+:::warning Note
+
+The Attachment field is deprecated. For file uploads, use a [File collection](./file-collection.md). For links to external files, use an [Attachment URL](../field-attachment-url/index.md) field.
+
+:::
 
 In NocoBase, **Attachment** uploads files and relates file records to the current business record.
 
@@ -22,6 +28,8 @@ Attachment fields are suitable for these business scenarios:
 - Files uploaded for business records
 
 ## Create and configure
+
+These steps apply to the legacy interface. The v2 **Add field** menu no longer offers the Attachment field.
 
 On the collection's **Configure fields** page, click **Add field** and select **Attachment** to create this field.
 
