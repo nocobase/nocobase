@@ -20,7 +20,8 @@ import { forbidden, invalid } from '../../kernel/errors.js';
 import type { TxRunner } from '../../kernel/tx.js';
 import { asJson, jsonObject } from '../../kernel/values.js';
 import type { AgentService } from '../agents/index.js';
-import { findAgent } from '../agents/index.js';
+import { PREFERRED_EFFORTS } from '../../../shared/agents.js';
+import { findAgent, lockAgentRow } from '../agents/index.js';
 import { preferencesRepo, settingsRepo } from './conversation.store.js';
 
 const CHAT_SETTINGS_KEY = 'chat';
@@ -37,6 +38,12 @@ export const ChatPreferencesPatchSchema: z.ZodType<ChatPreferencesPatch> = z
       .enum(RUNNER_PREFERENCES)
       .describe(
         'Which kind of runner runs queued from now on go to first: auto, personal or team.',
+      ),
+    effort: z
+      .enum(PREFERRED_EFFORTS)
+      .nullable()
+      .describe(
+        'The reasoning effort new conversations take when none is chosen, where the agent offers it; null: each agent’s default.',
       ),
   })
   .partial();
@@ -97,6 +104,7 @@ export function createChatSettingsService(deps: {
     return {
       defaultAgentId: row?.defaultAgentId ?? null,
       runnerPreference: toRunnerPreference(row?.runnerPreference),
+      effort: row?.effort ?? null,
     };
   }
 
@@ -113,6 +121,9 @@ export function createChatSettingsService(deps: {
     settings: (conn) => readSettings(conn ?? tx.read()),
 
     updateSettings: async (byUserId, patch) => {
+      // Nothing to change: answer without writing. Writing the whole row back would restore a default another manager
+      // replaced meanwhile, possibly one since limited to roles, because this path takes no agent lock.
+      if (patch.defaultAgentId === undefined) return readSettings(tx.read());
       await validateOnlineDefault(patch);
       return tx.run(async ({ conn }) => {
         const current = await readSettings(conn);
@@ -122,11 +133,20 @@ export function createChatSettingsService(deps: {
           next.defaultAgentId !== null &&
           next.defaultAgentId !== 'online'
         ) {
+          // Making it the default races limiting who may chat with it (`agent.service.ts`): both lock the agent's row
+          // before reading the other's state, so the later one sees what the earlier one saved.
+          await lockAgentRow(conn, next.defaultAgentId);
           const agent = await findAgent(conn, next.defaultAgentId);
           if (!agent || agent.status !== 'enabled')
             throw invalid('defaultAgentId names no enabled agent.', {
               field: 'defaultAgentId',
             });
+          // Everyone's default: an agent only some roles may chat with cannot be it.
+          if (agent.chatRoles?.length)
+            throw invalid(
+              'The team default agent must be one everyone may chat with.',
+              { field: 'defaultAgentId', reason: 'AGENT_CHAT_LIMITED' },
+            );
         }
         const now = clock.now().toISOString();
         const values = {
@@ -174,6 +194,7 @@ export function createChatSettingsService(deps: {
           defaultAgentId: next.defaultAgentId,
           runnerPreference:
             next.runnerPreference === 'auto' ? null : next.runnerPreference,
+          effort: next.effort,
           updatedAt: clock.now().toISOString(),
         };
         const existing = await preferencesRepo(conn).findOne({

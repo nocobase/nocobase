@@ -30,6 +30,7 @@ import {
 } from './git.ts';
 import { NO_ISOLATION } from '../isolation.ts';
 import { runCommand } from './process.ts';
+import { openGitSsh } from '../git-ssh.ts';
 import { JobFailure, type JobContext } from './types.ts';
 
 /** A build job's token without a username, as applications sent before usernames came with credentials. */
@@ -116,19 +117,49 @@ export async function runBuild(
   try {
     context.phase('checkout');
     context.log('runner', `fetch ${spec.repo.url}`);
-    const repo = {
-      ...spec.repo,
-      auth: spec.repo.auth && {
-        username: spec.repo.auth.username ?? LEGACY_JOB_GIT_USERNAME,
-        token: spec.repo.auth.token,
-      },
-    };
-    cache = await fetchRepo(
-      context.paths,
-      { url: repo.url, ...(repo.auth ? { auth: repo.auth } : {}) },
-      spec.repo.sha ? [spec.repo.sha] : [],
-    );
-    const sha = await targetCommit(cache, repo);
+    let sha: string;
+    try {
+      const ssh = await openGitSsh(
+        spec.repo.ssh === undefined
+          ? undefined
+          : [{ ...spec.repo.ssh, url: spec.repo.url }],
+        undefined,
+        context.signal,
+      );
+      try {
+        const repo = {
+          url: spec.repo.url,
+          ...(spec.repo.ref === undefined ? {} : { ref: spec.repo.ref }),
+          ...(spec.repo.sha === undefined ? {} : { sha: spec.repo.sha }),
+          ...(ssh !== undefined
+            ? { ssh: ssh.env(spec.repo.url), retry: { signal: context.signal } }
+            : spec.repo.auth === undefined
+              ? {}
+              : {
+                  auth: {
+                    username:
+                      spec.repo.auth.username ?? LEGACY_JOB_GIT_USERNAME,
+                    token: spec.repo.auth.token,
+                  },
+                }),
+        };
+        cache = await fetchRepo(
+          context.paths,
+          repo,
+          repo.sha ? [repo.sha] : [],
+        );
+        sha = await targetCommit(cache, repo);
+      } finally {
+        await ssh?.close();
+      }
+    } catch (error) {
+      if (error instanceof JobFailure) throw error;
+      throw new JobFailure(
+        'checkoutFailed',
+        `Could not check out ${spec.repo.url}: ${error instanceof Error ? error.message : String(error)}`,
+        { cause: error },
+      );
+    }
     await addJobWorktree(cache, src, sha);
     context.log('runner', `checked out ${sha}`);
     if (context.signal.aborted) throw context.signal.reason;

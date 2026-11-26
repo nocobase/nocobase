@@ -30,6 +30,15 @@ import type { LoggingConfig } from '@nocobase/logging';
 
 import type { AppHostMode } from './host-mode.ts';
 import type { AppMemoryBudget } from './app-registry.ts';
+import {
+  resolveArtifactReadOptions,
+  type ArtifactReadOptions,
+} from './artifact-read.js';
+
+import {
+  resolveArtifactWorkerOptions,
+  type ArtifactWorkerConfig,
+} from './artifact-worker-options.js';
 
 export interface AppHostConfig {
   mode: AppHostMode;
@@ -48,6 +57,8 @@ export interface AppHostConfig {
   controlDir?: string;
   maxActiveApps?: number;
   memoryBudget?: AppMemoryBudget;
+  artifactRead?: ArtifactReadOptions;
+  artifactWorker?: ArtifactWorkerConfig;
   idleTtlMs?: number;
   evictionIntervalMs?: number;
   /** How long a page request to a stopped App waits for it before answering with a starting page. */
@@ -180,7 +191,17 @@ function decodeAppHostConfig(config: Config, rootDir: string): AppHostConfig {
     );
   }
   const host = required(hostConfig.string('server.host'), 'host.server.host');
-  const port = positiveInteger(hostConfig, 'server.port');
+  const port = hostConfig.integer('server.port');
+  if (
+    port === undefined ||
+    !Number.isInteger(port) ||
+    port < (mode === 'managed' ? 0 : 1) ||
+    port > 65535
+  ) {
+    throw new Error(
+      `Invalid app-host config: host.server.port must be an integer from ${mode === 'managed' ? 0 : 1} through 65535`,
+    );
+  }
   const revisions = hostConfig.string('appRevisionsDir');
   const appRevisionsDir = resolveConfigDirectory(
     revisions ?? 'storage/apps/revisions',
@@ -223,6 +244,12 @@ function decodeAppHostConfig(config: Config, rootDir: string): AppHostConfig {
     appVolumesDir,
     controlDir,
     maxActiveApps: optionalPositiveInteger(hostConfig, 'maxActiveApps'),
+    artifactRead: resolveArtifactReadOptions(
+      hostConfig.cut('artifactRead').raw(),
+    ),
+    artifactWorker: resolveArtifactWorkerOptions(
+      hostConfig.get('artifactWorker') as ArtifactWorkerConfig | undefined,
+    ),
     ...(hostConfig.has('memoryBudget')
       ? {
           memoryBudget: hostConfig.cut('memoryBudget').raw(),

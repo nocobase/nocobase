@@ -14,6 +14,7 @@
 // to a deployment. Their compiled output is copied into `dist/vendor` and referenced by a `file:` path, so a plugin
 // developed in this repository deploys the same way as one installed from a registry.
 import fs from 'node:fs';
+import { createRequire } from 'node:module';
 import path from 'node:path';
 
 import { parse, stringify } from 'yaml';
@@ -76,6 +77,37 @@ const isWorkspaceVersion = (version) => version?.startsWith('workspace:');
 const getVendorPackagePath = (packageName) =>
   path.join(vendorDir, ...packageName.split('/'));
 
+// Keep this rule aligned with isPluginPackageName in src/lib/plugin-package-name.ts.
+const isPluginPackageName = (name) =>
+  /^@[a-z0-9][a-z0-9-]*\/app-(?:plugin|portal)-[a-z0-9]+(?:-[a-z0-9]+)*$/u.test(
+    name,
+  );
+
+/**
+ * The other application plugins a plugin builds on, kept so a deployment can still tell which plugin another one
+ * needs, with the ones marked optional still marked so. The range is `*`: a `workspace:` range means nothing outside
+ * this repository, and with `autoInstallPeers: false` the deployment installs none of them because of it.
+ */
+const pluginPeerDependencies = (packageJson) => {
+  const peers = Object.keys(packageJson.peerDependencies ?? {})
+    .filter(isPluginPackageName)
+    .sort();
+  if (peers.length === 0) return {};
+  const optional = peers.filter(
+    (name) => packageJson.peerDependenciesMeta?.[name]?.optional === true,
+  );
+  return {
+    peerDependencies: Object.fromEntries(peers.map((name) => [name, '*'])),
+    ...(optional.length === 0
+      ? {}
+      : {
+          peerDependenciesMeta: Object.fromEntries(
+            optional.map((name) => [name, { optional: true }]),
+          ),
+        }),
+  };
+};
+
 const createRuntimePackageJson = (packageJson) => ({
   name: packageJson.name,
   displayName: packageJson.displayName,
@@ -88,6 +120,7 @@ const createRuntimePackageJson = (packageJson) => ({
   exports: packageJson.publishConfig?.exports ?? packageJson.exports,
   engines: packageJson.engines,
   nocobase: packageJson.nocobase,
+  ...pluginPeerDependencies(packageJson),
 });
 
 /**
@@ -196,12 +229,27 @@ const writeDistWorkspace = () => {
       '',
     ].join('\n'),
   );
-  // Runtime patches are part of the deployable dependency contract, not just the development install.
+  // Runtime resolution rules must survive the fresh deployment install, including their catalog references.
   const patchRoot = findWorkspaceRoot(rootDir) ?? rootDir;
   const workspacePath = path.join(patchRoot, 'pnpm-workspace.yaml');
-  const patches = fs.existsSync(workspacePath)
-    ? (parse(fs.readFileSync(workspacePath, 'utf8'))?.patchedDependencies ?? {})
+  const workspaceSettings = fs.existsSync(workspacePath)
+    ? (parse(fs.readFileSync(workspacePath, 'utf8')) ?? {})
     : {};
+  if (Object.keys(workspaceSettings.overrides ?? {}).length)
+    fs.appendFileSync(
+      distWorkspacePath,
+      stringify({
+        ...(workspaceSettings.catalog
+          ? { catalog: workspaceSettings.catalog }
+          : {}),
+        ...(workspaceSettings.catalogs
+          ? { catalogs: workspaceSettings.catalogs }
+          : {}),
+        overrides: workspaceSettings.overrides,
+      }),
+    );
+  // Runtime patches are part of the deployable dependency contract, not just the development install.
+  const patches = workspaceSettings.patchedDependencies ?? {};
   const copied = {};
   for (const [specifier, file] of Object.entries(patches)) {
     if (typeof file !== 'string')
@@ -271,11 +319,16 @@ const addExternalPackage = (
 ) => {
   if (externalPackageNames.has(packageName)) return;
 
-  const version =
-    getInstalledVersion(packageName, sourcePackageDir) ??
-    getInstalledVersion(packageName) ??
+  const declared =
     getDeclaredVersion(sourcePackage, packageName) ??
     getDeclaredVersion(rootPackage, packageName);
+  // A tarball may contain a version unavailable on npm (for example, the official SheetJS releases).
+  const version =
+    declared && /^https?:\/\//u.test(declared)
+      ? declared
+      : (getInstalledVersion(packageName, sourcePackageDir) ??
+        getInstalledVersion(packageName) ??
+        declared);
 
   if (!version) {
     throw new Error(
@@ -365,6 +418,36 @@ const dependencies = Object.fromEntries([
   ...Object.entries(workspaceDependencies),
 ]);
 
+// Capture display and registration metadata while the development packages are available.
+const applicationRequire = createRequire(rootPackagePath);
+const developmentPlugins = {};
+for (const name of Object.keys(rootPackage.devDependencies ?? {})
+  .filter(isPluginPackageName)
+  .sort()) {
+  if (Object.hasOwn(rootPackage.dependencies ?? {}, name)) continue;
+  const manifestPath = applicationRequire.resolve
+    .paths(name)
+    .map((directory) => path.join(directory, name, 'package.json'))
+    .find((file) => fs.existsSync(file));
+  if (!manifestPath) {
+    developmentPlugins[name] = null;
+    continue;
+  }
+  const manifest = readJson(manifestPath);
+  const { title, description, docs } = manifest.nocobase ?? {};
+  const entries = manifest.publishConfig?.exports ?? manifest.exports ?? {};
+  developmentPlugins[name] = {
+    version: manifest.version,
+    nocobase: { title, description, docs },
+    exports: Object.fromEntries(
+      ['./client', './server', './cli']
+        .filter((entry) => Object.hasOwn(entries, entry))
+        .map((entry) => [entry, true]),
+    ),
+    ...pluginPeerDependencies(manifest),
+  };
+}
+
 const distPackage = {
   name: rootPackage.name,
   // The server publishes both to the client, which shows them as the application's name and version.
@@ -372,7 +455,7 @@ const distPackage = {
   version: rootPackage.version ?? '0.0.0',
   private: true,
   type: 'module',
-  nocobase: rootPackage.nocobase,
+  nocobase: { ...rootPackage.nocobase, developmentPlugins },
   main: './server/embedded.js',
   exports: {
     '.': './server/embedded.js',

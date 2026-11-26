@@ -50,6 +50,8 @@ import {
 
 /** `agents` in the application's configuration. */
 export interface AgentsConfig {
+  /** Enable application-hosted model services. Runner models are independent. Defaults to true. */
+  readonly modelServices?: boolean;
   readonly uiRecovery?: OnlineAgentRecoveryConfig;
   readonly fileInputs?: import('../online/files/types.js').FileInputsConfig;
   /**
@@ -178,6 +180,7 @@ export class AgentsProvider extends ServiceProvider<AppPluginApplication> {
     this.app.container.singleton(agentsToken, (resolver) => {
       const config = this.app.config.get<AgentsConfig>('agents');
       return createAgents({
+        modelServices: config?.modelServices,
         limitForDisk: resolver.has(driveManagerToken)
           ? (disk) => resolver.resolve(driveManagerToken).getUploadLimit(disk)
           : undefined,
@@ -267,6 +270,22 @@ export class AgentsProvider extends ServiceProvider<AppPluginApplication> {
   }
 
   public override async boot(): Promise<void> {
+    // Listed on the file storage settings page, with the disk its files go to and how many it holds.
+    if (this.app.container.has(serverFileRepositoryManagerToken))
+      this.app.container
+        .resolve(serverFileRepositoryManagerToken)
+        .registerUsage({
+          id: 'agents.chatAttachments',
+          title: {
+            key: 'fileUsage',
+            ns: '@nocobase/app-plugin-agents',
+            defaultValue: 'Chat attachments',
+          },
+          plugin: '@nocobase/app-plugin-agents',
+          collection: 'agChatAttachments',
+          disk: { default: true },
+          download: 'authenticated',
+        });
     if (this.releases.length > 0) return;
     const { container } = this.app;
     const services = container.resolve(agentsToken);

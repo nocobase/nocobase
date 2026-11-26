@@ -2,8 +2,33 @@ import type { LocaleResource } from '@nocobase/i18n';
 
 import type enUS from './en-US.js';
 
+import pagesJaJP from '../../shared/locales/pages.ja-JP.js';
+
 const jaJP: LocaleResource<typeof enUS> = {
+  access: pagesJaJP.access,
   errors: {
+    originalNotFound:
+      '元のメッセージはメールプロバイダーで利用できなくなりました。',
+    originalTooLarge:
+      '元のメッセージはダウンロード上限の 40 MiB を超えています。',
+    operationUnsupported: 'このメール操作は利用できません。',
+    connectionAuthenticationFailed:
+      '{{protocol}} 認証に失敗しました。ログイン名とパスワードまたはアプリパスワードを確認してください。',
+    connectionHostNotFound:
+      '{{protocol}} ホストを解決できません。サーバーのホスト名を確認してください。',
+    connectionConnectionRefused:
+      '{{protocol}} 接続が拒否されました。ホスト、ポート、サーバーの状態を確認してください。',
+    connectionConnectionTimeout:
+      '{{protocol}} 接続がタイムアウトしました。サーバーとネットワーク設定を確認してください。',
+    connectionCertificateInvalid:
+      '{{protocol}} 証明書の検証に失敗しました。証明書とホスト名を確認してください。',
+    connectionTlsFailed:
+      '{{protocol}} TLS ネゴシエーションに失敗しました。SSL/STARTTLS 設定とポートを確認してください。',
+    connectionConnectionFailed:
+      '{{protocol}} 接続に失敗しました。サーバーとネットワーク設定を確認してください。',
+    connectionConnectionLost:
+      '{{protocol}} 接続が切断されました。もう一度お試しください。',
+
     imapMoveLocationChanged:
       '選択したフォルダーまたはコピーが変更されました。メールボックスを同期し、移動元のフォルダーを開き直してください。',
     imapMoveNotWritable:

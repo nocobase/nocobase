@@ -9,6 +9,7 @@ import type {
   DatabaseDriverRegistration,
   ExtensibleDatabaseConfig,
   MigrationSource,
+  MissingSourcePolicy,
   SeedSource,
 } from '@nocobase/db';
 
@@ -90,9 +91,11 @@ export interface AppDatabaseMigrationConfig {
    * How to react when an executed migration's source no longer hashes to the
    * checksum recorded for it. `warn` (the default) reports the drift and
    * continues; `error` refuses to run until `nocobase db repair` realigns the
-   * history. A migration the sources cannot explain at all always fails.
+   * history.
    */
   onChecksumMismatch?: ChecksumMismatchPolicy;
+  /** Missing applied sources default to `warn`; a database newer than code always fails. */
+  onMissingSource?: MissingSourcePolicy;
 }
 
 export interface AppDatabaseSeedConfig {

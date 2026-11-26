@@ -1,5 +1,7 @@
 # Inbox Integration Contract
 
+Set `inboxRoute: false` to omit the built-in inbox page.
+
 ## Required packages
 
 - `@nocobase/app-plugin-authentication` supplies the authenticated user and session.
@@ -36,7 +38,7 @@ import {
 
 Prefer the hooks over calling the API helpers from components: `useInboxItems(pageSize)` pages by `nextPageToken`, `useInboxActions()` marks, deletes and reads all optimistically and refetches once settled, and `useInboxRefresh(extraTopics)` mounts the realtime, reconnection and focus invalidation once for the page. Extend `inboxKeys.all` invalidation for data the application attaches to messages by passing its own realtime topics to `useInboxRefresh` rather than subscribing separately.
 
-Register `@nocobase/app-plugin-notification-in-app/client` in the application Client composition root. The plugin contributes no routes: an application that wants an inbox page renders `NotificationInAppInbox` inside `NotificationInAppProvider` in a page it declares among its own routes. Mounting the Provider in that page cleans up its realtime and focus listeners when navigation leaves the page.
+Register `@nocobase/app-plugin-notification-in-app/client` in the application Client composition root. It registers the route `inbox` (`/inbox`, signed in, `authz: 'skip'`) and the header action `inbox` with its badge (`useInboxBadge`: pending count in the `attention` tone, else unread). Do not copy an inbox page into the application. Customize in this order: plugin options (`headerButton: false`, `inboxPath`), the extension lists `inboxRenderersToken` (entry renderers by notification `kind`) and `inboxSourcesToken` (pending sources: `notices`, `waiting`, `pending`, `refreshTopics`), registered from the application's client service provider `boot()`, and only then `routeComponentOverrides` on the route id `@nocobase/app-plugin-notification-in-app:inbox` (`INBOX_ROUTE_ID`) or `headerActionOverrides` on `inbox`. The list accepts `category`, and `unreadCount?byCategory=true` answers `categories: [{ category, count }]`.
 
 ## Final delivery validation
 
@@ -56,7 +58,7 @@ When an application configures `api.baseURL` or `api.realtimeURL`, both transpor
 
 #### Ownership and upgrades
 
-The plugin owns the inbox components, Provider, authentication enforcement, per-user isolation, persistence, and event publication. Applications receive UI changes by upgrading the plugin. The application owns the inbox page and its route, which must require authentication.
+The plugin owns the inbox page, its route, the header button, authentication enforcement, per-user isolation, persistence, and event publication. Applications receive UI changes by upgrading the plugin, and own only what they register into the extension lists or the overrides they declare.
 
 ## Diagnosis order
 
@@ -64,7 +66,7 @@ The plugin owns the inbox components, Provider, authentication enforcement, per-
 2. Confirm mutations send no CSRF token and return the changed item/count.
 3. Confirm the application client points HTTP and realtime transports at the intended backend.
 4. Confirm the realtime connection subscribes to the public topic.
-5. Confirm a valid invalidation increments the UI revision and triggers an HTTP refetch.
+5. Confirm a valid invalidation refetches the `inboxKeys.all` queries (the header badge hook mounts `useInboxRefresh`).
 6. Confirm reopening the realtime connection refetches even when no event was received.
 7. Confirm cleanup removes the topic, connection-open, and window-focus listeners.
 

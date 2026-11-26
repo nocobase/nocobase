@@ -27,11 +27,23 @@ import {
   within,
 } from '@testing-library/react';
 import type { ComponentType, ReactElement } from 'react';
-import { Outlet, MemoryRouter } from 'react-router';
+import { Link, Outlet, MemoryRouter, useLocation } from 'react-router';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { BackButton } from '#components/back-button';
 import { AppRouter } from '../../client/routing/app-router.tsx';
 import { AppThemeProvider } from '../../client/theme/index.ts';
+
+vi.mock('../../package.json', () => ({
+  default: {
+    name: 'team-portal',
+    version: '9.0.0',
+    nocobase: {
+      templatePackage: '@nocobase/app-template-enterprise',
+      defaultTemplateVersion: '1.2.3',
+    },
+  },
+}));
 
 afterEach(() => vi.unstubAllGlobals());
 
@@ -98,8 +110,9 @@ describe('application shell', () => {
     expect(
       screen.getByText('NocoBase', { selector: 'a' }).parentElement,
     ).toHaveTextContent('AI + NocoBase');
-    expect(screen.queryByText('Default Template')).not.toBeInTheDocument();
-    expect(screen.getByText('v0.0.0')).toHaveClass('truncate');
+    expect(
+      screen.getByText('Based on the Enterprise template v1.2.3'),
+    ).toBeVisible();
     // shadcn's edge rail, with a translated label in place of its built-in one.
     expect(
       screen.getByRole('button', { name: 'Expand or collapse navigation' }),
@@ -109,7 +122,7 @@ describe('application shell', () => {
     ).toBeVisible();
   });
 
-  it('renders no Settings or Inbox entry in the header', async () => {
+  it('omits settings and inbox shortcuts when their routes are absent', async () => {
     renderApplication('/', true);
     await screen.findByRole('heading', { name: 'App client is ready' });
     expect(
@@ -204,16 +217,15 @@ describe('application shell', () => {
     ).toHaveAttribute('aria-pressed', 'true');
     // The footer keeps only its shield; focusing it shows the slogan and version.
     const footerIcon = screen.getByRole('img', {
-      name: 'AI + NocoBase Build reliable business systems v0.0.0',
+      name: 'AI + NocoBase Build reliable business systems Based on the Enterprise template v1.2.3',
     });
     act(() => footerIcon.focus());
     expect(
-      await screen.findByText('v0.0.0', {
+      await screen.findByText('Based on the Enterprise template v1.2.3', {
         selector: '[data-slot="tooltip-content"] span',
       }),
     ).toBeVisible();
 
-    expect(screen.queryByText(/Default Template/)).not.toBeInTheDocument();
     expect(
       screen.getByText('AI + NocoBase', {
         selector: '[data-slot="tooltip-content"] span',
@@ -256,8 +268,12 @@ describe('application shell', () => {
     fireEvent.click(
       await screen.findByRole('button', { name: 'Open navigation' }),
     );
+    const drawer = await screen.findByRole('dialog', {
+      name: 'Application navigation',
+    });
+    expect(drawer).toBeVisible();
     expect(
-      await screen.findByRole('dialog', { name: 'Application navigation' }),
+      within(drawer).getByText('Based on the Enterprise template v1.2.3'),
     ).toBeVisible();
     fireEvent.click(screen.getByRole('button', { name: 'Close navigation' }));
     await waitFor(() =>
@@ -280,7 +296,117 @@ describe('application shell', () => {
       screen.queryByRole('button', { name: 'Theme' }),
     ).not.toBeInTheDocument();
   });
+
+  it('redirects a signed-out visitor from a standalone page to sign in', async () => {
+    const route = standaloneReport();
+    renderApplication('/report?format=print', false, [
+      route,
+      createRoute('login', '/login', 'guest', () => {
+        const { pathname, search } = useLocation();
+        return <p>{pathname + search}</p>;
+      }),
+    ]);
+
+    expect(await screen.findByText(/^\/login\?/)).toHaveTextContent(
+      encodeURIComponent('/report?format=print'),
+    );
+    expect(route.componentLoader).not.toHaveBeenCalled();
+  });
+
+  it('denies access to a protected standalone page before loading it', async () => {
+    const route = standaloneReport();
+    renderApplication('/report', true, [route], {
+      authorization: { can: async () => false },
+    });
+
+    expect(
+      await screen.findByRole('heading', { name: 'Access denied' }),
+    ).toBeVisible();
+    expect(route.componentLoader).not.toHaveBeenCalled();
+    expect(screen.queryByRole('banner')).not.toBeInTheDocument();
+  });
+
+  it('shows the standalone page and restores the application shell on an ordinary route', async () => {
+    const route = standaloneReport();
+    renderApplication('/report', true, [route], {
+      authorization: { can: async () => true },
+    });
+
+    expect(
+      await screen.findByRole('heading', { name: 'Print report' }),
+    ).toBeVisible();
+    expect(screen.queryByRole('banner')).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('complementary', { name: 'Application navigation' }),
+    ).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole('link', { name: 'Back to home' }));
+    expect(await screen.findByText('App client is ready')).toBeVisible();
+    expect(screen.getByRole('banner')).toBeVisible();
+    expect(
+      screen.getByRole('complementary', { name: 'Application navigation' }),
+    ).toBeVisible();
+  });
+
+  it('lets a child page of a standalone page go back without the application shell', async () => {
+    const parent = standaloneReport();
+    const child = {
+      ...createRoute('report-detail', '/report/detail', 'required', () => (
+        <>
+          <h2>Report detail</h2>
+          <BackButton />
+        </>
+      )),
+      layout: 'none' as const,
+    };
+    const page = {
+      ...parent,
+      componentLoader: async () => ({
+        default: () => (
+          <>
+            <h2>Print report</h2>
+            <Outlet />
+          </>
+        ),
+      }),
+      children: [child],
+    };
+    renderApplication('/report/detail', true, [page], {
+      authorization: { can: async () => true },
+    });
+
+    const back = await screen.findByRole('link', { name: 'Back' });
+    expect(
+      screen.getByRole('heading', { name: 'Report detail' }),
+    ).toBeVisible();
+    expect(screen.queryByRole('banner')).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('complementary', { name: 'Application navigation' }),
+    ).not.toBeInTheDocument();
+    fireEvent.click(back);
+    expect(
+      await screen.findByRole('heading', { name: 'Print report' }),
+    ).toBeVisible();
+    expect(
+      screen.queryByRole('heading', { name: 'Report detail' }),
+    ).not.toBeInTheDocument();
+    expect(screen.queryByRole('banner')).not.toBeInTheDocument();
+  });
 });
+
+function standaloneReport() {
+  const report = createRoute('report', '/report', 'required', () => (
+    <>
+      <h2>Print report</h2>
+      <Link to='/'>Back to home</Link>
+    </>
+  ));
+  return {
+    ...report,
+    layout: 'none' as const,
+    authz: { resource: { type: 'page', id: 'report' }, action: 'access' },
+    componentLoader: vi.fn(report.componentLoader),
+  };
+}
 
 function renderApplication(
   initialEntry: string,
@@ -313,6 +439,7 @@ function renderApplication(
   ]);
   const app = {
     config: createAppClientConfig({ rawConfig: {} }),
+    runtime: { headerActions: [], routes: clientRoutes },
     services: {
       has: (token: unknown) => registered.has(token),
       resolve: (token: unknown) => {

@@ -12,6 +12,7 @@ import {
 import type { ApiKey } from '@better-auth/api-key';
 
 import { isDeviceApprovalPath, isKeyManagementPath } from './key-sessions.js';
+import { MAX_KEY_NAME } from './constants.js';
 type ServerEndpoint<
   Options extends Parameters<typeof createAuthEndpoint.serverOnly>[0],
   Result,
@@ -53,6 +54,12 @@ export const OWN_KEY_POLICY_SLOT: unique symbol = Symbol.for(
 
 export interface OwnKeyPolicySlot {
   current: ((userId: string) => Promise<boolean>) | null;
+  /**
+   * Whether a key that is the person in full may be created; Better Auth's own `/api-key/create` makes only such keys
+   * from a sign-in. Unset allows it.
+   */
+  sameAsMe?: ((userId: string) => Promise<boolean>) | null;
+  applyIdleRule?: ((keyId: string) => Promise<void>) | null;
 }
 
 /** The slot of a plugin `apiKey()` made, or undefined for any other plugin. */
@@ -72,7 +79,7 @@ export function ownKeyPolicySlotOf(
  * page still issues keys, and every request carrying one answers 401.
  *
  * Every option is overridable, `enableSessionForAPIKeys` included, so passing
- * all three back reproduces Better Auth's own behaviour exactly.
+ * all four back reproduces Better Auth's own behaviour exactly.
  */
 function createApiKeysPlugin(
   options: ApiKeyConfigurationOptions | ApiKeyConfigurationOptions[] = {},
@@ -82,6 +89,7 @@ function createApiKeysPlugin(
       enableSessionForAPIKeys: true,
       rateLimit: { enabled: false },
       requireName: true,
+      maximumNameLength: MAX_KEY_NAME,
       ...configuration,
     }),
   );
@@ -131,6 +139,39 @@ function createApiKeysPlugin(
     options: { configurations },
     hooks: {
       ...plugin.hooks,
+      after: [
+        {
+          matcher: (ctx: { path?: string }) => ctx.path === '/api-key/create',
+          handler: createAuthMiddleware(async (ctx) => {
+            if (!policy.applyIdleRule || !(ctx.request || ctx.headers)) return;
+            const key = ctx.context.returned as Partial<ApiKey> | null;
+            if (
+              !key ||
+              typeof key.id !== 'string' ||
+              key.configId !== 'default'
+            )
+              return;
+            const config = configurations.find(
+              (item) => (item.configId ?? 'default') === 'default',
+            );
+            if (
+              config?.references === 'organization' ||
+              config?.customStorage ||
+              config?.storage === 'secondary-storage'
+            )
+              return;
+            try {
+              await policy.applyIdleRule(key.id);
+            } catch (error) {
+              await ctx.context.adapter.delete({
+                model: 'apikey',
+                where: [{ field: 'id', value: key.id }],
+              });
+              throw error;
+            }
+          }),
+        },
+      ],
       before: [
         ...plugin.hooks.before,
         {
@@ -179,12 +220,21 @@ function createApiKeysPlugin(
           matcher: (ctx: { path?: string }) => ctx.path === '/api-key/create',
           handler: createAuthMiddleware(async (ctx) => {
             const check = policy.current;
-            if (!check || presentedKey(ctx.headers) !== null) return;
+            const sameAsMe = policy.sameAsMe;
+            if ((!check && !sameAsMe) || presentedKey(ctx.headers) !== null)
+              return;
             const session = await getSessionFromCtx(ctx);
-            if (session && !(await check(session.user.id)))
+            if (!session) return;
+            if (check && !(await check(session.user.id)))
               throw APIError.from('FORBIDDEN', {
                 code: 'API_KEY_CREATION_FORBIDDEN',
                 message: 'You may not create API keys of your own.',
+              });
+            if (sameAsMe && !(await sameAsMe(session.user.id)))
+              throw APIError.from('FORBIDDEN', {
+                code: 'SAME_AS_ME_DISABLED',
+                message:
+                  'Keys with the same permissions as their owner are turned off: choose what the key may do.',
               });
           }),
         },

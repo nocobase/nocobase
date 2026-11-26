@@ -17,6 +17,7 @@ import {
 
 /** The settings `config set` changes, by the name it takes. */
 const KEYS = [
+  'log-retention',
   'min-free-disk',
   'agent-tools',
   'artifact-ttl',
@@ -66,6 +67,7 @@ const AGENT_TOOLS: readonly AgentTools[] = ['runner', 'system'];
 export default class ConfigSet extends RunnerCommand {
   static override summary: string = 'Change a runner setting.';
   static override description: string =
+    '`log-retention` keeps logs for 7 days by default. Runner logs have no total-size budget. Each run journal stops at 50 MiB with a truncation marker. Changes apply at the next GC.\n\n' +
     '`min-free-disk` is how much of the disk holding the working directories to keep free: a size (20G, 512M), a ' +
     `share of the disk (10%), or off; ${formatFreeSpace(DEFAULT_MIN_FREE_DISK)} by default. Below it, the runner cleans ` +
     'idle artifacts, then clean pushed workspaces, then disposable read-only copies. If space remains low, new work pauses ' +
@@ -100,6 +102,7 @@ export default class ConfigSet extends RunnerCommand {
   async run(): Promise<
     | { key: string; minFreeDisk: FreeSpace | null }
     | { key: string; agentTools: AgentTools }
+    | { key: string; logRetentionDays: number }
     | { key: string; artifactTtlMs: number }
     | { key: string; artifactPatterns: string[] }
   > {
@@ -107,6 +110,16 @@ export default class ConfigSet extends RunnerCommand {
     if (!(KEYS as readonly string[]).includes(args.key))
       throw new UsageError(`Unknown setting ${args.key}.`);
     const settings = await readSettings(this.paths);
+    if (args.key === 'log-retention') {
+      const days = Number(args.value);
+      if (!Number.isSafeInteger(days) || days <= 0)
+        throw new UsageError(
+          'log-retention must be a positive number of days.',
+        );
+      settings.logRetentionDays = days;
+      await writeSettings(settings, this.paths);
+      return { key: args.key, logRetentionDays: days };
+    }
     if (args.key === 'artifact-ttl') {
       const ttl = parseArtifactTtl(args.value);
       settings.artifactTtlMs = ttl;

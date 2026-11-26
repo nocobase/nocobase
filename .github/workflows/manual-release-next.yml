@@ -24,7 +24,7 @@ permissions:
 jobs:
   dispatch:
     name: Run the v1/v2 implementation
-    if: ${{ github.ref == 'refs/heads/v3-develop' }}
+    if: ${{ github.ref == format('refs/heads/{0}', github.event.repository.default_branch) }}
     runs-on: ubuntu-latest
     steps:
       - name: Dispatch on main

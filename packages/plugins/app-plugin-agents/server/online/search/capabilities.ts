@@ -2,14 +2,14 @@ import {
   providerOf,
   type ModelCapabilities,
   type ModelKind,
-  type ModelProviderName,
+  type BuiltinModelProviderName,
   type ProviderCapabilitiesDefinition,
 } from '../../../shared/models.js';
 import type { ModelConnection } from '../providers.js';
 
 /** Admission is code-owned, never a user-editable service setting or a model-name heuristic. */
 const definitions: Partial<
-  Record<ModelProviderName, ProviderCapabilitiesDefinition>
+  Record<BuiltinModelProviderName, ProviderCapabilitiesDefinition>
 > = {
   alibaba: {
     defaults: { webSearch: true },
@@ -20,7 +20,7 @@ const definitions: Partial<
     models: {},
   },
   deepseek: {
-    defaults: { webSearch: false },
+    defaults: { webSearch: true },
     models: {
       // Verified against https://api-docs.deepseek.com/zh-cn/guides/vision on 2026-10-23.
       'deepseek-flash': {
@@ -86,8 +86,10 @@ export function officialSearchEndpoint(
     const expected = new URL(official);
     return (
       url.origin === expected.origin &&
-      url.pathname.replace(/\/+$/u, '') ===
-        expected.pathname.replace(/\/+$/u, '') &&
+      (url.pathname.replace(/\/+$/u, '') ===
+        expected.pathname.replace(/\/+$/u, '') ||
+        (connection.provider === 'deepseek' &&
+          url.pathname.replace(/\/+$/u, '') === '/v1')) &&
       !url.username &&
       !url.password &&
       !url.search &&
@@ -103,11 +105,21 @@ export function resolveModelCapabilities(
   model: string,
   kind: ModelKind = 'chat',
 ): ModelCapabilities {
-  const definition = definitions[connection.provider];
+  const definition = Object.hasOwn(definitions, connection.provider)
+    ? definitions[connection.provider as BuiltinModelProviderName]
+    : undefined;
   if (kind !== 'chat' || !definition || !officialSearchEndpoint(connection)) {
     return { webSearch: false };
   }
-  return mergeModelCapabilities(definition, model);
+  const capabilities = mergeModelCapabilities(definition, model);
+  // Search's documented /v1 alias does not expand separately verified image admission.
+  if (
+    connection.provider === 'deepseek' &&
+    connection.baseUrl &&
+    new URL(connection.baseUrl).pathname.replace(/\/+$/u, '') === '/v1'
+  )
+    return { webSearch: capabilities.webSearch };
+  return capabilities;
 }
 
 export function supportsOpenAISearch(

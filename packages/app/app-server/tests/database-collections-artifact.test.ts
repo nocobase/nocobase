@@ -102,6 +102,25 @@ function readJson<T>(file: string): T {
 }
 
 describe('generateAppCollectionsArtifact', () => {
+  it('still generates after the explicit migration directory has disappeared', async () => {
+    const { config, paths } = await fixture();
+    const directory = paths.database('explicit-migrations');
+    config.connections.main.migrations = { directory };
+    migration(directory, '001_main', 'mainRows');
+    await migrate(config, paths);
+    rmSync(directory, { recursive: true });
+
+    const result = await generateAppCollectionsArtifact(
+      withoutDrivers(config),
+      { paths },
+    );
+    expect(result.results[0]).toMatchObject({
+      connection: 'main',
+      status: 'completed',
+      manifest: { migrationHead: '001_main' },
+    });
+  });
+
   it('writes three files per Collection and a manifest per connection, external ones included', async () => {
     const { config, paths, dialect } = await fixture();
     migration(paths.database('main/migrations'), '001_main', 'mainRows');

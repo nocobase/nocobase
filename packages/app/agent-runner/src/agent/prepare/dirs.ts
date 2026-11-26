@@ -15,6 +15,7 @@ import {
   RepoAccessFailure,
   WorkspaceBusyError,
 } from '../../core/checkout.ts';
+import { gitSshFailureOf } from '../../core/git.ts';
 import { GitNetworkError } from '../../core/git-retry.ts';
 import { acceptedFailure } from '../../protocol/index.ts';
 import {
@@ -40,6 +41,7 @@ async function prepare(
       workDir,
       dirs: context.payload.workspace.dirs,
       ...(context.gitAuth === undefined ? {} : { auth: context.gitAuth }),
+      ...(context.gitSsh === undefined ? {} : { ssh: context.gitSsh }),
       log: context.log,
       retry: {
         ...context.gitRetry,
@@ -71,18 +73,20 @@ async function prepare(
         error.kind === 'denied' ? 'repoAccessDenied' : 'repoAccessUnavailable',
         error.message,
       );
+    const gitSshFailure = gitSshFailureOf(error);
+    const ssh = gitSshFailure === undefined ? {} : { gitSshFailure };
     if (error instanceof GitNetworkError)
       throw new PrepareError(
         acceptedFailure('prepareNetwork', context.payload.run.acceptedFailures),
         error.message,
-        { retries, lastError: error.lastError },
+        { retries, lastError: error.lastError, ...ssh },
       );
     if (retries === 0) throw error;
     const message = error instanceof Error ? error.message : String(error);
     throw new PrepareError(
       'checkoutFailed',
       `${message}\n(after ${retries} ${retries === 1 ? 'retry' : 'retries'} on this runner)`,
-      { retries, lastError: message },
+      { retries, lastError: message, ...ssh },
     );
   }
 }

@@ -59,7 +59,7 @@ export type SettingsKey = {
  * | `configure`        | read and change the App's configuration and settings, labels and expiry                |
  * | `upload`           | upload releases, request upload tickets, promote releases into the App, label releases |
  * | `deploy`           | deploy and roll back on an unprotected environment, request a deployment anywhere      |
- * | `deploy-protected` | approve deployments to a protected environment that names no approvers; people only   |
+ * | `deploy-protected` | fallback approval eligibility when no environment approvers resolve   |
  * | `operate`          | start, stop and restart                                                                |
  * | `delete`           | delete the App with its data                                                           |
  */
@@ -185,15 +185,30 @@ export function actionText(
 }
 
 /**
- * Actions an agent or a key may never perform, whatever its grants: the assembling application marks a caller as an
+ * Actions a key may never perform, whatever its grants: the assembling application marks a caller as an
  * agent (`ReleasesAccess.actorKindOf`), a request made with a scoped credential is a key, and the plugin refuses these
- * for both.
+ * for keys.
  */
 export const HUMAN_ONLY_ACTIONS: readonly AppAction[] = [
   'deploy-protected',
   'delete',
   'configure',
 ];
+
+/** Why each of `HUMAN_ONLY_ACTIONS` is a person's only, as the permission editor shows it for a key. */
+export const HUMAN_ONLY_REASONS: Readonly<
+  Record<
+    'deploy-protected' | 'delete' | 'configure',
+    { key: string; ns: string }
+  >
+> = {
+  'deploy-protected': accessText('humanOnly.deployProtected'),
+  delete: accessText('humanOnly.delete'),
+  configure: accessText('humanOnly.configure'),
+};
+
+/** Actions an agent may never perform, whatever the represented person's permissions. */
+export const AGENT_REFUSED_ACTIONS: readonly AppAction[] = ['delete'];
 
 /** What a caller may do, decided once per request by the assembling application. */
 export interface ReleasesPermissions {
@@ -293,6 +308,9 @@ type KeyScopeAccess =
     };
 
 /**
+ * @deprecated Format `1` of API key scopes: declare with `KEY_TEMPLATES`, `HUMAN_ONLY_REASONS` and the object source the
+ * plugin registers with the authorization plugin. Kept for applications that still register these groups.
+ *
  * The permission groups this plugin offers to API keys with a scope, as data the application hands to the API keys
  * plugin (the shape of its `KeyScopeGroupDeclaration`; nothing here imports it). Each level includes the ones before.
  *
@@ -302,7 +320,7 @@ type KeyScopeAccess =
  *   CI has no need to create them.
  * - `releases.environments`: read lists the environments, write manages them.
  *
- * Whatever its scope, a key never deploys directly to a protected environment, and nobody else does either; it may ask
+ * Whatever its scope, a key never deploys directly to a protected environment; it may ask
  * for a deployment there (a deployment request) when it may deploy the App.
  */
 export const KEY_SCOPE_GROUPS: readonly {
@@ -354,6 +372,8 @@ export const KEY_SCOPE_GROUPS: readonly {
 ];
 
 /**
+ * @deprecated Format `1`; see `KEY_TEMPLATES`, which offers the same permissions.
+ *
  * Presets for a key's scope, for the Apps chosen and 90 days: "CI deploy" uploads and deploys (`acme release upload`
  * then `acme deploy`), "CI upload" only uploads.
  */
@@ -385,5 +405,53 @@ export const KEY_SCOPE_PRESETS: readonly {
     description: accessText('keyScopes.presets.ciUpload.description'),
     groups: { 'releases.apps': { level: 'write', objects: 'pick' } },
     expiresInDays: 90,
+  },
+];
+
+/**
+ * Templates for an API key's permissions, which the plugin registers with the authorization plugin
+ * (`authz.credentials.templates`): "CI deploy" opens Apps and sees them, their releases, deployments and logs, uploads,
+ * deploys and starts or stops them; "CI upload" only uploads. Both are limited to the Apps chosen and last 90 days, and
+ * give exactly what the deprecated presets of the same name give. An action name stands for each of its levels; a key
+ * gets the ones its maker holds.
+ */
+export const KEY_TEMPLATES: readonly {
+  readonly id: string;
+  readonly title: { readonly key: string; readonly ns: string };
+  readonly description: { readonly key: string; readonly ns: string };
+  readonly expiresInDays: number;
+  readonly grants: readonly {
+    readonly resource: { readonly type: string; readonly id: string };
+    readonly actions: readonly string[];
+    readonly objects?: 'pick';
+  }[];
+}[] = [
+  {
+    id: 'releases.ci-deploy',
+    title: accessText('keyScopes.presets.ciDeploy.title'),
+    description: accessText('keyScopes.presets.ciDeploy.description'),
+    expiresInDays: 90,
+    grants: [
+      { resource: { type: 'page', id: 'rel-apps' }, actions: ['access'] },
+      {
+        resource: { type: RESOURCE_TYPE, id: 'rel.apps' },
+        actions: ['view', 'read-logs', 'upload', 'deploy', 'operate'],
+        objects: 'pick',
+      },
+    ],
+  },
+  {
+    id: 'releases.ci-upload',
+    title: accessText('keyScopes.presets.ciUpload.title'),
+    description: accessText('keyScopes.presets.ciUpload.description'),
+    expiresInDays: 90,
+    grants: [
+      { resource: { type: 'page', id: 'rel-apps' }, actions: ['access'] },
+      {
+        resource: { type: RESOURCE_TYPE, id: 'rel.apps' },
+        actions: ['view', 'read-logs', 'upload'],
+        objects: 'pick',
+      },
+    ],
   },
 ];

@@ -1,10 +1,11 @@
+import { AUTHENTICATION_SETTINGS_ID } from '@nocobase/app-plugin-authentication';
 import type { Authorization } from '@nocobase/authorization/core';
 import type { PermissionSetsAuthorizationApi } from '@nocobase/authorization/permission-sets';
 import { AUTHORIZATION_NAMESPACE } from '../../shared.js';
 import type { AuthorizationExtensionHost } from '../host.js';
 import type { SettingsAuthorizationApi } from '../settings.js';
 import { AUTHORIZATION_SETTINGS_SECTION } from '../ui.js';
-import { createInspectorHandler, INSPECTOR_SETTINGS } from './inspector.js';
+import { createInspectorHandler } from './inspector.js';
 import {
   createPermissionSetHandler,
   PERMISSION_SETS_SETTINGS,
@@ -16,7 +17,10 @@ const action = (name: string) => ({
   title: text(`options.actions.${name}`),
 });
 
-/** The Permission Set and inspector settings items and their routes. */
+/**
+ * The Permission Set and Authentication settings items, and the Permission Set and inspector routes. The inspector is not a settings item:
+ * it is never offered as a grantable permission, and its routes admit only an unrestricted identity.
+ */
 export function installAuthorizationAdministration(
   authz: Authorization &
     AuthorizationExtensionHost &
@@ -28,19 +32,21 @@ export function installAuthorizationAdministration(
     title: text('options.settings.permission-sets'),
     actions: ['read', 'create', 'update', 'delete', 'assign'].map(action),
   });
-  authz.settings.add({
-    id: INSPECTOR_SETTINGS,
-    title: text('options.settings.inspector'),
-    actions: [action('inspect')],
-  });
-  // Permission sets lead the section and the inspector closes it; rule plugins sit between.
+  // Permission sets lead the section; rule plugins follow.
   authz.ui.place(
     { type: 'settings', id: PERMISSION_SETS_SETTINGS },
     { section: AUTHORIZATION_SETTINGS_SECTION, order: 0 },
   );
+  // Reading the Authentication settings. The authentication plugin owns the page and the route; it cannot
+  // depend on this plugin, so the item is declared here and the provider binds its check.
+  authz.settings.add({
+    id: AUTHENTICATION_SETTINGS_ID,
+    title: text('options.settings.authentication-settings'),
+    actions: [action('read')],
+  });
   authz.ui.place(
-    { type: 'settings', id: INSPECTOR_SETTINGS },
-    { section: AUTHORIZATION_SETTINGS_SECTION, order: 1000 },
+    { type: 'settings', id: AUTHENTICATION_SETTINGS_ID },
+    { section: AUTHORIZATION_SETTINGS_SECTION, order: 10 },
   );
   authz.routes.add(
     '/permissionSets',

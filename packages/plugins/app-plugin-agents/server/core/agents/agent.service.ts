@@ -21,6 +21,7 @@ import { z } from 'zod';
 
 import {
   effortsFor,
+  normalizeChatRoles,
   MAX_MODEL_ENTRIES,
   type Agent,
   type AgentChange,
@@ -31,6 +32,7 @@ import {
   type SystemAgentInput,
 } from '../../../shared/agents.js';
 import {
+  uniqueAgentName,
   agentNameOf,
   catalogEntry,
   normalizeModel,
@@ -43,6 +45,7 @@ import type { IdSource } from '../../kernel/ids.js';
 import type { People } from '../../kernel/people.js';
 import type { Tx, TxRunner } from '../../kernel/tx.js';
 import { cleanList } from '../../kernel/values.js';
+import { teamDefaultAgentId } from '../conversations/conversation.store.js';
 import {
   diffAgents,
   listChanges,
@@ -57,6 +60,7 @@ import {
   insertAgent,
   isRemoved,
   listAgents,
+  lockAgentRow,
   reviseAgent,
   updateAgent,
   type AgentRecord,
@@ -76,6 +80,15 @@ export const AgentPatchSchema: z.ZodType<AgentPatch> = z.strictObject({
     .boolean()
     .optional()
     .meta({ description: 'Offer it work, or stop offering it.' }),
+  chatRoles: z
+    .array(z.string().trim().min(1).max(255))
+    .max(100)
+    .nullable()
+    .optional()
+    .meta({
+      description:
+        'Who may chat with it: null or an empty list for every signed-in person, else the keys of the permission sets (roles) whose members may. Managers of agents always may.',
+    }),
   expectedRevision: z
     .number()
     .int()
@@ -303,20 +316,25 @@ export function createAgentService(deps: AgentServiceDeps): AgentService {
     };
   };
 
-  /** The name `base`, or `base #2`, `base #3`… the first not already held by a non-removed agent. */
-  async function uniqueAgentName(
+  /** The name a new agent of `tool` and `model` is saved with (`uniqueAgentName`), against the non-removed agents. */
+  async function newAgentName(
     conn: DatabaseConnection,
-    base: string,
+    tool: AgentTool,
+    model: string,
+    displayModel: string | undefined,
   ): Promise<string> {
+    const base = agentNameOf(tool, model, displayModel);
     const clashes = await agentsRepo(conn).findMany({
       filter: (f) =>
         f.and([f.string('name').startsWith(base), f.date('deletedAt').empty()]),
     });
     const taken = new Set(clashes.map((record) => record.name));
-    if (!taken.has(base)) return base;
-    let suffix = 2;
-    while (taken.has(`${base} #${suffix}`)) suffix += 1;
-    return `${base} #${suffix}`;
+    return uniqueAgentName(
+      tool,
+      model,
+      (name) => taken.has(name),
+      displayModel,
+    );
   }
 
   async function createRunnerAgent(
@@ -329,10 +347,7 @@ export function createAgentService(deps: AgentServiceDeps): AgentService {
     const id = runnerAgentId(tool, model);
     const { instructions, actions } = currentDefaults();
     const description = suggestionOf(defaults(), tool, model)?.en ?? null;
-    const name = await uniqueAgentName(
-      unit.conn,
-      agentNameOf(tool, model, displayModel),
-    );
+    const name = await newAgentName(unit.conn, tool, model, displayModel);
     try {
       // A savepoint: another runner's report creating the same agent at once leaves this transaction usable.
       await unit.conn.transaction((conn) =>
@@ -354,7 +369,6 @@ export function createAgentService(deps: AgentServiceDeps): AgentService {
           instructions,
           runnerIds: [],
           actions: [...actions],
-          confirmChanges: 'larger',
           access: 'everyone',
           ownerUserId: 'system',
           maxConcurrentRuns: RUNNER_AGENT_CONCURRENCY,
@@ -430,9 +444,21 @@ export function createAgentService(deps: AgentServiceDeps): AgentService {
       try {
         return await tx.run(async (unit) => {
           const { conn, emit } = unit;
+          const limiting =
+            patch.chatRoles !== undefined &&
+            normalizeChatRoles(patch.chatRoles) !== null;
+          // Limiting who may chat with it races making it the team default (`chat-settings.ts`): both lock the
+          // agent's row before reading the other's state, so the later one sees what the earlier one saved.
+          if (limiting) await lockAgentRow(conn, id);
           const before = await require(conn, id);
           if (patch.expectedRevision !== before.revision)
             throw revisionConflict(before.revision);
+          // The team's default is everyone's: it stays open to everyone while it is the default.
+          if (limiting && (await teamDefaultAgentId(conn)) === id)
+            throw invalid(
+              'The team default agent must stay open to everyone: choose another team default first.',
+              { field: 'chatRoles', reason: 'AGENT_TEAM_DEFAULT' },
+            );
           const now = clock.now().toISOString();
           const modelEntries: RunnerModelEntry[] =
             effort === undefined
@@ -452,6 +478,9 @@ export function createAgentService(deps: AgentServiceDeps): AgentService {
                   : null,
               status,
               modelEntries: modelEntries.slice(0, MAX_MODEL_ENTRIES),
+              ...(patch.chatRoles === undefined
+                ? {}
+                : { chatRoles: normalizeChatRoles(patch.chatRoles) }),
               updatedAt: now,
             }))
           )
@@ -511,7 +540,6 @@ export function createAgentService(deps: AgentServiceDeps): AgentService {
             tool: null,
             model: null,
             runnerIds: [],
-            confirmChanges: 'larger',
             access: 'everyone',
             ownerUserId: 'system',
             maxConcurrentRuns: RUNNER_AGENT_CONCURRENCY,
@@ -677,10 +705,7 @@ export function createAgentService(deps: AgentServiceDeps): AgentService {
             { reason: 'AGENT_EXISTS' },
           );
         const now = clock.now().toISOString();
-        const name = await uniqueAgentName(
-          conn,
-          agentNameOf(tool, model, input.displayModel),
-        );
+        const name = await newAgentName(conn, tool, model, input.displayModel);
         const { instructions, actions } = currentDefaults();
         await insertAgent(conn, {
           id,
@@ -698,7 +723,6 @@ export function createAgentService(deps: AgentServiceDeps): AgentService {
           instructions,
           runnerIds: [],
           actions: [...actions],
-          confirmChanges: 'larger',
           access: 'everyone',
           ownerUserId: 'system',
           maxConcurrentRuns: RUNNER_AGENT_CONCURRENCY,

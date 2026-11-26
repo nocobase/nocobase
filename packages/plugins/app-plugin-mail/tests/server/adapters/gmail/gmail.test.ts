@@ -1,3 +1,4 @@
+import { originalMime } from '../../../fixtures/original-message.js';
 import type {
   MailCredentialVault,
   MailProviderAdapter,
@@ -20,6 +21,299 @@ describe('Gmail HTTP errors', () => {
   afterEach(() => {
     vi.useRealTimers();
     vi.unstubAllGlobals();
+  });
+
+  it('downloads the exact provider MIME of one message', async () => {
+    const credentials = memoryVault();
+    await credentials.putAt('credential-1', {
+      provider: 'gmail',
+      accessToken: 'fixture-access-token',
+      refreshToken: 'fixture-refresh-token',
+      expiresAt: '2099-01-01T00:00:00.000Z',
+      scopes: [],
+      tokenType: 'Bearer',
+    });
+    const fetchMock = vi
+      .fn<typeof fetch>()
+      .mockResolvedValueOnce(
+        Response.json({ raw: originalMime.toString('base64url') }),
+      );
+    vi.stubGlobal('fetch', fetchMock);
+    const adapter = new GmailMailProviderAdapter(
+      context(credentials),
+      config(),
+      account(),
+    );
+    const signal = new AbortController().signal;
+    const original = await adapter.getOriginalMessage('selected/id', signal);
+    expect(original).toMatchObject({
+      ok: true,
+      value: { size: originalMime.length },
+    });
+    if (!original.ok) throw new Error('Expected original MIME');
+    expect(
+      Buffer.from(await new Response(original.value.stream).arrayBuffer()),
+    ).toEqual(originalMime);
+    expect(
+      String(fetchMock.mock.calls[0]?.[0]).endsWith(
+        '/users/me/messages/selected%2Fid?format=raw&fields=raw',
+      ),
+    ).toBe(true);
+    fetchMock.mockResolvedValueOnce(Response.json({}, { status: 404 }));
+    expect(
+      await adapter.getOriginalMessage('selected/id', signal),
+    ).toMatchObject({
+      ok: false,
+      error: { code: 'MAIL_ORIGINAL_NOT_FOUND' },
+    });
+    fetchMock.mockResolvedValueOnce(Response.json({ raw: 'AA+/' }));
+    expect(
+      await adapter.getOriginalMessage('selected/id', signal),
+    ).toMatchObject({
+      ok: false,
+      error: { code: 'GMAIL_ORIGINAL_INVALID' },
+    });
+    fetchMock.mockResolvedValueOnce(
+      new Response(
+        new ReadableStream<Uint8Array>({
+          start(controller) {
+            controller.enqueue(new Uint8Array(56 * 1024 * 1024));
+          },
+        }),
+      ),
+    );
+    expect(
+      await adapter.getOriginalMessage('selected/id', signal),
+    ).toMatchObject({
+      ok: false,
+      error: { code: 'MAIL_ORIGINAL_TOO_LARGE' },
+    });
+  });
+
+  it('asks for reauthorization when the Gmail grant is metadata-only', async () => {
+    const credentials = memoryVault();
+    await credentials.putAt('credential-1', {
+      provider: 'gmail',
+      accessToken: 'fixture-access-token',
+      refreshToken: 'fixture-refresh-token',
+      expiresAt: '2099-01-01T00:00:00.000Z',
+      scopes: ['https://www.googleapis.com/auth/gmail.metadata'],
+      tokenType: 'Bearer',
+    });
+    const fetchMock = vi.fn();
+    vi.stubGlobal('fetch', fetchMock);
+    const adapter = new GmailMailProviderAdapter(
+      context(credentials),
+      config(),
+      account(),
+    );
+    expect(
+      await adapter.getOriginalMessage('message', new AbortController().signal),
+    ).toMatchObject({
+      ok: false,
+      error: { category: 'authentication', retryable: false },
+    });
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it('logs account reauthorization failures without refresh tokens', async () => {
+    const credentials = memoryVault();
+    await credentials.putAt('credential-1', {
+      provider: 'gmail',
+      accessToken: 'access-1',
+      refreshToken: 'refresh-1',
+      expiresAt: '2000-01-01T00:00:00.000Z',
+      scopes: [],
+      tokenType: 'Bearer',
+    });
+    const logger = { warn: vi.fn() };
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () =>
+        Response.json(
+          {
+            error: 'invalid_grant',
+            error_description: 'refresh-1 access-1 client-secret credential-1',
+          },
+          { status: 400 },
+        ),
+      ),
+    );
+    const adapter = new GmailMailProviderAdapter(
+      { ...context(credentials), logger },
+      config(),
+      account(),
+    );
+    expect(await adapter.listFolders({ limit: 10 })).toMatchObject({
+      ok: false,
+      error: { category: 'authentication', retryable: false },
+    });
+    expect(logger.warn).toHaveBeenCalledWith(
+      expect.objectContaining({
+        event: 'mail.gmail.auth_failed',
+        accountId: 'account-1',
+        category: 'authentication',
+        retryable: false,
+        stage: 'auth',
+        responseCode: 400,
+      }),
+      expect.any(String),
+    );
+    for (const secret of [
+      'refresh-1',
+      'access-1',
+      'client-secret',
+      'credential-1',
+    ])
+      expect(JSON.stringify(logger.warn.mock.calls)).not.toContain(secret);
+  });
+
+  it('logs sync, sending and OAuth failures without credentials or HTTP payloads', async () => {
+    const logger = { warn: vi.fn() };
+    const credentials = memoryVault();
+    await credentials.putAt('credential-1', {
+      provider: 'gmail',
+      accessToken: 'access-1',
+      refreshToken: 'refresh-1',
+      expiresAt: '2099-01-01T00:00:00.000Z',
+      scopes: [],
+      tokenType: 'Bearer',
+    });
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () =>
+        Response.json(
+          {
+            error: {
+              message:
+                'access-1 refresh-1 client-secret private-code private-verifier credential-1',
+            },
+          },
+          { status: 401 },
+        ),
+      ),
+    );
+    const adapter = new GmailMailProviderAdapter(
+      { ...context(credentials), logger },
+      config(),
+      account(),
+    );
+    expect(await adapter.listFolders({ limit: 10 })).toMatchObject({
+      ok: false,
+    });
+    expect(
+      await adapter.sendMessage({
+        trackingId: 'diagnostic',
+        identity: {
+          id: 'identity',
+          accountId: 'account-1',
+          address: 'user@example.com',
+          isPrimary: true,
+          canSend: true,
+        },
+        message: {
+          to: [{ address: 'recipient@example.com' }],
+          cc: [],
+          bcc: [],
+          subject: 'Private subject',
+          text: 'Private body',
+          attachments: [],
+          references: [],
+        },
+      }),
+    ).toMatchObject({ status: 'failed' });
+    expect(
+      await gmailMailProviderDefinition.authorization!.complete(
+        { ...context(credentials), logger },
+        config(),
+        {
+          code: 'private-code',
+          codeVerifier: 'private-verifier',
+          state: 'private-state',
+          redirectUri: 'https://example.invalid/callback',
+          scopes: [],
+        },
+      ),
+    ).toMatchObject({ ok: false });
+    expect(logger.warn).toHaveBeenCalledWith(
+      expect.objectContaining({
+        provider: 'gmail',
+        accountId: 'account-1',
+        event: 'mail.gmail.sync_failed',
+        stage: 'auth',
+        responseCode: 401,
+        durationMs: expect.any(Number),
+      }),
+      expect.any(String),
+    );
+    expect(logger.warn).toHaveBeenCalledWith(
+      expect.objectContaining({
+        event: 'mail.gmail.send_failed',
+        protocol: 'https',
+      }),
+      expect.any(String),
+    );
+    expect(logger.warn).toHaveBeenCalledWith(
+      expect.objectContaining({
+        event: 'mail.gmail.auth_failed',
+        stage: 'auth',
+      }),
+      expect.any(String),
+    );
+    for (const secret of [
+      'access-1',
+      'refresh-1',
+      'client-secret',
+      'private-code',
+      'private-verifier',
+      'private-state',
+      'credential-1',
+      'user@example.com',
+      'Private subject',
+      'Private body',
+      'stack',
+    ])
+      expect(JSON.stringify(logger.warn.mock.calls)).not.toContain(secret);
+  });
+
+  it('keeps Gmail quota classification in diagnostic logs for HTTP 403', async () => {
+    const credentials = memoryVault();
+    await credentials.putAt('credential-1', {
+      provider: 'gmail',
+      accessToken: 'access-1',
+      refreshToken: 'refresh-1',
+      expiresAt: '2099-01-01T00:00:00.000Z',
+      scopes: [],
+      tokenType: 'Bearer',
+    });
+    const logger = { warn: vi.fn() };
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () =>
+        Response.json(
+          { error: { errors: [{ reason: 'rateLimitExceeded' }] } },
+          { status: 403 },
+        ),
+      ),
+    );
+    const adapter = new GmailMailProviderAdapter(
+      { ...context(credentials), logger },
+      config(),
+      account(),
+    );
+    expect(await adapter.listFolders({ limit: 10 })).toMatchObject({
+      ok: false,
+      error: { category: 'rate_limit', retryable: true },
+    });
+    expect(logger.warn).toHaveBeenCalledWith(
+      expect.objectContaining({
+        category: 'rate_limit',
+        retryable: true,
+        stage: 'sync',
+        reasonCode: 'gmailRateLimitExceeded',
+      }),
+      expect.any(String),
+    );
   });
 
   it.each(['rateLimitExceeded', 'userRateLimitExceeded'])(

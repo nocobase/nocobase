@@ -90,7 +90,6 @@ import { AgentComposerDemo } from './demo/agents/agent-composer';
 import { AgentPickerDemo } from './demo/agents/agent-picker';
 import { AgentQueueDemo } from './demo/agents/agent-queue';
 import { IssueCardDemo } from './demo/projects/issue-card';
-import { PlanCardDemo } from './demo/projects/plan-card';
 import { IssueTableDemo } from './demo/projects/issue-table';
 import { DataTableDemo } from './demo/components/data-table';
 import { FlowDiagramDemo } from './demo/components/flow-diagram';
@@ -228,7 +227,6 @@ const itemPreviews: Record<string, ItemPreview> = {
   kanban: { path: '/demo/components/kanban', icon: Columns3 },
   'issue-table': { path: '/demo/projects/issue-table', icon: Table2 },
   'issue-card': { path: '/demo/projects/issue-card', icon: SquareCheck },
-  'plan-card': { path: '/demo/projects/plan-card', icon: ClipboardList },
   'agent-run-history': {
     path: '/demo/agents/agent-run-history',
     icon: History,
@@ -377,9 +375,6 @@ function AppContent(): ReactElement {
   }
   if (pathname.startsWith('/demo/projects/issue-card')) {
     return <IssueCardDemo />;
-  }
-  if (pathname.startsWith('/demo/projects/plan-card')) {
-    return <PlanCardDemo />;
   }
   if (pathname.startsWith('/demo/projects/issue-table')) {
     return <IssueTableDemo />;

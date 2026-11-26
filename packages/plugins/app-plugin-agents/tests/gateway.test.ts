@@ -14,7 +14,7 @@ import {
   type ModelEvent,
   type ModelGateway,
 } from '../server/online/index.js';
-import { reasoningOf } from '../server/online/gateway.js';
+import type { ReasoningLevel } from '../shared/models.js';
 import { createHarness, type Harness } from './harness.js';
 import { startMockOpenAI, type MockOpenAI } from './mock-openai.js';
 
@@ -348,13 +348,28 @@ describe('the model gateway', () => {
     ).toMatchObject({ ok: false });
   });
 
-  it('keeps ModelErrors as they are, and names an entry’s reasoning effort as the SDK does', () => {
+  it('keeps ModelErrors as they are', () => {
     const error = new ModelError('rateLimit', 'Slow down.');
     expect(classify(error)).toBe(error);
     expect(classify(new Error('boom')).code).toBe('unknown');
-    expect(reasoningOf('xhigh')).toBe('xhigh');
-    expect(reasoningOf('low')).toBe('low');
-    expect(reasoningOf('max')).toBe('provider-default');
-    expect(reasoningOf(null)).toBe('provider-default');
+  });
+
+  it('passes the thinking level to the provider as it is, none included, and the provider default when absent', async () => {
+    for (const reasoning of ['none', 'xhigh', 'provider-default', undefined]) {
+      mock.answer({ text: ['Hi.'] });
+      await collect(
+        gateway.stream({
+          model: {
+            ...model,
+            ...(reasoning ? { reasoning: reasoning as ReasoningLevel } : {}),
+          },
+          messages: [{ role: 'user', content: 'Hello?' }],
+        }),
+      );
+      const sent = mock.requests.at(-1) as unknown as Record<string, unknown>;
+      if (reasoning === 'none' || reasoning === 'xhigh')
+        expect(sent.reasoning_effort).toBe(reasoning);
+      else expect(sent).not.toHaveProperty('reasoning_effort');
+    }
   });
 });

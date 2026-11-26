@@ -33,11 +33,16 @@ const frFR: LocaleResource<typeof enUS> = {
         runners: 'Environnements d’exécution',
         prices: 'Tarifs des modèles',
         services: 'Services modèles',
+        skills: 'Compétences',
       },
     },
     actions: {
       read: 'Afficher',
       manage: 'Gérer',
+    },
+    humanOnly: {
+      servicesManage:
+        'Gérer les services de modèles écrit des clés de fournisseurs ; seule une personne peut le faire.',
     },
     keyScopes: {
       agents: {

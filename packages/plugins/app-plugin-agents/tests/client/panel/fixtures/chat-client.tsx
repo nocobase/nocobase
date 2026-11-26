@@ -1,0 +1,2148 @@
+/* eslint-disable react-refresh/only-export-components, @eslint-react/no-unnecessary-use-prefix -- a stand-in for a
+   module of components and hooks, under the names of the real ones whether or not the stand-in calls a hook */
+import type * as Chat from '../../../../client/chat.js';
+import type * as Models from '../../../../shared/models.js';
+import { Chat as SDKChat, useChat as useSDKChat } from '@ai-sdk/react';
+import {
+  createUIMessageStreamResponse,
+  DefaultChatTransport,
+  type UIMessageChunk,
+} from 'ai';
+import { appUIMessageText } from '../../../../shared/ui-message.js';
+export { appUIMessageText };
+import {
+  AIToolRendererProvider as ToolRendererProvider,
+  useAIToolRenderer as useToolRenderer,
+  getAIToolSourceMessage as toolSourceMessage,
+} from '../../../../client/chat/tool-renderer.js';
+export type {
+  AIToolPart,
+  AIToolRendererContext,
+  AIToolRendererMap,
+  AIToolRendererProps,
+  AIToolRendererProviderProps,
+} from '../../../../client/chat.js';
+
+// Use the real context implementation so preview nesting and exact-name dispatch cannot drift.
+export const AIToolRendererProvider: typeof Chat.AIToolRendererProvider =
+  ToolRendererProvider;
+export const useAIToolRenderer: typeof Chat.useAIToolRenderer = useToolRenderer;
+export const getAIToolSourceMessage: typeof Chat.getAIToolSourceMessage =
+  toolSourceMessage;
+export { chatMessageSegments } from '../../../../client/chat/message-model.js';
+import {
+  CHAT_LAST_AGENT_STORAGE_KEY as CHAT_LAST_AGENT_KEY,
+  readLastAgent,
+  rememberLastAgent,
+} from '../../../../client/chat/agent-mode.js';
+export {
+  agentsOfMode,
+  CHAT_AGENT_MODES,
+  CHAT_LAST_AGENT_STORAGE_KEY,
+  chatAgentMode,
+  configuredChatModes,
+  lastAgentStorageKey,
+  ONLINE_AGENT_ID,
+  readLastAgent,
+  rememberLastAgent,
+  resolveChatAgentMode,
+} from '../../../../client/chat/agent-mode.js';
+import type {
+  ChatAgent,
+  ConversationDetail,
+  ConversationShare,
+  ConversationLink,
+  ResolvedPageContext,
+  ConversationMode,
+  ConversationNotice,
+  ConversationSource,
+  MessageAttachment,
+} from '../../../../shared/conversations.js';
+import type { ModelService } from '../../../../shared/models.js';
+import { BotIcon } from 'lucide-react';
+import {
+  type ContextType,
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useLayoutEffect,
+  useRef,
+  useState,
+  useSyncExternalStore,
+} from 'react';
+import { useNavigate } from 'react-router';
+
+import { cn } from 'cn';
+import {
+  contextChips as realContextChips,
+  buildPageContext as realBuildPageContext,
+  uiItemKey as realUIItemKey,
+  snapshotUIContext as realSnapshotUIContext,
+} from '../../../../client/chat/context-model.js';
+import { clonePageUIContext } from '../../../../shared/page-ui-context.js';
+
+// The preview's stand-in for @nocobase/app-plugin-agents/client/chat, aliased in vite.config.ts and mocked with it in
+// the tests: the panel's state as the plugin keeps it, and the conversations in memory. A message is answered after a
+// moment, the reply growing in place, as a run at work. Every export is
+// typed against the real one, so the block and this mock follow the plugin's contract.
+
+type RunEvent = ReturnType<typeof Chat.useLiveRunEvents>[number];
+
+const now = Date.now();
+const ago = (minutes: number): string =>
+  new Date(now - minutes * 60_000).toISOString();
+
+const online = { online: true, reason: null, onlineRunners: 1 } as const;
+
+/** `?lang=zh-CN` previews the sample data in Chinese as well as the interface. */
+const zh =
+  typeof window !== 'undefined' &&
+  new URLSearchParams(window.location.search).get('lang') === 'zh-CN';
+const L = (en: string, cn: string): string => (zh ? cn : en);
+
+const AGENTS: readonly ChatAgent[] = [
+  {
+    id: 'assistant',
+    name: L('Assistant', '助手'),
+    description: 'Everyday coding and writing.',
+    nameText: null,
+    descriptionText: null,
+    avatar: null,
+    isSystemDefault: false,
+    isMyDefault: true,
+    runnerNames: [L('Dev machine', '开发机')],
+    availability: online,
+    personalOnly: false,
+  },
+  {
+    id: 'coder',
+    name: L('Coding agent', '编码 Agent'),
+    description: 'Works in a repository on a runner.',
+    nameText: null,
+    descriptionText: null,
+    avatar: null,
+    isSystemDefault: true,
+    isMyDefault: false,
+    runnerNames: [L('Dev machine', '开发机')],
+    availability: online,
+    personalOnly: false,
+  },
+  {
+    id: 'release',
+    name: L('Release manager', '发布经理'),
+    description: null,
+    nameText: null,
+    descriptionText: null,
+    avatar: null,
+    isSystemDefault: false,
+    isMyDefault: false,
+    runnerNames: [],
+    availability: { online: false, reason: 'noRunner', onlineRunners: 0 },
+    personalOnly: true,
+  },
+  {
+    id: 'online',
+    name: L('Online agent', '在线 Agent'),
+    description: 'Chat with a configured model and registered tools.',
+    nameText: null,
+    descriptionText: null,
+    avatar: null,
+    isSystemDefault: false,
+    isMyDefault: false,
+    runnerNames: [],
+    availability: { online: true, reason: null, onlineRunners: 0 },
+    personalOnly: false,
+  },
+];
+
+/** `?agents=online` or `?agents=runner` shows the panel with one kind of agent configured, and no switch. */
+function configuredAgents(): readonly ChatAgent[] {
+  const only =
+    typeof window === 'undefined'
+      ? null
+      : new URLSearchParams(window.location.search).get('agents');
+  if (only === 'none') return [];
+  return only === 'online'
+    ? AGENTS.filter((agent) => agent.id === 'online')
+    : only === 'runner'
+      ? AGENTS.filter((agent) => agent.id !== 'online')
+      : AGENTS;
+}
+
+const MODELS: readonly ModelService[] = [
+  {
+    name: 'demo',
+    title: L('Demo models', '演示模型'),
+    provider: 'openai',
+    models: [
+      {
+        value: 'fast',
+        label: L('Fast model', '快速模型'),
+        kind: 'chat',
+        dimensions: null,
+      },
+      {
+        value: 'deep',
+        label: L('Deep model', '深度模型'),
+        kind: 'chat',
+        dimensions: null,
+      },
+      {
+        // A long name, to show that the trigger keeps it whole.
+        value: 'reasoning-preview-2026-11-01',
+        label: L(
+          'Reasoning preview 2026-11-01 (long context)',
+          '推理预览 2026-11-01（长上下文）',
+        ),
+        kind: 'chat',
+        dimensions: null,
+      },
+    ],
+  },
+];
+
+function agentRef(id: string): ConversationDetail['agent'] {
+  const agent = AGENTS.find((candidate) => candidate.id === id);
+  return {
+    id,
+    name: agent?.name ?? null,
+    nameText: null,
+    avatar: null,
+    archived: false,
+  };
+}
+
+function conversation(
+  id: string,
+  agentId: string,
+  title: string,
+  fields: Partial<ConversationDetail> = {},
+): ConversationDetail {
+  const agent = AGENTS.find((candidate) => candidate.id === agentId);
+  return {
+    id,
+    title,
+    titleSource: 'auto',
+    category: 'chat',
+    showInChatList: true,
+    source: 'panel',
+    mode: 'runner',
+    agent: agentRef(agentId),
+    fallbackFrom: null,
+    read: true,
+    lastMessageAt: ago(5),
+    archivedAt: null,
+    createdAt: ago(60),
+    updatedAt: ago(5),
+    run: null,
+    availability: agent?.availability ?? online,
+    canFallback: false,
+    canRestore: false,
+    // Runner conversations run on the demo's dev machine and drive linked tasks; online ones have neither.
+    ...(fields.mode === 'online'
+      ? {}
+      : { runner: DEV_MACHINE, links: demoLinks(id) }),
+    ...fields,
+  };
+}
+
+function message(
+  conversationId: string,
+  seq: number,
+  role: Chat.AppUIMessage['role'],
+  content: string,
+  fields: {
+    createdAt?: string;
+    workContext?: ResolvedPageContext;
+    attachments?: readonly MessageAttachment[];
+    metadata?: {
+      agentId?: string;
+      sourceUserMessageId?: string;
+      clientId?: string;
+      notice?: ConversationNotice;
+    };
+  } = {},
+): Chat.AppUIMessage {
+  const notice = fields.metadata?.notice;
+  return {
+    id: `${conversationId}-${seq}`,
+    role,
+    metadata: {
+      conversationId,
+      seq,
+      revision: 1,
+      createdAt: fields.createdAt ?? ago(30 - seq),
+      ...(fields.metadata?.agentId ? { agentId: fields.metadata.agentId } : {}),
+      ...(fields.metadata?.sourceUserMessageId
+        ? { sourceUserMessageId: fields.metadata.sourceUserMessageId }
+        : {}),
+      ...(fields.metadata?.clientId
+        ? { clientId: fields.metadata.clientId }
+        : {}),
+      ...(fields.workContext ? { context: fields.workContext } : {}),
+    },
+    parts: [
+      ...(notice
+        ? notice.code === 'news'
+          ? [
+              {
+                type: 'data-notice' as const,
+                id: `notice-${seq}`,
+                data: {
+                  type: notice.type,
+                  title: notice.title,
+                  ...(notice.params ? { params: { ...notice.params } } : {}),
+                },
+              },
+            ]
+          : [
+              {
+                type: 'data-business' as const,
+                id: `business-${seq}`,
+                data: {
+                  kind: notice.code,
+                  id: `record-${seq}`,
+                  payload: JSON.parse(JSON.stringify(notice)) as Chat.AppUIJson,
+                },
+              },
+            ]
+        : [{ type: 'text' as const, text: content, state: 'done' as const }]),
+      ...(fields.attachments ?? []).map((file) => ({
+        type: 'file' as const,
+        filename: file.filename,
+        mediaType: file.mimeType,
+        url: file.contentUrl,
+      })),
+    ],
+  };
+}
+
+/** A 4×3 PNG of a test report, standing in for a screenshot. */
+const SCREENSHOT =
+  'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAQAAAADCAYAAAC09K7GAAAAGklEQVR42mP8z8Dwn4EIwMjIyMjEQCQYVQwAkrgDBaaWfF8AAAAASUVORK5CYII=';
+
+/** A file sent with a message, its bytes at `url`. */
+function attachment(
+  id: string,
+  filename: string,
+  mimeType: string,
+  size: number,
+  url: string,
+): MessageAttachment {
+  return {
+    id,
+    filename,
+    ext: filename.split('.').pop()?.toLowerCase() ?? '',
+    mimeType,
+    size,
+    contentUrl: url,
+    downloadUrl: url,
+    previewable: mimeType.startsWith('image/'),
+  };
+}
+
+function link(
+  conversationId: string,
+  id: string,
+  kind: string,
+  key: string | null,
+  title: string,
+  status: string | null,
+  minutes: number,
+): ConversationLink {
+  return {
+    id: `${conversationId}:${id}`,
+    conversationId,
+    kind,
+    targetId: id,
+    origin: 'agent',
+    createdAt: ago(minutes),
+    view: {
+      key,
+      title,
+      status,
+      url: null,
+      targetUpdatedAt: ago(minutes),
+    },
+  };
+}
+
+/** Linked work in the plugin's generic shape: the demo's `issue` slot renders tasks, other kinds use the default. */
+function releaseLinks(conversationId: string): readonly ConversationLink[] {
+  return [
+    link(
+      conversationId,
+      'pm-12',
+      'issue',
+      'PM-12',
+      L('Welcome tour', '欢迎引导'),
+      L('In review', '待验收'),
+      4,
+    ),
+    link(
+      conversationId,
+      'pm-15',
+      'issue',
+      'PM-15',
+      L('Invite emails', '邀请邮件'),
+      L('In progress', '进行中'),
+      6,
+    ),
+    link(
+      conversationId,
+      'pm-16',
+      'issue',
+      'PM-16',
+      L('Onboarding checklist copy', '新手清单文案'),
+      L('In progress', '进行中'),
+      9,
+    ),
+    link(
+      conversationId,
+      'pm-18',
+      'issue',
+      'PM-18',
+      L('Empty states', '空状态'),
+      L('Todo', '待规划'),
+      20,
+    ),
+    link(
+      conversationId,
+      'pm-9',
+      'issue',
+      'PM-9',
+      L('Sign-in redirect', '登录跳转'),
+      L('Done', '已完成'),
+      40,
+    ),
+    link(
+      conversationId,
+      'pm-10',
+      'issue',
+      'PM-10',
+      L('Workspace switcher', '工作区切换'),
+      L('Done', '已完成'),
+      60,
+    ),
+    link(
+      conversationId,
+      'pm-11',
+      'issue',
+      'PM-11',
+      L('Inbox badge', '收件箱角标'),
+      L('Done', '已完成'),
+      80,
+    ),
+    link(
+      conversationId,
+      'doc-1',
+      'document',
+      null,
+      L('Release checklist', '发布检查清单'),
+      null,
+      30,
+    ),
+  ];
+}
+
+const IN_REVIEW = L('In review', '待验收');
+const IN_PROGRESS = L('In progress', '进行中');
+const TODO = L('Todo', '待规划');
+const DONE = L('Done', '已完成');
+
+/** Every Runner conversation of the demo drives some tasks, so any one opened shows the summary row and details. */
+function demoLinks(conversationId: string): readonly ConversationLink[] {
+  if (conversationId === 'release-follow-up')
+    return releaseLinks(conversationId);
+  if (conversationId === 'flaky-test')
+    return [
+      link(
+        conversationId,
+        'pm-21',
+        'issue',
+        'PM-21',
+        L('Flaky sign-in test', '登录测试不稳定'),
+        IN_PROGRESS,
+        3,
+      ),
+      link(
+        conversationId,
+        'pm-22',
+        'issue',
+        'PM-22',
+        L('Session cookie timeout', '会话 Cookie 超时'),
+        IN_REVIEW,
+        8,
+      ),
+      link(
+        conversationId,
+        'pm-23',
+        'issue',
+        'PM-23',
+        L('Retry e2e on CI', 'CI 上重跑 e2e'),
+        TODO,
+        30,
+      ),
+      link(
+        conversationId,
+        'pm-20',
+        'issue',
+        'PM-20',
+        L('Sign-in page copy', '登录页文案'),
+        DONE,
+        90,
+      ),
+    ];
+  if (conversationId === 'welcome-tour')
+    return [
+      link(
+        conversationId,
+        'pm-12',
+        'issue',
+        'PM-12',
+        L('Welcome tour', '欢迎引导'),
+        IN_REVIEW,
+        12,
+      ),
+      link(
+        conversationId,
+        'pm-13',
+        'issue',
+        'PM-13',
+        L('Tour last step copy', '引导最后一步文案'),
+        TODO,
+        20,
+      ),
+      link(
+        conversationId,
+        'pm-14',
+        'issue',
+        'PM-14',
+        L('Tour illustrations', '引导插图'),
+        DONE,
+        60,
+      ),
+    ];
+  return [
+    link(
+      conversationId,
+      'pm-30',
+      'issue',
+      'PM-30',
+      L('Release notes 1.4', '1.4 发布说明'),
+      IN_PROGRESS,
+      600,
+    ),
+    link(
+      conversationId,
+      'pm-31',
+      'issue',
+      'PM-31',
+      L('Changelog review', '更新日志审阅'),
+      DONE,
+      700,
+    ),
+  ];
+}
+
+/** The runner the demo's Runner conversations are bound to. */
+const DEV_MACHINE = {
+  id: 'dev-machine',
+  name: L('Dev machine', '开发机'),
+  status: 'online',
+} as const;
+
+/** Unlinks in memory, as `DELETE …/links/:id` would; the demo's API client routes that request here. */
+export function removeDemoLink(conversationId: string, linkId: string): void {
+  update((current) => ({
+    ...current,
+    conversations: current.conversations.map((item) =>
+      item.id === conversationId
+        ? { ...item, links: item.links?.filter((entry) => entry.id !== linkId) }
+        : item,
+    ),
+  }));
+}
+
+interface Store {
+  readonly conversations: readonly ConversationDetail[];
+  readonly messages: Readonly<Record<string, readonly Chat.AppUIMessage[]>>;
+  readonly events: Readonly<Record<string, readonly RunEvent[]>>;
+}
+
+function initialStore(): Store {
+  return {
+    conversations: [
+      // Runner agent with linked work: the linked panel's summary row and details list them.
+      conversation(
+        'release-follow-up',
+        'coder',
+        L('Release follow-up', '发布跟进'),
+        {
+          lastMessageAt: ago(2),
+        },
+      ),
+      // Online agent, idle: its last messages offer edit, copy and regenerate on hover; it consulted a runner agent.
+      conversation(
+        'release-plan',
+        'online',
+        L('Plan the onboarding release', '规划新手引导发布'),
+        {
+          lastMessageAt: ago(3),
+          mode: 'online',
+          execution: { status: 'idle' },
+        },
+      ),
+      // Online agent, archived.
+      conversation(
+        'naming',
+        'online',
+        L('Name the onboarding checklist', '给新手清单起名'),
+        {
+          lastMessageAt: ago(300),
+          archivedAt: ago(240),
+          mode: 'online',
+          execution: { status: 'idle' },
+        },
+      ),
+      // Runner agent at work, with an unread reply on its way.
+      conversation(
+        'flaky-test',
+        'coder',
+        L('Fix the flaky sign-in test', '修复不稳定的登录测试'),
+        {
+          read: false,
+          run: { id: 'run-7', status: 'running', acceptsInput: true },
+          lastMessageAt: ago(1),
+        },
+      ),
+      // Runner agent, started from the issue page's "Ask agent", with the issue as its context.
+      conversation(
+        'welcome-tour',
+        'assistant',
+        L('Summarize PM-12 Welcome tour', '总结 PM-12 欢迎引导'),
+        {
+          source: 'askAgent',
+          lastMessageAt: ago(12),
+        },
+      ),
+      // Runner agent, archived after its run failed.
+      conversation(
+        'notes',
+        'release',
+        L('Release notes draft', '发布说明草稿'),
+        {
+          archivedAt: ago(600),
+          lastMessageAt: ago(900),
+        },
+      ),
+    ],
+    messages: {
+      'release-follow-up': [
+        message(
+          'release-follow-up',
+          1,
+          'user',
+          L(
+            'Follow up on the tasks for this release.',
+            '帮我跟进这次发布相关的任务。',
+          ),
+        ),
+        message(
+          'release-follow-up',
+          2,
+          'assistant',
+          L(
+            'PM-12 is waiting for your review, and PM-15 and PM-16 are in progress. I will keep following up on the rest.',
+            'PM-12 在等你验收，PM-15 和 PM-16 正在进行。其余任务我会继续跟进。',
+          ),
+          { metadata: { agentId: 'coder' } },
+        ),
+      ],
+      naming: [
+        message(
+          'naming',
+          1,
+          'user',
+          'Suggest three short names for the onboarding checklist.',
+        ),
+        message(
+          'naming',
+          2,
+          'assistant',
+          'Here are three: **First steps**, **Getting started** and **Welcome checklist**.',
+          {
+            metadata: { agentId: 'online', sourceUserMessageId: 'naming-1' },
+          },
+        ),
+      ],
+      'welcome-tour': [
+        message(
+          'welcome-tour',
+          1,
+          'user',
+          L(
+            'Summarize this issue and what is left to do.',
+            '总结一下这个任务还剩什么。',
+          ),
+          {
+            workContext: {
+              route: '/',
+              dropped: 0,
+              items: [
+                {
+                  kind: 'issue',
+                  id: 'pm-12',
+                  key: 'PM-12',
+                  title: 'Welcome tour',
+                  url: null,
+                },
+              ],
+            },
+          },
+        ),
+        message(
+          'welcome-tour',
+          2,
+          'assistant',
+          L(
+            'PM-12 adds a short tour for new members: the projects, the inbox and how to ask an agent. The tour is built and in review with Lin; what is left is the review and the copy for the last step.',
+            'PM-12 为新成员加一段简短引导：项目、收件箱，以及怎样问 Agent。引导已完成，正在由 Lin 验收；剩下验收和最后一步的文案。',
+          ),
+          { metadata: { agentId: 'assistant' } },
+        ),
+      ],
+      'release-plan': [
+        message(
+          'release-plan',
+          1,
+          'user',
+          L(
+            'What is left before we can ship the onboarding release?',
+            '新手引导发布之前还剩哪些事？',
+          ),
+          {
+            workContext: {
+              route: '/projects/onboarding',
+              dropped: 0,
+              items: [
+                {
+                  kind: 'project',
+                  id: 'p1',
+                  key: null,
+                  title: L('Onboarding', '新手引导'),
+                  url: null,
+                },
+              ],
+            },
+          },
+        ),
+        message(
+          'release-plan',
+          2,
+          'assistant',
+          L(
+            'Three issues are still open:\n\n| Issue | Status | Owner |\n| --- | --- | --- |\n| PM-12 Welcome tour | In review | Lin |\n| PM-15 Invite emails | In progress | Coding agent |\n| PM-18 Empty states | Todo | — |\n\nPM-12 only needs a review; I can **ask the coding agent** to finish PM-15.',
+            '还有三个任务没完成：\n\n| 任务 | 状态 | 负责人 |\n| --- | --- | --- |\n| PM-12 欢迎引导 | 待验收 | Lin |\n| PM-15 邀请邮件 | 进行中 | 编码 Agent |\n| PM-18 空状态 | 待规划 | — |\n\nPM-12 只差验收；我可以**请编码 Agent** 完成 PM-15。',
+          ),
+          {
+            metadata: {
+              agentId: 'online',
+              sourceUserMessageId: 'release-plan-1',
+            },
+          },
+        ),
+        message(
+          'release-plan',
+          3,
+          'system',
+          L('Consulted Coding agent', '咨询了编码 Agent'),
+          {
+            metadata: {
+              notice: {
+                code: 'consultation',
+                callId: 'call-1',
+                runId: 'run-3',
+                agentId: 'coder',
+                agentName: L('Coding agent', '编码 Agent'),
+                question: L(
+                  'How long until PM-15 can be reviewed?',
+                  'PM-15 还要多久可以验收？',
+                ),
+                state: 'completed',
+                answer: L(
+                  'About an hour: the templates are done, the tests remain.',
+                  '大约一小时：模板已完成，还剩测试。',
+                ),
+                error: null,
+                usage: { inputTokens: 1840, outputTokens: 212 },
+              },
+            },
+          },
+        ),
+      ],
+      'flaky-test': [
+        message(
+          'flaky-test',
+          1,
+          'user',
+          L(
+            'The sign-in test fails about once in ten runs. Can you find out why?',
+            '登录测试大约每十次失败一次，能查一下原因吗？',
+          ),
+          {
+            attachments: [
+              attachment(
+                'file-report',
+                'test-report.png',
+                'image/png',
+                48_213,
+                SCREENSHOT,
+              ),
+              attachment(
+                'file-log',
+                'sign-in.log',
+                'text/plain',
+                12_480,
+                'data:text/plain,Timeout%20waiting%20for%20the%20session%20cookie',
+              ),
+            ],
+          },
+        ),
+      ],
+      notes: [
+        message('notes', 1, 'user', 'Draft the notes for 1.4.'),
+        message('notes', 2, 'system', 'The agent stopped before answering.', {
+          metadata: {
+            notice: { code: 'runFailed', runId: 'run-1', reason: null },
+          },
+        }),
+      ],
+    },
+    events: {
+      'run-7': [
+        {
+          seq: 1,
+          at: ago(2),
+          type: 'thinking',
+          content: 'The failure is a timeout; look at the test first.',
+        },
+        {
+          seq: 2,
+          at: ago(2),
+          type: 'toolUse',
+          tool: 'Read',
+          input: { file_path: 'e2e/sign-in.test.ts' },
+        },
+        {
+          seq: 3,
+          at: ago(1),
+          type: 'toolResult',
+          tool: 'Read',
+          output:
+            'await page.click("Sign in");\nawait expect(page).toHaveURL("/");',
+        },
+        {
+          seq: 4,
+          at: ago(1),
+          type: 'toolUse',
+          tool: 'Bash',
+          input: { command: 'pnpm test:e2e sign-in --repeat-each 20' },
+        },
+      ],
+    },
+  };
+}
+
+let store: Store = initialStore();
+const listeners = new Set<() => void>();
+const chats = new Map<string, SDKChat<Chat.AppUIMessage>>();
+const demoWatermarks = new Map<string, number>();
+const stopReplies = new Map<string, () => void>();
+let generation = 0;
+function demoChat(id: string): SDKChat<Chat.AppUIMessage> {
+  let chat = chats.get(id);
+  if (!chat) {
+    chat = new SDKChat<Chat.AppUIMessage>({
+      id,
+      messages: [...(store.messages[id] ?? [])],
+      transport: new DefaultChatTransport({
+        api: id,
+        fetch: async () =>
+          answer(
+            id,
+            store.conversations.find((item) => item.id === id)?.agent.id ??
+              'assistant',
+          ),
+      }),
+    });
+    chats.set(id, chat);
+  }
+  return chat;
+}
+
+function update(next: (current: Store) => Store): void {
+  store = next(store);
+  for (const listener of listeners) listener();
+}
+
+function useStore(): Store {
+  return useSyncExternalStore(
+    (listener) => {
+      listeners.add(listener);
+      return () => listeners.delete(listener);
+    },
+    () => store,
+  );
+}
+
+/** Replies still on their way; a reset cancels them so they cannot write into the conversations that follow. */
+const replyTimers = new Set<ReturnType<typeof setTimeout>>();
+
+/** Puts the sample conversations back; the tests call it between cases. */
+export function resetChatDemo(): void {
+  generation++;
+  for (const stop of stopReplies.values()) stop();
+  stopReplies.clear();
+  for (const chat of chats.values()) void chat.stop();
+  chats.clear();
+  demoWatermarks.clear();
+  for (const timer of replyTimers) clearTimeout(timer);
+  replyTimers.clear();
+  try {
+    for (const key of Object.keys(window.localStorage))
+      if (key.startsWith(CHAT_LAST_AGENT_KEY))
+        window.localStorage.removeItem(key);
+  } catch {
+    // Nothing remembered to forget.
+  }
+  update(() => initialStore());
+}
+
+function patchConversation(
+  id: string,
+  patch: (current: ConversationDetail) => ConversationDetail,
+): ConversationDetail | undefined {
+  update((current) => ({
+    ...current,
+    conversations: current.conversations.map((item) =>
+      item.id === id ? patch(item) : item,
+    ),
+  }));
+  return store.conversations.find((item) => item.id === id);
+}
+
+function appendMessage(
+  conversationId: string,
+  build: (seq: number) => Chat.AppUIMessage,
+): Chat.AppUIMessage {
+  const list = store.messages[conversationId] ?? [];
+  const seq =
+    Math.max(
+      demoWatermarks.get(conversationId) ?? 0,
+      ...list.map((message) => message.metadata?.seq ?? 0),
+      0,
+    ) + 1;
+  const added = build(seq);
+  demoWatermarks.set(conversationId, seq);
+  update((current) => ({
+    ...current,
+    messages: { ...current.messages, [conversationId]: [...list, added] },
+  }));
+  return added;
+}
+
+const REPLY =
+  'Here is what I would do:\n\n1. Review **PM-12** today.\n2. Let the coding agent finish PM-15.\n3. Move PM-18 to the next release.';
+
+/** A deterministic producer emits standard SDK chunks and saves only its final public message. */
+function answer(conversationId: string, agentId: string): Response {
+  const ownGeneration = generation;
+  const seq =
+    Math.max(
+      demoWatermarks.get(conversationId) ?? 0,
+      ...(store.messages[conversationId] ?? []).map(
+        (message) => message.metadata?.seq ?? 0,
+      ),
+      0,
+    ) + 1;
+  const sourceUserMessageId = store.messages[conversationId]
+    ?.filter((message) => message.role === 'user')
+    .at(-1)?.id;
+  const id = `${conversationId}-${seq}`;
+  const createdAt = new Date().toISOString();
+  let length = 0,
+    ended = false;
+  let output!: ReadableStreamDefaultController<UIMessageChunk>;
+  let interval: ReturnType<typeof setInterval> | undefined;
+  let start: ReturnType<typeof setTimeout>;
+  patchConversation(conversationId, (item) => ({
+    ...item,
+    run: { id: `run-${conversationId}`, status: 'running', acceptsInput: true },
+    execution: { status: 'running' },
+  }));
+  const finish = (cancelled = false) => {
+    if (ended) return;
+    ended = true;
+    clearTimeout(start);
+    clearInterval(interval);
+    replyTimers.delete(start);
+    if (interval) replyTimers.delete(interval);
+    stopReplies.delete(conversationId);
+    if (ownGeneration !== generation) {
+      output.close();
+      return;
+    }
+    const saved: Chat.AppUIMessage = {
+      id,
+      role: 'assistant',
+      metadata: {
+        conversationId,
+        seq,
+        revision: 1,
+        createdAt,
+        agentId,
+        sourceUserMessageId,
+      },
+      parts: [{ type: 'text', text: REPLY.slice(0, length), state: 'done' }],
+    };
+    if (length) appendMessage(conversationId, () => saved);
+    patchConversation(conversationId, (item) => ({
+      ...item,
+      run: null,
+      execution: {
+        status: 'idle',
+        outcome: cancelled ? 'cancelled' : 'completed',
+      },
+      lastMessageAt: new Date().toISOString(),
+    }));
+    if (length) output.enqueue({ type: 'text-end', id: 'text' });
+    output.enqueue({
+      type: 'finish',
+      ...(length ? { messageMetadata: saved.metadata } : {}),
+      finishReason: cancelled ? 'other' : 'stop',
+    });
+    output.close();
+  };
+  const stream = new ReadableStream<UIMessageChunk>({
+    start(controller) {
+      output = controller;
+      start = setTimeout(() => {
+        replyTimers.delete(start);
+        if (ownGeneration !== generation) return;
+        output.enqueue({
+          type: 'start',
+          messageId: id,
+          messageMetadata: {
+            conversationId,
+            createdAt,
+            agentId,
+            revision: 0,
+            sourceUserMessageId,
+          },
+        });
+        output.enqueue({ type: 'text-start', id: 'text' });
+        interval = setInterval(() => {
+          const before = length;
+          length = Math.min(REPLY.length, length + 12);
+          output.enqueue({
+            type: 'text-delta',
+            id: 'text',
+            delta: REPLY.slice(before, length),
+          });
+          if (length === REPLY.length) finish();
+        }, 80);
+        replyTimers.add(interval);
+      }, 700);
+      replyTimers.add(start);
+    },
+    cancel() {
+      ended = true;
+      clearTimeout(start);
+      clearInterval(interval);
+      stopReplies.delete(conversationId);
+    },
+  });
+  stopReplies.set(conversationId, () => finish(true));
+  return createUIMessageStreamResponse({ stream });
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+// Constants and pure models
+// ---------------------------------------------------------------------------------------------------------------------
+
+export const CHAT_PANEL_ID: typeof Chat.CHAT_PANEL_ID = 'agents-chat-panel';
+export const CHAT_PANEL_ATTRIBUTE: typeof Chat.CHAT_PANEL_ATTRIBUTE =
+  'data-agents-chat';
+export const CHAT_DOCK_QUERY: typeof Chat.CHAT_DOCK_QUERY =
+  '(min-width: 1280px)';
+export const CHAT_MOBILE_QUERY: typeof Chat.CHAT_MOBILE_QUERY =
+  '(max-width: 767px)';
+
+export const modifierKeyLabel: typeof Chat.modifierKeyLabel = () =>
+  typeof navigator !== 'undefined' && /mac/iu.test(navigator.platform)
+    ? '⌘'
+    : 'Ctrl';
+
+export const timelineOrder: typeof Chat.timelineOrder = (entries) =>
+  [...entries].sort((a, b) => a.at.localeCompare(b.at) || a.rank - b.rank);
+
+export const newConversationAgent: typeof Chat.newConversationAgent = (
+  agents,
+  picked,
+  lastUsed = null,
+) =>
+  agents
+    ? ((picked ? agents.find((agent) => agent.id === picked) : undefined) ??
+      (lastUsed ? agents.find((agent) => agent.id === lastUsed) : undefined) ??
+      agents.find((agent) => agent.isMyDefault) ??
+      agents.find((agent) => agent.isSystemDefault) ??
+      null)
+    : null;
+
+export const noticeText: typeof Chat.noticeText = (
+  t,
+  notice: ConversationNotice | undefined,
+  fallback,
+  agentName,
+  newsText,
+) => {
+  if (!notice) return fallback;
+  switch (notice.code) {
+    case 'switchedToDefault':
+      return t('chat.notice.switchedToDefault', {
+        name: agentName(notice.agentId),
+        own: agentName(notice.fromAgentId),
+      });
+    case 'switchedBack':
+      return t('chat.notice.switchedBack', { name: agentName(notice.agentId) });
+    case 'runFailed':
+      return t('chat.notice.runFailed');
+    case 'runCancelled':
+      return t('chat.notice.runCancelled');
+    case 'news':
+      return newsText?.(notice, t) ?? notice.title;
+    default:
+      return fallback;
+  }
+};
+
+export const liveStepsView: typeof Chat.liveStepsView = (events) => {
+  const steps = events.filter((event) =>
+    ['thinking', 'toolUse', 'toolResult', 'permission'].includes(event.type),
+  );
+  const tool = [...steps].reverse().find((event) => event.type === 'toolUse');
+  const input = tool?.input as { command?: string; file_path?: string } | null;
+  const subject = input?.command ?? input?.file_path ?? tool?.tool ?? '';
+  return {
+    steps,
+    line:
+      !subject || steps.at(-1)?.type === 'thinking'
+        ? { kind: 'thinking' }
+        : tool?.tool === 'Read'
+          ? { kind: 'reading', subject }
+          : { kind: 'working', subject },
+  };
+};
+
+export const stepLineText: typeof Chat.stepLineText = (t, line) =>
+  line.kind === 'thinking'
+    ? t('chat.steps.thinking')
+    : t(`chat.steps.${line.kind}`, { subject: line.subject });
+
+export const itemKey: typeof Chat.itemKey = (item) => `${item.kind}:${item.id}`;
+
+export const filterText: typeof Chat.filterText = (filter) =>
+  Object.entries(filter.params)
+    .map(([key, value]) => `${key}=${value}`)
+    .join(', ');
+
+export const selectionPreview: typeof Chat.selectionPreview = (
+  text,
+  max = 40,
+) => {
+  const line = text.replace(/\s+/gu, ' ').trim();
+  return line.length > max ? `${line.slice(0, max - 1)}…` : line;
+};
+
+export const contextChips: typeof Chat.contextChips = realContextChips;
+export const buildPageContext: typeof Chat.buildPageContext =
+  realBuildPageContext;
+export const uiItemKey: typeof Chat.uiItemKey = realUIItemKey;
+export const snapshotUIContext: typeof Chat.snapshotUIContext =
+  realSnapshotUIContext;
+
+// ---------------------------------------------------------------------------------------------------------------------
+// Names, avatars and times
+// ---------------------------------------------------------------------------------------------------------------------
+
+const agentText: Chat.AgentText = {
+  name: ((agent: { readonly name: string | null }) =>
+    agent.name) as Chat.AgentText['name'],
+  description: (agent) => agent.description,
+};
+
+export const useAgentText: typeof Chat.useAgentText = () => agentText;
+
+export const AgentAvatar: typeof Chat.AgentAvatar = ({
+  name,
+  size = 'default',
+  className,
+}) => (
+  <span
+    aria-hidden='true'
+    className={cn(
+      'inline-flex shrink-0 items-center justify-center bg-blue-500/15 font-semibold text-blue-700 dark:text-blue-300',
+      size === 'xs'
+        ? 'size-4 rounded-[0.3rem] text-[0.5625rem] [&_svg]:size-2.5'
+        : size === 'sm'
+          ? 'size-6 rounded-md text-xs [&_svg]:size-3.5'
+          : 'size-8 rounded-md text-sm [&_svg]:size-4',
+      className,
+    )}
+  >
+    {name ? name.slice(0, 1).toUpperCase() : <BotIcon />}
+  </span>
+);
+
+const relative = new Intl.RelativeTimeFormat(zh ? 'zh-CN' : 'en', {
+  numeric: 'auto',
+});
+const dateTime = new Intl.DateTimeFormat(zh ? 'zh-CN' : 'en', {
+  dateStyle: 'medium',
+  timeStyle: 'short',
+});
+const formatters: Chat.Formatters = {
+  dateTime: (iso) => (iso ? dateTime.format(new Date(iso)) : '—'),
+  time: (iso) =>
+    iso ? new Date(iso).toLocaleTimeString(zh ? 'zh-CN' : 'en') : '—',
+  relative: (iso) => {
+    if (!iso) return '—';
+    const minutes = Math.round((new Date(iso).getTime() - Date.now()) / 60_000);
+    return Math.abs(minutes) < 60
+      ? relative.format(minutes, 'minute')
+      : relative.format(Math.round(minutes / 60), 'hour');
+  },
+};
+
+export const useFormatters: typeof Chat.useFormatters = () => formatters;
+
+// ---------------------------------------------------------------------------------------------------------------------
+// The panel's state
+// ---------------------------------------------------------------------------------------------------------------------
+
+export const ChatExtensionsContext: typeof Chat.ChatExtensionsContext =
+  createContext<Chat.ChatExtensions>({});
+
+function noop(): void {}
+
+const unavailable: Chat.ChatPanelValue = {
+  available: false,
+  open: false,
+  mode: 'docked',
+  view: 'chat',
+  conversationId: null,
+  newAgentId: null,
+  openChat: noop,
+  closeChat: noop,
+  toggleChat: noop,
+  setMode: noop,
+  setView: noop,
+  selectConversation: noop,
+  pinned: [],
+  clearPinned: noop,
+  draft: null,
+  composerRevision: 0,
+  source: 'panel',
+  resetSource: noop,
+  registerComposer: () => noop,
+  focusComposer: noop,
+  openPage: null,
+  conversationPath: null,
+};
+
+const PanelContext = createContext<Chat.ChatPanelValue | null>(null);
+const SourcesContext = createContext<Chat.ChatSourcesValue | null>(null);
+const PageContext = createContext<Chat.ChatPageTracking | null>(null);
+
+export const ChatPanelScope: typeof Chat.ChatPanelScope = PanelContext.Provider;
+
+export const useChatPanel: typeof Chat.useChatPanel = () =>
+  useContext(PanelContext) ?? unavailable;
+
+const noSources: Chat.ChatSourcesValue = {
+  uiSources: [],
+  selectedUIKeys: new Set(),
+  registerUI: () => noop,
+  selectUI: noop,
+  snapshotUI: async () => undefined,
+  items: [],
+  filter: null,
+  selection: null,
+  removed: new Set(),
+  registerItem: () => noop,
+  registerFilter: () => noop,
+  remove: noop,
+};
+
+export const useChatSources: typeof Chat.useChatSources = () =>
+  useContext(SourcesContext) ?? noSources;
+
+export const useChatPages: typeof Chat.useChatPages = () => ({
+  list: true,
+  detail: true,
+});
+
+export const useChatPageTracking: typeof Chat.useChatPageTracking = () =>
+  useContext(PageContext);
+
+export const useChatContextSource: typeof Chat.useChatContextSource = (
+  item,
+) => {
+  const { registerItem } = useChatSources();
+  // Registered again only when the object or its label changes, not for each new object literal.
+  const key = item ? `${itemKey(item)}\u0000${item.label}` : null;
+  const itemRef = useRef(item);
+  useEffect(() => {
+    itemRef.current = item;
+  });
+  useEffect(() => {
+    const current = itemRef.current;
+    return key && current ? registerItem(current) : undefined;
+  }, [registerItem, key]);
+};
+
+export const useChatUIContextSource: typeof Chat.useChatUIContextSource = (
+  source,
+) => {
+  const { registerUI } = useChatSources();
+  const latestRef = useRef(source);
+  useLayoutEffect(() => {
+    latestRef.current = source;
+  });
+  const kind = source?.kind;
+  const id = source?.id;
+  useEffect(() => {
+    if (kind === undefined || id === undefined) return;
+    return registerUI({
+      kind,
+      id,
+      get label() {
+        return latestRef.current?.label ?? id;
+      },
+      getSnapshot: () => {
+        const current = latestRef.current;
+        if (!current || current.kind !== kind || current.id !== id)
+          throw new Error('UI context source is no longer available.');
+        return current.getSnapshot();
+      },
+    });
+  }, [registerUI, kind, id]);
+};
+
+export const ChatProvider: typeof Chat.ChatProvider = ({
+  available = true,
+  conversationPath,
+  memoryScope,
+  children,
+}) => {
+  const navigate = useNavigate();
+  const [state, setState] = useState({
+    open: false,
+    mode: 'docked' as Chat.ChatPanelMode,
+    view: 'chat' as Chat.ChatPanelView,
+    conversationId: null as string | null,
+    newAgentId: null as string | null,
+    agentMode: null as ConversationMode | null,
+  });
+  const memoryKey = `demo:${memoryScope ?? ''}`;
+  const [lastAgentId, setLastAgentId] = useState(() =>
+    readLastAgent(memoryKey),
+  );
+  const rememberAgent = useCallback(
+    (agentId: string) => {
+      rememberLastAgent(memoryKey, agentId);
+      setLastAgentId(agentId);
+    },
+    [memoryKey],
+  );
+  const [pinned, setPinned] = useState<readonly Chat.ChatContextItem[]>([]);
+  const [draft, setDraft] = useState<Chat.ChatDraft | null>(null);
+  const [composerRevision, setComposerRevision] = useState(0);
+  const [contextChange, setContextChange] = useState<{
+    readonly revision: number;
+    readonly pin: Chat.OpenChatOptions['pin'];
+    readonly uiSources: Chat.OpenChatOptions['uiSources'];
+  } | null>(null);
+  const draftNonceRef = useRef(0);
+  const conversationRef = useRef(state.conversationId);
+  useLayoutEffect(() => {
+    conversationRef.current = state.conversationId;
+  }, [state.conversationId]);
+  const resetComposer = useCallback((options: Chat.OpenChatOptions = {}) => {
+    setComposerRevision((revision) => revision + 1);
+    setDraft(null);
+    setPinned([]);
+    setContextChange((current) => ({
+      revision: (current?.revision ?? 0) + 1,
+      pin: options.pin,
+      uiSources: options.uiSources,
+    }));
+  }, []);
+  const [source, setSource] = useState<ConversationSource>('panel');
+  const [items, setItems] = useState<readonly Chat.ChatContextItem[]>([]);
+  const [removed, setRemoved] = useState<ReadonlySet<string>>(() => new Set());
+  const focusRef = useRef<(() => void) | null>(null);
+  const wantFocusRef = useRef(false);
+
+  const focusComposer = useCallback(() => {
+    if (focusRef.current) focusRef.current();
+    else wantFocusRef.current = true;
+  }, []);
+  const registerComposer = useCallback((focus: () => void) => {
+    focusRef.current = focus;
+    if (wantFocusRef.current) {
+      wantFocusRef.current = false;
+      focus();
+    }
+    return () => {
+      if (focusRef.current === focus) focusRef.current = null;
+    };
+  }, []);
+
+  const openChat = useCallback(
+    (options: Chat.OpenChatOptions = {}) => {
+      const fresh =
+        options.conversationId !== undefined &&
+        (options.conversationId === null ||
+          options.conversationId !== conversationRef.current);
+      if (fresh) resetComposer(options);
+      else if (options.pin || options.uiSources !== undefined)
+        setContextChange((current) => ({
+          revision: current?.revision ?? 0,
+          pin: options.pin,
+          uiSources: options.uiSources,
+        }));
+      if (options.conversationId !== undefined)
+        conversationRef.current = options.conversationId;
+      setState((current) => ({
+        ...current,
+        open: true,
+        view: options.view ?? 'chat',
+        conversationId:
+          options.conversationId === undefined
+            ? current.conversationId
+            : options.conversationId,
+        newAgentId:
+          options.agentId === undefined ? current.newAgentId : options.agentId,
+        agentMode: options.agentId ? null : current.agentMode,
+      }));
+      if (options.source) setSource(options.source);
+      const pin = options.pin;
+      if (pin)
+        setPinned((current) =>
+          current.some((item) => itemKey(item) === itemKey(pin))
+            ? current
+            : [...current, pin],
+        );
+      if (options.draft !== undefined) {
+        draftNonceRef.current += 1;
+        setDraft({ text: options.draft, nonce: draftNonceRef.current });
+      }
+    },
+    [resetComposer],
+  );
+  const closeChat = useCallback(
+    () => setState((current) => ({ ...current, open: false })),
+    [],
+  );
+  const toggleChat = useCallback(
+    () => setState((current) => ({ ...current, open: !current.open })),
+    [],
+  );
+
+  useEffect(() => {
+    function onKeyDown(event: KeyboardEvent): void {
+      if (event.key.toLowerCase() !== 'j' || event.metaKey === event.ctrlKey)
+        return;
+      event.preventDefault();
+      toggleChat();
+    }
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [toggleChat]);
+
+  const panel = useMemo<Chat.ChatPanelValue>(
+    () => ({
+      ...state,
+      available,
+      openChat,
+      closeChat,
+      toggleChat,
+      setMode: (mode) => setState((current) => ({ ...current, mode })),
+      setView: (view) => setState((current) => ({ ...current, view })),
+      selectConversation: (conversationId, agentId, options) => {
+        const changed = conversationId !== conversationRef.current;
+        if ((conversationId === null || changed) && !options?.preserveComposer)
+          resetComposer();
+        else if (changed) setDraft(null);
+        conversationRef.current = conversationId;
+        setState((current) => ({
+          ...current,
+          view: 'chat',
+          conversationId,
+          newAgentId:
+            conversationId === null ? (agentId ?? null) : current.newAgentId,
+          agentMode:
+            conversationId === null && agentId ? null : current.agentMode,
+        }));
+      },
+      pinned,
+      clearPinned: () => setPinned([]),
+      draft,
+      composerRevision,
+      source,
+      resetSource: () => setSource('panel'),
+      registerComposer,
+      focusComposer,
+      openPage: conversationPath
+        ? (conversationId) => {
+            closeChat();
+            void navigate(conversationPath(conversationId));
+          }
+        : null,
+      conversationPath: conversationPath ?? null,
+      setAgentMode: (agentMode) =>
+        setState((current) => ({ ...current, agentMode })),
+      lastAgentId,
+      rememberAgent,
+    }),
+    [
+      lastAgentId,
+      rememberAgent,
+      state,
+      available,
+      openChat,
+      closeChat,
+      toggleChat,
+      pinned,
+      draft,
+      composerRevision,
+      resetComposer,
+      source,
+      registerComposer,
+      focusComposer,
+      conversationPath,
+      navigate,
+    ],
+  );
+
+  const uiRegistryRef = useRef(new Map<string, Chat.ChatUIContextSource>());
+  const [uiSources, setUISources] = useState<
+    readonly Chat.ChatUIContextSource[]
+  >([]);
+  const [selectedUIKeys, setSelectedUIKeys] = useState<ReadonlySet<string>>(
+    () => new Set(),
+  );
+  const selectedUIRef = useRef(selectedUIKeys);
+  const registerUI = useCallback((source: Chat.ChatUIContextSource) => {
+    const key = uiItemKey(source);
+    if (uiRegistryRef.current.has(key))
+      throw new Error(`UI context source already registered: ${key}`);
+    clonePageUIContext({
+      version: 1,
+      items: [{ kind: source.kind, id: source.id }],
+    });
+    const registered: Chat.ChatUIContextSource = {
+      kind: source.kind,
+      id: source.id,
+      get label() {
+        return source.label;
+      },
+      getSnapshot: () => source.getSnapshot(),
+    };
+    uiRegistryRef.current.set(key, registered);
+    setUISources([...uiRegistryRef.current.values()]);
+    return () => {
+      if (uiRegistryRef.current.get(key) !== registered) return;
+      uiRegistryRef.current.delete(key);
+      setUISources([...uiRegistryRef.current.values()]);
+      const next = new Set(selectedUIRef.current);
+      next.delete(key);
+      selectedUIRef.current = next;
+      setSelectedUIKeys(next);
+    };
+  }, []);
+  const selectUI = useCallback<Chat.ChatSourcesValue['selectUI']>(
+    (source, selected = true) => {
+      const key = uiItemKey(source);
+      if (selected && !uiRegistryRef.current.has(key))
+        throw new Error('UI context source is no longer registered.');
+      const next = new Set(selectedUIRef.current);
+      if (selected) next.add(key);
+      else next.delete(key);
+      selectedUIRef.current = next;
+      setSelectedUIKeys(next);
+    },
+    [],
+  );
+  const snapshotUI = useCallback<
+    Chat.ChatSourcesValue['snapshotUI']
+  >(async () => {
+    const selected = selectedUIRef.current;
+    if ([...selected].some((key) => !uiRegistryRef.current.has(key)))
+      throw new Error('UI context source is no longer registered.');
+    const entries = [...uiRegistryRef.current.entries()].filter(([key]) =>
+      selected.has(key),
+    );
+    const snapshot = await snapshotUIContext(
+      entries.map(([, source]) => source),
+    );
+    if (
+      selected !== selectedUIRef.current ||
+      entries.some(([key, source]) => uiRegistryRef.current.get(key) !== source)
+    )
+      throw new Error(
+        'UI context selection or source changed while reading its snapshot.',
+      );
+    return snapshot;
+  }, []);
+  const registerItem = useCallback((item: Chat.ChatContextItem) => {
+    setItems((current) => [...current, item]);
+    return () =>
+      setItems((current) => current.filter((other) => other !== item));
+  }, []);
+  const [seenContextChange, setSeenContextChange] = useState(contextChange);
+  if (contextChange !== seenContextChange) {
+    const clear =
+      contextChange?.revision !== (seenContextChange?.revision ?? 0);
+    setSeenContextChange(contextChange);
+    if (contextChange) {
+      const nextRemoved = clear
+        ? new Set(items.map(itemKey))
+        : new Set(removed);
+      const nextSelected = clear ? new Set<string>() : new Set(selectedUIKeys);
+      if (contextChange.pin) nextRemoved.delete(itemKey(contextChange.pin));
+      for (const source of contextChange.uiSources ?? []) {
+        const key = uiItemKey(source);
+        nextSelected.add(key);
+        nextRemoved.delete(key);
+      }
+      setSelectedUIKeys(nextSelected);
+      setRemoved(nextRemoved);
+    }
+  }
+  const sources = useMemo<Chat.ChatSourcesValue>(
+    () => ({
+      uiSources,
+      selectedUIKeys,
+      registerUI,
+      selectUI,
+      snapshotUI,
+      items,
+      filter: null,
+      selection: null,
+      removed,
+      registerItem,
+      registerFilter: () => noop,
+      remove: (key) => {
+        const source = uiRegistryRef.current.get(key);
+        if (source) selectUI(source, false);
+        else setRemoved((current) => new Set([...current, key]));
+      },
+    }),
+    [
+      uiSources,
+      selectedUIKeys,
+      registerUI,
+      selectUI,
+      snapshotUI,
+      items,
+      removed,
+      registerItem,
+    ],
+  );
+
+  const tracking = useMemo<Chat.ChatPageTracking>(
+    () => ({ enter: () => noop, returnTo: () => null }),
+    [],
+  );
+
+  return (
+    <PanelContext.Provider value={panel}>
+      <SourcesContext.Provider value={sources}>
+        <PageContext.Provider value={tracking}>{children}</PageContext.Provider>
+      </SourcesContext.Provider>
+    </PanelContext.Provider>
+  );
+};
+
+// ---------------------------------------------------------------------------------------------------------------------
+// Data hooks
+// ---------------------------------------------------------------------------------------------------------------------
+
+function query<T>(data: T | undefined): never {
+  return {
+    data,
+    isSuccess: data !== undefined,
+    isError: false,
+    isPending: data === undefined,
+    error: null,
+    refetch: () => Promise.resolve(),
+  } as never;
+}
+
+export const useChatAgents: typeof Chat.useChatAgents = () =>
+  query([...configuredAgents()]);
+
+export const useChatModels: typeof Chat.useChatModels = () =>
+  query(
+    configuredAgents().some((agent) => agent.id === 'online')
+      ? [...MODELS]
+      : [],
+  );
+// The demo's model and thinking choices: those saved per conversation and the level remembered per model, in memory.
+const demoThinking = {
+  models: new Map<string, Models.ModelRef>(),
+  saved: new Map<string, Models.ReasoningLevel>(),
+  remembered: new Map<string, Models.ReasoningLevel>(),
+  listeners: new Set<() => void>(),
+  version: 0,
+};
+function changeThinking(change: () => void): void {
+  change();
+  demoThinking.version += 1;
+  for (const listener of demoThinking.listeners) listener();
+}
+function useDemoThinking(): number {
+  return useSyncExternalStore(
+    (listener) => {
+      demoThinking.listeners.add(listener);
+      return () => demoThinking.listeners.delete(listener);
+    },
+    () => demoThinking.version,
+  );
+}
+
+export const useConversationModel: typeof Chat.useConversationModel = (id) => {
+  useDemoThinking();
+  const thinking = id ? demoThinking.saved.get(id) : undefined;
+  return {
+    configuration: query(
+      id
+        ? {
+            selectedModel: demoThinking.models.get(id) ?? {
+              modelService: 'demo',
+              model: 'fast',
+            },
+            scope: [],
+            tool: [],
+            toolVersions: {},
+            systemPrompt: '',
+            ...(thinking ? { thinking } : {}),
+          }
+        : undefined,
+    ),
+    select: mutation<
+      | Models.ModelRef
+      | {
+          selectedModel?: Models.ModelRef;
+          thinking?: Models.ReasoningLevel;
+        }
+    >((input, options?: { onSuccess?: () => void }) => {
+      const model =
+        'modelService' in input ? input : (input.selectedModel ?? undefined);
+      const level = 'thinking' in input ? input.thinking : undefined;
+      if (id)
+        changeThinking(() => {
+          if (model) demoThinking.models.set(id, model);
+          if (level) demoThinking.saved.set(id, level);
+        });
+      options?.onSuccess?.();
+    }),
+    changing: false,
+  };
+};
+export const useThinkingMemory: typeof Chat.useThinkingMemory = () => {
+  useDemoThinking();
+  return {
+    remembered: (model) =>
+      demoThinking.remembered.get(`${model.modelService}:${model.model}`) ??
+      null,
+    remember: (model, level) =>
+      changeThinking(() =>
+        demoThinking.remembered.set(
+          `${model.modelService}:${model.model}`,
+          level,
+        ),
+      ),
+  };
+};
+export const shownThinking: typeof Chat.shownThinking = (value) =>
+  value ?? 'provider-default';
+export { thinkingLevelText } from '../../../../client/chat/message-model.js';
+export const useConversation: typeof Chat.useConversation = (
+  conversationId,
+) => {
+  const { conversations } = useStore();
+  return query(
+    conversationId
+      ? (() => {
+          const item = conversations.find((item) => item.id === conversationId);
+          return item
+            ? {
+                ...item,
+                execution: item.execution ?? {
+                  status: item.run ? 'running' : 'idle',
+                },
+              }
+            : undefined;
+        })()
+      : undefined,
+  );
+};
+
+export const useConversationList: typeof Chat.useConversationList = (
+  filter,
+) => {
+  const { conversations, messages } = useStore();
+  const q = filter.q?.toLowerCase();
+  const items = conversations
+    .filter(
+      (item) =>
+        (filter.archived === 'all' ||
+          Boolean(item.archivedAt) === Boolean(filter.archived)) &&
+        (!filter.agentId || item.agent.id === filter.agentId) &&
+        (!filter.mode ||
+          (item.agent.id === 'online') === (filter.mode === 'online')) &&
+        (!filter.source || item.source === filter.source) &&
+        (!q ||
+          (item.title ?? '').toLowerCase().includes(q) ||
+          (messages[item.id] ?? []).some((entry) =>
+            appUIMessageText(entry).toLowerCase().includes(q),
+          )),
+    )
+    .sort((a, b) => b.lastMessageAt.localeCompare(a.lastMessageAt));
+  return {
+    ...(query({
+      pages: [{ items, nextCursor: null }],
+      pageParams: [null],
+    }) as object),
+    hasNextPage: false,
+    isFetchingNextPage: false,
+    fetchNextPage: () => Promise.resolve(),
+  } as never;
+};
+
+export const useConversationMessages: typeof Chat.useConversationMessages = (
+  conversationId,
+) => {
+  useStore();
+  const sdk = useSDKChat({ chat: demoChat(conversationId ?? 'draft') });
+  const items = conversationId ? sdk.messages : [];
+  return {
+    items,
+    pending: [],
+    hasMore: false,
+    olderToken: null,
+    lastSeq: Math.max(0, ...items.map((message) => message.metadata?.seq ?? 0)),
+    loaded: true,
+    loadingOlder: false,
+    error: undefined,
+    loadOlder: noop,
+    fetchNewer: noop,
+    dispatch: noop,
+  };
+};
+
+export const useSendMessage: typeof Chat.useSendMessage = ({
+  conversationId,
+  agentId,
+  source,
+  onCreated,
+}) =>
+  useCallback(
+    (input) => {
+      let id = conversationId;
+      const agent = AGENTS.find((candidate) => candidate.id === agentId);
+      if (!id) {
+        if (!agent) return false;
+        id = `new-${Date.now().toString(36)}`;
+        const created = conversation(id, agent.id, input.content.slice(0, 30), {
+          source,
+          lastMessageAt: new Date().toISOString(),
+        });
+        update((current) => ({
+          ...current,
+          conversations: [created, ...current.conversations],
+          messages: { ...current.messages, [created.id]: [] },
+        }));
+        onCreated(created);
+      }
+      const target = id;
+      const sdk = demoChat(target);
+      const saved = appendMessage(target, (seq) =>
+        message(target, seq, 'user', input.content, {
+          createdAt: new Date().toISOString(),
+          ...(input.attachments?.length
+            ? { attachments: input.attachments }
+            : {}),
+        }),
+      );
+      const detail = store.conversations.find((item) => item.id === target);
+      if (detail) void sdk.sendMessage(saved);
+      return true;
+    },
+    [conversationId, agentId, source, onCreated],
+  );
+/** Preview-only destructive resend, using the same official SDK entry points as production. */
+export const useResendMessage: typeof Chat.useResendMessage = (
+  conversationId,
+) => {
+  useStore();
+  const [isPending, setIsPending] = useState(false);
+  return {
+    isPending,
+    resend: async (options) => {
+      const detail = store.conversations.find(
+        (item) => item.id === conversationId,
+      );
+      const sdk = demoChat(conversationId ?? 'draft');
+      const list = store.messages[conversationId ?? ''] ?? [];
+      const index = list.findIndex(
+        (message) =>
+          message.id === options.messageId && message.role === 'user',
+      );
+      if (
+        !conversationId ||
+        !detail ||
+        detail.mode !== 'online' ||
+        detail.archivedAt ||
+        index < 0 ||
+        sdk.status === 'streaming' ||
+        sdk.status === 'submitted'
+      )
+        return {
+          outcome: 'rejected',
+          error: new Error('Resend is unavailable.'),
+        };
+      setIsPending(true);
+      const original = list[index];
+      let replaced = false;
+      const target = {
+        ...original,
+        metadata: {
+          ...original.metadata!,
+          revision: (original.metadata?.revision ?? 0) + 1,
+        },
+        parts: options.input
+          ? [
+              ...original.parts.flatMap<Chat.AppUIMessage['parts'][number]>(
+                (part) => {
+                  if (part.type !== 'text') return [part];
+                  if (replaced) return [];
+                  replaced = true;
+                  return [{ type: 'text', text: options.input!.text }];
+                },
+              ),
+              ...(!original.parts.some((part) => part.type === 'text')
+                ? [{ type: 'text' as const, text: options.input.text }]
+                : []),
+            ]
+          : original.parts,
+      };
+      const seq = Math.max(
+        0,
+        ...list.map((message) => message.metadata?.seq ?? 0),
+      );
+      demoWatermarks.set(
+        conversationId,
+        Math.max(demoWatermarks.get(conversationId) ?? 0, seq),
+      );
+      update((current) => ({
+        ...current,
+        messages: {
+          ...current.messages,
+          [conversationId]: [...list.slice(0, index), target],
+        },
+      }));
+      if (options.input)
+        void sdk.sendMessage({ ...target, messageId: target.id });
+      else void sdk.regenerate({ messageId: target.id });
+      setIsPending(false);
+      return { outcome: 'accepted' };
+    },
+  };
+};
+
+let uploads = 0;
+
+/** Uploads after a moment, the file's bytes kept in the page; a file named `fail…` fails, to show the error. */
+export const useChatAttachments: typeof Chat.useChatAttachments = () =>
+  useMemo(
+    () => ({
+      upload: (file, signal) =>
+        new Promise<MessageAttachment>((resolve, reject) => {
+          const timer = setTimeout(() => {
+            if (file.name.startsWith('fail')) {
+              reject(new Error('The upload failed.'));
+              return;
+            }
+            uploads += 1;
+            resolve(
+              attachment(
+                `upload-${uploads}`,
+                file.name,
+                file.type || 'application/octet-stream',
+                file.size,
+                typeof URL.createObjectURL === 'function'
+                  ? URL.createObjectURL(file)
+                  : '',
+              ),
+            );
+          }, 400);
+          signal?.addEventListener('abort', () => clearTimeout(timer));
+        }),
+      discard: () => undefined,
+    }),
+    [],
+  );
+
+function mutation<V>(
+  run: (variables: V, options?: { onSuccess?: () => void }) => void,
+): never {
+  return { mutate: run, isPending: false } as never;
+}
+
+export const useConversationActions: typeof Chat.useConversationActions =
+  () => ({
+    rename: mutation<{ id: string; title: string }>(({ id, title }) =>
+      patchConversation(id, (item) => ({
+        ...item,
+        title,
+        titleSource: 'user',
+      })),
+    ),
+    archive: mutation<{ id: string; archived: boolean }>(({ id, archived }) =>
+      patchConversation(id, (item) => ({
+        ...item,
+        archivedAt: archived ? new Date().toISOString() : null,
+      })),
+    ),
+    stop: mutation<string>((id) => {
+      stopReplies.get(id)?.();
+      patchConversation(id, (item) => ({
+        ...item,
+        run: null,
+        execution: { status: 'idle', outcome: 'cancelled' },
+      }));
+    }),
+    remove: mutation<string>((id) => {
+      stopReplies.get(id)?.();
+      void chats.get(id)?.stop();
+      chats.delete(id);
+      demoWatermarks.delete(id);
+      update((current) => ({
+        ...current,
+        conversations: current.conversations.filter((item) => item.id !== id),
+        messages: Object.fromEntries(
+          Object.entries(current.messages).filter(([key]) => key !== id),
+        ),
+      }));
+    }),
+    markRead: (id: string) => {
+      if (store.conversations.find((item) => item.id === id)?.read === false)
+        patchConversation(id, (item) => ({ ...item, read: true }));
+    },
+  });
+
+export const useLiveRunEvents: typeof Chat.useLiveRunEvents = (runId) =>
+  useStore().events[runId] ?? [];
+
+const SOURCES: readonly Chat.ConversationSourceOption[] = [
+  { key: 'askAgent', label: 'Ask agent' },
+  { key: 'home', label: 'Home page' },
+];
+
+export const useConversationSources: typeof Chat.useConversationSources = () =>
+  SOURCES;
+
+/** The preview has no network stream; production chat uses the plugin controller. */
+export const useChatStream: typeof Chat.useChatStream = (id) => {
+  const sdk = useSDKChat({ chat: demoChat(id ?? 'draft') });
+  return id ? { status: sdk.status, error: sdk.error } : undefined;
+};
+export const useChatController: typeof Chat.useChatController = () =>
+  ({
+    refresh: async () => {},
+    resume: async () => {},
+    finalize: async () => {},
+    approve: async () => {},
+    isStopping: () => false,
+    submissions: {
+      blocked: () => false,
+      snapshot: () => [],
+      releaseUnknown: () => false,
+    },
+  }) as unknown as ReturnType<typeof Chat.useChatController>;
+
+export {
+  chatFeedback,
+  chatIsRunning,
+} from '../../../../client/chat/feedback.js';
+export { useChatScroll } from '../../../../client/chat/use-chat-scroll.js';
+
+// The linked-panel recipe reuses the public query cache for a passive usage snapshot.
+import { QueryClient } from '@tanstack/react-query';
+export { chatKeys } from '../../../../client/chat/keys.js';
+const linkedPanelQueries = new QueryClient();
+export const agentsQueryClient: typeof Chat.agentsQueryClient = () =>
+  linkedPanelQueries;
+const previewShares = new Map<string, ConversationShare[]>();
+export const useChatApi: typeof Chat.useChatApi = () =>
+  ({
+    shareCandidates: async () => [
+      { id: 'preview-reader', name: 'Taylor (preview)' },
+    ],
+    shares: async (id: string) => previewShares.get(id) ?? [],
+    share: async (id: string, userId: string) => {
+      const at = new Date().toISOString();
+      const share: ConversationShare = {
+        userId,
+        name: 'Taylor (preview)',
+        cutoffSeq: 0,
+        snapshotAt: at,
+        updatedAt: at,
+      };
+      previewShares.set(id, [share]);
+      return share;
+    },
+    revokeShare: async (id: string, userId: string) => {
+      previewShares.set(
+        id,
+        (previewShares.get(id) ?? []).filter(
+          (share) => share.userId !== userId,
+        ),
+      );
+    },
+    conversationLinks: async () => [],
+    usage: async () => ({
+      inputTokens: 1200,
+      cacheReadTokens: 8000,
+      outputTokens: 300,
+      runs: 1,
+      context: { used: 50000, size: 200000 },
+      costUsd: null,
+    }),
+  }) as unknown as ReturnType<typeof Chat.useChatApi>;
+export { isChatShortcut } from '../../../../client/chat/panel-state.js';
+
+export { AgentsOptionsContext } from '../../../../client/shell/options.js';
+export const CapturingPageDraftContext: typeof Chat.CapturingPageDraftContext =
+  createContext<ContextType<typeof Chat.CapturingPageDraftContext>>(null);
+export const RestoredPageDraftContext: typeof Chat.RestoredPageDraftContext =
+  createContext<ContextType<typeof Chat.RestoredPageDraftContext>>(null);
+export const PageDraftStoreContext: typeof Chat.PageDraftStoreContext =
+  createContext<ContextType<typeof Chat.PageDraftStoreContext>>(null);

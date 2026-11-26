@@ -1,7 +1,29 @@
 import type { LocaleResource } from '@nocobase/i18n';
 
-const enUS = {
+import pagesEnUS from '../../shared/locales/pages.en-US.js';
+
+const ownEnUS = {
   errors: {
+    originalNotFound:
+      'The original message is no longer available at the mail provider.',
+    originalTooLarge: 'The original message exceeds the 40 MiB download limit.',
+    operationUnsupported: 'This mail operation is unavailable.',
+    connectionAuthenticationFailed:
+      '{{protocol}} authentication failed. Check the login name and password or app password.',
+    connectionHostNotFound:
+      '{{protocol}} host could not be resolved. Check the server hostname.',
+    connectionConnectionRefused:
+      '{{protocol}} connection was refused. Check the host, port and server availability.',
+    connectionConnectionTimeout:
+      '{{protocol}} connection timed out. Check the server and network settings.',
+    connectionCertificateInvalid:
+      '{{protocol}} certificate validation failed. Check the certificate and hostname.',
+    connectionTlsFailed:
+      '{{protocol}} TLS negotiation failed. Check the SSL/STARTTLS settings and port.',
+    connectionConnectionFailed:
+      '{{protocol}} connection failed. Check the server and network settings.',
+    connectionConnectionLost: '{{protocol}} connection was lost. Try again.',
+
     imapMoveLocationChanged:
       'The selected folder or copy changed. Synchronize and open the source folder again.',
     imapMoveNotWritable:
@@ -34,6 +56,11 @@ const enUS = {
     messageNotFound: 'Mail message was not found.',
     authorizationStateRequired: 'Mail authorization state is required.',
   },
+};
+
+const enUS: typeof ownEnUS & { readonly access: typeof pagesEnUS.access } = {
+  ...ownEnUS,
+  access: pagesEnUS.access,
 };
 
 export type MailServerResource = LocaleResource<typeof enUS>;

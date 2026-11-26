@@ -1,18 +1,36 @@
-// shadcn base-nova source adapted for declaration-emitting ESM builds.
-import { cva } from 'class-variance-authority';
-import type { ComponentProps, ReactElement } from 'react';
+import * as React from 'react';
+import { cva, type VariantProps } from 'class-variance-authority';
+import { cn, type ClassValue } from 'cn';
 
-import { cn } from 'cn';
+const alertVariantsBase = cva(
+  "group/alert relative grid w-full gap-0.5 rounded-lg border px-2.5 py-2 text-left text-sm has-data-[slot=alert-action]:relative has-data-[slot=alert-action]:pr-18 has-[>svg]:grid-cols-[auto_1fr] has-[>svg]:gap-x-2 *:[svg]:row-span-2 *:[svg]:translate-y-0.5 *:[svg]:text-current *:[svg:not([class*='size-'])]:size-4",
+  {
+    variants: {
+      variant: {
+        default: 'bg-card text-card-foreground',
+        destructive:
+          'bg-card text-destructive *:data-[slot=alert-description]:text-destructive/90 *:[svg]:text-current',
+      },
+    },
+    defaultVariants: {
+      variant: 'default',
+    },
+  },
+);
 
-export type AlertProps = ComponentProps<'div'> & {
-  readonly variant?: 'default' | 'destructive';
-};
+function alertVariants(props?: {
+  readonly variant?: 'default' | 'destructive' | null;
+  readonly className?: ClassValue;
+}): string {
+  return alertVariantsBase(props as Parameters<typeof alertVariantsBase>[0]);
+}
 
-export function Alert({
+function Alert({
   className,
-  variant = 'default',
+  variant,
   ...props
-}: AlertProps): ReactElement {
+}: React.ComponentProps<'div'> &
+  VariantProps<typeof alertVariants>): React.JSX.Element {
   return (
     <div
       data-slot='alert'
@@ -23,10 +41,10 @@ export function Alert({
   );
 }
 
-export function AlertTitle({
+function AlertTitle({
   className,
   ...props
-}: ComponentProps<'div'>): ReactElement {
+}: React.ComponentProps<'div'>): React.JSX.Element {
   return (
     <div
       data-slot='alert-title'
@@ -39,10 +57,10 @@ export function AlertTitle({
   );
 }
 
-export function AlertDescription({
+function AlertDescription({
   className,
   ...props
-}: ComponentProps<'div'>): ReactElement {
+}: React.ComponentProps<'div'>): React.JSX.Element {
   return (
     <div
       data-slot='alert-description'
@@ -55,16 +73,17 @@ export function AlertDescription({
   );
 }
 
-const alertVariants = cva(
-  "group/alert relative grid w-full gap-0.5 rounded-lg border px-2.5 py-2 text-left text-sm has-[>svg]:grid-cols-[auto_1fr] has-[>svg]:gap-x-2 *:[svg]:row-span-2 *:[svg]:translate-y-0.5 *:[svg]:text-current *:[svg:not([class*='size-'])]:size-4",
-  {
-    variants: {
-      variant: {
-        default: 'bg-card text-card-foreground',
-        destructive:
-          'bg-card text-destructive *:data-[slot=alert-description]:text-destructive/90 *:[svg]:text-current',
-      },
-    },
-    defaultVariants: { variant: 'default' },
-  },
-);
+function AlertAction({
+  className,
+  ...props
+}: React.ComponentProps<'div'>): React.JSX.Element {
+  return (
+    <div
+      data-slot='alert-action'
+      className={cn('absolute top-2 right-2', className)}
+      {...props}
+    />
+  );
+}
+
+export { Alert, AlertTitle, AlertDescription, AlertAction };

@@ -15,7 +15,6 @@ const jaJP: LocaleResource<typeof enUS> = {
     actions: {
       assign: '割り当ての管理',
       configure: '設定する',
-      inspect: '権限を検査する',
       read: '読み取り',
       create: '作成',
       update: '更新',
@@ -31,8 +30,8 @@ const jaJP: LocaleResource<typeof enUS> = {
         '後で追加されたページも含め、すべてのページへのアクセスを許可します。',
     },
     settings: {
-      inspector: '許可検査官',
       'permission-sets': '権限セット',
+      'authentication-settings': 'サインインと認証',
     },
     subjectTypes: {
       authenticated: 'サインインしているすべてのユーザー',

@@ -77,6 +77,8 @@ export interface Subscriptions {
   list(userId: string): Promise<Device[]>;
   enabled(): Promise<SubscriptionRow[]>;
   forUser(userId: string): Promise<SubscriptionRow[]>;
+  /** The enabled devices of every user in `userIds`, in one query per hundred users. */
+  forUsers(userIds: readonly string[]): Promise<SubscriptionRow[]>;
   get(userId: string, id: string): Promise<SubscriptionRow | null>;
   save(userId: string, input: SubscriptionInputValue): Promise<Device>;
   update(userId: string, id: string, enabled: boolean): Promise<Device>;
@@ -101,6 +103,22 @@ export function createSubscriptions(
     },
     async forUser(userId: string): Promise<SubscriptionRow[]> {
       return rows().findMany({ filter: { userId, enabled: true } });
+    },
+    async forUsers(userIds: readonly string[]): Promise<SubscriptionRow[]> {
+      const found: SubscriptionRow[] = [];
+      for (let index = 0; index < userIds.length; index += 100) {
+        const batch = userIds.slice(index, index + 100);
+        found.push(
+          ...(await rows().findMany({
+            filter: (f) =>
+              f.and([
+                f.boolean('enabled').isTrue(),
+                f.or(batch.map((id) => f.string('userId').eq(id))),
+              ]),
+          })),
+        );
+      }
+      return found;
     },
     async get(userId: string, id: string): Promise<SubscriptionRow | null> {
       return (await rows().findOne({ filter: { id, userId } })) ?? null;

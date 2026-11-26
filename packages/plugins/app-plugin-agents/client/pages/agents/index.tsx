@@ -1,7 +1,6 @@
 /**
  * Route `/agents`: the agents people give work to, added from reported models or the application’s recommendations
- * (`runner-agents.tsx`). An application that keeps agents of its own composes this section into its own page instead
- * (`RunnerAgentsSection` from `client/kit`).
+ * (`runner-agents.tsx`).
  */
 import { useTranslation } from '@nocobase/i18n/client';
 import type { ReactElement } from 'react';

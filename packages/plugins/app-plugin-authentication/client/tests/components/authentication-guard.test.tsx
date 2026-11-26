@@ -1,5 +1,11 @@
 import { act, render, screen } from '@testing-library/react';
-import { MemoryRouter, Route, Routes, useSearchParams } from 'react-router';
+import {
+  MemoryRouter,
+  Route,
+  Routes,
+  useLocation,
+  useSearchParams,
+} from 'react-router';
 import { useEffect } from 'react';
 import { describe, expect, it, vi } from 'vitest';
 import {
@@ -25,9 +31,40 @@ function Device() {
   return <div>Device {params.get('user_code')}</div>;
 }
 
+function Location() {
+  const { pathname, search, hash } = useLocation();
+  return <output aria-label='Location'>{pathname + search + hash}</output>;
+}
+
 describe('AuthenticationGuard', () => {
   it.each([
-    { session: null, from: '/private', expected: 'Login' },
+    {
+      session: null,
+      from: '/private',
+      expected: 'Login',
+      location: '/login?redirect=%2Fprivate',
+    },
+    { session: null, from: '/', expected: 'Login', location: '/login' },
+    {
+      session: null,
+      from: '/private?x=1#c',
+      expected: 'Login',
+      location: '/login?redirect=%2Fprivate%3Fx%3D1%23c',
+    },
+    {
+      session: null,
+      from: '/private?x=1#c',
+      expected: 'Login',
+      location: '/login?redirect=%2Fprivate%3Fx%3D1%23c',
+      basename: '/main',
+    },
+    {
+      session: { user: { id: 'user' }, session: { id: 'session' } },
+      from: '/login?redirect=%2Fprivate%3Fx%3D1%23c',
+      expected: 'Private',
+      location: '/private?x=1#c',
+      basename: '/main',
+    },
     {
       session: { user: { id: 'user' }, session: { id: 'session' } },
       from: '/login',
@@ -43,15 +80,29 @@ describe('AuthenticationGuard', () => {
       from: '/login?redirect=%2F%2Fevil.example.com',
       expected: 'Home',
     },
+    {
+      session: { user: { id: 'user' }, session: { id: 'session' } },
+      from: '/login?redirect=https%3A%2F%2Fevil.example',
+      expected: 'Home',
+    },
+    {
+      session: { user: { id: 'user' }, session: { id: 'session' } },
+      from: '/login?redirect=%2F%5Cevil.example',
+      expected: 'Home',
+    },
   ])(
     'redirects from $from according to the session',
-    async ({ session, from, expected }) => {
+    async ({ session, from, expected, location, basename = '' }) => {
       useService.mockReturnValue({
         getSession: vi.fn().mockResolvedValue({ data: session }),
       });
       render(
-        <MemoryRouter initialEntries={[from]}>
+        <MemoryRouter
+          basename={basename || '/'}
+          initialEntries={[basename + from]}
+        >
           <AuthenticationProvider>
+            <Location />
             <Routes>
               <Route
                 path='/private'
@@ -63,13 +114,18 @@ describe('AuthenticationGuard', () => {
                 path='/login'
                 element={<GuestAuthentication>Login</GuestAuthentication>}
               />
-              <Route path='/' element={<div>Home</div>} />
+              <Route
+                path='/'
+                element={<RequiredAuthentication>Home</RequiredAuthentication>}
+              />
               <Route path='/device' element={<Device />} />
             </Routes>
           </AuthenticationProvider>
         </MemoryRouter>,
       );
       expect(await screen.findByText(expected)).toBeInTheDocument();
+      if (location)
+        expect(screen.getByLabelText('Location')).toHaveTextContent(location);
     },
   );
 

@@ -1,7 +1,8 @@
 # Copy this file to config.yml before starting the application.
 
 # app:
-#   Public origin used for callbacks and redirects in production.
+#   Public origin used for callbacks and redirects in production. System settings › Authentication
+#   shows whether it is set and the callback URLs built from it.
 #   publicOrigin: https://apps.example.com
 
 # The language the application starts in, for the browser and the server alike. Which languages it offers follows
@@ -64,6 +65,9 @@
 
 # Values under client are public and embedded in the SPA HTML.
 client:
+  # Open personal settings from the account menu as a page (default) or dialog.
+  personalSettings:
+    openMode: page
   app:
     title: NocoBase Examples
     # Defaults apply only when no valid browser-local choice is saved.
@@ -133,7 +137,8 @@ secrets:
 # MAILERS_SYSTEM_ENABLED=true
 
 auth:
-  # Set app.publicOrigin before explicitly enabling automatic password recovery.
+  # Set app.publicOrigin before explicitly enabling automatic password recovery. System settings › Sign-in and
+  # authentication checks all three conditions and shows where each effective auth value comes from.
   # passwordReset:
   #   enabled: true
   #   mailer: system # omit to preserve existing default selection
@@ -149,6 +154,9 @@ notification:
   channels:
     inbox:
       type: in-app
+    # Browser push to the devices each person turned on; needs push.privateKey (WEB_PUSH_PRIVATE_KEY).
+    webPush:
+      type: web-push
 
     # Configuring mailers alone does not create a notification channel.
     # system-email:
@@ -204,6 +212,19 @@ database:
     #   naming: { underscored: true, tablePrefix: crm_ }
     #   # Optional: read metadata from another directory in the same layout instead of this connection's own.
     #   # metadataStore: database/shared-crm/metadata
+
+# Optional backup settings. Disk exclusions are relative to a named filesystem Drive disk.
+# backup:
+#   disks:
+#     local:
+#       excludePaths: [cache, tmp]
+#   connections:
+#     main: # Example for a PostgreSQL or MySQL connection that needs explicit TLS.
+#       tls:
+#         mode: verify-full
+#         caFile: certs/database-ca.pem
+#   tools:
+#     pgDump: tools/pg_dump
 
 snowflake:
   # Assign a unique worker ID to each concurrently running instance.

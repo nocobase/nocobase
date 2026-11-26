@@ -1,3 +1,4 @@
+import type { ModelUsageRecorder } from '../../../core/reports/model-usage.js';
 import type { NativeExecutionRequest } from './types.js';
 import type { OnlineAgentResendOptions } from '../../../../shared/resend.js';
 import { resendOptions } from '../messages/resend.js';
@@ -72,6 +73,7 @@ export class NativeOnlineAgentBackend implements OnlineAgentBackend {
       resolver?: ServiceResolver;
       webSearch?: OnlineAgentWebSearch;
       fileInputs?: NativeFileInputs;
+      modelUsage?: ModelUsageRecorder;
       model(ref: ModelRef, sessionId: string): Promise<LanguageModel>;
       defaultModel(): Promise<ModelRef | null>;
       uiStreams: OnlineAgentUIStreams;

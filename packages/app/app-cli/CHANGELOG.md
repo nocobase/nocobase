@@ -1,5 +1,94 @@
 # @nocobase/app-cli
 
+## 1.0.0-beta.40
+
+### Patch Changes
+
+- 89c4785: List development dependency plugins under Not enabled in deployed applications without installing them as production dependencies.
+
+## 1.0.0-beta.39
+
+### Minor Changes
+
+- 28a7606: Add built-in backup commands, disk-specific path exclusions, and application compatibility checks for restore.
+
+### Patch Changes
+
+- Updated dependencies [28a7606]
+- Updated dependencies [28a7606]
+  - @nocobase/app-server@5.0.0-beta.10
+  - @nocobase/backup@0.1.0-beta.0
+
+## 1.0.0-beta.38
+
+### Minor Changes
+
+- a6b9b74: `classifyPluginRegistration` from `@nocobase/app-server/plugins` decides a plugin's registration state from its facts, so `pnpm nocobase plugin inspect` and the App Foundation plugins page agree. `listCliPluginRegistrations` parses a `cli/plugins.ts` with the application's TypeScript compiler and lists the packages passed to `defineCliPlugins([...])`, ignoring unused imports and anything in comments, strings, template literals or regular expressions; `plugin inspect` reads the CLI registration through it. `pnpm build` writes that list to `dist/cli/plugins.json`, which `readCliPluginRegistrations` reads in a deployment, where neither `cli/plugins.ts` nor TypeScript exists. `plugin inspect` now reports `PARTIALLY_REGISTERED` for a plugin with both client and server entries that only one of `client/plugins.ts` and `server/plugins.ts` registers, and reports a plugin that ships only Agent Skills as `registered` (with `registration.skillsOnly: true`) when the application declares it in `dependencies`, where it used to report `unregistered`. `plugin register` accepts several names and registers them in order, such as `plugin register agents knowledge`; with more than one, `--json` returns `{ plugins: [...] }`. Every name is checked before anything is written, and when one fails part way the error's `details` lists the plugins already registered, the one that failed and those not attempted. A vendored workspace plugin's runtime `package.json` in `dist/` keeps the application plugins it requires as `peerDependencies`, in any scope that follows the plugin naming rule.
+
+### Patch Changes
+
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [1048669]
+  - @nocobase/app-server@5.0.0-beta.9
+  - @nocobase/dev-config@0.1.0-beta.26
+  - @nocobase/db@1.0.0-beta.30
+
+## 1.0.0-beta.37
+
+### Minor Changes
+
+- a727ebe: Preinstall plugins with their Skills, unregister them while retaining the development dependency, and use plugin remove for a complete uninstall. Create apps from Professional and Enterprise template packages by alias. Default preinstalls Web Push and its Skill for opt-in registration. Default preinstalls SQLite, PostgreSQL, MySQL, SQL Server and Oracle as development dependencies. Source configuration promotes the selected driver. Configuration checks, migrations and builds report missing production driver declarations and how to fix them. The application upgrade Skill covers Community to Professional or Enterprise and Professional to Enterprise while preserving existing plugin registrations and database choices.
+
+### Patch Changes
+
+- 858fcc4: Stop copying development runtime settings into dist/.env. Exclude application runtime configuration and storage from deployment archives, and preserve the previous archive if packing fails. Deployments must provide their listener settings through external configuration or environment variables.
+- b83a645: Default missing applied migration sources to warnings instead of errors, with an `onMissingSource: 'error'` option for strict validation. Downgrades within participating packages still fail. Preserve missing migration history and report warnings in database commands and startup logs. Rollback validates only its target batch and lists every missing or irreversible migration before executing any down operation, with recovery guidance.
+
+  Compare migration filename timestamps for downgrade detection independently of parameter target hashes. Validate applications with applied history even when all migration directories have disappeared, while continuing to skip empty applications.
+
+  An explicitly configured migration directory that no longer exists is now checked against the migration history when tasks run, rather than rejected while planning: an application with history follows the missing-source policy, while a mistyped path on an application that never migrated still fails before any storage is touched.
+
+- Updated dependencies [e830c36]
+- Updated dependencies [b737800]
+- Updated dependencies [a727ebe]
+- Updated dependencies [b83a645]
+  - @nocobase/app-server@5.0.0-beta.8
+  - @nocobase/db@1.0.0-beta.29
+
+## 1.0.0-beta.36
+
+### Minor Changes
+
+- 8339722: Allow CLI extensions to register a command at their topic root, including development-only root commands excluded from production applications.
+
+### Patch Changes
+
+- 8339722: Synchronize application development Skills from installed CLI extensions while keeping standalone branded CLI Skills separate.
+- Updated dependencies [38854ec]
+- Updated dependencies [8339722]
+  - @nocobase/app-server@5.0.0-beta.7
+
+## 1.0.0-beta.35
+
+### Patch Changes
+
+- dd0a34f: Use pnpm 11.11.0 for source and generated application builds. Its remote tarball integrity handling allows production installations of the official patched SheetJS distribution; applications using that distribution should update their packageManager pin before building with pnpm 11.
+- dd0a34f: Keep fresh production installations on patched argparse 1 and ansi-regex 5 releases. Upgrading argparse within its compatible major removes the vulnerable Lodash 3 dependency without forcing Lodash across major versions.
+- dd0a34f: Keep official tarball dependency sources and workspace security overrides in standalone deployments. Include catalogs referenced by overrides so a production install retains the tested dependency constraints.
+- @nocobase/app-server@5.0.0-beta.5
+
+## 1.0.0-beta.34
+
+### Patch Changes
+
+- a6b6b7c: Build only an application's workspace dependencies without traversing dependency test fixtures, limit dependency build concurrency, and provide a default 6 GiB compiler heap.
+- Updated dependencies [44bf26a]
+- Updated dependencies [1952789]
+  - @nocobase/app-server@5.0.0-beta.5
+
 ## 1.0.0-beta.33
 
 ### Minor Changes

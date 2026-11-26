@@ -1,6 +1,6 @@
 ---
 name: nocobase-app-plugin-users
-description: Integrate the Users plugin into a NocoBase App, build a user management page on its API and configure its permissions, or add an application-owned role scope through the public Server contracts.
+description: Integrate the Users plugin into a NocoBase App, use or replace its User management pages under System settings, configure their permissions, or add an application-owned role scope through the public Server contracts.
 metadata:
   short-description: Integrate reusable user administration
 ---
@@ -15,13 +15,24 @@ user, account, or Session storage.
 ## Public surfaces
 
 - Client registration factory and `UsersClientOptions`:
-  `@nocobase/app-plugin-users/client`. It contributes only the public
-  invitation page at `/invite/:token`; there is no user management page.
+  `@nocobase/app-plugin-users/client`. It contributes the User management
+  pages under System settings and the public invitation page at
+  `/invite/:token`.
+- Route ids of the User management pages, from
+  `@nocobase/app-plugin-users/client`: `USERS_ROUTE_ID` (the list at
+  `/settings/users`), `USER_CREATE_ROUTE_ID` (the New user dialog at
+  `/settings/users/create`) and `USER_EDIT_ROUTE_ID` (the Edit user drawer at
+  `/settings/users/:userId/edit`).
+- `UserForm`, the page component behind both the New user dialog and the Edit
+  user drawer, and `RoleSelection`, its searchable role picker, from
+  `@nocobase/app-plugin-users/client`, for a replacement page that keeps the
+  plugin's validation and role selection.
 - Typed API client: `UsersClient` and its types from
   `@nocobase/app-plugin-users/client/user-client`.
 - Server contracts: `userManagementServiceToken`,
   `userRoleScopeRegistryToken`, `UserRoleScope`, and related types from
   `@nocobase/app-plugin-users/server/tokens`.
+- Accounts from server code, such as demo accounts in sample data: `container.resolve(userManagementServiceToken).create({ name, email, password, username?, roleScopes? })` returns the managed user with its `id`. `roleScopes: { app: ['<permission set id>'] }` assigns the direct roles in the same call, and the permission sets must already exist. Register the work on `sampleDataToken` from `@nocobase/app-server/sample-data`: a seed's restricted database context cannot reach the service.
 - HTTP API: `GET /api/users` (`page`, `pageSize`, `q`, `status`, `roleScope`, `role`, `sort=name`, `order=asc|desc`; answers `{ data, meta: { page, pageSize, total } }`), `GET /api/users/options`, `GET /api/users/:userId` (latest managed profile and role scopes, requires `user/read`, 404 for absent accounts), `POST /api/users`, `PATCH /api/users/:userId`, `DELETE /api/users/:userId?confirm=true`, `POST /api/users/:userId/disable|enable|resetPassword|revokeSessions`, and `PUT /api/users/:userId/roleScopes/:scope`. The running application documents each one, with request and response schemas, at `/api/swagger/docs` (JSON at `/api/swagger`) under the `Users` tag. Failures use the standard error body; branch on `error.reason`, such as `USER_NOT_FOUND`, `SELF_DELETE_NOT_ALLOWED`, `LAST_ASSIGNMENT` or `USER_EMAIL_CONFLICT`.
 
 `UsersClient.update(userId, { name?, username?, email?, roleScopes? })` supports one atomic editor Save. Profile fields require `update`; submitted `roleScopes` additionally require `assign-role`. A roles-only payload requires `assign-role` without `update`. The service validates scope values, runs each applicable target-account guard, and commits profile changes and all submitted scope replacements in the caller-owned transaction, notifying permission clients only after commit. Omitted scopes are preserved. Keep the existing per-scope PUT for callers needing only one scope. Do not implement a combined Save as sequential profile and role requests: a later failure would leave a partially saved account.
@@ -34,7 +45,35 @@ Every HTTP route requires Authentication and Authorization. Routes check the `us
    and Server plugin arrays. The Client factory takes no placement options:
    `users()`.
 2. Grant only the `user` actions those roles need, on `{ type: 'user', id: '*' }` because `user` is a record type. The plugin creates no roles and grants no access by itself.
-3. For a user management page, build it in the App on `UsersClient` and declare it among the App's own routes with the page access it needs; the plugin ships none.
+3. User management is ready once the plugin is registered: `users()` adds it to the Accounts and permissions category of System settings at `/settings/users`, with its page access (`read` on `user`, and `create` for the New user dialog). Do not declare another `/settings/users` route in the App; a duplicate path is a conflict.
+
+## Replace a User management page
+
+Replace a page, not the route: pass `routeComponentOverrides` to `defineAppRuntime()` in the App's `client/runtime.ts`, keyed by the exported route ids, as section 10 of the `nocobase-app-development` Skill's pages and routes reference (`references/frontend/references/page.md`) describes. The path, page access, navigation, dialog or drawer presentation and breadcrumb stay the plugin's, and the pages that are not replaced stay the plugin's own; replacing only the list keeps the plugin's New user dialog and Edit user drawer.
+
+```ts
+// client/route-overrides.ts
+import { USERS_ROUTE_ID } from '@nocobase/app-plugin-users/client';
+import {
+  defineClientRouteComponentOverrides,
+  type AppClientRouteComponentOverrideDefinition,
+} from '@nocobase/app-client/plugins';
+
+const routeComponentOverrides: readonly AppClientRouteComponentOverrideDefinition[] =
+  defineClientRouteComponentOverrides([
+    {
+      routeId: USERS_ROUTE_ID,
+      componentEntry: './client/pages/members/index',
+      componentLoader: () => import('./pages/members/index.js'),
+    },
+  ]);
+
+export default routeComponentOverrides;
+```
+
+Import it in `client/runtime.ts` and add `routeComponentOverrides` to the existing `defineAppRuntime({ … })`, keeping every other option. Add `USER_CREATE_ROUTE_ID` or `USER_EDIT_ROUTE_ID` entries to replace those pages as well.
+
+Build a replacement on `UsersClient`; a replacement form can render `UserForm` or `RoleSelection` rather than repeating the validation and role picker. A replaced list keeps linking to `create` and `:userId/edit` under its own path and renders `<Outlet />` where the plugin's dialog and drawer should mount; without it they never open. To refresh the list after a save, pass `<Outlet context={{ reload }} />` (the `UserFormOutletContext` type), where `reload(updated?)` re-fetches the list or shows `updated` in place; without `reload` the form still saves and closes, and the list refreshes on its next load. To change wording only, override the plugin's translations instead of replacing a page.
 
 The invitation page reports results through `useToaster()` from `@nocobase/app-client`, so the App needs the `@nocobase/app-client` that exports it and registers a toaster service, as the templates do: `client/lib/toaster.ts` from the template, and `this.app.container.instance(toasterToken, createToaster())` in the `register()` of `client/service-provider.ts`, with the `Toaster` component mounted in `client/react-providers.ts`. Without the registration nothing throws, but its toasts are only logged to the browser console.
 
@@ -72,7 +111,7 @@ uses it for list pages and falls back to `get()` for existing scopes.
 
 ## Invite users
 
-Holders of `invite` on `user` can create invitations through `POST /api/users/invitations` or `UsersClient`; choosing roles also requires `assign-role`. Results include a shareable link even when email succeeds. A queued invitation closed or rotated by another request returns `emailSent=false` without a link, while the other recipients still complete. Original inviters can renew with `sendEmail=false`, which invalidates the old link. Plugin-specific invitations must use their domain endpoint, which rechecks its own grants. Other managers may resend email but receive no link. Tokens last seven days; only hashes are stored.
+Holders of `invite` on `user` can create invitations through `POST /api/users/invitations` or `UsersClient`; choosing roles also requires `assign-role`. Results include a shareable link even when email succeeds. A queued invitation closed or rotated by another request returns `emailSent=false` without a link, while the other recipients still complete. Original inviters can renew with `sendEmail=false`, which invalidates the old link. Plugin-specific invitations must use their domain endpoint, which rechecks its own grants. Other managers may resend email but receive no link. Tokens last seven days; only hashes are stored. Each invitation has one email language: `locale` when given (it must be an application language, otherwise `INVALID_INVITATION`), else the caller's interface language when offered, else the application default. It is stored on the invitation, reused by resends and returned by the lookup; the accept page opens in it, and accepting stores the page's language as the new account's `i18n.locale`. Plugin domains that invite through `UserManagementService.invite` pass `locale` and the caller's request locale as `inviterLocale`.
 
 New accounts register directly from the invitation link with a name and password; acceptance leaves `emailVerified=false`. Email delivery is optional: authorized original inviters can privately forward the link when the email channel is absent or fails. Links use `app.publicOrigin` when configured, otherwise the invitation request origin. Existing accounts must sign in with the invited email. Acceptance consumes only the supplied invitation and applies only its grants; handlers run in its transaction and roll back account creation on failure.
 
@@ -81,10 +120,11 @@ New accounts register directly from the invitation link with a name and password
 - Authentication owns user identity, credentials, account state, password
   hashing, and Sessions.
 - Authorization owns Permission Sets, grants, and assignments.
-- Users owns the management API, the invitation page, orchestration transaction,
-  `user` authorization handler, and role-scope registry.
+- Users owns the management API, the User management pages, the invitation
+  page, orchestration transaction, `user` authorization handler, and
+  role-scope registry.
 - The App or business plugin owns role definitions, role grants, assignments,
-  the user management page, and role-specific invariants.
+  any replacement of a User management page, and role-specific invariants.
 - The plugin's `skills/` source is authoritative. `.agents/skills/` is a
   synchronized copy and must not be edited.
 

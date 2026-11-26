@@ -1,3 +1,4 @@
+// Generated from packages/plugins/app-plugin-notification-in-app/client/inbox-page/inbox-item.tsx: edit it there, then run `node scripts/sync-ui-library-inbox.mjs`.
 import { CheckCircle2Icon, MoreHorizontalIcon } from 'lucide-react';
 import { createElement, type KeyboardEvent, type ReactElement } from 'react';
 

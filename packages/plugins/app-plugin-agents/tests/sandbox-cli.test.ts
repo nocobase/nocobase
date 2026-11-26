@@ -47,6 +47,70 @@ function shell(commands: readonly CliCommand[], send: CommandSurface['send']) {
 }
 
 describe('Sandbox CLI public parser/request compatibility (adapter contracts, not business acceptance)', () => {
+  it('lists operation-key commands and refuses execution before sending while retaining help', async () => {
+    const send = vi.fn<CommandSurface['send']>();
+    const bash = shell(
+      [
+        {
+          ...command,
+          idempotency: {
+            header: 'operation-key-header',
+            flag: 'operation-key',
+            minLength: 1,
+          },
+        },
+      ],
+      send,
+    );
+    expect((await bash.exec('acme record --help')).stdout).toContain('update');
+    const help = await bash.exec('acme record update --help');
+    expect(help.exitCode).toBe(0);
+    expect(help.stdout).toContain('--operation-key');
+    const result = await bash.exec('acme record update abc --json');
+    expect(result.exitCode).not.toBe(0);
+    expect(JSON.parse(result.stdout)).toMatchObject({
+      ok: false,
+      error: { code: 'UNSUPPORTED_CAPABILITY' },
+    });
+    expect(send).not.toHaveBeenCalled();
+  });
+
+  it.each(['file', 'confirmation'] as const)(
+    'retains the earlier %s refusal for operation-key commands',
+    async (mode) => {
+      const send = vi.fn<CommandSurface['send']>();
+      const marked: CliCommand = {
+        ...command,
+        idempotency: {
+          header: 'operation-key-header',
+          flag: 'operation-key',
+          minLength: 1,
+        },
+        ...(mode === 'file'
+          ? {
+              parameters: [
+                {
+                  name: 'tar',
+                  field: 'tar',
+                  in: 'file',
+                  type: 'string',
+                  required: true,
+                  binary: true,
+                },
+              ],
+            }
+          : { confirm: 'Upgrade?' }),
+      };
+      const bash = shell([marked], send);
+      const result = await bash.exec('acme record update abc --json');
+      expect(JSON.parse(result.stdout).error.code).toBe(
+        mode === 'file' ? 'FILES_UNAVAILABLE' : 'CONFIRMATION_REQUIRED',
+      );
+      expect(result.exitCode).not.toBe(0);
+      expect(send).not.toHaveBeenCalled();
+    },
+  );
+
   it('reads JSON/content files and exported shell values only from the VFS', async () => {
     const send = vi.fn<CommandSurface['send']>(async () =>
       Response.json({ data: { saved: true } }),
@@ -125,9 +189,9 @@ describe('Sandbox CLI public parser/request compatibility (adapter contracts, no
           error: {
             code: 403,
             status: 'PERMISSION_DENIED',
-            reason: 'PLAN_REQUIRED',
+            reason: 'RECORD_LOCKED',
             domain: 'fixture',
-            message: 'Create a plan first.',
+            message: 'The record is locked.',
           },
         },
         { status: 403 },
@@ -141,7 +205,7 @@ describe('Sandbox CLI public parser/request compatibility (adapter contracts, no
       'acme record update abc --content hello --json',
     );
     expect(result.exitCode).not.toBe(0);
-    expect(result.stdout).toContain('PLAN_REQUIRED');
+    expect(result.stdout).toContain('RECORD_LOCKED');
     expect(result.stdout).not.toContain('approval-requested');
     expect(send).toHaveBeenCalledTimes(1);
   });

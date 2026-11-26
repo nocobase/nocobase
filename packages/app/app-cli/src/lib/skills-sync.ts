@@ -151,8 +151,9 @@ export async function collectPluginSkills({
 }: PluginLocation): Promise<PluginSkills> {
   const skillsDirectory = path.join(pluginDirectory, PLUGIN_SKILLS_DIRECTORY);
   const prefix = pluginSkillPrefix(packageName);
-  // A packaged application CLI (`nocobase.cli` in its manifest, such as `@nocobase/studio-cli`) ships the Skill its
-  // own users read beside the command, not one for developing the application that depends on it.
+  // A standalone packaged CLI (`nocobase.cli.bin` without `nocobase.cli.entry`, such as `@nocobase/studio-cli`) ships
+  // the Skill its own users read beside the command, not one for developing the application that depends on it. A CLI
+  // extension (`nocobase.cli.entry`) ships guidance for the consuming application and is synchronized like a plugin.
   if (await isPackagedCli(pluginDirectory))
     return {
       packageName,
@@ -734,11 +735,11 @@ async function isPackagedCli(directory: string): Promise<boolean> {
   try {
     const manifest = await readJson(path.join(directory, 'package.json'));
     const nocobase = manifest.nocobase;
-    return (
-      typeof nocobase === 'object' &&
-      nocobase !== null &&
-      typeof (nocobase as { cli?: unknown }).cli === 'object'
-    );
+    if (typeof nocobase !== 'object' || nocobase === null) return false;
+    const cli = (nocobase as { cli?: { bin?: unknown; entry?: unknown } }).cli;
+    // Project-local CLI extensions ship development guidance for the consuming app.
+    // Only a standalone branded executable owns a separate end-user Skill.
+    return typeof cli?.bin === 'string' && cli.entry === undefined;
   } catch {
     return false;
   }

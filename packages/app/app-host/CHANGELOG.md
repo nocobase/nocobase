@@ -1,5 +1,46 @@
 # @nocobase/app-host
 
+## 0.1.0-beta.27
+
+### Minor Changes
+
+- 63100e7: Back up and restore Apps on a managed Host with their own backup commands, deduplicated by operation ID: in-process Apps through a child process of the Host and Docker Apps through one-off containers on their image and volumes, with both backends reporting the backup capability. A restore refuses an incomplete backup, another release or an archive that does not verify before it stops the App, and is not repeated once its data is back; a restore that fails or is cancelled after that keeps the record that its data was restored.
+
+### Patch Changes
+
+- Updated dependencies [fcc0c18]
+  - @nocobase/app-server@5.0.0-beta.11
+
+## 0.1.0-beta.26
+
+### Patch Changes
+
+- 0e247f9: Allow configuring checksum and extraction worker deadlines through host.artifactWorker.timeoutMs, with a 120000 ms default and startup validation of the supported timer range.
+- Updated dependencies [761fb01]
+  - @nocobase/logging@0.1.0-beta.8
+
+## 0.1.0-beta.25
+
+### Patch Changes
+
+- 375c285: Use OS-assigned ports for managed Hosts and discover their actual listeners through session-bound IPC readiness. Preserve strict explicit ports, reject bind failures without trusting unrelated HTTP listeners, and expose the current ready management client without starting a Host.
+
+## 0.1.0-beta.24
+
+### Patch Changes
+
+- f60b678: Bound release downloads with configurable idle and total timeouts, retry a timed out read once, and allow cancellation while opening or transferring the artifact so queued deployments can continue.
+- Updated dependencies [3112daa]
+- Updated dependencies [3112daa]
+  - @nocobase/app-server@5.0.0-beta.6
+
+## 0.1.0-beta.23
+
+### Patch Changes
+
+- 6102557: Keep the expanded release when the App Host refuses a deployment for memory or capacity, so the retry after a recycle or a Host restart reuses it instead of extracting it again, and stop appending an unset active app limit to capacity errors. Show one state per app in the Releases app list and app overview, with a pending deployment taking precedence and the runtime's last failure as its detail, and word capacity refusals and the recycle wait in every supported language.
+- @nocobase/app-server@5.0.0-beta.5
+
 ## 0.1.0-beta.22
 
 ### Patch Changes

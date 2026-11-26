@@ -11,6 +11,7 @@ import {
 import { QueueServiceProvider } from '@nocobase/app-server/queue';
 import { SecretsProvider } from '@nocobase/app-server/secrets';
 import { JobExecutorServiceProvider } from '@nocobase/app-server/jobs';
+import { MessageBrokerServiceProvider } from '@nocobase/app-server/message-broker';
 import {
   SessionProvider,
   sessionHttpMiddleware,
@@ -39,6 +40,7 @@ export function createApp(runtime: AppRuntimeContext): Application {
   app.addServiceProvider(JobExecutorServiceProvider, {
     nodeEnv: runtime.env.NODE_ENV,
   });
+  app.addServiceProvider(MessageBrokerServiceProvider);
   app.addHttpMiddleware(requestLoggingMiddleware);
   app.addHttpMiddleware(sessionHttpMiddleware);
   app.addHttpMiddleware(i18nHttpMiddleware);

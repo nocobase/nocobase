@@ -1,5 +1,41 @@
 # @nocobase/app-plugin-notification-providers
 
+## 1.0.0-beta.21
+
+### Minor Changes
+
+- a6b9b74: Notify people instead of channels. Notification templates become notification kinds that declare a policy per channel type (`required`, `on` or `off`), and the notification service gains `notify(kind, { to: userIds, data, target, source, idempotencyKey })`, which applies each person's choices, reaches them through every channel type that can (in-app by user, email by account address, web-push by enabled device) and makes one ordinary `send()`; `send()` and `sendTransient()` are unchanged. Each person chooses channels per kind in the new `notificationPreferences` table through `GET`/`PUT /api/notifications/preferences`; required channels cannot be turned off. In-app items record their kind, category and source, and the inbox list filters by `category`. The plugins now own every notification page: the in-app client plugin registers the `/inbox` page and the header's inbox button with a pending-or-unread badge and exports inbox entry renderers and pending sources as extension points, replacing `NotificationInAppInbox` and `NotificationInAppProvider`; the notification client plugin registers System settings › Messages › Notifications (channels with a test send to yourself, kinds, and a filterable delivery log with retry) and Personal settings › Messages › Notifications, with channel type displays and personal sections as extension points, and web-push adds its devices section. The settings pages and their API check the new `notification` settings item (`read`, `manage`) instead of `page:notification.templates` and `page:notification.logs`, and `/api/notifications/templates` is replaced by `/api/notifications/kinds`. Projects and the notification example send with `notify()`; Projects drops its `inboxChannel` option. Both templates drop their copied inbox and notification template pages and only register the plugins, and Examples registers web-push with a sample channel.
+
+### Patch Changes
+
+- a6b9b74: Declare the plugin's title and one-line description in English and Chinese under `nocobase` in `package.json`, which the App Foundation plugins page lists it by.
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+  - @nocobase/app-plugin-authentication@2.0.0-beta.24
+  - @nocobase/app-server@5.0.0-beta.9
+  - @nocobase/app-plugin-notification@2.0.0-beta.10
+  - @nocobase/i18n@2.0.0-beta.2
+  - @nocobase/service-provider@0.0.2-beta.2
+
+## 1.0.0-beta.20
+
+### Patch Changes
+
+- dd0a34f: Upgrade SMTP sending to Nodemailer 10 with its bundled declarations and security fixes. The framework's Node.js 24 requirement already satisfies Nodemailer 10's Node.js 20 minimum.
+
+  Align Notification Providers' SMTP test dependency with the shared transport so its mocks intercept the runtime version.
+
+- Updated dependencies [dd0a34f]
+  - @nocobase/mailer@1.0.0-beta.3
+  - @nocobase/app-server@5.0.0-beta.5
+
 ## 1.0.0-beta.19
 
 ### Minor Changes

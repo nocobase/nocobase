@@ -1,3 +1,4 @@
+import type { RecordCondition } from './store.js';
 import type {
   CreateContext,
   EffectDefinition,
@@ -10,6 +11,7 @@ import { LifecycleError, type Blocker, type InputProblem } from './errors.js';
 import type {
   JsonObject,
   LifecycleActor,
+  LifecycleRecord,
   LifecycleTypes,
   ParametersOf,
   ServicesOf,
@@ -159,6 +161,61 @@ export function versionOf<T extends LifecycleTypes>(
   return Number.isSafeInteger(version) ? version : null;
 }
 
+/** The fields only the lifecycle writes: no `set`, `accept` or creation value may. */
+export function ownedFields<T extends LifecycleTypes>(
+  lifecycle: Lifecycle<T>,
+): readonly string[] {
+  return [
+    'id',
+    lifecycle.stateField,
+    lifecycle.changedAtField,
+    lifecycle.versionField,
+    ...(lifecycle.management
+      ? [lifecycle.management.field, `${lifecycle.management.field}Revision`]
+      : []),
+    ...(lifecycle.dueAtField ? [lifecycle.dueAtField] : []),
+    ...(lifecycle.definitionField === undefined
+      ? []
+      : [lifecycle.definitionField]),
+  ];
+}
+
+/**
+ * The definition a record is bound to: the value of its definition field,
+ * or null when it names none. Undefined for a definition without a
+ * definition field, whose records are all its own.
+ */
+export function boundDefinitionOf<T extends LifecycleTypes>(
+  lifecycle: Lifecycle<T>,
+  record: T['record'],
+): string | null | undefined {
+  if (lifecycle.definitionField === undefined) return undefined;
+  const value = record[lifecycle.definitionField];
+  return typeof value === 'string' && value !== '' ? value : null;
+}
+
+/**
+ * Refuses a record another definition created, or none did, with
+ * `DEFINITION_MISMATCH`: one version of a process never reads or moves a
+ * record of another, and an unbound record never falls to the latest. Every
+ * definition that declares a definition field is checked, a single version
+ * too; only a legacy definition without one is not.
+ */
+export function checkBinding<T extends LifecycleTypes>(
+  lifecycle: Lifecycle<T>,
+  record: T['record'],
+): void {
+  const bound = boundDefinitionOf(lifecycle, record);
+  if (bound === undefined || bound === lifecycle.name) return;
+  throw new LifecycleError(
+    'DEFINITION_MISMATCH',
+    bound === null
+      ? `${lifecycle.collection} record "${String(record.id)}" has not been started by any definition of "${lifecycle.key}".`
+      : `${lifecycle.collection} record "${String(record.id)}" belongs to definition "${bound}", not "${lifecycle.name}".`,
+    { bound },
+  );
+}
+
 /** Transitions that may start from the record's current state, before any guard. */
 export function transitionsFrom<T extends LifecycleTypes>(
   lifecycle: Lifecycle<T>,
@@ -236,12 +293,7 @@ export async function planTransition<T extends LifecycleTypes>(
       ? await definition.set(Object.freeze({ ...base, from, to }))
       : {}),
   };
-  for (const field of [
-    'id',
-    lifecycle.stateField,
-    lifecycle.changedAtField,
-    lifecycle.versionField,
-  ])
+  for (const field of ownedFields(lifecycle))
     if (field in extra)
       throw new LifecycleError(
         'INVALID_SET',
@@ -265,4 +317,45 @@ export async function planTransition<T extends LifecycleTypes>(
     },
     effects: [...transition.effects, ...(lifecycle.onEnter.get(to) ?? [])],
   };
+}
+
+export function recordCondition(
+  lifecycle: Lifecycle<LifecycleTypes>,
+  record: LifecycleRecord,
+): RecordCondition {
+  const field = lifecycle.management
+    ? `${lifecycle.management.field}Revision`
+    : undefined;
+  return {
+    stateField: lifecycle.stateField,
+    state: stateOf(lifecycle, record),
+    versionField: lifecycle.versionField,
+    version: versionOf(lifecycle, record),
+    ...(field
+      ? {
+          managementRevision: {
+            field,
+            value: record[field] == null ? null : Number(record[field]),
+          },
+        }
+      : {}),
+  };
+}
+
+export function triggerDueAt(
+  lifecycle: Lifecycle<LifecycleTypes>,
+  state: string,
+  parameters: Readonly<object>,
+  now: Date,
+): string | null {
+  const delays = [...lifecycle.triggers.values()]
+    .filter((trigger) => trigger.when.includes(state))
+    .map((trigger) =>
+      trigger.definition.after(parameters as ParametersOf<LifecycleTypes>),
+    );
+  if (delays.some((delay) => !Number.isFinite(delay)))
+    throw new Error('Trigger delay must be finite.');
+  return delays.length
+    ? new Date(now.getTime() + Math.min(...delays)).toISOString()
+    : null;
 }

@@ -38,6 +38,17 @@ import {
   type ClientServiceProviderConstructor,
 } from '../plugins.js';
 import {
+  resolveLayoutExtensions,
+  type AppClientRegisteredLayoutExtension,
+} from '../layout-extensions.js';
+import {
+  applyHeaderActionOverrides,
+  resolveHeaderActions,
+  type AppClientHeaderActionOverride,
+  type AppClientHeaderActions,
+  type AppClientRegisteredHeaderAction,
+} from '../header-actions.js';
+import {
   readAppClientPublicConfig,
   readAppClientRuntimeConfig,
 } from './browser-config.js';
@@ -58,10 +69,20 @@ export interface AppRuntimeDefinition {
   readonly defaultConfigs?: AppConfigFactory<AppClientConfigMap>;
   readonly serviceProviders?: AppClientServiceProviders;
   readonly reactProviders?: AppClientReactProviders;
+  /** Mount system settings contributions under /settings. Defaults to true. */
+  readonly systemSettingsRoutes?: boolean;
+  /** Mount personal settings contributions under /me. Defaults to true. */
+  readonly personalSettingsRoutes?: boolean;
   readonly routes?: AppClientRoutes;
   readonly locales?: AppClientLocales;
   readonly plugins: AppClientPlugins;
+  /** Entries removed from the Client route tree by package-qualified ID, including descendants. Shared settings categories cannot be excluded. */
+  readonly excludedRouteIds?: readonly string[];
   readonly routeComponentOverrides?: readonly AppClientRouteComponentOverrideDefinition[];
+  /** The application's own header actions, beside its plugins' (`AppClientHeaderActionDefinition`). */
+  readonly headerActions?: AppClientHeaderActions;
+  /** Hides or replaces header actions by name, the application's own or its plugins' (`AppClientHeaderActionOverride`). */
+  readonly headerActionOverrides?: readonly AppClientHeaderActionOverride[];
   readonly sourceExtensions?: readonly AppClientSourceExtension[];
   readonly validate?: AppRuntimeValidator;
 }
@@ -87,6 +108,10 @@ export interface AppRuntimeContext {
   readonly serviceProviders: readonly AppClientRegisteredServiceProvider[];
   readonly reactProviders: readonly AppClientRegisteredReactProvider[];
   readonly routes: readonly AppClientRegisteredRoute[];
+  /** The header's actions in order, overrides applied. Older hand-composed runtimes may omit this. */
+  readonly headerActions?: readonly AppClientRegisteredHeaderAction[];
+  /** The plugins' layout providers and asides, in registration order. Older hand-composed runtimes may omit this. */
+  readonly layoutExtensions?: readonly AppClientRegisteredLayoutExtension[];
   readonly validate?: AppRuntimeValidator;
 }
 
@@ -101,6 +126,13 @@ export function defineAppRuntime(
     serviceProviders: freezeOptionalList(definition.serviceProviders),
     reactProviders: freezeOptionalList(definition.reactProviders),
     routes: freezeRouteDeclarations(definition.routes),
+    excludedRouteIds:
+      definition.excludedRouteIds &&
+      Object.freeze([...definition.excludedRouteIds]),
+    headerActions: freezeOptionalList(definition.headerActions),
+    headerActionOverrides: definition.headerActionOverrides
+      ? Object.freeze([...definition.headerActionOverrides])
+      : undefined,
     routeComponentOverrides: definition.routeComponentOverrides
       ? Object.freeze([...definition.routeComponentOverrides])
       : undefined,
@@ -130,14 +162,60 @@ export async function resolveAppRuntime(
     routes: plugin.routes,
     reactProviders: plugin.reactProviders,
   }));
-  const contributions = resolveAppClientContributions([
-    applicationContribution,
-    ...pluginContributions,
-  ]);
+  const contributions = resolveAppClientContributions(
+    [applicationContribution, ...pluginContributions],
+    {
+      excludedRouteIds: definition.excludedRouteIds,
+      systemSettingsRoutes: definition.systemSettingsRoutes,
+      personalSettingsRoutes: definition.personalSettingsRoutes,
+    },
+  );
   const i18n = options.i18n ?? (await createI18nRuntime(definition, config));
   const extensionOverrides = collectSourceExtensionRouteOverrides(
     definition.sourceExtensions ?? [],
   );
+
+  const routes = applyClientRouteComponentOverrides(
+    contributions.routes,
+    [
+      ...definition.plugins.routeComponentOverrides,
+      ...(definition.routeComponentOverrides ?? []),
+      ...extensionOverrides,
+    ].filter(
+      ({ routeId }) => !contributions.excludedRoutes?.has(routeId.trim()),
+    ),
+  );
+  const routesById = new Map<string, AppClientRegisteredRoute>();
+  const visitRoute = (route: AppClientRegisteredRoute): void => {
+    routesById.set(route.id, route);
+    route.children?.forEach(visitRoute);
+  };
+  routes.forEach(visitRoute);
+
+  const headerActions = resolveHeaderActions([
+    {
+      packageName: definition.packageName,
+      source: 'application',
+      headerActions:
+        resolveDeclaration(definition.headerActions, undefined) ?? [],
+    },
+    ...definition.plugins.plugins.map((plugin) => ({
+      packageName: plugin.packageName,
+      source: 'plugin' as const,
+      headerActions: plugin.headerActions,
+    })),
+  ]);
+  for (const { name, routeId } of headerActions) {
+    if (routeId === undefined) continue;
+    const route = routesById.get(routeId);
+    const excluded = contributions.excludedRoutes?.get(routeId);
+    if (route?.componentLoader || (!route && excluded === 'page')) continue;
+    throw new Error(
+      route || excluded === 'group'
+        ? `Header action "${name}" cannot target route group "${routeId}".`
+        : `Header action "${name}" references missing route "${routeId}".`,
+    );
+  }
 
   const runtime: AppRuntimeContext = {
     registeredPlugins: Object.freeze(
@@ -166,11 +244,22 @@ export async function resolveAppRuntime(
       ),
     ]),
     reactProviders: contributions.reactProviders,
-    routes: applyClientRouteComponentOverrides(contributions.routes, [
-      ...definition.plugins.routeComponentOverrides,
-      ...(definition.routeComponentOverrides ?? []),
-      ...extensionOverrides,
-    ]),
+    routes,
+    headerActions: Object.freeze(
+      applyHeaderActionOverrides(
+        headerActions,
+        definition.headerActionOverrides ?? [],
+      ).filter(
+        ({ routeId }) => routeId === undefined || routesById.has(routeId),
+      ),
+    ),
+    layoutExtensions: resolveLayoutExtensions(
+      definition.plugins.plugins.map((plugin) => ({
+        packageName: plugin.packageName,
+        source: 'plugin' as const,
+        layoutExtensions: plugin.layoutExtensions,
+      })),
+    ),
     validate: definition.validate,
   };
   if (definition.defaultConfigs) {

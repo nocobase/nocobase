@@ -17,8 +17,6 @@ import { useState, type ReactElement } from 'react';
 
 import {
   isOpenCodeUrl,
-  MODEL_PROVIDERS,
-  providerOf,
   type ModelCheck,
   type ModelConnectionRequest,
   type ModelKind,
@@ -62,12 +60,14 @@ import {
   baseUrlOf,
   modelRows,
   newServiceTitle,
+  providerIn,
   setModelDimensions,
   setModelKind,
   testModelOf,
   toggleModel,
   validBaseUrl,
 } from './model.js';
+import { useModelProviders } from './use-model-providers.js';
 
 const messageOf = (error: unknown): string =>
   error instanceof Error ? error.message : String(error);
@@ -134,8 +134,9 @@ function ServiceForm({
   const api = useAgentsApi();
   const notify = useNotify();
   const queryClient = useQueryClient();
+  const providers = useModelProviders();
   const [provider, setProvider] = useState<ModelProviderOption | null>(() =>
-    service ? providerOf(service.provider) : null,
+    service ? providerIn(providers, service.provider) : null,
   );
   const [title, setTitle] = useState(service?.title ?? '');
   const [url, setUrl] = useState(service?.baseUrl ?? '');
@@ -235,7 +236,7 @@ function ServiceForm({
   });
 
   const choose = (name: string | null) => {
-    const next = MODEL_PROVIDERS.find((option) => option.name === name);
+    const next = providers.find((option) => option.name === name);
     if (!next) return;
     if (
       !title.trim() ||
@@ -277,7 +278,7 @@ function ServiceForm({
   const shown = query
     ? rows.filter((row) => row.id.toLowerCase().includes(query))
     : rows;
-  const providerItems = MODEL_PROVIDERS.map((option) => ({
+  const providerItems = providers.map((option) => ({
     value: option.name,
     label: option.title,
   }));

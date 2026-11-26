@@ -4,8 +4,14 @@ import {
   legacyChannelConfig,
   type RegisteredChannelType,
 } from './channel-type-adapter.js';
-import type { ChannelConfig, ChannelTypeClass } from './channel-type.js';
 import type {
+  ChannelConfig,
+  ChannelConfigSummaryItem,
+  ChannelTypeClass,
+} from './channel-type.js';
+import type {
+  NotificationChannelConfigInput,
+  NotificationI18nText,
   NotificationChannelDefinition,
   NotificationConfigInput,
   NotificationExtensionRegistry,
@@ -83,6 +89,41 @@ export class NotificationRegistry implements NotificationExtensionRegistry {
 
   channel(type: string): NotificationChannelDefinition | undefined {
     return this.channelDefinitions.get(type);
+  }
+
+  /**
+   * What the settings pages show of a configured channel's type: its message family (`in-app`, `email`, `web-push`),
+   * display name, registering package and safe configuration summary. `undefined` for a type nobody registered.
+   */
+  describe(config: NotificationChannelConfigInput):
+    | {
+        readonly type: string;
+        readonly messageType: string;
+        readonly label?: string | NotificationI18nText;
+        readonly contributor?: string;
+        readonly summary: readonly ChannelConfigSummaryItem[];
+      }
+    | undefined {
+    const type = resolveChannelType(config);
+    const registered = this.channelTypes.get(type);
+    if (registered)
+      return {
+        type,
+        messageType: registered.messageType,
+        ...(registered.label === undefined ? {} : { label: registered.label }),
+        ...(registered.contributor
+          ? { contributor: registered.contributor }
+          : {}),
+        summary: registered.summarize(config),
+      };
+    const provider = this.providerDefinitions.get(type);
+    if (!provider) return undefined;
+    return {
+      type,
+      messageType: provider.messageType,
+      ...(provider.label === undefined ? {} : { label: provider.label }),
+      summary: [],
+    };
   }
 
   provider(type: string): NotificationProviderDefinition | undefined {

@@ -6,11 +6,7 @@ import path from 'node:path';
 import test from 'node:test';
 
 const root = path.resolve(import.meta.dirname, '../..');
-const releases = [
-  'v3-release-beta.yml',
-  'v3-release-stable.yml',
-  'v3-merge-beta-to-stable.yml',
-];
+const releases = ['v3-release.yml'];
 const identity =
   'nocobase[bot] <179432756+nocobase[bot]@users.noreply.github.com>';
 
@@ -36,12 +32,7 @@ test('release candidates and sync commits use the verified NocoBase bot identity
     delete env[key];
   }
   let count = 0;
-  for (const name of [
-    ...releases,
-    'v3-pro-release-beta.yml',
-    'v3-pro-release-stable.yml',
-    'v3-pro-promote-to-stable.yml',
-  ]) {
+  for (const name of [...releases, 'v3-pro-release.yml']) {
     const source = workflow(name);
     const configurations = source.matchAll(
       /git config user\.name [^\n]+\n\s*git config user\.email [^\n]+/gu,
@@ -86,7 +77,17 @@ test('GitHub PR merge commands explicitly skip CI on the newly created merge com
 
   for (const name of releases) {
     const source = workflow(name);
-    const merges = [...source.matchAll(/^\s*(gh pr merge[^\n]+)$/gmu)];
+    const allMerges = [...source.matchAll(/^\s*(gh pr merge[^\n]+)$/gmu)];
+    // Release branches merge back with a merge commit, into v3 as into Pro develop, so the tagged release commit stays
+    // reachable from the branch.
+    const merges = allMerges.filter(
+      ([, command]) => !command.includes('--repo nocobase/nocobase3-pro'),
+    );
+    for (const [, command] of allMerges.filter(([, command]) =>
+      command.includes('--repo nocobase/nocobase3-pro'),
+    )) {
+      assert.match(command, / --merge(?: |$)/u, name);
+    }
     assert.ok(merges.length > 0, name);
     for (const [, command] of merges) {
       const output = execFileSync('bash', ['-e', '-c', command], {
@@ -106,12 +107,17 @@ test('GitHub PR merge commands explicitly skip CI on the newly created merge com
         'merge',
         'https://github.com/nocobase/nocobase/pull/1',
       ]);
-      assert.ok(args.includes('--squash'), name);
+      assert.ok(args.includes('--merge'), name);
+      assert.ok(!args.includes('--squash'), name);
+      assert.ok(args.includes('--delete-branch'), name);
       const subjectIndex = args.indexOf('--subject');
       assert.notEqual(subjectIndex, -1, name);
       assert.match(args[subjectIndex + 1], /\[skip ci\]$/u, name);
     }
-    const titles = [...source.matchAll(/--title "([^"\n]+)"/gu)];
+    // Pull request titles only; a GitHub Release title is not a commit.
+    const titles = [
+      ...source.matchAll(/^(?![^\n]*gh release)[^\n]*--title "([^"\n]+)"/gmu),
+    ];
     assert.ok(titles.length > 0, name);
     for (const [, title] of titles) assert.match(title, /\[skip ci\]$/u, name);
   }
@@ -155,9 +161,16 @@ test('OSS writes use a fresh scoped App token after validation, including merge 
 
     for (const step of steps(name)) {
       if (step.includes('gh pr ')) {
+        // Pro steps write to nocobase/nocobase3-pro only, with a token scoped to that repository.
+        const token = step.includes('--repo nocobase/nocobase3-pro')
+          ? 'pro_write_token'
+          : 'release_token';
         assert.match(
           step,
-          /GH_TOKEN: \$\{\{ steps\.release_token\.outputs\.token \}\}/u,
+          new RegExp(
+            `GH_TOKEN: \\$\\{\\{ steps\\.${token}\\.outputs\\.token \\}\\}`,
+            'u',
+          ),
           name,
         );
       }
@@ -165,7 +178,14 @@ test('OSS writes use a fresh scoped App token after validation, including merge 
         assert.match(step, /persist-credentials: false/u, name);
       }
       if (step.includes('git push') && !step.includes('echo "  git')) {
-        assert.ok(source.indexOf(step) > tokenPosition, name);
+        // A Pro push uses its own Pro-scoped token, minted after Pro's own validation in the same job.
+        if (
+          !step.includes(
+            'PRO_TOKEN: ${{ steps.pro_write_token.outputs.token }}',
+          )
+        ) {
+          assert.ok(source.indexOf(step) > tokenPosition, name);
+        }
         assert.match(step, /if: .*?!inputs\.dry_run/u, name);
       }
     }
@@ -184,7 +204,7 @@ test('GitHub Releases use the App and receive its private key through workflow_c
     /GH_TOKEN: \$\{\{ steps\.release_token\.outputs\.token \}\}/u,
   );
   assert.doesNotMatch(source, /GH_TOKEN: \$\{\{ secrets\.GITHUB_TOKEN \}\}/u);
-  for (const name of ['v3-release-beta.yml', 'v3-release-stable.yml']) {
+  for (const name of releases) {
     const caller = workflow(name)
       .split('\n  github-release:')[1]
       .split(/\n  [a-z][\w-]*:/u)[0];

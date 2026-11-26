@@ -1,3 +1,4 @@
+import { originalMime } from '../../../fixtures/original-message.js';
 import type {
   MailCredentialVault,
   MailProviderAdapter,
@@ -14,6 +15,294 @@ import {
 import { graphFolderType } from '../../../../server/adapters/microsoft/normalize.js';
 
 describe('Microsoft Mail Provider', () => {
+  it('downloads the exact provider MIME of one message', async () => {
+    const credentials = memoryVault();
+    await credentials.putAt('credential-1', {
+      provider: 'microsoft',
+      accessToken: 'fixture-access-token',
+      refreshToken: 'fixture-refresh-token',
+      expiresAt: '2099-01-01T00:00:00.000Z',
+      scopes: [],
+      tokenType: 'Bearer',
+    });
+    const fetchMock = vi.fn<typeof fetch>().mockResolvedValueOnce(
+      new Response(new Uint8Array(originalMime), {
+        headers: { 'content-length': String(originalMime.length) },
+      }),
+    );
+    vi.stubGlobal('fetch', fetchMock);
+    const adapter = new MicrosoftMailProviderAdapter(
+      context(credentials),
+      config(),
+      account(),
+    );
+    const signal = new AbortController().signal;
+    const original = await adapter.getOriginalMessage('selected/id', signal);
+    expect(original).toMatchObject({
+      ok: true,
+      value: { size: originalMime.length },
+    });
+    if (!original.ok) throw new Error('Expected original MIME');
+    expect(
+      Buffer.from(await new Response(original.value.stream).arrayBuffer()),
+    ).toEqual(originalMime);
+    expect(
+      String(fetchMock.mock.calls[0]?.[0]).endsWith(
+        '/me/messages/selected%2Fid/$value',
+      ),
+    ).toBe(true);
+    fetchMock.mockResolvedValueOnce(Response.json({}, { status: 404 }));
+    expect(
+      await adapter.getOriginalMessage('selected/id', signal),
+    ).toMatchObject({
+      ok: false,
+      error: { code: 'MAIL_ORIGINAL_NOT_FOUND' },
+    });
+    expect(
+      new Headers(fetchMock.mock.calls[0]?.[1]?.headers).get('prefer'),
+    ).toContain('IdType="ImmutableId"');
+    fetchMock.mockResolvedValueOnce(new Response('partial', { status: 206 }));
+    expect(
+      await adapter.getOriginalMessage('selected/id', signal),
+    ).toMatchObject({ ok: false });
+    fetchMock.mockResolvedValueOnce(
+      new Response(new Uint8Array(originalMime), {
+        headers: { 'content-encoding': 'gzip', 'content-length': '123' },
+      }),
+    );
+    const decoded = await adapter.getOriginalMessage('selected/id', signal);
+    expect(decoded).toMatchObject({ ok: true, value: { size: undefined } });
+    if (decoded.ok) await decoded.value.stream.cancel();
+  });
+
+  it('streams original MIME past 30 seconds and aborts at the download deadline', async () => {
+    vi.useFakeTimers();
+    const timeout = vi
+      .spyOn(AbortSignal, 'timeout')
+      .mockImplementation((ms) => {
+        const controller = new AbortController();
+        setTimeout(
+          () => controller.abort(new DOMException('Timed out', 'TimeoutError')),
+          ms,
+        );
+        return controller.signal;
+      });
+    try {
+      const credentials = memoryVault();
+      await credentials.putAt('credential-1', {
+        provider: 'microsoft',
+        accessToken: 'fixture-access-token',
+        expiresAt: '2099-01-01T00:00:00.000Z',
+      });
+      vi.stubGlobal(
+        'fetch',
+        vi.fn<typeof fetch>(async (_input, init) => {
+          const signal = init?.signal;
+          return new Response(
+            new ReadableStream<Uint8Array>({
+              start(controller) {
+                const chunk = setTimeout(
+                  () => controller.enqueue(originalMime),
+                  31_000,
+                );
+                signal?.addEventListener(
+                  'abort',
+                  () => {
+                    clearTimeout(chunk);
+                    controller.error(signal.reason);
+                  },
+                  { once: true },
+                );
+              },
+            }),
+          );
+        }),
+      );
+      const adapter = new MicrosoftMailProviderAdapter(
+        context(credentials),
+        config(),
+        account(),
+      );
+      const original = await adapter.getOriginalMessage(
+        'selected',
+        AbortSignal.timeout(60_000),
+      );
+      if (!original.ok) throw new Error('Expected original MIME');
+      const reader = original.value.stream.getReader();
+
+      await vi.advanceTimersByTimeAsync(31_000);
+      expect(await reader.read()).toEqual({ done: false, value: originalMime });
+
+      await Promise.all([
+        expect(reader.read()).rejects.toMatchObject({ name: 'TimeoutError' }),
+        vi.advanceTimersByTimeAsync(29_000),
+      ]);
+    } finally {
+      timeout.mockRestore();
+      vi.useRealTimers();
+    }
+  });
+
+  it('logs account reauthorization failures without refresh tokens', async () => {
+    const credentials = memoryVault();
+    await credentials.putAt('credential-1', {
+      provider: 'microsoft',
+      accessToken: 'access-1',
+      refreshToken: 'refresh-1',
+      expiresAt: '2000-01-01T00:00:00.000Z',
+      scopes: [],
+      tokenType: 'Bearer',
+    });
+    const logger = { warn: vi.fn() };
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () =>
+        Response.json(
+          {
+            error: 'invalid_grant',
+            error_description: 'refresh-1 access-1 client-secret credential-1',
+          },
+          { status: 400 },
+        ),
+      ),
+    );
+    const adapter = new MicrosoftMailProviderAdapter(
+      { ...context(credentials), logger },
+      config(),
+      account(),
+    );
+    expect(await adapter.listFolders({ limit: 10 })).toMatchObject({
+      ok: false,
+      error: { category: 'authentication', retryable: false },
+    });
+    expect(logger.warn).toHaveBeenCalledWith(
+      expect.objectContaining({
+        event: 'mail.microsoft.auth_failed',
+        accountId: 'account-1',
+        category: 'authentication',
+        retryable: false,
+        stage: 'auth',
+        responseCode: 400,
+      }),
+      expect.any(String),
+    );
+    for (const secret of [
+      'refresh-1',
+      'access-1',
+      'client-secret',
+      'credential-1',
+    ])
+      expect(JSON.stringify(logger.warn.mock.calls)).not.toContain(secret);
+  });
+
+  it('logs sync, sending and OAuth failures without credentials or HTTP payloads', async () => {
+    const logger = { warn: vi.fn() };
+    const credentials = memoryVault();
+    await credentials.putAt('credential-1', {
+      provider: 'microsoft',
+      accessToken: 'access-1',
+      refreshToken: 'refresh-1',
+      expiresAt: '2099-01-01T00:00:00.000Z',
+      scopes: [],
+      tokenType: 'Bearer',
+    });
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () =>
+        Response.json(
+          {
+            error: {
+              message:
+                'access-1 refresh-1 client-secret private-code private-verifier credential-1',
+            },
+          },
+          { status: 401 },
+        ),
+      ),
+    );
+    const adapter = new MicrosoftMailProviderAdapter(
+      { ...context(credentials), logger },
+      config(),
+      account(),
+    );
+    expect(await adapter.listFolders({ limit: 10 })).toMatchObject({
+      ok: false,
+    });
+    expect(
+      await adapter.sendMessage({
+        trackingId: 'diagnostic',
+        identity: {
+          id: 'identity',
+          accountId: 'account-1',
+          address: 'user@example.com',
+          isPrimary: true,
+          canSend: true,
+        },
+        message: {
+          to: [{ address: 'recipient@example.com' }],
+          cc: [],
+          bcc: [],
+          subject: 'Private subject',
+          text: 'Private body',
+          attachments: [],
+          references: [],
+        },
+      }),
+    ).toMatchObject({ status: 'failed' });
+    expect(
+      await microsoftMailProviderDefinition.authorization!.complete(
+        { ...context(credentials), logger },
+        config(),
+        {
+          code: 'private-code',
+          codeVerifier: 'private-verifier',
+          state: 'private-state',
+          redirectUri: 'https://example.invalid/callback',
+          scopes: [],
+        },
+      ),
+    ).toMatchObject({ ok: false });
+    expect(logger.warn).toHaveBeenCalledWith(
+      expect.objectContaining({
+        provider: 'microsoft',
+        accountId: 'account-1',
+        event: 'mail.microsoft.sync_failed',
+        stage: 'auth',
+        responseCode: 401,
+        durationMs: expect.any(Number),
+      }),
+      expect.any(String),
+    );
+    expect(logger.warn).toHaveBeenCalledWith(
+      expect.objectContaining({
+        event: 'mail.microsoft.send_failed',
+        protocol: 'https',
+      }),
+      expect.any(String),
+    );
+    expect(logger.warn).toHaveBeenCalledWith(
+      expect.objectContaining({
+        event: 'mail.microsoft.auth_failed',
+        stage: 'auth',
+      }),
+      expect.any(String),
+    );
+    for (const secret of [
+      'access-1',
+      'refresh-1',
+      'client-secret',
+      'private-code',
+      'private-verifier',
+      'private-state',
+      'credential-1',
+      'user@example.com',
+      'Private subject',
+      'Private body',
+      'stack',
+    ])
+      expect(JSON.stringify(logger.warn.mock.calls)).not.toContain(secret);
+  });
+
   it('classifies localized well-known folders independently of display names', () => {
     expect(graphFolderType('收件箱', 'inbox')).toBe('inbox');
     expect(graphFolderType('已发送邮件', 'sentitems')).toBe('sent');

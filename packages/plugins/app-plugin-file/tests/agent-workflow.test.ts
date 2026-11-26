@@ -34,6 +34,7 @@ function snippet(section: string, language: string): string {
   return source.slice(start + fence.length).split('```')[0]!;
 }
 
+// The CI shard shares its runner with other packages while this fixture runs two TypeScript compilers and starts an app.
 it('builds a business attachment feature from the shipped Skill and UI Library', () => {
   const appRoot = mkdtempSync(path.join(tmpdir(), 'file-agent-app-'));
   try {
@@ -132,6 +133,10 @@ it('builds a business attachment feature from the shipped Skill and UI Library',
     );
     writeFileSync(path.join(appRoot, 'routes.ts'), snippet('API routes', 'ts'));
     writeFileSync(
+      path.join(appRoot, 'storage-routes.ts'),
+      snippet('Storage directories', 'ts'),
+    );
+    writeFileSync(
       path.join(appRoot, 'client/invoice-attachments.tsx'),
       snippet('UI Library components', 'tsx'),
     );
@@ -173,7 +178,7 @@ it('builds a business attachment feature from the shipped Skill and UI Library',
         compilerOptions: {
           outDir: './server-declarations',
         },
-        include: ['database/**/*.ts', 'routes.ts'],
+        include: ['database/**/*.ts', 'routes.ts', 'storage-routes.ts'],
       }),
     );
     execFileSync(
@@ -200,4 +205,4 @@ it('builds a business attachment feature from the shipped Skill and UI Library',
   } finally {
     rmSync(appRoot, { force: true, recursive: true });
   }
-}, 90_000);
+}, 180_000);

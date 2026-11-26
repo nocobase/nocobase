@@ -2,7 +2,17 @@
   "name": "@nocobase/app-plugin-service-provider-example",
   "displayName": "Service Provider Example App Plugin",
   "description": "Example app plugin that registers and manages a service through a ServiceProvider.",
-  "version": "1.0.0-beta.11",
+  "nocobase": {
+    "title": {
+      "en-US": "Service provider example",
+      "zh-CN": "服务提供方示例"
+    },
+    "description": {
+      "en-US": "Register a service and manage its lifecycle with a service provider.",
+      "zh-CN": "通过服务提供方注册服务并管理其生命周期。"
+    }
+  },
+  "version": "1.0.0-beta.13",
   "type": "module",
   "prettier": "@nocobase/dev-config/prettier",
   "engines": {

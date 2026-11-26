@@ -2,8 +2,33 @@ import type { LocaleResource } from '@nocobase/i18n';
 
 import type enUS from './en-US.js';
 
+import pagesDeDE from '../../shared/locales/pages.de-DE.js';
+
 const deDE: LocaleResource<typeof enUS> = {
+  access: pagesDeDE.access,
   errors: {
+    originalNotFound:
+      'Die Originalnachricht ist beim E-Mail-Anbieter nicht mehr verfügbar.',
+    originalTooLarge:
+      'Die Originalnachricht überschreitet das Downloadlimit von 40 MiB.',
+    operationUnsupported: 'Diese E-Mail-Aktion ist nicht verfügbar.',
+    connectionAuthenticationFailed:
+      '{{protocol}}-Authentifizierung fehlgeschlagen. Prüfen Sie den Anmeldenamen und das Passwort oder App-Passwort.',
+    connectionHostNotFound:
+      '{{protocol}}-Host konnte nicht aufgelöst werden. Prüfen Sie den Servernamen.',
+    connectionConnectionRefused:
+      '{{protocol}}-Verbindung abgelehnt. Prüfen Sie Host, Port und Serververfügbarkeit.',
+    connectionConnectionTimeout:
+      'Zeitüberschreitung bei {{protocol}}. Prüfen Sie Server und Netzwerkeinstellungen.',
+    connectionCertificateInvalid:
+      '{{protocol}}-Zertifikatsprüfung fehlgeschlagen. Prüfen Sie Zertifikat und Hostnamen.',
+    connectionTlsFailed:
+      '{{protocol}}-TLS-Aushandlung fehlgeschlagen. Prüfen Sie SSL/STARTTLS und den Port.',
+    connectionConnectionFailed:
+      '{{protocol}}-Verbindung fehlgeschlagen. Prüfen Sie Server und Netzwerkeinstellungen.',
+    connectionConnectionLost:
+      '{{protocol}}-Verbindung unterbrochen. Versuchen Sie es erneut.',
+
     imapMoveLocationChanged:
       'Der ausgewählte Ordner oder die Kopie wurde geändert. Synchronisieren Sie das Postfach und öffnen Sie den Quellordner erneut.',
     imapMoveNotWritable:

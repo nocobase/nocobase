@@ -2,11 +2,21 @@
   "name": "@nocobase/app-plugin-notification",
   "displayName": "Notification App Plugin",
   "description": "Provides the application notification runtime, storage, delivery, and logs.",
-  "version": "2.0.0-beta.7",
+  "version": "2.0.0-beta.10",
   "type": "module",
   "prettier": "@nocobase/dev-config/prettier",
   "engines": {
     "node": ">=24.0.0"
+  },
+  "nocobase": {
+    "title": {
+      "en-US": "Notifications",
+      "zh-CN": "通知"
+    },
+    "description": {
+      "en-US": "Notification types and personal delivery settings",
+      "zh-CN": "通知类型和个人接收设置"
+    }
   },
   "sideEffects": false,
   "main": "./dist/server/index.js",
@@ -104,7 +114,8 @@
     "react-dom": "^19.0.0",
     "@base-ui/react": "catalog:",
     "class-variance-authority": "catalog:",
-    "cn": "catalog:"
+    "cn": "catalog:",
+    "react-router": "catalog:"
   },
   "devDependencies": {
     "@nocobase/app-testing": "workspace:*",
@@ -120,7 +131,8 @@
     "vitest": "catalog:",
     "shadcn": "catalog:",
     "tailwindcss": "catalog:",
-    "tw-animate-css": "catalog:"
+    "tw-animate-css": "catalog:",
+    "react-router": "catalog:"
   },
   "imports": {
     "#components/*": {

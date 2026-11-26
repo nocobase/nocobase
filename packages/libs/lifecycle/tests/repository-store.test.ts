@@ -1,6 +1,6 @@
 import type { DatabaseConnection, DatabaseManager } from '@nocobase/db';
 import { createTestDatabase, type TestDatabase } from '@nocobase/db-testing';
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import {
   CREATE_TRANSITION,
@@ -31,6 +31,11 @@ async function createTables(): Promise<void> {
     table.string('status').notNull();
     table.datetimeTz('statusChangedAt').notNull();
     table.integer('lifecycleVersion').notNull().defaultTo(0);
+    // Which version of a process a ticket belongs to; empty for most here.
+    table.string('flow');
+    table.datetimeTz('dueAt');
+    table.json('management');
+    table.integer('managementRevision');
   });
   await builder.createCollection('notes', (table) => {
     table.bigInt('id').primary().autoIncrement().notNull();
@@ -53,7 +58,9 @@ async function createTables(): Promise<void> {
     // The request id, or `$v:<version>` without one: never null, so one
     // unique index means the same on every dialect.
     table.string('requestKey').notNull();
-    table.unique(['lifecycle', 'recordId', 'version']);
+    table.json('management');
+    table.integer('journalRevision').notNull().defaultTo(0);
+    table.unique(['lifecycle', 'recordId', 'version', 'journalRevision']);
     table.unique(['lifecycle', 'recordId', 'requestKey']);
   });
   await builder.createCollection(LIFECYCLE_COLLECTIONS.effectRuns, (table) => {
@@ -414,6 +421,28 @@ describe('Repository lifecycle store', () => {
     expect(third.map((record) => String(record.id))).toEqual([ids[3]]);
   });
 
+  it('narrows idle records to one version of a process', async () => {
+    const first = await createTicket();
+    const second = await createTicket();
+    await database.repository('tickets').updateMany({
+      filter: { id: Number(first) },
+      values: { flow: 'tickets' },
+    });
+    await database.repository('tickets').updateMany({
+      filter: { id: Number(second) },
+      values: { flow: 'tickets-v2' },
+    });
+    const found = await store.findIdleRecords('tickets', {
+      stateField: 'status',
+      states: ['open'],
+      changedAtField: 'statusChangedAt',
+      changedBefore: '2026-10-01T10:00:00.000Z',
+      limit: 10,
+      match: { field: 'flow', value: 'tickets-v2' },
+    });
+    expect(found.map((record) => String(record.id))).toEqual([second]);
+  });
+
   it('runs an effect a crashed process left behind once it recovers', async () => {
     const id = await createTicket();
     // A dispatcher that accepts the run and then "crashes" before executing it.
@@ -533,6 +562,111 @@ describe('Repository lifecycle store', () => {
         .repository('tickets')
         .findOne({ filter: { id: Number(id) } }),
     ).toMatchObject({ status: 'awaitingCustomer' });
+  });
+
+  it('rolls back a transition joined to the resume savepoint and lets the caller retry', async () => {
+    const managed = new LifecycleRuntime({ store, clock: () => now });
+    const afterCommit = vi.fn();
+    const name = 'managedTickets';
+    const actor = { id: 'agent' };
+    let refuse = true;
+    managed.register(
+      defineLifecycle({
+        name,
+        key: name,
+        version: 1,
+        collection: 'tickets',
+        initial: 'open',
+        states: ['open', { name: 'closed', final: true }],
+        dueAtField: 'dueAt',
+        transitions: { close: { from: 'open', to: 'closed' } },
+        triggers: {
+          expire: { when: 'open', after: () => 1_000, transition: 'close' },
+        },
+        management: {
+          field: 'management',
+          suspend: true,
+          onResume: async ({ record, tx }) => {
+            await (tx.handle as DatabaseConnection)
+              .repository('notes')
+              .createOne({
+                values: { ticketId: String(record.id), text: 'resumed' },
+              });
+            tx.afterCommit(afterCommit);
+            if (refuse)
+              await managed.fire(name, record.id, 'close', {
+                actor,
+                transaction: tx.handle,
+              });
+          },
+        },
+      }),
+    );
+    const authorize = () => true;
+    const {
+      record: { id },
+    } = await managed.create(
+      name,
+      { customerEmail: 'a@example.com' },
+      { actor },
+    );
+    const options = { actor, authorize, reason: 'Review' };
+    const suspended = await managed.suspend(name, id, {
+      ...options,
+      requestId: 'suspend',
+      expectedVersion: (await managed.managementDetails(
+        name,
+        id,
+        actor,
+        authorize,
+      ))!.version,
+    });
+    const before = await store.findRecord('tickets', id);
+    const history = await store.listTransitions(name, String(id));
+    now = new Date(now.getTime() + 500);
+    const command = {
+      ...options,
+      requestId: 'resume',
+      expectedVersion: suspended.version,
+    };
+
+    await database.transaction(async (transaction) => {
+      await transaction.repository('notes').createOne({
+        values: { ticketId: String(id), text: 'caller write' },
+      });
+      await expect(
+        managed.resume(name, id, { ...command, transaction }),
+      ).rejects.toMatchObject({ code: 'INVALID_SET' });
+    });
+
+    expect(await store.findRecord('tickets', id)).toEqual(before);
+    expect(await store.listTransitions(name, String(id))).toEqual(history);
+    expect(afterCommit).not.toHaveBeenCalled();
+    const notes = database.repository('notes');
+    expect((await notes.findMany({})).map((row) => row.text)).toEqual([
+      'caller write',
+    ]);
+
+    refuse = false;
+    await database.transaction(async (transaction) => {
+      await expect(
+        managed.resume(name, id, { ...command, transaction }),
+      ).resolves.toMatchObject({ suspended: false });
+      expect(afterCommit).not.toHaveBeenCalled();
+    });
+    expect(afterCommit).toHaveBeenCalledOnce();
+    expect(await store.findRecord('tickets', id)).toMatchObject({
+      dueAt: new Date(now.getTime() + 1_000).toISOString(),
+      managementRevision: 2,
+      management: { suspendedAt: null, pausedMs: 500 },
+    });
+    expect(await notes.count()).toBe(2);
+    expect(
+      await store.findTransitionByRequest(name, String(id), 'resume'),
+    ).toMatchObject({
+      transition: '$manage',
+      management: { command: 'resume' },
+    });
   });
 
   it('joins a caller’s transaction, and dispatches the effects once it commits', async () => {
@@ -882,6 +1016,33 @@ describe('a continuation waiting on the database', () => {
     },
   });
 
+  it('continues by numeric run id across equal due times, then by due time', async () => {
+    const runtime = new LifecycleRuntime({ store, clock: () => now });
+    runtime.register(deliveries, {
+      services: { flags: { broken: true }, calls: [] },
+    });
+    const ship = async () =>
+      (
+        await runtime.fire('deliveries', await createTicket(), 'ship', {
+          actor: SYSTEM_ACTOR,
+        })
+      ).effectRuns[0].id;
+    const later = await ship();
+    now = new Date(now.getTime() - 1000);
+    const first = await ship();
+    const second = await ship();
+    const query = {
+      continuationDueBy: new Date(now.getTime() + 61_000).toISOString(),
+    };
+    const page = await store.listEffectRuns({ ...query, limit: 1 });
+    expect(page.map((run) => run.id)).toEqual([first]);
+    const remaining = await store.listEffectRuns({
+      ...query,
+      continuationAfter: { id: first, dueAt: page[0].continuation!.dueAt },
+    });
+    expect(remaining.map((run) => run.id)).toEqual([second, later]);
+  });
+
   it('keeps the outcome, waits, and fires once the definition is fixed', async () => {
     const id = await createTicket();
     const flags: Flags = { broken: true };
@@ -1113,6 +1274,68 @@ describe('the request key of a log entry', () => {
     input: {},
     at: '2026-10-01T09:00:00.000Z',
   };
+
+  it('journals management revisions independently at one business version', async () => {
+    await store.appendTransition({ ...entry, version: 1, requestId: null });
+    for (const revision of [1, 2]) {
+      await store.appendTransition({
+        ...entry,
+        transition: '$manage',
+        version: 1,
+        requestId: `manage-${revision}`,
+        management: {
+          command: revision === 1 ? 'suspend' : 'resume',
+          reason: 'review',
+          revision,
+          previousRound: 1,
+          expectedVersion: String(revision - 1),
+          result: {
+            recordId: '1',
+            lifecycle: 'tickets',
+            definitionVersion: 1,
+            state: 'closed',
+            suspended: revision === 1,
+            round: 1,
+            version: String(revision),
+          },
+        },
+      });
+    }
+    const rows = await store.listTransitions('tickets', '1');
+    expect(rows.map((row) => [row.version, row.management?.revision])).toEqual([
+      [1, undefined],
+      [1, 1],
+      [1, 2],
+    ]);
+  });
+
+  it('rejects a stale management revision at the same business version', async () => {
+    const id = await createTicket();
+    const condition = {
+      stateField: 'status',
+      state: 'open',
+      versionField: 'lifecycleVersion',
+      version: 0,
+    };
+    const update = (expected: number | null, next: number) =>
+      store.updateRecordIf(
+        'tickets',
+        id,
+        {
+          ...condition,
+          managementRevision: { field: 'managementRevision', value: expected },
+        },
+        { managementRevision: next },
+      );
+    expect(await update(null, 1)).toBe(true);
+    expect(await update(null, 2)).toBe(false);
+    expect(await update(1, 2)).toBe(true);
+    expect(await update(1, 3)).toBe(false);
+    expect(await store.findRecord('tickets', id)).toMatchObject({
+      managementRevision: 2,
+      lifecycleVersion: 0,
+    });
+  });
 
   it('logs every transition without a request id, each under its version', async () => {
     const id = await createTicket();

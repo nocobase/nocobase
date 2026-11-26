@@ -5,7 +5,6 @@ import { enUS as skillProjectsenUS } from '../pages/skill-projects/locales.js';
 import { workflowNamesEnUS } from '../../shared/workflow-names.js';
 import type { LocaleResource } from '@nocobase/i18n';
 
-import agentChatEnUS from '#extensions/nocobase-agent-chat/locales/en-US';
 import systemEnUS from './system/en-US.js';
 
 const enUS = {
@@ -209,10 +208,13 @@ const enUS = {
     nodeParametersDescription:
       'Only parameters associated with this node or transition are shown. Other workflow parameters remain unchanged.',
     workflowParameters: 'Workflow parameters',
-    parameterRevision: 'Workflow parameter version {{revision}}',
+    parameterRevision: 'Configuration revision {{revision}}',
     parametersTitle: '{{name}} parameters',
+    copyVersionParameters: 'Copy values from v{{version}} as unsaved inputs',
+    configuringVersion:
+      'Configuring v{{version}}. Changes affect only records created afterward, including drafts. References retain their selection; current membership is resolved at execution.',
     parametersDescription:
-      'These settings apply only to this workflow. Existing snapshots remain unchanged.',
+      'Fixed when a record is created, including drafts. Changes affect only records created later in this version.',
     discardParameters: 'Discard unsaved parameter changes?',
     noParameters: 'This workflow has no configurable parameters.',
     addParameterEntry: 'Add entry',
@@ -320,6 +322,9 @@ const enUS = {
     executionCount: 'Executions',
     executionActivity: 'Executions',
     lastExecutedAt: 'Last {{date}}',
+    managementHint:
+      'In your project repository, tell the Agent what workflow you want to create, change, or delete.',
+    documentation: 'View documentation',
     neverExecuted: 'Not executed yet',
     workflow: 'Workflow',
     source: 'Source',
@@ -344,9 +349,17 @@ const enUS = {
     signIn: 'Sign in to view workflows.',
     retry: 'Retry',
     executionCountLink: 'Executions: {{count}}',
+    version: 'Version',
+    versionLabel: 'Version {{version}}',
+    latestVersion: 'Version {{version}} (latest)',
+    versionShort: 'v{{version}}',
+    allVersions: 'All versions',
+    versionCount: '{{count}} versions',
+    latestHint:
+      'Latest means the largest version number; new records may still start with an earlier version.',
     viewExecutions: 'View executions',
     parameterHint:
-      'Click a configured node or transition to adjust its runtime parameters. Other nodes show their definition details. Changes apply according to each workflow’s snapshot or live mode.',
+      'Fixed when a record is created, including drafts. Changes affect only records created later in this version.',
     currentState: 'Displayed state',
     latest: 'Latest progress',
     historyHint:
@@ -369,8 +382,10 @@ const enUS = {
     executionDescription:
       'Inspect the recorded path and review each transition in order.',
     executionParameters: 'Parameters used by this execution',
+    upgradeSource:
+      'Added during upgrade using configuration revision {{revision}}',
     snapshotHint:
-      'These values come from the execution record. Snapshot values remain fixed; live values are resolved again when the workflow runs.',
+      'Fixed when a record is created, including drafts. Changes affect only records created later in this version.',
     sources: {
       lifecycle: 'Lifecycle examples',
       office: 'Office workflows',
@@ -388,21 +403,12 @@ const enUS = {
   // The template's own copy: the shell, the sign-in pages and shared components. Keep it in `./system/` so a
   // template upgrade can replace it without touching the application's copy below.
   ...systemEnUS,
-  ...agentChatEnUS,
-  onlineAgent: {
-    group: 'Agents',
-    agents: 'Agents',
-    runtimes: 'Runtimes',
-    skills: 'Skills',
-    newSkill: 'New skill',
-    skillDetail: 'Skill details',
-    connectRuntime: 'Connect runtime',
-    models: 'Models',
-    openModels: 'Open models',
+  aiExamples: {
+    group: 'AI examples',
+    openModels: 'Open model services',
     checkingModels: 'Checking chat models…',
     catalogFailed: 'Could not load chat models.',
     noModels: {
-      title: 'No chat model configured',
       description:
         'Add a model service and enable a chat model to start chatting.',
       readOnly: 'Ask an administrator to configure a chat model.',
@@ -651,11 +657,11 @@ const enUS = {
       description:
         'Review an application-owned tool proposal and explicitly fill a local draft without saving records.',
     },
-    onlineAgent: {
-      title: 'Online Agent',
+    agent: {
+      title: 'Agent',
       description:
-        'Configure a chat model and talk to Online Agent from any page.',
-      open: 'Open Agent chat',
+        'Configure a model service, then ask the Agent from any page.',
+      open: 'Open Agent',
     },
     i18n: {
       title: 'Internationalization',

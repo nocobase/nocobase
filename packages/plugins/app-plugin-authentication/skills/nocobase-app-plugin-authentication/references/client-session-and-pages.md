@@ -71,7 +71,7 @@ set here.
 
 ## Where the pages live
 
-The plugin ships no pages. The application declares four guest routes and
+The plugin ships no sign-in pages; it registers only the two [settings pages](#the-settings-pages). The application declares four guest routes and
 owns their components:
 
 ```text
@@ -185,3 +185,24 @@ Automatic recovery requires `app.publicOrigin` (or `APP_PUBLIC_ORIGIN`) to be co
 Both application templates default to `emailAndPassword.autoSignIn: true`: a new account signs in immediately, and an existing email returns an explicit error. This exposes whether an email is registered, as in Better Auth’s default flow. Applications requiring email enumeration protection can explicitly keep `autoSignIn: false` and configure email verification with `emailVerification.sendVerificationEmail`, or `emailAndPassword.onExistingUserSignUp` to notify the email owner. Existing explicit configuration overrides the template default and is never migrated automatically. `defineAuthConfig` warns at startup when password registration is allowed with automatic sign-in off and neither verification nor an existing-user callback.
 
 Unsigned-in registration responses need neutral feedback and a sign-in or recovery link. Show verification instructions only for an actual configured flow, and promise an email only when the application can confirm it was sent. The templates do not publish verification or notification settings and therefore make no email-delivery promise.
+
+## The settings pages
+
+The plugin registers two settings pages; the application declares neither and keeps no copy of them.
+
+- **Authentication**, System settings › Accounts (`/settings/authentication`), for whoever is granted the `authentication.settings` settings item's `read` action. It reads `GET /api/authentication/settings` and shows the effective values, each with its source (environment variable, `config.yml`, code or default), on four tabs: sign-in methods and what the sign-in page shows, registration, password rules and the three conditions for password recovery (`auth.passwordReset.enabled`, a mail sender, `app.publicOrigin`), and sessions and security. Problems to fix are listed at the top. Every section has a "How to change" snippet; the page saves nothing. Each sign-in method that is not configured has a "How to enable" guide, and every guide ends in an editable prompt the administrator copies to a development agent working in the application's repository; the page saves nothing. `/settings/authentication/sso` (`?type=sso` or `?type=social`) chooses the identity provider and the first sign-in, shows the callback URL, `<app.publicOrigin><base path>/api/auth/callback/<id>` for social and `genericOAuth()` providers alike, and builds a prompt that follows both choices: client id and secret from `AUTH_<ID>_CLIENT_ID` and `AUTH_<ID>_CLIENT_SECRET`, `account.accountLinking.disableImplicitLinking: true` so a provider sign-in is never linked to an existing user by email (a signed-in person still links it explicitly), and the provider's `disableSignUp: true` for "existing accounts only", which also refuses an explicit sign-up request. The client secret is never typed into it. `/settings/authentication/two-factor` and `/settings/authentication/passkey` build prompts for `twoFactor()` and for `passkey()` from `@better-auth/passkey`, with the migration from [Enabling an official Better Auth plugin](better-auth-plugins.md#two-factor-authentication-and-passkeys), `rpID` and `origin` read from `app.publicOrigin`, and the Account and security sections and sign-in steps this plugin does not provide. Every prompt is filled in with the application's name and `app.publicOrigin`, or the address being browsed with a warning when it is not set. The sign-in page entries list a configured provider only when the application names it in `authentication({ signInButtons })`, because the application's own sign-in page renders the buttons.
+- **Account and security**, Personal settings › Account (`/me/security`), for every signed-in person. It shows the username and email, changes the password (with "Sign out of other devices"), lists signed-in devices with sign-out for one or all others, and links or unlinks the single sign-on and social providers `GET /api/authentication/providers` lists; the last way to sign in cannot be unlinked. It calls only Better Auth's `changePassword`, `listSessions`, `revokeSession`, `revokeOtherSessions`, `listAccounts`, `linkSocial` (Better Auth 1.7 registers `genericOAuth()` providers as social providers, so they link the same way) and `unlinkAccount`, which act on the session's own user. A password counts as a remaining way to sign in only while the application publishes `auth.emailAndPassword.enabled` as on, which `defineAuthConfig` does; without it the page keeps the last provider linked.
+
+Replace a page as a whole, keeping its route, path and permission:
+
+```ts
+// client/plugins.ts
+authentication({
+  settingsComponentLoader: () => import('./pages/settings/authentication.js'),
+  accountSecurityComponentLoader: () => import('./pages/me/security.js'),
+}),
+```
+
+or pass `routeComponentOverrides` to the runtime with `AUTHENTICATION_SETTINGS_ROUTE_ID`, `AUTHENTICATION_SSO_GUIDE_ROUTE_ID`, `AUTHENTICATION_TWO_FACTOR_GUIDE_ROUTE_ID`, `AUTHENTICATION_PASSKEY_GUIDE_ROUTE_ID` or `ACCOUNT_SECURITY_ROUTE_ID` from `@nocobase/app-plugin-authentication/client`. A replacement reads the same routes; it must not show any value the settings route does not return.
+
+Another plugin adds a row to the sign-in methods list on the server with `signInMethodsToken` (see the plugin's SKILL.md); the page needs no change.

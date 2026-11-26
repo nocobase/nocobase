@@ -21,6 +21,7 @@ export type OnlineAgentCall = {
 };
 export type OnlineAgentSession = {
   id: string;
+  source: string;
   kind: 'realtime' | 'background';
   config: OnlineAgentConfig;
   model: ModelRef;

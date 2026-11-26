@@ -8,6 +8,7 @@ export const MAIL_PROVIDER_CAPABILITIES: readonly [
   'drafts',
   'moveMessage',
   'aliases',
+  'downloadOriginal',
 ] = [
   'receive',
   'send',
@@ -18,6 +19,7 @@ export const MAIL_PROVIDER_CAPABILITIES: readonly [
   'drafts',
   'moveMessage',
   'aliases',
+  'downloadOriginal',
 ];
 
 /** Folder relation used for drafts that are owned by Mail rather than a Provider. */
@@ -38,6 +40,7 @@ export interface MailProviderCapabilities {
   readonly drafts?: boolean;
   readonly moveMessage?: boolean;
   readonly aliases?: boolean;
+  readonly downloadOriginal?: boolean;
 }
 
 export const MAIL_LABEL_COLORS = [
@@ -106,6 +109,11 @@ export interface MailAccount {
   readonly initialSyncReceivedAfter?: string;
   /** Minimum time between automatic synchronization sweeps for this account. */
   readonly automaticSyncIntervalMinutes?: number;
+  /**
+   * Provider folder IDs this account synchronizes. Absent means every folder, including folders created later; an
+   * empty list means the folders have not been chosen yet and no messages are imported.
+   */
+  readonly syncFolderIds?: readonly string[];
   readonly syncCursor?: MailSyncCursor;
 }
 
@@ -119,6 +127,43 @@ export interface MailManagedAccountView extends MailAccountView {
   readonly ownerName?: string;
   readonly canMoveMessages?: boolean;
   readonly canSync: boolean;
+}
+
+/**
+ * One member's account on the Mail settings page: who owns it, its Provider, its status and when it last
+ * synchronized. It carries no scopes, folders or other mailbox detail.
+ */
+export interface MailAdminAccountView {
+  readonly id: string;
+  readonly userId: string;
+  readonly ownerName?: string;
+  readonly address: string;
+  readonly displayName?: string;
+  readonly provider: MailProviderIdentity;
+  readonly status: MailAccountStatus;
+  readonly removalFailed?: boolean;
+  /** When the account last finished a synchronization. */
+  readonly lastSyncedAt?: string;
+}
+
+/** Narrows the Mail settings account list; every condition given must match. */
+export interface MailAdminAccountFilter {
+  readonly statuses?: readonly string[];
+  /** The configured Provider name. */
+  readonly providerName?: string;
+  readonly userId?: string;
+  /** Part of the address, the display name or the owner's name. */
+  readonly q?: string;
+}
+
+/** One member's account as Team mail offers it in its filters: who owns it and its address. */
+export interface MailTeamAccountView {
+  readonly id: string;
+  readonly userId: string;
+  readonly ownerName?: string;
+  readonly address: string;
+  readonly displayName?: string;
+  readonly canMoveMessages?: boolean;
 }
 
 export interface MailIdentity {
@@ -216,6 +261,22 @@ export interface MailFolder {
   readonly unreadCount?: number;
   /** Gmail labels and Outlook folders share this model without sharing semantics. */
   readonly kind: 'folder' | 'label';
+  /** Whether the account synchronizes this folder; only reported when unsynchronized folders are requested. */
+  readonly synced?: boolean;
+}
+
+/** Every folder of an account for choosing its synchronized folders, and whether that list is complete. */
+export interface MailFolderChoices {
+  readonly folders: readonly MailFolder[];
+  /** False until a synchronization run has read the whole folder list from the mail server. */
+  readonly complete: boolean;
+  /** No folder listing completed and none is running; start a synchronization to list the folders again. */
+  readonly failed: boolean;
+  /**
+   * True once an initial synchronization saved its cursor, so a synchronization that keeps the folder selection runs
+   * incrementally; false means it imports from the initial sync date.
+   */
+  readonly initialSyncCompleted: boolean;
 }
 
 export interface MailAddress {
@@ -376,6 +437,8 @@ export interface MailInitialSyncPolicy {
   /** @deprecated Historical imports no longer have a total message limit. */
   readonly maxMessages?: number;
   readonly batchSize: number;
+  /** The account's folder selection when the run was created; absent means every folder. */
+  readonly syncFolderIds?: readonly string[];
 }
 
 export interface MailSyncRun {
@@ -428,6 +491,12 @@ export interface MailSyncRunView {
   readonly canManage?: boolean;
 }
 
+/** An account after `updateAccount`, with the initial run a changed folder selection scheduled. */
+export interface MailUpdatedAccountView extends MailAccountView {
+  /** The initial run that replaced the active one because `syncFolderIds` changed; absent otherwise. */
+  readonly syncRun?: MailSyncRunView;
+}
+
 export interface MailStartSyncInput {
   readonly accountId: string;
   readonly mode?: MailSyncMode;
@@ -437,6 +506,17 @@ export interface MailStartSyncInput {
 export interface MailUpdateAccountInput {
   readonly accountId: string;
   readonly status?: 'active' | 'suspended';
+  /**
+   * The folders to synchronize, at least one; `null` synchronizes every folder, including folders created later. A
+   * change restarts the initial synchronization and deletes local messages left in no selected folder.
+   */
+  readonly syncFolderIds?: readonly string[] | null;
+}
+
+/** What changing an account's synchronized folders would do to its local messages. */
+export interface MailSyncFolderPreview {
+  /** Local messages that would be deleted because they belong to no selected folder. */
+  readonly removedMessageCount: number;
 }
 
 export type MailCommandType =
@@ -450,6 +530,19 @@ export interface MailCommand {
   readonly status: 'pending' | 'confirmed' | 'failed';
   readonly errorCode?: string;
   readonly createdAt: string;
+}
+
+/** Narrows every member's sync runs or submissions; every condition given must match. */
+export interface MailManagedLogFilter {
+  /** Runs or submissions of this member's accounts. */
+  readonly userId?: string;
+  readonly accountId?: string;
+  /** Any of these statuses. */
+  readonly statuses?: readonly string[];
+  /** Created at or after this RFC 3339 time. */
+  readonly createdFrom?: string;
+  /** Created before this RFC 3339 time. */
+  readonly createdBefore?: string;
 }
 
 /** A bounded offset page. For grouped submissions, total counts batches. */
@@ -490,6 +583,8 @@ export interface MailStartAuthorizationInput {
   readonly redirectUri: string;
   readonly scopes?: readonly string[];
   readonly initialSyncReceivedAfter: string;
+  /** Pass an empty list to choose the folders after connecting; omitted or `null` synchronizes every folder. */
+  readonly syncFolderIds?: readonly [] | null;
 }
 
 export interface MailConnectAccountInput {
@@ -499,6 +594,8 @@ export interface MailConnectAccountInput {
   readonly username?: string;
   readonly password: string;
   readonly initialSyncReceivedAfter: string;
+  /** Pass an empty list to choose the folders after connecting; omitted or `null` synchronizes every folder. */
+  readonly syncFolderIds?: readonly [] | null;
 }
 
 export interface MailCompleteAuthorizationInput {
@@ -715,6 +812,27 @@ export interface MailSubmissionLogView extends MailSubmissionView {
   readonly updatedAt: string;
 }
 
+/**
+ * One member's submission on the Mail settings page: its account, how many recipients, the result and why it failed.
+ * It never carries the subject, the body, the addresses or the attachments.
+ */
+export interface MailManagedSubmissionView {
+  readonly id: string;
+  readonly accountId: string;
+  readonly status: MailSubmissionStatus;
+  readonly recipientCount: number;
+  readonly bulk?: boolean;
+  readonly batchId?: string;
+  readonly scheduledAt?: string;
+  readonly error?: MailPublicError;
+  /** Whether the caller may retry it now. */
+  readonly canRetry?: boolean;
+  /** Whether the caller may cancel it now. */
+  readonly canCancel?: boolean;
+  readonly createdAt: string;
+  readonly updatedAt: string;
+}
+
 export interface MailAttachmentContent {
   readonly fileName: string;
   readonly contentType: string;
@@ -837,4 +955,60 @@ export interface NormalizedMailAttachment {
   readonly size: number;
   readonly contentId?: string;
   readonly inline: boolean;
+}
+
+/**
+ * Where a Mail setting's value comes from: an `MAIL_*` environment variable, the `mail` section of the application's
+ * configuration, the built-in default, or code the application registered.
+ */
+/** Where a setting's value comes from; `unknown` when the configuration cannot tell. */
+export type MailSettingSource =
+  'environment' | 'config' | 'default' | 'code' | 'unknown';
+
+export interface MailSettingValue<T> {
+  readonly value: T;
+  readonly source: MailSettingSource;
+}
+
+/** One Provider members can connect, with how many accounts use it. */
+export interface MailSettingsProviderView {
+  /** The configured name, or the type for a Provider registered in code without configuration. */
+  readonly name: string;
+  readonly type: string;
+  readonly label: string;
+  readonly connection?: 'oauth' | 'credentials';
+  readonly capabilities: MailProviderCapabilities;
+  /** `config` when `mail.providers` names it; `code` when it is only registered with `mailProviderRegistryToken`. */
+  readonly source: 'config' | 'code';
+  readonly accountCount: number;
+  /** Accounts that need their owner's attention: reauthorization required or revoked. */
+  readonly attentionCount: number;
+}
+
+/**
+ * The Mail settings page's overview: Providers, account totals and the runtime configuration with where each value
+ * comes from. It never carries a secret: the push webhook secret is only reported as configured or not, and Provider
+ * credentials are not read at all.
+ */
+export interface MailSettingsOverview {
+  readonly providers: readonly MailSettingsProviderView[];
+  readonly accounts: {
+    readonly total: number;
+    readonly reauthorizationRequired: number;
+    readonly suspended: number;
+    readonly removing: number;
+  };
+  readonly runtime: {
+    readonly automaticSyncIntervalMinutes: MailSettingValue<number>;
+    readonly syncBatchSize: MailSettingValue<number>;
+    readonly oauthCallbackUrl: MailSettingValue<string>;
+    readonly oauthReturnUrl: MailSettingValue<string>;
+    readonly pushWebhookUrl: MailSettingValue<string | null>;
+    readonly pushWebhookSecretConfigured: MailSettingValue<boolean>;
+    /** The `jobs` configuration Mail runs on; `null` follows `jobs.default`. */
+    readonly jobs: MailSettingValue<string | null>;
+    readonly logRetentionDays: MailSettingValue<number>;
+    /** `builtin` stores credentials in the application database; `application` is a vault the application registered. */
+    readonly credentialVault: MailSettingValue<'builtin' | 'application'>;
+  };
 }

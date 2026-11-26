@@ -97,7 +97,7 @@ describe('Provider failure classification', () => {
     expect(thrown).toBeInstanceOf(MailProviderRequestError);
     expect(isMailProviderError(thrown)).toBe(true);
     expect(thrown).toMatchObject({
-      message: 'Private provider details',
+      message: 'Mail provider request failed.',
       code: 'TEST_FAILURE',
       category: 'rate_limit',
       retryable: true,

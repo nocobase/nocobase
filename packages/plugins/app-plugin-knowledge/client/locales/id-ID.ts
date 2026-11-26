@@ -3,6 +3,7 @@ import type { LocaleResource } from '@nocobase/i18n';
 import type enUS from './en-US.js';
 
 const idID: LocaleResource<typeof enUS> = {
+  fileUsage: 'Berkas basis pengetahuan',
   indexing: {
     failedDocumentCount: 'Dokumen gagal: {{count}}',
     enabled: 'Aktifkan pengindeksan',
@@ -221,7 +222,6 @@ const idID: LocaleResource<typeof enUS> = {
       count_other: 'dokumen {{count}}',
       archivedCount_one: 'Dokumen arsip {{count}}',
       archivedCount_other: 'Dokumen arsip {{count}}',
-      selectTarget: 'Buka {{title}}',
       target: 'Buat di {{title}}',
       chooseTarget: 'Pilih proyek atau pengetahuan sistem yang akan dibuat',
       expandAll: 'Perluas semuanya',
@@ -329,6 +329,17 @@ const idID: LocaleResource<typeof enUS> = {
       uploaded_other:
         'File {{count}} yang diunggah; teks mereka sedang diekstraksi.',
       download: 'Unduh',
+      fullscreen: 'Layar penuh',
+      close: 'Tutup',
+      olderVersion: 'Versi {{version}} (versi lama)',
+      textHint_one:
+        'Pencarian dan jawaban AI memakai persis teks ini · {{count}} baris',
+      textHint_other:
+        'Pencarian dan jawaban AI memakai persis teks ini · {{count}} baris',
+      copy: 'Salin',
+      copied: 'Tersalin.',
+      copyFailed:
+        'Penyalinan otomatis tidak tersedia di sini; pilih teksnya lalu salin sendiri.',
       version: 'Versi {{version}}',
       statusHint: {
         parsing:
@@ -413,6 +424,7 @@ const idID: LocaleResource<typeof enUS> = {
       contents: 'Isi',
       edit: 'Edit',
       rename: 'Ganti nama',
+      properties: 'Properti dan ringkasan',
       history: 'Sejarah',
       verify: 'Mark diverifikasi',
       verifiedToast: 'Ditandai terverifikasi.',

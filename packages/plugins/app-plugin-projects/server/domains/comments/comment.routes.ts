@@ -12,16 +12,11 @@ import {
   emptyResponse,
   listResponse,
 } from '@nocobase/app-server/router';
-import type { DatabaseConnection } from '@nocobase/db';
 import type { Hono } from 'hono';
 
 import { collectRunAttempts, RECORDED_SKIPS } from '../../kernel/work.js';
 import type { CreateCommentResult } from '../../../shared/comments.js';
-import {
-  delegatedWrite,
-  viewerOf,
-  type ViewerEnv,
-} from '../../access/request.js';
+import { viewerOf, type ViewerEnv } from '../../access/request.js';
 import {
   cursorList,
   domainRouter,
@@ -59,8 +54,6 @@ export function createIssueCommentRoutes(deps: {
   readonly comments: CommentService;
   readonly uploadLimit: DriveUploadLimit;
   readonly queries: CommentQueries;
-  /** A connection to read with, for answering a comment a delegated write made. */
-  readonly read: () => DatabaseConnection;
 }): Hono<ViewerEnv> {
   const routes = domainRouter<ViewerEnv>();
   routes.get(
@@ -155,27 +148,6 @@ export function createIssueCommentRoutes(deps: {
     async (context) => {
       const { issueId } = context.req.valid('param');
       const input = context.req.valid('json');
-      const delegated = await delegatedWrite(context, {
-        title: `Comment on ${issueId}`,
-        rows: [{ op: 'comment.create', params: { issue: issueId, ...input } }],
-      });
-      if (delegated) {
-        const created = delegated.plan.rows[0]?.result?.created?.id;
-        const issue = delegated.plan.rows[0]?.result?.target?.id;
-        const comment =
-          created && issue
-            ? (await deps.queries.list(deps.read(), issue)).find(
-                (candidate) => candidate.id === created,
-              )
-            : undefined;
-        return context.json(
-          {
-            data: { comment: comment ?? null, triggered: [], skipped: [] },
-            meta: delegated.meta,
-          },
-          201,
-        );
-      }
       const {
         value: { comment, triggered },
         attempts,
@@ -256,7 +228,7 @@ export function createCommentRoutes(comments: CommentService): Hono<ViewerEnv> {
         confirm: 'Delete this comment and its files?',
       }),
       description:
-        'By its author, or by whoever may moderate comments on the issue. A run may delete only its own plain comments from the current run, without moderator fallback. Its files go with it.',
+        'By its author, or by whoever may moderate comments on the issue. Its files go with it.',
       responses: {
         204: emptyResponse(),
         ...apiErrorResponses,

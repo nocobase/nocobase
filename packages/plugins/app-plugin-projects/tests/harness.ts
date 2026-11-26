@@ -22,8 +22,6 @@ import { permissionsOf, type Role } from './permissions.js';
 export { permissionsOf, type Role };
 import type { Viewer } from '../server/access/viewer.js';
 import type { UserInvitations } from '../server/domains/invitations/index.js';
-import type { PlanHooks } from '../server/domains/plans/index.js';
-import type { IntakeOrganizer } from '../server/domains/plans/intake/index.js';
 import {
   registerBusinesses,
   registerSettings,
@@ -55,10 +53,6 @@ export interface Harness {
   readonly admitted: string[];
   /** The administrators the application reports. */
   readonly admins: string[];
-  /** What hears plans being decided (`projectsPlanHooksToken`); set it in a test. */
-  readonly planHooks: { current?: PlanHooks };
-  /** Who organises intake with AI (`projectsIntakeOrganizerToken`); set it in a test. */
-  readonly intakeOrganizer: { current?: IntakeOrganizer };
   /** The role `permissionsOfUser` reports per user (`member` when unset). */
   readonly roles: Map<string, Role>;
   /** Stored files' bytes by key: the file plugin and Drive, in memory. */
@@ -108,8 +102,6 @@ export async function createHarness(
   let next = 0;
   const admitted: string[] = [];
   const admins: string[] = [];
-  const planHooks: { current?: PlanHooks } = {};
-  const intakeOrganizer: { current?: IntakeOrganizer } = {};
   const roles = new Map<string, Role>();
   const authorization = createAppAuthorization({
     connection: database.connection(),
@@ -206,8 +198,6 @@ export async function createHarness(
         Promise.resolve(permissionsOf(roles.get(userId) ?? 'member', userId)),
     },
     invitations,
-    planHooks: () => planHooks.current,
-    intakeOrganizer: () => intakeOrganizer.current,
   });
   invitations.onAccepted = async (conn, row, userId) => {
     await addUser(userId, userId, conn);
@@ -228,8 +218,6 @@ export async function createHarness(
     invitations,
     admitted,
     admins,
-    planHooks,
-    intakeOrganizer,
     roles,
     stored,
     addUser: (id, name) => addUser(id, name),

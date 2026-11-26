@@ -1,8 +1,8 @@
 /**
  * Route `/runtimes`: the runtimes that run agents (a runner on a server, a VM or someone's own device). The list is an
  * overview, one row per runtime: its name with its system, its state with the slots it uses, its coding tools by
- * whether each is signed in, whether it is personal or shared with all users, its runner version (marked when a newer
- * one is served) and when it was last seen. Clicking a row, or "Edit" in its menu, opens the runtime's sheet
+ * whether each is signed in and its quota, whether it is personal or shared with all users, whether its runner is the
+ * latest version or upgradable, and when it was last seen. Clicking a row, or "Edit" in its menu, opens the runtime's sheet
  * (`runner-sheet.tsx`), which holds every setting; the menu also revokes it, or deletes it once revoked. Revoked
  * runtimes sit folded below until deleted.
  *
@@ -265,7 +265,9 @@ function RunnerTable({
             <TableHead>{t('runtimes.columns.status')}</TableHead>
             <TableHead>{t('runtimes.columns.tools')}</TableHead>
             <TableHead>{t('runtimes.columns.sharing')}</TableHead>
-            <TableHead>{t('runtimes.columns.version')}</TableHead>
+            <TableHead className='w-28'>
+              {t('runtimes.columns.version')}
+            </TableHead>
             <TableHead>{t('runtimes.columns.lastSeen')}</TableHead>
             <TableHead className='w-10' />
           </TableRow>

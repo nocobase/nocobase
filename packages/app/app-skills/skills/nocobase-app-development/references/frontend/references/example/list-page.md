@@ -6,11 +6,11 @@ Part of the [projects worked example](../example.md). For the runnable, continuo
 
 **Add first**: `yes n | pnpm exec shadcn add alert empty input-group select skeleton table`, then format the files it creates ([how](../shadcn.md#1-what-the-template-ships-and-how-to-add-the-rest)), and reuse the template's shipped `DataTable` in `client/components/data-table/` with its supported `@tanstack/react-table` v8 dependency ([section 1 of `table.md`](../table.md#1-choosing-a-table-component)).
 
-**On phones**: `DataTable` hands `ProjectCard` the row's own actions cell (`ProjectRowMenu`) as `card.actions`, and the card ends with it (M3.1 in [the phone experience](../../mobile.md)); keep it when adapting this page, and do not add a different action control to the card. Leave it out only together with the row's menu, for one of the three cases M3.1 names. The search box, the filter and the sort sit on one row through `DataTable`'s `search`, `filters` and `getColumnLabel` (M4.1); never lay them out yourself in the `toolbar`.
+**On phones**: `DataTable` hands `ProjectCard` the row's own actions cell (its `RowActions` "⋮" menu) as `card.actions`, and the card ends with it (M3.1 in [the phone experience](../../mobile.md)); keep it when adapting this page, and do not add a different action control to the card. Leave it out only together with the row's menu, for one of the three cases M3.1 names. The search box, the filter and the sort sit on one row through `DataTable`'s `search`, `filters` and `getColumnLabel` (M4.1); never lay them out yourself in the `toolbar`.
 
 **Links to**: the [create dialog](create-dialog.md), the [detail drawer](detail-drawer.md) and the [edit dialog](edit-dialog.md), which a row's menu opens alone, are its child routes. Without a detail view, render the name as plain text: a link to a route that does not exist lands on the home page.
 
-**Without detail and delete** (a list with only a create dialog), remove: the `actions` column, `ProjectRowMenu` and the `actions` slot of `ProjectCard`, the `deletion` state, `ProjectDeleteDialog` at the end, `focusSearchAfterReloadRef` with its effect, and `afterDelete`, `onSaved` and `onNotFound`, which leaves `outletContext` as `{ reload }`, `ProjectsOutletContext` in `types.ts` with only `reload` and no `ProjectEditOutletContext`; render the name as plain text.
+**Without detail and delete** (a list with only a create dialog), remove: the `actions` column and the `actions` slot of `ProjectCard`, the `deletion` state, `ProjectDeleteDialog` at the end, `focusSearchAfterReloadRef` with its effect, and `afterDelete`, `onSaved` and `onNotFound`, which leaves `outletContext` as `{ reload }`, `ProjectsOutletContext` in `types.ts` with only `reload` and no `ProjectEditOutletContext`; render the name as plain text.
 
 Use the application's existing authorization hook to resolve create permission before rendering the page-level action. Put the standard create action only in the page header, including for a successful empty query; never wire it through the empty state's `emptyAction`. Let `DataTable` render each built-in state with its matching icon and one short line, and keep clear, retry and sign-in actions in the existing toolbar or authentication flow. Follow [shared list feedback](../list-feedback.md) for the state and request contract.
 
@@ -24,13 +24,7 @@ import { listStateShowsData, resolveListState } from '@nocobase/app-client';
 import { useCan } from '@nocobase/app-plugin-authorization/client';
 import { useLocale, useTranslation } from '@nocobase/i18n/client';
 import type { ColumnDef } from '@tanstack/react-table';
-import {
-  MoreHorizontalIcon,
-  PencilIcon,
-  PlusIcon,
-  SearchIcon,
-  Trash2Icon,
-} from 'lucide-react';
+import { PlusIcon, SearchIcon } from 'lucide-react';
 import {
   type ReactElement,
   type ReactNode,
@@ -52,15 +46,8 @@ import { useListLocation } from '#hooks/use-list-location';
 import { useTableUrlState } from '#hooks/use-table-url-state';
 import { PageContainer } from '#components/page-container';
 import { PageHeader } from '#components/page-header';
+import { RowActions } from '#components/row-actions';
 import { Button } from '#components/ui/button';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuGroup,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '#components/ui/dropdown-menu';
 import {
   InputGroup,
   InputGroupAddon,
@@ -290,14 +277,34 @@ export default function ProjectsPage(): ReactElement {
         header: () => (
           <span className='sr-only'>{t('projects.actions.label')}</span>
         ),
+        // One "⋮" menu at the end of the row, the same on every page (T1.5); DataTable hands it to the phone card.
         cell: ({ row }) => (
-          <div className='flex justify-end'>
-            <ProjectRowMenu
-              project={row.original}
-              search={location.search}
-              onDelete={(project) => setDeletion({ open: true, project })}
-            />
-          </div>
+          <RowActions
+            label={t('projects.actions.more', { name: row.original.name })}
+            actions={[
+              {
+                // Edit is the list's own child route, edit/:projectId: the item is a link, and the dialog opens
+                // alone over the list.
+                key: 'edit',
+                label: t('projects.actions.edit'),
+                render: (
+                  <Link
+                    to={{
+                      pathname: `edit/${encodeURIComponent(row.original.id)}`,
+                      search: location.search,
+                    }}
+                  />
+                ),
+              },
+              {
+                key: 'delete',
+                label: t('projects.actions.delete'),
+                destructive: true,
+                onClick: () =>
+                  setDeletion({ open: true, project: row.original }),
+              },
+            ]}
+          />
         ),
       },
     ],
@@ -378,7 +385,7 @@ export default function ProjectsPage(): ReactElement {
             ) : null}
           </div>
         )}
-        // `card.actions` is the row's actions cell (ProjectRowMenu), which the card ends with.
+        // `card.actions` is the row's actions cell (its RowActions menu), which the card ends with.
         renderCard={(row, card) => (
           <ProjectCard
             project={row.original}
@@ -440,64 +447,6 @@ function RefreshIndicator(): ReactElement | null {
     return () => clearTimeout(timer);
   }, []);
   return visible ? <Spinner className='text-muted-foreground' /> : null;
-}
-
-/** A project's actions: the row's menu on desktop and the card's on a phone, where it is a full-size tap target. */
-function ProjectRowMenu({
-  project,
-  search,
-  onDelete,
-  size = 'icon-sm',
-}: {
-  readonly project: Project;
-  readonly search: string;
-  readonly onDelete: (project: Project) => void;
-  readonly size?: 'icon-sm' | 'icon';
-}): ReactElement {
-  const { t } = useTranslation();
-  return (
-    <DropdownMenu>
-      <DropdownMenuTrigger
-        render={
-          <Button
-            variant='ghost'
-            size={size}
-            aria-label={t('projects.actions.more', { name: project.name })}
-          />
-        }
-      >
-        <MoreHorizontalIcon />
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align='end' className='w-auto min-w-40'>
-        <DropdownMenuGroup>
-          {/* Edit is the list's own child route, edit/:projectId: the menu item is a link, and the dialog opens alone over the list. */}
-          <DropdownMenuItem
-            render={
-              <Link
-                to={{
-                  pathname: `edit/${encodeURIComponent(project.id)}`,
-                  search,
-                }}
-              />
-            }
-          >
-            <PencilIcon />
-            {t('projects.actions.edit')}
-          </DropdownMenuItem>
-        </DropdownMenuGroup>
-        <DropdownMenuSeparator />
-        <DropdownMenuGroup>
-          <DropdownMenuItem
-            variant='destructive'
-            onClick={() => onDelete(project)}
-          >
-            <Trash2Icon />
-            {t('projects.actions.delete')}
-          </DropdownMenuItem>
-        </DropdownMenuGroup>
-      </DropdownMenuContent>
-    </DropdownMenu>
-  );
 }
 
 /**

@@ -15,6 +15,7 @@ import {
   type MailAccount,
   type MailComposeInput,
   type MailFolder,
+  type MailFolderChoices,
   type MailIdentity,
   type MailLabel,
   type MailLabelColor,
@@ -174,6 +175,16 @@ export class DatabaseMailStore implements MailStore {
     return this.accounts.listAllAccounts();
   }
 
+  public listLastSyncedAt(): Promise<ReadonlyMap<string, string>> {
+    return this.sync.listLastSyncedAt();
+  }
+
+  public countAccountsByProvider(): Promise<
+    readonly import('./contracts/persistence.js').MailProviderAccountCount[]
+  > {
+    return this.accounts.countAccountsByProvider();
+  }
+
   public async getPushSubscription(
     accountId: string,
   ): Promise<MailProviderPushSubscription | undefined> {
@@ -263,6 +274,23 @@ export class DatabaseMailStore implements MailStore {
     status: 'active' | 'suspended',
   ): Promise<void> {
     return this.accounts.updateAccountStatus(accountId, status);
+  }
+
+  public updateAccountSyncFolders(
+    accountId: string,
+    syncFolderIds: readonly string[] | undefined,
+  ): Promise<boolean> {
+    return this.accounts.updateAccountSyncFolders(accountId, syncFolderIds);
+  }
+
+  public countMessagesOutsideSyncFolders(
+    accountId: string,
+    syncFolderIds: readonly string[],
+  ): Promise<number> {
+    return this.accounts.countMessagesOutsideSyncFolders(
+      accountId,
+      syncFolderIds,
+    );
   }
 
   public async saveAccount(account: MailAccount): Promise<MailAccount> {
@@ -582,10 +610,21 @@ export class DatabaseMailStore implements MailStore {
     return this.sync.createSyncRun(input);
   }
 
+  public replaceSyncFolders(
+    syncFolderIds: readonly string[] | undefined,
+    run: MailCreateSyncRunInput,
+  ): Promise<MailSyncRun | undefined> {
+    return this.sync.replaceSyncFolders(syncFolderIds, run);
+  }
+
   public async findActiveSyncRun(
     accountId: string,
   ): Promise<MailSyncRun | undefined> {
     return this.sync.findActiveSyncRun(accountId);
+  }
+
+  public async getFolderCatalog(accountId: string): Promise<MailFolderChoices> {
+    return this.sync.getFolderCatalog(accountId);
   }
 
   public async getSyncRun(syncRunId: string): Promise<MailSyncRun | undefined> {
@@ -617,10 +656,18 @@ export class DatabaseMailStore implements MailStore {
   }
 
   public async listAllSyncRuns(
-    offset: number,
+    pageToken: string | undefined,
     limit: number,
-  ): Promise<import('../shared/mail.js').MailOffsetPage<MailSyncRun>> {
-    return this.sync.listAllSyncRuns(offset, limit);
+    filter?: import('../shared/mail.js').MailManagedLogFilter,
+  ): Promise<import('../shared/mail.js').MailPage<MailSyncRun>> {
+    return this.sync.listAllSyncRuns(pageToken, limit, filter);
+  }
+
+  public deleteFinishedSyncRunsBefore(
+    before: string,
+    limit: number,
+  ): Promise<number> {
+    return this.sync.deleteFinishedSyncRunsBefore(before, limit);
   }
 
   public async cancelSyncRun(
@@ -706,10 +753,18 @@ export class DatabaseMailStore implements MailStore {
   }
 
   public async listAllSubmissions(
-    offset: number,
+    pageToken: string | undefined,
     limit: number,
-  ): Promise<import('../shared/mail.js').MailOffsetPage<MailStoredSubmission>> {
-    return this.submissions.listAllSubmissions(offset, limit);
+    filter?: import('../shared/mail.js').MailManagedLogFilter,
+  ): Promise<import('../shared/mail.js').MailPage<MailStoredSubmission>> {
+    return this.submissions.listAllSubmissions(pageToken, limit, filter);
+  }
+
+  public deleteFinishedSubmissionsBefore(
+    before: string,
+    limit: number,
+  ): Promise<number> {
+    return this.submissions.deleteFinishedSubmissionsBefore(before, limit);
   }
 
   public async createSubmission(

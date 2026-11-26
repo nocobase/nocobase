@@ -1,410 +1,111 @@
-import type { FoundationResource } from './en-US.js';
+import type { LocaleResource } from '@nocobase/i18n';
 
-const idID: FoundationResource = {
+import type enUS from './en-US.js';
+
+const idID: LocaleResource<typeof enUS> = {
   nav: {
-    settings: 'Pengaturan sistem',
-    foundation: 'Fondasi aplikasi',
-    foundationDescription: 'Kemampuan NocoBase yang digunakan aplikasi ini.',
-    capabilityGuide: 'Fitur dan ekstensi',
-    capabilityGuideDescription:
-      'Pelajari cara menggunakan fitur yang tersedia di aplikasi ini untuk membangun proses bisnis Anda.',
+    plugins: 'Plugin',
+    pluginsDescription:
+      'Plugin yang digunakan aplikasi ini, versinya, dan cara mengaktifkan yang lain.',
+  },
+  access: {
+    section: 'Sistem',
+    settings: {
+      plugins: 'Plugin',
+    },
+    actions: {
+      read: 'Lihat',
+    },
   },
   page: {
-    otherCapabilities: 'Kemampuan lainnya',
-    notCounted: 'Belum dihitung',
-    updatingHistory: 'Memperbarui… Menampilkan hasil sebelumnya.',
-    previousKernel:
-      'Menampilkan riwayat kernel {{version}}; kernel berjalan: {{current}}.',
-    identified: 'Teridentifikasi {{value}}',
-    counted: 'Terhitung: {{value}}',
-    partial: 'Sebagian data menunggu pembaruan',
-    title: 'Fondasi aplikasi',
+    title: 'Plugin',
     description:
-      'Aplikasi Anda berfokus pada bisnis. Data, izin, dan alur kerja didukung NocoBase Core: kemampuan umum yang dikembangkan, diuji, dipelihara oleh NocoBase, serta diperbarui melalui rilis resmi.',
-    bandTitle: 'NocoBase Core',
-    bandDescription:
-      'Pilih kemampuan untuk melihat perannya dalam aplikasi ini.',
-    score: '{{active}} / {{total}}',
-    scoreCaption: 'kemampuan mendukung aplikasi',
-    refresh: 'Segarkan',
-    refreshing: 'Mengumpulkan…',
-    updatedAt: 'Pemeriksaan terakhir {{time}}',
-    loading: 'Mengumpulkan kemampuan…',
-    refreshFailed:
-      'Pembaruan gagal. Menampilkan hasil terakhir yang berhasil dikumpulkan.',
-    loadFailed: 'Informasi menunggu pembaruan',
-    forbidden:
-      'Hanya administrator dengan akses tak terbatas yang dapat melihat halaman ini.',
+      'Plugin yang digunakan aplikasi ini. Mengaktifkan atau menonaktifkan plugin mengubah kode aplikasi dan baru berlaku setelah dimulai ulang, jadi halaman ini memberikan perintah yang perlu dijalankan, bukan sakelar.',
+    deployed:
+      'Untuk mengaktifkan plugin, daftarkan plugin di proyek sumber lalu deploy ulang aplikasi.',
+    attention_one:
+      '{{count}} plugin perlu perhatian dan ditampilkan paling atas.',
+    attention_other:
+      '{{count}} plugin perlu perhatian dan ditampilkan paling atas.',
+    search: 'Cari berdasarkan nama atau paket',
+    loading: 'Memuat plugin…',
+    loadFailed: 'Plugin tidak dapat dimuat.',
     retry: 'Coba lagi',
-    undetermined_one: 'Informasi menunggu pembaruan ({{count}})',
-    undetermined_other: 'Informasi menunggu pembaruan ({{count}})',
-    highlightsLabel: 'Angka utama',
-    unavailable: 'Informasi menunggu pembaruan',
-    lowerBound: 'Nilai minimum: sebagian data tidak dapat dibaca.',
+    empty: 'Tidak ada plugin yang cocok.',
   },
-  matrix: {
-    apiPath: 'Permintaan API: {{method}} {{path}}',
-    successPath: 'Permintaan API berhasil: {{method}} {{path}}',
-    conditions: {
-      databaseAvailable: 'Database tersedia',
-      authorizationIdentityResolved: 'Identitas otorisasi terselesaikan',
-      authenticated: 'Autentikasi diterima',
-      bodyWithinLimit: 'Isi permintaan berada dalam batas ukuran',
-      validInput: 'Validasi input berhasil',
-    },
-    collections: 'Koleksi data: {{names}}',
-    title: 'Modul bisnis dan kemampuan fondasi',
-    description:
-      'Lihat kemampuan yang mendukung tiap modul. Pilih tanda centang untuk melihat dasar hubungan dan pekerjaan yang perlu dibuat sendiri.',
-    modules: 'Modul bisnis',
-    summary: '{{count}} kemampuan · {{pages}} halaman',
-    inspect: 'Lihat {{module}} × {{capability}}',
-    unknown: 'Belum dikenali',
-    empty:
-      'Belum ada modul yang ditemukan. Modul akan muncul otomatis saat halaman dan navigasi ditambahkan.',
-    legend:
-      '✓ Integrasi dikenali; · hubungan belum dikenali. Referensi kode menunjukkan dependensi, bukan jumlah eksekusi.',
-    partial:
-      'Beberapa dependensi halaman belum dapat dipastikan; hanya hubungan yang telah dikonfirmasi yang ditampilkan.',
-    evidence: {
-      page: 'Halaman terdaftar di aplikasi',
-      authentication: 'Halaman memerlukan login',
-      authorization: 'Akses halaman dikendalikan oleh izin',
-      provider: 'Halaman disediakan penyedia ini',
-      source: 'Penyedia dirujuk oleh kode halaman',
-      apiSource: 'Penyedia dirujuk oleh penangan API yang sesuai',
-    },
+  filters: {
+    label: 'Tampilkan',
+    all: 'Semua {{count}}',
+    enabled: 'Aktif {{count}}',
+    disabled: 'Belum aktif {{count}}',
+    attention: 'Perlu perhatian {{count}}',
   },
-  inventory: {
-    recognitionNotes: 'Catatan identifikasi',
-    title: 'Kemampuan dan penyedia',
-    description:
-      'Kemampuan mencerminkan inti, plugin resmi dan Pro, serta ekstensi yang terhubung ke aplikasi.',
-    discovered: 'paket penyedia ditemukan',
-    mapped: 'paket penyedia terklasifikasi',
-    unmapped: 'menunggu klasifikasi',
-    partial: 'Penemuan belum lengkap. Tidak dapat membaca: {{sources}}.',
-    selectedCategory: 'Penyedia untuk {{category}}',
-    usageBoundary:
-      'Status berlaku untuk seluruh kategori, bukan bukti bahwa setiap paket telah diaktifkan, dikonfigurasi, atau digunakan.',
-    noCategoryProviders:
-      'Katalog saat ini belum mengenali penyedia untuk kategori ini.',
-    extensionsTitle: 'Penyedia tambahan · menunggu identifikasi',
-    extensionsDescription:
-      'Penyedia tanpa kategori tetap terlihat. Tidak otomatis dianggap integrasi eksternal atau belum digunakan.',
-    noExtensions: 'Tidak ditemukan penyedia tambahan dalam cakupan saat ini.',
-    discoveryBoundary:
-      'Cakupan: dependensi langsung, penyedia yang dikenal, kontribusi basis data dan API terusan publik, serta kontribusi klien yang diamati di peramban. Tidak mencakup semua kontribusi runtime, ekstensi tidak langsung, atau modul lokal. Asal dan edisi Pro memerlukan katalog tepercaya; nama dan lisensi saja tidak cukup.',
-    versionUnknown: 'Versi tidak tersedia',
-    origin: 'Asal',
-    officialCatalog: 'Katalog NocoBase',
-    unverifiedOrigin: 'Asal belum diverifikasi',
-    installation: 'Pemasangan',
-    installed: 'Manifes ditemukan',
-    manifestUnavailable: 'Manifes tidak tersedia',
-    registration: 'Pendaftaran',
-    observed: 'Kontribusi runtime saat ini teramati',
-    registrationUnknown: 'Belum dipastikan · bukan berarti dinonaktifkan',
-    evidence: 'Bukti',
-    noEvidence: 'Belum ada bukti terkonfirmasi',
-    categories: 'Kategori',
-    awaitingRecognition: 'Menunggu klasifikasi',
-    evidenceLabels: {
-      manifest: 'Manifes paket terpasang',
-      databaseContribution: 'Kontribusi tugas basis data',
-      apiContribution: 'Kontribusi API terusan',
-      foundationRuntime: 'Layanan fondasi berjalan',
-      clientContribution: 'Kontribusi klien teramati di peramban',
-      serverRegistration: 'Pendaftaran plugin server',
-    },
+  columns: {
+    plugin: 'Plugin',
+    version: 'Versi',
+    status: 'Status',
+    actions: 'Tindakan',
+  },
+  groups: {
+    enabled: 'Aktif {{count}}',
+    disabled: 'Belum aktif {{count}}',
   },
   status: {
-    active: 'Digunakan',
-    needsSetup: 'Siap, perlu konfigurasi',
-    unused: 'Belum digunakan',
-    undetermined: 'Informasi menunggu pembaruan',
-    legendActive: 'Digunakan {{count}}',
-    legendNeedsSetup: 'Perlu konfigurasi {{count}}',
-    legendUnused: 'Belum digunakan {{count}}',
-  },
-  detail: {
-    selectedCapability: 'Kemampuan terpilih',
-    retainedAt: 'Terakhir dikonfirmasi {{time}}',
-    readNotes: 'Detail pembacaan',
-    collectionCount: '{{count}} tabel',
-    collectionPreview: 'Pratinjau tabel',
-    collectionsTitle: 'Tabel',
-    noCollectionMatches: 'Tidak ada tabel yang cocok',
-    noCollectionMatchesHint: 'Coba nama lain atau kosongkan pencarian.',
-    collectionRange: '{{from}}–{{to}} dari {{total}}',
-    closeCollections: 'Tutup daftar tabel',
-    viewCollections: 'Lihat semua koleksi',
-    searchCollections: 'Cari koleksi',
-    collectionResults: '{{count}} koleksi cocok',
-    previousPage: 'Sebelumnya',
-    nextPage: 'Berikutnya',
-    countRecords: 'Hitung rekaman',
-    recordsOnDemand:
-      'Menghitung tabel teridentifikasi sesuai permintaan, tanpa tabel sistem yang dikenal. Basis data besar mungkin memerlukan waktu lebih lama.',
-    recordsCountedAt: 'Catatan dihitung {{time}}',
-
-    businessModules: 'Modul bisnis terkait',
-    inThisApp: 'Dalam aplikasi ini',
-    withoutFoundation: 'Tanpa fondasi',
-    onceInUse: 'Setelah digunakan',
-    whyNot: 'Alasan belum digunakan',
-    liveData: 'Statistik',
-    parts: 'Komponen',
-    packages: 'Disediakan paket NocoBase',
-    noPackages: 'Belum ada paket kemampuan ini yang terpasang.',
-    noFacts: 'Belum ada fakta terkonfirmasi.',
-    partial: 'Sebagian data menunggu pembaruan.',
-    failed: 'Informasi menunggu pembaruan.',
-    unreadable: 'Tidak dapat membaca: {{sources}}',
-    timeout: 'Pemeriksaan melewati batas waktu.',
-  },
-  capabilities: {
-    dataModeling: {
-      name: 'Pemodelan data',
-      tagline: 'Koleksi, kolom, relasi, dan migrasi',
-      without:
-        'Perlu membuat perubahan skema, kueri, filter, paginasi, perlindungan injeksi, dan kompatibilitas basis data sendiri.',
-      onceInUse:
-        'Migrasi mendefinisikan koleksi dengan antarmuka kueri seragam untuk basis data yang didukung.',
-    },
-    files: {
-      name: 'Pengelolaan berkas',
-      tagline: 'Unggahan, penyimpanan, dan lampiran',
-      without:
-        'Perlu membuat unggahan, adaptor, pemeriksaan ukuran dan jenis, serta tautan unduhan sendiri.',
-      onceInUse: 'Kontrak koleksi dan penyimpanan seragam mengelola lampiran.',
-    },
-    usersAndOrganizations: {
-      name: 'Pengguna dan organisasi',
-      tagline: 'Akun, masuk, dan undangan',
-      without:
-        'Perlu membuat pendaftaran, sesi, pemulihan kata sandi, dan pengelolaan akun yang aman sendiri.',
-      onceInUse: 'Akun, proses masuk, dan undangan dikelola terpusat.',
-    },
-    permissions: {
-      name: 'Izin',
-      tagline: 'Kumpulan izin dan aturan akses',
-      without:
-        'Perlu memeriksa akses pada setiap API tanpa pengelolaan terpusat.',
-      onceInUse:
-        'Kumpulan izin mengatur halaman, data, dan tindakan, diperiksa server pada setiap permintaan.',
-    },
-    workflows: {
-      name: 'Alur dan persetujuan',
-      tagline: 'Siklus hidup, transisi, dan jadwal',
-      without:
-        'Perlu membuat status, transisi, riwayat, percobaan ulang, dan batas waktu sendiri.',
-      onceInUse:
-        'Siklus hidup menyediakan transisi terkendali, riwayat, dan efek dengan percobaan ulang.',
-    },
-    aiAgents: {
-      name: 'AI dan agen',
-      tagline: 'Layanan model, agen, dan pelaksana',
-      without:
-        'Perlu mengintegrasikan model, melindungi kunci, mencatat penggunaan, dan menjalankan agen secara aman.',
-      onceInUse:
-        'Aktifkan layanan model untuk OnlineAgent dan gateway model, atau daftarkan pelaksana untuk menjalankan agen.',
-    },
-    knowledge: {
-      name: 'Basis pengetahuan',
-      tagline: 'Ruang, dokumen, dan pencarian',
-      without:
-        'Perlu membuat penyimpanan dokumen, versi, akses, dan pencarian sendiri.',
-      onceInUse:
-        'Ruang mengelola dokumen, versi, dan akses untuk pengguna dan agen.',
-    },
-    mail: {
-      name: 'Email',
-      tagline: 'Kotak surat, sinkronisasi, dan pengiriman',
-      without:
-        'Perlu menghubungkan layanan, menyinkronkan folder, mengelola otorisasi, dan mengirim ulang sendiri.',
-      onceInUse:
-        'Hubungkan kotak surat untuk membaca, menyinkronkan, dan mengirim dalam aplikasi.',
-    },
-    notifications: {
-      name: 'Notifikasi',
-      tagline: 'Kanal, pengiriman, dan pesan internal',
-      without:
-        'Perlu membuat pengiriman, percobaan ulang, deduplikasi, dan riwayat untuk setiap kanal.',
-      onceInUse:
-        'Kanal terkonfigurasi menyediakan pengiriman dengan percobaan ulang, deduplikasi, dan riwayat.',
-    },
-    integrations: {
-      name: 'Integrasi',
-      tagline: 'Kunci API dan akses eksternal',
-      without:
-        'Perlu menerbitkan dan memeriksa kredensial untuk setiap sistem eksternal.',
-      onceInUse: 'Sistem eksternal memakai kunci API dengan izin pemiliknya.',
-    },
-    interface: {
-      name: 'Antarmuka dan konfigurasi',
-      tagline: 'Halaman, navigasi, bahasa, dan tema',
-      without:
-        'Perlu membuat perutean, menu, terjemahan, dan tema sebelum halaman bisnis.',
-      onceInUse: 'Klien NocoBase menyediakan halaman, menu, bahasa, dan tema.',
-    },
-    audit: {
-      name: 'Log audit',
-      tagline: 'Catatan operasi sensitif',
-      without:
-        'Perlu mencatat sendiri siapa yang melakukan setiap perubahan penting.',
-      onceInUse: 'Catatan terpusat menyimpan operasi sensitif aplikasi.',
-    },
-    operations: {
-      name: 'Operasional',
-      tagline: 'Migrasi, tugas, antrean, dan rahasia',
-      without:
-        'Perlu mengelola peningkatan, tugas latar, antrean, dan penyimpanan rahasia sendiri.',
-      onceInUse:
-        'Server menyediakan migrasi tercatat, tugas, antrean, dan pengelolaan rahasia.',
-    },
+    enabled: 'Aktif',
+    skillsOnly: 'Aktif · Hanya Skill',
+    enabledAttention: 'Aktif · Perlu perhatian',
+    disabled: 'Belum aktif',
+    disabledAttention: 'Belum aktif · Perlu perhatian',
+    unknown: 'Tidak dapat dipastikan · Build ulang',
   },
   reasons: {
-    installedNotUsed:
-      'Sudah terpasang, tetapi belum ditemukan bukti pengaktifan atau penggunaan saat ini.',
-    noRecognizedAudit:
-      'Katalog saat ini belum mengenali penyedia audit; ekstensi lain mungkin menyediakannya.',
-    noDatabase: 'Aplikasi berjalan tanpa basis data.',
-    notRegistered: 'Plugin penyedia belum terdaftar dalam aplikasi.',
-    notProvided: 'NocoBase Core belum menyediakan kemampuan ini.',
-    noFileCollection: 'Belum ada koleksi yang menyimpan berkas.',
-    noDrive: 'Ada koleksi berkas, tetapi penyimpanan belum dikonfigurasi.',
-    noAccounts: 'Aplikasi belum memiliki akun.',
-    onlyUnrestrictedAccess:
-      'Hanya administrator memiliki akses tak terbatas; belum ada izin untuk pengguna lain.',
-    noWorkflows: 'Belum ada siklus hidup tersimpan atau jadwal aktif.',
-    noSchedules: 'Belum ada jadwal aktif.',
-    noModelOrRunner: 'Belum ada layanan model aktif atau pelaksana terdaftar.',
-    noModelService: 'Belum ada layanan model aktif.',
-    noAgent: 'Belum ada agen yang didefinisikan.',
-    noDocuments: 'Ruang pengetahuan belum memiliki dokumen.',
-    noConnectedMailbox: 'Belum ada kotak surat terhubung.',
-    noChannel: 'Belum ada kanal notifikasi terkonfigurasi.',
-    noApiKey: 'Belum ada kunci API.',
-    noUsedApiKey: 'Ada kunci API, tetapi belum digunakan.',
-    noClient: 'Aplikasi tidak menyediakan klien NocoBase.',
-    notConfigured: 'Belum dikonfigurasi.',
+    partial:
+      'Baru aktif sebagian: halamannya bisa dibuka, tetapi datanya tidak termuat. Jalankan lagi perintah aktivasi untuk memperbaikinya.',
+    devDependency:
+      'Aktif, tetapi tidak ikut saat aplikasi di-deploy, sehingga aplikasi produksi tidak memilikinya. Jalankan lagi perintah aktivasi untuk memperbaikinya.',
+    missingRequires: '“{{title}}” memerlukan {{names}}, yang belum aktif.',
+    other:
+      'Belum terpasang sepenuhnya di aplikasi ini. Jalankan lagi perintah aktivasi untuk memperbaikinya.',
+    requiresFirst:
+      'Aktifkan dulu: {{names}} (sudah termasuk dalam perintah aktivasi)',
+    unknown:
+      'Aplikasi ini dibangun sebelum proses build mencatat plugin baris perintah yang didaftarkan, jadi di sini tidak dapat dipastikan apakah plugin ini aktif. Jalankan pnpm build lagi lalu deploy ulang.',
   },
-  facts: {
-    fileCollectionsPartial: '{{count}} koleksi berkas terhitung: {{names}}.',
-    collectionOwnershipUnknown:
-      'Tabel sistem NocoBase yang dikenal dikecualikan. Kepemilikan tabel lain belum teridentifikasi; hasil pembacaan ini bukan total khusus bisnis atau seluruh aplikasi.',
-    noApplicationCollections:
-      'Belum ada tabel data tambahan yang teridentifikasi.',
-    applicationCollectionsPreview:
-      '{{count}} tabel data teridentifikasi, termasuk {{names}}.',
-    applicationCollections: '{{count}} tabel data teridentifikasi: {{names}}.',
-    relations: '{{count}} field relasi logis menghubungkannya.',
-    fileCollections: '{{count}} koleksi berkas: {{names}}.',
-    accounts: '{{count}} akun memakai autentikasi NocoBase.',
-    permissionSets:
-      '{{count}} kumpulan izin selain akses tak terbatas: {{names}}.',
-    accessRules: '{{count}} aturan berbagi, pembatasan, atau akses bawaan.',
-    lifecyclesWithoutTransitions:
-      'Penyimpanan siklus hidup siap, belum ada transisi.',
-    lifecycles:
-      '{{count}} siklus hidup mencatat {{transitions}} transisi: {{names}}.',
-    schedules: '{{count}} jadwal aktif.',
-    modelServices:
-      '{{count}} layanan model aktif mendukung OnlineAgent dan panggilan gateway model.',
-    runners: '{{count}} pelaksana terdaftar mendukung eksekusi agen.',
-    agents: '{{count}} agen, {{runs}} eksekusi.',
-    documents: '{{count}} dokumen pengetahuan.',
-    mailboxes: '{{count}} kotak surat terhubung.',
-    mailboxesNeedAttention:
-      '{{count}} kotak surat memerlukan tindakan agar sinkronisasi berlanjut.',
-    channels: '{{count}} kanal notifikasi: {{names}}.',
-    usedApiKeys: '{{count}} kunci API telah memanggil aplikasi.',
-    locales: '{{count}} bahasa: {{names}}.',
-    migrations: '{{count}} migrasi dijalankan, {{own}} milik aplikasi.',
-    latestMigration: 'Eksekusi terakhir: {{at}}.',
-    registeredExtension: 'Ekstensi terdaftar dalam aplikasi ini.',
+  actions: {
+    commands: 'Perintah',
+    commandsFor: 'Perintah untuk {{title}}',
+    enable: 'Cara mengaktifkan',
+    enableFor: 'Cara mengaktifkan {{title}}',
   },
-  parts: {
-    accounts: 'Akun',
-    organizations: 'Organisasi',
-    permissionSets: 'Kumpulan izin',
-    sharingRules: 'Aturan berbagi',
-    restrictionRules: 'Aturan pembatasan',
-    defaultAccess: 'Akses bawaan',
-    lifecycles: 'Siklus hidup',
-    schedules: 'Jadwal',
-    modelServices: 'Layanan model',
-    agents: 'Agen',
-    runners: 'Pelaksana',
-    migrations: 'Migrasi',
-    jobs: 'Tugas',
-    queue: 'Antrean',
-    secrets: 'Rahasia',
-    caching: 'Cache',
+  commands: {
+    title: 'Perintah untuk {{title}}',
+    description:
+      'Jalankan di direktori kode aplikasi, lalu mulai ulang; untuk aplikasi produksi, build dan deploy lagi.',
+    fix: 'Memperbaiki yang perlu perhatian',
+    update: 'Memperbarui ke versi terbaru',
+    unregister: 'Menonaktifkannya; datanya tetap disimpan',
+    dependents:
+      'Plugin aktif yang bergantung padanya: {{names}}. Nonaktifkan bersama-sama.',
+    noDependents:
+      'Tidak ada plugin aktif yang bergantung padanya, jadi bisa dinonaktifkan sendiri.',
+    optionalDependents:
+      'Plugin aktif yang menggunakannya secara opsional: {{names}}. Plugin itu tetap berjalan tanpanya, tetapi kehilangan fitur yang memerlukannya.',
   },
-  metrics: {
-    businessRecords: 'Rekaman',
-    businessCollections: 'Tabel data',
-    views: 'Tampilan',
-    fields: 'Kolom',
-    relations: 'Field relasi logis',
-    physicalForeignKeys: 'Foreign key fisik',
-    systemCollections: 'Koleksi sistem NocoBase',
-    files: 'Berkas',
-    storedBytes: 'Penyimpanan tercatat',
-    fileCollections: 'Koleksi berkas',
-    accounts: 'Akun',
-    disabledAccounts: 'Akun nonaktif',
-    invitations: 'Undangan',
-    grants: 'Pemberian izin',
-    permissionSets: 'Kumpulan izin',
-    assignments: 'Penetapan',
-    sharingRules: 'Aturan berbagi',
-    restrictionRules: 'Aturan pembatasan',
-    defaultAccess: 'Aturan akses bawaan',
-    transitions: 'Transisi status',
-    lifecycles: 'Siklus hidup dengan transisi',
-    effectsSucceeded: 'Efek berhasil',
-    effectsFailed: 'Efek gagal',
-    effectsPending: 'Efek menunggu',
-    schedules: 'Jadwal aktif',
-    scheduleOccurrences: 'Kejadian jadwal',
-    agents: 'Agen',
-    modelServices: 'Layanan model aktif',
-    runners: 'Pelaksana',
-    runs: 'Eksekusi',
-    modelCalls: 'Panggilan model di luar eksekusi',
-    tokens: 'Token',
-    documents: 'Dokumen',
-    spaces: 'Ruang pengetahuan',
-    chunks: 'Potongan',
-    connectedMailboxes: 'Kotak surat terhubung',
-    mailboxesNeedAttention: 'Kotak surat perlu tindakan',
-    messages: 'Pesan',
-    submissions: 'Pesan diajukan untuk dikirim',
-    failedSubmissions: 'Pengiriman gagal',
-    acceptedDeliveries: 'Pengiriman diterima penyedia',
-    notifications: 'Notifikasi',
-    deliveries: 'Pengiriman',
-    failedDeliveries: 'Pengiriman gagal',
-    pendingDeliveries: 'Pengiriman berlangsung',
-    deliveryAttempts: 'Percobaan pengiriman',
-    inAppMessages: 'Pesan internal',
-    inAppMessagesRead: 'Pesan internal dibaca',
-    channels: 'Kanal',
-    usedApiKeys: 'Kunci API digunakan',
-    apiKeys: 'Kunci API aktif',
-    locales: 'Bahasa',
-    migrations: 'Migrasi dijalankan',
-    applicationMigrations: 'Migrasi milik aplikasi',
-    seeds: 'Seed dijalankan',
+  enable: {
+    title: 'Aktifkan {{title}}',
+    description: 'Jalankan di direktori kode aplikasi:',
+    requires:
+      '{{title}} bergantung pada {{names}}, yang juga belum aktif; perintahnya sudah menyertakannya.',
+    development:
+      'Pengembangan lokal: mulai ulang pnpm dev setelah menjalankannya, lalu muat ulang halaman ini untuk melihatnya aktif.',
+    live: 'Aplikasi produksi: commit perubahan, jalankan pnpm build --tar, lalu tingkatkan dengan installer.',
+    data: 'Saat pertama kali dijalankan, tabelnya dibuat. Menonaktifkannya nanti dengan plugin unregister tetap menyimpan datanya.',
   },
-  dynamic: {
-    extension: 'Ekstensi',
-    pending: 'Menunggu identifikasi',
-    pendingDescription:
-      'Plugin telah terdaftar. Konfigurasi dan penggunaan aktual belum ditentukan.',
+  dialog: {
+    copy: 'Salin perintah',
+    copied: 'Disalin',
+    copyFailed: 'Gagal menyalin; pilih perintahnya lalu salin.',
+    close: 'Mengerti',
   },
 };
 

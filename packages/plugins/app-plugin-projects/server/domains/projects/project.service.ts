@@ -14,11 +14,12 @@ import {
   type IssueCounts,
   type ProjectDetail,
   type ProjectListItem,
+  type ProjectReference,
   type UpdateProjectRequest,
 } from '../../../shared/projects.js';
 import { requireAction, scopeOf, type Viewer } from '../../access/viewer.js';
 import type { Actor } from '../../kernel/actor.js';
-import { conflict, forbidden, invalid, notFound } from '../../kernel/errors.js';
+import { forbidden, invalid, notFound } from '../../kernel/errors.js';
 import type { IdSource } from '../../kernel/ids.js';
 import type { Tx, TxRunner } from '../../kernel/tx.js';
 import type { UserDirectory } from '../../kernel/users.js';
@@ -29,7 +30,6 @@ import {
   validDate,
 } from '../../kernel/validate.js';
 import {
-  canManage,
   managed,
   requireVisible,
   visibleProjectsFilter,
@@ -68,6 +68,8 @@ export interface ProjectIssues {
 
 export interface ProjectService extends ProjectMembers, ProjectResources {
   list(viewer: Viewer): Promise<ProjectListItem[]>;
+  /** One authorized metadata read, with the viewer's own membership. */
+  references(viewer: Viewer): Promise<ProjectReference[]>;
   get(viewer: Viewer, id: string): Promise<ProjectDetail>;
   create(viewer: Viewer, input: CreateProjectRequest): Promise<ProjectDetail>;
   update(
@@ -76,12 +78,6 @@ export interface ProjectService extends ProjectMembers, ProjectResources {
     patch: UpdateProjectRequest,
   ): Promise<ProjectDetail>;
   remove(viewer: Viewer, id: string): Promise<void>;
-  /**
-   * For undoing a plan: deletes a project the viewer leads (or any, for one who may delete projects) that has no live
-   * issue left (400 `PROJECT_NOT_EMPTY` otherwise); its deleted issues are detached. Not offered over HTTP; the plans
-   * domain checks that its plan created the project.
-   */
-  retract(viewer: Viewer, id: string): Promise<void>;
 }
 
 export interface ProjectDeps {
@@ -176,6 +172,53 @@ export function createProjectService(deps: ProjectDeps): ProjectService {
     ...createProjectMembers(deps),
     ...createProjectResources(deps),
 
+    async references(viewer) {
+      const conn = deps.tx.read();
+      let query = conn.query
+        .selectFrom('pmProjects as project')
+        .select(['project.id', 'project.name', 'project.leadUserId'])
+        .select((eb) => [
+          eb
+            .selectFrom('pmProjectMembers as member')
+            .select('member.userId')
+            .whereRef('member.projectId', '=', 'project.id')
+            .where('member.userId', '=', viewer.userId)
+            .limit(1)
+            .as('memberUserId'),
+        ]);
+      const scope = scopeOf(viewer, 'pm.projects', 'view');
+      // Keep the same visibility predicate as visibleProjectsFilter, before projection.
+      if (scope === 'none') query = query.where('project.id', 'is', null);
+      else if (scope !== 'all')
+        query = query.where((eb) =>
+          eb.or([
+            eb('project.visibility', '!=', 'members'),
+            eb('project.leadUserId', 'in', scope.users),
+            eb.exists(
+              eb
+                .selectFrom('pmProjectMembers as visibleMember')
+                .select('visibleMember.userId')
+                .whereRef('visibleMember.projectId', '=', 'project.id')
+                .where('visibleMember.userId', 'in', scope.users),
+            ),
+          ]),
+        );
+      if (viewer.projectIds)
+        query = viewer.projectIds.length
+          ? query.where('project.id', 'in', viewer.projectIds)
+          : query.where('project.id', 'is', null);
+      const rows = await query
+        .orderBy('project.name', 'asc')
+        .orderBy('project.id', 'asc')
+        .execute();
+      return rows.map((row) => ({
+        id: String(row.id),
+        name: String(row.name),
+        leadUserId: row.leadUserId as string | null,
+        member: Boolean(row.memberUserId),
+      }));
+    },
+
     async list(viewer) {
       const conn = deps.tx.read();
       const projects = await findProjects(conn, visibleProjectsFilter(viewer));
@@ -236,6 +279,8 @@ export function createProjectService(deps: ProjectDeps): ProjectService {
         await updateProject(tx.conn, id, values);
         if (values.leadUserId)
           await addMember(tx.conn, deps.ids.next(), id, values.leadUserId);
+        if (values.visibility !== undefined || values.leadUserId !== undefined)
+          tx.emit({ type: 'project.changed', projectId: id });
       });
       return detail(deps, deps.tx.read(), id);
     },
@@ -245,27 +290,6 @@ export function createProjectService(deps: ProjectDeps): ProjectService {
         await requireVisible(tx.conn, viewer, id);
         if (scopeOf(viewer, 'pm.projects', 'delete') !== 'all')
           throw forbidden('Only an administrator may delete a project.');
-        await deps.issues().detach(tx, id, viewer.actor);
-        await deleteProject(tx.conn, id);
-      });
-    },
-
-    async retract(viewer, id) {
-      await deps.tx.run(async (tx) => {
-        const relation = await requireVisible(tx.conn, viewer, id);
-        if (
-          !canManage(viewer, relation) &&
-          scopeOf(viewer, 'pm.projects', 'delete') !== 'all'
-        )
-          throw forbidden(
-            'Only the project lead or an administrator may take a project back.',
-          );
-        const counts = await deps.issues().counts(tx.conn, [id]);
-        if ((counts.get(id)?.total ?? 0) > 0)
-          throw conflict(
-            'PROJECT_NOT_EMPTY',
-            'The project has issues; it cannot be taken back.',
-          );
         await deps.issues().detach(tx, id, viewer.actor);
         await deleteProject(tx.conn, id);
       });

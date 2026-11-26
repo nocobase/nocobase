@@ -78,7 +78,7 @@ Server writers may pass an application-defined `message: { type, params }` along
   comment, any type, up to 20 MiB each, stored through the file plugin (`@nocobase/app-plugin-file`) on the App's
   default Drive disk. A file starts as an upload of its uploader's attached to nothing (a person, or an agent working
   on an issue as its own principal) and is attached in the transaction of the change that takes it: an upload onto
-  the issue, a comment's `attachmentIds`, or an executed intake plan, whose files go to the issues it created. Whoever
+  the issue, or a comment's `attachmentIds`. Whoever
   sees the issue reads its files; the plugin serves them itself, after that check, with safe images inline and
   everything else as a download (`nosniff`, a sandbox CSP, `private, no-store`). Uploading needs `pm.attachments`
   `upload`; the uploader or someone who moderates the issue's comments removes an issue's file, and a comment's files
@@ -97,33 +97,7 @@ Server writers may pass an application-defined `message: { type, params }` along
   finished) or that are among the ids given (whatever their status), with `truncated` past the limit, and
   `subscriptions.followedBy(conn, userId, issueIds)` those of them a person follows. An application's board of work joins its own records to issues with
   them, without a query per issue.
-- **Hierarchy reads**: `issueQueries.hierarchy(viewer, query)` returns the complete independently authorized live issue scope, filtered matching IDs and internal dependency-wait facts before paging. It is an uncapped input for application-owned grouping, never a substitute for authorization. `hierarchy(viewer, query, { unfinishedOnly: true, includeIds })` instead reads unfinished tasks, explicitly included visible tasks and contiguous visible ancestors; dependency facts are scoped to those targets without exposing hidden blockers. `hierarchySource(viewer, query)` supplies authorized, filtered SQL relations for database-side hierarchy aggregation and pagination without materializing historical records. `visibleIds(viewer, ids)` reauthorizes explicit IDs without row or relationship hydration. `hierarchyItems(viewer, ids)` hydrates at most 500 independently reauthorized rows with visible child/dependency counts; callers must replace raw parent IDs at unreadable boundaries. Applications own attention policy, grouping and continuation consistency. No new task statuses or persistence are required.
-- **Operation plans** (`shared/plans.ts`, `server/domains/plans/`): a short list of changes (create or update an
-  issue, comment, add or remove a dependency, create a project; 1–50 rows, later rows may refer to what earlier ones
-  create) that one person, the decider, reviews and executes as a whole. Creating, editing and retrying a plan
-  rehearse it: every row runs as the decider in one transaction that always rolls back (a savepoint per row), the
-  triggers only report whom they would wake (`Tx.rehearsal`, `kernel/work.ts`) and nothing is announced; each row
-  gets its errors, wakes, risk flags and the baseline of its target. Execution is one transaction as the person who
-  clicks; a target changed since the rehearsal makes the plan `stale` and nothing is applied. An executed plan can be
-  undone for 24 hours in one step: a preview (`previewUndo`) lists the reverse rows and what they leave alone because
-  someone changed it since, and undoing applies them at once in one transaction; no other plan is created. The plan
-  card shows and decides a plan wherever the application places it (for example, in the conversation that proposed it); the
-  plugin lists plans nowhere of its own. Changes
-  made through a plan, or by an agent for a person (`Actor.via = 'agent'` with its trace), show on the timeline as
-  "via ‹Agent›" or "via ‹Agent›'s plan" (`Activity.via`). Other plugins use `projects.plans` (`PlanService`) and hear
-  decisions through `projectsPlanHooksToken` (`PlanHooks.onPlanDecided`). A plan is visible to its decider and, for a
-  status rule's plan about an issue (from earlier versions), to the issue's owner and editors.
-- **Intake with AI** (`shared/intake-ai.ts`, `server/domains/plans/intake/intake.ai.*`): as the old NocoProject, AI
-  splits requirements into drafts ("AI split"), revises the drafts by one instruction ("Ask AI to revise", with the
-  rows it added or changed highlighted and an undo), and breaks an issue down into sub-issue drafts ("AI breakdown" on
-  the issue page). The plugin runs no model: the application binds an organiser (`projectsIntakeOrganizerToken`,
-  `IntakeOrganizer`), which is handed each request's task (`IntakeAiTask`, worded for any runtime by
-  `intakeAiInstructions` and `intakeAiMaterial`) and answers later with `projects.intakeAi.deliver` (the drafts) or
-  `ended`. A request is a job (`pmIntakeJobs`) the page follows (`progress`: queued and why, or the organiser's newest
-  activity) and the person may cancel. Delivered drafts become a pending intake plan the person decides, rehearsed with
-  their own permissions, in place of the draft the request was made on; AI never creates an issue. Asking needs
-  `pm.issues` `create`; without an organiser the AI draft tab offers the rule split only. an application's organiser is an agent
-  run on a runner (`server/agents/intake/`).
+- **Hierarchy reads**: `issueQueries.hierarchy(viewer, query)` returns the complete independently authorized live issue scope, filtered matching IDs and internal dependency-wait facts before paging. It is an uncapped input for application-owned grouping, never a substitute for authorization. `hierarchy(viewer, query, { unfinishedOnly: true, includeIds })` instead reads unfinished tasks, explicitly included visible tasks and contiguous visible ancestors. With `query.projectId`, unfinished seeds come only from that authorized project; explicit visible includes remain eligible outside it. Without a project filter, the unfinished seed scope remains the complete authorized set. Parent hydration stops at invisible parents or after 64 ancestor edges; dependency facts are scoped to those targets without exposing hidden blockers. `hierarchySource(viewer, query)` supplies authorized, filtered SQL relations for database-side hierarchy aggregation and pagination without materializing historical records. `visibleIds(viewer, ids)` reauthorizes explicit IDs without row or relationship hydration. `hierarchyItems(viewer, ids)` hydrates at most 500 independently reauthorized rows with visible child/dependency counts; callers must replace raw parent IDs at unreadable boundaries. Applications own attention policy, grouping and continuation consistency. No new task statuses or persistence are required.
 
 ## Server API
 
@@ -163,22 +137,14 @@ New accounts register directly from the invitation link with a name and password
 | `PATCH /issues/{issueId}/dependencies/{dependencyId}`                              | Changes a link type (`{ type, expectedType }`) atomically   |
 | `DELETE /issues/{issueId}/dependencies/{dependencyId}`                             | Removes a link                                              |
 | `POST /issues/{issueId}/removeDependency`                                          | Removes the link to an issue (`{ dependsOnIssueId, type }`) |
-| `POST /plans/rehearse`                                                             | Rehearses a plan and stores nothing                         |
-| `GET/POST /plans`, `GET/PATCH /plans/{planId}`                                     | Operation plans: list, create, read, edit rows              |
-| `POST /plans/{planId}/execute`, `…/retry`, `…/void`                                | Decides a plan (`{ revision }`)                             |
-| `POST /plans/{planId}/undo`                                                        | `{ dryRun: true }` previews undoing; else undoes            |
-| `POST /intake/files`, `DELETE /intake/files/{fileId}`                              | The caller's intake uploads                                 |
-| `POST /intake/split`, `POST /intake/extractTexts`                                  | The rule split; the uploads' text                           |
-| `GET /intake/aiAvailability`                                                       | Whether AI can be asked                                     |
-| `POST /intake/aiJobs`, `GET …/{jobId}`, `POST …/{jobId}/cancel`                    | A request to AI; cancelling it                              |
 
 Relationship conversion preserves the link ID and checks the type the caller read (`expectedType`). A stale change returns 409 `DEPENDENCY_CHANGED`; if the target relationship already exists, it returns 409 `DEPENDENCY_EXISTS` and keeps both links. A related link may be converted from either end: the current issue becomes the waiting issue when changed to `blockedBy`.
 
-Operations that add explicit or implicit waits (dependencies, conversions, issue creation, parent/stage changes and restores) share a dedicated database graph revision row. Its conditional increment protects cycle detection and writes until the outer transaction commits, across processes and projects. An outdated transaction snapshot returns 409 `DEPENDENCY_GRAPH_CHANGED`; reload and retry the whole operation. Every issue creation takes this protection before allocating its number, so plans that create issues and add dependencies use the same lock order. Standalone creates without dependencies lock the row without advancing the graph revision, so independent parallel creates still succeed without retrying each other. The revision is separate from settings/counters so MySQL reads of those rows after writing them cannot disguise an old graph snapshot. Restoring an issue is rejected if its waits would now create a cycle. Every relationship write, including both removal endpoints, acquires this protection before reading its type and endpoints, keeping duplicate checks, activity and release notifications consistent with conversions. Issue status and project changes, status events and deletion take the same guard before writing an issue, so concurrent changes cannot each see an old blocker and miss the last release. Automatic parent/stage completion keeps the originating guard; ordinary edits that cannot change waits do not acquire it. Plans acquire the guard without advancing its revision before their first row, including rehearsal and undo, so earlier issue edits cannot reverse the lock order of a later graph write.
+Operations that add explicit or implicit waits (dependencies, conversions, issue creation, parent/stage changes and restores) share a dedicated database graph revision row. Its conditional increment protects cycle detection and writes until the outer transaction commits, across processes and projects. An outdated transaction snapshot returns 409 `DEPENDENCY_GRAPH_CHANGED`; reload and retry the whole operation. Every issue creation takes this protection before allocating its number, so transactions that create issues and add dependencies use the same lock order. Standalone creates without dependencies lock the row without advancing the graph revision, so independent parallel creates still succeed without retrying each other. The revision is separate from settings/counters so MySQL reads of those rows after writing them cannot disguise an old graph snapshot. Restoring an issue is rejected if its waits would now create a cycle. Every relationship write, including both removal endpoints, acquires this protection before reading its type and endpoints, keeping duplicate checks, activity and release notifications consistent with conversions. Issue status and project changes, status events and deletion take the same guard before writing an issue, so concurrent changes cannot each see an old blocker and miss the last release. Automatic parent/stage completion keeps the originating guard; ordinary edits that cannot change waits do not acquire it.
 
-Cursor lists (issues, activities, comment threads, plans) take `pageSize` (20 by default, at most 100; plans 50) and `pageToken`, and answer `meta.nextPageToken` until the last page. `orderBy` on issues is `updatedAt`, `createdAt`, `number` or `priority`, optionally followed by `asc` or `desc` (`updatedAt desc` by default). The other lists are answered whole with `meta.total`. A scoped API key may not use `/intake` or `/plans` (403 `SCOPED_KEY_FORBIDDEN`).
+Cursor lists (issues, activities, comment threads) take `pageSize` (20 by default, at most 100) and `pageToken`, and answer `meta.nextPageToken` until the last page. `orderBy` on issues is `updatedAt`, `createdAt`, `number` or `priority`, optionally followed by `asc` or `desc` (`updatedAt desc` by default). The other lists are answered whole with `meta.total`.
 
-Errors are the standard error body with domain `projects`; clients branch on `reason`, and `metadata` carries the details. A missing resource the URL names is 404 `<RESOURCE>_NOT_FOUND` (such as `ISSUE_NOT_FOUND`); a project or issue named in the query that does not exist is 400 with a field violation. `PATCH /issues/{issueId}` needs the `revision` the caller read; a stale one is 409 `ABORTED` `REVISION_CONFLICT`. It answers 200 `{ data: { issue } }`. A status that does not exist, or a new issue in any status but `backlog` and `in_progress`, is 400 `INVALID_STATUS`; a move the caller's kind may not make is 400 `TRANSITION_NOT_ALLOWED`. A dependency that would close a cycle is 400 `DEPENDENCY_CYCLE` (`metadata.via`), one too deep to check 400 `DEPENDENCY_TOO_DEEP`, a duplicate 409 `ALREADY_EXISTS` `DEPENDENCY_EXISTS`. A plan with a failing row is 400 `PLAN_INVALID` with every row's check in `metadata.rows`; deciding a plan that is not open is 400 `PLAN_NOT_OPEN`, an expired one 400 `PLAN_EXPIRED`; undoing after the window is 400 `UNDO_EXPIRED`, with nothing left to revert 400 `NOTHING_TO_UNDO`, and when something changed since the preview 409 `ABORTED` `UNDO_STALE`. Other refusals by state are 400 `FAILED_PRECONDITION` too.
+Errors are the standard error body with domain `projects`; clients branch on `reason`, and `metadata` carries the details. A missing resource the URL names is 404 `<RESOURCE>_NOT_FOUND` (such as `ISSUE_NOT_FOUND`); a project or issue named in the query that does not exist is 400 with a field violation. `PATCH /issues/{issueId}` needs the `revision` the caller read; a stale one is 409 `ABORTED` `REVISION_CONFLICT`. It answers 200 `{ data: { issue } }`. A status that does not exist, or a new issue in any status but `backlog` and `in_progress`, is 400 `INVALID_STATUS`; a move the caller's kind may not make is 400 `TRANSITION_NOT_ALLOWED`. A dependency that would close a cycle is 400 `DEPENDENCY_CYCLE` (`metadata.via`), one too deep to check 400 `DEPENDENCY_TOO_DEEP`, a duplicate 409 `ALREADY_EXISTS` `DEPENDENCY_EXISTS`. Other refusals by state are 400 `FAILED_PRECONDITION` too.
 
 ## Statuses and the lifecycle module
 
@@ -195,8 +161,10 @@ are registered by name (`createLifecycleRegistry`).
 definition is compiled again whenever the kinds or events change. The entry action `notifyOwner` on `blocked` and
 `in_review` records `owner_notified` and announces it. Notices (`server/providers/notifications.ts`) go to
 `projectsNoticesToken` when the App binds it (`ProjectsNotices`: `send` each notice with its kind, type and issue) —
-the assembling application keeps its inbox that way. Without it they go straight to the notification plugin's in-app
-channel `projects.inboxChannel` names (`inbox` by default) when that channel is configured.
+the assembling application keeps its inbox that way. Without it they go to the notification plugin's `notify()` as the
+kinds `server/providers/notice-kinds.ts` registers (`projects.mentioned`, `projects.assigned`, `projects.attention`,
+`projects.commented`, `projects.status-changed`, `projects.progress`, category `projects`): always to the in-app inbox,
+and to push and email by each kind's default and each member's notification settings.
 
 ## Permissions
 
@@ -226,18 +194,15 @@ The plugin seeds no roles: the application that assembles it seeds its own (the 
 
 ## Pages
 
-| Path                                  | What it shows                                               |
-| ------------------------------------- | ----------------------------------------------------------- |
-| `/my-issues`                          | The viewer's owned or executed issues, each once            |
-| `/issues` (`?view=board` or `list`)   | Every visible issue; filters, search and order in the URL   |
-| `/issues/new` (`?tab=ai` or `manual`) | The New issue dialog: AI draft (intake) or one issue        |
-| `/issues/new?tab=ai&job=:id`          | The AI draft tab following a request to AI                  |
-| `/issues/:id`, `/issues/plans/:id`    | One issue, by id or identifier; one plan, by its id         |
-| `/projects`, `/projects/new`          | Projects; a new one (a project's page is the application's) |
+| Path                                | What it shows                                               |
+| ----------------------------------- | ----------------------------------------------------------- |
+| `/my-issues`                        | The viewer's owned or executed issues, each once            |
+| `/issues` (`?view=board` or `list`) | Every visible issue; filters, search and order in the URL   |
+| `/issues/new`                       | The manual New issue form                                   |
+| `/issues/:id`                       | One issue, by id or identifier                              |
+| `/projects`, `/projects/new`        | Projects; a new one (a project's page is the application's) |
 
-My tasks combines owned and executed issues, and the New issue dialog opens on its "AI draft" tab (the last tab used is remembered in the browser): requirements typed or uploaded are split into a draft of issues, edited row by row and created together, after which the dialog closes. Its manual tab asks when the issue starts: "Start now" (`in_progress`) or "Later" (`backlog`), and preselects the default executor. Nothing asks "Start now?" any more: moving an issue to `in_progress` starts its work.
-
-Applications that create tasks through conversation can render the retained create and subtask pages under `IssueCreationModeContext.Provider` (from `client/kit`) with `value='manual'`. This shows only the original guarded form, ignoring old AI tab parameters and preferences, without changing the default plugin pages.
+My tasks combines owned and executed issues, and the New issue dialog asks when the issue starts: "Start now" (`in_progress`) or "Later" (`backlog`), and preselects the default executor. Nothing asks "Start now?" any more: moving an issue to `in_progress` starts its work.
 
 The settings pages are exported for the application to route under its own `/config` (`client/config.ts`: the issue
 prefix and labels), and components it reuses on its member pages are exported from
@@ -245,7 +210,7 @@ prefix and labels), and components it reuses on its member pages are exported fr
 `issue-detail`, `comment-thread` and `attachment-list`) over the headless parts in `client/issues.ts`: the issue
 (`useIssueDetail`), its property changes (`useIssueUpdate`; `useConfirmedUpdate` applies a change at once), every other
 change of the page (`useIssuePageActions`), the activity line (`useIssueTimeline`, `useIssueCommentActions`,
-`useMentionSearch`, `useAttachmentUploads`), "Break into sub-issues" (`useIntakeBreakdown`), and the permission and
+`useMentionSearch`, `useAttachmentUploads`), and the permission and
 wording helpers. It routes a project's page the same way, as a child of the plugin's `/projects` (`projectsRoute` from
 `client/pages`), over the headless parts in `client/projects.ts`: the project with the statuses
 (`useProjectDetail`, `useProjectStatuses`), its property changes (`useProjectUpdate`), members and
@@ -281,7 +246,7 @@ Invitation emails use `notificationService.sendTransient()` so credentials never
 
 ## Structured issue progress
 
-`Issue` exposes nullable text `needsYou` and `next`. `PATCH /api/projects/issues/{issueId}` and `issue.update` plan rows accept them in the same transaction as `statusKey`. Both fields are optional for people, agents, plans and system events. Omitted needsYou is retained in Blocked or In review; null, empty or whitespace clears it. Applications may constrain authenticated callers at their request boundary. Leaving these states clears it. Omitted `next` is retained; nonblank text replaces it; null, an empty string or whitespace clears it. Done and Cancelled always clear it. Both fields allow at most 2,000 characters. Progress-only writes advance revision and emit the existing refresh event. System status events share the optional-field validation and clearing rules. The new reversible migration adds the two columns without backfilling comments.
+`Issue` exposes nullable text `needsYou` and `next`. `PATCH /api/projects/issues/{issueId}` accept them in the same transaction as `statusKey`. Both fields are optional for people, agents and system events. Omitted needsYou is retained in Blocked or In review; null, empty or whitespace clears it. Applications may constrain authenticated callers at their request boundary. Leaving these states clears it. Omitted `next` is retained; nonblank text replaces it; null, an empty string or whitespace clears it. Done and Cancelled always clear it. Both fields allow at most 2,000 characters. Progress-only writes advance revision and emit the existing refresh event. System status events share the optional-field validation and clearing rules. The new reversible migration adds the two columns without backfilling comments.
 
 `Issue` also exposes nullable Markdown `acceptance`: the issue's delivery report — how it was, the agreed approach, what changed, how it was checked, open issues and details — ending with the acceptance criteria the owner checks and where. `PATCH /api/projects/issues/{issueId}` accepts it in any status, normally with the move to In review (`nb-studio issue update <issue> --status in_review --acceptance-file report.md`). It is kept across status changes, including Done, Cancelled and a move back to In progress, and the next delivery replaces it; omitted it is retained, and null, an empty string or whitespace clears it. It allows at most 20,000 characters (`ISSUE_ACCEPTANCE_MAX`). Its reversible migration adds the column without backfilling.
 
@@ -294,3 +259,5 @@ Applications can provide `ExecutorPresentationContext` from the client kit to re
 `GET /api/projects/issues/summaries?refs=PM-12,123` accepts 1–100 IDs or identifiers and returns `{ data: [{ id, identifier, title, statusKey }], meta: { total } }`. It requires authentication and `pm.issues/view`; deleted, invisible and credential-project-excluded issues are omitted without distinguishing them from missing references. Duplicate references return one row. The batch performs one business query with the existing visibility predicate and no comment, member or relation hydration. Browser consumers may call `PmApi.issueSummaries(refs)` and use `FIXED_STATUSES` for labels and colors.
 
 `pm.changed` preserves known `issueIds` for creation, deletion and membership changes too. `listsChanged: true` means lists and project counts must refresh while issue details remain scoped to those IDs and their directly embedded references. Child deletion and restoration also name the already-known parent, including when the restored child is absent from the parent's current snapshot. Batches larger than 100 IDs are split; events with unknown scope still omit `issueIds`. Re-read after each subscription acknowledgement to recover missed events.
+
+`projects.references(viewer)` returns only authorized project IDs, names, lead IDs and the viewer's membership in one query. It uses the same visibility and API-key project bounds as `projects.list`, without reading issue totals, member totals, resources or lead display records.

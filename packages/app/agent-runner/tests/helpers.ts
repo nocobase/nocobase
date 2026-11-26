@@ -1,10 +1,32 @@
 import { execFileSync, spawn, type ChildProcess } from 'node:child_process';
-import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import {
+  mkdtempSync,
+  rmSync,
+  writeFileSync,
+  readdirSync,
+  readFileSync,
+} from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 
 export const PACKAGE_ROOT = path.resolve(import.meta.dirname, '..');
 export const BIN = path.join(PACKAGE_ROOT, 'bin', 'run.js');
+
+/** Read every dated segment, including after midnight or a size rotation. */
+export function readDaemonLog(directory: string): string {
+  let files: string[];
+  try {
+    files = readdirSync(directory);
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === 'ENOENT') return '';
+    throw error;
+  }
+  return files
+    .filter((name) => /^runner\.\d{4}-\d{2}-\d{2}\.\d+\.log$/.test(name))
+    .sort()
+    .map((name) => readFileSync(path.join(directory, name), 'utf8'))
+    .join('');
+}
 
 /** Fast intervals for driving the daemon in tests. */
 export const FAST_TIMINGS = {

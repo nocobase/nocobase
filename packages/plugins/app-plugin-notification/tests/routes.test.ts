@@ -8,6 +8,7 @@ import {
 } from '@nocobase/app-plugin-authorization';
 import type { AppPluginApplication } from '@nocobase/app-server/plugins';
 import {
+  ApiError,
   findUndeclaredApiRoutes,
   generateApiDocument,
 } from '@nocobase/app-server/router';
@@ -31,46 +32,64 @@ import {
 import { NOTIFICATION_NAMESPACE } from '../server/types.js';
 
 describe('@nocobase/app-plugin-notification routes', () => {
-  it('keeps logs on their page access permission', async () => {
-    const { router, can } = await createRouter();
+  it('keeps logs on the notification settings read action', async () => {
+    const { router, require } = await createRouter();
 
     const response = await router.request('/notifications/logs');
 
     expect(response.status).toBe(200);
-    expect(can).toHaveBeenCalledWith({
-      resource: { type: 'page', id: 'notification.logs' },
-      action: 'access',
+    expect(require).toHaveBeenCalledWith({
+      resource: { type: 'settings', id: 'notification' },
+      action: 'read',
     });
   });
 
-  it('returns a stable localized error when log access is denied', async () => {
-    const { router } = await createRouter({ allowed: false });
+  it.each([
+    ['GET', '/notifications/logs', 'read'],
+    ['GET', '/notifications/channels', 'read'],
+    ['GET', '/notifications/kinds', 'read'],
+    ['GET', '/notifications/deliveries', 'read'],
+    ['POST', '/notifications/channels/inbox/test', 'manage'],
+    ['POST', '/notifications/deliveries/delivery-1/retry', 'manage'],
+  ])('refuses %s %s without the %s action', async (method, path, action) => {
+    const { router, require } = await createRouter({ allowed: false });
 
-    const response = await router.request('/notifications/logs', {
-      headers: { 'accept-language': 'zh-CN' },
+    const response = await router.request(path, {
+      method,
+      ...(method === 'POST'
+        ? {
+            headers: { 'content-type': 'application/json' },
+            body: JSON.stringify({ reason: 'Fixed', locale: 'en-US' }),
+          }
+        : {}),
     });
 
     expect(response.status).toBe(403);
-    await expect(response.json()).resolves.toEqual({
-      error: {
-        code: 403,
-        status: 'PERMISSION_DENIED',
-        reason: 'NOTIFICATION_LOGS_FORBIDDEN',
-        domain: 'notifications',
-        message: 'Notification logs access is required.',
-        localizedMessage: {
-          locale: 'zh-CN',
-          message: '需要通知日志访问权限。',
-        },
-        requestId: expect.any(String),
-      },
+    expect(require).toHaveBeenCalledWith({
+      resource: { type: 'settings', id: 'notification' },
+      action,
     });
   });
 
+  it('serves preferences to any signed-in user without a permission check', async () => {
+    const { router, require, preferencesFor } = await createRouter({
+      allowed: false,
+    });
+
+    const response = await router.request('/notifications/preferences');
+
+    expect(response.status).toBe(200);
+    expect(preferencesFor).toHaveBeenCalledWith('user-1');
+    expect(require).not.toHaveBeenCalled();
+  });
+
   it('requires authentication for logs', async () => {
-    const { router, can } = await createRouter({ authenticated: false });
+    const { router, require } = await createRouter({ authenticated: false });
     expect((await router.request('/notifications/logs')).status).toBe(401);
-    expect(can).not.toHaveBeenCalled();
+    expect((await router.request('/notifications/preferences')).status).toBe(
+      401,
+    );
+    expect(require).not.toHaveBeenCalled();
   });
 
   it.each([
@@ -78,13 +97,13 @@ describe('@nocobase/app-plugin-notification routes', () => {
     ['POST', '/notifications/testSends'],
     ['GET', '/notifications/testSends/previous-test'],
   ])('does not expose the removed %s %s endpoint', async (method, path) => {
-    const { router, can } = await createRouter();
+    const { router, require } = await createRouter();
     const response = await router.request(path, {
       method,
       headers: { 'x-nocobase-notification-test': '1' },
     });
     expect(response.status).toBe(404);
-    expect(can).not.toHaveBeenCalled();
+    expect(require).not.toHaveBeenCalled();
   });
 });
 
@@ -112,15 +131,42 @@ describe('API document', () => {
     expect(operations).toEqual([
       ['GET /api/notifications/logs', 'notificationsListLogs', tags],
       ['GET /api/notifications/logs/{logId}', 'notificationsGetLog', tags],
-      ['GET /api/notifications/templates', 'notificationsListTemplates', tags],
+      ['GET /api/notifications/channels', 'notificationsListChannels', tags],
       [
-        'GET /api/notifications/templates/{templateId}',
-        'notificationsGetTemplate',
+        'POST /api/notifications/channels/{name}/test',
+        'notificationsTestChannel',
+        tags,
+      ],
+      ['GET /api/notifications/kinds', 'notificationsListKinds', tags],
+      ['GET /api/notifications/kinds/{kindId}', 'notificationsGetKind', tags],
+      [
+        'POST /api/notifications/kinds/{kindId}/preview',
+        'notificationsPreviewKind',
         tags,
       ],
       [
-        'POST /api/notifications/templates/{templateId}/preview',
-        'notificationsPreviewTemplate',
+        'GET /api/notifications/deliveries',
+        'notificationsListDeliveries',
+        tags,
+      ],
+      [
+        'GET /api/notifications/deliveries/{deliveryId}',
+        'notificationsGetDelivery',
+        tags,
+      ],
+      [
+        'POST /api/notifications/deliveries/{deliveryId}/retry',
+        'notificationsRetryDelivery',
+        tags,
+      ],
+      [
+        'GET /api/notifications/preferences',
+        'notificationsGetPreferences',
+        tags,
+      ],
+      [
+        'PUT /api/notifications/preferences',
+        'notificationsUpdatePreferences',
         tags,
       ],
     ]);
@@ -141,14 +187,24 @@ async function createRouter(options: RouterOptions = {}): Promise<{
   readonly router: Hono;
   /** The plugin's own router, as the application mounts it under `/api`. */
   readonly contribution: Hono;
-  readonly can: ReturnType<typeof vi.fn>;
+  readonly require: ReturnType<typeof vi.fn>;
+  readonly preferencesFor: ReturnType<typeof vi.fn>;
 }> {
   const container = new ServiceContainer();
   container.instance(
     notificationTemplateRegistryToken,
     new NotificationTemplateRegistry(),
   );
-  const can = vi.fn(async () => options.allowed ?? true);
+  const require = vi.fn(async () => {
+    if (options.allowed === false)
+      throw new ApiError({
+        status: 'PERMISSION_DENIED',
+        reason: 'AUTHORIZATION_DENIED',
+        domain: 'authorization',
+        message: 'Permission denied.',
+      });
+  });
+  const preferencesFor = vi.fn(async () => ({ channelTypes: [], kinds: [] }));
   let logsRouter = options.logsRouter;
   if (!logsRouter) {
     logsRouter = new Hono();
@@ -168,12 +224,13 @@ async function createRouter(options: RouterOptions = {}): Promise<{
   } as unknown as Auth);
   container.instance(authorizationToken, {
     middleware: () => async (context, next) => {
-      context.set('authz', { can });
+      context.set('authz', { require });
       await next();
     },
   } as unknown as Authorization);
   container.instance(notificationRuntimeToken, {
     router: logsRouter,
+    preferencesFor,
   } as unknown as NotificationRuntime);
 
   const contribution = await apiRoutes.createRouter({
@@ -200,6 +257,7 @@ async function createRouter(options: RouterOptions = {}): Promise<{
   return {
     router,
     contribution,
-    can,
+    require,
+    preferencesFor,
   };
 }

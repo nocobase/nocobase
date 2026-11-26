@@ -3,6 +3,10 @@ import { MailError } from './services/errors.js';
 import { MailAccountRemovals } from './runtime/account-removals.js';
 import { MailBackgroundTasks } from './runtime/background-tasks.js';
 import { MailOutboxRelay } from './runtime/outbox-relay.js';
+import { MailImapIdle } from './runtime/imap-idle.js';
+import { mailPushTiming, type MailPushTiming } from './runtime/push-timing.js';
+import type { ImapSmtpMailProviderConfig } from './adapters/imap-smtp/config.js';
+import type { MailAccount } from '../shared/mail.js';
 import { MailPushSubscriptions } from './runtime/push-subscriptions.js';
 import { MailSyncScheduler } from './operations/schedule-sync.js';
 import { randomUUID } from 'node:crypto';
@@ -35,6 +39,11 @@ import type { MailRuntimeService } from './contracts/service.js';
 
 export type MailRuntimeLogger = MailLogger;
 
+/** How often an instance deletes expired sync runs and submissions. */
+const MAIL_LOG_CLEANUP_INTERVAL_MS = 60 * 60_000;
+/** The most rows of each log table one cleanup deletes. */
+const MAIL_LOG_CLEANUP_BATCH = 1000;
+
 export interface MailRuntimeOptions {
   readonly store: MailStore;
   readonly adapters: MailProviderAdapterResolver;
@@ -49,8 +58,13 @@ export interface MailRuntimeOptions {
   readonly syncBatchSize?: number;
   readonly outboundAttachments?: MailOutboundAttachmentStorage;
   readonly credentials?: MailCredentialVault;
+  readonly resolveImapConfig?: (
+    account: MailAccount,
+  ) => ImapSmtpMailProviderConfig;
   readonly pushWebhookUrl?: string;
   readonly pushWebhookSecret?: string;
+  /** Days finished sync runs and submissions are kept; `0` or omitted keeps them. */
+  readonly logRetentionDays?: number;
   readonly messageChangeNotifier?: MailMessageChangeNotifier;
 }
 
@@ -58,6 +72,7 @@ export class MailRuntime implements MailOutboxPublisher, MailRuntimeService {
   private readonly operation: SyncMailboxOperation;
   private readonly scheduler: MailSyncScheduler;
   private readonly subscriptions: MailPushSubscriptions;
+  private readonly imapIdle?: MailImapIdle;
   private readonly relay: MailOutboxRelay;
   private readonly removals: MailAccountRemovals;
   private removalPromise?: Promise<void>;
@@ -70,8 +85,17 @@ export class MailRuntime implements MailOutboxPublisher, MailRuntimeService {
   private publishPromise?: Promise<void>;
   private automaticSyncPromise?: Promise<void>;
   private closed = false;
+  private lastLogCleanupAt = 0;
 
   public constructor(private readonly options: MailRuntimeOptions) {
+    if (options.credentials && options.resolveImapConfig) {
+      this.imapIdle = new MailImapIdle({
+        credentials: options.credentials,
+        resolveConfig: options.resolveImapConfig,
+        schedulePushSync: (accountId) => this.schedulePushSync(accountId),
+        logger: options.logger,
+      });
+    }
     this.removals = new MailAccountRemovals(options);
     this.scheduler = new MailSyncScheduler(
       options.store,
@@ -206,6 +230,7 @@ export class MailRuntime implements MailOutboxPublisher, MailRuntimeService {
   private async sweepAccounts(): Promise<number> {
     let created = 0;
     const accounts = await this.options.store.listAllAccounts();
+    this.imapIdle?.reconcile(accounts);
     for (const account of accounts) {
       if (account.status !== 'active') continue;
       try {
@@ -264,6 +289,40 @@ export class MailRuntime implements MailOutboxPublisher, MailRuntimeService {
         new Date(Date.now() - 7 * 24 * 60 * 60_000).toISOString(),
       ),
     );
+    await this.runMaintenanceTask('deleteExpiredLogs', () =>
+      this.deleteExpiredLogs(),
+    );
+  }
+
+  /**
+   * Deletes finished sync runs and submissions older than `logRetentionDays`, at most once an hour per instance and at
+   * most `MAIL_LOG_CLEANUP_BATCH` rows of each table at a time, so a backlog drains over several hours instead of in
+   * one long statement. Every instance may run it; a row deleted twice is simply not found the second time.
+   */
+  public async deleteExpiredLogs(now: number = Date.now()): Promise<number> {
+    const days = this.options.logRetentionDays ?? 0;
+    if (days <= 0 || now - this.lastLogCleanupAt < MAIL_LOG_CLEANUP_INTERVAL_MS)
+      return 0;
+    this.lastLogCleanupAt = now;
+    const before = new Date(now - days * 24 * 60 * 60_000).toISOString();
+    const runs =
+      (await this.options.store.deleteFinishedSyncRunsBefore?.(
+        before,
+        MAIL_LOG_CLEANUP_BATCH,
+      )) ?? 0;
+    const submissions =
+      (await this.options.store.deleteFinishedSubmissionsBefore?.(
+        before,
+        MAIL_LOG_CLEANUP_BATCH,
+      )) ?? 0;
+    if (runs + submissions > 0)
+      writeMailLog(
+        this.options.logger,
+        'info',
+        { event: 'mail.logs.deleted', syncRuns: runs, submissions, before },
+        'Deleted expired Mail sync runs and submissions.',
+      );
+    return runs + submissions;
   }
 
   private async runMaintenanceTask(
@@ -282,20 +341,60 @@ export class MailRuntime implements MailOutboxPublisher, MailRuntimeService {
     }
   }
 
-  public schedulePushSync(accountId: string): Promise<boolean> {
-    return this.tasks.run(() => this.activatePushSync(accountId), false);
+  public accountChanged(account: MailAccount): void {
+    if (this.closed) return;
+    this.imapIdle?.update(account);
   }
 
-  private async activatePushSync(accountId: string): Promise<boolean> {
+  public schedulePushSync(accountId: string): Promise<boolean> {
+    const timing = mailPushTiming.getStore();
+    return this.tasks.run(
+      () => this.activatePushSync(accountId, timing),
+      false,
+    );
+  }
+
+  private async activatePushSync(
+    accountId: string,
+    timing?: MailPushTiming,
+  ): Promise<boolean> {
+    const startedAt = Date.now();
     const account = await this.options.store.getAccount(accountId);
-    if (!account || account.status !== 'active') return false;
+    if (!account || account.status !== 'active' || waitsForFolders(account))
+      return false;
     const requestToken = randomUUID();
     await this.options.store.markPushSyncPending(accountId, requestToken);
-    const created = await this.createSyncRun(accountId);
+    writeMailLog(
+      this.options.logger,
+      'info',
+      {
+        event: 'mail.sync.push_persisted',
+        accountId,
+        requestToken,
+        ...timing,
+        persistedAt: new Date().toISOString(),
+      },
+      'Mail push request persisted.',
+    );
+    const created = await this.createSyncRun(accountId, requestToken, timing);
     if (created) {
       await this.options.store.clearPushSyncPending(accountId, requestToken);
       this.kick();
     }
+    writeMailLog(
+      this.options.logger,
+      'info',
+      {
+        event: 'mail.sync.push_scheduled',
+        accountId,
+        requestToken,
+        ...timing,
+        created,
+        scheduledAt: new Date().toISOString(),
+        schedulingMs: Math.max(0, Date.now() - startedAt),
+      },
+      'Mail push scheduling finished.',
+    );
     return created;
   }
 
@@ -323,7 +422,7 @@ export class MailRuntime implements MailOutboxPublisher, MailRuntimeService {
   ): Promise<void> {
     for (const account of accounts) {
       try {
-        if (await this.createSyncRun(account.id)) {
+        if (await this.createSyncRun(account.id, requestToken)) {
           await this.options.store.clearPushSyncPending(
             account.id,
             requestToken,
@@ -331,7 +430,11 @@ export class MailRuntime implements MailOutboxPublisher, MailRuntimeService {
           this.kick();
         } else {
           const current = await this.options.store.getAccount(account.id);
-          if (!current || current.status !== 'active') {
+          if (
+            !current ||
+            current.status !== 'active' ||
+            waitsForFolders(current)
+          ) {
             await this.options.store.clearPushSyncPending(
               account.id,
               requestToken,
@@ -349,21 +452,43 @@ export class MailRuntime implements MailOutboxPublisher, MailRuntimeService {
     }
   }
 
-  private async createSyncRun(accountId: string): Promise<boolean> {
+  private async createSyncRun(
+    accountId: string,
+    requestToken?: string,
+    timing?: MailPushTiming,
+  ): Promise<boolean> {
     const account = await this.options.store.getAccount(accountId);
     if (!account || account.status !== 'active') return false;
+    if (waitsForFolders(account)) return false;
     const cursor = await this.options.store.getSyncCursor(account.id);
     const legacyInitialSyncDate =
       !cursor && !account.initialSyncReceivedAfter
         ? new Date(`${mailSyncDateMonthsAgo(1)}T00:00:00Z`).toISOString()
         : undefined;
-    return (
-      await this.scheduler.request(
-        account,
-        account.userId,
-        legacyInitialSyncDate ? { receivedAfter: legacyInitialSyncDate } : {},
-      )
-    ).created;
+    const result = await this.scheduler.request(
+      account,
+      account.userId,
+      legacyInitialSyncDate ? { receivedAfter: legacyInitialSyncDate } : {},
+    );
+    writeMailLog(
+      this.options.logger,
+      'info',
+      {
+        event: result.created
+          ? 'mail.sync.run_created'
+          : 'mail.sync.run_reused',
+        accountId,
+        requestToken,
+        ...timing,
+        syncRunId: result.run.id,
+        created: result.created,
+        runCreatedAt: result.run.createdAt,
+        observedAt: new Date().toISOString(),
+        revision: result.run.revision,
+      },
+      'Mail synchronization run requested.',
+    );
+    return result.created;
   }
 
   public kick(): void {
@@ -426,6 +551,7 @@ export class MailRuntime implements MailOutboxPublisher, MailRuntimeService {
     if (this.automaticSyncTimer) clearInterval(this.automaticSyncTimer);
     this.relayTimer = undefined;
     this.automaticSyncTimer = undefined;
+    await this.imapIdle?.close();
     await this.tasks.close();
     await this.publishPromise;
     await this.automaticSyncPromise;
@@ -448,4 +574,9 @@ export function isAutomaticSyncDue(
   const last = Date.parse(lastSyncedAt);
   if (!Number.isFinite(last)) return true;
   return now - last >= intervalMs;
+}
+
+/** An account whose folders are not chosen yet imports nothing until its owner chooses them. */
+function waitsForFolders(account: MailAccount): boolean {
+  return account.syncFolderIds?.length === 0;
 }

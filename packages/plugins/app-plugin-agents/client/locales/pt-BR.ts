@@ -3,6 +3,9 @@ import type { LocaleResource } from '@nocobase/i18n';
 import type enUS from './en-US.js';
 
 const ptBR: LocaleResource<typeof enUS> = {
+  openAgentSettings: 'Abrir configurações de agentes',
+  myConversations: 'Minhas conversas',
+  fileUsage: 'Anexos do chat',
   modelSuggestions: {
     design:
       'Raciocínio mais forte: propostas, arquitetura, investigações difíceis e revisão de alterações importantes; também implementação comum e alterações entre pacotes.',
@@ -92,6 +95,7 @@ const ptBR: LocaleResource<typeof enUS> = {
     codex: 'Codex',
     opencode: 'OpenCode',
     pi: 'Pi',
+    antigravity: 'Antigravity CLI',
     gemini: 'Gemini CLI',
     copilot: 'GitHub Copilot',
     cursor: 'Cursor',
@@ -125,6 +129,8 @@ const ptBR: LocaleResource<typeof enUS> = {
       all: 'Todos {{count}}',
       enabled: '{{count}} habilitado',
       unreported: 'Nenhum ambiente de execução {{count}}',
+      disabled: 'Desabilitada',
+      enabledOnly: 'Habilitada',
     },
     loadFailed: 'Não foi possível carregar os Agents',
     loadMore: 'Carregar mais',
@@ -141,6 +147,7 @@ const ptBR: LocaleResource<typeof enUS> = {
       where: 'Onde funciona',
       effort: 'Esforço de raciocínio',
       state: 'Status',
+      chatRoles: 'Quem pode conversar',
     },
     where: {
       none: 'Sem ambiente de execução',
@@ -193,6 +200,7 @@ const ptBR: LocaleResource<typeof enUS> = {
       title: 'Editar {{name}}',
       enabled: 'Habilitado',
       done: '{{name}} salvo',
+      model: 'Modelo',
     },
     available: {
       open: 'Adicionar Agent',
@@ -246,6 +254,40 @@ const ptBR: LocaleResource<typeof enUS> = {
       addFailed:
         '{{failed}} não puderam ser adicionados. O motivo está abaixo de cada um; tente novamente.',
     },
+    chatRoles: {
+      label: 'Quem pode conversar',
+      everyone: 'Todos os membros',
+      roles: 'Funções específicas',
+      placeholder: 'Escolher funções',
+      hint: 'Os membros sem essas funções não veem o agente no painel de chat nem podem iniciar uma conversa com ele. A permissão de gerenciar agentes não altera esse acesso. Somente o usuário root pode conversar com todos os agentes.',
+      required: 'Escolha pelo menos uma função.',
+    },
+    detail: {
+      view: 'Visualizar',
+      viewFor: 'Ver {{name}}',
+      readOnly:
+        'Você pode visualizar este agente. Somente quem gerencia agentes pode alterá-lo.',
+      tabs: {
+        settings: 'Configurações',
+        actions: 'Ações de negócio',
+        skills: 'Habilidades padrão',
+        runs: 'Execuções',
+      },
+      actionsHint:
+        'Ações que o aplicativo permite que este agente execute nos dados de negócio. A pessoa que o acionou também precisa ter permissão para executá-las.',
+      actionsNone: 'Este agente não tem ações de negócio.',
+      skillsHint:
+        'Habilidades padrão da equipe usadas em cada execução de todos os agentes. Você pode alterá-las na página de habilidades.',
+      skillsNone: 'A equipe ainda não tem habilidades padrão.',
+      skillsUnavailable:
+        'Você precisa de permissão de leitura para ver as habilidades.',
+    },
+    teamDefault: {
+      label: 'Agente padrão da equipe',
+      none: 'Nenhuma',
+      hint: 'Novas conversas usam este agente, a menos que a pessoa escolha seu próprio agente padrão. Apenas um agente ativo com o qual todos os membros possam conversar pode ser o padrão da equipe.',
+      saved: 'Agente padrão da equipe salvo',
+    },
   },
   agentTypes: {
     label: 'Tipo de agente',
@@ -271,10 +313,6 @@ const ptBR: LocaleResource<typeof enUS> = {
     save: 'Salvar habilidades',
     descriptionOnline:
       'Manuais que o Agent lê quando uma tarefa corresponde à sua descrição, em uma sandbox somente leitura no servidor.',
-    onlineScripts:
-      'Os scripts não são executados para Agents online: o Agent pode lê-los, não executá-los.',
-    skippedScripts: ': {{paths}}',
-    pathSeparator: ', ',
   },
   brief: {
     preview: 'Pré-visualização do prompt completo',
@@ -398,7 +436,7 @@ const ptBR: LocaleResource<typeof enUS> = {
       purposes: {
         embedding: 'Incorporações',
         rerank: 'Reclassificação',
-        text: 'Texto utilitário',
+        text: 'Geração de texto',
       },
     },
     title: 'Uso',
@@ -458,6 +496,7 @@ const ptBR: LocaleResource<typeof enUS> = {
       cacheWrite: 'Gravação em cache',
       cost: 'Custo estimado',
     },
+    tabs: { usage: 'Uso', prices: 'Preços' },
   },
   defaultSkills: {
     title: 'Habilidades padrão',
@@ -617,6 +656,15 @@ const ptBR: LocaleResource<typeof enUS> = {
     pathHint:
       'O runner encontra as ferramentas de programação pelo próprio PATH. Em um terminal onde which codex / which claude funcione, execute nocobase-runner service install de novo e reinicie o serviço (ou execute nocobase-runner start de novo) para que ele receba o PATH correto.',
     quota: {
+      ceilingReached: 'Limite de uso atingido',
+      ceilingLabel: 'Pausar em',
+      ceilingInput: 'Pausar novos trabalhos de {{tool}} na porcentagem usada',
+      ceilingSave: 'Aplicar',
+      ceilingInvalid:
+        'Insira uma porcentagem inteira de 1 a 100 ou deixe em branco.',
+      ceilingPaused:
+        'Uma janela atingiu o limite; novos trabalhos afetados aguardam a redefinição ou alteração do limite.',
+
       workspaceStatus: {
         active: 'O trabalho continua',
         ended: 'Finalizado · limpeza permitida',
@@ -647,6 +695,10 @@ const ptBR: LocaleResource<typeof enUS> = {
       workspaceSize: 'Tamanho do espaço de trabalho: {{value}}',
       providers_one: 'Provedor {{count}} na cota',
       providers_other: 'Provedores {{count}} na cota',
+      models_one: '{{count}} modelo na cota',
+      models_other: '{{count}} modelos na cota',
+      models_many: '{{count}} modelos na cota',
+      percent: '{{percent}}%',
       runColumns: {
         issue: 'Tarefa / conversa',
         agent: 'Agente',
@@ -689,7 +741,7 @@ const ptBR: LocaleResource<typeof enUS> = {
         'Limpe somente depois de confirmar que a cota foi restaurada. {{target}} volta a receber trabalho imediatamente; se a cota ainda estiver esgotada, a próxima execução a marca de novo.',
       observed: 'Último {{time}} relatado',
       usedPercent: '{{percent}}% usado',
-      ok: 'OK',
+      noUsage: 'Ainda não há dados de cota',
       hint: 'Uma marca some sozinha no horário de reinicialização conhecido ou quando a ferramenta volta a informar cota disponível. Limpe-a manualmente somente depois de confirmar que a cota foi restaurada. Somente o proprietário e os administradores do ambiente de execução podem limpar as marcas.',
       marks_many: 'Marcas de cota {{count}}',
       providers_many: 'Provedores {{count}} na cota',
@@ -768,8 +820,8 @@ const ptBR: LocaleResource<typeof enUS> = {
       offlineNever: 'Off-line',
     },
     toolUsage: {
-      label: 'Executado por ferramenta de codificação',
-      item: '{{tool}} {{used}}/{{limit}}',
+      short: 'Execuções {{used}}/{{limit}}',
+      hint: 'No máximo {{limit}} execuções de {{tool}} ao mesmo tempo; {{used}} em andamento',
     },
     toolSlots: {
       label: 'Limites por ferramenta de codificação',
@@ -909,6 +961,8 @@ const ptBR: LocaleResource<typeof enUS> = {
       show: 'Versão {{version}}: um ambiente de execução mais recente está disponível',
       available: 'Atualização disponível',
       badge: 'Atualizável',
+      latest: 'Atual',
+      installed: 'Versão {{version}}',
       title: 'Um ambiente de execução mais recente para {{name}}',
       description: '{{version}} instalado, esta aplicação atende {{latest}}.',
       hint: 'Ele se atualiza quando nenhum Agent está em execução. Para atualizá-lo agora, execute-o em seu host.',
@@ -979,6 +1033,26 @@ const ptBR: LocaleResource<typeof enUS> = {
     },
   },
   chat: {
+    thinking: {
+      levels: {
+        'provider-default': 'Padrão',
+        none: 'Desativado',
+        minimal: 'Mínimo',
+        low: 'Baixo',
+        medium: 'Médio',
+        high: 'Alto',
+        xhigh: 'Muito alto',
+      },
+      adjusted:
+        'Este modelo não aceita o nível de raciocínio "{{requested}}"; nesta resposta foi usado "{{used}}".',
+      adjustedToDefault:
+        'Este modelo não aceita o nível de raciocínio "{{requested}}"; nesta resposta foi usado o padrão do provedor.',
+      warning:
+        'O modelo pode não ter aplicado o nível de raciocínio "{{level}}" nesta resposta.',
+      title: 'Nível de raciocínio',
+      choose: 'Nível de raciocínio: {{level}}',
+      useDefault: 'Usar o padrão do provedor',
+    },
     // Keep new guidance available in English until this locale is translated.
     executionFailed:
       'A execução falhou. Revise a conversa salva antes de tentar de novo.',
@@ -1033,6 +1107,20 @@ const ptBR: LocaleResource<typeof enUS> = {
       fallbackDone: 'Esta conversa agora usa outro Agent',
       restoreDone: 'Mudou de volta',
       newSession: 'O Agent inicia uma nova sessão e lê esta conversa.',
+      agentMissing: '{{name}} não existe mais',
+      agentArchived: '{{name}} não está habilitado',
+      forbidden: 'Você não pode mais usar {{name}}',
+      noModel: 'Configure primeiro um modelo de chat',
+      noRunner: 'Não há ambiente de execução online para {{name}} agora',
+      othersPersonal:
+        '{{name}} está disponível apenas nos ambientes pessoais de outros usuários. Conecte seu próprio ambiente',
+      modelUnavailable:
+        'O modelo de {{name}} está indisponível. Entre em contato com um administrador',
+      kept: 'Suas mensagens ficam guardadas e serão respondidas assim que for possível.',
+      fallback: 'Usar outro Agent aqui',
+      usingDefault:
+        'Esta conversa usa temporariamente {{name}} no lugar de {{own}}.',
+      restore: 'Voltar para {{own}}',
     },
     notice: {
       switchedToDefault:
@@ -1052,12 +1140,33 @@ const ptBR: LocaleResource<typeof enUS> = {
       unavailableTitle: 'Agent consultado indisponível',
       snapshotTitle: '{{name}} solicitado no momento',
       title: 'Consultado {{name}}',
+      question: 'Pergunta',
+      answer: 'Resposta',
+      steps: 'Etapas dele',
+      usage: 'Usou {{input}} tokens de entrada e {{output}} de saída.',
+      state: {
+        running: 'Respondendo…',
+        completed: 'Respondido',
+        failed: 'Falhou',
+        refused: 'Recusado',
+      },
     },
     steps: {
       thinking: 'Pensando…',
       reading: 'Olhando para {{subject}}',
       working: 'Trabalhando em {{subject}}',
+      ...{
+        count_one: '{{count}} etapa',
+        count_other: '{{count}} etapas',
+        count_many: '{{count}} etapas',
+      },
+      title: 'Etapas',
+      waiting: 'Aguardando um ambiente de execução assumir o trabalho…',
+      starting: 'Iniciando…',
+      started: 'O Agent está respondendo.',
+      finished: 'O Agent terminou de responder.',
     },
+    // Plural forms of the panel wording, outside the typed shape (the rest falls back to English).
     agents: {
       personalOnly: 'Somente ambientes de execução pessoais',
       hint: 'Lista os Agents habilitados e diz por que nenhum deles pode responder agora. As respostas são executadas em um ambiente de execução: a primeira resposta espera que alguém a responda, geralmente alguns segundos.',
@@ -1068,6 +1177,324 @@ const ptBR: LocaleResource<typeof enUS> = {
       placeholder: 'Escolha um Agent',
       myDefault: 'Meu padrão',
       systemDefault: 'Padrão do sistema',
+      models: 'Modelos',
+      defaultModel: 'Modelo padrão',
+      runnerAgents: 'Agentes',
+      modelPlaceholder: 'Escolha um modelo',
+      modelSwitch:
+        'Modelo: {{name}} · {{service}}; escolher um modelo ou Agent',
+      modelOnlySwitch: 'Modelo: {{name}} · {{service}}; escolher um modelo',
+      modelLoadFailed: 'Não foi possível carregar o modelo da conversa',
+      modelChangeFailed: 'Não foi possível confirmar a troca de modelo',
+      modelSearch: 'Pesquisar modelos',
+      noMatchingModels: 'Nenhum modelo correspondente',
+      modelHint: 'Escolha um modelo online para conversar.',
+      mixedHint:
+        'Escolha um modelo online ou um agente em um ambiente de execução para conversar.',
+      search: 'Pesquisar modelos ou Agents',
+      noResults: 'Nenhum modelo ou Agent correspondente',
+      switch: 'Agent: {{name}}; escolher outro',
+      withStatus: '{{name}}, {{status}}',
+      chatWith: 'Conversar com',
+      startWith: 'Iniciar uma nova conversa com',
+      boundHint:
+        'Uma conversa fica com o seu Agent; escolher outro inicia uma nova conversa.',
+      noneToChat: 'Nenhum Agent com quem você possa conversar',
+      field: 'Agente: {{name}}',
+      personal: 'Somente ambientes de execução pessoais',
+      temporary: 'Temporário',
+      chatHint:
+        'Lista os agentes ativos e explica por que um agente não pode responder agora. As respostas online usam um modelo do aplicativo. Os demais agentes aguardam um ambiente de execução disponível.',
+    },
+    sharing: {
+      related: 'Registros relacionados',
+      title: 'Compartilhar instantâneo',
+      description:
+        'Os destinatários só veem o conteúdo até o momento em que você compartilha. Um turno não concluído fica de fora. Compartilhe novamente para atualizar o instantâneo.',
+      sensitive:
+        'Esta conversa pode conter informações sensíveis. Compartilhe apenas com quem deve vê-las.',
+      asOf: 'Compartilhado em {{time}}',
+      recipient: 'Selecionar usuários do aplicativo',
+      share: 'Compartilhar',
+      update: 'Atualizar',
+      revoke: 'Revogar',
+      copy: 'Copiar link',
+      copied: 'Link copiado',
+      copyFailed: 'Não foi possível copiar o link',
+      none: 'Nenhum destinatário ainda.',
+      failed:
+        'Não foi possível carregar ou atualizar o compartilhamento. Tente novamente.',
+      failedRecipients:
+        'Não foi possível compartilhar com: {{names}}. Esses usuários continuam selecionados para uma nova tentativa.',
+      older: 'Carregar mensagens anteriores',
+      empty: 'Não há turnos concluídos neste instantâneo.',
+    },
+    webSearch: {
+      title: 'Pesquisa na web',
+      queryCount: 'Consultas · {{count}}',
+      expand: 'Expandir',
+      collapse: 'Recolher',
+      toggle: 'Pesquisar na web',
+      unsupported:
+        'Selecione um modelo compatível para habilitar a pesquisa na web.',
+      searching: 'Pesquisando…',
+      completed: 'Fontes obtidas',
+      unverified: 'Pesquisa não verificada',
+      unverifiedNotice:
+        'O provedor retornou uma resposta sem evidências de pesquisa. Não foi possível verificar a execução da pesquisa, a atualidade nem as fontes.',
+      partial: 'Algumas pesquisas falharam',
+      failed: 'Pesquisa indisponível',
+      cancelled: 'Pesquisa cancelada',
+      interrupted: 'Pesquisa interrompida',
+      timeout: 'A pesquisa excedeu o tempo limite.',
+      unavailable: 'A pesquisa está temporariamente indisponível.',
+      noEvidence: 'Nenhuma evidência verificada da web foi retornada.',
+      sources: 'Fontes',
+    },
+    retrySaving: 'Tentar salvar novamente',
+    cancel: 'Cancelar',
+    editMessage: 'Editar',
+    copyMessage: 'Copiar',
+    refreshReply: 'Gerar novamente',
+    copyFailed: 'Não foi possível copiar a mensagem.',
+    resendConfirm: 'Reenviar',
+    resend: {
+      rejected: 'A mensagem não foi reenviada. Sua edição foi mantida.',
+      unknown:
+        'O resultado do reenvio é desconhecido. Atualize o histórico e aguarde antes de tentar novamente; a mensagem pode já ter sido aceita.',
+      needsSync:
+        'A mensagem foi aceita, mas o histórico não foi sincronizado. Atualize o histórico; não a envie novamente.',
+    },
+    contextFailed:
+      'Não foi possível ler o contexto selecionado nem enviar a mensagem. Verifique a página atual e tente novamente.',
+    approval: {
+      request:
+        'Esta ferramenta precisa da sua aprovação antes de ser executada.',
+      approve: 'Aprovar',
+      deny: 'Negar',
+      denied: 'A execução da ferramenta foi negada.',
+      failed:
+        'A aprovação não foi confirmada. Atualize a mensagem salva antes de tentar novamente.',
+    },
+    feedback: {
+      sending: 'Enviando…',
+      waiting: 'Aguardando o Agent…',
+      thinking: 'Pensando…',
+      stopping: 'Interrupção solicitada. Aguardando o Agent terminar…',
+      completed: 'Concluído.',
+      cancelled:
+        'Cancelado. Verifique as ações que podem ter sido concluídas antes de repeti-las.',
+      failed:
+        'A resposta falhou. Verifique o histórico antes de decidir se deve enviar novamente.',
+      unknown:
+        'O resultado ou o histórico salvo não foi confirmado. Atualize o histórico antes de decidir se deve enviar novamente.',
+      effectReview:
+        'Algumas ações podem ter sido concluídas. Verifique os resultados delas antes de repeti-las.',
+    },
+    historicalReadOnly:
+      'Esta conversa do histórico é somente leitura. Inicie um novo chat para continuar.',
+    connectionUnknown:
+      'Conexão interrompida. O resultado é desconhecido. Atualize o histórico salvo antes de decidir enviar novamente.',
+    allowAnother: 'Permitir outro envio (pode duplicar)',
+    refreshHistory: 'Atualizar histórico',
+    title: 'Chat com o Agent',
+    ask: 'Perguntar ao agente',
+    launcher: 'Abrir agente',
+    closeLauncher: 'Fechar agente',
+    close: 'Fechar',
+    expand: 'Largura total',
+    restoreSize: 'Voltar ao painel lateral',
+    openPage: 'Abrir em tela cheia',
+    openInPanel: 'Abrir no painel lateral',
+    more: 'Mais',
+    newConversation: 'Nova conversa',
+    rename: 'Renomear',
+    renameHint: '{{title}} (clique para renomear)',
+    archive: 'Arquivar',
+    unarchive: 'Desarquivar',
+    you: 'Você',
+    agentGone: 'Agent excluído',
+    anyAgent: 'Agente',
+    loadFailed: 'Não foi possível carregar a conversa',
+    notFound: 'Não é possível abrir esta conversa',
+    notFoundDescription:
+      'Ela pode ter sido removida ou pertence a outra pessoa.',
+    emptyTitle: 'O que {{name}} pode fazer por você?',
+    emptyDescription:
+      'Pergunte qualquer coisa ou descreva o trabalho a organizar. O que esta página mostra é enviado como contexto.',
+    noAgent:
+      'Você não tem acesso a nenhum agente para conversar. Peça a um administrador que habilite um ou conecte um ambiente de execução.',
+    chooseAgent:
+      'Escolha abaixo com quem conversar. Para começar sempre com um agente específico, defina-o como padrão no seu perfil.',
+    messages: 'Mensagens',
+    olderMessages: 'Mensagens anteriores',
+    sources: { panel: 'Painel de chat' },
+    reasoning: { title: 'Raciocínio', thinking: 'Pensando…' },
+    reply: { writing: 'Escrevendo…', interrupted: 'A resposta parou aqui.' },
+    pending: {
+      sending: 'Enviando…',
+      failed: 'Não enviada',
+      retry: 'Enviar novamente',
+      discard: 'Descartar',
+    },
+    composer: {
+      label: 'Mensagem para o Agent',
+      placeholder: 'Pergunte ou descreva o trabalho a organizar…',
+      hint: 'Enter para enviar, Shift+Enter para nova linha',
+      runningHint: 'Em execução. Você pode interromper esta execução.',
+      tooLong: 'No máximo {{max}} caracteres.',
+      send: 'Enviar',
+      stop: 'Parar',
+      stopping: 'Parando…',
+    },
+    attachments: {
+      attach: 'Anexar arquivos',
+      label: 'Arquivos que a próxima mensagem leva',
+      sent: 'Arquivos enviados com esta mensagem',
+      images: 'Imagens',
+      files: 'Arquivos',
+      remove: 'Remover {{name}}',
+      uploading: 'Enviando…',
+      tooLarge: 'Maior que {{max}}',
+      failed: 'Não foi possível enviar',
+      tooMany: 'No máximo {{max}} arquivos por mensagem.',
+      blocked:
+        'Remova os arquivos que não puderam ser enviados para enviar a mensagem.',
+      waiting:
+        'A mensagem será enviada quando os arquivos terminarem de ser carregados…',
+      drop: 'Solte os arquivos para anexá-los',
+      preview: 'Pré-visualizar {{name}}',
+      download: 'Baixar {{name}}',
+      previous: 'Imagem anterior',
+      next: 'Próxima imagem',
+    },
+    context: {
+      label: 'Contexto que a próxima mensagem leva',
+      sent: 'Contexto que esta mensagem levou',
+      filter: 'Filtro: {{filter}}',
+      selection: 'Texto selecionado: “{{text}}”',
+      remove: 'Remover contexto: {{label}}',
+      inspect: 'Mostrar contexto: {{label}}',
+      preview: 'Contexto: {{label}}',
+    },
+    modes: {
+      online: 'Agent online',
+      runner: 'Agentes de ambientes de execução',
+      switchToOnline: 'Trocar para o Agent online',
+      switchToRunner: 'Alternar para agentes de ambientes de execução',
+    },
+    history: {
+      title: 'Conversas',
+      fold: 'Recolher a lista de conversas',
+      unfold: 'Expandir a lista de conversas',
+      search: 'Pesquisar conversas',
+      show: 'Mostrar',
+      active: 'Abertas',
+      archived: 'Arquivadas',
+      agent: 'Agente',
+      allAgents: 'Todos os Agents',
+      source: 'Iniciada em',
+      allSources: 'Qualquer lugar',
+      loadFailed: 'Não foi possível carregar as conversas',
+      noMatch: 'Nenhuma conversa correspondente',
+      noArchived: 'Nenhuma conversa arquivada',
+      empty: 'Nenhuma conversa',
+      more: 'Carregar mais',
+      unread: 'Nova resposta',
+      actions: 'Ações de {{title}}',
+      waiting: 'Aguardando você',
+      running: 'Em andamento',
+      recent: 'Recentes',
+      ownOnly:
+        'Apenas suas conversas são listadas. As pessoas com quem você compartilha uma conversa só podem lê-la.',
+    },
+    list: {
+      waiting_one: 'Precisam de mim {{count}}',
+      waiting_other: 'Precisam de mim {{count}}',
+      waiting_many: 'Precisam de mim {{count}}',
+      active_one: 'Em andamento {{count}}',
+      active_other: 'Em andamento {{count}}',
+      active_many: 'Em andamento {{count}}',
+      label: 'Conversas',
+      archivedTitle: 'Arquivadas',
+      back: 'Voltar às conversas',
+      all: 'Todos',
+      filters: 'Mostrar',
+      today: 'Hoje',
+      yesterday: 'Ontem',
+      week: 'Esta semana',
+      earlier: 'Anteriores',
+      restore: 'Restaurar',
+      offline: 'Ambiente de execução offline',
+      needsMe: 'Precisa de mim',
+      working: 'Em andamento',
+      reply: 'Nova resposta',
+      failed: 'Falhou',
+      confirm: 'Pergunta para você',
+    },
+    loading: 'Carregando',
+    retry: 'Tentar novamente',
+    errors: {
+      forbidden: 'Você não tem permissão para fazer isso.',
+      notFound: 'Isso não existe mais.',
+      requestFailed: 'A solicitação falhou. Tente novamente.',
+    },
+    transcript: {
+      waiting: 'Aguardando o Agent iniciar…',
+      empty: 'Esta execução não registrou eventos.',
+      fetchFailed: 'Não foi possível buscar novos eventos. Tentando novamente…',
+      expand: 'Mostrar tudo',
+      truncated: 'Cortado: o texto completo era longo demais para ser mantido.',
+      events: 'Transcrição da execução',
+      inputDelivered: '{{count}} entrada(s) entregue(s) ao Agent',
+      tokens: '{{input}} tokens de entrada, {{output}} de saída',
+      kinds: {
+        text: 'Agente',
+        thinking: 'Raciocínio',
+        toolUse: 'Ferramenta',
+        toolResult: 'Resultado',
+        allowed: 'Permitido',
+        denied: 'Negado',
+        input: 'Entrada',
+        checkout: 'Checkout',
+        status: 'Status',
+        error: 'Erro',
+        usage: 'Uso',
+      },
+    },
+    backToList: 'Voltar à lista',
+    showDetails: 'Mostrar detalhes',
+    hideDetails: 'Ocultar detalhes',
+    detailsTitle: 'Detalhes da sessão',
+    sessionDetails: 'Sessão',
+    runtime: 'Ambiente de execução',
+    agent: 'Agente',
+    started: 'Iniciada',
+    usageTitle: 'Uso',
+    relatedWork: 'Trabalho relacionado',
+    unlink: 'Remover associação',
+    unlinkFailed: 'Não foi possível remover a associação.',
+    expandPanel: 'Largura total',
+    restorePanel: 'Restaurar painel',
+    delete: 'Excluir',
+    deleteDialog: {
+      menu: 'Excluir',
+      title: 'Excluir “{{title}}”?',
+      description:
+        'As mensagens, os arquivos e as associações serão excluídos permanentemente, e qualquer execução ativa será interrompida. Os registros relacionados serão mantidos. Esta ação é irreversível.',
+      cancel: 'Cancelar',
+      confirm: 'Excluir',
+      done: '“{{title}}” excluída',
+      body: 'As mensagens, os arquivos e as associações serão excluídos permanentemente, e qualquer execução ativa será interrompida. Os registros relacionados serão mantidos. Esta ação é irreversível.',
+    },
+    usage: {
+      title: 'Uso',
+      context: 'Contexto {{used}} / {{size}} tokens ({{percent}}%)',
+      window: 'Janela de contexto',
+      input: 'Entrada',
+      cached: 'Em cache',
+      output: 'Saída',
+      cost: 'Custo',
     },
   },
   chatProfile: {
@@ -1306,8 +1733,6 @@ const ptBR: LocaleResource<typeof enUS> = {
     binaryFile: 'Arquivo binário, {{size}}. Não pode ser editado aqui.',
     executable: 'Executável',
     scriptBadge: 'Roteiro',
-    scriptsNote:
-      'Possui scripts: os Agents online podem lê-los, mas nunca executá-los',
     compatibility: 'Compatibilidade: {{value}}',
     fileContent: 'Conteúdo de {{path}}',
     export: 'Exportar',
@@ -1339,8 +1764,7 @@ const ptBR: LocaleResource<typeof enUS> = {
       name: 'Nome',
       renameTitle: 'Renomear "{{name}}"',
       conventional: {
-        scripts:
-          'Os Agents de código podem ser executados. Os Agents online apenas leem.',
+        scripts: 'Código que os Agents podem executar.',
         references: 'Os Agents de documentação leem quando precisam.',
         assets: 'Modelos, imagens e outros recursos.',
       },
@@ -1479,11 +1903,16 @@ const ptBR: LocaleResource<typeof enUS> = {
         runners: 'Ambientes de execução',
         prices: 'Preços dos modelos',
         services: 'Serviços modelo',
+        skills: 'Habilidades',
       },
     },
     actions: {
       read: 'Visualizar',
       manage: 'Gerenciar',
+    },
+    humanOnly: {
+      servicesManage:
+        'Gerenciar serviços de modelos grava chaves de provedores; só uma pessoa pode fazer isso.',
     },
     keyScopes: {
       agents: {
@@ -1506,6 +1935,37 @@ const ptBR: LocaleResource<typeof enUS> = {
         description:
           'Veja os serviços de modelo e os modelos que eles oferecem, nunca suas chaves.',
       },
+    },
+  },
+  me: {
+    navigation: 'Agente',
+    title: 'Agente',
+    description:
+      'Suas configurações de agente: o destino das novas conversas, os ambientes adicionados e o consumo das suas execuções.',
+    defaultAgent: { title: 'Meu agente padrão' },
+    effort: {
+      title: 'Esforço de raciocínio',
+      description:
+        'O esforço de raciocínio nas conversas que você iniciar, a menos que escolha outro nível dentro da conversa. Se a ferramenta de programação não oferecer essa opção, o agente usará seu próprio padrão.',
+      label: 'Meu esforço de raciocínio',
+      default: 'Padrão de cada agente',
+      saved: 'Esforço de raciocínio salvo',
+    },
+    runtimes: {
+      title: 'Ambientes de execução que adicionei',
+      description:
+        'Ambientes pessoais executam apenas os seus trabalhos. Adicione um na página de ambientes de execução nas configurações do sistema ou fale com um administrador.',
+      none: 'Você ainda não adicionou um ambiente de execução.',
+      loadFailed: 'Não foi possível carregar seus ambientes de execução',
+      status: { online: 'Online', offline: 'Offline', revoked: 'Revogado' },
+    },
+    usage: {
+      title: 'Meu consumo',
+      description: 'Consumo das suas execuções nos últimos 30 dias.',
+      runs: 'Execuções',
+      tokens: 'Fichas',
+      cost: 'Custo estimado',
+      loadFailed: 'Não foi possível carregar seu consumo',
     },
   },
 };

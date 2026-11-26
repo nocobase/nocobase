@@ -9,6 +9,7 @@ const ruRU: LocaleResource<typeof enUS> = {
   authorization: {
     title: 'Расписания',
     read: 'Просмотр',
+    manage: 'Управление',
   },
 };
 

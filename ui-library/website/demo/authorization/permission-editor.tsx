@@ -1,334 +1,491 @@
 import { useState, type ReactElement } from 'react';
+import { CopyIcon } from 'lucide-react';
 import { Button } from '#components/ui/button';
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '#components/ui/select';
 
 import {
   PermissionEditor,
-  type PermissionEditorLevel,
-  type PermissionEditorSection,
-  type PermissionEditorScope,
-  type PermissionEditorNavigationNode,
+  type PermissionAction,
+  type PermissionMenuNode,
+  type PermissionObject,
+  type PermissionSettingsPage,
+  type PermissionScopeOption,
+  type PermissionValue,
 } from '#components/permission-editor';
 
-const OWN_OR_ALL: readonly PermissionEditorLevel[] = [
-  { value: '', label: 'Use default rules' },
-  { value: 'own', label: 'Their own records' },
-  { value: 'all', label: 'All records' },
+// Example data only: an application builds its objects from its implemented operations and its menus from its routes.
+const RECORDS: readonly PermissionScopeOption[] = [
+  { value: 'all', label: 'All' },
+  { value: 'team', label: 'Their team' },
+  { value: 'own', label: 'Their own' },
 ];
 
-const ALL_ONLY: readonly PermissionEditorLevel[] = [
-  { value: 'all', label: 'All records' },
-];
+const view = (
+  id: string,
+  label: string,
+  description?: string,
+): PermissionAction => ({
+  id,
+  label,
+  description,
+  view: true,
+  scopes: [{ id: 'records', options: RECORDS, defaultValue: 'own' }],
+});
 
-const VIEW_OR_MANAGE: readonly PermissionEditorLevel[] = [
-  { value: 'view', label: 'View' },
-  { value: 'manage', label: 'Manage' },
-];
+/** A basic or business action whose data scope follows View. */
+const follows = (
+  id: string,
+  label: string,
+  extra: Partial<PermissionAction> = {},
+): PermissionAction => ({
+  id,
+  label,
+  scopes: [{ id: 'records', followsView: true }],
+  ...extra,
+});
 
-interface DemoRow {
-  readonly id: string;
-  readonly label: string;
-  readonly actionKey?: string | undefined;
-  readonly hint?: string;
-  readonly levels?: readonly PermissionEditorLevel[];
-  readonly scopes?: readonly PermissionEditorScope[];
-  /** A hint per level, for a settings item whose levels mean different things. */
-  readonly hints?: Readonly<Record<string, string>>;
-}
-
-interface DemoGroup {
-  readonly id: string;
-  readonly title?: string;
-  readonly rows: readonly DemoRow[];
-}
-
-const CATALOG: readonly {
-  readonly id: string;
-  readonly title: string;
-  readonly footer?: string;
-  readonly description?: string;
-  readonly groups: readonly DemoGroup[];
-  readonly navigation?: readonly PermissionEditorNavigationNode[];
-}[] = [
+const OBJECTS: readonly PermissionObject[] = [
   {
-    id: 'actions',
-    title: 'Business operations',
-    footer:
-      'Their own records are the ones they own or are assigned to; all records include everyone else’s.',
-    groups: [
+    id: 'customers',
+    label: 'Customers',
+    group: 'Sales',
+    actions: [
+      view(
+        'customers.view',
+        'View customers',
+        'Open the customer list and details.',
+      ),
+      follows('customers.create', 'Create customers', {
+        description: 'Create customers they own.',
+      }),
+      follows('customers.update', 'Edit customers', {
+        description: 'Change the name, industry and tier.',
+      }),
+      follows('customers.destroy', 'Delete customers'),
+      follows('customers.export', 'Export customers', {
+        description: 'Download the customer list.',
+        risk: 'sensitive',
+      }),
+      follows('customers.assign', 'Assign owner', {
+        business: true,
+        description: 'Hand a customer to another rep.',
+      }),
+    ],
+  },
+  {
+    id: 'contacts',
+    label: 'Contacts',
+    group: 'Sales',
+    actions: [
+      view('contacts.view', 'View contacts'),
+      follows('contacts.create', 'Create contacts'),
+      follows('contacts.update', 'Edit contacts'),
+      follows('contacts.destroy', 'Delete contacts'),
+    ],
+  },
+  {
+    id: 'activities',
+    label: 'Activities',
+    group: 'Sales',
+    actions: [
+      view('activities.view', 'View activities'),
+      follows('activities.create', 'Log activities'),
+      follows('activities.update', 'Edit activities'),
+      follows('activities.destroy', 'Delete activities'),
+    ],
+  },
+  {
+    id: 'deals',
+    label: 'Deals',
+    group: 'Sales',
+    actions: [
+      view('deals.view', 'View deals'),
+      follows('deals.create', 'Create deals'),
+      follows('deals.update', 'Edit deals', {
+        description: 'Change the amount, stage and close date.',
+      }),
+      follows('deals.destroy', 'Delete deals'),
+      follows('deals.move-stage', 'Move stage', { business: true }),
+      follows('deals.mark-lost', 'Mark as lost', {
+        business: true,
+        description: 'Requires a reason.',
+      }),
+    ],
+  },
+  {
+    id: 'contracts',
+    label: 'Contracts',
+    group: 'Sales',
+    actions: [
+      view(
+        'contracts.view',
+        'View contracts',
+        'Open contracts and their amounts.',
+      ),
+      follows('contracts.create', 'Draft contracts', {
+        description: 'Draft a contract for a customer.',
+      }),
+      follows('contracts.update', 'Change amount', {
+        description: 'Change the contract amount.',
+      }),
+      follows('contracts.export', 'Export contracts', {
+        description: 'Download the contract list.',
+      }),
+      follows('contracts.submit', 'Submit for approval', {
+        business: true,
+        description: 'Submit a draft for approval.',
+      }),
       {
-        id: 'deals',
-        title: 'Deals',
-        rows: [
+        id: 'contracts.approve',
+        label: 'Approve',
+        business: true,
+        description: 'Approve contracts awaiting approval.',
+        scopes: [
+          { id: 'records', label: 'Contracts', followsView: true },
+          // Approving also reads the customer: an extra scope titled with that object's registered title. It follows
+          // Customers' View, so the customer scope is set once, on the Customers object.
           {
-            id: 'deals-view',
-            actionKey: 'read',
-            label: 'View deals',
-            hint: 'Open deals and their history',
-            levels: OWN_OR_ALL,
+            id: 'customers',
+            label: 'Customers',
+            options: RECORDS,
+            defaultValue: 'team',
+            followsView: 'customers.view',
           },
           {
-            id: 'deals-edit',
-            actionKey: 'update',
-            label: 'Edit deals',
-            hint: 'Change the amount, stage and close date',
-            levels: OWN_OR_ALL,
-          },
-          {
-            id: 'deals-delete',
-            actionKey: 'delete',
-            label: 'Delete deals',
-            hint: 'Remove a deal for good',
-            levels: ALL_ONLY,
-          },
-        ],
-      },
-      {
-        id: 'quotes',
-        title: 'Quotes',
-        rows: [
-          {
-            id: 'quotes-submit',
-            actionKey: 'submit',
-            label: 'Submit quote',
-            hint: 'Submit an eligible quote after checking its linked project.',
-            scopes: [
-              {
-                id: 'quote-projects',
-                label: 'Linked projects',
-                levels: OWN_OR_ALL,
-                level: '',
-                hint: 'This role adds no records. Effective access also depends on other roles and default, sharing and restriction rules.',
-              },
-              {
-                id: 'quote-records',
-                label: 'Quotes allowed for submission',
-                levels: OWN_OR_ALL,
-                level: '',
-                hint: 'This role adds no records. Effective access also depends on other roles and default, sharing and restriction rules.',
-              },
+            id: 'amount',
+            label: 'Amount up to',
+            options: [
+              { value: 'any', label: 'No limit' },
+              { value: '500k', label: '$500,000' },
+              { value: '100k', label: '$100,000' },
             ],
-          },
-          {
-            id: 'quotes-create',
-            label: 'Create quote',
-            hint: 'Prepare a draft quotation.',
-          },
-          {
-            id: 'quotes-withdraw',
-            label: 'Withdraw quote',
-            hint: 'Withdraw an unprocessed quotation.',
+            defaultValue: '100k',
           },
         ],
       },
+      follows('contracts.void', 'Void', {
+        business: true,
+        description: 'Void a contract.',
+      }),
+    ],
+  },
+  {
+    id: 'payments',
+    label: 'Payments',
+    group: 'Sales',
+    actions: [
+      view('payments.view', 'View payments'),
+      follows('payments.create', 'Record payments'),
+      follows('payments.refund', 'Refund', {
+        business: true,
+        risk: 'high',
+        description: 'Return money to the customer.',
+      }),
+    ],
+  },
+  {
+    id: 'products',
+    label: 'Products',
+    group: 'Sales',
+    actions: [
+      view('products.view', 'View products'),
+      follows('products.create', 'Create products'),
+      follows('products.update', 'Edit products'),
+      follows('products.destroy', 'Delete products'),
+      follows('products.export', 'Export products'),
+      follows('products.price', 'Change prices', { business: true }),
+    ],
+  },
+];
+
+// System settings: each page lists the settings objects it uses, without data scopes. A page shows in the sidebar
+// while the action that opens it is on.
+const SETTINGS_OBJECTS: readonly PermissionObject[] = [
+  {
+    id: 'users',
+    label: 'Users',
+    actions: [
+      { id: 'users.view', label: 'View users', view: true },
+      { id: 'users.create', label: 'Invite users' },
+      { id: 'users.disable', label: 'Disable users' },
+      {
+        id: 'users.assign-role',
+        label: 'Assign roles',
+        risk: 'high',
+        description: 'Gives users everything those roles allow.',
+      },
+    ],
+  },
+  {
+    id: 'roles',
+    label: 'Roles',
+    actions: [
+      { id: 'roles.view', label: 'View roles and permissions', view: true },
+      {
+        id: 'roles.update',
+        label: 'Create and edit roles',
+        risk: 'high',
+        description: 'Can grant anything to anyone.',
+      },
+    ],
+    notice:
+      'Anyone who can create and edit roles or assign them can give any role any permission, including Administrator. Grant these only to people trusted with full access.',
+  },
+];
+
+const SETTINGS: readonly PermissionSettingsPage[] = [
+  {
+    id: 'user-management',
+    label: 'User management',
+    group: 'Account and permissions',
+    objects: SETTINGS_OBJECTS.filter((object) => object.id === 'users'),
+  },
+  {
+    id: 'permission-management',
+    label: 'Permission management',
+    group: 'Account and permissions',
+    objects: SETTINGS_OBJECTS.filter((object) => object.id === 'roles'),
+  },
+];
+
+const MENUS: readonly PermissionMenuNode[] = [
+  // Top-level pages are listed as they are, without a group around them.
+  { id: 'home', label: 'Home', public: true },
+  {
+    id: 'sales-dashboard',
+    label: 'Sales dashboard',
+    uses: { primary: ['deals'], related: ['contracts', 'payments'] },
+  },
+  { id: 'products', label: 'Products', uses: { primary: ['products'] } },
+  {
+    id: 'customer-management',
+    label: 'Customer management',
+    children: [
+      { id: 'customers', label: 'Customers', uses: { primary: ['customers'] } },
       {
         id: 'contacts',
-        title: 'Contacts',
-        rows: [
-          {
-            id: 'contacts-view',
-            actionKey: 'read',
-            label: 'View contacts',
-            levels: OWN_OR_ALL,
-          },
-          {
-            id: 'contacts-export',
-            actionKey: 'export',
-            label: 'Export contacts',
-            hint: 'Download contacts as a spreadsheet',
-            levels: ALL_ONLY,
-          },
-        ],
+        label: 'Contacts',
+        uses: { primary: ['contacts'], related: ['customers'] },
+      },
+      {
+        id: 'activities',
+        label: 'Activities',
+        uses: { primary: ['activities'], related: ['customers'] },
       },
     ],
   },
   {
-    id: 'pages',
-    title: 'Page access',
-    description:
-      'Choose business pages. System settings and their actions are controlled under Configuration permissions.',
-    navigation: [
+    id: 'sales',
+    label: 'Sales',
+    children: [
       {
-        id: 'dashboard',
-        label: 'Dashboard',
-        rowId: 'page-dashboard',
-        path: '/dashboard',
+        id: 'deals',
+        label: 'Deals',
+        uses: { primary: ['deals'], related: ['customers'] },
       },
       {
-        id: 'sales-menu',
-        label: 'Sales',
-        children: [
-          {
-            id: 'pipeline-menu',
-            label: 'Pipeline',
-            rowId: 'page-pipeline',
-            path: '/sales/pipeline',
-            children: [
-              {
-                id: 'deals-menu',
-                label: 'Deals',
-                rowId: 'page-deals',
-                path: '/sales/pipeline/deals',
-              },
-              {
-                id: 'contacts-menu',
-                label: 'Contacts',
-                rowId: 'page-contacts',
-                path: '/sales/pipeline/contacts',
-              },
-            ],
-          },
-          {
-            id: 'reports-menu',
-            label: 'Reports',
-            children: [
-              {
-                id: 'forecast-menu',
-                label: 'Forecast',
-                rowId: 'page-forecast',
-              },
-            ],
-          },
-        ],
-      },
-    ],
-    groups: [
-      {
-        id: 'home',
-        rows: [{ id: 'page-dashboard', label: 'Dashboard' }],
+        id: 'contracts',
+        label: 'Contracts',
+        uses: { primary: ['contracts'], related: ['customers'] },
       },
       {
-        id: 'sales',
-        title: 'Sales',
-        rows: [
-          { id: 'page-pipeline', label: 'Pipeline' },
-          { id: 'page-deals', label: 'Deals' },
-          { id: 'page-contacts', label: 'Contacts' },
-        ],
-      },
-      {
-        id: 'reports',
-        title: 'Reports',
-        rows: [{ id: 'page-forecast', label: 'Forecast' }],
-      },
-    ],
-  },
-  {
-    id: 'settings',
-    title: 'Configuration permissions',
-    description:
-      'Control access and actions for the system settings this application exposes.',
-    groups: [
-      {
-        id: 'stages',
-        rows: [
-          {
-            id: 'settings-stages',
-            label: 'Pipeline stages',
-            levels: VIEW_OR_MANAGE,
-            hints: {
-              view: 'See the stages and their order',
-              manage: 'Add, rename and reorder stages',
-            },
-          },
-        ],
+        id: 'payments',
+        label: 'Payments',
+        uses: { primary: ['payments'], related: ['contracts', 'customers'] },
       },
     ],
   },
 ];
 
-const INITIAL_ENABLED: Readonly<Record<string, boolean>> = {
-  'deals-view': true,
-  'quotes-submit': true,
-  'deals-edit': true,
-  'contacts-view': true,
-  'page-dashboard': true,
-  'page-pipeline': true,
-  'page-deals': true,
-  'settings-stages': true,
+const ROLES: Readonly<
+  Record<
+    string,
+    {
+      readonly title: string;
+      readonly value: PermissionValue;
+      readonly unrestricted?: boolean;
+    }
+  >
+> = {
+  'sales-manager': {
+    title: 'Sales Manager',
+    value: {
+      menus: [
+        'sales-dashboard',
+        'products',
+        'customers',
+        'contacts',
+        'activities',
+        'deals',
+        'contracts',
+        'payments',
+      ],
+      grants: {
+        'customers.view': { scopes: { records: 'team' } },
+        'customers.create': {},
+        'customers.update': {},
+        'customers.export': { scopes: { records: 'own' } },
+        'customers.assign': {},
+        'contacts.view': { scopes: { records: 'team' } },
+        'contacts.create': {},
+        'contacts.update': {},
+        'contacts.destroy': {},
+        'activities.view': { scopes: { records: 'team' } },
+        'activities.create': {},
+        'activities.update': {},
+        'deals.view': { scopes: { records: 'team' } },
+        'deals.create': {},
+        'deals.update': {},
+        'deals.move-stage': {},
+        'deals.mark-lost': {},
+        'contracts.view': { scopes: { records: 'team' } },
+        'contracts.create': {},
+        'contracts.update': {},
+        'contracts.submit': {},
+        'contracts.approve': { scopes: { customers: 'team', amount: '500k' } },
+        'products.view': { scopes: { records: 'all' } },
+      },
+    },
+  },
+  'it-admin': {
+    title: 'IT Administrator',
+    value: {
+      menus: [],
+      grants: {
+        'users.view': {},
+        'users.create': {},
+        'users.disable': {},
+        'roles.view': {},
+      },
+    },
+  },
+  admin: {
+    title: 'Administrator',
+    value: { menus: [], grants: {} },
+    unrestricted: true,
+  },
 };
 
-const INITIAL_LEVELS: Readonly<Record<string, string>> = {
-  'deals-view': 'all',
-  'deals-edit': 'own',
-  'contacts-view': 'own',
-  'settings-stages': 'view',
-};
+const ROLE_ITEMS = Object.entries(ROLES).map(([value, role]) => ({
+  value,
+  label: role.title,
+}));
 
 export function PermissionEditorDemo(): ReactElement {
-  const [enabled, setEnabled] = useState(INITIAL_ENABLED);
-  const [levels, setLevels] = useState(INITIAL_LEVELS);
-  const [saved, setSaved] = useState({
-    enabled: INITIAL_ENABLED,
-    levels: INITIAL_LEVELS,
-  });
-  const [savedNotice, setSavedNotice] = useState(false);
-  const dirty = JSON.stringify({ enabled, levels }) !== JSON.stringify(saved);
-  const sections: readonly PermissionEditorSection[] = CATALOG.map(
-    (section) => ({
-      ...section,
-      groups: section.groups.map((group) => ({
-        ...group,
-        rows: group.rows.map((row) => {
-          const level = levels[row.id] ?? row.levels?.[0]?.value;
-          return {
-            id: row.id,
-            label: row.label,
-            actionKey: row.actionKey,
-            hint: row.hints && level ? row.hints[level] : row.hint,
-            enabled: enabled[row.id] ?? false,
-            levels: row.levels,
-            scopes: row.scopes?.map((scope) => ({
-              ...scope,
-              level: levels[scope.id] ?? scope.level,
-            })),
-            level,
-          };
-        }),
-      })),
-    }),
+  const [roleKey, setRoleKey] = useState('sales-manager');
+  const [saved, setSaved] = useState<Readonly<Record<string, PermissionValue>>>(
+    () =>
+      Object.fromEntries(
+        Object.entries(ROLES).map(([key, role]) => [key, role.value]),
+      ),
   );
+  const [draft, setDraft] = useState<PermissionValue>(saved[roleKey]);
+  const [message, setMessage] = useState('');
+  const role = ROLES[roleKey];
+  const dirty = JSON.stringify(draft) !== JSON.stringify(saved[roleKey]);
   return (
-    <div className='min-h-svh bg-background p-6 text-foreground'>
-      <div className='mx-auto grid max-w-6xl gap-4'>
-        <p className='text-sm text-muted-foreground'>
-          Example application permissions. Changes take effect after Save.
-        </p>
+    <div className='min-h-svh bg-background p-4 text-foreground sm:p-6'>
+      <div className='mx-auto grid max-w-6xl gap-3'>
         <PermissionEditor
-          sections={sections}
-          onEnabledChange={(id, on) =>
-            setEnabled((current) => ({ ...current, [id]: on }))
+          key={roleKey}
+          menus={MENUS}
+          objects={OBJECTS}
+          settings={SETTINGS}
+          value={draft}
+          onChange={setDraft}
+          unrestricted={role.unrestricted}
+          dirty={dirty}
+          defaultObjectId='customers'
+          header={
+            <div className='flex min-w-0 flex-wrap items-center gap-2'>
+              <Select
+                items={ROLE_ITEMS}
+                value={roleKey}
+                onValueChange={(next: string | null) => {
+                  if (!next || next === roleKey) return;
+                  if (
+                    dirty &&
+                    !window.confirm('Discard unsaved changes to this role?')
+                  )
+                    return;
+                  setRoleKey(next);
+                  setDraft(saved[next]);
+                  setMessage('');
+                }}
+              >
+                <SelectTrigger aria-label='Role' className='w-48'>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectGroup>
+                    {ROLE_ITEMS.map((item) => (
+                      <SelectItem key={item.value} value={item.value}>
+                        {item.label}
+                      </SelectItem>
+                    ))}
+                  </SelectGroup>
+                </SelectContent>
+              </Select>
+              <span className='text-sm text-muted-foreground'>
+                Changes take effect after Save.
+              </span>
+              {!role.unrestricted && (
+                <Button
+                  type='button'
+                  variant='outline'
+                  size='sm'
+                  className='ml-auto'
+                  onClick={() =>
+                    setMessage(
+                      `Creates a new role with ${role.title}’s permissions.`,
+                    )
+                  }
+                >
+                  <CopyIcon aria-hidden />
+                  Duplicate as new role
+                </Button>
+              )}
+              {message && (
+                <p
+                  role='status'
+                  className='basis-full text-xs text-muted-foreground'
+                >
+                  {message}
+                </p>
+              )}
+            </div>
           }
-          onLevelChange={(id, level) =>
-            setLevels((current) => ({ ...current, [id]: level }))
+          footer={
+            role.unrestricted ? null : (
+              <>
+                <Button
+                  type='button'
+                  variant='outline'
+                  disabled={!dirty}
+                  onClick={() => setDraft(saved[roleKey])}
+                >
+                  Discard changes
+                </Button>
+                <Button
+                  type='button'
+                  disabled={!dirty}
+                  onClick={() =>
+                    setSaved((current) => ({ ...current, [roleKey]: draft }))
+                  }
+                >
+                  Save
+                </Button>
+              </>
+            )
           }
         />
-        <div className='flex flex-wrap items-center justify-end gap-2'>
-          <span role='status' className='mr-auto text-xs text-muted-foreground'>
-            {dirty ? 'Unsaved changes' : savedNotice ? 'Example saved' : ''}
-          </span>
-          <Button
-            type='button'
-            variant='outline'
-            disabled={!dirty}
-            onClick={() => {
-              setEnabled(saved.enabled);
-              setLevels(saved.levels);
-              setSavedNotice(false);
-            }}
-          >
-            Discard changes
-          </Button>
-          <Button
-            type='button'
-            disabled={!dirty}
-            onClick={() => {
-              setSaved({ enabled, levels });
-              setSavedNotice(true);
-            }}
-          >
-            Save
-          </Button>
-        </div>
       </div>
     </div>
   );

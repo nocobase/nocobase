@@ -39,6 +39,7 @@ import {
 } from '../realtime.js';
 import { createDatabaseMailStore } from '../store.js';
 import {
+  mailAssemblyInfoToken,
   mailProviderAdapterResolverToken,
   mailCredentialVaultToken,
   mailProviderRegistryToken,
@@ -47,6 +48,7 @@ import {
   mailOutboundAttachmentStorageToken,
   mailStoreToken,
 } from '../tokens.js';
+import type { ImapSmtpMailProviderConfig } from '../adapters/imap-smtp/config.js';
 import { mailFailedPrecondition } from '../services/errors.js';
 
 // Keep this historical destination fixed: the current default no longer names a Dev page.
@@ -71,6 +73,11 @@ export class MailCoreProvider extends ServiceProvider<MailCoreProviderApplicatio
     this.app.container.singleton(mailStoreToken, (container) =>
       createDatabaseMailStore(container.resolve(databaseManagerToken)),
     );
+    this.app.container.instance(mailAssemblyInfoToken, {
+      credentialVault: this.app.container.has(mailCredentialVaultToken)
+        ? 'application'
+        : 'builtin',
+    });
     if (!this.app.container.has(mailCredentialVaultToken)) {
       this.app.container.singleton(mailCredentialVaultToken, (container) =>
         createDatabaseMailCredentialVault(
@@ -85,6 +92,12 @@ export class MailCoreProvider extends ServiceProvider<MailCoreProviderApplicatio
           registry,
           context: {
             publicBasePath: this.app.publicBasePath,
+            logger: container.has(loggingToken)
+              ? container
+                  .resolve(loggingToken)
+                  .getLogger()
+                  .child({ module: 'mail' })
+              : undefined,
             credentials: container.resolve(mailCredentialVaultToken),
           },
           resolveConfig: (account) =>
@@ -100,10 +113,15 @@ export class MailCoreProvider extends ServiceProvider<MailCoreProviderApplicatio
         syncBatchSize: this.getMailConfig().syncBatchSize,
         pushWebhookUrl: this.getMailConfig().pushWebhookUrl,
         pushWebhookSecret: this.getMailConfig().pushWebhookSecret,
+        logRetentionDays: this.getMailConfig().logRetentionDays,
         outboundAttachments: container.resolve(
           mailOutboundAttachmentStorageToken,
         ),
         credentials: container.resolve(mailCredentialVaultToken),
+        resolveImapConfig: (account) =>
+          this.resolveProviderConfig(
+            account.provider,
+          ) as ImapSmtpMailProviderConfig,
         logger: container
           .resolve(loggingToken)
           .getLogger()
@@ -140,6 +158,12 @@ export class MailCoreProvider extends ServiceProvider<MailCoreProviderApplicatio
           registry,
           providerContext: {
             publicBasePath: this.app.publicBasePath,
+            logger: container.has(loggingToken)
+              ? container
+                  .resolve(loggingToken)
+                  .getLogger()
+                  .child({ module: 'mail' })
+              : undefined,
             credentials: container.resolve(mailCredentialVaultToken),
           },
           credentials: container.resolve(mailCredentialVaultToken),

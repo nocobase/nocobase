@@ -38,15 +38,10 @@ import { type MiddlewareHandler, Hono } from 'hono';
 import type {
   BusinessKey,
   Scope,
-  Page,
   SettingsAction,
   SettingsItem,
 } from '../shared/access.js';
-import type {
-  AgentStatus,
-  ConfirmChanges,
-  RunnerModelEntry,
-} from '../shared/agents.js';
+import type { AgentStatus, RunnerModelEntry } from '../shared/agents.js';
 import { agentsRepo } from '../server/core/agents/agent.store.js';
 import { replaceAttachments } from '../server/core/skills/skill.store.js';
 
@@ -58,7 +53,6 @@ export interface TestAgentInput {
   readonly modelEntries?: readonly RunnerModelEntry[];
   readonly instructions?: string | null;
   readonly actions?: readonly string[];
-  readonly confirmChanges?: ConfirmChanges;
   readonly skillIds?: readonly string[];
   readonly maxConcurrentRuns?: number;
   readonly maxAttempts?: number;
@@ -83,6 +77,7 @@ import type {
   SubjectScope,
 } from '../server/core/runs/index.js';
 import { createAdminRoutes, type AdminEnv } from '../server/routes/admin.js';
+import type { SkillPolicy, UsagePolicy } from '../server/tokens.js';
 import { createChatRoutes } from '../server/routes/chat.js';
 import { createModelRoutes } from '../server/online/routes.js';
 import { createRunRoutes } from '../server/routes/run.js';
@@ -301,15 +296,19 @@ export function testSecrets(
 
 export async function createHarness(
   options: {
-    /** `null` for an application without secrets keys. */
+    readonly modelServices?: boolean;
     readonly uiRecovery?: OnlineAgentRecoveryConfig;
     readonly drive?: AppDriveConfig;
     readonly measureOnlineAgent?: (phase: string, durationMs: number) => void;
+    /** `null` for an application without secrets keys. */
     readonly secrets?: SecretsService | null;
     readonly dist?: DistConfig;
     readonly retryBaseDelayMs?: number;
     /** How a claim waits its turn (`claimPace`); skipped by default, so a test sees who is first, not how long. */
     readonly claimPause?: (ms: number, signal?: AbortSignal) => Promise<void>;
+    /** The application's skill policy the admin routes enforce. */
+    readonly skillPolicy?: SkillPolicy;
+    readonly usagePolicy?: UsagePolicy;
   } = {},
 ): Promise<Harness> {
   const { database, drop } = await openDatabase();
@@ -344,6 +343,7 @@ export async function createHarness(
     options.drive?.default ?? 'memory',
   );
   const services = createAgents({
+    modelServices: options.modelServices,
     limitForDisk: (disk) => drive.getUploadLimit(disk),
     measureOnlineAgent: options.measureOnlineAgent,
     uiRecovery: options.uiRecovery,
@@ -472,13 +472,23 @@ export async function createHarness(
           grants.includes(`${item}/${action}`) ||
             (action === 'read' && grants.includes(`${item}/manage`)),
         ),
-      opens: (page: Page) => Promise.resolve(grants.includes(`page/${page}`)),
       scope: (key: BusinessKey) => {
         const level = levels.get(key) ?? 'none';
         return Promise.resolve(
           (level === 'related' ? { users: [user] } : level) as Scope,
         );
       },
+      // `x-test-roles`: the caller's permission sets; `x-test-unrestricted: yes` (root) chats with every agent.
+      chatAudience: () =>
+        Promise.resolve(
+          context.req.header('x-test-unrestricted') === 'yes'
+            ? ('all' as const)
+            : new Set(
+                (context.req.header('x-test-roles') ?? '')
+                  .split(',')
+                  .filter(Boolean),
+              ),
+        ),
     });
     await next();
   };
@@ -490,8 +500,8 @@ export async function createHarness(
     context.set('caller', {
       userId: run.actorUserId,
       can: () => Promise.resolve(false),
-      opens: () => Promise.resolve(false),
       scope: () => Promise.resolve('none' as Scope),
+      chatAudience: () => Promise.resolve(new Set<string>()),
       run: {
         id: run.id,
         subjectKind: run.subjectKind,
@@ -547,7 +557,16 @@ export async function createHarness(
   app.route('/agents', createRosterRoutes(services, guard));
   app.route('/agents', createChatRoutes(services, guard, personOrRun));
   app.route('/agents', createModelRoutes(services, guard));
-  app.route('/agents', createAdminRoutes(services, guard));
+  app.route(
+    '/agents',
+    createAdminRoutes(
+      services,
+      guard,
+      guard,
+      () => options.skillPolicy,
+      () => options.usagePolicy,
+    ),
+  );
 
   const request: Harness['request'] = async (method, url, options = {}) => {
     const headers: Record<string, string> = {
@@ -629,7 +648,6 @@ export async function createHarness(
             maxConcurrentRuns: input.maxConcurrentRuns ?? 2,
             maxAttempts: input.maxAttempts ?? 3,
             toolPolicy: input.toolPolicy ?? null,
-            confirmChanges: input.confirmChanges ?? 'larger',
             ...(input.status ? { status: input.status } : {}),
             ...(input.source === 'runner'
               ? {

@@ -87,3 +87,9 @@ A reader without `read` on a node gets 404 for it, the same as for a missing one
 | `kbDocs`      | `accessMode` (`inherit` or `custom`), `aclKey`                                                               |
 | `kbChunks`    | `aclKey`, copied from the node                                                                               |
 | `kbDocAccess` | one entry per node and subject: `docId`, `spaceId`, `subjectType`, `subjectId`, `level`, who set it and when |
+
+## Authorizing actors as their initiating user
+
+The application may set `actorAuthorization: 'initiator'` on its `KnowledgeAccessResolver`. For run agents (`actor.kind === 'agent'`), space levels and document ACLs then use the initiating user's permissions without the actor intersection or propose ceiling. Directory snapshots and single-document checks use the same policy. The original reader and actor remain available to the application's resolver and are retained for version attribution, including the run ID. Without this option, actors retain the default intersection and propose ceiling. Applications that enable it must enforce their own command and deletion boundaries.
+
+Online agents retain the default permission intersection and propose ceiling, even with initiator authorization enabled. Archived documents remain hidden to all actors.

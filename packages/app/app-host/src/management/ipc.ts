@@ -20,6 +20,10 @@ import {
 import type { HostManagementService } from './manager.ts';
 import type {
   ApplyDeploymentSetResult,
+  HostBackup,
+  HostBackupOptions,
+  HostRestoreOptions,
+  HostRestoreResult,
   HostDeploymentSpec,
   HostDeploymentSet,
   HostDescription,
@@ -49,7 +53,10 @@ type IpcMethod =
   | 'getOperation'
   | 'describeHost'
   | 'checkScope'
-  | 'readAppLogs';
+  | 'readAppLogs'
+  | 'createBackup'
+  | 'restoreBackup'
+  | 'deleteBackup';
 
 export interface IpcHostManagementClientOptions {
   session: string;
@@ -180,6 +187,29 @@ export class IpcHostManagementClient implements HostManagementService {
     return this.call<JournalPage>('readAppLogs', { appId, query });
   }
 
+  createBackup(appId: string, options: HostBackupOptions): Promise<HostBackup> {
+    return this.call<HostBackup>('createBackup', { appId, options });
+  }
+
+  restoreBackup(
+    appId: string,
+    options: HostRestoreOptions,
+  ): Promise<HostRestoreResult> {
+    return this.call<HostRestoreResult>('restoreBackup', { appId, options });
+  }
+
+  deleteBackup(
+    appId: string,
+    backupId: string,
+    options?: { scope?: HostScope },
+  ): Promise<{ deleted: boolean }> {
+    return this.call<{ deleted: boolean }>('deleteBackup', {
+      appId,
+      backupId,
+      ...(options?.scope ? { scope: options.scope } : {}),
+    });
+  }
+
   private call<T>(
     method: IpcMethod,
     payload?: unknown,
@@ -228,13 +258,15 @@ export class IpcHostManagementServer {
       return;
     }
     this.respond(message).catch((error: unknown) => {
-      const code = (error as { code?: unknown } | null)?.code;
+      const { code, details } =
+        (error as { code?: unknown; details?: unknown } | null) ?? {};
       sendIpcResponse({
         channel: IPC_CHANNEL,
         kind: 'response',
         requestId: message.requestId,
         error: error instanceof Error ? error.message : String(error),
         ...(typeof code === 'string' ? { errorCode: code } : {}),
+        ...(details !== undefined ? { errorDetails: details } : {}),
       });
     });
   };
@@ -353,6 +385,44 @@ export class IpcHostManagementServer {
           query: JournalQuery;
         };
         result = await this.service.readAppLogs(appId, query ?? {});
+        break;
+      }
+      case 'createBackup': {
+        if (!this.service.createBackup)
+          throw new Error('Host backups are unavailable');
+        this.accept(request);
+        const { appId, options } = request.payload as {
+          appId: string;
+          options: HostBackupOptions;
+        };
+        result = await this.service.createBackup(appId, options);
+        break;
+      }
+      case 'restoreBackup': {
+        if (!this.service.restoreBackup)
+          throw new Error('Host backups are unavailable');
+        this.accept(request);
+        const { appId, options } = request.payload as {
+          appId: string;
+          options: HostRestoreOptions;
+        };
+        result = await this.service.restoreBackup(appId, options);
+        break;
+      }
+      case 'deleteBackup': {
+        if (!this.service.deleteBackup)
+          throw new Error('Host backups are unavailable');
+        this.accept(request);
+        const { appId, backupId, scope } = request.payload as {
+          appId: string;
+          backupId: string;
+          scope?: HostScope;
+        };
+        result = await this.service.deleteBackup(
+          appId,
+          backupId,
+          scope ? { scope } : {},
+        );
         break;
       }
       default:

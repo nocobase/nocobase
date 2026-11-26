@@ -48,7 +48,7 @@ const GLOBAL_FLAGS: readonly string[] = GLOBAL_FLAG_HELP.flatMap(([flag]) =>
 
 /** The flags of a manifest command, as typed. */
 function flagsOf(command: CliCommand): string[] {
-  const flags: string[] = [];
+  const flags: string[] = command.idempotency ? ['--operation-key'] : [];
   for (const parameter of command.parameters) {
     if (parameter.position !== undefined) continue;
     flags.push(`--${parameter.name}`);

@@ -16,8 +16,14 @@ export class CommandFailedError extends Error {
   public readonly command: string;
   public readonly exitCode: number | null;
   public readonly stderr: string;
+  public readonly stdout: string;
 
-  public constructor(command: string, exitCode: number | null, stderr: string) {
+  public constructor(
+    command: string,
+    exitCode: number | null,
+    stderr: string,
+    stdout = '',
+  ) {
     super(
       `${command} failed${exitCode === null ? '' : ` with exit code ${exitCode}`}.`,
     );
@@ -25,6 +31,7 @@ export class CommandFailedError extends Error {
     this.command = command;
     this.exitCode = exitCode;
     this.stderr = stderr;
+    this.stdout = stdout;
   }
 }
 
@@ -87,7 +94,9 @@ export function runCommand(
         return;
       }
 
-      reject(new CommandFailedError(command, code, stderr.trim()));
+      reject(
+        new CommandFailedError(command, code, stderr.trim(), stdout.trim()),
+      );
     });
   });
 }

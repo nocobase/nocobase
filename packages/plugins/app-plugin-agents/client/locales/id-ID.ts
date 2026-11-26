@@ -3,6 +3,9 @@ import type { LocaleResource } from '@nocobase/i18n';
 import type enUS from './en-US.js';
 
 const idID: LocaleResource<typeof enUS> = {
+  openAgentSettings: 'Buka pengaturan agen',
+  myConversations: 'Percakapan saya',
+  fileUsage: 'Lampiran obrolan',
   modelSuggestions: {
     design:
       'Penalaran terkuat: usulan, arsitektur, penyelidikan rumit dan peninjauan perubahan penting; juga implementasi rutin dan perubahan lintas paket.',
@@ -91,6 +94,7 @@ const idID: LocaleResource<typeof enUS> = {
     codex: 'Codex',
     opencode: 'OpenCode',
     pi: 'Pi',
+    antigravity: 'Antigravity CLI',
     gemini: 'Gemini CLI',
     copilot: 'GitHub Copilot',
     cursor: 'Cursor',
@@ -124,6 +128,8 @@ const idID: LocaleResource<typeof enUS> = {
       all: 'Semua {{count}}',
       enabled: 'Mengaktifkan {{count}}',
       unreported: 'Tidak ada runner {{count}}',
+      disabled: 'Nonaktif',
+      enabledOnly: 'Diaktifkan',
     },
     loadFailed: 'Tidak dapat memuat Agent',
     loadMore: 'Muat lebih banyak',
@@ -140,6 +146,7 @@ const idID: LocaleResource<typeof enUS> = {
       where: 'Dimana ia berjalan',
       effort: 'Upaya penalaran',
       state: 'Status',
+      chatRoles: 'Siapa yang dapat mengobrol',
     },
     where: {
       none: 'Tidak ada runner',
@@ -187,6 +194,7 @@ const idID: LocaleResource<typeof enUS> = {
       title: 'Sunting {{name}}',
       enabled: 'Aktif',
       done: '{{name}} disimpan',
+      model: 'Model',
     },
     available: {
       open: 'Tambahkan Agent',
@@ -234,6 +242,39 @@ const idID: LocaleResource<typeof enUS> = {
       addFailed:
         '{{failed}} tidak dapat ditambahkan. Alasan ada di bawah masing-masing; coba lagi.',
     },
+    chatRoles: {
+      label: 'Siapa yang dapat mengobrol',
+      everyone: 'Semua anggota',
+      roles: 'Peran tertentu',
+      placeholder: 'Pilih peran',
+      hint: 'Anggota tanpa peran ini tidak melihat agen ini di panel obrolan dan tidak dapat memulai percakapan dengannya. Hak untuk mengelola agen tidak mengubah akses obrolan. Hanya root yang dapat mengobrol dengan semua agen.',
+      required: 'Pilih setidaknya satu peran.',
+    },
+    detail: {
+      view: 'Lihat',
+      viewFor: 'Lihat {{name}}',
+      readOnly:
+        'Anda dapat melihat agen ini. Hanya pengelola agen yang dapat mengubahnya.',
+      tabs: {
+        settings: 'Pengaturan',
+        actions: 'Tindakan bisnis',
+        skills: 'Keterampilan bawaan',
+        runs: 'Proses',
+      },
+      actionsHint:
+        'Tindakan yang diizinkan aplikasi untuk dilakukan agen ini pada data bisnis. Pengguna yang menjalankan agen juga harus memiliki izin untuk tindakan tersebut.',
+      actionsNone: 'Agen ini tidak memiliki tindakan bisnis.',
+      skillsHint:
+        'Keterampilan bawaan tim yang digunakan pada setiap eksekusi semua agen. Ubah di halaman Keterampilan.',
+      skillsNone: 'Belum ada keterampilan bawaan tim.',
+      skillsUnavailable: 'Anda perlu izin untuk melihat keterampilan.',
+    },
+    teamDefault: {
+      label: 'Agen bawaan tim',
+      none: 'Tidak ada',
+      hint: 'Percakapan baru dimulai dengan agen ini kecuali pengguna memilih agen bawaannya sendiri. Hanya agen aktif yang dapat diajak mengobrol oleh semua anggota yang dapat menjadi agen bawaan tim.',
+      saved: 'Agen bawaan tim disimpan',
+    },
   },
   agentTypes: {
     label: 'Tipe agen',
@@ -260,10 +301,6 @@ const idID: LocaleResource<typeof enUS> = {
     save: 'Simpan keterampilan',
     descriptionOnline:
       'Manual yang dibaca Agent ketika tugas cocok dengan deskripsinya, dalam kotak pasir hanya-baca di server.',
-    onlineScripts:
-      'Skrip tidak dijalankan untuk Agent online: Agent dapat membacanya, bukan menjalankannya.',
-    skippedScripts: ': {{paths}}',
-    pathSeparator: ', ',
   },
   brief: {
     preview: 'Pratinjau perintah lengkap',
@@ -385,7 +422,7 @@ const idID: LocaleResource<typeof enUS> = {
       purposes: {
         embedding: 'Penyematan',
         rerank: 'Pemeringkatan ulang',
-        text: 'Teks utilitas',
+        text: 'Pembuatan teks',
       },
     },
     title: 'Penggunaan',
@@ -445,6 +482,7 @@ const idID: LocaleResource<typeof enUS> = {
       cacheWrite: 'Penulisan cache',
       cost: 'Perkiraan biaya',
     },
+    tabs: { usage: 'Penggunaan', prices: 'Harga' },
   },
   defaultSkills: {
     title: 'Keterampilan bawaan',
@@ -594,6 +632,14 @@ const idID: LocaleResource<typeof enUS> = {
     pathHint:
       'Runner mencari alat pemrograman menggunakan PATH miliknya sendiri. Di terminal tempat which codex / which claude berfungsi, jalankan lagi nocobase-runner service install dan mulai ulang layanan (atau jalankan lagi nocobase-runner start) agar runner mendapat PATH yang benar.',
     quota: {
+      ceilingReached: 'Ambang kuota tercapai',
+      ceilingLabel: 'Jeda pada',
+      ceilingInput: 'Jeda pekerjaan {{tool}} baru pada persentase terpakai',
+      ceilingSave: 'Terapkan',
+      ceilingInvalid: 'Masukkan persentase bulat 1 hingga 100, atau kosongkan.',
+      ceilingPaused:
+        'Satu jendela kuota mencapai batas; pekerjaan baru terkait menunggu reset atau perubahan batas.',
+
       workspaceStatus: {
         active: 'Pekerjaan berlanjut',
         ended: 'Berakhir · pembersihan diperbolehkan',
@@ -624,6 +670,9 @@ const idID: LocaleResource<typeof enUS> = {
       workspaceSize: 'Ukuran ruang kerja: {{value}}',
       providers_one: 'Penyedia {{count}} dengan kuota',
       providers_other: 'Penyedia {{count}} dengan kuota',
+      models_one: '{{count}} model mencapai kuota',
+      models_other: '{{count}} model mencapai kuota',
+      percent: '{{percent}}%',
       runColumns: {
         issue: 'Tugas / percakapan',
         agent: 'Agen',
@@ -666,7 +715,7 @@ const idID: LocaleResource<typeof enUS> = {
         'Hapus hanya setelah memastikan kuota sudah pulih. {{target}} langsung menerima pekerjaan lagi; jika kuota masih habis, eksekusi berikutnya menandainya lagi.',
       observed: 'Terakhir dilaporkan {{time}}',
       usedPercent: '{{percent}}% digunakan',
-      ok: 'Oke',
+      noUsage: 'Belum ada data kuota',
       hint: 'Tanda hilang dengan sendirinya pada waktu reset yang diketahui, atau saat alat melaporkan kuota tersedia lagi. Hapus secara manual hanya setelah memastikan kuota sudah pulih. Hanya pemilik runtime dan administrator yang dapat menghapus tanda.',
     },
     workspaces: {
@@ -742,8 +791,8 @@ const idID: LocaleResource<typeof enUS> = {
       offlineNever: 'Luring',
     },
     toolUsage: {
-      label: 'Dijalankan dengan alat pengkodean',
-      item: '{{tool}} {{used}}/{{limit}}',
+      short: 'Jalan {{used}}/{{limit}}',
+      hint: 'Paling banyak {{limit}} jalannya {{tool}} sekaligus; {{used}} berjalan sekarang',
     },
     toolSlots: {
       label: 'Batasan per alat pengkodean',
@@ -881,6 +930,8 @@ const idID: LocaleResource<typeof enUS> = {
       show: 'Versi {{version}}: runner yang lebih baru tersedia',
       available: 'Pembaruan tersedia',
       badge: 'Dapat diupgrade',
+      latest: 'Terbaru',
+      installed: 'Versi {{version}}',
       title: 'Runner baru untuk {{name}}',
       description:
         'Menginstal {{version}}, aplikasi ini menyajikan {{latest}}.',
@@ -951,6 +1002,26 @@ const idID: LocaleResource<typeof enUS> = {
     },
   },
   chat: {
+    thinking: {
+      levels: {
+        'provider-default': 'Bawaan',
+        none: 'Mati',
+        minimal: 'Minimal',
+        low: 'Rendah',
+        medium: 'Sedang',
+        high: 'Tinggi',
+        xhigh: 'Sangat tinggi',
+      },
+      adjusted:
+        'Model ini tidak mendukung tingkat berpikir "{{requested}}"; jawaban ini menggunakan "{{used}}".',
+      adjustedToDefault:
+        'Model ini tidak mendukung tingkat berpikir "{{requested}}"; jawaban ini menggunakan bawaan penyedia.',
+      warning:
+        'Model mungkin tidak menerapkan tingkat berpikir "{{level}}" pada jawaban ini.',
+      title: 'Tingkat penalaran',
+      choose: 'Tingkat penalaran: {{level}}',
+      useDefault: 'Gunakan bawaan penyedia',
+    },
     // Keep new guidance available in English until this locale is translated.
     executionFailed:
       'Eksekusi gagal. Tinjau percakapan yang tersimpan sebelum mencoba lagi.',
@@ -1004,6 +1075,19 @@ const idID: LocaleResource<typeof enUS> = {
       fallbackDone: 'Percakapan ini sekarang menggunakan Agent lain',
       restoreDone: 'Beralih kembali',
       newSession: 'Agent memulai sesi baru dan membaca percakapan ini.',
+      agentMissing: '{{name}} sudah tidak ada',
+      agentArchived: '{{name}} tidak diaktifkan',
+      forbidden: 'Anda tidak lagi dapat menggunakan {{name}}',
+      noModel: 'Konfigurasikan model obrolan terlebih dahulu',
+      noRunner: 'Saat ini tidak ada lingkungan eksekusi {{name}} yang daring',
+      othersPersonal:
+        '{{name}} hanya tersedia di lingkungan pribadi pengguna lain. Hubungkan lingkungan eksekusi Anda sendiri',
+      modelUnavailable: 'Model {{name}} tidak tersedia. Hubungi administrator',
+      kept: 'Pesan Anda disimpan dan dijawab begitu Agent dapat menjawab.',
+      fallback: 'Gunakan Agent lain di sini',
+      usingDefault:
+        'Percakapan ini sementara menggunakan {{name}} sebagai pengganti {{own}}.',
+      restore: 'Kembali ke {{own}}',
     },
     notice: {
       switchedToDefault:
@@ -1023,12 +1107,33 @@ const idID: LocaleResource<typeof enUS> = {
       unavailableTitle: 'Agent yang berkonsultasi tidak tersedia',
       snapshotTitle: 'Meminta {{name}} pada saat itu',
       title: 'Berkonsultasi dengan {{name}}',
+      question: 'Pertanyaan',
+      answer: 'Jawaban',
+      steps: 'Langkah-langkahnya',
+      usage:
+        'Menggunakan {{input}} token masukan dan {{output}} token keluaran.',
+      state: {
+        running: 'Menjawab…',
+        completed: 'Dijawab',
+        failed: 'Gagal',
+        refused: 'Ditolak',
+      },
     },
     steps: {
       thinking: 'Berpikir…',
       reading: 'Melihat {{subject}}',
       working: 'Sedang mengerjakan {{subject}}',
+      ...{
+        count_one: '{{count}} langkah',
+        count_other: '{{count}} langkah',
+      },
+      title: 'Langkah',
+      waiting: 'Menunggu lingkungan eksekusi mengambil pekerjaan ini…',
+      starting: 'Memulai…',
+      started: 'Agent sedang membalas.',
+      finished: 'Agent selesai membalas.',
     },
+    // Plural forms of the panel wording, outside the typed shape (the rest falls back to English).
     agents: {
       personalOnly: 'Hanya runner pribadi',
       hint: 'Mencantumkan Agent yang diaktifkan dan menjelaskan mengapa seseorang tidak dapat menjawab Anda sekarang. Jawaban dijalankan pada runner: balasan pertama menunggu seseorang untuk mengambilnya, biasanya beberapa detik.',
@@ -1039,6 +1144,316 @@ const idID: LocaleResource<typeof enUS> = {
       placeholder: 'Pilih Agent',
       myDefault: 'Default saya',
       systemDefault: 'Default sistem',
+      models: 'Model',
+      defaultModel: 'Model default',
+      runnerAgents: 'Agen',
+      modelPlaceholder: 'Pilih model',
+      modelSwitch: 'Model: {{name}} · {{service}}; pilih model atau Agent',
+      modelOnlySwitch: 'Model: {{name}} · {{service}}; pilih model',
+      modelLoadFailed: 'Tidak dapat memuat model percakapan',
+      modelChangeFailed: 'Tidak dapat mengonfirmasi perubahan model',
+      modelSearch: 'Cari model',
+      noMatchingModels: 'Tidak ada model yang cocok',
+      modelHint: 'Pilih model online untuk diajak mengobrol.',
+      mixedHint:
+        'Pilih model daring atau agen di lingkungan eksekusi untuk memulai obrolan.',
+      search: 'Cari model atau Agent',
+      noResults: 'Tidak ada model atau Agent yang cocok',
+      switch: 'Agent: {{name}}; pilih yang lain',
+      withStatus: '{{name}}, {{status}}',
+      chatWith: 'Mengobrol dengan',
+      startWith: 'Mulai percakapan baru dengan',
+      boundHint:
+        'Percakapan tetap dengan Agent-nya; memilih yang lain memulai percakapan baru.',
+      noneToChat: 'Tidak ada Agent yang dapat Anda ajak mengobrol',
+      field: 'Agen: {{name}}',
+      personal: 'Hanya runner pribadi',
+      temporary: 'Sementara',
+      chatHint:
+        'Menampilkan agen aktif dan alasan agen belum dapat merespons. Balasan daring menggunakan model aplikasi. Agen lain menunggu lingkungan eksekusi yang tersedia.',
+    },
+    sharing: {
+      related: 'Catatan terkait',
+      title: 'Bagikan snapshot',
+      description:
+        'Penerima hanya dapat melihat konten hingga saat Anda berbagi. Giliran yang belum selesai tidak disertakan. Bagikan lagi untuk memperbarui snapshot.',
+      sensitive:
+        'Percakapan ini mungkin berisi informasi sensitif. Bagikan hanya kepada orang yang berhak melihatnya.',
+      asOf: 'Dibagikan per {{time}}',
+      recipient: 'Pilih pengguna aplikasi',
+      share: 'Bagikan',
+      update: 'Perbarui',
+      revoke: 'Cabut',
+      copy: 'Salin tautan',
+      copied: 'Tautan disalin',
+      copyFailed: 'Tidak dapat menyalin tautan',
+      none: 'Belum ada penerima.',
+      failed: 'Tidak dapat memuat atau memperbarui berbagi. Silakan coba lagi.',
+      failedRecipients:
+        'Tidak dapat berbagi dengan: {{names}}. Pengguna ini tetap dipilih untuk dicoba lagi.',
+      older: 'Muat pesan lebih lama',
+      empty: 'Tidak ada giliran yang selesai dalam snapshot ini.',
+    },
+    webSearch: {
+      title: 'Pencarian web',
+      queryCount: 'Kueri · {{count}}',
+      expand: 'Bentangkan',
+      collapse: 'Ciutkan',
+      toggle: 'Cari di web',
+      unsupported:
+        'Pilih model yang didukung untuk mengaktifkan pencarian web.',
+      searching: 'Mencari…',
+      completed: 'Sumber diperoleh',
+      unverified: 'Pencarian belum diverifikasi',
+      unverifiedNotice:
+        'Penyedia mengembalikan jawaban tanpa bukti pencarian. Eksekusi pencarian, kebaruan, dan sumbernya tidak dapat diverifikasi.',
+      partial: 'Beberapa pencarian gagal',
+      failed: 'Pencarian tidak tersedia',
+      cancelled: 'Pencarian dibatalkan',
+      interrupted: 'Pencarian terputus',
+      timeout: 'Waktu pencarian habis.',
+      unavailable: 'Pencarian sementara tidak tersedia.',
+      noEvidence: 'Tidak ada bukti web terverifikasi yang dikembalikan.',
+      sources: 'Sumber',
+    },
+    retrySaving: 'Coba simpan lagi',
+    cancel: 'Batal',
+    editMessage: 'Edit',
+    copyMessage: 'Salin',
+    refreshReply: 'Buat ulang',
+    copyFailed: 'Tidak dapat menyalin pesan.',
+    resendConfirm: 'Kirim ulang',
+    resend: {
+      rejected: 'Pesan tidak dikirim ulang. Hasil edit Anda tetap disimpan.',
+      unknown:
+        'Hasil pengiriman ulang tidak diketahui. Muat ulang riwayat dan tunggu sebelum mencoba lagi; pesan mungkin sudah diterima.',
+      needsSync:
+        'Pesan sudah diterima, tetapi riwayat belum tersinkron. Muat ulang riwayat; jangan kirim lagi.',
+    },
+    contextFailed:
+      'Tidak dapat membaca konteks terpilih atau mengirim pesan. Periksa halaman saat ini dan coba lagi.',
+    approval: {
+      request: 'Alat ini memerlukan persetujuan Anda sebelum dijalankan.',
+      approve: 'Setujui',
+      deny: 'Tolak',
+      denied: 'Eksekusi alat ditolak.',
+      failed:
+        'Persetujuan tidak dikonfirmasi. Muat ulang pesan tersimpan sebelum mencoba lagi.',
+    },
+    feedback: {
+      sending: 'Mengirim…',
+      waiting: 'Menunggu Agent…',
+      thinking: 'Berpikir…',
+      stopping: 'Penghentian diminta. Menunggu Agent selesai…',
+      completed: 'Selesai.',
+      cancelled:
+        'Dibatalkan. Periksa tindakan yang mungkin sudah selesai sebelum mengulanginya.',
+      failed:
+        'Respons gagal. Periksa riwayat sebelum memutuskan untuk mengirim lagi.',
+      unknown:
+        'Hasil atau riwayat tersimpannya belum dikonfirmasi. Muat ulang riwayat sebelum memutuskan untuk mengirim lagi.',
+      effectReview:
+        'Beberapa tindakan mungkin sudah selesai. Periksa hasilnya sebelum mengulanginya.',
+    },
+    historicalReadOnly:
+      'Percakapan riwayat ini hanya dapat dibaca. Mulai obrolan baru untuk melanjutkan.',
+    connectionUnknown:
+      'Koneksi terputus. Hasilnya tidak diketahui. Muat ulang riwayat tersimpan sebelum memutuskan untuk mengirim lagi.',
+    allowAnother: 'Izinkan kirim lagi (mungkin duplikat)',
+    refreshHistory: 'Muat ulang riwayat',
+    title: 'Obrolan Agent',
+    ask: 'Tanya agen',
+    launcher: 'Buka agen',
+    closeLauncher: 'Tutup agen',
+    close: 'Tutup',
+    expand: 'Lebar penuh',
+    restoreSize: 'Kembali ke panel samping',
+    openPage: 'Buka layar penuh',
+    openInPanel: 'Buka di panel samping',
+    more: 'Lainnya',
+    newConversation: 'Percakapan baru',
+    rename: 'Ganti nama',
+    renameHint: '{{title}} (klik untuk mengganti nama)',
+    archive: 'Arsipkan',
+    unarchive: 'Batalkan arsip',
+    you: 'Anda',
+    agentGone: 'Agent yang dihapus',
+    anyAgent: 'Agen',
+    loadFailed: 'Tidak dapat memuat percakapan',
+    notFound: 'Percakapan ini tidak dapat dibuka',
+    notFoundDescription: 'Mungkin sudah dihapus, atau milik orang lain.',
+    emptyTitle: 'Apa yang bisa {{name}} lakukan untuk Anda?',
+    emptyDescription:
+      'Tanyakan apa saja, atau jelaskan pekerjaan yang ingin diatur. Isi halaman ini ikut dikirim sebagai konteks.',
+    noAgent:
+      'Tidak ada agen yang dapat Anda ajak mengobrol. Minta administrator mengaktifkan agen atau hubungkan lingkungan eksekusi.',
+    chooseAgent:
+      'Pilih lawan bicara di bawah. Untuk selalu memulai dengan agen tertentu, pilih agen bawaan di profil Anda.',
+    messages: 'Pesan',
+    olderMessages: 'Pesan sebelumnya',
+    sources: { panel: 'Panel obrolan' },
+    reasoning: { title: 'Penalaran', thinking: 'Berpikir…' },
+    reply: { writing: 'Menulis…', interrupted: 'Balasan berhenti di sini.' },
+    pending: {
+      sending: 'Mengirim…',
+      failed: 'Tidak terkirim',
+      retry: 'Kirim lagi',
+      discard: 'Buang',
+    },
+    composer: {
+      label: 'Pesan untuk Agent',
+      placeholder: 'Tanyakan, atau jelaskan pekerjaan yang ingin diatur…',
+      hint: 'Enter untuk mengirim, Shift+Enter untuk baris baru',
+      runningHint: 'Sedang berjalan. Anda dapat menghentikan eksekusi ini.',
+      tooLong: 'Maksimal {{max}} karakter.',
+      send: 'Kirim',
+      stop: 'Hentikan',
+      stopping: 'Menghentikan…',
+    },
+    attachments: {
+      attach: 'Lampirkan file',
+      label: 'File yang dibawa pesan berikutnya',
+      sent: 'File yang dikirim dengan pesan ini',
+      images: 'Gambar',
+      files: 'Berkas',
+      remove: 'Hapus {{name}}',
+      uploading: 'Mengunggah…',
+      tooLarge: 'Lebih besar dari {{max}}',
+      failed: 'Tidak dapat mengunggah',
+      tooMany: 'Maksimal {{max}} file per pesan.',
+      blocked: 'Hapus file yang gagal diunggah untuk mengirim.',
+      waiting: 'Dikirim setelah file selesai diunggah…',
+      drop: 'Letakkan file untuk melampirkannya',
+      preview: 'Pratinjau {{name}}',
+      download: 'Unduh {{name}}',
+      previous: 'Gambar sebelumnya',
+      next: 'Gambar berikutnya',
+    },
+    context: {
+      label: 'Konteks yang dibawa pesan berikutnya',
+      sent: 'Konteks yang dibawa pesan ini',
+      filter: 'Filter: {{filter}}',
+      selection: 'Teks terpilih: “{{text}}”',
+      remove: 'Hapus konteks: {{label}}',
+      inspect: 'Tampilkan konteks: {{label}}',
+      preview: 'Konteks: {{label}}',
+    },
+    modes: {
+      online: 'Agent online',
+      runner: 'Agen lingkungan eksekusi',
+      switchToOnline: 'Beralih ke Agent online',
+      switchToRunner: 'Beralih ke agen lingkungan eksekusi',
+    },
+    history: {
+      title: 'Percakapan',
+      fold: 'Lipat daftar percakapan',
+      unfold: 'Bentangkan daftar percakapan',
+      search: 'Cari percakapan',
+      show: 'Tampilkan',
+      active: 'Terbuka',
+      archived: 'Diarsipkan',
+      agent: 'Agen',
+      allAgents: 'Semua Agent',
+      source: 'Dimulai dari',
+      allSources: 'Di mana saja',
+      loadFailed: 'Tidak dapat memuat percakapan',
+      noMatch: 'Tidak ada percakapan yang cocok',
+      noArchived: 'Tidak ada percakapan yang diarsipkan',
+      empty: 'Tidak ada percakapan',
+      more: 'Muat lebih banyak',
+      unread: 'Balasan baru',
+      actions: 'Tindakan untuk {{title}}',
+      waiting: 'Menunggu Anda',
+      running: 'Sedang berjalan',
+      recent: 'Terbaru',
+      ownOnly:
+        'Hanya percakapan Anda yang ditampilkan. Orang yang menerima percakapan yang dibagikan hanya dapat membacanya.',
+    },
+    list: {
+      waiting_one: 'Perlu saya {{count}}',
+      waiting_other: 'Perlu saya {{count}}',
+      active_one: 'Sedang berjalan {{count}}',
+      active_other: 'Sedang berjalan {{count}}',
+      label: 'Percakapan',
+      archivedTitle: 'Diarsipkan',
+      back: 'Kembali ke percakapan',
+      all: 'Semua',
+      filters: 'Tampilkan',
+      today: 'Hari ini',
+      yesterday: 'Kemarin',
+      week: 'Minggu ini',
+      earlier: 'Sebelumnya',
+      restore: 'Pulihkan',
+      offline: 'Lingkungan runtime offline',
+      needsMe: 'Perlu saya',
+      working: 'Sedang berjalan',
+      reply: 'Balasan baru',
+      failed: 'Gagal',
+      confirm: 'Pertanyaan untuk Anda',
+    },
+    loading: 'Memuat',
+    retry: 'Coba lagi',
+    errors: {
+      forbidden: 'Anda tidak diizinkan melakukan ini.',
+      notFound: 'Item ini sudah tidak ada.',
+      requestFailed: 'Permintaan gagal. Coba lagi.',
+    },
+    transcript: {
+      waiting: 'Menunggu Agent memulai…',
+      empty: 'Proses ini tidak mencatat peristiwa apa pun.',
+      fetchFailed: 'Tidak dapat mengambil peristiwa baru. Mencoba lagi…',
+      expand: 'Tampilkan semua',
+      truncated: 'Dipotong: teks lengkapnya terlalu panjang untuk disimpan.',
+      events: 'Transkrip proses',
+      inputDelivered: '{{count}} masukan dikirim ke Agent',
+      tokens: '{{input}} token masuk, {{output}} keluar',
+      kinds: {
+        text: 'Agen',
+        thinking: 'Berpikir',
+        toolUse: 'Alat',
+        toolResult: 'Hasil',
+        allowed: 'Diizinkan',
+        denied: 'Ditolak',
+        input: 'Masukan',
+        checkout: 'Checkout',
+        status: 'Status',
+        error: 'Kesalahan',
+        usage: 'Penggunaan',
+      },
+    },
+    backToList: 'Kembali ke daftar',
+    showDetails: 'Tampilkan detail',
+    hideDetails: 'Sembunyikan detail',
+    detailsTitle: 'Detail sesi',
+    sessionDetails: 'Sesi',
+    runtime: 'Lingkungan runtime',
+    agent: 'Agen',
+    started: 'Dimulai',
+    usageTitle: 'Penggunaan',
+    relatedWork: 'Pekerjaan terkait',
+    unlink: 'Hapus keterkaitan',
+    unlinkFailed: 'Keterkaitan tidak dapat dihapus.',
+    expandPanel: 'Lebar penuh',
+    restorePanel: 'Pulihkan panel',
+    delete: 'Hapus',
+    deleteDialog: {
+      menu: 'Hapus',
+      title: 'Hapus “{{title}}”?',
+      description:
+        'Pesan, berkas, dan kaitannya akan dihapus permanen, dan eksekusi aktif akan dihentikan. Data terkait tetap ada. Tindakan ini tidak dapat dibatalkan.',
+      cancel: 'Batal',
+      confirm: 'Hapus',
+      done: '“{{title}}” dihapus',
+      body: 'Pesan, berkas, dan kaitannya akan dihapus permanen, dan eksekusi aktif akan dihentikan. Data terkait tetap ada. Tindakan ini tidak dapat dibatalkan.',
+    },
+    usage: {
+      title: 'Penggunaan',
+      context: 'Konteks {{used}} / {{size}} token ({{percent}}%)',
+      window: 'Jendela konteks',
+      input: 'Masukan',
+      cached: 'Cache',
+      output: 'Keluaran',
+      cost: 'Biaya',
     },
   },
   chatProfile: {
@@ -1276,8 +1691,6 @@ const idID: LocaleResource<typeof enUS> = {
     binaryFile: 'File biner, {{size}}. Itu tidak dapat diedit di sini.',
     executable: 'Dapat dieksekusi',
     scriptBadge: 'Naskah',
-    scriptsNote:
-      'Memiliki skrip: Agent online dapat membacanya tetapi tidak pernah menjalankannya',
     compatibility: 'Kompatibilitas: {{value}}',
     fileContent: 'Konten {{path}}',
     export: 'Ekspor',
@@ -1310,7 +1723,7 @@ const idID: LocaleResource<typeof enUS> = {
       name: 'Nama',
       renameTitle: 'Ganti nama "{{name}}"',
       conventional: {
-        scripts: 'Agent kode dapat berjalan. Agent online hanya membacanya.',
+        scripts: 'Kode yang dapat dijalankan Agent.',
         references: 'Agent dokumentasi membaca saat mereka membutuhkannya.',
         assets: 'Templat, gambar, dan sumber daya lainnya.',
       },
@@ -1448,11 +1861,16 @@ const idID: LocaleResource<typeof enUS> = {
         runners: 'Lingkungan runtime',
         prices: 'Harga model',
         services: 'Layanan model',
+        skills: 'Keterampilan',
       },
     },
     actions: {
       read: 'Lihat',
       manage: 'Kelola',
+    },
+    humanOnly: {
+      servicesManage:
+        'Mengelola layanan model menulis kunci penyedia; hanya orang yang boleh melakukannya.',
     },
     keyScopes: {
       agents: {
@@ -1473,6 +1891,37 @@ const idID: LocaleResource<typeof enUS> = {
         description:
           'Lihat layanan model dan model yang mereka tawarkan, bukan kuncinya.',
       },
+    },
+  },
+  me: {
+    navigation: 'Agen',
+    title: 'Agen',
+    description:
+      'Pengaturan agen pribadi Anda: tujuan percakapan baru, lingkungan yang Anda tambahkan, dan penggunaan oleh eksekusi Anda.',
+    defaultAgent: { title: 'Agen bawaan saya' },
+    effort: {
+      title: 'Upaya penalaran',
+      description:
+        'Tingkat penalaran agen untuk percakapan yang Anda mulai, kecuali Anda memilih tingkat lain di dalam percakapan. Jika alat pemrogramannya tidak mendukung pengaturan ini, agen menggunakan bawaannya sendiri.',
+      label: 'Tingkat penalaran saya',
+      default: 'Bawaan setiap agen',
+      saved: 'Tingkat penalaran disimpan',
+    },
+    runtimes: {
+      title: 'Lingkungan eksekusi yang saya tambahkan',
+      description:
+        'Lingkungan pribadi hanya menjalankan pekerjaan Anda. Tambahkan lingkungan melalui halaman Lingkungan eksekusi di Pengaturan sistem atau hubungi administrator.',
+      none: 'Anda belum menambahkan lingkungan eksekusi.',
+      loadFailed: 'Gagal memuat lingkungan eksekusi Anda',
+      status: { online: 'Daring', offline: 'Luring', revoked: 'Dicabut' },
+    },
+    usage: {
+      title: 'Penggunaan saya',
+      description: 'Penggunaan oleh eksekusi Anda selama 30 hari terakhir.',
+      runs: 'Proses',
+      tokens: 'Token',
+      cost: 'Perkiraan biaya',
+      loadFailed: 'Gagal memuat penggunaan Anda',
     },
   },
 };

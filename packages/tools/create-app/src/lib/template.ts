@@ -1,12 +1,15 @@
-import { mkdtemp, readdir, readFile, rm } from 'node:fs/promises';
+import { copyFile, mkdtemp, readdir, readFile, rm } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { CommandFailedError, runCommand } from './run-command.ts';
 
-/** The public npm registry that carries NocoBase packages and templates. */
-export const DEFAULT_REGISTRY = 'https://registry.npmjs.org';
+import {
+  applyTemplatePreset,
+  type EnterprisePreset,
+} from './template-preset.ts';
 
 export interface TemplateAlias {
+  preset?: EnterprisePreset;
   /** Published package the name resolves to. Carries no tag; the channel is applied separately. */
   packageName: string;
 }
@@ -23,8 +26,21 @@ export interface TemplateAlias {
  */
 export const TEMPLATE_ALIASES: Readonly<Record<string, TemplateAlias>> = {
   default: { packageName: '@nocobase/app-template-default' },
+  pro: { packageName: '@nocobase/app-template-pro' },
+  enterprise: { packageName: '@nocobase/app-template-enterprise' },
   examples: { packageName: '@nocobase/app-template-examples' },
-  'multi-portal': { packageName: '@nocobase/app-template-multi-portal' },
+  'multi-portal': {
+    packageName: '@nocobase/app-template-enterprise',
+    preset: 'multi-portal',
+  },
+  'multi-app': {
+    packageName: '@nocobase/app-template-enterprise',
+    preset: 'multi-app',
+  },
+  'sub-app': {
+    packageName: '@nocobase/app-template-enterprise',
+    preset: 'sub-app',
+  },
 };
 
 export const DEFAULT_TEMPLATE = 'default';
@@ -71,7 +87,7 @@ export function resolveTemplateSource(
 }
 
 /** Reads the alias table without inheriting `Object.prototype`, so `constructor` does not read as a template. */
-function lookupTemplateAlias(name: string): TemplateAlias | undefined {
+export function lookupTemplateAlias(name: string): TemplateAlias | undefined {
   return Object.hasOwn(TEMPLATE_ALIASES, name)
     ? TEMPLATE_ALIASES[name]
     : undefined;
@@ -88,12 +104,16 @@ export interface ResolvedTemplate {
   directory: string;
   name: string;
   version: string;
+  hasSqliteDriver: boolean;
 }
 
 export interface DownloadTemplateOptions {
+  preset?: EnterprisePreset;
   /** A published package (`pkg`, `pkg@1.2.3`) or a path to a local package directory. */
   source: string;
-  registry?: string;
+  nocobaseRegistry?: string;
+  /** Deprecated generic override, retained only for callers using --registry. */
+  legacyRegistry?: string;
 }
 
 /**
@@ -127,7 +147,14 @@ function packerFor(source: string): {
 
   return {
     command: 'npm',
-    args: () => ['pack', '--silent', source],
+    args: (destination) => [
+      'pack',
+      // Keep HTTP failures visible to the runner's credential launcher; stdout is captured by runCommand.
+      '--loglevel=error',
+      source,
+      '--pack-destination',
+      path.dirname(destination),
+    ],
   };
 }
 
@@ -146,7 +173,7 @@ async function findTarball(directory: string): Promise<string> {
 
 async function readTemplateManifest(
   directory: string,
-): Promise<{ name: string; version: string }> {
+): Promise<Omit<ResolvedTemplate, 'directory'>> {
   const manifestPath = path.join(directory, 'package.json');
   let raw: string;
 
@@ -161,11 +188,17 @@ async function readTemplateManifest(
   const manifest = JSON.parse(raw) as {
     name?: string;
     version?: string;
+    dependencies?: Record<string, string>;
+    devDependencies?: Record<string, string>;
   };
 
   return {
     name: manifest.name ?? 'unknown',
     version: manifest.version ?? '0.0.0',
+    hasSqliteDriver: Boolean(
+      manifest.dependencies?.['@nocobase/db-sqlite'] ??
+      manifest.devDependencies?.['@nocobase/db-sqlite'],
+    ),
   };
 }
 
@@ -190,16 +223,26 @@ export async function downloadTemplate(
 
   try {
     const tarballPath = path.join(packDirectory, 'template.tgz');
-    const args = packer.args(tarballPath);
-
-    if (options.registry && !isLocalTemplateSource(source)) {
-      args.push(`--registry=${options.registry}`);
+    const local = isLocalTemplateSource(source);
+    const localArchive = local && /\.(?:tgz|tar\.gz)$/u.test(source);
+    if (localArchive) {
+      await copyFile(path.resolve(source), tarballPath);
+    } else {
+      const args = packer.args(tarballPath);
+      if (options.legacyRegistry && !local)
+        args.push(`--registry=${options.legacyRegistry}`);
+      if (
+        options.nocobaseRegistry &&
+        !local &&
+        source.startsWith('@nocobase/')
+      ) {
+        args.push(`--@nocobase:registry=${options.nocobaseRegistry}`);
+      }
+      await runCommand(packer.command, args, {
+        cwd: local ? path.resolve(source) : process.cwd(),
+        timeoutMs: PACK_TIMEOUT_MS,
+      });
     }
-
-    await runCommand(packer.command, args, {
-      cwd: isLocalTemplateSource(source) ? path.resolve(source) : packDirectory,
-      timeoutMs: PACK_TIMEOUT_MS,
-    });
 
     const tarball = isLocalTemplateSource(source)
       ? tarballPath
@@ -212,6 +255,24 @@ export async function downloadTemplate(
       { timeoutMs: PACK_TIMEOUT_MS },
     );
 
+    if (
+      options.preset &&
+      !(await applyTemplatePreset(extractDirectory, options.preset))
+    ) {
+      // An older edition on the selected channel predates presets. Its original scenario package still exists.
+      const fallback = source.replace(
+        '@nocobase/app-template-enterprise@',
+        '@nocobase/app-template-' + options.preset + '@',
+      );
+      if (fallback === source)
+        throw new Error('The template does not provide the requested preset.');
+      await rm(extractDirectory, { recursive: true, force: true });
+      return downloadTemplate({
+        ...options,
+        source: fallback,
+        preset: undefined,
+      });
+    }
     const manifest = await readTemplateManifest(extractDirectory);
 
     return { directory: extractDirectory, ...manifest };

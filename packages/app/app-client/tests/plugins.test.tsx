@@ -709,14 +709,14 @@ describe('client modules', () => {
 });
 
 describe('route contributions', () => {
-  it('rejects a contribution to a surface other than app routes', () => {
-    // A plugin built against an earlier release can still hand over `{ parent: 'settings' }`; name the fix.
+  it('rejects a contribution to a surface other than app and settings routes', () => {
+    // A plugin built against an earlier release can still hand over `{ parent: 'dev' }`; name the fix.
     const contribution = {
       packageName: '@nocobase/app-plugin-legacy',
-      routes: { parent: 'settings', routes: [] },
+      routes: { parent: 'dev', routes: [] },
     } as unknown as Parameters<typeof resolveAppClientContributions>[0][0];
     expect(() => resolveAppClientContributions([contribution])).toThrow(
-      'Plugin "@nocobase/app-plugin-legacy" contributed routes to unsupported parent "settings"; declare them with defineAppRoutes().',
+      'Plugin "@nocobase/app-plugin-legacy" contributed routes to unsupported parent "dev"; declare them with defineAppRoutes(), defineSystemSettingsRoutes() or definePersonalSettingsRoutes().',
     );
   });
 });

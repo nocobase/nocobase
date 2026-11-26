@@ -1,5 +1,6 @@
 import { InvitationWork } from '../invitations/lifecycle.js';
 import { registerInvitationTemplate } from '../invitations/template.js';
+import { registerNotificationUserLocales } from '../preferences/notification-locales.js';
 import { createApplicationUserRoleScope } from '../services/permission-set-scope.js';
 import { databaseManagerToken } from '@nocobase/db';
 import {
@@ -9,6 +10,7 @@ import {
 import { userAdministrationServiceToken } from '@nocobase/app-plugin-authentication';
 import type { DatabaseConnection } from '@nocobase/db';
 import type { AppIdentityConfig } from '@nocobase/app-server/config';
+import { i18nToken } from '@nocobase/app-server/i18n';
 import type { AppPluginApplication } from '@nocobase/app-server/plugins';
 
 import { createNotificationMailer } from '../invitations/notification-mailer.js';
@@ -61,6 +63,7 @@ export class UsersProvider extends ServiceProvider<AppPluginApplication> {
   private releasePermissionSetScope?: () => void;
   private releaseSubjectType?: () => void;
   private releaseInvitationTemplate?: () => void;
+  private notificationUserLocales = false;
 
   private readonly invitationWork = new InvitationWork();
   private invitationMailer?: ReturnType<typeof createNotificationMailer>;
@@ -96,6 +99,10 @@ export class UsersProvider extends ServiceProvider<AppPluginApplication> {
         },
         users: resolver.resolve(userAdministrationServiceToken),
         roleScopes: resolver.resolve(userRoleScopeRegistryToken),
+        preferences: resolver.resolve(userPreferencesServiceToken),
+        ...(resolver.has(i18nToken)
+          ? { i18n: resolver.resolve(i18nToken) }
+          : {}),
         ...(permissionSets === undefined ? {} : { permissionSets }),
         onRoleScopesChanged: (userId) =>
           permissionSets?.notifyAssignmentsChanged({
@@ -109,6 +116,10 @@ export class UsersProvider extends ServiceProvider<AppPluginApplication> {
   public override async boot(): Promise<void> {
     this.releaseInvitationTemplate ??= await registerInvitationTemplate(
       this.app,
+    );
+    this.notificationUserLocales ||= await registerNotificationUserLocales(
+      this.app,
+      () => this.app.container.resolve(userPreferencesServiceToken),
     );
     if (
       !this.releasePermissionSetScope &&
@@ -132,6 +143,8 @@ export class UsersProvider extends ServiceProvider<AppPluginApplication> {
       'user',
       {
         filterActive: (ids, connection) => this.enabledUserIds(ids, connection),
+        // A sharing rule names people: a service account, such as a system key's, acts as no person.
+        filterShareable: (ids, connection) => this.personIds(ids, connection),
         administration: {
           title: {
             key: 'options.subjectTypes.user',
@@ -181,9 +194,14 @@ export class UsersProvider extends ServiceProvider<AppPluginApplication> {
       : undefined;
     // A record type: the id is a user, and `delete` exists only while a role
     // scope can clean a deleted user up.
+    // Managing accounts is a person's only: no API key, scoped or not, may take any of these actions.
+    const humanOnly = {
+      key: 'humanOnly.manageAccounts',
+      ns: '@nocobase/app-plugin-users',
+    };
     authorization.resourceTypes.add({
       type: 'user',
-      actions: [...USER_ACTIONS],
+      actions: [...USER_ACTIONS].map((name) => ({ name, humanOnly })),
       authorize: grantBacked({
         also: async (request) =>
           request.action !== 'delete' ||
@@ -231,6 +249,24 @@ export class UsersProvider extends ServiceProvider<AppPluginApplication> {
    * Asks this plugin's own user administration which of these accounts are
    * still enabled, one page per batch rather than one query per account.
    */
+  private async personIds(
+    ids: readonly string[],
+    connection?: DatabaseConnection,
+  ): Promise<readonly string[]> {
+    const service = this.app.container.resolve(userAdministrationServiceToken);
+    const users = connection ? service.withConnection(connection) : service;
+    const people: string[] = [];
+    for (let start = 0; start < ids.length; start += ACCOUNT_PAGE_SIZE) {
+      const page = await users.list({
+        userIds: ids.slice(start, start + ACCOUNT_PAGE_SIZE),
+        kind: 'person',
+        pageSize: ACCOUNT_PAGE_SIZE,
+      });
+      people.push(...page.items.map((user) => user.id));
+    }
+    return people;
+  }
+
   private async enabledUserIds(
     ids: readonly string[],
     connection?: DatabaseConnection,

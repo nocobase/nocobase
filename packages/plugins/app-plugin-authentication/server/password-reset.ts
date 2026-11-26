@@ -39,9 +39,30 @@ export interface PasswordResetServices {
   readonly executions?: MailExecutions;
 }
 
+/**
+ * Why email password reset is or is not available, from the same values `PasswordResetPolicy.available` is computed
+ * from, so a settings page and the sign-in page cannot disagree.
+ */
+export interface PasswordResetDiagnosis {
+  readonly available: boolean;
+  /** Password sign-in is on (`auth.emailAndPassword.enabled` is not `false`). */
+  readonly passwordSignIn: boolean;
+  /** `auth.passwordReset.enabled` is `true`. */
+  readonly enabled: boolean;
+  /** `auth.passwordReset.enabled` is explicitly `false`. */
+  readonly disabled: boolean;
+  /** `auth.emailAndPassword.sendResetPassword` is the application's own callback, which takes precedence. */
+  readonly customSender: boolean;
+  /** A mail sender was selected for reset emails. */
+  readonly sender: boolean;
+  /** The application has a fixed public origin to build reset links from. */
+  readonly publicOrigin: boolean;
+}
+
 export class PasswordResetPolicy {
   public readonly available: boolean;
   public readonly automatic: boolean;
+  public readonly diagnosis: PasswordResetDiagnosis;
   private readonly sender: ResetSender | undefined;
   private readonly executions: MailExecutions;
   private readonly customSender: boolean;
@@ -76,6 +97,15 @@ export class PasswordResetPolicy {
       options.emailAndPassword?.enabled !== false &&
       config.enabled !== false &&
       (Boolean(custom) || this.automatic);
+    this.diagnosis = {
+      available: this.available,
+      passwordSignIn: options.emailAndPassword?.enabled !== false,
+      enabled: config.enabled === true,
+      disabled: config.enabled === false,
+      customSender: custom !== undefined,
+      sender: selected !== undefined,
+      publicOrigin: configuredResetOrigin(options.baseURL),
+    };
     if (this.available) {
       if (custom && config.mailer !== undefined)
         services.warning?.(
@@ -120,25 +150,36 @@ export class PasswordResetPolicy {
       : undefined;
   }
 
-  public async eligible(userId: string): Promise<boolean> {
-    const user = await this.connection.query
-      .selectFrom('user')
-      .select(['id', 'kind', 'disabledAt', 'deletedAt'])
-      .where('id', '=', userId)
-      .executeTakeFirst();
+  public async eligible(
+    userId: string,
+    adapter?: Pick<
+      AuthContext['internalAdapter'],
+      'findUserById' | 'findCredentialAccount'
+    >,
+  ): Promise<boolean> {
+    // Request checks must use Better Auth's adapter so they join its current transaction.
+    const user = adapter
+      ? await adapter.findUserById(userId)
+      : await this.connection.query
+          .selectFrom('user')
+          .select(['id', 'kind', 'disabledAt', 'deletedAt'])
+          .where('id', '=', userId)
+          .executeTakeFirst();
     if (
       !user ||
-      user.kind === 'service' ||
-      user.disabledAt != null ||
-      user.deletedAt != null
+      Reflect.get(user, 'kind') === 'service' ||
+      Reflect.get(user, 'disabledAt') != null ||
+      Reflect.get(user, 'deletedAt') != null
     )
       return false;
-    const credential = await this.connection.query
-      .selectFrom('account')
-      .select('password')
-      .where('userId', '=', userId)
-      .where('providerId', '=', 'credential')
-      .executeTakeFirst();
+    const credential = adapter
+      ? await adapter.findCredentialAccount(userId)
+      : await this.connection.query
+          .selectFrom('account')
+          .select('password')
+          .where('userId', '=', userId)
+          .where('providerId', '=', 'credential')
+          .executeTakeFirst();
     return (
       typeof credential?.password === 'string' && credential.password.length > 0
     );
@@ -222,7 +263,7 @@ export class PasswordResetPolicy {
                   ...adapter,
                   findUserByEmail: async (email, options) => {
                     const user = await adapter.findUserByEmail(email, options);
-                    return user && !(await this.eligible(user.user.id))
+                    return user && !(await this.eligible(user.user.id, adapter))
                       ? null
                       : user;
                   },
@@ -239,7 +280,7 @@ export class PasswordResetPolicy {
                       await adapter.findVerificationValue(identifier);
                     return value &&
                       identifier.startsWith('reset-password:') &&
-                      !(await this.eligible(value.value))
+                      !(await this.eligible(value.value, adapter))
                       ? null
                       : value;
                   },
@@ -256,7 +297,13 @@ export class PasswordResetPolicy {
                 await ctx.context.internalAdapter.findVerificationValue(
                   `reset-password:${token}`,
                 );
-              if (verification && !(await this.eligible(verification.value)))
+              if (
+                verification &&
+                !(await this.eligible(
+                  verification.value,
+                  ctx.context.internalAdapter,
+                ))
+              )
                 throw APIError.from('BAD_REQUEST', {
                   code: 'INVALID_TOKEN',
                   message: 'Invalid token.',
@@ -266,7 +313,7 @@ export class PasswordResetPolicy {
                 ctx.context.internalAdapter = {
                   ...adapter,
                   updatePassword: async (userId, password) => {
-                    if (!(await this.eligible(userId)))
+                    if (!(await this.eligible(userId, adapter)))
                       throw APIError.from('BAD_REQUEST', {
                         code: 'INVALID_TOKEN',
                         message: 'Invalid token.',
@@ -276,7 +323,7 @@ export class PasswordResetPolicy {
                     );
                   },
                   createAccount: async (account) => {
-                    if (!(await this.eligible(account.userId)))
+                    if (!(await this.eligible(account.userId, adapter)))
                       throw APIError.from('BAD_REQUEST', {
                         code: 'INVALID_TOKEN',
                         message: 'Invalid token.',
@@ -355,11 +402,18 @@ export class PasswordResetPolicy {
   }
 
   public async guardWrite(
-    context: { path?: string; context: object } | null | undefined,
+    context:
+      | { path?: string; context: Pick<AuthContext, 'internalAdapter'> }
+      | null
+      | undefined,
   ): Promise<void> {
     if (context?.path !== '/reset-password') return;
     const userId = this.resetWrites.getStore();
-    if (!this.available || !userId || !(await this.eligible(userId)))
+    if (
+      !this.available ||
+      !userId ||
+      !(await this.eligible(userId, context.context.internalAdapter))
+    )
       throw APIError.from('BAD_REQUEST', {
         code: 'INVALID_TOKEN',
         message: 'Invalid token.',

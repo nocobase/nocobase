@@ -1,3 +1,4 @@
+import type { MailFetch } from '../../diagnostic-fetch.js';
 import type {
   MailProviderError,
   MailProviderResult,
@@ -49,21 +50,24 @@ export async function graphRequest<T>(
   token: string,
   pathOrUrl: string,
   init: RequestInit,
+  fetcher: MailFetch = fetchWithTimeout,
+  read: (response: Response) => Promise<T> = readJson<T>,
+  accept = 'application/json',
 ): Promise<MailProviderResult<T>> {
   try {
     const resolvedUrl = resolveGraphUrl(config, pathOrUrl);
     if (!resolvedUrl.ok) return resolvedUrl;
-    const response = await fetchWithTimeout(resolvedUrl.value, {
+    const response = await fetcher(resolvedUrl.value, {
       ...init,
       headers: {
         ...init.headers,
         authorization: `Bearer ${token}`,
-        accept: 'application/json',
+        accept,
         Prefer: 'IdType="ImmutableId", outlook.body-content-type="html"',
       },
     });
     return response.ok
-      ? { ok: true, value: await readJson<T>(response) }
+      ? { ok: true, value: await read(response) }
       : { ok: false, error: await responseError(response) };
   } catch (error) {
     return {

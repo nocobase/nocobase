@@ -4,6 +4,8 @@
  */
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
+import type { AuthorizationContext } from '@nocobase/authorization/core';
+import { createAgents } from '../server/composition.js';
 import { nameFrom } from '../server/online/services.js';
 import { createHarness, type Harness } from './harness.js';
 import { startMockOpenAI, type MockOpenAI } from './mock-openai.js';
@@ -32,6 +34,58 @@ describe('model services', () => {
     baseUrl: `${mock.url}/`,
     apiKey: 'test-key',
     models: [{ value: 'mock-model' }, { value: 'mock-model' }],
+  });
+
+  it('blocks provider access after restarting against an existing model database', async () => {
+    h = await createHarness();
+    const original = h.services.models.services;
+    const saved = await original.create(local());
+    const ref = { modelService: saved.name, model: 'mock-model' };
+    const session = await h.request('POST', '/agents/conversations', {
+      user: 'alice',
+      body: { agentId: 'online' },
+    });
+    expect(session.status).toBe(201);
+    const restarted = createAgents({
+      modelServices: false,
+      database: h.database,
+      idGenerator: { generateString: () => 'unused' },
+    });
+    try {
+      await restarted.onlineAgent.recoverAtStartup();
+      await expect(
+        restarted.onlineAgent.realtime(
+          {
+            user: { id: 'alice' },
+            credentials: { kind: 'test-session' },
+            authorization: {
+              identity: { principal: { type: 'user', id: 'alice' } },
+            } as AuthorizationContext,
+          },
+          { sessionId: String(session.body.data.id) },
+        ),
+      ).rejects.toThrow('Model services are disabled');
+      const { services, gateway } = restarted.models;
+      expect(await services.list()).toEqual([]);
+      expect((await gateway.catalog()).services).toEqual([]);
+      await expect(services.connectionFor(ref)).rejects.toThrow('disabled');
+      await expect(services.endpointFor(ref, 'chat')).rejects.toThrow(
+        'disabled',
+      );
+      await expect(
+        gateway.generate({ model: ref, prompt: 'hello', source: 'test' }),
+      ).rejects.toThrow('disabled');
+      await expect(
+        gateway.embed({ model: ref, values: ['hello'], source: 'test' }),
+      ).rejects.toThrow('disabled');
+      await expect(services.remove(saved.name)).rejects.toThrow('disabled');
+      expect(mock.seen).toEqual([]);
+      expect((await original.list()).map((item) => item.name)).toEqual([
+        saved.name,
+      ]);
+    } finally {
+      await restarted.onlineAgent.shutdown();
+    }
   });
 
   it('names a service from its title', () => {
@@ -258,6 +312,45 @@ describe('model services', () => {
         'admin',
       ),
     ).rejects.toMatchObject({ code: 'INVALID_REQUEST' });
+  });
+
+  it('refuses a model’s thinking levels and ignores ones an earlier build saved', async () => {
+    h = await createHarness();
+    await h.services.models.services.create(local());
+    for (const reasoning of [false, { levels: ['off', 'high'] }])
+      expect(
+        (
+          await h.request('PATCH', '/agents/services/local', {
+            ...ADMIN,
+            body: { models: [{ value: 'mock-model', reasoning }] },
+          })
+        ).status,
+      ).toBe(400);
+    expect(
+      (
+        await h.request('PATCH', '/agents/services/local', {
+          ...ADMIN,
+          body: { models: [{ value: 'mock-model' }] },
+        })
+      ).status,
+    ).toBe(200);
+    await h.database
+      .connection()
+      .repository('agModelServices')
+      .updateMany({
+        filter: { name: 'local' },
+        values: { models: [{ value: 'mock-model', reasoning: false }] },
+      });
+    const [service] = await h.services.models.services.list();
+    expect(service!.models).toEqual([
+      {
+        value: 'mock-model',
+        label: 'mock-model',
+        kind: 'chat',
+        capabilities: { webSearch: false },
+        dimensions: null,
+      },
+    ]);
   });
 
   it('serves the routes behind agents.services read and manage', async () => {

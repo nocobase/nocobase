@@ -1,21 +1,34 @@
+import { resolveAppBase } from '@nocobase/app-client';
+import { defineClientPlugin } from '@nocobase/app-client/plugins';
 import {
   AuthenticationProvider,
   GuestAuthentication,
   authenticationClientToken,
 } from '@nocobase/app-plugin-authentication/client';
+import users from '@nocobase/app-plugin-users/client';
 import { authorizationClientToken } from '@nocobase/app-plugin-authorization/client';
 import { reactProviders } from '@nocobase/app-plugin-authorization/client/react-providers';
 import { renderWithApp } from '@nocobase/app-testing/client';
 import { act, fireEvent, screen } from '@testing-library/react';
 import { Route, Routes } from 'react-router';
-import { describe, expect, it, vi } from 'vitest';
+import { describe, expect, it, onTestFinished, vi } from 'vitest';
 import enUS from '../../client/locales/en-US.js';
 import zhCN from '../../client/locales/zh-CN.js';
 import RegisterPage from '../../client/pages/auth/register.js';
 
 const AuthorizationProvider = reactProviders[0]!.component;
+// The authentication plugin's provider without its service provider, so the test's session client stands in.
+const authentication = defineClientPlugin({
+  packageName: '@nocobase/app-plugin-authentication',
+  reactProviders: [
+    { name: 'authentication', component: AuthenticationProvider },
+  ],
+});
 
 async function renderRegistration(signedIn = false, locale = 'en-US') {
+  // A visitor's chosen language, which the user locale provider applies to guests.
+  localStorage.setItem(`nocobase.guest-locale:${resolveAppBase()}`, locale);
+  onTestFinished(() => localStorage.clear());
   let registered = false;
   const refresh = Promise.withResolvers<void>();
   const email = vi.fn(async () => {
@@ -32,22 +45,32 @@ async function renderRegistration(signedIn = false, locale = 'en-US') {
     };
   });
   const view = await renderWithApp(
-    <AuthenticationProvider>
-      <AuthorizationProvider>
-        <Routes>
-          <Route
-            path='/register'
-            element={
-              <GuestAuthentication>
-                <RegisterPage />
-              </GuestAuthentication>
-            }
-          />
-          <Route path='/' element={<p>Signed-in home</p>} />
-        </Routes>
-      </AuthorizationProvider>
-    </AuthenticationProvider>,
+    <AuthorizationProvider>
+      <Routes>
+        <Route
+          path='/register'
+          element={
+            <GuestAuthentication>
+              <RegisterPage />
+            </GuestAuthentication>
+          }
+        />
+        <Route path='/' element={<p>Signed-in home</p>} />
+      </Routes>
+    </AuthorizationProvider>,
     {
+      // The user locale provider sits below authentication as in the application, so a session refresh reaches it.
+      plugins: [authentication(), users()],
+      fetch: async (request) => {
+        const url = new URL(request.url);
+        if (request.method === 'PUT' && url.pathname.endsWith('/i18n/locale')) {
+          const { locale } = (await request.json()) as { locale: string };
+          return Response.json({
+            data: { locale, requestedLocale: locale, fallback: false },
+          });
+        }
+        return new Response(null, { status: 404 });
+      },
       route: '/register',
       locale,
       namespace: 'registration-test',
@@ -66,7 +89,7 @@ async function renderRegistration(signedIn = false, locale = 'en-US') {
   await screen.findByRole('heading', {
     name: locale === 'en-US' ? 'Create an account' : '创建账户',
   });
-  return { ...view, refresh, email };
+  return { ...view, refresh, email, getSession };
 }
 
 function submitForm(container: HTMLElement, locale = 'en-US') {
@@ -89,17 +112,19 @@ function submitForm(container: HTMLElement, locale = 'en-US') {
   fireEvent.submit(container.querySelector('form')!);
 }
 
-describe('registration feedback with the real session provider and guest guard', () => {
+describe('registration feedback with the real session, locale provider and guest guard', () => {
   it.each(['en-US', 'zh-CN'])(
-    'keeps accepted unsigned-in feedback after session refresh in %s',
+    'keeps the form during the session refresh and shows the accepted feedback while auto sign-in is off in %s',
     async (locale) => {
-      const { container, refresh, email } = await renderRegistration(
-        false,
-        locale,
-      );
+      const { container, refresh, email, getSession } =
+        await renderRegistration(false, locale);
       submitForm(container, locale);
       try {
         await vi.waitFor(() => expect(email).toHaveBeenCalledOnce());
+        // The session refresh after sign-up has started and is still waiting.
+        await vi.waitFor(() => expect(getSession).toHaveBeenCalledTimes(2));
+        // Render what the refresh changed before looking at the page.
+        await act(async () => {});
         expect(container.querySelector('form')).toBeInTheDocument();
       } finally {
         await act(async () => {

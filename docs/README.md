@@ -297,7 +297,7 @@ For changes to layout, styles or the hand-built pages, compare the pages you tou
 
 ## Publishing
 
-Merging into `v3-develop` publishes the site. [`.github/workflows/v3-docs.yml`](../.github/workflows/v3-docs.yml) runs on every pull request and push touching `docs/`: it runs `check.sh`, lint, typecheck, test and the build. On a push to `v3-develop` it then uploads `dist/` to a new timestamped directory (`YYYYMMDDHHMMSS`, Asia/Shanghai time) in the OSS bucket, copies `dist/404.html` to the bucket root, and runs `scripts/deploy-cdn.mjs`, which points the CDN's back-to-origin rules at the new directory, refreshes the cache and deletes all but the previous version. Readers see either the old site or the new one, never a mixture.
+Merging into `v3` (formerly `v3-develop`), the default branch, publishes the site. [`.github/workflows/v3-docs.yml`](../.github/workflows/v3-docs.yml) runs on every pull request and push touching `docs/`: it runs `check.sh`, lint, typecheck, test and the build. On a push to `v3` it then uploads `dist/` to a new timestamped directory (`YYYYMMDDHHMMSS`, Asia/Shanghai time) in the OSS bucket, copies `dist/404.html` to the bucket root, and runs `scripts/deploy-cdn.mjs`, which points the CDN's back-to-origin rules at the new directory, refreshes the cache and deletes all but the previous version. Readers see either the old site or the new one, never a mixture.
 
 To publish without a push, run the workflow manually (`workflow_dispatch`) with `publish` checked; without it the run only builds and checks.
 

@@ -1,5 +1,17 @@
 # @nocobase/acp-bridge
 
+## 1.0.0-beta.8
+
+### Patch Changes
+
+- 44395d2: Support Antigravity CLI on runtimes and list it between Pi and DeepSeek Harness, with Gemini CLI last.
+
+## 1.0.0-beta.7
+
+### Patch Changes
+
+- 1952789: Update authentication, editor, and validation dependencies to patched releases.
+
 ## 1.0.0-beta.6
 
 ### Patch Changes

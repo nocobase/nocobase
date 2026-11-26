@@ -1,8 +1,4 @@
 const settings = {
-  notificationManagementDescription:
-    'View registered notification templates and synthetic content previews.',
-  notificationTemplates: 'Notification templates',
-  notificationManagement: 'Notification management',
   listChanged: 'The list has changed. Please retry.',
   setup: {
     title: 'Feature prerequisites',
@@ -19,14 +15,12 @@ const settings = {
     invalid:
       'This prerequisite could not be verified. Ask the application maintainer to check its configuration.',
   },
-  roleFilterIncomplete:
-    'Choose both a role scope and a role, or clear the filters.',
-  backToSource: 'Return to previous page',
-  roleFilter: 'Filter by role',
-  allRoles: 'All roles',
 
-  permissionManagement: 'Permission management',
+  permissionManagement: 'Roles & permissions',
   defaultAccess: {
+    kindBusiness: 'business operations',
+    kindTable: 'data table',
+    kindLabel: '{{title}} ({{kind}})',
     noResourcesShort: 'No configurable objects available',
     scopeInvalid:
       'Choose a valid data scope or complete its filter conditions.',
@@ -47,7 +41,7 @@ const settings = {
     chooseResource: 'Choose a business object',
     action: 'Operation',
     scope: 'Data scope',
-    scopes: 'Operations and data scopes',
+    scopes: 'Operations & data scopes',
     none: 'No default scope',
     all: 'All records',
     custom: 'Custom filter',
@@ -92,7 +86,7 @@ const settings = {
   unnamedPage: 'Unnamed page ({{path}})',
   revokeRoles: 'Revoke roles',
   keyConflict: 'This role key is already in use.',
-  userPermissions: 'Users and accounts',
+  userPermissions: 'Users & accounts',
   readUsers: 'View users',
   createUsers: 'Create users',
   updateUsers: 'Edit users',
@@ -101,42 +95,40 @@ const settings = {
   resetUserPassword: 'Reset password',
   assignRole: 'Assign roles',
 
-  assignedRoles: 'Assigned roles',
   actionSaved: 'Updated access for "{{name}}"',
-  userActionSaved: {
-    disable: 'Disabled user "{{name}}"',
-    enable: 'Enabled user "{{name}}"',
-    revokeSessions: 'Revoked active sessions for "{{name}}"',
-  },
 
   identityConflict: 'This email or username is already in use.',
   signInAgain: 'Sign in again',
-  passwordPolicy: 'Password does not meet the current password policy.',
 
   reload: 'Reload role',
   title: 'System settings',
+  back: 'Back',
+  navigation: 'Settings navigation',
+  personal: {
+    title: 'Personal settings',
+    navigation: 'Personal settings navigation',
+    empty: 'There are no personal settings yet.',
+    appearance: {
+      title: 'Preferences',
+      description:
+        'The same choices as Language and Theme in the account menu; they apply to you in this browser.',
+    },
+  },
   home: {
-    description:
-      'Accounts, permissions, business configuration and system capabilities are all here.',
     empty: 'No settings are available to you yet.',
   },
   categories: {
-    account: 'Accounts and permissions',
-    business: 'Business configuration',
-    ai: 'AI',
-    system: 'System',
+    crm: 'CRM',
   },
   permissionManagementDescription:
     'Set what each role can open and do, and the data it can see.',
   users: 'Users',
-  roles: 'Roles and permissions',
-  usersDescription: 'Manage accounts, access and active sessions.',
-  rolesDescription: 'Define what each role can access and do.',
-  userSearch: 'Search names, usernames or emails',
+  roles: 'Roles',
+  rolesDescription:
+    'Set the menus each role sees and what it may do with each kind of business data.',
   roleSearch: 'Search role names',
   newUser: 'New user',
   editUserFor: 'Edit {{name}}',
-  editUser: 'Edit user',
   newRole: 'New role',
   editRole: 'Edit role',
   name: 'Name',
@@ -156,15 +148,9 @@ const settings = {
   noResults: 'No matching results',
   clearHint: 'Try a different search or clear the filters.',
   noUsers: 'No users yet',
-  noRoleAccess:
-    'This user can still sign in and use account basics. No business access is granted by roles.',
-  noAssignedRoles: 'No assigned roles',
   noRoles: 'No roles yet',
   create: 'Create',
   edit: 'Edit',
-  selectRoles: 'Select roles',
-  searchRoles: 'Search roles',
-  noRolesFound: 'No roles found.',
   save: 'Save',
   cancel: 'Cancel',
   saving: 'Saving…',
@@ -172,20 +158,10 @@ const settings = {
   enable: 'Enable',
   disable: 'Disable',
   revokeSessions: 'Revoke sessions',
-  disableTitle: 'Disable user "{{name}}"?',
-  disableHint:
-    'This user will be unable to sign in and existing sessions will end.',
-  enableTitle: 'Enable user "{{name}}"?',
-  enableHint: 'This user will be able to sign in again.',
-  revokeTitle: 'Revoke sessions for "{{name}}"?',
-  revokeHint: 'This user will need to sign in again.',
-  revokeRoleTitle: 'Revoke roles from "{{name}}"?',
-  revokeRoleHint: 'Access granted by the listed roles will be removed.',
   created: 'Created user "{{name}}"',
   saved: 'Saved "{{name}}"',
   rolesSaved: 'Updated roles for "{{name}}"',
   required: 'Enter a value for this field',
-  invalidEmail: 'Enter a valid email address',
   protected: 'Protected',
   custom: 'Custom',
   protectedHint:
@@ -273,6 +249,74 @@ const settings = {
       $empty: 'Is empty',
       $notEmpty: 'Is not empty',
     },
+  },
+  copyOfRole: '{{name}} (copy)',
+  selectRole: 'Select a role',
+  duplicateRole: 'Duplicate as new role',
+  discardChanges: 'Discard changes',
+  unrestrictedRole: 'All permissions',
+  openPage: 'Open page',
+  escalation: {
+    roles:
+      'Anyone who can create or change roles can give any role, including their own, any permission. The server does not limit them to the permissions they hold, so grant this only to trusted administrators.',
+    users:
+      'Assigning roles gives users everything those roles allow, including administrator roles. Grant it only to trusted administrators.',
+  },
+  permissionEditor: {
+    menusTab: 'Menus',
+    objectsTab: 'Business objects',
+    settingsTab: 'System settings',
+    tabCount: '{{count}} / {{total}}',
+    noMenus: 'No menus',
+    emptyPage:
+      '“{{menu}}” is checked, but this role cannot view {{object}} yet, so the page opens empty.',
+    openView: 'Turn on “{{action}}”',
+    opensWith: 'Shown with “{{action}}”',
+    attention_one: '{{count}} menu needs attention',
+    attention_other: '{{count}} menus need attention',
+    objects: 'Business objects',
+    search: 'Search objects or actions',
+    clearSearch: 'Clear search',
+    noResults: 'No matching objects or actions',
+    empty: 'No business objects to configure',
+    objectEnabled: '{{enabled}} of {{total}} on',
+    objectOff: 'Off',
+    enableAll: 'Enable all',
+    viewOnly: 'View only',
+    disableAll: 'Disable all',
+    sameAsView: 'Same as view ({{scope}})',
+    sameAsObjectView: 'Same as {{object}} view ({{scope}})',
+    needsView: 'Needs {{object}} view',
+    scopeFor: 'Data scope of {{action}}',
+    scopeForSlot: '{{action}}: {{scope}}',
+    managed: 'Managed by the application',
+    unrestrictedTitle: 'All permissions (unrestricted)',
+    unrestrictedDescription:
+      'This role can open every menu and perform every action on all data. There is nothing to set.',
+    confirmDisable_one:
+      'Turning off {{actions}} also turns off {{dependents}}, which needs it.',
+    confirmDisable_other:
+      'Turning off {{actions}} also turns off {{dependents}}, which need it.',
+    confirm: 'Turn off',
+    dismiss: 'Dismiss',
+    noticeScopeReset_one:
+      '{{actions}} now follows the view scope ({{view}}) again.',
+    noticeScopeReset_other:
+      '{{actions}} now follow the view scope ({{view}}) again.',
+    noticeAutoEnabled: 'Also turned on {{actions}}, which this needs.',
+    noticeStaysOff: '{{action}} stays off.',
+    noticeTurnOnFirst_one:
+      'It needs {{actions}}, which is never turned on automatically. Turn it on first.',
+    noticeTurnOnFirst_other:
+      'It needs {{actions}}, which are never turned on automatically. Turn them on first.',
+    noticeManagedRequirement_one:
+      'It needs {{actions}}, which is managed by the application and cannot be turned on here.',
+    noticeManagedRequirement_other:
+      'It needs {{actions}}, which are managed by the application and cannot be turned on here.',
+    noticeManagedDependent_one:
+      'Nothing was turned off: {{actions}} is managed by the application and needs it.',
+    noticeManagedDependent_other:
+      'Nothing was turned off: {{actions}} are managed by the application and need it.',
   },
   recordScope: 'Record scope',
   levelFor: 'Scope for {{name}}',

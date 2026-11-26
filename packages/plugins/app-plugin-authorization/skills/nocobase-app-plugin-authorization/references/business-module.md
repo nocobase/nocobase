@@ -12,13 +12,13 @@ Use a quote submission workflow as the reference: engineers prepare quotes; proj
 | Project manager     | Projects         | Maintain                 | Owned projects                                   | Write project details                            |
 | Delivery specialist | Orders           | Arrange/confirm delivery | Owned/assigned orders                            | Relation operations or delivery status/reference |
 
-Resolve unclear cases before granting access: may users consult colleagues' quotes, may a delegate submit as well as edit, and does confidentiality apply to every access path? Prefer meaningful action names to exposing all CRUD operations of every table.
+Resolve unclear cases before granting access: may users consult colleagues' quotes, may a delegate submit as well as edit, and does confidentiality apply to every access path? Use View, Create, Edit and Delete for standard operations and short verb phrases such as Submit or Confirm delivery for business actions. Do not repeat the object name in the label. Expose only operations that exist, not all CRUD actions of every table.
 
 ## 2. Model and declare
 
 Model ownership and preparer ids, project relations, region membership and any team or department membership as business data. Make membership changes an authorized business API. Keep credentials and fixture accounts out of production feature seeds.
 
-Create `server/sales-resources.ts` using the complete `quotes` declaration in [runtime integration](runtime-api.md#declare-a-business-operation). `defineDatabasePermission` declares fields and relation capabilities; `defineCompositeResource` binds them to data scope keys. A `submit` action binds `quotes` to quote read and status update and `projects` to parent read. Give independently controlled collections separate keys even when a workflow edits only one of them.
+Create `server/sales-resources.ts` using the complete `quotes` declaration in [runtime integration](runtime-api.md#declare-a-business-operation). The composite `sales.quotes` is not the table `salesQuotes`. `defineDatabasePermission` declares fields and relation capabilities; `defineCompositeResource` binds them to data scope slots. The `submit` action binds the slot `quotes` to read and status update on `salesQuotes`, and `projects` to parent read on `salesProjects`. Give independently controlled scopes separate keys. See the [permission workspace fields](client-development.md#permission-workspace-fields) for the editor keys.
 
 Keep portable declarations free of database queries so seeds and provisioning can reuse `quotes.reference().grant(...)`. Return fluent builders from callbacks. Define translations in the owning package and use `{ key, ns }` for persisted titles. Do not repeat resource and action strings in permission sets when a typed reference is available.
 
@@ -26,7 +26,7 @@ Keep portable declarations free of database queries so seeds and provisioning ca
 
 Resolve `authorizationToken` and the database in the owning provider. Register collections and composites there, add the workspace subsection with `authz.ui.sections.add` and place each composite with `authz.ui.place`, and register record access with `authz.recordAccess.define`.
 
-The following application-owned `server/sales-record-access.ts` implements the two selections the engineer set needs. Its migrations must define `quotes.preparedById`, `projects.region` and a trusted `salesMembers` table with user id and region; membership is maintained by authorized business code. A resolver receives `{ principal, collection, action, params }` and returns `true`, `false` or a filter on the collection's own columns. Answer no memberships with `false`, never with all records. Declare `.collections(...)` accurately and type optional parameters with `.params<P>(schema)`.
+The following application-owned `server/sales-record-access.ts` implements the two selections the engineer set needs. Its migrations must define `salesQuotes.preparedById`, `salesProjects.region` and a trusted `salesMembers` table with user ID and region; membership is maintained by authorized business code. A resolver receives `{ principal, collection, action, params }` and returns `true`, `false` or a filter on the collection's own columns. Answer no memberships with `false`, never with all records. Declare `.collections(...)` with the actual table names and type optional parameters with `.params<P>(schema)`.
 
 ```ts
 import { defineRecordAccess } from '@nocobase/authorization/core';
@@ -42,7 +42,7 @@ export function registerSalesRecordAccess(
     defineRecordAccess('sales.prepared', (access) =>
       access
         .title('Prepared by me')
-        .collections('quotes')
+        .collections('salesQuotes')
         .resolver(({ principal }) =>
           principal.type === 'user'
             ? buildFilter((f) => f.string('preparedById').eq(principal.id))
@@ -54,7 +54,7 @@ export function registerSalesRecordAccess(
     defineRecordAccess('sales.region', (access) =>
       access
         .title('My sales region')
-        .collections('projects')
+        .collections('salesProjects')
         .resolver(async ({ principal }) => {
           if (principal.type !== 'user') return false;
           const member = await database
@@ -83,11 +83,11 @@ export function registerPublicQuoteAccess(
     defineRecordAccess('sales.public', (access) =>
       access
         .title('Public projects')
-        .collections('quotes')
+        .collections('salesQuotes')
         .resolver(async () => {
           const projects = await database
             .connection()
-            .query.selectFrom('projects')
+            .query.selectFrom('salesProjects')
             .select('id')
             .where('confidential', '=', false)
             .execute();
@@ -104,7 +104,7 @@ export function registerPublicQuoteAccess(
 }
 ```
 
-This is a resolver's trusted lookup, not a public list endpoint. The model needs `projects.confidential`. When one record access applies to several collections, pass each to `.collections(...)` and branch on `collection` to map the right parent, instead of treating every collection's id as a project id. For large datasets, implement a database-backed parent lookup and measure it; a list of ids is not a universal scaling design.
+This is a resolver's trusted lookup, not a public list endpoint. The model needs `salesProjects.confidential`. When one record access applies to several collections, pass each to `.collections(...)` and branch on `collection` to map the right parent, instead of treating every collection's ID as a project ID. For large datasets, implement a database-backed parent lookup and measure it; a list of IDs is not a universal scaling design.
 
 Reuse the built-in `recordAccess.recordsIOwn` and `recordAccess.recordsICreated` when the collection has the corresponding column (default `ownerId` and `createdById`, configurable with `params.field`), `recordAccess.customFilter` for a fixed filter and `recordAccess.allRecords` for everything. Use custom record access when ownership follows a parent. Do not assume an id from a team subject is a user id; user-dependent resolvers must check the principal type.
 
@@ -112,7 +112,7 @@ Reuse the built-in `recordAccess.recordsIOwn` and `recordAccess.recordsICreated`
 
 Use an App-owned `defineApiRoutes` factory that creates a Hono router, resolves services, and installs authentication, authorization and input limits. Business code accepts the resolved policy rather than unrestricted repositories.
 
-The following service function accepts the request's authorization context. Its caller authenticates first, installs `authz.middleware()`, and calls `await submitQuote(database, c.var.authz, c.req.param('id'))`. Keep it in an App-owned module, then return the route's success response only after it resolves.
+The following service function accepts the request's authorization context. Its caller authenticates first, installs `authz.middleware()`, and calls `await submitQuote(database, c.var.authz, c.req.param('id'))`. Take policies from `decision.conditions.database` by their registered collection/table names, not by the composite ID `sales.quotes` or the scope slots `quotes` and `projects`. Keep it in an App-owned module, then return the route's success response only after it resolves.
 
 ```ts
 import type { AuthorizationContext } from '@nocobase/app-plugin-authorization/server';
@@ -137,13 +137,17 @@ export async function submitQuote(
     action: 'submit',
   });
   const policies = decision.conditions?.database;
-  if (decision.effect === 'deny' || !policies?.quotes || !policies.projects)
+  if (
+    decision.effect === 'deny' ||
+    !policies?.salesQuotes ||
+    !policies.salesProjects
+  )
     throw forbidden();
-  const quotePolicy = policies.quotes;
-  const projectPolicy = policies.projects;
+  const quotePolicy = policies.salesQuotes;
+  const projectPolicy = policies.salesProjects;
 
   await database.transaction(async (connection) => {
-    const quotes = connection.repository('quotes').withPolicy(quotePolicy);
+    const quotes = connection.repository('salesQuotes').withPolicy(quotePolicy);
     const quote = await quotes.findOne({ filter: { id: quoteId } });
     if (!quote || typeof quote.projectId !== 'string')
       throw new ApiError({
@@ -154,7 +158,7 @@ export async function submitQuote(
       });
 
     const project = await connection
-      .repository('projects')
+      .repository('salesProjects')
       .withPolicy(projectPolicy)
       .findOne({ filter: { id: quote.projectId } });
     if (!project) throw forbidden();
@@ -189,6 +193,8 @@ export async function submitQuote(
 
 Each `ApiError` is answered in the standard error body; clients branch on `reason`. Repository errors that propagate are rendered by the application (a refused read or write is 403, `RECORD_NOT_FOUND` 404); a route that must not disclose which records exist translates `RECORD_NOT_FOUND` into its own 403 `ApiError` in its `onError` before delegating to `apiErrorHandler`. It does not expose database errors. A concurrent change that invalidates the update predicate must fail; never retry it as an unconditional write. If a workflow requires a parent state to remain unchanged until commit, add appropriate locking or version checks for that parent too; a transaction alone does not supply that guarantee.
 
+For lifecycle-backed operations, keep the lifecycle library's error mapping: `INVALID_STATE` and `GUARD_REJECTED` whose blockers are all preconditions become HTTP 400 `FAILED_PRECONDITION`; do not override this mapping in the application. Reserve HTTP 409 `ABORTED` for a stale expected version (`CONFLICT`) and `ALREADY_EXISTS` for duplicate creation. Use input validation for malformed requests rather than treating them as state refusals.
+
 Do not fetch unrestricted data and filter it in JavaScript. Do not query only the parent ID supplied by the client. Do not call `require` or `authz.database.policyFor` after this decision; the business decision already includes every underlying check and policy. Resolve authorization once per request and bind its results to the repositories on the transaction connection.
 
 For collection CRUD without an operation boundary, use `authz.database.policyFor` and bind the result. For simple business Repository API routes, use [business-action middleware](repository-routes.md) while retaining static route policies. Mount it on all exposed actions. An endpoint policy is a maximum, not a source of grants.
@@ -201,7 +207,9 @@ Create the engineer set with page access and quote actions as separate grants. C
 
 The following rule-based extensions require the corresponding installed Skills; follow [capability discovery](optional-capabilities.md) first. Without them, describe the missing capability as separate development rather than assuming it is available. Add default access only for an intentional baseline. Add sharing for the delegation exception: the delegated quote's edit and submit scopes plus its actual parent project's submit scope, assigned to the delegated engineer. Sharing the quote does not automatically grant its parent or the submit action. Add restrictions for confidential records at the appropriate boundary; a collection restriction covers all operation branches when the invariant must apply everywhere.
 
-Use the three optional rule Skills for implementation. Follow [code declarations and seeds](code-and-seeds.md) for an executable permission-set declaration, persistence row shapes and initialization rules. Migrations contain schema operations only. Keep demonstration account creation and practice reset out of production features.
+Use the three optional rule Skills for implementation. Follow [code declarations and seeds](code-and-seeds.md) for an executable permission-set declaration, persistence row shapes and initialization rules. Migrations contain schema operations only. Put demo accounts, their role assignments and demo records in sample data: use `defineSeed({ name, sample: true, run })` for rows or the `sampleDataToken` provider hook when using the Users service. Install the demo on a fresh database with `APP_SAMPLE_DATA=true`; normal installations should not get demo credentials or records.
+
+For a known existing user, use the Users plugin's `PUT /api/users/:userId/roleScopes/app` with `{ "value": ["sales-engineer"] }` (or `UsersClient.replaceRoleScope(userId, 'app', value)`). The caller needs `assign-role` on the user. Send the desired complete list of direct permission-set keys for this scope, including existing direct roles that should remain. This leaves inherited assignments intact. Use the prepared User management page for the same operation.
 
 ## 6. Relations and transitions
 

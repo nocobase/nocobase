@@ -313,20 +313,21 @@ export function runnerUIMessages(
               },
             },
       );
-    } else
+    } else if (row.content.content)
       message.parts.push({
         type: 'text',
         text: row.content.content,
         state: 'done',
       });
-    message.metadata!.sourceRecords!.push({
-      recordId: row.id,
-      seq: row.seq,
-      partId,
-      partIndex: index,
-      ...(output ? { output } : {}),
-      createdAt: row.createdAt,
-    });
+    if (message.parts.length > index)
+      message.metadata!.sourceRecords!.push({
+        recordId: row.id,
+        seq: row.seq,
+        partId,
+        partIndex: index,
+        ...(output ? { output } : {}),
+        createdAt: row.createdAt,
+      });
     for (const file of row.attachments ?? []) {
       message.parts.push({
         type: 'file',

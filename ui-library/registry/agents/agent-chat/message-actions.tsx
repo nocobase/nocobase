@@ -48,11 +48,14 @@ export function MessageActions({
   disabled,
   onEdit,
   onRefresh,
+  children,
 }: {
   readonly text: string;
   readonly disabled?: boolean;
   readonly onEdit?: () => void;
   readonly onRefresh?: () => void;
+  /** After the built-in actions, such as what applications add (`messageActions`). */
+  readonly children?: ReactNode;
 }): ReactElement {
   const { t } = useChatTranslation();
   const [copyError, setCopyError] = useState(false);
@@ -89,6 +92,7 @@ export function MessageActions({
           <RefreshCwIcon aria-hidden='true' />
         </ActionButton>
       ) : null}
+      {children ?? null}
       {copyError ? (
         <span role='status' className='text-xs text-destructive'>
           {t('chat.copyFailed')}

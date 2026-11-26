@@ -55,7 +55,7 @@ function tarball(version: string): Uint8Array {
 }
 
 /** A server serving `version`, which records the requests it gets. */
-function fakeServer(version: string) {
+function fakeServer(version: string, requireKey = true) {
   const bytes = tarball(version);
   const sha256 = createHash('sha256').update(bytes).digest('hex');
   const requests: { url: string; key: string | null }[] = [];
@@ -64,7 +64,7 @@ function fakeServer(version: string) {
     const url = new URL(String(input));
     const key = new Headers(init?.headers).get(HEADERS.apiKey);
     requests.push({ url: url.pathname, key });
-    if (key !== 'key-1')
+    if (requireKey && key !== 'key-1')
       return Response.json(
         { error: { reason: 'UNAUTHORIZED', message: 'Sign in.' } },
         { status: 401 },
@@ -102,6 +102,26 @@ function installCli(name: string, version: string, mode = 'cli') {
 }
 
 describe('<bin> update', () => {
+  it('uses public distribution with the original update API and no download credential', async () => {
+    const { prefix, installation } = installCli('public-api', '0.1.0');
+    const server = fakeServer('0.2.0', false);
+    const result = await updateCli(
+      { server: session.server, headers: {} },
+      {
+        bin,
+        running: '0.1.0',
+        installation,
+        target,
+        fetch: server.fetch,
+      },
+      {},
+    );
+    expect(result.updated).toBe(true);
+    expect(readlinkSync(path.join(prefix, 'current'))).toBe('versions/0.2.0');
+    expect(server.requests).toHaveLength(2);
+    expect(server.requests.every((request) => request.key === null)).toBe(true);
+  });
+
   it('keeps the CLI upgrade successful while leaving all overlapping registered copies untouched', async () => {
     const { prefix, installation } = installCli('overlapping-skills', '0.1.0');
     const packageRoot = path.join(prefix, 'versions/0.1.0');

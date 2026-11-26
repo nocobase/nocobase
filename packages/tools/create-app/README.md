@@ -8,7 +8,11 @@ pnpm create @nocobase/app crm
 
 `pnpm create @nocobase/app` resolves to the `@nocobase/create-app` package and runs it, forwarding every argument after the package name verbatim.
 
-NocoBase packages and templates are published to the public npm registry. `--registry` changes where create-app downloads the template and resolves `@nocobase` dependencies; `NOCOBASE_REGISTRY` supplies the same override for a private registry or an unreleased local snapshot. Third-party dependencies keep the package manager's configured default registry; do not set `npm_config_registry` to a NocoBase-only private registry. A generated project's `.npmrc` records a non-public registry for the `@nocobase` scope and omits the override when public npm is used.
+Registry selection follows your npm/pnpm configuration. Set `NOCOBASE_REGISTRY` or `--nocobase-registry` to override the registry for **`@nocobase/*` only**. Precedence is `--nocobase-registry` > deprecated `--registry` > `NOCOBASE_REGISTRY` > existing package-manager configuration. Third-party templates and dependencies keep their configured registries. The deprecated `--registry` remains accepted with a migration warning (also included in JSON `warnings`). It retains the legacy template-download override, including third-party templates, and the generated `@nocobase` scope setting. Use `--nocobase-registry` or `NOCOBASE_REGISTRY` for NocoBase packages; configure npm/pnpm for third-party templates. If both flags are supplied, `--registry` is ignored.
+
+An explicit override is recorded as `@nocobase:registry` in the generated `.npmrc`, including when it points to public npm or the template is local. Without an override, no registry entry is written. Credentials are never copied. A project-level `.npmrc` used to fetch the template is not copied to the new application; use a user-level configuration or an explicit override when that registry must also be available there.
+
+`NOCOBASE_REGISTRY` is read by create-app after it starts. It does not control the outer `pnpm create` download of `@nocobase/create-app`; configure pnpm's `@nocobase` scope for that step. npm/pnpm's own `--registry` option remains a general registry setting, such as in `pnpm login --registry=...`.
 
 ## About dist-tags
 
@@ -41,18 +45,18 @@ pnpm create @nocobase/app
 
 ## Flags
 
-| Flag             | Description                                                                              |
-| ---------------- | ---------------------------------------------------------------------------------------- |
-| `[directory]`    | Application directory, relative to the current one. Prompted for when omitted            |
-| `--json`         | Non-interactive mode; requires a directory and prints one final JSON result              |
-| `--no-install`   | Skip installing dependencies after scaffolding                                           |
-| `--template`     | Template, `default` by default. Also accepts a published package or a local package path |
-| `--template-tag` | Channel a named template is fetched from: `latest` (default) or `beta`                   |
-| `--registry`     | Registry the template is downloaded from, `https://registry.npmjs.org` by default        |
-| `-h, --help`     | Show help                                                                                |
-| `--version`      | Show the version                                                                         |
+| Flag                  | Description                                                                              |
+| --------------------- | ---------------------------------------------------------------------------------------- |
+| `[directory]`         | Application directory, relative to the current one. Prompted for when omitted            |
+| `--json`              | Non-interactive mode; requires a directory and prints one final JSON result              |
+| `--no-install`        | Skip installing dependencies after scaffolding                                           |
+| `--template`          | Template, `default` by default. Also accepts a published package or a local package path |
+| `--template-tag`      | Channel a named template is fetched from: `latest` (default) or `beta`                   |
+| `--nocobase-registry` | Override the registry for `@nocobase/*`; takes precedence over `NOCOBASE_REGISTRY`       |
+| `-h, --help`          | Show help                                                                                |
+| `--version`           | Show the version                                                                         |
 
-`--template` supports `default` (the default application), `examples` (the example application), and `multi-portal` (one application with multiple business entry points), each pointing at the corresponding `@nocobase/app-template-*` package. The multi-portal template is a commercial Pro package; it is not bundled with this open-source creation tool.
+The open-source `default` and `examples` aliases select their respective template packages. The commercial `multi-app`, `sub-app` and `multi-portal` aliases enable capabilities in Enterprise. Use a registry account with access to Enterprise and its plugins. When the selected Enterprise channel predates a capability, create-app uses its original scenario package on the same channel.
 
 ```bash
 pnpm create @nocobase/app crm --template=default   # the default, can be omitted
@@ -79,11 +83,38 @@ For the commercial multi-portal template, first log in to the private registry w
 ```bash
 pnpm login --registry=https://pkg-v3.nocobase.com/ --scope=@nocobase
 npm whoami --registry=https://pkg-v3.nocobase.com/
-npm view @nocobase/app-template-multi-portal@beta version --registry=https://pkg-v3.nocobase.com/
+npm view @nocobase/app-template-enterprise@beta version --registry=https://pkg-v3.nocobase.com/
 NOCOBASE_REGISTRY=https://pkg-v3.nocobase.com/ pnpm create @nocobase/app@beta crm --template=multi-portal --template-tag=beta
 ```
 
-The alias follows `--template-tag` like Default and Examples. Registry selection remains explicit: use `--registry` or `NOCOBASE_REGISTRY`; the alias does not change global npm configuration. The generated project records the selected registry for `@nocobase` packages without copying credentials. A successful login does not prove access to the template or that the selected channel has been released: verify the package with `npm view` before creating the project. If the installed create-app predates this alias, use `--template=@nocobase/app-template-multi-portal@beta` with the same registry instead. Do not substitute Default when the commercial package is unavailable.
+The alias follows `--template-tag` like Default and Examples. Registry selection follows your configured `@nocobase` scope, or an explicit `NOCOBASE_REGISTRY` / `--nocobase-registry` override; the alias does not change global npm configuration. The generated project records the selected registry for `@nocobase` packages without copying credentials. A successful login does not prove access to the template or that the selected channel has been released: verify the package with `npm view` before creating the project. If the installed create-app predates this alias, use `--template=@nocobase/app-template-multi-portal@beta` with the same registry instead. Do not substitute Default when the commercial package is unavailable.
+
+### Multi-app applications
+
+The `multi-app` alias enables Main hosting and application access in Enterprise. It creates one Main application. Select the authorized registry explicitly and verify that the selected template version is available:
+
+```bash
+NOCOBASE_REGISTRY=https://pkg-v3.nocobase.com/ pnpm create @nocobase/app@beta platform --template multi-app --template-tag beta
+cd platform
+pnpm nocobase config init --dialect sqlite
+pnpm nocobase config check
+```
+
+After creation, use the installed `nocobase-app-plugin-multi-app` Skill for multi-app development and deployment. Each create-app invocation creates one application.
+
+### Child applications
+
+The `sub-app` alias creates an independent Enterprise application with platform SSO that Main can deploy. It preinstalls the `deploy` CLI extension as a development dependency. Use the same registry login as above and verify the package before creating the project:
+
+```bash
+npm view @nocobase/app-template-enterprise@beta version --registry=https://pkg-v3.nocobase.com/
+NOCOBASE_REGISTRY=https://pkg-v3.nocobase.com/ pnpm create @nocobase/app@beta child-app --template sub-app --template-tag beta
+cd child-app
+pnpm nocobase config init --dialect sqlite
+pnpm nocobase deploy init
+```
+
+Give each child its own database, separate from Main's. Do not substitute Default when the commercial package is unavailable.
 
 Dependencies are installed automatically; `--no-install` skips that. Generated `pnpm-workspace.yaml` defaults to `verifyDepsBeforeRun: false`, so `pnpm dev`, `pnpm build`, and `pnpm start` do not implicitly install dependencies. Run `pnpm install` explicitly after changing dependencies, or before starting an app created with `--no-install`. An explicit template setting is preserved. Existing applications can add `verifyDepsBeforeRun: false` to their own `pnpm-workspace.yaml`.
 
@@ -92,7 +123,7 @@ Dependencies are installed automatically; `--no-install` skips that. Generated `
 The template is downloaded (`@nocobase/app-template-default@latest` by default) and, on top of it:
 
 - `package.json` is rewritten: the application's own name and display name, publish metadata dropped so it cannot be released by accident, and `packageManager` pinned to a pnpm that reads `allowBuilds`
-- `.npmrc` records the registry the template came from, scoped to `@nocobase`, so later installs in the project resolve NocoBase packages from the same place; it is omitted for the public npm
+- `.npmrc` records an explicitly selected `@nocobase` registry for later installs, without changing the default registry or copying credentials; no registry entry is written when no override was supplied
 - `.gitignore` is written when the template ships none, so the `config.yml` that `config init` later writes cannot be committed
 - `pnpm-workspace.yaml` gets its `allowBuilds` decisions (see below)
 - Dependencies are installed (skip with `--no-install`)
@@ -104,26 +135,24 @@ Creation stops at a project that can be configured, not at one that can run. The
 
 ```bash
 cd crm
-pnpm nocobase config init
+pnpm nocobase config init --dialect sqlite
 pnpm nocobase config check
 pnpm dev
 ```
 
 `config init` writes `config.yml` from the template's `config.example.yml`, keeping its comments, and generates the first key of `secrets.keys`. It is part of the application rather than of this command, so it is also how an application is configured on a server. Run again on a configured application it leaves the file alone and reports it unchanged.
 
-The templates depend on `@nocobase/db-sqlite`, which is the dialect their own `server/config/database.ts` defaults to, so a new application is ready to configure without installing anything. Another database means installing its driver first, because which dialects an application can run on is decided by what it depends on, and then filling in the connection:
+Default preinstalls SQLite, PostgreSQL, MySQL, SQL Server and Oracle in `devDependencies`. During first configuration the application CLI moves the selected driver to `dependencies` and updates the lockfile. To select PostgreSQL:
 
 ```bash
 cd crm
-pnpm add @nocobase/db-postgres
-pnpm remove @nocobase/db-sqlite   # optional, if nothing else uses SQLite
 pnpm nocobase config init --dialect postgres
 pnpm nocobase config set database.connections.main.host=db.internal database.connections.main.username=crm
 pnpm nocobase config set --from-env database.connections.main.password=CRM_DB_PASSWORD
 pnpm nocobase config check
 ```
 
-`config init` installs nothing. A dialect whose driver is absent is reported with the `pnpm add` that supplies it, pinned to the range the installed runtime accepts, and nothing is written — so the command can simply be run again once the driver is there. It writes placeholder connection settings for anything but SQLite and lists them as `requiredSettings`; on a terminal it asks for them instead, reading the password without echo, and tries the connection before writing. Other connections are left exactly as the template declared them, including the Examples template's additional SQLite databases.
+A dialect whose driver is absent is reported with the `pnpm add` that supplies it, pinned to the range the installed runtime accepts, and nothing is written — so the command can simply be run again once the driver is there. It writes placeholder connection settings for anything but SQLite and lists them as `requiredSettings`; on a terminal it asks for them instead, reading the password without echo, and tries the connection before writing. Other connections are left exactly as the template declared them, including the Examples template's additional SQLite databases.
 
 `config set` keeps the file's comments, refuses a section the application does not know, and with `--from-env` reads a value from an environment variable so a secret never reaches the shell history. `config check` loads the configuration the way a start would and connects to every database but SQLite; it reports a driver that is missing, a secret that is missing or still the placeholder, a section nothing reads, and a `${NAME}` that would be used as literal text.
 
@@ -144,9 +173,9 @@ JSON mode never prompts. It writes one final JSON document to stdout and progres
 | `DRIVER_VERIFICATION_FAILED` | `verify`        | The database driver's native addon did not load, even after a rebuild.                 |
 | `NODE_UNSUPPORTED`           |                 | Node.js is older than 24; nothing ran.                                                 |
 
-`result.nextCommands` is the whole remaining procedure in order, so an agent can run it as written rather than reconstructing it from prose. It always begins with `pnpm nocobase config init` and `pnpm nocobase config check`, preceded by `pnpm install` after `--no-install`, and ends with `pnpm dev`. `config init --json` returns the rest the same way: `result.nextCommands`, and `result.requiredSettings` for a database whose connection still has to be filled in.
+`result.nextCommands` is the whole remaining procedure in order, so an agent can run it as written rather than reconstructing it from prose. For templates declaring SQLite in either dependency section it lists `pnpm nocobase config init --dialect sqlite`, `pnpm nocobase config check` and `pnpm dev`, preceded by `pnpm install` after `--no-install`. `config init --json` returns the rest the same way: `result.nextCommands`, and `result.requiredSettings` for a database whose connection still has to be filled in.
 
-Success exits with 0, invalid input with 2, and operational failures with 1. An install failure preserves generated files, and its suggestion is the `pnpm --dir <directory> install` that retries it in the existing directory from wherever it is run. `configured` is always `false`: creation writes no configuration, and nothing here verifies a database connection. The CLI never starts the application itself.
+Success exits with 0, invalid input with 2, and operational failures with 1. An install failure preserves generated files, and its suggestion is the `pnpm --dir=<directory> install` that retries it in the existing directory from wherever it is run. `configured` is always `false`: creation writes no configuration, and nothing here verifies a database connection. The CLI never starts the application itself.
 
 ## About native install scripts
 

@@ -40,7 +40,10 @@ import { PageContainer } from '../components/page-container.js';
 import { PageHeader } from '../components/page-header.js';
 import { RefreshButton } from '../components/refresh-button.js';
 import { PageTabs, type PageTab } from '../components/page-tabs.js';
-import { EnvironmentBadges } from '../components/release-badges.js';
+import {
+  AppStateBadge,
+  EnvironmentBadges,
+} from '../components/release-badges.js';
 import { RuntimeStateBadge } from '../components/runtime-state.js';
 import { Tag } from '../components/tag.js';
 import { Section } from '../components/section.js';
@@ -509,19 +512,15 @@ function EnvironmentApps({
       meta: { className: 'w-56' },
       cell: ({ row }) => {
         const request = pendingApps.get(row.original.app.id);
-        const deployment = row.original.hasPendingDeployment
-          ? (row.original.pendingDeployment?.status ?? 'deploying')
-          : null;
         return (
           <span className='inline-flex flex-wrap items-center gap-1.5'>
-            <RuntimeStateBadge runtime={row.original.runtime} />
-            {deployment ? (
-              <Tag tone={deployment === 'cancelling' ? 'amber' : 'blue'}>
-                {deployment === 'deploying'
-                  ? t('ui.state.deploying')
-                  : t(`ui.deployments.statuses.${deployment}`)}
-              </Tag>
-            ) : null}
+            {/* One state per App: a pending deployment's, with the runtime's last failure as its detail; else the
+                runtime's, which the state filter reads, with what holds or refuses it on hover. */}
+            {row.original.hasPendingDeployment ? (
+              <AppStateBadge summary={row.original} />
+            ) : (
+              <RuntimeStateBadge runtime={row.original.runtime} />
+            )}
             {request ? (
               <span
                 className='inline-flex'

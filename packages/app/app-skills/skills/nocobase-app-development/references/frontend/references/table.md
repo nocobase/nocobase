@@ -108,9 +108,9 @@ An ordinary business list shows one card per record below the `md` breakpoint (g
 />
 ```
 
-- The card is `rounded-lg border p-4`: the record's name link first (T1.3) with its status `Badge` beside it (T1.4), then two or three key fields as a small label–value list, and the row's "…" menu at the end with `size='icon'`. The complete card is `ProjectCard` in [`example/list-page.md`](example/list-page.md). Do not repeat every column; the detail holds the rest.
+- The card is `rounded-lg border p-4`: the record's name link first (T1.3) with its status `Badge` beside it (T1.4), then two or three key fields as a small label–value list, and the row's "⋮" menu (`card.actions`) at the end. The complete card is `ProjectCard` in [`example/list-page.md`](example/list-page.md). Do not repeat every column; the detail holds the rest.
 - With `getColumnLabel`, phone cards get an icon "Sort" menu on the search row (`DataTableSortMenu`), offering every sortable column in both directions under the translated names the headers show, and driving the same sorting state as the headers. Spread `useTableUrlState` into `DataTable`, as above: it passes `sortableColumns`, so only the URL's `sortColumns` are sortable, in the headers and the menu (M4.4). A controlled `onSortingChange` writes the URL and resets the page as a header click does. A dot on the icon marks an applied sort; from `md` up the headers sort and the menu is gone. Render `DataTableSortMenu` yourself only for a list outside `DataTable`.
-- The card's menu repeats the row's actions (M3.1), and `DataTable` provides it: `renderCard` receives the cell of the actions column (id `actions`, or `actionsColumnId`) as `card.actions`, already at a 32px tap size. Place it in the card's layout (`ProjectCard` in the example puts it after the name); a card that leaves it out still gets it in its top-right corner. Never write a second, different action control into the card, such as an inline Edit button beside a row's "…" menu. A list without row actions names its case (a), (b) or (c) of M3.1 in the design or report; the customer list of the [executable relation and batch example](executable-relation-batch.md) is case (c).
+- The card's menu repeats the row's actions (M3.1), and `DataTable` provides it: `renderCard` receives the cell of the actions column (id `actions`, or `actionsColumnId`) as `card.actions`, already at a 32px tap size. Place it in the card's layout (`ProjectCard` in the example puts it after the name); a card that leaves it out still gets it in its top-right corner. Never write a second, different action control into the card, such as an inline Edit button beside a row's "⋮" menu. A list without row actions names its case (a), (b) or (c) of M3.1 in the design or report; the customer list of the [executable relation and batch example](executable-relation-batch.md) is case (c).
 - With selection, render a `Checkbox` in the card with the same `aria-label` as the selection column, from `row.getIsSelected()` and `row.toggleSelected`; bulk actions stay in `toolbar`. Give the selection column the id `select` (or pass its id as `selectionColumnId`): `DataTable` then renders its header, the page's select-all checkbox with its indeterminate state, above the cards with the visible label "Select all on this page", which is also a tap target for it. The checkbox keeps its own `aria-label` ("Select all on this page"), which is its whole accessible name there: the visible text is hidden from assistive technology so the name is not read twice (M3.2).
 - Keep a table on phones only for rows compared across columns (M3.4): omit `renderCard`, and the table scrolls sideways inside its own frame.
 
@@ -204,11 +204,45 @@ The shared component provides accessible English and Chinese text. A business-sp
 
   - A `Badge` or other styled content goes in a `Popover` that opens on hover (`openOnHover delay={0}` on the trigger) instead: the tooltip surface is inverted, so a badge on it is unreadable.
   - `truncate` shows the ellipsis only on a block element. On a flex element such as `Badge` it clips without one, and the centered text loses both ends, so put the text in a `<span className='truncate'>` inside the badge and give the badge `min-w-0 shrink`. Do not use `line-clamp` in a cell: it needs text that wraps, which the cell prevents, so it only clips.
-- **Put row actions in a "More" menu** (guideline T1.5):
-  - The trigger is a ghost button with `size='icon-sm'` whose `aria-label` names the record; a button that opens a menu needs no tooltip (guideline A1).
-  - "Edit" is a child route, so the menu item renders as a link: pass ``<Link to={{ pathname: `edit/${id}`, search: location.search }} />`` to `render` on `DropdownMenuItem`. `edit/:projectId` is the list's own edit route, so the dialog opens alone over the list and closing returns to it; the drawer's "Edit" uses the route stacked on the drawer instead ([section 2.1 of `overlay.md`](overlay.md#21-declare-the-child-routes)).
-  - "Delete" uses `variant='destructive'`, comes last, is separated by a `DropdownMenuSeparator`, and opens the delete confirmation dialog when clicked.
-  - Menu items are verbs only ("Edit", "Delete"); the row they are in determines the object (guideline C3).
+- **Put row actions in the row's "⋮" menu with `RowActions`** (guideline T1.5). `#components/row-actions` ships with both templates; it renders the same trigger, menu, ordering and empty case on every page, so do not compose a `DropdownMenu`, buttons or links in the actions cell yourself:
+
+  ```tsx
+  {
+    id: 'actions',
+    enableHiding: false,
+    // No visible header text; the name stays for screen readers.
+    header: () => <span className='sr-only'>{t('projects.actions.label')}</span>,
+    cell: ({ row }) => (
+      <RowActions
+        label={t('projects.actions.more', { name: row.original.name })}
+        actions={[
+          canUpdate && {
+            key: 'edit',
+            label: t('projects.actions.edit'),
+            render: <Link to={{ pathname: `edit/${encodeURIComponent(row.original.id)}`, search: location.search }} />,
+          },
+          canDelete && {
+            key: 'delete',
+            label: t('projects.actions.delete'),
+            destructive: true,
+            onClick: () => setDeletion({ open: true, project: row.original }),
+          },
+        ]}
+      />
+    ),
+  }
+  ```
+
+  - `label` is the trigger's `aria-label` and names the record ("Actions for Apollo", "Apollo 的操作"); a button that opens a menu needs no tooltip (guideline A1).
+  - `actions` is the stable order of the items. Leave out an item the viewer may not do (`canX && { … }`); when none is left, `RowActions` renders nothing, so no empty menu or trigger appears. A state-dependent item (Start for a stopped instance, Open for an installed module, Enable for a disabled account) is chosen in this array: the entry looks the same in every state. Use `disabled` only for an item that is temporarily unavailable, such as while it runs.
+  - "Edit" is a child route, so its item renders as a link through `render`: `edit/:projectId` is the list's own edit route, so the dialog opens alone over the list and closing returns to it; the drawer's "Edit" uses the route stacked on the drawer instead ([section 2.1 of `overlay.md`](overlay.md#21-declare-the-child-routes)). An external link uses `render={<a href={url} target='_blank' rel='noreferrer' />}`.
+  - An item that does something on the server (Install, Start, Disable, Revoke sessions) opens its confirmation when it has consequences, shows its progress in that dialog or in the record's status, and ends in a result toast or an error, as it would from a button; the menu itself closes at once. Keep the existing permission checks, confirmations and feedback when moving such actions into the menu.
+  - `destructive: true` items ("Delete") come last, after a separator, in the destructive style, and open the delete confirmation.
+  - Items are verbs only ("Edit", "Delete"); the row they are in determines the object (guideline C3). The menu items carry no icons, so every page's menu reads the same.
+  - Clicks on the trigger and the items do not reach the row, so a row with `onRowClick` neither navigates nor toggles selection when its menu is used.
+  - The column has no visible header text, no fixed width and no `sticky`, `fixed` or right pinning: the trigger keeps it narrow, and it scrolls with the table. Pin it only for a wide table whose actions would otherwise be out of reach after scrolling sideways, and record why.
+  - `exposed={['start']}` shows the named actions as ghost buttons before the "⋮", the same on every row, while the rest stay in the menu. Use it only when the user asked for that action outside the menu or a confirmed page design shows it; never because the action is frequent or "primary".
+
 - The delete confirmation dialog is `ProjectDeleteDialog`, driven by `deletion` state as [section 4 of `overlay.md`](overlay.md#4-delete-confirmation-alertdialog) describes; after a successful delete, refresh the list and move focus to the search box (`deletedFocusRef`).
 
 ### Selection and bulk actions

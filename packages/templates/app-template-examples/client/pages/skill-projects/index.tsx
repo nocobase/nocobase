@@ -13,6 +13,7 @@ import { projectsScope } from './scopes.js';
 import { PageContainer } from '#components/page-container';
 import { PageHeader } from '#components/page-header';
 import { RecordLink } from '#components/record-link';
+import { RowActions } from '#components/row-actions';
 import { Alert, AlertDescription } from '#components/ui/alert';
 import {
   Table,
@@ -126,22 +127,28 @@ export default function SkillProjectsPage(): ReactElement {
       },
       {
         id: 'actions',
-        header: t('skillProjects.actions'),
+        // The actions column keeps a name for screen readers and shows no header text (T1.5).
+        header: () => (
+          <span className='sr-only'>{t('skillProjects.actions')}</span>
+        ),
         cell: ({ row }) => (
-          <Button
-            variant='ghost'
-            render={
-              <Link
-                to={{
-                  pathname: `${row.original.id}/edit`,
-                  search: location.search,
-                }}
-              />
-            }
-            nativeButton={false}
-          >
-            {t('skillProjects.editAction')}
-          </Button>
+          <RowActions
+            label={t('skillProjects.actionsFor', { name: row.original.name })}
+            actions={[
+              {
+                key: 'edit',
+                label: t('skillProjects.editAction'),
+                render: (
+                  <Link
+                    to={{
+                      pathname: `${row.original.id}/edit`,
+                      search: location.search,
+                    }}
+                  />
+                ),
+              },
+            ]}
+          />
         ),
       },
     ],
@@ -224,7 +231,9 @@ export default function SkillProjectsPage(): ReactElement {
             <TableHeader>
               <TableRow>
                 <TableHead>{t('skillProjects.name')}</TableHead>
-                <TableHead>{t('skillProjects.actions')}</TableHead>
+                <TableHead>
+                  <span className='sr-only'>{t('skillProjects.actions')}</span>
+                </TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -234,7 +243,7 @@ export default function SkillProjectsPage(): ReactElement {
                     <Skeleton className='h-4 w-40' />
                   </TableCell>
                   <TableCell>
-                    <Skeleton className='h-8 w-16' />
+                    <Skeleton className='ml-auto size-7' />
                   </TableCell>
                 </TableRow>
               ))}
@@ -281,7 +290,7 @@ export default function SkillProjectsPage(): ReactElement {
             showSelectedCount={false}
             emptyMessage={t('skillProjects.empty')}
             // Phones show one card per project (mobile.md M3): the name opens its detail, and the row's own actions
-            // cell (Edit) follows it, so the card offers what the row does.
+            // cell (the "⋮" menu with Edit) follows it, so the card offers what the row does.
             renderCard={(row, card) => (
               <div className='flex items-center gap-2 rounded-lg border p-4'>
                 <RecordLink

@@ -1,32 +1,44 @@
 name: V3 Studio Release
 run-name: studio-release:${{ inputs.channel }}${{ inputs.dry_run && ' (dry run)' || '' }}
 
-# Release NocoBase Studio's ordinary and EE images from the private nocobase/studio repository to the private registry
-# pkg-v3.nocobase.com/nocobase/studio and nocobase/studio-ee, for linux/amd64 and linux/arm64. The released version is the `version` of Studio's
+# Release NocoBase Studio's community, professional and EE images from the private nocobase/studio repository to the private registry
+# pkg-v3.nocobase.com/nocobase/studio-ce, nocobase/studio and nocobase/studio-ee, for linux/amd64 and linux/arm64. The released version is the `version` of Studio's
 # root package.json, as it is: unlike nocobase-ci's internal studio-image.yml, nothing is stamped with a dev version.
 #
 # - channel=beta releases studio's `dev` branch and channel=latest its `main` branch. The bump below goes back to the
 #   same branch.
-# - Before anything is built, the run stops when either edition's version already exists in the registry or studio
+# - Before anything is built, the run stops when any edition's version already exists in the registry or studio
 #   already has the git tag `v<version>`. The registry gates customers by the time a digest was first pushed, so pushing
 #   a version again would move its tag to a new digest that customers whose updates expired could no longer pull.
-# - Each edition/platform pair builds its own dist/ and pushes its image by digest; one job then tags both under a multi-platform
+# - Each edition/platform pair builds its own dist/ and pushes its image by digest; one job then tags all three under a multi-platform
 #   manifest (see "Name the tags" for which tags), studio is tagged `v<version>` on the commit that was built, and the
 #   versions of package.json and packages/studio-cli/package.json are bumped to the next version (1.0.0-beta.58 ->
 #   1.0.0-beta.59, 1.0.0 -> 1.0.1) through a squashed pull request into the source branch.
 # - Once the tag is pushed, Studio's own scripts/release/release-notes.mjs, taken from the released commit, writes the
-#   English and Chinese release notes from the descriptions of the pull requests merged since the previous tag. They
-#   become the GitHub release `v<version>` of nocobase/studio (a prerelease for beta; an existing release is left
-#   alone), go into the job summary with the pull requests whose description the script could not read, and the
-#   Chinese notes go into the success notice. The same script prepends the version to CHANGELOG.md and
-#   CHANGELOG.zh-CN.md, which live on `dev` only: a beta release commits them in its bump pull request to `dev`; a
-#   latest release keeps its bump pull request to `main` version-only and merges them into `dev` through a second
-#   squashed pull request from `release/studio-<version>-changelog`. Notes, changelog and GitHub release are
-#   best-effort: the image and the tag are already published by then, so a failure there (or a released commit older
-#   than the script) warns and is reported in the summary and the notice, but never fails the run. Each image's public
-#   notes (without pull request links and authors, and Studio's without Studio EE-only areas) are also uploaded to the
-#   registry, where the public image pages show them per version; also best-effort.
-# - dry_run resolves, validates and builds both editions on both platforms, but never signs in to the registry for a push, pushes,
+#   release notes in English, Chinese and Japanese from the descriptions of the pull requests merged since the
+#   previous tag, with pull request links but no authors. They become the GitHub release `v<version>` of
+#   nocobase/studio (a prerelease for beta; an existing release is left alone), go into the job summary with the pull
+#   requests whose description the script could not read, and the Chinese notes go into the success notice. The same
+#   script prepends the version to CHANGELOG.md, CHANGELOG.zh-CN.md and CHANGELOG.ja-JP.md (released commits older
+#   than Japanese support write the first two only), which live on `dev` only: a beta release commits them in its bump
+#   pull request to `dev`; a latest release keeps its bump pull request to `main` version-only and merges them into
+#   `dev` through a second squashed pull request from `release/studio-<version>-changelog`. Notes, changelog and
+#   GitHub release are best-effort: the image and the tag are already published by then, so a failure there (or a
+#   released commit older than the script) warns and is reported in the summary and the notice, but never fails the
+#   run. Each image's public notes (without pull request links and authors, and Studio's without Studio EE-only areas)
+#   are also uploaded to the registry, where the public image pages show them per version, with the Japanese notes
+#   when the script wrote them; also best-effort. The script's website notes (every change across the three images,
+#   paid-only modules marked with an edition) are committed to nocobase/website-v3 as the Studio entry of
+#   https://www.nocobase.com/changelog/ by scripts/studio-website-changelog.mjs; best-effort as well.
+# - Once Studio CE is on both public registries, a release that moves studio-ce's `latest` tag also uploads the
+#   one-command installer of the released commit to https://get.nocobase.com/studio, whose default image is
+#   `nocobase/studio-ce:latest`, by calling v3-studio-installer.yml (the `installer` job). It is best-effort too, in a
+#   job of its own that `release` does not wait for: its failure never holds back or undoes the images, the tag, the
+#   notes or the bump, and is posted to Feishu on its own. It does not run in a dry run or for a release that leaves
+#   studio-ce's `latest` alone, which prepare's summary says; a released commit without scripts/get-studio skips with a
+#   notice, and an upload configuration that is not complete (the GET_STUDIO_OSS_* secrets) skips with a warning in
+#   the summary, neither failing the run.
+# - dry_run resolves, validates and builds all three editions on both platforms, but never signs in to the registry for a push, pushes,
 #   tags, pushes a branch, opens a pull request, creates a GitHub release or notifies. With DOCKER_PUBLISH_TOKEN
 #   configured it also runs the read-only registry checks, so the tag decision can be previewed. It writes no release
 #   notes: they are only ever generated by the release job, which a dry run skips.
@@ -36,9 +48,17 @@ run-name: studio-release:${{ inputs.channel }}${{ inputs.dry_run && ' (dry run)'
 # - After a partial publication, use Re-run failed jobs on this run. Successful prepare/build jobs retain their
 #   original outputs/artifacts. Matching version digests are skipped; a conflict or moved alias stops the retry.
 #   A new run or Re-run all jobs must not be used to reconstruct a partially published version.
+# - A failed installer upload is retried the same way: Re-run failed jobs reruns only `installer` (and its notice),
+#   with the commit prepare resolved. Not once a newer release has uploaded its own installer, which the rerun would
+#   replace with this older one; dispatch V3 Studio Installer instead to upload a fixed one.
 #
 # Secrets: DOCKER_PUBLISH_TOKEN (the registry's PUBLISH_TOKEN), NOCOBASE_APP_PRIVATE_KEY with vars.NOCOBASE_APP_ID (the
-# NocoBase GitHub App, installed on nocobase/studio) and RELEASE_RESULT_FEISHU_WEBHOOK_URL.
+# NocoBase GitHub App, installed on nocobase/studio), PRO_NPM_TOKEN (read access to pkg-v3's npm packages),
+# ALI_DOCKER_USERNAME and ALI_DOCKER_PASSWORD, DOCKERHUB_USERNAME and DOCKERHUB_TOKEN (the public CE registries),
+# RELEASE_RESULT_FEISHU_WEBHOOK_URL, and for the installer upload, which the `installer` job passes on with
+# `secrets: inherit`, GET_STUDIO_OSS_BUCKET, GET_STUDIO_OSS_REGION, the optional GET_STUDIO_OSS_ENDPOINT and
+# GET_STUDIO_OSS_KEY, DOCS_ALI_OSS_ACCESS_KEY_ID and DOCS_ALI_OSS_ACCESS_KEY_SECRET (described in
+# v3-studio-installer.yml).
 
 on:
   workflow_dispatch:
@@ -73,6 +93,7 @@ env:
   REGISTRY: pkg-v3.nocobase.com
   IMAGE_REPOSITORY: nocobase/studio
   EE_IMAGE_REPOSITORY: nocobase/studio-ee
+  CE_IMAGE_REPOSITORY: nocobase/studio-ce
 
 jobs:
   prepare:
@@ -89,13 +110,19 @@ jobs:
       latest_reason: ${{ steps.tags.outputs.latest_reason }}
       ee_tags: ${{ steps.tags.outputs.ee_tags }}
       ee_latest_reason: ${{ steps.tags.outputs.ee_latest_reason }}
+      ce_tags: ${{ steps.tags.outputs.ce_tags }}
+      ce_latest_reason: ${{ steps.tags.outputs.ce_latest_reason }}
       image_plan: ${{ steps.tags.outputs.image_plan }}
+      installer_upload: ${{ steps.installer.outputs.upload }}
+      installer_reason: ${{ steps.installer.outputs.reason }}
     steps:
       - name: Check out release tooling
         uses: actions/checkout@v4
         with:
           ref: ${{ github.sha }}
-          sparse-checkout: scripts
+          sparse-checkout: |
+            scripts
+            .github/workflows
           persist-credentials: false
 
       - name: Set up Node.js
@@ -104,9 +131,9 @@ jobs:
           node-version: 24
 
       - name: Check image publication rules
-        run: node --test scripts/tests/studio-release-images.test.mjs
+        run: node --test scripts/tests/studio-release-images.test.mjs scripts/tests/studio-release-ce.test.mjs
 
-      # Without the publish token a real release could only fail at the push, after all four builds. A dry run goes on and
+      # Without the publish token a real release could only fail at the push, after all six builds. A dry run goes on and
       # skips the registry checks.
       - name: Check the registry publish token
         id: publish_token
@@ -262,6 +289,33 @@ jobs:
           COMMIT: ${{ steps.source.outputs.commit }}
         run: node scripts/studio-release-images.mjs prepare
 
+      # The installer pulls `nocobase/studio-ce:latest`, so it follows that tag: it is uploaded only by a release that
+      # moves it, which channel=latest always does and beta does while latest has no stable version (the tags step
+      # above). Decided here, where a job condition can read it, and said in the summary either way.
+      - name: Decide the installer upload
+        id: installer
+        env:
+          DRY_RUN: ${{ inputs.dry_run }}
+          CE_TAGS: ${{ steps.tags.outputs.ce_tags }}
+        run: |
+          moves=false
+          if grep -qxF latest <<< "$CE_TAGS"; then moves=true; fi
+          upload=false
+          if [ "$DRY_RUN" = "true" ]; then
+            reason="not uploaded in a dry run"
+            if [ "$moves" = "true" ]; then reason="${reason} (a release would upload it: it moves studio-ce:latest)"; fi
+          elif [ "$moves" != "true" ]; then
+            reason="not uploaded: this release leaves studio-ce:latest alone"
+          else
+            upload=true
+            reason="uploaded by the installer job once Studio CE is public, since this release moves studio-ce:latest (skipped with a warning while the GET_STUDIO_OSS_* secrets are not configured)"
+          fi
+          {
+            echo "upload=${upload}"
+            echo "reason=${reason}"
+          } >> "$GITHUB_OUTPUT"
+          echo "Installer: ${reason}"
+
       - name: Summary
         env:
           CHANNEL: ${{ inputs.channel }}
@@ -273,7 +327,10 @@ jobs:
           TAGS: ${{ steps.tags.outputs.tags }}
           LATEST_REASON: ${{ steps.tags.outputs.latest_reason }}
           EE_TAGS: ${{ steps.tags.outputs.ee_tags }}
+          CE_TAGS: ${{ steps.tags.outputs.ce_tags }}
           EE_LATEST_REASON: ${{ steps.tags.outputs.ee_latest_reason }}
+          CE_LATEST_REASON: ${{ steps.tags.outputs.ce_latest_reason }}
+          INSTALLER_REASON: ${{ steps.installer.outputs.reason }}
         run: |
           {
             if [ "$DRY_RUN" = "true" ]; then
@@ -290,6 +347,8 @@ jobs:
             echo "| Next version | \`${NEXT}\` |"
             echo "| Studio latest | ${LATEST_REASON} |"
             echo "| Studio EE latest | ${EE_LATEST_REASON} |"
+            echo "| Studio CE latest | ${CE_LATEST_REASON} |"
+            echo "| Installer | ${INSTALLER_REASON} |"
             echo
             echo 'Tags to push:'
             echo
@@ -299,6 +358,12 @@ jobs:
             while IFS= read -r tag; do
               if [ -n "$tag" ]; then echo "- \`${REGISTRY}/${EE_IMAGE_REPOSITORY}:${tag}\`"; fi
             done <<< "$EE_TAGS"
+            while IFS= read -r tag; do
+              [ -n "$tag" ] || continue
+              for registry in "$REGISTRY" registry.cn-shanghai.aliyuncs.com docker.io; do
+                echo "- \`${registry}/${CE_IMAGE_REPOSITORY}:${tag}\`"
+              done
+            done <<< "$CE_TAGS"
           } >> "$GITHUB_STEP_SUMMARY"
 
   # Each edition/platform builds its own dist and pushes by digest; manifest publishes one index per edition.
@@ -312,7 +377,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        edition: [studio, studio-ee]
+        edition: [studio, studio-ee, studio-ce]
         arch: [amd64, arm64]
         include:
           - arch: amd64
@@ -381,9 +446,24 @@ jobs:
           node-version: 24
           cache: pnpm
 
+      - name: Configure private npm read access
+        env:
+          PRO_NPM_TOKEN: ${{ secrets.PRO_NPM_TOKEN }}
+        run: |
+          if [ -z "$PRO_NPM_TOKEN" ]; then
+            echo "::error::PRO_NPM_TOKEN must grant read access to pkg-v3.nocobase.com."
+            exit 1
+          fi
+          umask 077
+          printf '%s\n' \
+            '@nocobase:registry=https://pkg-v3.nocobase.com/' \
+            "//pkg-v3.nocobase.com/:_authToken=$PRO_NPM_TOKEN" \
+            > "$RUNNER_TEMP/studio-npmrc"
+
       # The isolated edition build installs the frozen graph and verifies the final artifact.
       - name: Build edition dist
         env:
+          NPM_CONFIG_USERCONFIG: ${{ runner.temp }}/studio-npmrc
           TMPDIR: ${{ runner.temp }}
           EDITION: ${{ matrix.edition }}
           TARGET: ${{ matrix.target }}
@@ -391,6 +471,10 @@ jobs:
         run: |
           pnpm build:image --edition "$EDITION" --target "$TARGET" \
             --source-ref "$COMMIT" --out "$RUNNER_TEMP/studio-image"
+
+      - name: Remove private npm credentials
+        if: ${{ always() }}
+        run: rm -f "$RUNNER_TEMP/studio-npmrc"
 
       - name: Sign in to the registry
         if: ${{ !inputs.dry_run }}
@@ -456,7 +540,7 @@ jobs:
           retention-days: 30
 
   manifest:
-    name: Publish both edition manifests
+    name: Publish all edition manifests
     needs: [prepare, image]
     if: ${{ !inputs.dry_run }}
     runs-on: ubuntu-latest
@@ -464,6 +548,7 @@ jobs:
     outputs:
       digest: ${{ steps.push.outputs.digest }}
       ee_digest: ${{ steps.push.outputs.ee_digest }}
+      ce_digest: ${{ steps.push.outputs.ce_digest }}
     steps:
       - name: Check out release tooling
         uses: actions/checkout@v4
@@ -494,9 +579,60 @@ jobs:
           DIGESTS: ${{ runner.temp }}/digests
         run: node scripts/studio-release-images.mjs publish
 
+  public-ce:
+    name: Publish Studio CE to ${{ matrix.registry }}
+    needs: [prepare, manifest]
+    if: ${{ !inputs.dry_run }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        registry: [registry.cn-shanghai.aliyuncs.com, docker.io]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          sparse-checkout: scripts
+          persist-credentials: false
+
+      - name: Sign in to the source registry for CE
+        uses: docker/login-action@v3
+        with:
+          registry: pkg-v3.nocobase.com
+          username: ci
+          password: ${{ secrets.DOCKER_PUBLISH_TOKEN }}
+
+      - name: Sign in to the Shanghai public registry
+        if: matrix.registry == 'registry.cn-shanghai.aliyuncs.com'
+        uses: docker/login-action@v3
+        with:
+          registry: registry.cn-shanghai.aliyuncs.com
+          username: ${{ secrets.ALI_DOCKER_USERNAME }}
+          password: ${{ secrets.ALI_DOCKER_PASSWORD }}
+
+      - name: Sign in to Docker Hub
+        if: matrix.registry == 'docker.io'
+        uses: docker/login-action@v3
+        with:
+          registry: docker.io
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Publish Studio CE to the public registries
+        env:
+          IMAGE_PLAN: ${{ needs.prepare.outputs.image_plan }}
+          CE_DIGEST: ${{ needs.manifest.outputs.ce_digest }}
+          DESTINATION: ${{ matrix.registry }}
+        run: |
+          if ! command -v skopeo >/dev/null; then
+            sudo apt-get update && sudo apt-get install -y skopeo
+          fi
+          node scripts/studio-release-ce.mjs
+
   release:
     name: Tag studio and bump its version
-    needs: [prepare, manifest]
+    needs: [prepare, manifest, public-ce]
     if: ${{ !inputs.dry_run }}
     runs-on: ubuntu-latest
     timeout-minutes: 20
@@ -571,9 +707,9 @@ jobs:
       # commit older than the script has no notes. It reads every pull request in `<previous tag>..v<version>` through gh,
       # hence the write token (pull requests read is all it uses). scripts/release is copied out of the checkout because
       # the latest channel runs it again later from a checkout of dev, which may hold a different version of it.
-      # For beta it also prepends the version to CHANGELOG.md and CHANGELOG.zh-CN.md in the working tree, which the bump
-      # commit then carries. Any failure is a warning: a half-written changelog is restored and the release goes on
-      # without notes.
+      # For beta it also prepends the version to CHANGELOG.md, CHANGELOG.zh-CN.md and CHANGELOG.ja-JP.md in the working
+      # tree, which the bump commit then carries. Any failure is a warning: a half-written changelog is restored and the
+      # release goes on without notes.
       - name: Write the release notes
         id: notes
         continue-on-error: true
@@ -597,7 +733,7 @@ jobs:
             else
               echo "::warning::Writing the release notes failed; this release goes on without them."
               rm -rf "$notes"
-              for file in CHANGELOG.md CHANGELOG.zh-CN.md; do
+              for file in CHANGELOG.md CHANGELOG.zh-CN.md CHANGELOG.ja-JP.md; do
                 if git ls-files --error-unmatch -- "$file" > /dev/null 2>&1; then
                   git checkout HEAD -- "$file"
                 else
@@ -606,7 +742,7 @@ jobs:
               done
             fi
           fi
-          if [ "$available" = "true" ] && [ -n "$(git status --porcelain -- CHANGELOG.md CHANGELOG.zh-CN.md)" ]; then
+          if [ "$available" = "true" ] && [ -n "$(git status --porcelain -- CHANGELOG.md CHANGELOG.zh-CN.md CHANGELOG.ja-JP.md)" ]; then
             changelog=true
           fi
           {
@@ -642,7 +778,7 @@ jobs:
           done
           git add package.json packages/studio-cli/package.json
           if [ "$CHANGELOG" = "true" ]; then
-            for file in CHANGELOG.md CHANGELOG.zh-CN.md; do
+            for file in CHANGELOG.md CHANGELOG.zh-CN.md CHANGELOG.ja-JP.md; do
               if [ -e "$file" ]; then git add -- "$file"; fi
             done
           fi
@@ -666,7 +802,7 @@ jobs:
         run: |
           subject="chore: bump studio version to ${NEXT} [skip ci]"
           body="Studio \`${VERSION}\` was released as \`${REGISTRY}/${IMAGE_REPOSITORY}:${VERSION}\` and tagged \`v${VERSION}\`; this moves \`${SOURCE_BRANCH}\` on to \`${NEXT}\`."
-          if [ "$CHANGELOG" = "true" ]; then body="${body} It also adds \`v${VERSION}\` to CHANGELOG.md and CHANGELOG.zh-CN.md."; fi
+          if [ "$CHANGELOG" = "true" ]; then body="${body} It also adds \`v${VERSION}\` to CHANGELOG.md, CHANGELOG.zh-CN.md and CHANGELOG.ja-JP.md."; fi
           pr_url=$(gh pr create -R nocobase/studio \
             --base "$SOURCE_BRANCH" \
             --head "$BUMP_BRANCH" \
@@ -704,7 +840,7 @@ jobs:
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
         run: |
           fail() {
-            echo "::warning::Writing the changelog of v${VERSION} into dev failed: $1. Add it to CHANGELOG.md and CHANGELOG.zh-CN.md on dev by hand."
+            echo "::warning::Writing the changelog of v${VERSION} into dev failed: $1. Add it to CHANGELOG.md, CHANGELOG.zh-CN.md and CHANGELOG.ja-JP.md on dev by hand."
             echo "result=failed" >> "$GITHUB_OUTPUT"
             exit 0
           }
@@ -714,12 +850,12 @@ jobs:
           node "${RUNNER_TEMP}/studio-release-scripts/release-notes.mjs" \
             --tag "v${VERSION}" --channel latest --repo nocobase/studio \
             --out-dir "${RUNNER_TEMP}/notes-dev" --changelog-root . || fail "the release notes script exited non-zero"
-          if [ -z "$(git status --porcelain -- CHANGELOG.md CHANGELOG.zh-CN.md)" ]; then
+          if [ -z "$(git status --porcelain -- CHANGELOG.md CHANGELOG.zh-CN.md CHANGELOG.ja-JP.md)" ]; then
             echo "dev's changelogs already have v${VERSION}."
             echo "result=unchanged" >> "$GITHUB_OUTPUT"
             exit 0
           fi
-          for file in CHANGELOG.md CHANGELOG.zh-CN.md; do
+          for file in CHANGELOG.md CHANGELOG.zh-CN.md CHANGELOG.ja-JP.md; do
             if [ -e "$file" ]; then git add -- "$file"; fi
           done
           git diff --cached --stat
@@ -729,7 +865,7 @@ jobs:
             --base dev \
             --head "$CHANGELOG_BRANCH" \
             --title "$subject" \
-            --body "Adds Studio \`v${VERSION}\`, released from \`main\`, to CHANGELOG.md and CHANGELOG.zh-CN.md. Released by ${RUN_URL}") \
+            --body "Adds Studio \`v${VERSION}\`, released from \`main\`, to CHANGELOG.md, CHANGELOG.zh-CN.md and CHANGELOG.ja-JP.md. Released by ${RUN_URL}") \
             || fail "opening the pull request from ${CHANGELOG_BRANCH}"
           echo "url=${pr_url}" >> "$GITHUB_OUTPUT"
 
@@ -789,10 +925,11 @@ jobs:
 
       # The registry's public image pages (https://pkg-v3.nocobase.com/-/images/nocobase/studio and studio-ee) show each
       # version's release notes, read from PUT /-/release-notes/<repository>/<version>. Customers cannot open the private
-      # nocobase/studio, so each image gets the public notes the script writes for it, release-notes.<image>.<language>.md,
-      # without pull request links and authors; Studio's leave out the scopes Studio's scripts/release/scopes.json marks
-      # Studio EE-only. An upload replaces the version's notes, so a retried run is harmless. A released commit whose script
-      # writes no notes for an image uploads nothing for it. Failure is a warning only.
+      # nocobase/studio, so each image gets the public notes the script writes for it, release-notes.<image>.<language>.md
+      # in English, Chinese and, when the script writes it, Japanese, without pull request links and authors; Studio's
+      # leave out the scopes Studio's scripts/release/scopes.json marks Studio EE-only. An upload replaces the version's
+      # notes, so a retried run is harmless. A released commit whose script writes no notes for an image uploads nothing
+      # for it. Failure is a warning only.
       - name: Upload the release notes to the registry
         id: registry_notes
         continue-on-error: true
@@ -804,7 +941,7 @@ jobs:
           notes="${RUNNER_TEMP}/notes"
           uploaded=0
           missing=0
-          for repository in "$IMAGE_REPOSITORY" "$EE_IMAGE_REPOSITORY"; do
+          for repository in "$IMAGE_REPOSITORY" "$EE_IMAGE_REPOSITORY" "$CE_IMAGE_REPOSITORY"; do
             edition="${repository#*/}"
             en="${notes}/release-notes.${edition}.en.md"
             zh="${notes}/release-notes.${edition}.zh-CN.md"
@@ -814,7 +951,13 @@ jobs:
               continue
             fi
             body="${RUNNER_TEMP}/registry-release-notes.${edition}.json"
-            jq -nc --rawfile en "$en" --rawfile zh "$zh" '{ en: $en, "zh-CN": $zh }' > "$body"
+            # Japanese notes come from released commits whose script writes them; older ones send English and Chinese.
+            ja="${notes}/release-notes.${edition}.ja-JP.md"
+            if [ -s "$ja" ]; then
+              jq -nc --rawfile en "$en" --rawfile zh "$zh" --rawfile ja "$ja" '{ en: $en, "zh-CN": $zh, "ja-JP": $ja }' > "$body"
+            else
+              jq -nc --rawfile en "$en" --rawfile zh "$zh" '{ en: $en, "zh-CN": $zh }' > "$body"
+            fi
             url="https://${REGISTRY}/-/release-notes/${repository}/${VERSION}"
             if curl --fail-with-body --silent --show-error --retry 3 --retry-all-errors --max-time 30 \
               --request PUT \
@@ -829,15 +972,147 @@ jobs:
               echo "::warning::Uploading the release notes of ${repository}:${VERSION} to the registry failed; upload them by hand (PUT ${url})."
             fi
           done
-          if [ "$missing" = "2" ]; then
+          if [ "$missing" = "3" ]; then
             echo "result=skipped" >> "$GITHUB_OUTPUT"
-          elif [ "$uploaded" = "2" ]; then
+          elif [ "$uploaded" = "3" ]; then
             echo "result=uploaded" >> "$GITHUB_OUTPUT"
           elif [ "$uploaded" = "0" ]; then
             echo "result=failed" >> "$GITHUB_OUTPUT"
           else
             echo "result=partial" >> "$GITHUB_OUTPUT"
           fi
+
+      # Studio's script writes release-notes.website.<locale>.md for a release with changes: every change across the
+      # three images, paid-only modules marked with an edition. scripts/studio-website-changelog.mjs of this workflow's
+      # ref turns them into homepage/content/changelog/studio-<version>.md (.zh-CN.md, .ja-JP.md) of nocobase/website-v3,
+      # which www.nocobase.com/changelog/ lists in the same timeline as NocoBase 3. A push to website-v3's main runs its
+      # site.yml, which builds and publishes the site, so the commit message must never suppress CI. A released commit
+      # whose script writes no website notes, or a release with no changes, adds nothing. Requires the NocoBase App to be
+      # installed on nocobase/website-v3 with contents write (v3-github-release.yml uses it the same way). Failure is a
+      # warning only; the summary and the success notice report it.
+      - name: Check for website notes
+        id: website_notes
+        if: ${{ !cancelled() && steps.tag.outputs.tagged == 'true' && steps.notes.outputs.available == 'true' }}
+        run: |
+          if [ -s "${RUNNER_TEMP}/notes/release-notes.website.en.md" ]; then
+            echo "available=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "The released commit's release notes script wrote no website notes; the website gets no entry."
+            echo "available=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Create a website token
+        id: website_token
+        continue-on-error: true
+        if: ${{ !cancelled() && steps.website_notes.outputs.available == 'true' }}
+        uses: actions/create-github-app-token@v2
+        with:
+          app-id: ${{ vars.NOCOBASE_APP_ID }}
+          private-key: ${{ secrets.NOCOBASE_APP_PRIVATE_KEY }}
+          owner: nocobase
+          repositories: website-v3
+          permission-contents: write
+
+      - name: Check out the website changelog script
+        id: website_tooling
+        continue-on-error: true
+        if: ${{ !cancelled() && steps.website_token.outcome == 'success' }}
+        uses: actions/checkout@v4
+        with:
+          path: website-tooling
+          sparse-checkout: scripts
+          persist-credentials: false
+
+      # The App token stays in this checkout's credentials so the next step can push; nothing else uses it.
+      - name: Check out the website
+        id: website
+        continue-on-error: true
+        if: ${{ !cancelled() && steps.website_tooling.outcome == 'success' }}
+        uses: actions/checkout@v4
+        with:
+          repository: nocobase/website-v3
+          ref: main
+          path: website-v3
+          fetch-depth: 1
+          token: ${{ steps.website_token.outputs.token }}
+
+      # Other releases may push to website-v3 at the same time. A rejected push starts again from the new main and
+      # writes the entry afresh rather than rebasing, because the commit only ever adds, replaces or removes this
+      # entry's files; a rewritten entry keeps its date and publishedAt.
+      - name: Publish the changelog to the website
+        id: website_changelog
+        continue-on-error: true
+        if: ${{ !cancelled() && steps.website.outcome == 'success' }}
+        working-directory: website-v3
+        env:
+          VERSION: ${{ needs.prepare.outputs.version }}
+        run: |
+          git config user.name "nocobase[bot]"
+          git config user.email "179432756+nocobase[bot]@users.noreply.github.com"
+          for attempt in 1 2 3 4 5; do
+            if [ "$attempt" -gt 1 ]; then
+              sleep $((attempt * 5))
+              git fetch --depth=1 origin main
+              git reset --hard --quiet FETCH_HEAD
+            fi
+            # Every file of the entry the script wrote, left unchanged or removed: the English file comes first.
+            output=$(node "$GITHUB_WORKSPACE/website-tooling/scripts/studio-website-changelog.mjs" \
+              --version "$VERSION" \
+              --notes-dir "${RUNNER_TEMP}/notes" \
+              --out-dir homepage/content/changelog)
+            mapfile -t files <<< "$output"
+            if [ -z "${files[0]}" ]; then
+              echo "Studio v${VERSION} has no website notes, so the website gets no entry for it."
+              echo "result=skipped" >> "$GITHUB_OUTPUT"
+              exit 0
+            fi
+            if git cat-file -e "HEAD:${files[0]}" 2> /dev/null; then verb=update; else verb=add; fi
+            git add --all -- "${files[@]}"
+            if git diff --cached --quiet; then
+              echo "The website already has the entry for Studio v${VERSION}."
+              echo "result=unchanged" >> "$GITHUB_OUTPUT"
+              exit 0
+            fi
+            git commit --quiet -m "chore(changelog): $verb studio v${VERSION}"
+            if git push origin HEAD:main; then
+              echo "Committed ${files[*]} to nocobase/website-v3 ($verb)."
+              {
+                echo "result=published"
+                echo "url=https://github.com/nocobase/website-v3/commit/$(git rev-parse HEAD)"
+              } >> "$GITHUB_OUTPUT"
+              exit 0
+            fi
+            echo "Push attempt $attempt was rejected; retrying from the new main."
+          done
+          echo "::warning::Could not push the changelog of Studio v${VERSION} to nocobase/website-v3 main after 5 attempts."
+          exit 1
+
+      # Collapses the steps above into one result for the summary and the notice: skipped when there was nothing to
+      # publish, failed when a step that ran did not succeed.
+      - name: Report the website changelog
+        id: website_result
+        if: ${{ !cancelled() && steps.tag.outputs.tagged == 'true' && steps.notes.outputs.available == 'true' }}
+        env:
+          TOKEN: ${{ steps.website_token.outcome }}
+          TOOLING: ${{ steps.website_tooling.outcome }}
+          CHECKOUT: ${{ steps.website.outcome }}
+          COMMIT: ${{ steps.website_changelog.outcome }}
+          RESULT: ${{ steps.website_changelog.outputs.result }}
+          URL: ${{ steps.website_changelog.outputs.url }}
+          VERSION: ${{ needs.prepare.outputs.version }}
+        run: |
+          if [ "$TOKEN" = "skipped" ]; then
+            result=skipped
+          elif [ "$TOKEN" = "failure" ] || [ "$TOOLING" = "failure" ] || [ "$CHECKOUT" = "failure" ] || [ "$COMMIT" = "failure" ]; then
+            result=failed
+            echo "::warning::The changelog of Studio v${VERSION} was not published to the website; add homepage/content/changelog/studio-${VERSION}.md to nocobase/website-v3 by hand (scripts/studio-website-changelog.mjs)."
+          else
+            result="${RESULT:-failed}"
+          fi
+          {
+            echo "result=${result}"
+            echo "url=${URL}"
+          } >> "$GITHUB_OUTPUT"
 
       - name: Summary
         if: ${{ always() }}
@@ -846,7 +1121,9 @@ jobs:
           VERSION: ${{ needs.prepare.outputs.version }}
           DIGEST: ${{ needs.manifest.outputs.digest }}
           EE_DIGEST: ${{ needs.manifest.outputs.ee_digest }}
+          CE_DIGEST: ${{ needs.manifest.outputs.ce_digest }}
           EE_TAGS: ${{ needs.prepare.outputs.ee_tags }}
+          CE_TAGS: ${{ needs.prepare.outputs.ce_tags }}
           TAGGED: ${{ steps.tag.outputs.tagged }}
           MERGED: ${{ steps.merge.outputs.merged }}
           PR_URL: ${{ steps.merge.outputs.url }}
@@ -859,6 +1136,9 @@ jobs:
           RELEASE_RESULT: ${{ steps.github_release.outputs.result }}
           RELEASE_URL: ${{ steps.github_release.outputs.url }}
           REGISTRY_NOTES_RESULT: ${{ steps.registry_notes.outputs.result }}
+          WEBSITE_RESULT: ${{ steps.website_result.outputs.result }}
+          WEBSITE_URL: ${{ steps.website_result.outputs.url }}
+          INSTALLER_REASON: ${{ needs.prepare.outputs.installer_reason }}
         run: |
           notes="${RUNNER_TEMP}/notes"
           if [ "$CHANNEL" = "beta" ]; then
@@ -886,14 +1166,27 @@ jobs:
               if [ -n "$tag" ]; then echo "- \`${REGISTRY}/${EE_IMAGE_REPOSITORY}:${tag}\`"; fi
             done <<< "$EE_TAGS"
             echo
+            echo "Studio CE index \`${CE_DIGEST}\`, tagged:"
+            while IFS= read -r tag; do
+              [ -n "$tag" ] || continue
+              for registry in "$REGISTRY" registry.cn-shanghai.aliyuncs.com docker.io; do
+                echo "- \`${registry}/${CE_IMAGE_REPOSITORY}:${tag}\`"
+              done
+            done <<< "$CE_TAGS"
+            echo
             echo "- Git tag \`v${VERSION}\`: ${TAGGED:-not pushed}"
             echo "- Bump to \`${NEXT}\`: ${PR_URL:-no pull request} (merged: ${MERGED:-no})"
             echo "- GitHub release: ${RELEASE_URL:-not created} (${RELEASE_RESULT:-skipped})"
             echo "- Changelog: ${changelog}"
             echo "- Release notes on ${REGISTRY}/-/images: ${REGISTRY_NOTES_RESULT:-skipped}"
+            echo "- Changelog on https://www.nocobase.com/changelog/: ${WEBSITE_RESULT:-skipped}${WEBSITE_URL:+ (${WEBSITE_URL})}"
+            echo "- One-command installer at https://get.nocobase.com/studio: ${INSTALLER_REASON}"
             echo
             echo "\`docker pull ${REGISTRY}/${IMAGE_REPOSITORY}:${VERSION}\`"
             echo "\`docker pull ${REGISTRY}/${EE_IMAGE_REPOSITORY}:${VERSION}\`"
+            echo "\`docker pull ${REGISTRY}/${CE_IMAGE_REPOSITORY}:${VERSION}\`"
+            echo "\`docker pull registry.cn-shanghai.aliyuncs.com/${CE_IMAGE_REPOSITORY}:${VERSION}\`"
+            echo "\`docker pull docker.io/${CE_IMAGE_REPOSITORY}:${VERSION}\`"
             echo
             echo '### Release notes'
             echo
@@ -955,6 +1248,7 @@ jobs:
           WORKFLOW_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
           STANDARD_TAGS: ${{ needs.prepare.outputs.tags }}
           EE_TAGS: ${{ needs.prepare.outputs.ee_tags }}
+          CE_TAGS: ${{ needs.prepare.outputs.ce_tags }}
           VERSION: ${{ needs.prepare.outputs.version }}
           CHANNEL: ${{ inputs.channel }}
           SOURCE_BRANCH: ${{ needs.prepare.outputs.source_branch }}
@@ -965,6 +1259,8 @@ jobs:
           NOTES_AVAILABLE: ${{ steps.notes.outputs.available }}
           CHANGELOG_RESULT: ${{ steps.changelog.outputs.result }}
           CHANGELOG_URL: ${{ steps.changelog.outputs.url }}
+          INSTALLER_UPLOAD: ${{ needs.prepare.outputs.installer_upload }}
+          WEBSITE_RESULT: ${{ steps.website_result.outputs.result }}
         run: |
           notes="${RUNNER_TEMP}/notes"
           published_tags=
@@ -974,6 +1270,9 @@ jobs:
           while IFS= read -r tag; do
             if [ -n "$tag" ]; then published_tags="${published_tags:+${published_tags} }\`studio-ee:${tag}\`"; fi
           done <<< "$EE_TAGS"
+          while IFS= read -r tag; do
+            if [ -n "$tag" ]; then published_tags="${published_tags:+${published_tags} }\`studio-ce:${tag}\`"; fi
+          done <<< "$CE_TAGS"
           # The card stays readable and under Feishu's size limit: the Chinese notes are cut at a line boundary within
           # 3000 characters (code points, not bytes), and the full notes are one click away on the release.
           nl=$'\n'
@@ -986,6 +1285,12 @@ jobs:
             extra="${extra:+${extra}${nl}}GitHub Release：${RELEASE_URL}"
           else
             extra="${extra:+${extra}${nl}}⚠️ GitHub Release 没有创建成功，需要手动创建。"
+          fi
+          if [ "$WEBSITE_RESULT" = "failed" ]; then
+            extra="${extra:+${extra}${nl}}⚠️ 更新日志没有发布到官网 www.nocobase.com/changelog/，详见构建详情。"
+          fi
+          if [ "$INSTALLER_UPLOAD" = "true" ]; then
+            extra="${extra:+${extra}${nl}}一键安装脚本 https://get.nocobase.com/studio 由 installer 任务另外上传（OSS 没配置时跳过，见构建详情），失败会单独通知。"
           fi
           if [ "$NOTES_AVAILABLE" = "true" ] && [ -s "${notes}/release-notes.zh-CN.md" ]; then
             # shellcheck disable=SC2016 # the single-quoted script is JavaScript
@@ -1018,6 +1323,9 @@ jobs:
             "" \
             "\`docker pull ${REGISTRY}/${IMAGE_REPOSITORY}:${VERSION}\`" \
             "\`docker pull ${REGISTRY}/${EE_IMAGE_REPOSITORY}:${VERSION}\`" \
+            "\`docker pull ${REGISTRY}/${CE_IMAGE_REPOSITORY}:${VERSION}\`" \
+            "\`docker pull registry.cn-shanghai.aliyuncs.com/${CE_IMAGE_REPOSITORY}:${VERSION}\`" \
+            "\`docker pull docker.io/${CE_IMAGE_REPOSITORY}:${VERSION}\`" \
             "" \
             "已打 git tag \`v${VERSION}\`，\`${SOURCE_BRANCH}\` 的版本号已改为 \`${NEXT}\`。" \
             "$extra" \
@@ -1030,15 +1338,69 @@ jobs:
           export CONTENT
           workflow-tooling/scripts/feishu-notify.sh
 
+  # The one-command installer of the released commit, uploaded to https://get.nocobase.com/studio by
+  # v3-studio-installer.yml, which tests and builds it first; only when prepare decided so (see "Decide the installer
+  # upload"), and only after both public registries have Studio CE, the image the installer pulls. `release` and
+  # notify-failure do not need it, so its failure (a job calling a reusable workflow cannot continue-on-error) holds
+  # back nothing else, and Re-run failed jobs reruns it alone; notify-installer-failure reports it. With
+  # `skip_unavailable`, a released commit without scripts/get-studio ends with a notice and an incomplete upload
+  # configuration with a warning, instead of failing. The secrets are inherited: the GET_STUDIO_OSS_* ones are optional,
+  # and the installer reads each of them only in the jobs that need it.
+  installer:
+    name: Upload the one-command installer
+    needs: [prepare, public-ce]
+    if: ${{ !inputs.dry_run && needs.prepare.outputs.installer_upload == 'true' }}
+    uses: ./.github/workflows/v3-studio-installer.yml
+    with:
+      ref: ${{ needs.prepare.outputs.commit }}
+      upload: true
+      skip_unavailable: true
+    secrets: inherit
+    permissions:
+      contents: read
+
+  # The release's own notices are sent without waiting for the installer, so its failure gets a notice of its own. So
+  # does an upload cancelled alone, which the installer's concurrency group does to a pending upload when a third one
+  # queues behind it.
+  notify-installer-failure:
+    name: Notify installer failure
+    needs: [prepare, installer]
+    if: >-
+      always() && !cancelled() && !inputs.dry_run
+      && (needs.installer.result == 'failure' || needs.installer.result == 'cancelled')
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Check out workflow tooling
+        uses: actions/checkout@v4
+        with:
+          sparse-checkout: scripts
+          persist-credentials: false
+
+      - name: Notify failure
+        env:
+          WEBHOOK_URL: ${{ secrets.RELEASE_RESULT_FEISHU_WEBHOOK_URL }}
+          ACTOR: ${{ github.actor }}
+          REPOSITORY: nocobase/studio
+          TITLE: NocoBase Studio 一键安装脚本上传失败
+          STATUS: failure
+          STATUS_TEXT_FAILURE: 需要人工处理
+          WORKFLOW_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          CONTENT: |
+            Studio **${{ needs.prepare.outputs.version }}**（channel `${{ inputs.channel }}`）的镜像和 git tag 不受影响，但一键安装脚本没有更新，https://get.nocobase.com/studio 还是上一版。
+
+            先在 Actions 日志里看 installer 任务是哪一步失败的（测试、构建、OSS 配置或上传）。配置或网络问题修好后，在本次运行选择 Re-run failed jobs，只会重跑安装脚本；如果之后已经有新的发版上传过安装脚本，不要重跑，否则会换回这一版。要改的是安装脚本本身时，修复合并后手动运行 V3 Studio Installer（ref 填修复后的提交，勾选 upload）。
+        run: scripts/feishu-notify.sh
+
   # Covers failures in every job; a failed merge back is notified by the release job itself.
   notify-failure:
     name: Notify release failure
-    needs: [prepare, image, manifest, release]
+    needs: [prepare, image, manifest, public-ce, release]
     if: >-
       always() && !cancelled() && !inputs.dry_run
       && needs.release.outputs.merged != 'false'
       && (needs.prepare.result == 'failure' || needs.image.result == 'failure' || needs.manifest.result == 'failure'
-        || needs.release.result == 'failure')
+        || needs.public-ce.result == 'failure' || needs.release.result == 'failure')
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
@@ -1061,11 +1423,14 @@ jobs:
           WORKFLOW_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
           VERSION: ${{ needs.prepare.outputs.version }}
           CHANNEL: ${{ inputs.channel }}
+          PUBLIC_CE_RESULT: ${{ needs.public-ce.result }}
           MANIFEST_RESULT: ${{ needs.manifest.result }}
           TAGGED: ${{ needs.release.outputs.tagged }}
         run: |
           if [ "$TAGGED" = "true" ]; then
             state="镜像已推送，git tag \`v${VERSION}\` 已打，但版本号加一没有完成，需要手动把 studio 的版本号改成下一个版本。"
+          elif [ "$PUBLIC_CE_RESULT" = "failure" ]; then
+            state="CE 公开镜像同步失败。请在本次运行选择 Re-run failed jobs 补齐公开仓库，然后继续发版。"
           elif [ "$MANIFEST_RESULT" = "success" ]; then
             state="镜像已推送到私有源，但 git tag \`v${VERSION}\` 没有打上，版本号也没有加一，需要手动补上。"
           else

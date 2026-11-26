@@ -84,7 +84,7 @@ Framework tests use synthetic data and local model fixtures. They do not certify
 
 ## Inspected consumer references
 
-- Framework implementation started from `nocobase/nocobase` `v3-develop` at [4721806a42505969d4a20f99597cbd341a2b6af4](https://github.com/nocobase/nocobase/tree/4721806a42505969d4a20f99597cbd341a2b6af4); the pre-removal Agents version is `1.0.0-beta.28`.
+- Framework implementation started from `nocobase/nocobase` `v3` (then named `v3-develop`) at [4721806a42505969d4a20f99597cbd341a2b6af4](https://github.com/nocobase/nocobase/tree/4721806a42505969d4a20f99597cbd341a2b6af4); the pre-removal Agents version is `1.0.0-beta.28`.
 - Studio stable source [ed5408ca4137eaae46a79e47a2fa13491192f3b7](https://github.com/nocobase/studio/blob/ed5408ca4137eaae46a79e47a2fa13491192f3b7/server/knowledge/provider.ts) registers [legacy collections](https://github.com/nocobase/studio/blob/ed5408ca4137eaae46a79e47a2fa13491192f3b7/server/knowledge/vectors.ts); its framework pointer is `164abe70e53a24d1c406673daf4c486c452388f3`.
 - Studio development source [99b7062509a0fc5ee50a3964897ec96a0d8b7d24](https://github.com/nocobase/studio/blob/99b7062509a0fc5ee50a3964897ec96a0d8b7d24/server/knowledge/provider.ts) uses keyword retrieval and [disabled legacy configuration](https://github.com/nocobase/studio/blob/99b7062509a0fc5ee50a3964897ec96a0d8b7d24/server/config/agents.ts); its framework pointer is `cda06e7c433b3271a4b7b8112140a054b1b2a8a7`.
 

@@ -29,11 +29,15 @@ const zhTW: LocaleResource<typeof enUS> = {
         runners: '執行環境',
         prices: '型號價格',
         services: '模特兒服務',
+        skills: '技能',
       },
     },
     actions: {
       read: '檢視',
       manage: '管理',
+    },
+    humanOnly: {
+      servicesManage: '管理模型服務會寫入服務商金鑰，只能由人操作。',
     },
     keyScopes: {
       agents: {

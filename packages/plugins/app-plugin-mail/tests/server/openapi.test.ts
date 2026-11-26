@@ -55,6 +55,11 @@ const expectedOperations: readonly (readonly [string, string, string])[] = [
   ['post', '/api/mail/accounts/connect', 'mailConnectAccount'],
   ['patch', '/api/mail/accounts/{accountId}', 'mailUpdateAccount'],
   ['delete', '/api/mail/accounts/{accountId}', 'mailDeleteAccount'],
+  [
+    'post',
+    '/api/mail/accounts/{accountId}/previewSyncFolders',
+    'mailPreviewSyncFolders',
+  ],
   ['post', '/api/mail/authorizations', 'mailCreateAuthorization'],
   ['get', '/api/mail/accounts/{accountId}/identities', 'mailListIdentities'],
   [
@@ -100,6 +105,11 @@ const expectedOperations: readonly (readonly [string, string, string])[] = [
     'get',
     '/api/mail/accounts/{accountId}/messages/{messageId}',
     'mailGetMessage',
+  ],
+  [
+    'get',
+    '/api/mail/accounts/{accountId}/messages/{messageId}/original',
+    'mailDownloadOriginalMessage',
   ],
   [
     'patch',
@@ -150,6 +160,27 @@ const expectedOperations: readonly (readonly [string, string, string])[] = [
   ['get', '/api/mail/settings/accounts', 'mailListAdminAccounts'],
   ['get', '/api/mail/settings/syncRuns', 'mailListAdminSyncRuns'],
   ['get', '/api/mail/settings/submissions', 'mailListAdminSubmissions'],
+  ['get', '/api/mail/settings/overview', 'mailGetSettingsOverview'],
+  [
+    'post',
+    '/api/mail/settings/syncRuns/{syncRunId}/retry',
+    'mailRetryAdminSyncRun',
+  ],
+  [
+    'post',
+    '/api/mail/settings/syncRuns/{syncRunId}/cancel',
+    'mailCancelAdminSyncRun',
+  ],
+  [
+    'post',
+    '/api/mail/settings/submissions/{submissionId}/retry',
+    'mailRetryAdminSubmission',
+  ],
+  [
+    'post',
+    '/api/mail/settings/submissions/{submissionId}/cancel',
+    'mailCancelAdminSubmission',
+  ],
   ['get', '/api/mail/management/accounts', 'mailListManagedAccounts'],
   [
     'get',
@@ -210,12 +241,60 @@ describe('Mail API document', () => {
     for (const route of routes) expect(route.tags).toEqual(['Mail']);
   });
 
+  it('names the permission each route requires in its description', () => {
+    for (const [method, path] of expectedOperations) {
+      const description = operation(document, method, path).description ?? '';
+      const required = path.startsWith('/api/mail/settings/')
+        ? method === 'get'
+          ? 'settings:mail.admin/read'
+          : 'settings:mail.admin/manage'
+        : path.startsWith('/api/mail/management/')
+          ? method === 'get'
+            ? 'mail:mail.management/view'
+            : 'mail:mail.management/process'
+          : 'page:mail.workspace/access';
+      expect({ path, description }).toEqual({
+        path,
+        description: expect.stringContaining(
+          `Requires the \`${required}\` permission.`,
+        ),
+      });
+      const cli = (
+        operation(document, method, path) as unknown as Record<string, unknown>
+      )['x-cli'];
+      // A route kept off the command line has no action to declare.
+      if (cli !== false)
+        expect({ path, cli }).toEqual({ path, cli: { action: required } });
+    }
+  });
+
   it('documents each route under its operationId', () => {
     for (const [method, path, operationId] of expectedOperations) {
       expect(operation(document, method, path).operationId).toBe(operationId);
     }
     const operationIds = expectedOperations.map(([, , id]) => id);
     expect(new Set(operationIds).size).toBe(operationIds.length);
+  });
+
+  it('documents original MIME and the authenticated download failures', () => {
+    const original = operation(
+      document,
+      'get',
+      '/api/mail/accounts/{accountId}/messages/{messageId}/original',
+    );
+    expect(original.responses).toMatchObject({
+      '200': {
+        content: {
+          'message/rfc822': { schema: { type: 'string', format: 'binary' } },
+        },
+      },
+    });
+    expect(Object.keys(original.responses ?? {})).toEqual(
+      expect.arrayContaining(['400', '401', '403', '404', '429', '503']),
+    );
+    expect(original.description).toContain(
+      'Requires the `page:mail.workspace/access` permission.',
+    );
   });
 
   it('documents request inputs from the validators', () => {

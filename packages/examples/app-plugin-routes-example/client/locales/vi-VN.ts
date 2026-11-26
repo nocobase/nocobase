@@ -15,6 +15,11 @@ const viVN: LocaleResource<typeof enUS> = {
   plugin: 'Trình cắm',
   scope: 'Phạm vi',
   message: 'Tin nhắn',
+  settingsTitle: 'Cài đặt ví dụ định tuyến',
+  settingsDescription:
+    'Được plugin ví dụ định tuyến khai báo bằng defineSystemSettingsRoutes().',
+  settingsBody:
+    'Trang cài đặt này đến từ một plugin. Trang được khai báo bằng defineSystemSettingsRoutes(), thuộc danh mục Hệ thống và nằm dưới /settings.',
 };
 
 export default viVN;

@@ -134,6 +134,27 @@ describe('MailClient', () => {
     await client.listManagedAccounts();
     expect(request).toHaveBeenLastCalledWith({
       path: 'mail/settings/accounts',
+      query: {
+        status: undefined,
+        provider: undefined,
+        userId: undefined,
+        q: undefined,
+      },
+    });
+    await client.listManagedAccounts({
+      statuses: ['reauthorizationRequired', 'revoked'],
+      provider: 'gmail',
+      userId: 'user-2',
+      q: 'ana',
+    });
+    expect(request).toHaveBeenLastCalledWith({
+      path: 'mail/settings/accounts',
+      query: {
+        status: 'reauthorizationRequired,revoked',
+        provider: 'gmail',
+        userId: 'user-2',
+        q: 'ana',
+      },
     });
     await client.listManagementAccounts();
     expect(request).toHaveBeenLastCalledWith({
@@ -143,15 +164,15 @@ describe('MailClient', () => {
     expect(request).toHaveBeenLastCalledWith({
       path: 'mail/management/accounts/account%2F1/folders',
     });
-    await client.listManagedSyncRunsPage({ page: 2, pageSize: 50 });
+    await client.listManagedSyncRunsPage({ pageToken: 'next', pageSize: 50 });
     expect(request).toHaveBeenLastCalledWith({
       path: 'mail/settings/syncRuns',
-      query: { page: 2, pageSize: 50 },
+      query: { pageToken: 'next', pageSize: 50 },
     });
     await client.listManagedSubmissionsPage();
     expect(request).toHaveBeenLastCalledWith({
       path: 'mail/settings/submissions',
-      query: { page: undefined, pageSize: undefined },
+      query: { pageToken: undefined, pageSize: undefined },
     });
     await expect(
       client.startAuthorization({ type: 'gmail', name: 'google' }),
@@ -180,6 +201,51 @@ describe('MailClient', () => {
         password: 'secret',
         displayName: 'User',
       },
+    });
+    await client.previewSyncFolders('account/1', ['INBOX']);
+    expect(request).toHaveBeenLastCalledWith({
+      path: 'mail/accounts/account%2F1/previewSyncFolders',
+      method: 'POST',
+      json: { syncFolderIds: ['INBOX'] },
+    });
+    await client.listFolders('account/1', { includeUnsynced: true });
+    expect(request).toHaveBeenLastCalledWith({
+      path: 'mail/accounts/account%2F1/folders',
+      query: { includeUnsynced: 'true' },
+    });
+    await client.listFolders('account/1');
+    expect(request).toHaveBeenLastCalledWith({
+      path: 'mail/accounts/account%2F1/folders',
+    });
+    request.mockResolvedValueOnce({
+      data: [{ providerFolderId: 'INBOX', synced: true }],
+      meta: { total: 1, complete: false, initialSyncCompleted: true },
+    });
+    await expect(client.listFolderChoices('account/1')).resolves.toEqual({
+      folders: [{ providerFolderId: 'INBOX', synced: true }],
+      complete: false,
+      failed: false,
+      initialSyncCompleted: true,
+    });
+    // An older server reports no flag; its list is taken as complete and a sync as importing from the start date.
+    request.mockResolvedValueOnce({ data: [], meta: { total: 0 } });
+    await expect(client.listFolderChoices('account/1')).resolves.toEqual({
+      folders: [],
+      complete: true,
+      failed: false,
+      initialSyncCompleted: false,
+    });
+    request.mockResolvedValueOnce({
+      data: [],
+      meta: { total: 0, complete: false, failed: true },
+    });
+    await expect(client.listFolderChoices('account/1')).resolves.toMatchObject({
+      complete: false,
+      failed: true,
+    });
+    expect(request).toHaveBeenLastCalledWith({
+      path: 'mail/accounts/account%2F1/folders',
+      query: { includeUnsynced: 'true' },
     });
   });
 

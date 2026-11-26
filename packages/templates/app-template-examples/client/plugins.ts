@@ -9,6 +9,9 @@ import {
 } from '@nocobase/app-client/plugins';
 import authentication from '@nocobase/app-plugin-authentication/client';
 import authorization from '@nocobase/app-plugin-authorization/client';
+import { pagePermissionTitles } from './pages/settings/page-permission-titles.js';
+import { permissionPageCatalog } from './pages/settings/permission-catalog.js';
+import { permissionWorkspaceSelection } from './pages/settings/permission-workspace.js';
 import authorizationExample from '@nocobase/app-plugin-authorization-example/client';
 import templatePrintExample from '@nocobase/app-plugin-template-print-example/client';
 import users from '@nocobase/app-plugin-users/client';
@@ -22,6 +25,7 @@ import officeFlowsExample from '@nocobase/app-plugin-office-flows-example/client
 import routesExample from '@nocobase/app-plugin-routes-example/client';
 import i18n from '@nocobase/app-plugin-i18n/client';
 import notification from '@nocobase/app-plugin-notification/client';
+import notificationWebPush from '@nocobase/app-plugin-notification-web-push/client';
 import repositoryExample from '@nocobase/app-plugin-repository-example/client';
 import scheduler from '@nocobase/app-plugin-scheduler/client';
 import file from '@nocobase/app-plugin-file/client';
@@ -29,14 +33,26 @@ import fileExample from '@nocobase/app-plugin-file-example/client';
 import apiKeys from '@nocobase/app-plugin-api-keys/client';
 import agents from '@nocobase/app-plugin-agents/client';
 import foundation from '@nocobase/app-plugin-foundation/client';
-import applicationManifest from '../package.json' with { type: 'json' };
 import knowledge from '@nocobase/app-plugin-knowledge/client';
+import { FormProposalRenderer } from '#components/online-agent/form-proposal-card';
+import { EXAMPLES_FORM_TOOL } from '../shared/ai-form-fill.js';
+
+// The AI form demonstration's proposal card, shown in the Agent panel wherever the agent calls its tool.
+agents.toolRenderers.add({
+  name: EXAMPLES_FORM_TOOL,
+  component: FormProposalRenderer,
+});
 
 // Array order is contribution order. A plugin is enabled by appearing in this
 // list; removing its entry and its import disables it.
 const clientPlugins: AppClientPlugins = defineClientPlugins([
   authentication(),
-  authorization(),
+  // The Roles and permissions pages list this application's pages and business objects.
+  authorization({
+    pageCatalog: permissionPageCatalog,
+    workspace: permissionWorkspaceSelection,
+    pageTitles: pagePermissionTitles,
+  }),
   defaultAccess(),
   sharingRules(),
   restrictionRules(),
@@ -54,19 +70,16 @@ const clientPlugins: AppClientPlugins = defineClientPlugins([
   officeFlowsExample(),
   routesExample(),
   notification(),
+  notificationWebPush(),
   repositoryExample(),
   file(),
   fileExample(),
   scheduler(),
   mail(),
   mailExample(),
+  // The Agent panel and ✦ in the header, the conversation page, System settings › AI and Personal settings › Agent.
   agents(),
-  // The manifest is what the capability guide lists: every plugin this application declares.
-  foundation({
-    manifest: applicationManifest,
-    guideSettingsPath: '/settings',
-    navigation: false,
-  }),
+  foundation(),
   knowledge({ routes: false }),
 ]);
 

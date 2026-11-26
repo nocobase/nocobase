@@ -15,6 +15,10 @@ import {
   type UserAdministrationService,
 } from '@nocobase/app-plugin-authentication';
 import type { DatabaseConnection, DatabaseManager } from '@nocobase/db';
+import type { I18nRuntime } from '@nocobase/i18n';
+
+import { USER_LOCALE_PREFERENCE_KEY } from '../preferences/locale.js';
+import type { UserPreferencesService } from '../preferences/service.js';
 
 import {
   UserManagementError,
@@ -26,7 +30,11 @@ import {
   type UserRoleScope,
   type UserRoleValue,
 } from '../tokens.js';
-import { buildInvitationEmail, type InvitationMailer } from './mail.js';
+import {
+  buildInvitationEmail,
+  INVITATION_EMAIL_LOCALES,
+  type InvitationMailer,
+} from './mail.js';
 import {
   INVITATION_TTL_MS,
   hashToken,
@@ -64,6 +72,10 @@ export interface InvitationManagerOptions {
   readonly mailer: InvitationMailer;
   readonly site: InvitationSite;
   readonly onRoleScopesChanged?: (userId: string) => void | Promise<void>;
+  /** The application's languages; without it, the languages this plugin has email text for, and no default. */
+  readonly i18n?: Pick<I18nRuntime, 'getLocales' | 'getDefaultLocale'>;
+  /** Keeps a new account's language; without it, accepting stores none. */
+  readonly preferences?: Pick<UserPreferencesService, 'set'>;
 }
 
 export type InvitationManager = Pick<
@@ -85,6 +97,8 @@ const DELIVERY_BUDGET_MS = 30_000;
 interface Outgoing {
   readonly row: InvitationRecord;
   readonly token: string;
+  /** The email's language: the row's, or for an older row without one, the resending person's. */
+  readonly locale: string | null;
 }
 
 function notFound(): UserManagementError {
@@ -100,6 +114,30 @@ export function createInvitationManager(
 ): InvitationManager {
   const { database, users } = options;
   const handlers = new Set<UserInvitationAcceptedHandler>();
+
+  /** The value when the application offers it. */
+  function offered(locale: string | null | undefined): string | undefined {
+    return locale &&
+      (options.i18n?.getLocales() ?? INVITATION_EMAIL_LOCALES).includes(locale)
+      ? locale
+      : undefined;
+  }
+
+  /** The chosen language, else the inviter's when offered, else the application's default. */
+  function invitationLocale(
+    locale: string | undefined,
+    inviterLocale: string | undefined,
+  ): string | null {
+    if (locale !== undefined) {
+      if (offered(locale)) return locale;
+      throw new UserManagementError(
+        'INVALID_INVITATION',
+        `This application does not offer the language "${locale}".`,
+        400,
+      );
+    }
+    return offered(inviterLocale) ?? options.i18n?.getDefaultLocale() ?? null;
+  }
 
   async function userIdByEmail(
     email: string,
@@ -128,6 +166,7 @@ export function createInvitationManager(
     row: InvitationRecord,
     url: string,
     deadline: number,
+    locale: string | null,
   ): Promise<boolean> {
     let error: string | null = null;
     let timeout: ReturnType<typeof setTimeout> | undefined;
@@ -144,6 +183,10 @@ export function createInvitationManager(
           summary: row.summary,
           url,
           expiresAt: new Date(row.expiresAt),
+          ...(locale ? { locale } : {}),
+          ...(options.i18n
+            ? { defaultLocale: options.i18n.getDefaultLocale() }
+            : {}),
         }).then((email) => options.mailer.send(email)),
         new Promise<never>((_, reject) => {
           timeout = setTimeout(
@@ -177,7 +220,7 @@ export function createInvitationManager(
     const results = new Array<UserInvitationResult>(outgoing.length);
     const pending = outgoing.entries();
     async function sendNext(): Promise<void> {
-      for (const [index, { row, token }] of pending) {
+      for (const [index, { row, token, locale }] of pending) {
         let emailSent = false;
         // Check before sending and again afterwards so concurrent closure or rotation never returns a stale link.
         const before = await findInvitation(database.connection(), {
@@ -193,6 +236,7 @@ export function createInvitationManager(
             row,
             `${base}/invite/${token}`,
             deadline,
+            locale,
           );
         const current = await findInvitation(database.connection(), {
           id: row.id,
@@ -239,6 +283,7 @@ export function createInvitationManager(
       summary: row.summary,
       expiresAt: row.expiresAt,
       sentAt: row.sentAt,
+      locale: row.locale ?? null,
       createdAt: row.createdAt,
     }));
   }
@@ -248,6 +293,7 @@ export function createInvitationManager(
       const emails = normalizeEmails(input.emails);
       // Checked now, so an invitation never fails on acceptance for roles its inviter chose.
       options.validateRoleScopes(input.roleScopes ?? {});
+      const locale = invitationLocale(input.locale, input.inviterLocale);
       const direct: UserInvitationResult[] = [];
       const outgoing = await database.transaction(async (connection) => {
         const links: Outgoing[] = [];
@@ -275,11 +321,12 @@ export function createInvitationManager(
             sendError: null,
             acceptedUserId: null,
             acceptedAt: null,
+            locale,
             createdAt: now.toISOString(),
             updatedAt: now.toISOString(),
           };
           await insertInvitation(connection, row);
-          links.push({ row, token });
+          links.push({ row, token, locale });
         }
         return links;
       });
@@ -325,7 +372,13 @@ export function createInvitationManager(
           sentAt: null,
           sendError: null,
         });
-        return { row: { ...row, tokenHash: hash, expiresAt }, token };
+        return {
+          row: { ...row, tokenHash: hash, expiresAt },
+          token,
+          // Older invitations kept no language: write this send in the resending person's, without storing it.
+          locale:
+            row.locale ?? invitationLocale(undefined, input.inviterLocale),
+        };
       });
       const [result] = await deliver([outgoing], input.origin, input.sendEmail);
       return result;
@@ -356,6 +409,7 @@ export function createInvitationManager(
         inviterName: await nameOf(row.invitedById),
         summary: row.summary,
         expiresAt: row.expiresAt,
+        locale: row.locale ?? null,
       };
     },
 
@@ -415,6 +469,15 @@ export function createInvitationManager(
           userId = created.id;
           for (const [key, value] of Object.entries(row.roleScopes))
             await options.requireScope(key).replace(userId, value, connection);
+          // The language the page was in becomes the new account's, so its first sign-in matches the invitation.
+          const locale = offered(input.locale) ?? offered(row.locale);
+          if (locale && options.preferences)
+            await options.preferences.set(
+              userId,
+              USER_LOCALE_PREFERENCE_KEY,
+              locale,
+              connection,
+            );
         }
         if (!(await claimInvitation(connection, row.id, userId, row.tokenHash)))
           throw new UserManagementError(

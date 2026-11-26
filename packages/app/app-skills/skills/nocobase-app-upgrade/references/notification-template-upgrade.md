@@ -1,5 +1,19 @@
 # Reconcile notification template administration
 
+## Plugin-owned notification pages
+
+When TARGET no longer contains `client/extensions/nocobase-inbox/`, `client/pages/inbox.tsx` or `client/pages/settings/notification-routes.ts`, the notification plugins own those pages: `@nocobase/app-plugin-notification-in-app/client` registers `/inbox` (route id `@nocobase/app-plugin-notification-in-app:inbox`) and the header button `inbox`, and `@nocobase/app-plugin-notification/client` registers System settings › Messages › Notifications (`@nocobase/app-plugin-notification:notificationSettings`) and Personal settings › Messages › Notifications (`@nocobase/app-plugin-notification:notificationPreferences`).
+
+1. Record the application's changes to the copied inbox block and the template page against BASE, and any custom `InboxSource` or renderer it passes.
+2. Delete the copied block, the inbox page, its `inbox` route, its locale spreads and `inboxButton.*` keys, the template page, `notification-routes.ts` with `includeNotificationTemplateRoutes`, `server/providers/notification-management.ts` and its registration, and the `settings.notification*` labels. Keep `notificationInApp()` and `notification()` in `client/plugins.ts`.
+3. Move custom renderers and sources into the plugin's extension lists (`inboxRenderersToken`, `inboxSourcesToken`) from a client service provider's `boot()`. Replace a page only through `routeComponentOverrides` with the route id above, when the extension points cannot express the change.
+4. Stored grants: the settings pages and their API check the `notification` settings item (`read` to view, `manage` to test and retry), not `page:notification.templates` or `page:notification.logs`. Give the roles that held those page grants the matching settings item action.
+5. Business sends to users move to `notify(kind, { to })` after the kind declares its channel policies; `send()` stays for non-user addresses. Verify the inbox, both settings pages and a restricted role's 403 after restart.
+
+## Template-owned template directory
+
+The steps below apply only to TARGET versions that still ship the template page.
+
 Follow the version-selected upgrade entry point in the parent Skill. Fetch BASE and TARGET template tarballs and TARGET's compatible `@nocobase/app-skills` first. This reference applies only when TARGET contains `client/pages/settings/notification-routes.ts` and the Notification package exposes `notificationTemplateRegistryToken` plus `client/templates`. A dependency update alone does not replace application source or register this page. Before a target release is published, candidate-package checks are useful but do not establish a published upgrade pass.
 
 1. Record the clean application checkpoint, template package and baseline version. Preserve a representative business page, custom notification renderer/fixture, notification workflows, channel/mailer configuration, stored grants and business records for comparison. Keep secrets out of evidence.

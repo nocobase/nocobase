@@ -1,5 +1,21 @@
 # @nocobase/app-plugin-skills-example
 
+## 1.0.0-beta.12
+
+### Patch Changes
+
+- 8be5180: Show English and Simplified Chinese names and descriptions for example plugins in the plugin list.
+
+## 1.0.0-beta.11
+
+### Patch Changes
+
+- 1952789: Update authentication, editor, and validation dependencies to patched releases.
+- Updated dependencies [44bf26a]
+- Updated dependencies [1952789]
+  - @nocobase/app-server@5.0.0-beta.5
+  - @nocobase/app-plugin-authentication@2.0.0-beta.21
+
 ## 1.0.0-beta.10
 
 ### Patch Changes

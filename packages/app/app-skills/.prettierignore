@@ -5,3 +5,7 @@ skills/nocobase-app-development/references/frontend/shadcn/
 
 # Keep the migrated guide and executable examples in their maintained format.
 skills/nocobase-app-plugin-development/
+
+# Match the repository root: merged migration/seed sources retain their recorded checksums.
+**/database/*/migrations/
+**/database/*/seeds/

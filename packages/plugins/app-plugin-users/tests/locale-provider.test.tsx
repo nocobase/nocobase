@@ -12,7 +12,7 @@ import {
 } from '@nocobase/app-client/runtime';
 import { I18nProvider } from '@nocobase/i18n/client';
 import { act, render, screen, waitFor } from '@testing-library/react';
-import { useContext, useEffect, type ContextType } from 'react';
+import { useContext, useEffect, type ContextType, type ReactNode } from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 const identity = vi.hoisted(() => ({
@@ -42,6 +42,7 @@ function Consumer() {
 async function setup(
   values: Record<string, Record<string, unknown>> = {},
   load?: () => Promise<Record<string, unknown>>,
+  extra?: ReactNode,
 ) {
   const config = document.createElement('script');
   config.id = 'nocobase-runtime-config';
@@ -93,6 +94,7 @@ async function setup(
           key={JSON.stringify([identity.user, identity.session])}
         >
           <Consumer />
+          {extra}
         </UserLocaleProvider>
       </I18nProvider>
     </ClientApplicationContext.Provider>
@@ -146,8 +148,10 @@ describe('user locale integration', () => {
     identity.user = null;
     rerender();
     await screen.findByText('content');
+    // The consumer publishes the guest preference in an effect after its content appears.
+    await waitFor(() => expect(preference?.identity).toBeNull());
     await act(async () => {
-      await preference?.set('zh-CN');
+      await preference!.set('zh-CN');
     });
     identity.user = 'bob';
     identity.session = 'bob-2';
@@ -207,6 +211,27 @@ describe('user locale integration', () => {
     expect(app.runtime.i18n.getLocale()).toBe('en-US');
     expect(values.bob).toBeUndefined();
     expect(values.ann).toBeUndefined();
+  });
+  it.each([
+    ['signed out', null],
+    ['signed in', 'ann'],
+  ])('keeps children mounted while a %s session refreshes', async (_, user) => {
+    identity.user = user;
+    const mounts = vi.fn();
+    function Probe() {
+      useEffect(() => mounts(), []);
+      return null;
+    }
+    const { rerender } = await setup({}, undefined, <Probe />);
+    expect(mounts).toHaveBeenCalledOnce();
+    identity.pending = true;
+    rerender();
+    expect(screen.getByText('content')).toBeInTheDocument();
+    identity.pending = false;
+    rerender();
+    await waitFor(() => expect(preference?.ready).toBe(true));
+    expect(screen.getByText('content')).toBeInTheDocument();
+    expect(mounts).toHaveBeenCalledOnce();
   });
   it('orders rapid choices and rejects unsupported values', async () => {
     const { values } = await setup();

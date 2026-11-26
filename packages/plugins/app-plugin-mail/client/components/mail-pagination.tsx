@@ -14,6 +14,7 @@ export function MailPagination({
   pageSize,
   total,
   hasNext,
+  maxPage,
   disabled,
   onPageChange,
   onPageSizeChange,
@@ -22,6 +23,11 @@ export function MailPagination({
   readonly pageSize: number;
   readonly total?: number;
   readonly hasNext: boolean;
+  /**
+   * The furthest page that can be opened now, for a list paged by token whose pages are reached one after another;
+   * any page up to the last when absent.
+   */
+  readonly maxPage?: number;
   readonly disabled?: boolean;
   readonly onPageChange: (page: number) => void;
   readonly onPageSizeChange: (pageSize: number) => void;
@@ -30,7 +36,10 @@ export function MailPagination({
   const [draft, setDraft] = useState<{ page: number; value: string }>();
   const pageCount =
     total === undefined ? undefined : Math.max(1, Math.ceil(total / pageSize));
-  const lastPage = pageCount ?? (hasNext ? undefined : page);
+  const lastPage =
+    maxPage !== undefined
+      ? Math.min(maxPage, pageCount ?? maxPage)
+      : (pageCount ?? (hasNext ? undefined : page));
   const value = draft?.page === page ? draft.value : String(page);
   const target = Number(value);
   const valid =
@@ -44,7 +53,10 @@ export function MailPagination({
       page - 1,
       page,
       page + 1,
-      ...(pageCount === undefined ? [] : [pageCount]),
+      ...(pageCount === undefined ||
+      (lastPage !== undefined && pageCount > lastPage)
+        ? []
+        : [pageCount]),
     ]),
   ]
     .filter((number) => number >= 1 && number <= (lastPage ?? page + 1))
@@ -131,7 +143,10 @@ export function MailPagination({
         className='h-8 min-w-8 px-2'
         aria-label={t('workspace.nextPage', { defaultValue: 'Next page' })}
         disabled={
-          disabled || (pageCount === undefined ? !hasNext : page >= pageCount)
+          disabled ||
+          (pageCount === undefined || maxPage !== undefined
+            ? !hasNext
+            : page >= pageCount)
         }
         onClick={() => changePage(page + 1)}
       >

@@ -1,8 +1,11 @@
+import {
+  authorizationPages,
+  registeredPluginRoutes,
+} from '../helpers/plugin-routes.js';
 import packageMetadata from '../../package.json' with { type: 'json' };
 import { createAuthenticatedClientRenderer } from '../helpers/authenticated-client.js';
 import { resolveAppClientContributions } from '@nocobase/app-client/plugins';
 import { screen, waitFor, within } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
 import type { ReactNode } from 'react';
 import { Route, Routes, useLocation } from 'react-router';
 import { expect, it } from 'vitest';
@@ -20,6 +23,8 @@ const { routes } = resolveAppClientContributions([
     source: 'application',
     routes: applicationRoutes,
   },
+  registeredPluginRoutes('@nocobase/app-plugin-users'),
+  authorizationPages(),
 ]);
 
 function Shell({ children }: { children: ReactNode }) {
@@ -51,49 +56,16 @@ function mount(
   );
 }
 
-it('groups the modules an administrator may open into categories of cards that open by keyboard', async () => {
-  const user = userEvent.setup();
+it('opens the first system settings page an administrator may open', async () => {
   await mount();
-  const account = await screen.findByRole('region', {
-    name: 'Accounts and permissions',
-  });
-  const cards = within(account).getAllByRole('link');
-  expect(cards.map((card) => card.textContent)).toEqual([
-    'UsersManage accounts, access and active sessions.',
-    'Permission managementSet what each role can open and do, and the data it can see.',
-  ]);
-  expect(cards[0]).toHaveAttribute('href', '/main/users');
-  expect(cards[1]).toHaveAttribute('href', '/main/roles');
-  expect(
-    screen
-      .getAllByRole('region')
-      .map((region) => region.getAttribute('aria-label')),
-  ).toEqual([
-    'Accounts and permissions',
-    'Business configuration',
-    'AI',
-    'System',
-  ]);
-  // Examples configures the built-in invitation mailer, so Notifications joins System beside the database explorer.
-  const system = screen.getByRole('region', { name: 'System' });
-  expect(
-    within(system)
-      .getAllByRole('link')
-      .map((card) => card.getAttribute('href')),
-  ).toEqual([
-    '/main/settings/notifications/templates',
-    '/main/settings/database-explorer',
-  ]);
-  cards[1].focus();
-  await user.keyboard('{Enter}');
   await waitFor(() =>
     expect(screen.getByRole('status', { name: 'Route' })).toHaveTextContent(
-      '/roles',
+      '/settings/users',
     ),
   );
 });
 
-it('shows a restricted viewer only what they may open, opening a tabbed module on its readable view', async () => {
+it('opens a restricted viewer on the first page they may open', async () => {
   await mount({
     member: true,
     grants: [
@@ -103,27 +75,24 @@ it('shows a restricted viewer only what they may open, opening a tabbed module o
       },
     ],
   });
-  const account = await screen.findByRole('region', {
-    name: 'Accounts and permissions',
-  });
-  // Categories without a module this viewer may open are not shown.
-  expect(screen.getAllByRole('region')).toHaveLength(1);
-  const cards = within(account).getAllByRole('link');
-  expect(cards).toHaveLength(1);
-  expect(cards[0]).toHaveAttribute('href', '/main/default-access');
+  await waitFor(() =>
+    expect(screen.getByRole('status', { name: 'Route' })).toHaveTextContent(
+      '/settings/default-access',
+    ),
+  );
 });
 
 it('explains when there is nothing to manage', async () => {
   await mount({ member: true, locale: 'zh-CN' });
   expect(await screen.findByText('暂时没有你可以管理的设置。')).toBeVisible();
-  expect(screen.getByRole('heading', { name: '系统设置' })).toBeVisible();
+  expect(screen.queryByRole('status', { name: 'Route' })).toBeNull();
 });
 
 it('links the System settings breadcrumb back to the home from a module view', async () => {
-  await mount({}, '/roles');
+  await mount({}, '/settings/roles');
   const trail = await screen.findByRole('navigation', { name: 'Breadcrumb' });
   expect(
     await within(trail).findByRole('link', { name: 'System settings' }),
   ).toHaveAttribute('href', '/main/settings');
-  expect(within(trail).getByText('Roles and permissions')).toBeVisible();
+  expect(within(trail).getByText('Roles & permissions')).toBeVisible();
 });

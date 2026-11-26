@@ -8,17 +8,19 @@ Applications are created with `pnpm create @nocobase/app`, not with this package
 
 The bin finds the application from the nearest `package.json` above the working directory, and what that manifest says decides the command set:
 
-| Found                                    | Location   | Commands registered                                                                    |
-| ---------------------------------------- | ---------- | -------------------------------------------------------------------------------------- |
-| `nocobase.templateKind`                  | source     | everything: runtime, development, the application's own, and every plugin's            |
-| `nocobase.buildTarget` (a built `dist/`) | deployment | runtime commands, the application's own, and plugins' `commands` but not `devCommands` |
-| neither                                  | none       | `commands`, and the flag-targeted `plugin *`, `package remove` and `skills sync`       |
+| Found                                    | Location   | Commands registered                                                                                                          |
+| ---------------------------------------- | ---------- | ---------------------------------------------------------------------------------------------------------------------------- |
+| `nocobase.templateKind`                  | source     | everything: runtime, development, the application's own, and every plugin's                                                  |
+| `nocobase.buildTarget` (a built `dist/`) | deployment | runtime commands, the application's own, and plugins' `commands` and `rootCommand` but not `devCommands` or `devRootCommand` |
+| neither                                  | none       | `commands`, and the flag-targeted `plugin *`, `package remove` and `skills sync`                                             |
 
 `NOCOBASE_APP_ROOT` names the application explicitly and leaves the working directory alone, so relative paths a command takes still resolve against where it was run. The `cli/index.js` a build writes into `dist/` passes its own location instead, which is why `node dist/cli/index.js db apply` works from any directory — a built `dist/` has no `.bin`, and a slim runtime image has no pnpm.
 
 In a source application the bin registers the application's own `tsx` before it imports anything the application wrote, so `cli/plugins.ts` and `cli/commands/*.ts` load as they are.
 
 ## Commands
+
+Preinstalled plugins belong in devDependencies and provide Skills. Run `pnpm nocobase plugin register <name>` to enable one. Run `plugin unregister <name>` to retain it for development or `plugin remove <name>` to uninstall it together with its synchronized Skills.
 
 | Command                                                                    | In a deployment | Notes                                                                                                                    |
 | -------------------------------------------------------------------------- | --------------- | ------------------------------------------------------------------------------------------------------------------------ |
@@ -34,7 +36,7 @@ In a source application the bin registers the application's own `tsx` before it 
 | `dev`, `build`, `start`                                                    | no              | `build` passes `--target`, `--node-version` and `--tar` to the build                                                     |
 | `dist retarget`, `dist check`                                              | no              |                                                                                                                          |
 | `cli build`, `cli link`                                                    | no              | Pack or link the application's own CLI (`nocobase.cli`); `cli build --runner` packs `nocobase-runner`                    |
-| `plugin register`, `plugin unregister`, `plugin inspect`                   | no              | Take `--dir`, or `--workspace-root` with `--app` in this repository                                                      |
+| `plugin register`, `plugin unregister`, `plugin remove`, `plugin inspect`  | no              | Take `--dir`, or `--workspace-root` with `--app` in this repository                                                      |
 | `plugin update`                                                            | no              | Takes `--dir`; no `--workspace-root` or `--app`                                                                          |
 | `package remove`, `skills sync`                                            | no              |                                                                                                                          |
 | `app <name>`                                                               | yes             | The application's own commands, from `cli/commands/`                                                                     |
@@ -123,13 +125,15 @@ export default cliPlugin;
 
 `commands` run wherever the application runs; `devCommands` only make sense in a source checkout and are left out of a built `dist/`. Keep a command module light — import the heavy work inside `run()` — because help loads every command class.
 
+A plugin can also mount one command on its topic itself, so `pnpm nocobase deploy --target dev` runs it while `pnpm nocobase deploy init` still runs a subcommand. Declare it as `rootCommand`, which runs wherever the application runs, or as `devRootCommand`, which a built `dist/` leaves out together with the topic when nothing else remains under it; a plugin declares at most one of the two, and a plugin with only a root command is valid. A subcommand wins over the root command whenever the next word names one, so give a root command flags rather than a positional argument that could collide with a subcommand name.
+
 A command name nested with `:`, such as `export:csv`, sits in a nested topic, `audit-log export`. `topics: { export: 'Export audit logs.' }` gives that topic its line in `--help`; without it the topic borrows one of its commands' summaries. A described topic must have a command under it.
 
 `buildHooks` attach to `beforeBuild`, `afterClientBuild`, `afterServerBuild` or `afterBuild`, and `devHooks` to `beforeDev`. `build` and `dev` run inside the assembled CLI, collect the hooks from the registered plugins there, and hand them to the build and dev scripts in `NOCOBASE_CLI_HOOKS`; a script started any other way refuses to run rather than silently skipping them.
 
 ## Plugin and Skill management
 
-`plugin register` puts every plugin in `dependencies`, including client-only plugins and ones installed with `--disabled`, so the plugin reaches a deployment's dependency set. Registering again moves an old `devDependencies` declaration into `dependencies`; without `--version` an ordinary application keeps the declared range. `--no-install` fixes the manifest without running the package manager, leaving the lockfile to the caller. The client and server composition roots are edited with the application's own TypeScript and Prettier, so the edit is formatted the way the application formats itself, and neither being absent fails the registration.
+`plugin register` places enabled plugins in `dependencies`. With `--disabled` it installs the plugin in `devDependencies` and synchronizes Skills. Registering again moves an old `devDependencies` declaration into `dependencies`; without `--version` an ordinary application keeps the declared range. `--no-install` fixes the manifest without running the package manager, leaving the lockfile to the caller. The client and server composition roots are edited with the application's own TypeScript and Prettier, so the edit is formatted the way the application formats itself, and neither being absent fails the registration.
 
 `plugin update` upgrades one plugin, given by full name or short name, or every registered plugin when no name is given, and then synchronizes its Skills.
 
@@ -137,7 +141,7 @@ A command name nested with `:`, such as `export:csv`, sits in a nested topic, `a
 
 `nocobase-app-plugin-development` is the one reserved `nocobase-app-plugin-*` name owned by `@nocobase/app-skills`; business plugins cannot claim it. Synchronization copies the full version-matched guide, skips `node_modules` installed inside Skill examples, and materializes project copies instead of keeping links to a global installation. It never edits global Agent installations. The App upgrade Skill handles retiring an older global copy after the project replacement is verified.
 
-`package remove` uninstalls a directly declared package with the application's package manager and removes the Skills it synchronized; for a plugin it runs the whole `plugin unregister` flow. `--dry-run` prints the plan without changing anything.
+`package remove` uninstalls a directly declared package with the application's package manager and removes the Skills it synchronized; for a plugin it runs the whole `plugin remove` flow. `--dry-run` prints the plan without changing anything.
 
 `--workspace-root` selects an application inside this monorepo and writes `workspace:^` ranges; without it, plugins resolve from the application's own `node_modules`. `plugin inspect` reads the static registration surface only; it is not a substitute for running, testing or building the application.
 
@@ -149,7 +153,13 @@ The application's runtime and `createApp` load by convention from `server/runtim
 
 `dev` supervises development: `.env` and `.env.local` changes restart every development process, including Vite, and `config.yml` changes restart only the server. `build` produces `dist/client`, `dist/server`, `dist/cli` and the deployment's `dist/package.json`, installs its production dependencies, retargets native modules and verifies that everything the server, database and CLI code imports is declared. Vite configuration imports `createDevProxy` from `@nocobase/app-cli/dev/proxy`.
 
+Builds read `.env` and `.env.local` for build inputs but do not generate `dist/.env`. Supply runtime settings through the deployment's environment or external configuration, including the listener address, port and public origin. Existing deployments that relied on the build copying these settings must configure them at startup instead.
+
+`pnpm build --tar` produces `storage/exports/dist.tar.gz` with `dist/`, `config.example.yml` and, when present, the Docker build files. It excludes executable `.bin` directories and the application's `dist/.env`, `dist/.env.*`, `dist/config.yml`, `dist/config.yaml` and `dist/storage/`; same-named resources inside dependency packages are retained. This also protects archives of older builds or hooks that wrote runtime files. A successful pack replaces the previous archive; a failed pack retains it and removes its temporary output. Keep application-specific data outside `dist/`: this path policy is not a scanner for secrets embedded in source or custom build output.
+
 The scripts live under `src/tools/scripts/` and run in a child process with the application root in `NOCOBASE_TOOL_ROOT`. The scripts in `dist/package.json` are `start` and `nocobase`, the second because a deployment has no `.bin` to resolve the bin from.
+
+Application builds first build their direct workspace dependencies (including client and tooling dependencies), then their transitive runtime, peer and optional dependencies. They do not follow a dependency's development-only test applications. pnpm orders the selected packages with at most two concurrent builds. A workspace-wide build sets `NOCOBASE_SKIP_WORKSPACE_DEPENDENCY_BUILD=1` because it already builds those packages in order. Build subprocesses default to `--max-old-space-size=6144` in `NODE_OPTIONS`; an explicit caller heap setting takes precedence and other Node options are preserved.
 
 ### What the host application must provide
 

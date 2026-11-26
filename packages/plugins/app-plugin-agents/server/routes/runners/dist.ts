@@ -1,329 +1,63 @@
-/**
- * `/api/agents/dist`: the runner and the application's CLI as standalone tarballs (`DIST_ROUTES` of
- * `@nocobase/agent-protocol`, served from `distribution/`).
- *
- * Who may download: a runner by its key (self-update, and the CLI a run names), the install script by the one-time
- * registration token it was given (`HEADERS.registrationToken`; the token stays unused until the script registers
- * with it) or by a download token (`HEADERS.downloadToken`: the CLI for one platform, a few downloads within 30
- * minutes), or a signed-in person. Nothing here is public: the install script itself is, from `install.ts`.
- *
- * `POST /downloadTokens` mints a download token for any signed-in person (a session or a personal API key; scoped
- * keys are refused): it reaches nothing the person could not download themselves, and lets a machine where nobody is
- * signed in yet install the CLI, after which `acme login` signs it in as that person.
- */
-import { Readable } from 'node:stream';
-
+/** Agents keeps credential precedence and its original API document while sharing the distribution implementation. */
 import {
-  DIST_ACCEPT_NPM,
-  DIST_TARGET_PATTERN,
-  distAccepts,
-  DistArtifactSchema,
-  DistManifestSchema,
-  DistNpmPackageSchema,
-  DistResolutionSchema,
-  HEADERS,
-  isDistNpmPackage,
-  ProtocolError,
-  type DistArtifact,
-  UNIVERSAL_TARGET,
-  type DistNpmPackage,
-  type DistResolution,
-} from '@nocobase/agent-protocol';
-import {
-  apiErrorResponse,
-  apiErrorResponses,
-  apiValidator,
-  dataResponse,
-  cliRoute,
-  describeRoute,
-  resolver,
-} from '@nocobase/app-server/router';
+  createDistributionRoutes,
+  downloadTokenAdmission,
+} from '@nocobase/app-cli-distribution';
+import { HEADERS, ProtocolError } from '@nocobase/agent-protocol';
 import type { Context, Hono, MiddlewareHandler } from 'hono';
-
-import { z } from 'zod';
-
 import type { Agents } from '../../composition.js';
-import { domainRouter } from '../../kernel/http.js';
-import { downloadSecurity, tags } from '../openapi.js';
-import {
-  DistFileParams,
-  DistTargetParams,
-  DistTargetQuery,
-  DownloadTokenSchema,
-} from '../schemas.js';
 import type { AdminEnv } from './admin.js';
-
+import { distributionOpenapi } from './dist.openapi.js';
+export {
+  artifactEnv,
+  npmPackageEnv,
+  resolutionEnv,
+} from '@nocobase/app-cli-distribution';
 export interface DistRoutesOptions {
-  /**
-   * Lets a signed-in person through when the request carries neither a runner key nor a registration token; it
-   * answers 401 itself otherwise. Without it only runners and the install script may download.
-   */
   readonly authenticatePerson?: MiddlewareHandler;
-  /**
-   * Authenticates a person and sets `caller`, for minting a download token; without it no one can mint one. The route
-   * contribution passes the people guard (scoped keys refused), tests a fake.
-   */
   readonly person?: MiddlewareHandler<AdminEnv>;
 }
-
-/** `key=value` lines a POSIX shell reads without a JSON parser. Values never contain a newline. */
-export function artifactEnv(artifact: DistArtifact): string {
-  const parsed = DistArtifactSchema.parse(artifact);
-  return [
-    `product=${parsed.product}`,
-    `version=${parsed.version}`,
-    `target=${parsed.target}`,
-    `url=${parsed.url}`,
-    `sha256=${parsed.sha256}`,
-    `size=${parsed.size}`,
-    `channel=${parsed.channel}`,
-    // Only for the universal tarball, so the answer for a tarball built for the platform stays as it was.
-    ...(parsed.universal === true ? ['universal=true'] : []),
-    '',
-  ].join('\n');
-}
-
-/** The same lines for an npm answer, led by `kind=npm`; only a caller that sent `accept=npm` reads them. */
-export function npmPackageEnv(npm: DistNpmPackage): string {
-  const parsed = DistNpmPackageSchema.parse(npm);
-  return [
-    `kind=${parsed.kind}`,
-    `product=${parsed.product}`,
-    `version=${parsed.version}`,
-    `package=${parsed.package}`,
-    `channel=${parsed.channel}`,
-    '',
-  ].join('\n');
-}
-
-/** `artifactEnv` or `npmPackageEnv`, whichever the answer is. */
-export function resolutionEnv(resolution: DistResolution): string {
-  return isDistNpmPackage(resolution)
-    ? npmPackageEnv(resolution)
-    : artifactEnv(resolution);
-}
-
 export function createDistRoutes(
   services: Pick<Agents, 'runners' | 'dist' | 'downloadTokens'>,
   options: DistRoutesOptions = {},
 ): Hono {
-  const router = domainRouter();
-
-  /** What a download token is asked for on this request: the manifest, a platform, or a tarball (which counts). */
-  const admitDownloadToken = async (
-    context: Context,
-    token: string,
-  ): Promise<void> => {
-    const { product, target, version, file } = context.req.param() as Partial<
-      Record<'product' | 'target' | 'version' | 'file', string>
-    >;
-    if (version !== undefined && file !== undefined && product !== undefined) {
-      // Checked before the file is looked up, so an invalid token learns nothing about which files there are.
-      await services.downloadTokens.admit(token, { product });
-      const found = await services.dist.file(product, version, file);
-      // The universal tarball serves every platform, so it downloads under whichever one the token is bound to.
-      await services.downloadTokens.admit(token, {
-        product,
-        ...(found.target === UNIVERSAL_TARGET ? {} : { target: found.target }),
-        download: true,
-      });
-      return;
-    }
-    await services.downloadTokens.admit(token, {
-      ...(product === undefined ? {} : { product }),
-      ...(target === undefined ? {} : { target }),
-    });
-  };
-
-  // Downloads read only: a runner key is checked without counting as the runner being seen.
-  const allowed: MiddlewareHandler = async (context, next) => {
-    const runnerKey = context.req.header(HEADERS.runnerKey);
-    if (runnerKey) {
-      await services.runners.authenticate(runnerKey, { touch: false });
-      return next();
-    }
-    const downloadToken = context.req.header(HEADERS.downloadToken);
-    if (downloadToken) {
-      await admitDownloadToken(context, downloadToken);
-      return next();
-    }
-    const token = context.req.header(HEADERS.registrationToken);
-    if (token) {
-      if (!(await services.runners.isRegistrationTokenUsable(token)))
-        throw new ProtocolError(
-          'REGISTRATION_TOKEN_INVALID',
-          'The registration token is unknown, used or expired. Create a new one with "Add runtime".',
-        );
-      return next();
-    }
-    if (options.authenticatePerson)
-      return options.authenticatePerson(context, next);
-    throw new ProtocolError(
-      'UNAUTHORIZED',
-      'Send a runner key, a registration token, a download token, or sign in.',
-    );
-  };
-
-  const downloadErrors = {
-    401: apiErrorResponse(
-      401,
-      'No runner key, registration token, download token or signed-in person, or one that is not valid (`UNAUTHORIZED`, `REGISTRATION_TOKEN_INVALID`, `DOWNLOAD_TOKEN_INVALID`, `RUNNER_KEY_INVALID`).',
-    ),
-    500: apiErrorResponse(500),
-  };
-  const credentials =
-    'A runner (its key), the install script (an unused registration token, or a download token for its platform) or a signed-in person may download.';
-
-  if (options.person !== undefined) {
-    const person = options.person;
-    router.post(
-      '/downloadTokens',
-      person as unknown as MiddlewareHandler,
-      describeRoute({
-        tags,
-        summary: 'Create a CLI download token',
-        operationId: 'agentsCreateDistDownloadToken',
-        // Minted by the page that shows the install prompt; a signed-in CLI has no use for one.
-        ...cliRoute(false),
-        description:
-          'A short-lived token the install script downloads the application CLI with (`curl -fsSL <server>/api/agents/dist/installScript | sh -s -- --token <token>`) on a machine where nobody is signed in yet; it is shown only in this answer. It downloads only the CLI, for the platform of its first request, a few times within 30 minutes, and registers no runner. Any signed-in person may create one: it reaches nothing they could not download themselves. Scoped API keys are refused (`SCOPED_KEY_FORBIDDEN`).',
-        responses: {
-          201: dataResponse(DownloadTokenSchema, 'Created.'),
-          ...apiErrorResponses,
-        },
-      }),
+  return createDistributionRoutes({
+    artifacts: services.dist,
+    products: 'all',
+    admissions: [
       async (context) => {
-        const caller = (context as unknown as Context<AdminEnv>).get('caller');
-        return context.json(
-          { data: await services.downloadTokens.create(caller.userId) },
-          201,
-        );
+        const key = context.req.header(HEADERS.runnerKey);
+        if (!key) return false;
+        await services.runners.authenticate(key, { touch: false });
+        return true;
       },
-    );
-  }
-
-  router.get(
-    '/manifest',
-    allowed,
-    describeRoute({
-      tags,
-      summary: 'Get the distribution manifest',
-      operationId: 'agentsGetDistManifest',
-      // Plumbing: the runner, its install script and `acme` itself download from here.
-      ...cliRoute(false),
-      description: `Every version of the runner and the CLI the application serves, per platform. ${credentials}`,
-      security: downloadSecurity,
-      responses: {
-        200: dataResponse(DistManifestSchema),
-        ...downloadErrors,
+      downloadTokenAdmission(services.downloadTokens, services.dist),
+      async (context) => {
+        const token = context.req.header(HEADERS.registrationToken);
+        if (!token) return false;
+        if (!(await services.runners.isRegistrationTokenUsable(token)))
+          throw new ProtocolError(
+            'REGISTRATION_TOKEN_INVALID',
+            'The registration token is unknown, used or expired. Create a new one with "Add runtime".',
+          );
+        return true;
       },
-    }),
-    async (context) => context.json({ data: await services.dist.manifest() }),
-  );
-
-  router.get(
-    '/products/:product/targets/:target',
-    allowed,
-    describeRoute({
-      tags,
-      summary: "Resolve a product's current artifact for a platform",
-      operationId: 'agentsResolveDistArtifact',
-      // Plumbing: the runner, its install script and `acme` itself download from here.
-      ...cliRoute(false),
-      description: `The current version of \`product\` (the application's CLI, which carries the runner, or \`nocobase-runner\`) for \`target\` (such as \`darwin-arm64\` or \`linux-x64\`), with its download path and SHA-256: the tarball built for that platform, else the universal one (\`universal: true\`), which carries no Node and needs Node.js 24 or newer on the machine. \`format=env\` answers the same as \`key=value\` lines a POSIX shell reads, as the install script does. With \`accept=npm\`, a product the application has no tarball of but names on npm (\`agents.dist.npm\`) is answered as \`{ kind: 'npm', product, version, package, channel }\`, the package and exact version to install with Node.js 24 or later, for every platform; without it such a product is 404 as before. A product with a tarball is answered the same either way. Never cached. ${credentials}`,
-      security: downloadSecurity,
-      responses: {
-        200: {
-          description:
-            "The artifact: `{ data }` in JSON, or with `format=env` the lines `product=`, `version=`, `target=`, `url=`, `sha256=`, `size=` and `channel=` as `text/plain`, and `universal=true` when the platform gets the universal tarball, which needs Node.js 24 or newer on the machine. An npm answer (only with `accept=npm`) is `{ data: { kind: 'npm', ... } }`, or the lines `kind=npm`, `product=`, `version=`, `package=` and `channel=`.",
-          content: {
-            'application/json': {
-              schema: resolver(z.object({ data: DistResolutionSchema })),
-            },
-            'text/plain': {
-              schema: {
-                type: 'string',
-                description: 'One `key=value` line per field.',
-              },
-            },
+    ],
+    ...(options.authenticatePerson
+      ? { fallback: options.authenticatePerson }
+      : {}),
+    ...(options.person
+      ? {
+          mint: {
+            guard: options.person as unknown as MiddlewareHandler,
+            tokens: services.downloadTokens,
+            createdBy: (context: Context) =>
+              (context as Context<AdminEnv>).get('caller').userId,
           },
-        },
-        404: apiErrorResponse(
-          404,
-          'The product is not served, or not for this platform (`PRODUCT_NOT_FOUND`, `PLATFORM_UNSUPPORTED`).',
-        ),
-        ...downloadErrors,
-      },
-    }),
-    apiValidator('param', DistTargetParams),
-    apiValidator('query', DistTargetQuery),
-    async (context) => {
-      const { product, target } = context.req.valid('param');
-      const query = context.req.valid('query');
-      // An npm answer only to a caller that asked for it: everyone else is answered exactly as before it existed.
-      const npm =
-        distAccepts(query.accept, DIST_ACCEPT_NPM) &&
-        DIST_TARGET_PATTERN.test(target)
-          ? await services.dist.npmPackage(product)
-          : null;
-      const resolution: DistResolution =
-        npm ?? (await services.dist.resolve(product, target));
-      if (query.format === 'env')
-        return context.text(resolutionEnv(resolution), 200, {
-          'cache-control': 'no-store',
-        });
-      return context.json({ data: resolution }, 200, {
-        'cache-control': 'no-store',
-      });
-    },
-  );
-
-  router.get(
-    '/products/:product/versions/:version/files/:file',
-    allowed,
-    describeRoute({
-      tags,
-      summary: 'Download a distribution file',
-      operationId: 'agentsDownloadDistFile',
-      // Plumbing: the runner, its install script and `acme` itself download from here.
-      ...cliRoute(false),
-      description: `A tarball the manifest lists, as \`application/gzip\`, with its SHA-256 in \`x-checksum-sha256\`. Immutable, so it may be cached. ${credentials}`,
-      security: downloadSecurity,
-      responses: {
-        200: {
-          description: 'The file.',
-          headers: {
-            'x-checksum-sha256': {
-              description: "The file's SHA-256, in hex.",
-              schema: { type: 'string' },
-            },
-          },
-          content: {
-            'application/gzip': {
-              schema: { type: 'string', format: 'binary' },
-            },
-          },
-        },
-        404: apiErrorResponse(
-          404,
-          'The manifest lists no such file (`DIST_FILE_NOT_FOUND`).',
-        ),
-        ...downloadErrors,
-      },
-    }),
-    apiValidator('param', DistFileParams),
-    async (context) => {
-      const { product, version, file: name } = context.req.valid('param');
-      const file = await services.dist.file(product, version, name);
-      const stream = Readable.toWeb(file.open()) as ReadableStream<Uint8Array>;
-      return context.body(stream, 200, {
-        'content-type': 'application/gzip',
-        'content-length': String(file.size),
-        'x-checksum-sha256': file.sha256,
-        'cache-control': 'private, max-age=31536000, immutable',
-      });
-    },
-  );
-
-  return router;
+        }
+      : {}),
+    unauthorizedMessage:
+      'Send a runner key, a registration token, a download token, or sign in.',
+    openapi: distributionOpenapi,
+  });
 }

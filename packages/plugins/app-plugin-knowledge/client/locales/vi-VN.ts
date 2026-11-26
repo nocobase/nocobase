@@ -3,6 +3,7 @@ import type { LocaleResource } from '@nocobase/i18n';
 import type enUS from './en-US.js';
 
 const viVN: LocaleResource<typeof enUS> = {
+  fileUsage: 'Tệp cơ sở tri thức',
   indexing: {
     failedDocumentCount: 'Tài liệu thất bại: {{count}}',
     enabled: 'Bật lập chỉ mục',
@@ -217,7 +218,6 @@ const viVN: LocaleResource<typeof enUS> = {
       count_other: 'Tài liệu {{count}}',
       archivedCount_one: 'Tài liệu lưu trữ {{count}}',
       archivedCount_other: 'Tài liệu lưu trữ {{count}}',
-      selectTarget: 'Mở {{title}}',
       target: 'Tạo trong {{title}}',
       chooseTarget: 'Chọn một dự án hoặc kiến thức hệ thống để tạo trong',
       expandAll: 'Mở rộng tất cả',
@@ -323,6 +323,17 @@ const viVN: LocaleResource<typeof enUS> = {
       uploaded_other:
         'Đã tải lên các tệp {{count}}; văn bản của họ đang được trích xuất.',
       download: 'Tải xuống',
+      fullscreen: 'Toàn màn hình',
+      close: 'Đóng',
+      olderVersion: 'Phiên bản {{version}} (phiên bản cũ)',
+      textHint_one:
+        'Tìm kiếm và câu trả lời của AI dùng đúng văn bản này · {{count}} dòng',
+      textHint_other:
+        'Tìm kiếm và câu trả lời của AI dùng đúng văn bản này · {{count}} dòng',
+      copy: 'Sao chép',
+      copied: 'Đã sao chép.',
+      copyFailed:
+        'Không thể tự động sao chép ở đây; hãy chọn văn bản và tự sao chép.',
       version: 'Phiên bản {{version}}',
       statusHint: {
         parsing:
@@ -408,6 +419,7 @@ const viVN: LocaleResource<typeof enUS> = {
       contents: 'Nội dung',
       edit: 'Chỉnh sửa',
       rename: 'Đổi tên',
+      properties: 'Thuộc tính và tóm tắt',
       history: 'Lịch sử',
       verify: 'Đánh dấu đã xác minh',
       verifiedToast: 'Đánh dấu đã xác minh.',

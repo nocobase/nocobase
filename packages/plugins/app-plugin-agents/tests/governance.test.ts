@@ -8,8 +8,12 @@ import { afterEach, describe, expect, it } from 'vitest';
 import type { AgentsEvent } from '../server/kernel/events.js';
 import { createHarness, skillMd, type Harness } from './harness.js';
 
-const ADMIN = ['agents.agents/manage', 'agents.runners/manage'];
-const READ = ['agents.agents/read'];
+const ADMIN = [
+  'agents.agents/manage',
+  'agents.skills/manage',
+  'agents.runners/manage',
+];
+const READ = ['agents.agents/read', 'agents.skills/read'];
 const OWN = ['agents.agents/edit=related'];
 
 describe('agent governance', () => {

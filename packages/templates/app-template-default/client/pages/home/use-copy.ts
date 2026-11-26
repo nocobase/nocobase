@@ -5,7 +5,7 @@ import { useCallback, useEffect, useState } from 'react';
 export interface CopyState {
   /** Whether the last copy succeeded within the past two seconds, for a button to show a check mark. */
   readonly copied: boolean;
-  readonly copy: (text: string) => Promise<void>;
+  readonly copy: (text: string) => void;
 }
 
 /** Copies text to the clipboard and reports the outcome in a toast. */
@@ -21,18 +21,19 @@ export function useCopy(): CopyState {
   }, [copied]);
 
   const copy = useCallback(
-    async (text: string): Promise<void> => {
-      try {
-        if (!(await copyText(text))) {
-          toaster.show({ type: 'error', title: t('home.prompt.copyFailed') });
-          return;
-        }
-        setCopied(true);
-        toaster.show({ type: 'success', title: t('home.prompt.copied') });
-      } catch {
-        // Copying can fail when neither browser mechanism is available.
+    (text: string): void => {
+      const reportFailure = () =>
         toaster.show({ type: 'error', title: t('home.prompt.copyFailed') });
-      }
+      copyText(text)
+        .then((success) => {
+          if (!success) {
+            reportFailure();
+            return;
+          }
+          setCopied(true);
+          toaster.show({ type: 'success', title: t('home.prompt.copied') });
+        })
+        .catch(reportFailure);
     },
     [t, toaster],
   );

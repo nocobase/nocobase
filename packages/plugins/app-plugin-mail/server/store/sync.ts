@@ -5,11 +5,20 @@ import {
 import { mailFailedPrecondition } from '../services/errors.js';
 import { lockWritableAccount } from './account-guard.js';
 import { validateLogPagination } from '../log-pagination.js';
+import {
+  accountIdsOfMember,
+  applyLogCursor,
+  applyManagedLogFilter,
+  encodeLogCursor,
+  FINISHED_SYNC_RUN_STATUSES,
+} from './log-filter.js';
 import { type DatabaseManager, type QueryAdapter } from '@nocobase/db';
 import { randomUUID, randomBytes } from 'node:crypto';
 import {
   MAIL_LOCAL_DRAFT_FOLDER_ID,
-  type MailOffsetPage,
+  type MailFolderChoices,
+  type MailManagedLogFilter,
+  type MailPage,
   type MailProviderError,
   type MailSyncCursor,
   type MailSyncRun,
@@ -20,14 +29,18 @@ import {
   type MailSyncBatch,
   type MailSyncStepCommit,
 } from '../contracts/persistence.js';
-import { fromSyncRunRow, toSyncRunRow } from './mappers.js';
+import { fromFolderRow, fromSyncRunRow, toSyncRunRow } from './mappers.js';
 import {
   applyImapLocationChanges,
   deleteImapOrphans,
   deleteMessages,
+  deleteMessagesOutsideSyncFolders,
+  listMessagesInFolders,
+  pruneMessagesOutsideSyncFolders,
   refreshImapMessages,
   removeMessagesFromFolders,
   removeStaleMessageFolders,
+  unlinkProviderFolders,
   upsertFolders,
   upsertImapMessages,
   upsertMessages,
@@ -45,6 +58,7 @@ import type {
 } from '../adapters/imap-smtp/types.js';
 import {
   type AccountRow,
+  type FolderRow,
   type ImapLocationRow,
   type MessageRow,
   type OutboxRow,
@@ -108,6 +122,19 @@ export class MailSyncStore {
     return row?.lastSyncedAt;
   }
 
+  public async listLastSyncedAt(): Promise<ReadonlyMap<string, string>> {
+    const rows = await this.database
+      .query()
+      .selectFrom<SyncStateRow>('mailSyncStates')
+      .select(['accountId', 'lastSyncedAt'])
+      .execute<Pick<SyncStateRow, 'accountId' | 'lastSyncedAt'>>();
+    return new Map(
+      rows.flatMap((row) =>
+        row.lastSyncedAt ? [[row.accountId, row.lastSyncedAt] as const] : [],
+      ),
+    );
+  }
+
   public async clearSyncCursor(accountId: string): Promise<void> {
     await this.database
       .query()
@@ -120,18 +147,7 @@ export class MailSyncStore {
     input: MailCreateSyncRunInput,
   ): Promise<MailSyncRun> {
     const now = new Date().toISOString();
-    const run: MailSyncRun = {
-      ...input,
-      phase: 'preparing',
-      status: 'pending',
-      historyStartedAt: now,
-      revision: 0,
-      processedMessages: 0,
-      processedPages: 0,
-      retryAttempts: 0,
-      createdAt: now,
-      updatedAt: now,
-    };
+    const run = newSyncRun(input, now);
     try {
       await this.database.transaction(async (connection): Promise<void> => {
         const account = await connection.query
@@ -163,6 +179,61 @@ export class MailSyncStore {
     return run;
   }
 
+  /**
+   * Save an active account's folder selection, cancel its active runs and queue `run` in one transaction, so a failed
+   * request saves nothing and the last of two concurrent requests owns both the selection and the active run.
+   */
+  public async replaceSyncFolders(
+    syncFolderIds: readonly string[] | undefined,
+    input: MailCreateSyncRunInput,
+  ): Promise<MailSyncRun | undefined> {
+    const now = new Date().toISOString();
+    const run = newSyncRun(input, now);
+    return this.database.transaction(
+      async ({ query }): Promise<MailSyncRun | undefined> => {
+        // Updating the account first serializes with other selections, sweeps and account removal.
+        const account = await query
+          .updateTable<AccountRow>('mailAccounts')
+          .set({ syncFolderIds: jsonOrNull(syncFolderIds), updatedAt: now })
+          .where('id', '=', input.accountId)
+          .where('status', '=', 'active')
+          .execute();
+        if (account.updatedCount !== 1) return undefined;
+        const active = await query
+          .selectFrom<SyncRunRow>('mailSyncRuns')
+          .select(['id', 'revision'])
+          .where('accountId', '=', input.accountId)
+          .where('status', 'in', ['pending', 'running'])
+          .execute<Pick<SyncRunRow, 'id' | 'revision'>>();
+        for (const row of active) {
+          const cancelled = await query
+            .updateTable<SyncRunRow>('mailSyncRuns')
+            .set({
+              status: 'cancelled',
+              activeKey: null,
+              revision: Number(row.revision) + 1,
+              leaseToken: null,
+              leaseExpiresAt: null,
+              updatedAt: now,
+              completedAt: now,
+            })
+            .where('id', '=', row.id)
+            .where('revision', '=', row.revision)
+            .where('status', 'in', ['pending', 'running'])
+            .execute();
+          if (cancelled.updatedCount !== 1)
+            throw new Error('Mail sync run changed while it was replaced.');
+        }
+        await query
+          .insertInto<SyncRunRow>('mailSyncRuns')
+          .values(toSyncRunRow(run))
+          .execute();
+        await insertOutbox(query, run, 0, now);
+        return run;
+      },
+    );
+  }
+
   public async findActiveSyncRun(
     accountId: string,
   ): Promise<MailSyncRun | undefined> {
@@ -175,6 +246,60 @@ export class MailSyncStore {
       .orderBy('createdAt', 'asc')
       .executeTakeFirst<SyncRunRow>();
     return row ? fromSyncRunRow(row) : undefined;
+  }
+
+  /**
+   * The account's folders together with whether they form a complete listing. A run that left `preparing` committed
+   * its last folder page in that step, so reading the runs before the folders, in one transaction, never reports a
+   * partial list as complete; later listings only add folders until their own last page. `failed` means no listing
+   * has completed and none is running, so the owner has to start one again.
+   */
+  public async getFolderCatalog(accountId: string): Promise<MailFolderChoices> {
+    return this.database.transaction(async ({ query }) => {
+      const listed = await query
+        .selectFrom<SyncRunRow>('mailSyncRuns')
+        .select(['id'])
+        .where('accountId', '=', accountId)
+        .where('phase', '!=', 'preparing')
+        .limit(1)
+        .executeTakeFirst<Pick<SyncRunRow, 'id'>>();
+      const listing = listed
+        ? undefined
+        : await query
+            .selectFrom<SyncRunRow>('mailSyncRuns')
+            .select(['id'])
+            .where('accountId', '=', accountId)
+            .where('status', 'in', ['pending', 'running'])
+            .limit(1)
+            .executeTakeFirst<Pick<SyncRunRow, 'id'>>();
+      const ran = listed
+        ? undefined
+        : await query
+            .selectFrom<SyncRunRow>('mailSyncRuns')
+            .select(['id'])
+            .where('accountId', '=', accountId)
+            .limit(1)
+            .executeTakeFirst<Pick<SyncRunRow, 'id'>>();
+      const state = await query
+        .selectFrom<SyncStateRow>('mailSyncStates')
+        .select(['accountId'])
+        .where('accountId', '=', accountId)
+        .executeTakeFirst<Pick<SyncStateRow, 'accountId'>>();
+      const rows = await query
+        .selectFrom<FolderRow>('mailFolders')
+        .selectAll()
+        .where('accountId', '=', accountId)
+        .orderBy('name', 'asc')
+        .execute<FolderRow>();
+      // An account without any run keeps the folders it already has.
+      const complete = listed !== undefined || ran === undefined;
+      return {
+        folders: rows.map(fromFolderRow),
+        complete,
+        failed: !complete && listing === undefined,
+        initialSyncCompleted: state !== undefined,
+      };
+    });
   }
 
   public async getSyncRun(syncRunId: string): Promise<MailSyncRun | undefined> {
@@ -231,30 +356,77 @@ export class MailSyncStore {
   }
 
   public async listAllSyncRuns(
-    offset: number,
+    pageToken: string | undefined,
     limit: number,
-  ): Promise<MailOffsetPage<MailSyncRun>> {
-    validateLogPagination(offset, limit);
+    filter: MailManagedLogFilter = {},
+  ): Promise<MailPage<MailSyncRun>> {
+    validateLogPagination(0, limit);
+    const memberAccountIds = await accountIdsOfMember(this.accounts, filter);
+    if (memberAccountIds?.length === 0) return { items: [], total: 0 };
     const [rows, count] = await Promise.all([
-      this.database
-        .query()
-        .selectFrom<SyncRunRow>('mailSyncRuns')
-        .selectAll()
+      applyLogCursor(
+        applyManagedLogFilter(
+          this.database
+            .query()
+            .selectFrom<SyncRunRow>('mailSyncRuns')
+            .selectAll(),
+          filter,
+          memberAccountIds,
+        ),
+        pageToken,
+      )
         .orderBy('createdAt', 'desc')
         .orderBy('id', 'desc')
-        .offset(offset)
-        .limit(limit)
+        // One row past the page tells whether another page follows.
+        .limit(limit + 1)
         .execute<SyncRunRow>(),
-      this.database
-        .query()
-        .selectFrom<SyncRunRow>('mailSyncRuns')
-        .select(({ fn }) => [fn.countAll().as('count')])
-        .executeTakeFirst<{ readonly count: number | string }>(),
+      applyManagedLogFilter(
+        this.database
+          .query()
+          .selectFrom<SyncRunRow>('mailSyncRuns')
+          .select(({ fn }) => [fn.countAll().as('count')]),
+        filter,
+        memberAccountIds,
+      ).executeTakeFirst<{ readonly count: number | string }>(),
     ]);
+    const items = rows.slice(0, limit).map(fromSyncRunRow);
+    const last = items.at(-1);
     return {
-      items: rows.map(fromSyncRunRow),
+      items,
       total: Number(count?.count ?? 0),
+      ...(rows.length > limit && last
+        ? { nextCursor: encodeLogCursor(last) }
+        : {}),
     };
+  }
+
+  public async deleteFinishedSyncRunsBefore(
+    before: string,
+    limit: number,
+  ): Promise<number> {
+    const ids = await this.database
+      .query()
+      .selectFrom<SyncRunRow>('mailSyncRuns')
+      .select('id')
+      .where('createdAt', '<', before)
+      .where('status', 'in', [...FINISHED_SYNC_RUN_STATUSES])
+      .orderBy('createdAt', 'asc')
+      .orderBy('id', 'asc')
+      .limit(limit)
+      .pluck<string>('id');
+    if (ids.length === 0) return 0;
+    return this.database.transaction(async ({ query }) => {
+      await query
+        .deleteFrom('mailSyncTombstones')
+        .where('runId', 'in', ids)
+        .execute();
+      const result = await query
+        .deleteFrom<SyncRunRow>('mailSyncRuns')
+        .where('id', 'in', ids)
+        .where('status', 'in', [...FINISHED_SYNC_RUN_STATUSES])
+        .execute();
+      return result.deletedCount ?? 0;
+    });
   }
 
   /** Recreate lost queue deliveries from durable checkpoints, fenced by revision and lease. */
@@ -428,7 +600,23 @@ export class MailSyncStore {
         input.run.accountId,
         input.folders ?? [],
       );
+      const scope = input.run.policy.syncFolderIds;
+      let leftDeletedFolders: readonly string[] = [];
       if (input.completeProviderFolderIds) {
+        // A selected folder deleted on the server is never synchronized again, so its messages are collected before
+        // their links go; an initial run prunes the whole account instead.
+        if (scope && !input.pruneToFolderIds) {
+          const complete = new Set(input.completeProviderFolderIds);
+          const deletedFolders = scope.filter(
+            (id) => complete.size === 0 || !complete.has(id),
+          );
+          if (deletedFolders.length > 0)
+            leftDeletedFolders = await listMessagesInFolders(
+              connection.query,
+              input.run.accountId,
+              deletedFolders,
+            );
+        }
         let staleFolders = connection.query
           .deleteFrom('mailFolders')
           .where('accountId', '=', input.run.accountId);
@@ -451,6 +639,12 @@ export class MailSyncStore {
           input.completeProviderFolderIds,
         );
       }
+      if (input.pruneToFolderIds)
+        await pruneMessagesOutsideSyncFolders(
+          connection.query,
+          input.run.accountId,
+          input.pruneToFolderIds,
+        );
       let messages = input.messages;
       if (input.historyPage && messages.length > 0) {
         const removed = await connection.query
@@ -538,23 +732,61 @@ export class MailSyncStore {
         input.run.accountId,
         input.deletedProviderMessageIds ?? [],
       );
-      const pendingPush =
+      if (scope) {
+        // Only messages this step reported, or that were in a deleted selected folder, can have left the selection.
+        await unlinkProviderFolders(
+          connection.query,
+          input.run.accountId,
+          input.outOfScopeProviderMessageIds ?? [],
+        );
+        const changed = [
+          ...leftDeletedFolders,
+          ...(input.outOfScopeProviderMessageIds ?? []),
+          ...(input.removedFromFolders ?? []).map(
+            (removal) => removal.providerMessageId,
+          ),
+        ];
+        if (changed.length > 0)
+          await deleteMessagesOutsideSyncFolders(
+            connection.query,
+            input.run.accountId,
+            scope,
+            changed,
+          );
+      }
+      const pushRequest =
         input.status === 'completed'
           ? await connection.query
               .selectFrom<PushPendingRow>('mailPushPending')
-              .select(['accountId', 'requestToken'])
+              .select(['accountId', 'requestToken', 'requestedAt'])
               .where('accountId', '=', input.run.accountId)
               .executeTakeFirst<
-                Pick<PushPendingRow, 'accountId' | 'requestToken'>
+                Pick<
+                  PushPendingRow,
+                  'accountId' | 'requestToken' | 'requestedAt'
+                >
               >()
           : undefined;
-      if (pendingPush) {
-        await connection.query
+      let pushDeleted = false;
+      if (pushRequest) {
+        const deleted = await connection.query
           .deleteFrom<PushPendingRow>('mailPushPending')
           .where('accountId', '=', input.run.accountId)
-          .where('requestToken', '=', pendingPush.requestToken)
+          .where('requestToken', '=', pushRequest.requestToken)
           .execute();
+        pushDeleted = deleted.deletedCount === 1;
       }
+      // A completed IMAP verification has observed arrivals notified before
+      // this step was claimed. Keep later (or same-millisecond) pushes so a
+      // message arriving after the final LIST still gets a follow-up run.
+      const pendingPush =
+        pushRequest &&
+        (!pushDeleted ||
+          !(
+            imap?.cleanup &&
+            Date.parse(pushRequest.requestedAt) <
+              Date.parse(input.run.updatedAt)
+          ));
       // Only the step that finishes the run, after every batch and two
       // matching verification passes, may remove messages without copies.
       if (imap?.cleanup && input.status === 'completed' && !pendingPush) {
@@ -594,6 +826,9 @@ export class MailSyncStore {
               ? {
                   receivedAfter: input.receivedAfter,
                   batchSize: input.run.policy.batchSize,
+                  ...(input.run.policy.syncFolderIds
+                    ? { syncFolderIds: input.run.policy.syncFolderIds }
+                    : {}),
                 }
               : input.run.policy,
           ),
@@ -651,7 +886,13 @@ export class MailSyncStore {
           .where('accountId', '=', input.run.accountId)
           .execute();
       }
-      if (input.status === 'completed' && input.changeCursor) {
+      if (
+        input.changeCursor &&
+        (input.status === 'completed' ||
+          (input.status === 'partial' &&
+            (input.run.mode === 'incremental' ||
+              (input.historyComplete ?? input.run.historyComplete))))
+      ) {
         await upsertSyncState(
           connection.query,
           input.run.accountId,
@@ -1473,6 +1714,15 @@ export function createImapLocationPersistence(
       const rows = await select(query).execute<ImapLocationRow>();
       return resolve(query, rows);
     },
+    async getPushRequestedAt() {
+      const row = await database
+        .query()
+        .selectFrom<PushPendingRow>('mailPushPending')
+        .select('requestedAt')
+        .where('accountId', '=', accountId)
+        .executeTakeFirst<Pick<PushPendingRow, 'requestedAt'>>();
+      return row?.requestedAt;
+    },
     commitFlags,
     commitDeleted,
     commitSyncStep(input, evidence) {
@@ -1505,5 +1755,20 @@ function toStoredLocation(
     source: ((draft
       ? message.providerDraftMessageIdSource
       : message.imapIdSource) ?? undefined) as ImapIdSource | undefined,
+  };
+}
+
+function newSyncRun(input: MailCreateSyncRunInput, now: string): MailSyncRun {
+  return {
+    ...input,
+    phase: 'preparing',
+    status: 'pending',
+    historyStartedAt: now,
+    revision: 0,
+    processedMessages: 0,
+    processedPages: 0,
+    retryAttempts: 0,
+    createdAt: now,
+    updatedAt: now,
   };
 }

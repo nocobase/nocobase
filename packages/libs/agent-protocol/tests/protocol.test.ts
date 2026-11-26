@@ -27,6 +27,7 @@ import {
   routePath,
   RUNNER_ROUTES,
   RunCliSchema,
+  RunInputSchema,
   RunMountSchema,
   RunPayloadSchema,
   SkillBundleSchema,
@@ -37,7 +38,26 @@ import {
   RepoReportSchema,
   RunGitSchema,
   RunnerFeatureSchema,
+  NpmCredentialRequestSchema,
 } from '../src/index.js';
+
+it('reads a retired input type as a generic input without losing its details', () => {
+  const input = {
+    id: 'input-1',
+    type: 'retired-trigger',
+    at: '2026-10-01T00:00:00.000Z',
+    actor: { kind: 'user', id: 'alice', name: 'Alice' },
+    text: 'Historical context',
+    payload: { revision: 1 },
+  };
+  expect(RunInputSchema.parse(input)).toEqual({ ...input, type: 'custom' });
+  expect(RunInputSchema.parse({ ...input, type: 'comment' }).type).toBe(
+    'comment',
+  );
+  expect(RunInputSchema.safeParse({ ...input, type: null }).success).toBe(
+    false,
+  );
+});
 
 it('accepts an optional confirmed session on cancellation and remains compatible with old runners', () => {
   expect(CancelAckRequestSchema.parse({})).toEqual({});
@@ -117,8 +137,8 @@ const payload: RunPayload = {
 };
 
 describe('agent protocol', () => {
-  it('is version 16 and still serves versions 3 to 15', () => {
-    expect(PROTOCOL_VERSION).toBe(16);
+  it('is version 18 and still serves versions 3 to 17', () => {
+    expect(PROTOCOL_VERSION).toBe(18);
     expect(MIN_PROTOCOL_VERSION).toBe(3);
     expect(isProtocolSupported(3)).toBe(true);
     expect(isProtocolSupported(4)).toBe(true);
@@ -135,7 +155,9 @@ describe('agent protocol', () => {
     expect(isProtocolSupported(14)).toBe(true);
     expect(isProtocolSupported(15)).toBe(true);
     expect(isProtocolSupported(16)).toBe(true);
-    expect(isProtocolSupported(17)).toBe(false);
+    expect(isProtocolSupported(17)).toBe(true);
+    expect(isProtocolSupported(18)).toBe(true);
+    expect(isProtocolSupported(19)).toBe(false);
     expect(isProtocolSupported(3.5)).toBe(false);
   });
 
@@ -513,7 +535,6 @@ describe('agent protocol', () => {
     expect(exitCodeFor('ISSUE_NOT_FOUND', 'NOT_FOUND')).toBe(
       EXIT_CODES.notFound,
     );
-    expect(exitCodeFor('PLAN_REQUIRED')).toBe(EXIT_CODES.planRequired);
 
     const error = new ProtocolError('LEASE_LOST', 'Lost', { runId: 'r1' });
     expect(error).toMatchObject({
@@ -598,6 +619,21 @@ describe('agent protocol', () => {
       }).load.tools,
     ).toEqual({ claude: { slots: 2, free: 0 } });
   });
+});
+
+it('accepts every npm credential reason and keeps older runner protocols supported', () => {
+  for (const reason of ['declared', 'notFound', 'unauthorized'])
+    expect(NpmCredentialRequestSchema.parse({ attempt: 1, reason })).toEqual({
+      attempt: 1,
+      reason,
+    });
+  expect(
+    NpmCredentialRequestSchema.safeParse({ attempt: 1, reason: 'unknown' })
+      .success,
+  ).toBe(false);
+  expect(isProtocolSupported(16)).toBe(true);
+  expect(isProtocolSupported(17)).toBe(true);
+  expect(isProtocolSupported(PROTOCOL_VERSION + 1)).toBe(false);
 });
 
 it('declares optional block streaming and validates empty end events without changing legacy messages', () => {

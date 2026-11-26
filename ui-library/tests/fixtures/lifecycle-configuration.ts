@@ -4,14 +4,17 @@ export const description: LifecycleDescription = {
   name: 'expenses',
   initial: 'review',
   initialStates: ['review'],
-  states: ['review'],
-  stateInfo: [{ name: 'review', title: 'Review', final: false, meta: {} }],
+  states: ['review', 'approved'],
+  stateInfo: [
+    { name: 'review', title: 'Review', final: false, meta: {} },
+    { name: 'approved', title: 'Approved', final: true, meta: {} },
+  ],
   transitions: [
     {
       name: 'approve',
       title: 'Approve',
       from: ['review'],
-      to: ['review'],
+      to: ['approved'],
       effects: [],
       accept: [],
       manual: true,
@@ -22,7 +25,6 @@ export const description: LifecycleDescription = {
   onEnter: {},
   triggers: [],
   parameterConfiguration: {
-    readMode: 'snapshot',
     groups: [
       {
         key: 'approval',

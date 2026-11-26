@@ -10,6 +10,7 @@ import {
   type UsageSeriesPoint,
 } from '../../../shared/reports.js';
 import type { SubjectVocabulary } from '../../../shared/vocabulary.js';
+import { BUSINESS_MOUNT } from '../../mount.js';
 
 /** `YYYY-MM-DD` of a local date. */
 export function toDay(date: Date): string {
@@ -187,20 +188,21 @@ export function formatDayRange(
 }
 
 /**
- * Where a row links to: an agent to its page, a group or a subject (`kind:id`) to where the application shows it
+ * Where a row links to: an agent to its page where the pages are mounted (`client/mount.ts`), a group or a subject (`kind:id`) to where the application shows it
  * (`SubjectVocabulary.path`, `groupPath`); null when nowhere.
  */
 export function rowLink(
   groupBy: UsageGroupBy,
   key: string,
   subjects: readonly SubjectVocabulary[],
+  agentLink: (key: string) => string | null = BUSINESS_MOUNT.agentLink,
 ): string | null {
   if (!key) return null;
   const fill = (path: string | null | undefined, id: string) =>
     path ? path.replace('{id}', encodeURIComponent(id)) : null;
   switch (groupBy) {
     case 'agent':
-      return `/agents/${encodeURIComponent(key)}`;
+      return agentLink(key);
     case 'group':
       return fill(
         subjects.find((subject) => subject.groupPath)?.groupPath,

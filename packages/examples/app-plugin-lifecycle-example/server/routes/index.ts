@@ -1,3 +1,10 @@
+import { authorizationToken } from '@nocobase/app-plugin-authorization';
+import { signedInUser } from './api.js';
+import {
+  ticketAdministrator,
+  ticketManagementRoutes,
+} from './ticket-management.js';
+import { z } from 'zod';
 import { configurationRoutes } from './parameter-configuration.js';
 import { parameterConfigurationServiceToken } from '../tokens.js';
 import {
@@ -27,7 +34,11 @@ import {
   durableFlowServiceToken,
   lifecycleExampleServiceToken,
 } from '../tokens.js';
-import type { ExampleLifecycleName, Plain } from '../tokens.js';
+import {
+  NEW_EXPENSE_DEFINITION,
+  type ExampleLifecycleName,
+  type Plain,
+} from '../tokens.js';
 import { outward, tags, toApiError } from './api.js';
 import { durableFlowRoutes, webhookRoutes } from './durable-flows.js';
 import { lifecycleRoutes } from './lifecycle.js';
@@ -82,9 +93,16 @@ function listRoutes(
         page,
         pageSize,
         total: result.total,
-        parameters: (await service.parameters(name)) as Readonly<
-          Record<string, unknown>
-        >,
+        // What a new record runs with: new reports use the latest
+        // definition their entry names, not the first.
+        parameters: (await service.parameters(
+          name === 'expenses' ? NEW_EXPENSE_DEFINITION : name,
+        )) as Readonly<Record<string, unknown>>,
+        states: service.runtime.groupStates(name).map((state) => ({
+          name: state.name,
+          title: state.title,
+          final: state.final,
+        })),
       },
     });
 
@@ -133,12 +151,24 @@ function listRoutes(
       },
     }),
     apiValidator('query', ActAsQuery),
+    apiValidator(
+      'header',
+      z.object({ 'idempotency-key': z.string().min(1).max(200).optional() }),
+    ),
     apiValidator('json', CreateTicketInput),
     async (context) => {
       const { actAs } = context.req.valid('query');
       const values = context.req.valid('json');
       return context.json(
-        { data: outward(await service.createTicket(values, actAs)) },
+        {
+          data: outward(
+            await service.createTicket(
+              values,
+              actAs,
+              context.req.valid('header')['idempotency-key'],
+            ),
+          ),
+        },
         201,
       );
     },
@@ -151,7 +181,7 @@ function listRoutes(
       summary: 'List expense reports',
       operationId: 'lifecycleExampleListExpenses',
       description:
-        'An applicant’s own reports, or with `view=approvals` those waiting for the persona’s decision, newest first.',
+        'An applicant’s own reports, or with `view=approvals` those waiting for the persona’s decision, newest first. Reports of every version of the process are listed together; `status` narrows them to one state, and `meta.states` lists every state any version declares.',
       responses: {
         200: listResponse(ExampleRecord, ListMeta),
         401: apiErrorResponse(401),
@@ -160,13 +190,14 @@ function listRoutes(
     }),
     apiValidator('query', ListExpensesQuery),
     async (context) => {
-      const { actAs, page, pageSize, view } = context.req.valid('query');
+      const { actAs, page, pageSize, view, status } =
+        context.req.valid('query');
       return context.json(
         await list(
           'expenses',
           page,
           pageSize,
-        )(await service.listExpenses(actAs, view, { page, pageSize })),
+        )(await service.listExpenses(actAs, view, { page, pageSize }, status)),
       );
     },
   );
@@ -177,7 +208,7 @@ function listRoutes(
       summary: 'Draft an expense report',
       operationId: 'lifecycleExampleCreateExpense',
       description:
-        'Created through the expense lifecycle in `draft`, whose `create` lets only an employee file one, for themselves.',
+        'Creates a draft through its concrete definition, atomically freezing all effective parameters with the record. Only an employee may file one for themselves; configuration edits affect later-created records, including drafts.',
       responses: {
         201: dataResponse(ExampleRecord, 'The report, in `draft`.'),
         401: apiErrorResponse(401),
@@ -207,6 +238,9 @@ export const apiRoutes: AppApiRouteContribution<AppPluginApplication> =
     const authentication = container.resolve(authenticationToken);
     const service = container.resolve(lifecycleExampleServiceToken);
     const flows = container.resolve(durableFlowServiceToken);
+    const authorization = container.has(authorizationToken)
+      ? container.resolve(authorizationToken)
+      : undefined;
 
     router.use(`${BASE}/*`, authentication.required());
     router.onError((error, context) =>
@@ -235,6 +269,7 @@ export const apiRoutes: AppApiRouteContribution<AppPluginApplication> =
     configurationRoutes(router, BASE, configuration);
     listRoutes(router, service);
     durableFlowRoutes(router, BASE, flows);
+    ticketManagementRoutes(router, BASE, service.runtime, authorization);
 
     // Each record's routes — its lifecycle, view, transitions and effect
     // runs — follow the paths `@nocobase/lifecycle/react` calls.
@@ -252,12 +287,25 @@ export const apiRoutes: AppApiRouteContribution<AppPluginApplication> =
         basePath: BASE,
         lifecycle,
         noun,
+        ...(lifecycle === 'tickets'
+          ? {
+              managementActor: async (context) => {
+                const id = signedInUser(context);
+                return (await ticketAdministrator(authorization, id))
+                  ? { id }
+                  : undefined;
+              },
+            }
+          : {}),
         ...(['tickets', 'expenses'].includes(lifecycle)
           ? {
+              // Every version's groups: a record of any of them is served here.
               authorizeParameters: (actor: string) => {
-                for (const group of service.runtime.describe(lifecycle)
-                  .parameterConfiguration!.groups)
-                  configuration.authorize(actor, 'read', group.key);
+                for (const { name } of service.runtime.group(lifecycle)
+                  .versions)
+                  for (const group of service.runtime.describe(name)
+                    .parameterConfiguration!.groups)
+                    configuration.authorize(actor, 'read', group.key);
               },
             }
           : {}),

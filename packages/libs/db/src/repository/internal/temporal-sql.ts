@@ -60,6 +60,12 @@ export function temporalProjection(
   assertPrecision(field);
   const strategy =
     getDatabaseDriverRuntime(client)?.repository?.temporalProjection;
-  if (strategy) return strategy({ client, field, reference });
-  return referenceExpression;
+  if (!strategy) return referenceExpression;
+  // Keep SQL NULL as NULL whatever the dialect's concatenation semantics:
+  // KingbaseES in Oracle-compatible mode, for example, turns `NULL || 'Z'`
+  // into `'Z'`, which is not a temporal value.
+  return client.raw('case when ? is null then null else ? end', [
+    referenceExpression,
+    strategy({ client, field, reference }),
+  ]);
 }

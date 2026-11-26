@@ -1,0 +1,512 @@
+/**
+ * The viewer's own conversations, grouped (waiting for them, in progress, recent) and last message first within a
+ * group, in the panel's history view, the conversation list on its left while
+ * it covers the content, and the full-page view's history dialog: an optional header, search over titles and messages,
+ * a filter by agent, then the list, and at the bottom the toggle between open and archived ones. With `mode` the list
+ * holds that mode's conversations only (online or runner agents) and its agent filter that mode's agents; without it,
+ * every conversation, with a filter by where a conversation started. Each row opens its conversation; its menu opens it
+ * full screen (when the application has a page for it), renames it in place, or archives it (undo in the toast) or
+ * brings it back. `ChatHistoryDialog` shows the list in a dialog, for a page rather than the panel.
+ */
+import {
+  agentsOfMode,
+  CHAT_PANEL_ATTRIBUTE,
+  chatIsRunning,
+  useAgentText,
+  useChatAgents,
+  useConversationActions,
+  useConversationList,
+  useConversationSources,
+  useFormatters,
+} from '../chat.js';
+import {
+  CONVERSATION_TITLE_MAX,
+  PANEL_SOURCE,
+  type ConversationListQuery,
+  type ConversationMode,
+  type ConversationSummary,
+} from '../../shared/conversations.js';
+import {
+  ArchiveIcon,
+  ArchiveRestoreIcon,
+  Maximize2Icon,
+  MoreHorizontalIcon,
+  PencilIcon,
+  SearchIcon,
+} from 'lucide-react';
+import {
+  useEffect,
+  useState,
+  type ComponentType,
+  type ReactElement,
+  type ReactNode,
+} from 'react';
+
+import { Button } from '../components/ui/button.js';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '../components/ui/dialog.js';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuGroup,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '../components/ui/dropdown-menu.js';
+import { Input } from '../components/ui/input.js';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '../components/ui/select.js';
+import { Skeleton } from '../components/ui/skeleton.js';
+import { cn } from 'cn';
+
+import { useChatTranslation } from './chat-i18n.js';
+import { LoadError, Pulse } from './chat-ui.js';
+import { replaceable } from '../ui-slots.js';
+import { HISTORY_GROUPS, historyGroup } from './history-groups.js';
+
+const ALL = '__all__';
+
+export interface HistoryListProps {
+  /** Above the search, such as the list's title and a new conversation button. */
+  readonly header?: ReactNode;
+  readonly activeId: string | null;
+  readonly onOpen: (conversationId: string) => void;
+  /** Offered in each row's menu: open the conversation on the application's full-page view. */
+  readonly onOpenPage?: ((conversationId: string) => void) | null;
+  /** Only this mode's conversations (online or runner agents); left out, every conversation. */
+  readonly mode?: ConversationMode | null;
+  readonly className?: string;
+}
+
+export function HistoryList({
+  header,
+  activeId,
+  onOpen,
+  onOpenPage,
+  mode,
+  className,
+}: HistoryListProps): ReactElement {
+  const { t } = useChatTranslation();
+  const agents = useChatAgents();
+  const sources = useConversationSources();
+  const agentText = useAgentText();
+  const [text, setText] = useState('');
+  const [q, setQ] = useState('');
+  const [archived, setArchived] = useState(false);
+  const [agentId, setAgentId] = useState(ALL);
+  const [source, setSource] = useState(ALL);
+  // A filter of the other mode's agent would hide every row.
+  const [seenMode, setSeenMode] = useState(mode);
+  if (seenMode !== mode) {
+    setSeenMode(mode);
+    setAgentId(ALL);
+  }
+  useEffect(() => {
+    const timer = window.setTimeout(() => setQ(text.trim()), 300);
+    return () => window.clearTimeout(timer);
+  }, [text]);
+  const bySource = !mode;
+  const query: ConversationListQuery = {
+    archived,
+    ...(q ? { q } : {}),
+    ...(mode ? { mode } : {}),
+    ...(agentId === ALL ? {} : { agentId }),
+    ...(bySource && source !== ALL ? { source } : {}),
+  };
+  const pages = useConversationList(query);
+  const items = pages.data?.pages.flatMap((page) => page.items) ?? [];
+  const listed = mode
+    ? agentsOfMode(agents.data ?? [], mode)
+    : (agents.data ?? []);
+  const agentItems = [
+    { value: ALL, label: t('chat.history.allAgents') },
+    ...listed.map((agent) => ({
+      value: agent.id,
+      label: agentText.name(agent),
+    })),
+  ];
+  // The online agent is one: a filter by agent would choose nothing.
+  const byAgent = mode !== 'online';
+  const sourceItems = [
+    { value: ALL, label: t('chat.history.allSources') },
+    { value: PANEL_SOURCE, label: t('chat.sources.panel') },
+    ...sources.map((source) => ({ value: source.key, label: source.label })),
+  ];
+  const filtered =
+    Boolean(q) || agentId !== ALL || (bySource && source !== ALL);
+
+  return (
+    <div
+      className={cn('flex h-full min-h-0 flex-col', className)}
+      data-testid='chat-history'
+      data-mode={mode ?? undefined}
+    >
+      {header}
+      <div className='flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto p-3'>
+        <div className='relative'>
+          <SearchIcon
+            className='pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground'
+            aria-hidden='true'
+          />
+          <Input
+            type='search'
+            value={text}
+            className='pl-8'
+            placeholder={t('chat.history.search')}
+            aria-label={t('chat.history.search')}
+            onChange={(event) => setText(event.target.value)}
+          />
+        </div>
+        {byAgent || bySource ? (
+          <div className='flex min-w-0 flex-wrap items-center gap-2'>
+            {byAgent ? (
+              <Select
+                items={agentItems}
+                value={agentId}
+                onValueChange={(next: string | null) => setAgentId(next ?? ALL)}
+              >
+                <SelectTrigger
+                  size='sm'
+                  className='max-w-48 min-w-0'
+                  aria-label={t('chat.history.agent')}
+                >
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent className='w-auto max-w-[min(var(--container-sm),var(--available-width))] min-w-(--anchor-width) [&_[data-slot=select-item]>:first-child]:whitespace-normal'>
+                  {agentItems.map((item) => (
+                    <SelectItem key={item.value} value={item.value}>
+                      {item.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            ) : null}
+            {bySource ? (
+              <Select
+                items={sourceItems}
+                value={source}
+                onValueChange={(next: string | null) => setSource(next ?? ALL)}
+              >
+                <SelectTrigger
+                  size='sm'
+                  className='max-w-48 min-w-0'
+                  aria-label={t('chat.history.source')}
+                >
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent className='w-auto max-w-[min(var(--container-sm),var(--available-width))] min-w-(--anchor-width) [&_[data-slot=select-item]>:first-child]:whitespace-normal'>
+                  {sourceItems.map((item) => (
+                    <SelectItem key={item.value} value={item.value}>
+                      {item.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            ) : null}
+          </div>
+        ) : null}
+        {pages.isError && !pages.data ? (
+          <LoadError
+            title={t('chat.history.loadFailed')}
+            error={pages.error}
+            onRetry={() => void pages.refetch()}
+          />
+        ) : !pages.data ? (
+          <div
+            role='status'
+            aria-label={t('chat.loading')}
+            className='space-y-2 rounded-lg border bg-card p-3'
+          >
+            {[0, 1, 2, 3].map((row) => (
+              <Skeleton key={row} className='h-7 w-full' />
+            ))}
+          </div>
+        ) : items.length === 0 ? (
+          <p
+            className='px-1 py-1.5 text-sm text-muted-foreground'
+            data-testid='chat-history-empty'
+          >
+            {filtered
+              ? t('chat.history.noMatch')
+              : archived
+                ? t('chat.history.noArchived')
+                : t('chat.history.empty')}
+          </p>
+        ) : (
+          <div
+            className='flex flex-col gap-3'
+            role='group'
+            aria-label={t('chat.history.title')}
+          >
+            {HISTORY_GROUPS.map((group) => {
+              const rows = items.filter((item) => historyGroup(item) === group);
+              if (!rows.length) return null;
+              const heading = t(`chat.history.${group}`);
+              return (
+                <section
+                  key={group}
+                  className='flex flex-col gap-1'
+                  data-history-group={group}
+                >
+                  <h3 className='px-2.5 text-xs font-medium text-muted-foreground'>
+                    {heading}
+                  </h3>
+                  <ul className='flex flex-col gap-1' aria-label={heading}>
+                    {rows.map((item) => (
+                      <ConversationListItem
+                        key={item.id}
+                        item={item}
+                        active={item.id === activeId}
+                        onOpen={() => onOpen(item.id)}
+                        onOpenPage={
+                          onOpenPage ? () => onOpenPage(item.id) : null
+                        }
+                      />
+                    ))}
+                  </ul>
+                </section>
+              );
+            })}
+          </div>
+        )}
+        {pages.hasNextPage ? (
+          <Button
+            variant='outline'
+            size='sm'
+            className='self-center'
+            disabled={pages.isFetchingNextPage}
+            onClick={() => void pages.fetchNextPage()}
+          >
+            {t('chat.history.more')}
+          </Button>
+        ) : null}
+        <p className='px-1 text-xs text-muted-foreground'>
+          {t('chat.history.ownOnly')}
+        </p>
+      </div>
+      <div className='flex shrink-0 items-center gap-1 border-t px-2 py-2'>
+        <Button
+          variant='ghost'
+          size='sm'
+          aria-pressed={archived}
+          title={t('chat.history.archived')}
+          className={cn(
+            'h-8 min-w-0 gap-1.5 px-2 text-xs font-normal text-muted-foreground hover:text-foreground',
+            archived && 'bg-muted text-foreground',
+          )}
+          onClick={() => setArchived(!archived)}
+          data-testid='chat-history-archived'
+        >
+          <ArchiveIcon className='size-4 shrink-0' />
+          <span className='truncate'>{t('chat.history.archived')}</span>
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+export interface ConversationListItemProps {
+  readonly item: ConversationSummary;
+  /** The conversation the panel shows. */
+  readonly active: boolean;
+  readonly onOpen: () => void;
+  /** Opens it on the application's full-page view; null without one. */
+  readonly onOpenPage: (() => void) | null;
+}
+
+/** A row of the conversation list: title, time, agent, and its menu; replaceable as `ConversationListItem`. */
+export function DefaultConversationListItem({
+  item,
+  active,
+  onOpen,
+  onOpenPage,
+}: ConversationListItemProps): ReactElement {
+  const { t } = useChatTranslation();
+  const format = useFormatters();
+  const actions = useConversationActions();
+  const agentText = useAgentText();
+  const shown = item.title?.trim() ? item.title : t('chat.untitled');
+  const [renaming, setRenaming] = useState(false);
+  const [title, setTitle] = useState(item.title ?? '');
+
+  function save(): void {
+    const next = title.trim().slice(0, CONVERSATION_TITLE_MAX);
+    setRenaming(false);
+    if (!next || next === item.title) {
+      setTitle(item.title ?? '');
+      return;
+    }
+    actions.rename.mutate({ id: item.id, title: next });
+  }
+
+  return (
+    <li
+      className={cn(
+        'group flex min-w-0 items-center gap-1 rounded-md pr-1 hover:bg-muted',
+        active && 'bg-muted',
+      )}
+      data-conversation={item.id}
+    >
+      {renaming ? (
+        <Input
+          autoFocus
+          value={title}
+          maxLength={CONVERSATION_TITLE_MAX}
+          className='m-1 h-8'
+          aria-label={t('chat.rename')}
+          onChange={(event) => setTitle(event.target.value)}
+          onBlur={save}
+          onKeyDown={(event) => {
+            if (event.key === 'Enter' && !event.nativeEvent.isComposing) {
+              event.preventDefault();
+              save();
+            } else if (event.key === 'Escape') {
+              event.preventDefault();
+              event.stopPropagation();
+              setTitle(item.title ?? '');
+              setRenaming(false);
+            }
+          }}
+        />
+      ) : (
+        <button
+          type='button'
+          className='flex min-h-12 min-w-0 flex-1 flex-col items-start gap-0.5 rounded-md px-2.5 py-1.5 text-left focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none'
+          aria-current={active ? 'true' : undefined}
+          onClick={onOpen}
+        >
+          <span className='flex w-full min-w-0 items-center gap-1.5'>
+            {chatIsRunning(item) ? <Pulse /> : null}
+            <span
+              className={cn(
+                'truncate text-sm',
+                item.read ? 'font-medium' : 'font-semibold',
+              )}
+              title={shown}
+            >
+              {shown}
+            </span>
+            {!item.read ? (
+              <span
+                className='ml-auto size-2 shrink-0 rounded-full bg-primary'
+                role='img'
+                aria-label={t('chat.history.unread')}
+              />
+            ) : null}
+          </span>
+          <span className='flex w-full min-w-0 items-center gap-1.5 text-xs text-muted-foreground'>
+            <time
+              className='shrink-0 whitespace-nowrap'
+              dateTime={item.lastMessageAt}
+            >
+              {format.relative(item.lastMessageAt)}
+            </time>
+            <span aria-hidden='true'>·</span>
+            <span className='truncate'>
+              {agentText.name(item.agent) ?? t('chat.agentGone')}
+            </span>
+          </span>
+        </button>
+      )}
+      <DropdownMenu>
+        <DropdownMenuTrigger
+          render={
+            <Button
+              variant='ghost'
+              size='icon-sm'
+              aria-label={t('chat.history.actions', { title: shown })}
+            />
+          }
+        >
+          <MoreHorizontalIcon />
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align='end' className='w-auto min-w-40'>
+          <DropdownMenuGroup>
+            {onOpenPage ? (
+              <DropdownMenuItem onClick={onOpenPage}>
+                <Maximize2Icon />
+                {t('chat.openPage')}
+              </DropdownMenuItem>
+            ) : null}
+            <DropdownMenuItem
+              onClick={() => {
+                setTitle(item.title ?? '');
+                setRenaming(true);
+              }}
+            >
+              <PencilIcon />
+              {t('chat.rename')}
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              onClick={() =>
+                actions.archive.mutate({
+                  id: item.id,
+                  archived: !item.archivedAt,
+                })
+              }
+            >
+              {item.archivedAt ? <ArchiveRestoreIcon /> : <ArchiveIcon />}
+              {item.archivedAt ? t('chat.unarchive') : t('chat.archive')}
+            </DropdownMenuItem>
+          </DropdownMenuGroup>
+        </DropdownMenuContent>
+      </DropdownMenu>
+    </li>
+  );
+}
+
+// eslint-disable-next-line react-refresh/only-export-components -- wrapped once at load, so replacements follow it
+export const ConversationListItem: ComponentType<ConversationListItemProps> =
+  replaceable('ConversationListItem', DefaultConversationListItem);
+
+/**
+ * The person's conversations in a dialog (search, filters, rename, archive), for a page rather than the panel: a row
+ * opens the conversation with `onOpen` and closes the dialog.
+ */
+export interface ChatHistoryDialogProps {
+  readonly open: boolean;
+  readonly onOpenChange: (open: boolean) => void;
+  readonly onOpen: (conversationId: string) => void;
+  readonly activeId?: string | null;
+}
+
+export function ChatHistoryDialog({
+  open,
+  onOpenChange,
+  onOpen,
+  activeId = null,
+}: ChatHistoryDialogProps): ReactElement {
+  const { t } = useChatTranslation();
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent
+        className='flex max-h-[calc(100dvh-2rem)] flex-col gap-3 sm:max-w-lg'
+        {...{ [CHAT_PANEL_ATTRIBUTE]: '' }}
+        data-testid='chat-history-dialog'
+      >
+        <DialogHeader>
+          <DialogTitle>{t('chat.history.title')}</DialogTitle>
+        </DialogHeader>
+        <div className='-mx-3 -mb-3 flex min-h-0 flex-1 flex-col'>
+          {open ? (
+            <HistoryList
+              activeId={activeId}
+              onOpen={(id) => {
+                onOpenChange(false);
+                onOpen(id);
+              }}
+            />
+          ) : null}
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}

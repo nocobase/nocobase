@@ -29,11 +29,6 @@ export const createAuthorization: typeof createCoreAuthorization = (
       name,
     })),
   });
-  api.add({
-    id: 'authorization.inspector',
-    title: 'Inspector',
-    actions: [{ name: 'inspect' }],
-  });
   return authz;
 };
 

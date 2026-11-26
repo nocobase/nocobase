@@ -1,5 +1,31 @@
 # @nocobase/db
 
+## 1.0.0-beta.30
+
+### Patch Changes
+
+- 1048669: Document how to create demo accounts with roles through the Users service in sample data, that `db reset` needs `db sample` afterwards to build service-registered sample data, and the primary key types of the lifecycle log tables.
+
+## 1.0.0-beta.29
+
+### Minor Changes
+
+- b83a645: Default missing applied migration sources to warnings instead of errors, with an `onMissingSource: 'error'` option for strict validation. Downgrades within participating packages still fail. Preserve missing migration history and report warnings in database commands and startup logs. Rollback validates only its target batch and lists every missing or irreversible migration before executing any down operation, with recovery guidance.
+
+  Compare migration filename timestamps for downgrade detection independently of parameter target hashes. Validate applications with applied history even when all migration directories have disappeared, while continuing to skip empty applications.
+
+  An explicitly configured migration directory that no longer exists is now checked against the migration history when tasks run, rather than rejected while planning: an application with history follows the missing-source policy, while a mistyped path on an application that never migrated still fails before any storage is touched.
+
+### Patch Changes
+
+- b737800: Temporal columns that are NULL now read back as `null` on every dialect. A driver's temporal formatting is wrapped in a NULL guard, so a database that concatenates NULL as an empty string, such as KingbaseES in Oracle-compatible mode, no longer turns an empty `datetimeTz` value into `"Z"` and fails the read.
+
+## 1.0.0-beta.28
+
+### Patch Changes
+
+- 57912f1: Explain in the database and application development Skills that `upsertOne` needs a non-empty `update`, and that a seed creating a record only when it is missing checks `exists` before `createOne`, so generated sample seeds no longer stop the first start with `update: {}`.
+
 ## 1.0.0-beta.27
 
 ### Minor Changes

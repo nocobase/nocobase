@@ -1,5 +1,135 @@
 # @nocobase/app-plugin-releases
 
+## 0.1.0-beta.27
+
+### Minor Changes
+
+- a6b9b74: API key permissions now take the shape of a permission set's grants. `POST /api/apiKeys` accepts `permissions` (the same resources, actions and composite record scopes a role holds, plus the records a business is limited to), checks that the maker holds each action (`KEY_SCOPE_EXCEEDS_YOURS`) and that a key may hold it (`KEY_ACTION_HUMAN_ONLY`), and every key answers `permissions`; `GET /api/apiKeys/grantable` lists what the caller may give and the templates resolved to it. Keys are stored in a new format `2` of the `permissions` column. Actions can be declared human-only (`humanOnly: <reason>`, with an optional `risk`) where they are registered with the authorization plugin: any API key, including one without permissions and a service account's, is then denied them with `KEY_HUMAN_ONLY`, while a signed-in person keeps them. Plugins register key templates and record sources with `authz.credentials`, and a key's composite record scopes restrict records like a restriction rule (`KeyScope.policy`). Releases marks configuring, deleting and protected deploys human-only and registers the "CI deploy" and "CI upload" templates and the Apps record source; projects registers its projects record source; agents marks managing model services human-only.
+
+  Deprecated, still working for one more minor release and then removed: scope groups and presets (`KeyScopeGroupDeclaration`, `KeyScopePresetDeclaration`, `apiKeyScopesToken`'s `groups.add`, `presets.add`, `mapAccess`), the `scope` field of `/api/apiKeys`, `GET /api/apiKeys/scopeOptions` and `/scopeObjects/:group`, `ScopedApiKeys.scopeOptions`, `scopeObjects` and `setScope`, `encodeKeyScope` and `decodeKeyScope`, and the `KEY_SCOPE_GROUPS` and `KEY_SCOPE_PRESETS` of releases, projects and agents. They keep their behaviour and convert to format `2`. Keys stored in format `1` keep working and are converted in the background on the first request after the upgrade, exactly as they are enforced then, so no key widens and none has to be regenerated. To migrate, register templates and record sources with `authz.credentials`, mark the actions no key may hold `humanOnly`, and send `permissions` instead of `scope`; the API keys README describes the formats.
+
+### Patch Changes
+
+- a6b9b74: Declare the plugin's title and one-line description in English and Chinese under `nocobase` in `package.json`, which the App Foundation plugins page lists it by.
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [1048669]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [1048669]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [1048669]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [1048669]
+- Updated dependencies [1048669]
+- Updated dependencies [1048669]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [1048669]
+  - @nocobase/app-client@4.0.0-beta.12
+  - @nocobase/authorization@1.0.0-beta.17
+  - @nocobase/app-plugin-authorization@1.0.0-beta.39
+  - @nocobase/app-plugin-authentication@2.0.0-beta.24
+  - @nocobase/app-server@5.0.0-beta.9
+  - @nocobase/db@1.0.0-beta.30
+  - @nocobase/app-host-docker@0.1.0-beta.5
+  - @nocobase/config@0.1.0-beta.3
+  - @nocobase/i18n@2.0.0-beta.2
+  - @nocobase/service-provider@0.0.2-beta.2
+
+## 0.1.0-beta.26
+
+### Patch Changes
+
+- 0e247f9: Allow configuring checksum and extraction worker deadlines through host.artifactWorker.timeoutMs, with a 120000 ms default and startup validation of the supported timer range.
+- 761fb01: Collect bounded, sanitized runner diagnostics through heartbeat requests, retain UTC-dated runner journals with configurable cleanup, merge downloaded archives into local timelines, and propagate request IDs to application error toasts.
+
+  Apply one credential-key rule in structured and text logs, hiding numeric credentials while preserving token-count field names.
+
+  Stream runner diagnostics one temporary file at a time with abort cleanup, per-runner export queues, progress and file-consumption callbacks. Intersect up to 500 selected runs with the requested dates, remove selected-run priority and file-count preferences, and provide `logs export` plus local `logs timeline` commands.
+
+- Updated dependencies [0e247f9]
+- Updated dependencies [761fb01]
+  - @nocobase/app-host@0.1.0-beta.26
+  - @nocobase/logging@0.1.0-beta.8
+  - @nocobase/app-client@4.0.0-beta.11
+  - @nocobase/app-plugin-authentication@2.0.0-beta.23
+
+## 0.1.0-beta.25
+
+### Minor Changes
+
+- 2d79f24: Allow applications to authorize run agents (actor kind `agent`) as their initiating user while retaining version attribution. Online agents retain the default permission intersection and propose ceiling; archived documents remain hidden to all actors. Native run HTTP requests now carry their actor even for hosts using the default policy, so they also receive that default ceiling.
+
+  Allow agents to configure Apps and deploy directly to protected environments when their initiating user is an environment approver. Resolved environment approvers take precedence over the fallback `deploy-protected` permission. This release behavior applies to every host without an opt-in; keys retain their existing restrictions. The `ReleasesAccess.approversOf` resolver now receives an App-ID context for both direct deployments and request decisions instead of a full deployment request.
+
+  Clarify the Projects comment deletion API description; hosts may impose their own stricter run deletion boundary.
+
+### Patch Changes
+
+- Updated dependencies [38854ec]
+- Updated dependencies [8339722]
+  - @nocobase/app-server@5.0.0-beta.7
+  - @nocobase/app-plugin-authentication@2.0.0-beta.22
+
+## 0.1.0-beta.24
+
+### Patch Changes
+
+- f60b678: Bound release downloads with configurable idle and total timeouts, retry a timed out read once, and allow cancellation while opening or transferring the artifact so queued deployments can continue.
+- 2a63164: Paginate app lists in the database, scan label and runtime filters in bounded batches, and index both environment and global ordering. Treat search text literally.
+- Updated dependencies [3112daa]
+- Updated dependencies [f60b678]
+- Updated dependencies [3112daa]
+  - @nocobase/app-server@5.0.0-beta.6
+  - @nocobase/app-host@0.1.0-beta.24
+  - @nocobase/app-plugin-authentication@2.0.0-beta.22
+
+## 0.1.0-beta.23
+
+### Patch Changes
+
+- 6102557: Keep the expanded release when the App Host refuses a deployment for memory or capacity, so the retry after a recycle or a Host restart reuses it instead of extracting it again, and stop appending an unset active app limit to capacity errors. Show one state per app in the Releases app list and app overview, with a pending deployment taking precedence and the runtime's last failure as its detail, and word capacity refusals and the recycle wait in every supported language.
+- Updated dependencies [b33e134]
+- Updated dependencies [6102557]
+- Updated dependencies [dd0a34f]
+  - @nocobase/app-plugin-authentication@2.0.0-beta.22
+  - @nocobase/app-host@0.1.0-beta.23
+  - @nocobase/app-host-docker@0.1.0-beta.5
+  - @nocobase/app-server@5.0.0-beta.5
+
+## 0.1.0-beta.22
+
+### Patch Changes
+
+- 1952789: Update authentication, editor, and validation dependencies to patched releases.
+- Updated dependencies [44bf26a]
+- Updated dependencies [1952789]
+  - @nocobase/app-server@5.0.0-beta.5
+  - @nocobase/app-plugin-authentication@2.0.0-beta.21
+  - @nocobase/app-plugin-authorization@1.0.0-beta.38
+
 ## 0.1.0-beta.21
 
 ### Patch Changes

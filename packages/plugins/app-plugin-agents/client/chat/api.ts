@@ -15,6 +15,7 @@ import {
   chatPath,
   type ChatAgent,
   type ConversationShare,
+  type ConversationAttentionCounts,
   type ConversationLink,
   type ConversationShareCandidate,
   type OnlineChatConfigSnapshot,
@@ -56,6 +57,11 @@ export class ChatApi {
 
   public constructor(api: ApiClient) {
     this.api = api;
+  }
+
+  /** How many of the caller's conversations wait for them (`GET /api/agents/conversationAttention`). */
+  public attention(): Promise<ConversationAttentionCounts> {
+    return this.get(chatPath('attention'));
   }
 
   public conversationLinks(id: string): Promise<ConversationLink[]> {

@@ -1,3 +1,4 @@
+import { syncedFolders } from '../services/sync-folders.js';
 import { notifyMailMessageChange } from '../realtime.js';
 import type {
   MailAccount,
@@ -205,9 +206,10 @@ export class MailMessageMutations {
         'MAIL_DRAFT_LOCAL_ONLY',
         'A local-only draft cannot be moved to a provider folder.',
       );
-    const folder = (await this.dependencies.store.listFolders(account.id)).find(
-      (item) => item.providerFolderId === input.providerFolderId,
-    );
+    const folder = syncedFolders(
+      account,
+      await this.dependencies.store.listFolders(account.id),
+    ).find((item) => item.providerFolderId === input.providerFolderId);
     if (!folder)
       throw mailNotFound(
         'MAIL_FOLDER_NOT_FOUND',

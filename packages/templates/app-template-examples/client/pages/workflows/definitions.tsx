@@ -6,6 +6,7 @@ import type { ReactElement } from 'react';
 import { Outlet } from 'react-router';
 import { useTranslation } from '@nocobase/i18n/client';
 import { Input } from '#components/ui/input';
+import { Badge } from '#components/ui/badge';
 import { useUrlSearch } from '#hooks/use-url-search';
 import { WorkflowDefinitionList } from '#extensions/nocobase-workflow-management/definition-list';
 import type { WorkflowSummary } from '../../../shared/workflows.js';
@@ -15,7 +16,7 @@ import { useWorkflowData, useWorkflowLabels, workflowDate } from './hooks.js';
 export default function DefinitionsPage(): ReactElement {
   const location = useLocation();
   const detail = useMatch({
-    path: '/workflows/definitions/:workflowId',
+    path: '/settings/workflows/definitions/:workflowId',
     end: false,
   });
   const { t, i18n } = useTranslation();
@@ -52,21 +53,33 @@ export default function DefinitionsPage(): ReactElement {
         name:
           workflow.name === labels.title(workflow) ? undefined : workflow.name,
         title: (
-          <RecordLink
-            to={{
-              pathname: `/workflows/definitions/${workflow.id}`,
-              search: location.search,
-            }}
-          >
-            {labels.title(workflow)}
-          </RecordLink>
+          <>
+            <RecordLink
+              to={{
+                pathname: `/settings/workflows/definitions/${workflow.id}`,
+                search: location.search,
+              }}
+            >
+              {labels.title(workflow)}
+            </RecordLink>
+            {workflow.versions.length > 1 && (
+              <Badge
+                variant='secondary'
+                className='ml-2 align-middle'
+                title={t('workflows.latestHint')}
+                aria-label={`${t('workflows.latestVersion', { version: workflow.version })}, ${t('workflows.versionCount', { count: workflow.versions.length })}`}
+              >
+                {t('workflows.versionShort', { version: workflow.version })}
+              </Badge>
+            )}
+          </>
         ),
         activity:
           workflow.executionCount > 0 ? (
             <>
               <RecordLink
                 to={{
-                  pathname: '/workflows/executions',
+                  pathname: '/settings/workflows/executions',
                   search: new URLSearchParams({
                     workflowId: workflow.id,
                   }).toString(),
@@ -128,6 +141,21 @@ export default function DefinitionsPage(): ReactElement {
         request.data?.data.length ?? 0,
         Boolean(normalizedName) || category !== 'all',
       )}
+      empty={
+        <>
+          <span className='whitespace-normal'>
+            {t('workflows.managementHint')}
+          </span>{' '}
+          <a
+            href={`https://docs.nocobase.com${i18n.language.startsWith('zh') ? '/zh-CN' : ''}/core/developing-apps/business-workflows/`}
+            target='_blank'
+            rel='noreferrer'
+            className='whitespace-nowrap'
+          >
+            {t('workflows.documentation')}
+          </a>
+        </>
+      }
       onClearFilters={() =>
         nameFilter.clear((next) => {
           next.delete('category');

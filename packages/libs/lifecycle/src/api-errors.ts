@@ -34,6 +34,8 @@ export interface LifecycleApiErrorFields {
   readonly metadata: {
     readonly blockers: readonly Blocker[];
     readonly problems: readonly InputProblem[];
+    /** For `DEFINITION_MISMATCH`: the record's definition, or null when none started it. */
+    readonly bound?: string | null;
   };
 }
 
@@ -76,10 +78,14 @@ const STATUSES: Readonly<
   // Unless every blocker is a precondition; see statusOf().
   GUARD_REJECTED: 'PERMISSION_DENIED',
   NOT_MANUAL: 'PERMISSION_DENIED',
+  SUSPENDED: 'FAILED_PRECONDITION',
+  MANAGEMENT_FORBIDDEN: 'PERMISSION_DENIED',
   INVALID_STATE: 'FAILED_PRECONDITION',
   UNKNOWN_EFFECT: 'FAILED_PRECONDITION',
   RUN_SETTLED: 'FAILED_PRECONDITION',
   NO_CONTINUATION: 'FAILED_PRECONDITION',
+  // The record belongs to another version of the process.
+  DEFINITION_MISMATCH: 'FAILED_PRECONDITION',
   CONFLICT: 'ABORTED',
 });
 
@@ -124,6 +130,7 @@ const FIELDS: Readonly<Partial<Record<LifecycleErrorCode, string>>> =
  * | `GUARD_REJECTED` with a `permission` blocker                                    | `PERMISSION_DENIED`   |
  * | `GUARD_REJECTED` whose blockers are all `precondition`                          | `FAILED_PRECONDITION` |
  * | `INVALID_STATE`, `UNKNOWN_EFFECT`, `RUN_SETTLED`, `NO_CONTINUATION`             | `FAILED_PRECONDITION` |
+ * | `DEFINITION_MISMATCH`, with the bound definition as `metadata.bound`            | `FAILED_PRECONDITION` |
  * | `CONFLICT`                                                                      | `ABORTED`             |
  *
  * With `continuation`, see {@link LifecycleApiErrorOptions.continuation}.
@@ -156,6 +163,10 @@ export function lifecycleErrorFields(
     reason: error.code,
     message: error.message,
     ...(named.length ? { fieldViolations: named } : {}),
-    metadata: { blockers: error.blockers, problems: error.problems },
+    metadata: {
+      blockers: error.blockers,
+      problems: error.problems,
+      ...(error.bound === undefined ? {} : { bound: error.bound }),
+    },
   };
 }

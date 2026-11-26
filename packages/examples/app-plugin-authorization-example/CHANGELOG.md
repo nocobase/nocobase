@@ -1,5 +1,91 @@
 # @nocobase/app-plugin-authorization-example
 
+## 1.0.0-beta.28
+
+### Patch Changes
+
+- 8be5180: Show English and Simplified Chinese names and descriptions for example plugins in the plugin list.
+
+## 1.0.0-beta.27
+
+### Patch Changes
+
+- a6b9b74: System keys act as no person: a record access can be declared `personal` (the built-in "records I own" and "records I created" are), and a key scope marked `personless` gets no records from default access or sharing rules that select by one, while restriction rules still apply; sharing rules refuse subjects a subject type keeps from being shared with (`filterShareable`), which the users plugin uses to refuse service accounts. Permission Sets can be protected by key prefix, so every process protects a system key's hidden set, including one another process created later.
+
+  A system key's data scope may be limited to chosen records the person giving it can see (`GET /api/apiKeys/scopeRecords`, the permission table's "Selected records"), checked again on the server; every record or records of another person are refused. Permission changes are serialized per key and written with their activity in one transaction. Owners must be active members, and owners are told a week before a system key expires. Idle disabling follows the rule each key took when it was created or rotated, and rotating clears the last reminder. Managed keys are only viewed, disabled or deleted by administrators; notices to their manager are stored and delivered again until taken. `adopt` takes the key to adopt, keeps its own scope and runs in one transaction. The system key and members' key lists filter and page in the database. Permission check shows a key's state, what it covers and the records it keeps, refuses everything for a disabled or expired key, and opens from a personal key's detail too.
+
+- a6b9b74: Rework a role's detail in Roles and permissions into the Page access, Operations, System settings and Members tabs, followed by the tabs other packages register through `roleTabs`. A composite now names the pages it is used on with `usedOn(...)` and an action the pages that turn it on with `defaultFor(...)`; neither grants anything, and the options routes return both. Checking a page turns on its declared operations at their default scope and says so, each page shows how many of its operations are on and whether it opens empty, each operation lists the pages it is used on and warns when none of them is open, and operations used on no page are grouped under Other operations. System settings pages offer None, View and Manage above their individual switches and mark high-risk actions. Saving a role first reviews every change and marks high-risk grants, and members are added and removed at once. The page explains how roles, default access, sharing and restriction rules combine. The customer and sales examples declare the pages their operations are used on.
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [1048669]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [1048669]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [1048669]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [1048669]
+- Updated dependencies [1048669]
+- Updated dependencies [1048669]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [1048669]
+  - @nocobase/app-client@4.0.0-beta.12
+  - @nocobase/authorization@1.0.0-beta.17
+  - @nocobase/app-plugin-authorization@1.0.0-beta.39
+  - @nocobase/app-plugin-authentication@2.0.0-beta.24
+  - @nocobase/app-plugin-authz-sharing-rules@1.0.0-beta.21
+  - @nocobase/app-plugin-authz-default-access@1.0.0-beta.22
+  - @nocobase/app-plugin-authz-restriction-rules@1.0.0-beta.20
+  - @nocobase/app-server@5.0.0-beta.9
+  - @nocobase/db@1.0.0-beta.30
+  - @nocobase/i18n@2.0.0-beta.2
+  - @nocobase/service-provider@0.0.2-beta.2
+
+## 1.0.0-beta.26
+
+### Patch Changes
+
+- b33e134: Upgrade Better Auth and its API key integration to 1.7.21 with aligned runtime dependencies. Keep password reset eligibility checks inside the active authentication transaction.
+- Updated dependencies [b33e134]
+  - @nocobase/app-plugin-authentication@2.0.0-beta.22
+  - @nocobase/app-server@5.0.0-beta.5
+
+## 1.0.0-beta.25
+
+### Patch Changes
+
+- 1952789: Update authentication, editor, and validation dependencies to patched releases.
+- Updated dependencies [44bf26a]
+- Updated dependencies [1952789]
+  - @nocobase/app-server@5.0.0-beta.5
+  - @nocobase/app-plugin-authentication@2.0.0-beta.21
+  - @nocobase/app-plugin-authorization@1.0.0-beta.38
+  - @nocobase/app-plugin-authz-default-access@1.0.0-beta.21
+  - @nocobase/app-plugin-authz-restriction-rules@1.0.0-beta.19
+  - @nocobase/app-plugin-authz-sharing-rules@1.0.0-beta.20
+
 ## 1.0.0-beta.24
 
 ### Patch Changes

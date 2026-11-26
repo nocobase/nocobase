@@ -2,8 +2,33 @@ import type { LocaleResource } from '@nocobase/i18n';
 
 import type enUS from './en-US.js';
 
+import pagesFrFR from '../../shared/locales/pages.fr-FR.js';
+
 const frFR: LocaleResource<typeof enUS> = {
+  access: pagesFrFR.access,
   errors: {
+    originalNotFound:
+      'Le message original n’est plus disponible chez le fournisseur de messagerie.',
+    originalTooLarge:
+      'Le message original dépasse la limite de téléchargement de 40 Mio.',
+    operationUnsupported: 'Cette opération de messagerie est indisponible.',
+    connectionAuthenticationFailed:
+      'Échec de l’authentification {{protocol}}. Vérifiez l’identifiant et le mot de passe ou mot de passe d’application.',
+    connectionHostNotFound:
+      'Impossible de résoudre le serveur {{protocol}}. Vérifiez son nom d’hôte.',
+    connectionConnectionRefused:
+      'Connexion {{protocol}} refusée. Vérifiez l’hôte, le port et la disponibilité du serveur.',
+    connectionConnectionTimeout:
+      'Délai de connexion {{protocol}} dépassé. Vérifiez le serveur et le réseau.',
+    connectionCertificateInvalid:
+      'Échec de validation du certificat {{protocol}}. Vérifiez le certificat et le nom d’hôte.',
+    connectionTlsFailed:
+      'Échec de négociation TLS {{protocol}}. Vérifiez SSL/STARTTLS et le port.',
+    connectionConnectionFailed:
+      'Échec de connexion {{protocol}}. Vérifiez le serveur et le réseau.',
+    connectionConnectionLost:
+      'La connexion {{protocol}} a été perdue. Réessayez.',
+
     imapMoveLocationChanged:
       'Le dossier ou la copie sélectionné a changé. Synchronisez la boîte aux lettres et rouvrez le dossier source.',
     imapMoveNotWritable:

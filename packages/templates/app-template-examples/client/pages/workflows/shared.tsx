@@ -5,6 +5,8 @@ import type { ReactElement } from 'react';
 import { useTranslation } from '@nocobase/i18n/client';
 import { Button } from '#components/ui/button';
 import { Skeleton } from '#components/ui/skeleton';
+import { WorkflowVersionSelect } from '#extensions/nocobase-workflow-management/version-select';
+import type { WorkflowVersion } from '../../../shared/workflows.js';
 
 export function DataState({
   loading,
@@ -66,5 +68,43 @@ export function DataState({
         )}
       </AlertDescription>
     </Alert>
+  );
+}
+
+/**
+ * Picks one version of a process. "Latest" only means the largest number:
+ * the entry points that create records choose their version in code.
+ */
+export function VersionSelect({
+  versions,
+  value,
+  onChange,
+  allLabel,
+  appearance = 'field',
+}: {
+  readonly versions: readonly WorkflowVersion[];
+  readonly value: number | undefined;
+  readonly onChange: (version: number | undefined) => void;
+  /** Offers "every version" as `undefined` when set. */
+  readonly allLabel?: string;
+  readonly appearance?: 'field' | 'tag';
+}): ReactElement {
+  const { t } = useTranslation();
+  const latest = versions.at(-1)?.version;
+  return (
+    <WorkflowVersionSelect
+      versions={versions.map(({ version }) => ({
+        version,
+        label:
+          version === latest
+            ? t('workflows.latestVersion', { version })
+            : t('workflows.versionLabel', { version }),
+      }))}
+      value={value}
+      onChange={onChange}
+      label={t('workflows.version')}
+      allLabel={allLabel}
+      appearance={appearance}
+    />
   );
 }

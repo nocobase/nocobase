@@ -1,5 +1,72 @@
 # @nocobase/app-plugin-authentication
 
+## 2.0.0-beta.25
+
+### Minor Changes
+
+- 29c62bd: Expose the active authentication transaction connection so server extensions can commit or roll back their database changes together with authentication.
+
+### Patch Changes
+
+- Updated dependencies [300f760]
+- Updated dependencies [28a7606]
+- Updated dependencies [8ff2df3]
+  - @nocobase/app-client@4.0.0-beta.13
+  - @nocobase/app-server@5.0.0-beta.10
+
+## 2.0.0-beta.24
+
+### Minor Changes
+
+- a6b9b74: Add two settings pages to the authentication plugin. System settings › Accounts › Sign-in and authentication (`/settings/authentication`) shows the effective sign-in methods, registration, password, password recovery and session settings, where each value comes from (environment variable, `config.yml`, code or default), the problems to fix such as password recovery being off or `app.publicOrigin` missing, a "How to change" snippet per section, and a "How to enable" guide for single sign-on, social sign-in, two-factor authentication and passkeys that builds the callback URL where one is needed and an editable prompt for a development agent to turn the method on in the application's repository; it is read-only and saves nothing. Personal settings › Account › Account and security (`/me/security`) lets every signed-in person change their password, sign out of other devices, see and sign out command-line and browser sessions, and link or unlink single sign-on and social accounts through Better Auth's own endpoints. Applications replace either page with `authentication({ settingsComponentLoader, accountSecurityComponentLoader })` or `routeComponentOverrides`, and name the providers their sign-in page shows a button for with `authentication({ signInButtons })`.
+
+  The authentication plugin adds `GET /api/authentication/settings`, which needs the new `authentication.settings` settings item's `read` action and never returns a secret, signing key, client secret or mail credential, and `GET /api/authentication/providers`, the providers a signed-in person can link. Other plugins add rows to the page's sign-in methods with `signInMethodsToken`; the API keys plugin adds its API keys row. The authorization plugin declares the `authentication.settings` item and binds `authenticationSettingsAccessToken`. The templates' `config.example.yml` points to the new page.
+
+### Patch Changes
+
+- a6b9b74: A Permission Set protected by name stays its owner's even under another owner's protected key prefix, whichever is registered first, so an application whose root or default set is named in a reserved prefix still starts; a prefix protection may also leave named keys alone (`except`). Deleting a user whose deletion was interrupted after the account was marked deleted finishes the remaining cleanup instead of doing nothing.
+- a6b9b74: Declare the plugin's title and one-line description in English and Chinese under `nocobase` in `package.json`, which the App Foundation plugins page lists it by.
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [1048669]
+  - @nocobase/app-client@4.0.0-beta.12
+  - @nocobase/caching@1.0.0-beta.5
+  - @nocobase/app-server@5.0.0-beta.9
+  - @nocobase/db@1.0.0-beta.30
+  - @nocobase/i18n@2.0.0-beta.2
+  - @nocobase/service-provider@0.0.2-beta.2
+
+## 2.0.0-beta.23
+
+### Patch Changes
+
+- 8647bb2: Return visitors to the original application path, query and fragment after signing in.
+
+## 2.0.0-beta.22
+
+### Patch Changes
+
+- b33e134: Upgrade Better Auth and its API key integration to 1.7.21 with aligned runtime dependencies. Keep password reset eligibility checks inside the active authentication transaction.
+- Updated dependencies [dd0a34f]
+  - @nocobase/mailer@1.0.0-beta.3
+  - @nocobase/app-server@5.0.0-beta.5
+
+## 2.0.0-beta.21
+
+### Patch Changes
+
+- 1952789: Update authentication, editor, and validation dependencies to patched releases.
+- Updated dependencies [44bf26a]
+- Updated dependencies [1952789]
+  - @nocobase/app-server@5.0.0-beta.5
+
 ## 2.0.0-beta.20
 
 ### Minor Changes

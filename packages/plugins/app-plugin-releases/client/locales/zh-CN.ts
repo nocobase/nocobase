@@ -9,6 +9,7 @@ const zhCN: typeof enUS = {
     },
     apps: {
       title: '应用',
+      lastFailure: '上次失败：{{detail}}',
       create: '创建应用',
       id: '应用 ID',
       name: '名称',
@@ -573,6 +574,11 @@ const zhCN: typeof enUS = {
         INITIAL_ADMIN_UNAVAILABLE: '没有可显示的初始管理员。',
       },
       messages: {
+        artifactReadIdleTimeout:
+          '读取发布包时连续 {{seconds}} 秒没有收到数据，部署未完成，请重试。',
+        artifactReadTotalTimeout:
+          '读取发布包超过 {{seconds}} 秒，部署未完成，请重试。',
+        artifactReadTimeout: '读取发布包超时，部署未完成，请重试。',
         hostExited: '应用进程在就绪前退出了。',
         hostDisabled: '应用宿主未启用。',
         hostShutDown: '应用宿主已关闭。',
@@ -587,6 +593,14 @@ const zhCN: typeof enUS = {
         notReady: '尚未就绪，请稍后再试。',
         checkTimeout: '测试在 20 秒内没有完成。',
         hostNoSettings: '本机运行时不需要连接设置。',
+        recycleWait: '预览服务正在回收内存，完成后继续部署。',
+        recycleRetry: '预览服务仍在回收内存，部署未完成。请稍后重试。',
+        capacityExceeded:
+          '预览服务内存不足或运行中的应用已达到上限，部署未完成。请稍后重试。',
+        replacementMemory:
+          '预览服务内存不足，无法启动新版本，当前版本继续运行。请稍后重试。',
+        startQueueFull: '同时启动的应用过多，请稍后重试。',
+        activeLimit: '运行中的应用已达到上限，请稍后重试。',
       },
       prefixed: {
         startFailed: '启动失败：{{detail}}',

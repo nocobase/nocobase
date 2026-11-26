@@ -307,6 +307,16 @@ export class MemoryLifecycleStore implements LifecycleStore, MemoryRows {
     this.scope.commits.push(callback);
   }
 
+  public async findRecords(
+    collection: string,
+    ids: readonly RecordId[],
+  ): Promise<LifecycleRecord[]> {
+    const rows = await Promise.all(
+      ids.map((id) => this.findRecord(collection, id)),
+    );
+    return rows.filter((row): row is LifecycleRecord => row !== undefined);
+  }
+
   public findRecord(
     collection: string,
     id: RecordId,
@@ -320,6 +330,15 @@ export class MemoryLifecycleStore implements LifecycleStore, MemoryRows {
     values: Readonly<Record<string, unknown>>,
   ): Promise<LifecycleRecord> {
     if (this.scope?.finished) return Promise.reject(new Error(FINISHED));
+    if (
+      (typeof values.id === 'string' || typeof values.id === 'number') &&
+      this.rows(collection).has(String(values.id))
+    )
+      return Promise.reject(
+        Object.assign(new Error('Duplicate record primary key.'), {
+          code: 'UNIQUE_CONFLICT',
+        }),
+      );
     return Promise.resolve(this.insertRecord(collection, values));
   }
 
@@ -333,10 +352,17 @@ export class MemoryLifecycleStore implements LifecycleStore, MemoryRows {
     const rows = this.rows(collection);
     const current = rows.get(String(id));
     const version = current?.[condition.versionField] ?? null;
+    const revision = condition.managementRevision;
+    const storedRevision = revision
+      ? (current?.[revision.field] ?? null)
+      : null;
     if (
       !current ||
       current[condition.stateField] !== condition.state ||
-      (version === null ? null : Number(version)) !== condition.version
+      (version === null ? null : Number(version)) !== condition.version ||
+      (revision &&
+        (storedRevision === null ? null : Number(storedRevision)) !==
+          revision.value)
     )
       return Promise.resolve(false);
     this.log(update(rows, String(id), current, values)[1]);
@@ -354,6 +380,8 @@ export class MemoryLifecycleStore implements LifecycleStore, MemoryRows {
         .filter(
           (record) =>
             query.states.includes(String(record[query.stateField])) &&
+            (query.match === undefined ||
+              record[query.match.field] === query.match.value) &&
             typeof record[query.changedAtField] === 'string' &&
             (record[query.changedAtField] as string) < query.changedBefore &&
             (after === undefined ||
@@ -376,7 +404,9 @@ export class MemoryLifecycleStore implements LifecycleStore, MemoryRows {
         (other) =>
           other.lifecycle === entry.lifecycle &&
           other.recordId === entry.recordId &&
-          (other.version === entry.version ||
+          ((other.version === entry.version &&
+            (other.management?.revision ?? 0) ===
+              (entry.management?.revision ?? 0)) ||
             transitionRequestKey(other) === requestKey),
       )
     )
@@ -480,6 +510,7 @@ export class MemoryLifecycleStore implements LifecycleStore, MemoryRows {
 
   public listEffectRuns(query: EffectRunQuery): Promise<EffectRun[]> {
     if (this.scope?.finished) return Promise.reject(new Error(FINISHED));
+    const after = query.continuationAfter;
     const runs = [...this.state.effectRuns.values()].filter(
       (run) =>
         (query.lifecycle === undefined || run.lifecycle === query.lifecycle) &&
@@ -497,7 +528,11 @@ export class MemoryLifecycleStore implements LifecycleStore, MemoryRows {
           (abandonedAt(run.continuation) !== null) ===
             query.continuationAbandoned) &&
         (query.continuationDueBy === undefined ||
-          isDueBy(waitingDueAt(run.continuation), query.continuationDueBy)),
+          isDueBy(waitingDueAt(run.continuation), query.continuationDueBy)) &&
+        (!after ||
+          (waitingDueAt(run.continuation) ?? '') > after.dueAt ||
+          (waitingDueAt(run.continuation) === after.dueAt &&
+            Number(run.id) > Number(after.id))),
     );
     if (query.continuationDueBy !== undefined)
       runs.sort((a, b) => {

@@ -1,5 +1,5 @@
 import { useParameterBindingEditor } from './parameter-binding-editor.js';
-import { ParameterHistory } from './parameter-history.js';
+import { ParameterHistory, SnapshotOrigins } from './parameter-history.js';
 import { useState, type ReactElement, type ReactNode } from 'react';
 import { useApiClient } from '@nocobase/app-client';
 import type { UseLifecycleResult } from '@nocobase/lifecycle/react';
@@ -16,7 +16,7 @@ import {
 import { useTranslate } from '../lib/use-example-record.js';
 import { dateTime, NAMESPACE } from '../lib/format.js';
 import { cn } from '../lib/utils.js';
-import { visitedStates } from '../lib/diagram.js';
+import { currentRoundTransitions, visitedStates } from '../lib/diagram.js';
 import { ProcessDiagram } from './process-diagram.js';
 import { Badge } from './ui/badge.js';
 import { Button } from './ui/button.js';
@@ -181,6 +181,7 @@ export function LifecyclePanel({
   const [open, setOpen] = useState(false);
   const [note, setNote] = useState('');
   const state = String(detail.record.status);
+  const diagramHistory = currentRoundTransitions(detail);
   const transitionNames = new Map(
     detail.history.transitions.map((entry) => [entry.id, entry.transition]),
   );
@@ -298,6 +299,15 @@ export function LifecyclePanel({
             </div>
           </div>
 
+          {!actor && detail.parameterSnapshot && (
+            <details>
+              <summary>{t('parameters.firstSnapshot')}</summary>
+              <SnapshotOrigins snapshot={detail.parameterSnapshot} />
+              <pre className='overflow-auto rounded-lg bg-muted p-2 text-xs'>
+                {JSON.stringify(detail.parameterSnapshot, null, 2)}
+              </pre>
+            </details>
+          )}
           {actor && detail.description.parameterConfiguration && (
             <>
               {parameterEditor.editor}
@@ -319,8 +329,8 @@ export function LifecyclePanel({
                 }
                 description={detail.description}
                 current={state}
-                visited={visitedStates(detail)}
-                history={detail.history.transitions}
+                visited={visitedStates(diagramHistory)}
+                history={diagramHistory}
                 availableTransitions={detail.available
                   .filter((item) => item.allowed)
                   .map((item) => item.name)}

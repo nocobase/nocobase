@@ -15,9 +15,67 @@ import {
 } from '@nocobase/app-client/runtime';
 import type { ClientApplication as ClientApplicationType } from '@nocobase/app-client';
 
+import { defineAppRoutes } from '@nocobase/app-client/plugins';
+import agents from '@nocobase/app-plugin-agents/client';
+import mail from '@nocobase/app-plugin-mail/client';
+import notificationInApp from '@nocobase/app-plugin-notification-in-app/client';
 import appRuntime from '../../client/runtime.ts';
 
 describe('app client runtime', () => {
+  it('removes the registered settings shortcut when system settings routes are disabled', async () => {
+    const enabled = await resolveAppRuntime(appRuntime);
+    expect(enabled.headerActions).toContainEqual(
+      expect.objectContaining({
+        name: 'system-settings',
+        placement: 'beforeAccount',
+      }),
+    );
+    const disabled = await resolveAppRuntime({
+      ...appRuntime,
+      systemSettingsRoutes: false,
+    });
+    expect(
+      disabled.headerActions?.some(
+        (action) => action.name === 'system-settings',
+      ),
+    ).toBe(false);
+  });
+
+  it('lets an application own the chat, inbox and mail URLs with the plugins registered', async () => {
+    const paths = [
+      '/chat',
+      '/chat/:conversationId',
+      '/inbox',
+      '/mail',
+      '/mail/team',
+      '/settings/mail',
+      '/me/mail',
+    ];
+    const runtime = await resolveAppRuntime(
+      defineAppRuntime({
+        packageName: '@example/custom',
+        createAppConfig: createAppClientConfig,
+        plugins: defineClientPlugins([
+          agents({ chatRoutes: false, panel: false, headerAction: false }),
+          notificationInApp({ inboxRoute: false, headerButton: false }),
+          mail({ workspaceRoutes: false }),
+        ]),
+        systemSettingsRoutes: false,
+        personalSettingsRoutes: false,
+        routes: defineAppRoutes(
+          paths.map((path, index) => ({
+            name: 'custom' + index,
+            path,
+            authz: 'skip',
+            componentLoader: async () => ({ default: () => null }),
+          })),
+        ),
+      }),
+    );
+    expect(runtime.routes.map((route) => route.path)).toEqual(paths);
+    expect(runtime.headerActions).toEqual([]);
+  });
+
   it('resolves static contributions without running ServiceProvider lifecycle', async () => {
     const calls: string[] = [];
     class Provider extends ServiceProvider<ClientApplicationType> {

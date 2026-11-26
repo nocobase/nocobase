@@ -123,7 +123,7 @@ test('unrelated paths and empty changes skip the matrix', () => {
       'AGENTS.md',
       'packages/app/app-client/src/index.ts',
       'packages/libs/db-postgres-extra/src/index.ts',
-      '.github/workflows/v3-release-beta.yml',
+      '.github/workflows/v3-release.yml',
     ]),
     [],
   );
@@ -136,11 +136,23 @@ const claimConcurrency = {
     'tests/claim-concurrency.test.ts tests/active-input.test.ts tests/run-revision-migration.test.ts',
 };
 
+const chatRolesRace = {
+  dialect: 'postgres',
+  filter: '@nocobase/app-plugin-agents',
+  tests: 'tests/chat-roles-race.test.ts',
+};
+
 const claimPagination = {
   dialect: 'postgres',
   filter: '@nocobase/app-plugin-agents',
   tests: 'tests/claim-pagination.test.ts',
 };
+
+const appPagination = ['postgres', 'mysql'].map((dialect) => ({
+  dialect,
+  filter: '@nocobase/app-plugin-releases',
+  tests: 'tests/list-apps-paging.test.ts tests/migrations.test.ts',
+}));
 
 const artifactKeyMigration = {
   dialect: 'mssql',
@@ -176,7 +188,14 @@ test('release migration changes select the SQL Server upgrade regression', () =>
     'packages/plugins/app-plugin-releases/database/migrations/202610260002_rel_bound_artifact_keys.ts',
     'packages/plugins/app-plugin-releases/tests/artifact-key-migration.test.ts',
   ])
-    assert.deepEqual(selectPackageSuites([file]), [artifactKeyMigration], file);
+    assert.deepEqual(
+      selectPackageSuites([file]),
+      [
+        ...(file.includes('/database/migrations/') ? appPagination : []),
+        artifactKeyMigration,
+      ],
+      file,
+    );
   assert.deepEqual(
     selectPackageSuites([
       'packages/plugins/app-plugin-releases/server/plugin.ts',
@@ -188,7 +207,6 @@ test('release migration changes select the SQL Server upgrade regression', () =>
 test('a guarded package path selects its dialect suite, and nothing else does', () => {
   for (const file of [
     'packages/plugins/app-plugin-agents/server/core/runs/comment-consent.ts',
-    'packages/plugins/app-plugin-agents/server/core/agents/agent.store.ts',
     'packages/plugins/app-plugin-agents/tests/claim-concurrency.test.ts',
     'packages/plugins/app-plugin-agents/database/migrations/202610260001_ag_run_revision.ts',
   ]) {
@@ -202,11 +220,27 @@ test('a guarded package path selects its dialect suite, and nothing else does', 
     [claimConcurrency, claimPagination],
   );
   for (const file of [
-    'packages/plugins/app-plugin-agents/server/core/agents/agent.service.ts',
     'packages/plugins/app-plugin-agents/client/index.ts',
     'packages/libs/db-postgres/src/index.ts',
   ])
     assert.deepEqual(selectPackageSuites([file]), [], file);
+});
+
+test('the team default and chat role saves select their PostgreSQL lock race', () => {
+  assert.deepEqual(
+    selectPackageSuites([
+      'packages/plugins/app-plugin-agents/server/core/agents/agent.store.ts',
+    ]),
+    [claimConcurrency, chatRolesRace],
+  );
+  for (const file of [
+    'packages/plugins/app-plugin-agents/server/core/conversations/chat-settings.ts',
+    'packages/plugins/app-plugin-agents/server/core/agents/agent.service.ts',
+    'packages/plugins/app-plugin-agents/tests/chat-roles-race.test.ts',
+  ]) {
+    assert.deepEqual(selectPackageSuites([file]), [chatRolesRace], file);
+    assert.deepEqual(selectDatabases([file]), [], file);
+  }
 });
 
 test('claim pagination changes select the PostgreSQL boundary and competition suite', () => {
@@ -357,6 +391,19 @@ test('PR selection excludes target-branch changes already present in the base', 
   ]);
 });
 
+const serverBackups = ['postgres', 'mysql'].map((dialect) => ({
+  dialect,
+  filter: '@nocobase/backup',
+  tests: 'tests/integration/server-roundtrip.test.ts',
+}));
+
+test('backup library changes select its two native client suites', () => {
+  assert.deepEqual(
+    selectPackageSuites(['packages/libs/backup/src/backup.ts']),
+    serverBackups,
+  );
+});
+
 test('missing or unavailable comparison commits conservatively select every database', (t) => {
   const repo = createRepository(t);
   const headSha = repo.commit();
@@ -364,9 +411,12 @@ test('missing or unavailable comparison commits conservatively select every data
     const plan = planDbIntegration({ ...repo, baseSha, headSha });
     assert.deepEqual(plan.databases, databases);
     assert.deepEqual(plan.suites, [
+      ...serverBackups,
+      ...appPagination,
       ...receiptConcurrency,
       ...withdrawalConcurrency,
       claimConcurrency,
+      chatRolesRace,
       claimPagination,
       ...replacementRace,
       artifactKeyMigration,
@@ -400,4 +450,19 @@ test('the CLI publishes matrix outputs for selected and skipped runs', (t) => {
     });
     assert.equal(readFileSync(output, 'utf8'), expected);
   }
+});
+
+test('app pagination selects both server dialects for service, migration and test changes', () => {
+  for (const file of [
+    'packages/plugins/app-plugin-releases/server/services/releases.ts',
+    'packages/plugins/app-plugin-releases/tests/list-apps-paging.test.ts',
+    'packages/plugins/app-plugin-releases/tests/migrations.test.ts',
+  ])
+    assert.deepEqual(selectPackageSuites([file]), appPagination, file);
+  assert.deepEqual(
+    selectPackageSuites([
+      'packages/plugins/app-plugin-releases/client/pages/environment-page.tsx',
+    ]),
+    [],
+  );
 });

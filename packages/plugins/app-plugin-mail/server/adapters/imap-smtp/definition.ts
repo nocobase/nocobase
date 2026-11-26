@@ -8,9 +8,17 @@ import type {
 
 import type { ImapLocationPersistence, ImapSmtpCredential } from './types.js';
 import type { ImapSmtpMailProviderConfig } from './config.js';
-import { IMAP_SMTP_CAPABILITIES } from './constants.js';
+import {
+  IMAP_SMTP_CAPABILITIES,
+  IMAP_SMTP_LOCATION_CAPABILITIES,
+} from './constants.js';
 import { ImapSmtpAdapter } from './adapter.js';
+import { ImapConnectionPool } from './connection-pool.js';
 import { validateConfig, verifyConnections } from './connection.js';
+import {
+  logMailFailure,
+  MailConnectionError,
+} from '../../connection-diagnostics.js';
 import { classifyError, failure } from './errors.js';
 
 /**
@@ -19,11 +27,14 @@ import { classifyError, failure } from './errors.js';
  */
 export function createImapSmtpMailProviderDefinition(
   locations?: (accountId: string) => ImapLocationPersistence,
+  pool: ImapConnectionPool = new ImapConnectionPool(),
 ): MailProviderDefinition<ImapSmtpMailProviderConfig> {
   return {
     type: 'imap-smtp',
     label: 'IMAP / SMTP',
-    capabilities: IMAP_SMTP_CAPABILITIES,
+    capabilities: locations
+      ? IMAP_SMTP_LOCATION_CAPABILITIES
+      : IMAP_SMTP_CAPABILITIES,
     validateConfig,
     connection: createConnection(),
     async createAdapter(
@@ -40,6 +51,10 @@ export function createImapSmtpMailProviderDefinition(
         account,
         credential,
         locations?.(account.id),
+        undefined,
+        undefined,
+        undefined,
+        pool,
       );
     },
   };
@@ -68,6 +83,7 @@ function createConnection(): MailProviderConnection<ImapSmtpMailProviderConfig> 
           false,
         );
       }
+      const startedAt = Date.now();
       try {
         await verifyConnections(config, {
           username: input.username,
@@ -99,7 +115,23 @@ function createConnection(): MailProviderConnection<ImapSmtpMailProviderConfig> 
           },
         };
       } catch (error) {
-        return { ok: false, error: classifyError(error, 'IMAP_SMTP_CONNECT') };
+        const classified = classifyError(error, 'IMAP_SMTP_CONNECT');
+        const protocol =
+          error instanceof MailConnectionError && error.protocol === 'smtp'
+            ? 'smtp'
+            : 'imap';
+        logMailFailure(error, classified, {
+          logger: context.logger,
+          event: 'mail.account.connect_failed',
+          provider: 'imap-smtp',
+          address: input.address,
+          protocol,
+          endpoint: config[protocol],
+          stage: 'connect',
+          startedAt,
+          secrets: [input.username, input.password],
+        });
+        return { ok: false, error: classified };
       }
     },
   };

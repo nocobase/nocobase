@@ -1,5 +1,74 @@
 # @nocobase/app-plugin-authz-sharing-rules
 
+## 1.0.0-beta.21
+
+### Minor Changes
+
+- a6b9b74: System keys act as no person: a record access can be declared `personal` (the built-in "records I own" and "records I created" are), and a key scope marked `personless` gets no records from default access or sharing rules that select by one, while restriction rules still apply; sharing rules refuse subjects a subject type keeps from being shared with (`filterShareable`), which the users plugin uses to refuse service accounts. Permission Sets can be protected by key prefix, so every process protects a system key's hidden set, including one another process created later.
+
+  A system key's data scope may be limited to chosen records the person giving it can see (`GET /api/apiKeys/scopeRecords`, the permission table's "Selected records"), checked again on the server; every record or records of another person are refused. Permission changes are serialized per key and written with their activity in one transaction. Owners must be active members, and owners are told a week before a system key expires. Idle disabling follows the rule each key took when it was created or rotated, and rotating clears the last reminder. Managed keys are only viewed, disabled or deleted by administrators; notices to their manager are stored and delivered again until taken. `adopt` takes the key to adopt, keeps its own scope and runs in one transaction. The system key and members' key lists filter and page in the database. Permission check shows a key's state, what it covers and the records it keeps, refuses everything for a disabled or expired key, and opens from a personal key's detail too.
+
+- a6b9b74: Data rules in Roles and permissions now edit Default access, Sharing rules and Restriction rules side by side: each kind is a tab its plugin adds, its rules read as one sentence in the list, and a rule is created, edited and deleted in a side sheet over the list, naming who a sharing or restriction rule applies to, its reason and a preview. A sharing rule never offers every record. Closing a rule with unsaved changes asks once, and the old Default access create and edit addresses open the sheet. A new Permission check tab, for unrestricted roles, picks a user and lists everything the user may do with the role it comes from, or checks one operation step by step through roles, default access, sharing and restriction rules. It only reads.
+
+### Patch Changes
+
+- a6b9b74: Declare the plugin's title and one-line description in English and Chinese under `nocobase` in `package.json`, which the App Foundation plugins page lists it by.
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [1048669]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [1048669]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [1048669]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [1048669]
+- Updated dependencies [1048669]
+- Updated dependencies [1048669]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [1048669]
+  - @nocobase/app-client@4.0.0-beta.12
+  - @nocobase/authorization@1.0.0-beta.17
+  - @nocobase/app-plugin-authorization@1.0.0-beta.39
+  - @nocobase/app-plugin-authentication@2.0.0-beta.24
+  - @nocobase/app-server@5.0.0-beta.9
+  - @nocobase/db@1.0.0-beta.30
+  - @nocobase/i18n@2.0.0-beta.2
+  - @nocobase/service-provider@0.0.2-beta.2
+
+## 1.0.0-beta.20
+
+### Patch Changes
+
+- 1952789: Update authentication, editor, and validation dependencies to patched releases.
+- Updated dependencies [44bf26a]
+- Updated dependencies [1952789]
+  - @nocobase/app-server@5.0.0-beta.5
+  - @nocobase/app-plugin-authentication@2.0.0-beta.21
+  - @nocobase/app-plugin-authorization@1.0.0-beta.38
+
 ## 1.0.0-beta.19
 
 ### Minor Changes

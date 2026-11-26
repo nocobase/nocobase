@@ -33,6 +33,7 @@ function session(row: ConversationRecord): OnlineAgentSession {
   return {
     id: row.id,
     ...value,
+    source: row.source,
     lastSeq: Number(row.lastSeq),
     model: { model: row.model, modelService: row.modelService },
   };

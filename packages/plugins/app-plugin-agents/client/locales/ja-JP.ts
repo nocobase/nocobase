@@ -3,6 +3,9 @@ import type { LocaleResource } from '@nocobase/i18n';
 import type enUS from './en-US.js';
 
 const jaJP: LocaleResource<typeof enUS> = {
+  openAgentSettings: 'エージェント設定を開く',
+  myConversations: '自分の会話',
+  fileUsage: 'チャットの添付ファイル',
   modelSuggestions: {
     design:
       '最も高度な推論：提案、アーキテクチャ、難しい問題の調査、重要な変更のコードレビュー。通常の実装、パッケージ間の変更、提案書の作成にも対応。',
@@ -91,6 +94,7 @@ const jaJP: LocaleResource<typeof enUS> = {
     codex: 'Codex',
     opencode: 'OpenCode',
     pi: 'Pi',
+    antigravity: 'Antigravity CLI',
     gemini: 'Gemini CLI',
     copilot: 'GitHub Copilot',
     cursor: 'Cursor',
@@ -124,6 +128,8 @@ const jaJP: LocaleResource<typeof enUS> = {
       all: 'すべての{{count}}',
       enabled: '{{count}}を有効にしました',
       unreported: '実行環境なし {{count}}',
+      disabled: '無効',
+      enabledOnly: '有効化',
     },
     loadFailed: 'Agentsをロードできませんでした',
     loadMore: 'もっと読み込む',
@@ -140,6 +146,7 @@ const jaJP: LocaleResource<typeof enUS> = {
       where: 'どこで動作するか',
       effort: '推論努力',
       state: '状態',
+      chatRoles: 'チャットできるユーザー',
     },
     where: {
       none: '実行環境なし',
@@ -189,6 +196,7 @@ const jaJP: LocaleResource<typeof enUS> = {
       title: '{{name}}を編集',
       enabled: '有効',
       done: '{{name}} が保存されました',
+      model: 'モデル',
     },
     available: {
       open: 'Agentを追加',
@@ -235,6 +243,39 @@ const jaJP: LocaleResource<typeof enUS> = {
       addFailed:
         '{{failed}} 件を追加できませんでした。理由は各項目の下に表示されています。もう一度お試しください。',
     },
+    chatRoles: {
+      label: 'チャットできるユーザー',
+      everyone: 'すべてのメンバー',
+      roles: '指定したロール',
+      placeholder: 'ロールを選択',
+      hint: 'これらのロールを持たないメンバーにはチャットパネルにこのエージェントが表示されず、会話を開始できません。エージェントの管理権限を持っていても同様です。すべてのエージェントと会話できるのは root だけです。',
+      required: 'ロールを1つ以上選択してください。',
+    },
+    detail: {
+      view: '閲覧',
+      viewFor: '{{name}}を表示',
+      readOnly:
+        'このエージェントを閲覧できます。変更できるのはエージェントの管理者だけです。',
+      tabs: {
+        settings: '設定',
+        actions: '業務アクション',
+        skills: 'デフォルトスキル',
+        runs: '実行',
+      },
+      actionsHint:
+        'このエージェントが業務データに対して実行できる操作です。起動したユーザーにもその操作を行う権限が必要です。',
+      actionsNone: 'このエージェントには業務アクションがありません。',
+      skillsHint:
+        'すべてのエージェントの各実行に適用されるチーム既定のスキルです。スキルページで変更できます。',
+      skillsNone: 'チーム既定のスキルはまだありません。',
+      skillsUnavailable: 'スキルを表示するには閲覧権限が必要です。',
+    },
+    teamDefault: {
+      label: 'チームの既定のエージェント',
+      none: 'なし',
+      hint: '個人の既定値を選択していない場合、新しい会話はこのエージェントで始まります。有効で、全メンバーが会話できるエージェントのみ設定できます。',
+      saved: 'チームの既定のエージェントを保存しました',
+    },
   },
   agentTypes: {
     label: 'エージェントの種類',
@@ -261,10 +302,6 @@ const jaJP: LocaleResource<typeof enUS> = {
     save: 'スキルを保存',
     descriptionOnline:
       'サーバー上の読み取り専用サンドボックスで、タスクがその説明に一致したときにAgentが読むマニュアル。',
-    onlineScripts:
-      'オンライン Agentsに対してスクリプトは実行されません。Agentはスクリプトを読み取ることができますが、実行することはできません。',
-    skippedScripts: ': {{paths}}',
-    pathSeparator: ', ',
   },
   brief: {
     preview: 'プロンプト全体をプレビューする',
@@ -384,7 +421,7 @@ const jaJP: LocaleResource<typeof enUS> = {
       purposes: {
         embedding: '埋め込み',
         rerank: 'リランキング',
-        text: 'ユーティリティテキスト',
+        text: 'テキスト生成',
       },
     },
     title: '利用状況',
@@ -444,6 +481,7 @@ const jaJP: LocaleResource<typeof enUS> = {
       cacheWrite: 'キャッシュ書き込み',
       cost: '推定コスト',
     },
+    tabs: { usage: '使用量', prices: '料金' },
   },
   defaultSkills: {
     title: 'デフォルトスキル',
@@ -591,6 +629,14 @@ const jaJP: LocaleResource<typeof enUS> = {
     pathHint:
       'runner は自身の PATH でコーディングツールを探します。which codex / which claude が動作するターミナルで nocobase-runner service install を再実行してサービスを再起動（または nocobase-runner start を再実行）し、正しい PATH を取得させてください。',
     quota: {
+      ceilingReached: '使用量のしきい値に到達',
+      ceilingLabel: '受付停止の使用率',
+      ceilingInput: '{{tool}} の新規作業を停止する使用率',
+      ceilingSave: '適用',
+      ceilingInvalid: '1～100 の整数を入力するか、空欄にしてください。',
+      ceilingPaused:
+        'いずれかの枠が上限に達しました。対象の新規作業はリセットまたは上限変更まで待機します。',
+
       workspaceStatus: {
         active: '仕事は続く',
         ended: '終了しました · クリーンアップは許可されました',
@@ -621,6 +667,9 @@ const jaJP: LocaleResource<typeof enUS> = {
       workspaceSize: 'ワークスペースのサイズ: {{value}}',
       providers_one: '{{count}} プロバイダーがクォータに達しました',
       providers_other: '{{count}} プロバイダーがクォータに達しています',
+      models_one: '{{count}} モデルがクォータに達しています',
+      models_other: '{{count}} モデルがクォータに達しています',
+      percent: '{{percent}}%',
       runColumns: {
         issue: 'タスク / 会話',
         agent: 'エージェント',
@@ -663,7 +712,7 @@ const jaJP: LocaleResource<typeof enUS> = {
         'クォータが回復したことを確認してからクリアしてください。{{target}} はすぐに仕事を受け取ります。クォータがまだ尽きている場合は、次の実行で再びマークされます。',
       observed: '最後に報告されたのは {{time}}',
       usedPercent: '{{percent}}% 使用',
-      ok: 'わかりました',
+      noUsage: '利用枠のデータはまだありません',
       hint: 'マークは既知のリセット時刻、またはツールがクォータの残りを再び報告したときに自動的に解除されます。手動でクリアするのはクォータの回復を確認してからにしてください。マークをクリアできるのは、実行環境の所有者と管理者だけです。',
     },
     workspaces: {
@@ -739,8 +788,8 @@ const jaJP: LocaleResource<typeof enUS> = {
       offlineNever: 'オフライン',
     },
     toolUsage: {
-      label: 'コーディングツールで実行',
-      item: '{{tool}} {{used}}/{{limit}}',
+      short: '同時 {{used}}/{{limit}}',
+      hint: '{{tool}} は同時に最大 {{limit}} 件まで実行、現在 {{used}} 件',
     },
     toolSlots: {
       label: 'コーディングツールごとの制限',
@@ -879,6 +928,8 @@ const jaJP: LocaleResource<typeof enUS> = {
       show: 'バージョン {{version}}: 新しい実行環境が利用可能です',
       available: 'アップデートが利用可能',
       badge: 'アップグレード可能',
+      latest: '最新',
+      installed: 'バージョン {{version}}',
       title: '{{name}} の新しい実行環境',
       description:
         '{{version}} がインストールされており、このアプリケーションは {{latest}} を提供します。',
@@ -950,6 +1001,26 @@ const jaJP: LocaleResource<typeof enUS> = {
     },
   },
   chat: {
+    thinking: {
+      levels: {
+        'provider-default': 'デフォルト',
+        none: 'オフ',
+        minimal: '最小',
+        low: '低',
+        medium: '中',
+        high: '高',
+        xhigh: '超高',
+      },
+      adjusted:
+        'このモデルは思考レベル「{{requested}}」に対応していないため、この返信では「{{used}}」を使用しました。',
+      adjustedToDefault:
+        'このモデルは思考レベル「{{requested}}」に対応していないため、この返信ではプロバイダーの既定値を使用しました。',
+      warning:
+        'モデルがこの返信に思考レベル「{{level}}」を適用していない可能性があります。',
+      title: '思考レベル',
+      choose: '思考レベル：{{level}}',
+      useDefault: 'プロバイダーの既定値を使う',
+    },
     // Keep new guidance available in English until this locale is translated.
     executionFailed:
       '実行に失敗しました。再試行する前に保存された会話を確認してください。',
@@ -1004,6 +1075,20 @@ const jaJP: LocaleResource<typeof enUS> = {
       fallbackDone: 'この会話では別のAgentが使用されています',
       restoreDone: 'スイッチバックしました',
       newSession: 'Agentは新しいセッションを開始し、この会話を読み取ります。',
+      agentMissing: '{{name}} はもう存在しません',
+      agentArchived: '{{name}} は有効になっていません',
+      forbidden: '{{name}} はもう使えません',
+      noModel: '最初にチャットモデルを設定します',
+      noRunner: '{{name}}の実行環境は現在オンラインではありません',
+      othersPersonal:
+        '{{name}}は他のユーザーの個人用実行環境でのみ利用できます。自分の実行環境を接続してください',
+      modelUnavailable:
+        '{{name}}のモデルは利用できません。管理者にお問い合わせください',
+      kept: 'メッセージは保存され、応答できるようになったら回答されます。',
+      fallback: 'この会話で別の Agent を使う',
+      usingDefault:
+        'この会話では一時的に {{own}} の代わりに {{name}} を使っています。',
+      restore: '{{own}} に戻す',
     },
     notice: {
       switchedToDefault:
@@ -1022,12 +1107,33 @@ const jaJP: LocaleResource<typeof enUS> = {
       unavailableTitle: '相談したAgentが不在です',
       snapshotTitle: '当時{{name}}をリクエストしました',
       title: '{{name}}に相談しました',
+      question: '質問',
+      answer: '回答',
+      steps: 'その手順',
+      usage:
+        '入力 {{input}} トークン、出力 {{output}} トークンを使用しました。',
+      state: {
+        running: '回答中…',
+        completed: '回答済み',
+        failed: '失敗',
+        refused: '拒否されました',
+      },
     },
     steps: {
       thinking: '考え中…',
       reading: '{{subject}}を見て',
       working: '{{subject}}作業中',
+      ...{
+        count_one: '{{count}} ステップ',
+        count_other: '{{count}} ステップ',
+      },
+      title: '手順',
+      waiting: '実行環境が処理を引き受けるのを待っています…',
+      starting: '開始しています…',
+      started: 'Agent が返信中です。',
+      finished: 'Agent の返信が完了しました。',
     },
+    // Plural forms of the panel wording, outside the typed shape (the rest falls back to English).
     agents: {
       personalOnly: '個人実行環境限定',
       hint: '有効なAgentsをリストし、現在応答できない理由を示します。回答は実行環境上で実行されます。最初の回答は、実行環境が回答するまで待機します (通常は数秒)。',
@@ -1038,6 +1144,318 @@ const jaJP: LocaleResource<typeof enUS> = {
       placeholder: 'Agentを選択してください',
       myDefault: '私のデフォルト',
       systemDefault: 'システムデフォルト',
+      models: 'モデル',
+      defaultModel: '既定のモデル',
+      runnerAgents: 'エージェント',
+      modelPlaceholder: 'モデルを選択',
+      modelSwitch: 'モデル：{{name}} · {{service}}。モデルまたは Agent を選ぶ',
+      modelOnlySwitch: 'モデル：{{name}} · {{service}}。モデルを選ぶ',
+      modelLoadFailed: '会話のモデルを読み込めませんでした',
+      modelChangeFailed: 'モデルの変更を確認できませんでした',
+      modelSearch: 'モデルを検索',
+      noMatchingModels: '一致するモデルはありません',
+      modelHint: 'チャットするオンラインのモデルを選んでください。',
+      mixedHint:
+        'チャットするオンラインモデルか実行環境のエージェントを選択してください。',
+      search: 'モデルまたは Agent を検索',
+      noResults: '一致するモデルまたは Agent はありません',
+      switch: 'Agent：{{name}}。別の Agent を選ぶ',
+      withStatus: '{{name}}、{{status}}',
+      chatWith: 'チャット相手',
+      startWith: '新しい会話を始める相手',
+      boundHint:
+        '会話はその Agent に紐づきます。別の Agent を選ぶと新しい会話が始まります。',
+      noneToChat: 'チャットできる Agent がありません',
+      field: 'エージェント：{{name}}',
+      personal: '個人実行環境限定',
+      temporary: '一時的',
+      chatHint:
+        '有効なエージェントと、今すぐ応答できない理由が表示されます。オンラインの応答にはアプリのモデルを使用します。他のエージェントは利用可能な実行環境を待ちます。',
+    },
+    sharing: {
+      related: '関連する記録',
+      title: 'スナップショットを共有',
+      description:
+        '受け取った人は共有した時点の内容だけを見られます。進行中のターンは含まれません。もう一度共有するとスナップショットが更新されます。',
+      sensitive:
+        'この会話には機密情報が含まれている可能性があります。見るべき人とだけ共有してください。',
+      asOf: '{{time}} 時点の共有',
+      recipient: 'アプリケーションのユーザーを選択',
+      share: '共有',
+      update: '更新',
+      revoke: '取り消す',
+      copy: 'リンクをコピー',
+      copied: 'リンクをコピーしました',
+      copyFailed: 'リンクをコピーできませんでした',
+      none: 'まだ誰とも共有していません。',
+      failed:
+        '共有を読み込めないか更新できませんでした。もう一度お試しください。',
+      failedRecipients:
+        '次のユーザーと共有できませんでした：{{names}}。再試行できるよう選択したままにしています。',
+      older: '以前のメッセージを読み込む',
+      empty: 'このスナップショットには完了したターンがありません。',
+    },
+    webSearch: {
+      title: 'ウェブ検索',
+      queryCount: '検索語 · {{count}}',
+      expand: '展開',
+      collapse: '折りたたむ',
+      toggle: 'ウェブを検索',
+      unsupported: 'ウェブ検索を使うには対応するモデルを選んでください。',
+      searching: '検索しています…',
+      completed: '情報源を取得しました',
+      unverified: '検索は未検証です',
+      unverifiedNotice:
+        'プロバイダーは検索の根拠なしで回答を返しました。検索が実行されたか、情報の鮮度や情報源を検証できません。',
+      partial: '一部の検索に失敗しました',
+      failed: '検索を利用できません',
+      cancelled: '検索はキャンセルされました',
+      interrupted: '検索が中断されました',
+      timeout: '検索がタイムアウトしました。',
+      unavailable: '検索は一時的に利用できません。',
+      noEvidence: '検証可能なウェブ上の根拠は返されませんでした。',
+      sources: 'ソース',
+    },
+    retrySaving: '保存を再試行',
+    cancel: 'キャンセル',
+    editMessage: '編集',
+    copyMessage: 'コピー',
+    refreshReply: '再生成',
+    copyFailed: 'メッセージをコピーできませんでした。',
+    resendConfirm: '再送信',
+    resend: {
+      rejected:
+        'メッセージは再送信されませんでした。編集内容は残してあります。',
+      unknown:
+        '再送信の結果は不明です。再試行する前に履歴を更新して待ってください。メッセージはすでに受け付けられている可能性があります。',
+      needsSync:
+        'メッセージは受け付けられましたが、履歴が同期されていません。履歴を更新し、再送信しないでください。',
+    },
+    contextFailed:
+      '選択したコンテキストを読み込めないか、メッセージを送信できませんでした。現在のページを確認してもう一度お試しください。',
+    approval: {
+      request: 'このツールを実行するにはあなたの承認が必要です。',
+      approve: '承認',
+      deny: '拒否',
+      denied: 'ツールの実行は拒否されました。',
+      failed:
+        '承認が確認できていません。再試行する前に保存されたメッセージを更新してください。',
+    },
+    feedback: {
+      sending: '送信中…',
+      waiting: 'Agent を待っています…',
+      thinking: '考えています…',
+      stopping: '停止を要求しました。Agent の終了を待っています…',
+      completed: '完了しました。',
+      cancelled:
+        'キャンセルしました。繰り返す前に、完了している可能性のある操作を確認してください。',
+      failed:
+        '応答に失敗しました。もう一度送るか決める前に履歴を確認してください。',
+      unknown:
+        '結果または履歴の保存が確認できていません。もう一度送るか決める前に履歴を更新してください。',
+      effectReview:
+        '一部の操作が完了している可能性があります。繰り返す前に結果を確認してください。',
+    },
+    historicalReadOnly:
+      'この過去の会話は閲覧専用です。続けるには新しいチャットを始めてください。',
+    connectionUnknown:
+      '接続が中断されました。結果は不明です。もう一度送るか決める前に保存された履歴を更新してください。',
+    allowAnother: 'もう一度送信を許可（重複の可能性あり）',
+    refreshHistory: '履歴を更新',
+    title: 'Agent チャット',
+    ask: 'エージェントに質問',
+    launcher: 'エージェントを開く',
+    closeLauncher: 'エージェントを閉じる',
+    close: '閉じる',
+    expand: '全幅',
+    restoreSize: 'サイドパネルに戻す',
+    openPage: '全画面で開く',
+    openInPanel: 'サイドパネルで開く',
+    more: 'その他',
+    newConversation: '新しい会話',
+    rename: '名前を変更',
+    renameHint: '{{title}}（クリックして名前を変更）',
+    archive: 'アーカイブ',
+    unarchive: 'アーカイブを解除',
+    you: 'あなた',
+    agentGone: '削除された Agent',
+    anyAgent: 'エージェント',
+    loadFailed: '会話を読み込めませんでした',
+    notFound: 'この会話は開けません',
+    notFoundDescription: '削除されたか、ほかの人の会話の可能性があります。',
+    emptyTitle: '{{name}} に何を手伝ってもらいますか？',
+    emptyDescription:
+      '何でも質問するか、整理したい作業を説明してください。このページの内容はコンテキストとして一緒に送られます。',
+    noAgent:
+      'チャットできるエージェントがありません。管理者に有効化を依頼するか、実行環境を接続してください。',
+    chooseAgent:
+      '会話の相手を以下から選んでください。毎回同じエージェントで始めるには、プロフィールで既定値を設定してください。',
+    messages: 'メッセージ',
+    olderMessages: '以前のメッセージ',
+    sources: { panel: 'チャットパネル' },
+    reasoning: { title: '推論', thinking: '考えています…' },
+    reply: { writing: '入力中…', interrupted: '返信はここで止まりました。' },
+    pending: {
+      sending: '送信中…',
+      failed: '送信されませんでした',
+      retry: 'もう一度送信',
+      discard: '破棄',
+    },
+    composer: {
+      label: 'Agent へのメッセージ',
+      placeholder: '質問するか、整理したい作業を説明してください…',
+      hint: 'Enter で送信、Shift+Enter で改行',
+      runningHint: '実行中です。この処理は停止できます。',
+      tooLong: '最大 {{max}} 文字です。',
+      send: '送信',
+      stop: '停止',
+      stopping: '停止しています…',
+    },
+    attachments: {
+      attach: 'ファイルを添付',
+      label: '次のメッセージに添付されるファイル',
+      sent: 'このメッセージに添付されたファイル',
+      images: '画像',
+      files: 'ファイル',
+      remove: '{{name}} を削除',
+      uploading: 'アップロード中…',
+      tooLarge: '{{max}} を超えています',
+      failed: 'アップロードできませんでした',
+      tooMany: '1 つのメッセージに添付できるのは最大 {{max}} 個です。',
+      blocked:
+        '送信するには、アップロードできなかったファイルを削除してください。',
+      waiting: 'ファイルのアップロード後に送信します…',
+      drop: 'ドロップしてファイルを添付',
+      preview: '{{name}} をプレビュー',
+      download: '{{name}} をダウンロード',
+      previous: '前の画像',
+      next: '次の画像',
+    },
+    context: {
+      label: '次のメッセージに含まれるコンテキスト',
+      sent: 'このメッセージに含まれたコンテキスト',
+      filter: 'フィルター：{{filter}}',
+      selection: '選択したテキスト：「{{text}}」',
+      remove: 'コンテキストを削除：{{label}}',
+      inspect: 'コンテキストを表示：{{label}}',
+      preview: 'コンテキスト：{{label}}',
+    },
+    modes: {
+      online: 'オンライン Agent',
+      runner: '実行環境のエージェント',
+      switchToOnline: 'オンライン Agent に切り替え',
+      switchToRunner: '実行環境のエージェントに切り替える',
+    },
+    history: {
+      title: '会話',
+      fold: '会話一覧を折りたたむ',
+      unfold: '会話一覧を展開',
+      search: '会話を検索',
+      show: '表示',
+      active: '進行中',
+      archived: 'アーカイブ済み',
+      agent: 'エージェント',
+      allAgents: 'すべての Agent',
+      source: '開始元',
+      allSources: 'すべて',
+      loadFailed: '会話を読み込めませんでした',
+      noMatch: '一致する会話はありません',
+      noArchived: 'アーカイブされた会話はありません',
+      empty: '会話はありません',
+      more: 'さらに読み込む',
+      unread: '新しい返信',
+      actions: '{{title}} の操作',
+      waiting: 'あなたを待っています',
+      running: '進行中',
+      recent: '最近の会話',
+      ownOnly:
+        '自分の会話のみ表示されます。共有相手は会話を閲覧することだけができます。',
+    },
+    list: {
+      waiting_one: '要対応 {{count}}',
+      waiting_other: '要対応 {{count}}',
+      active_one: '進行中 {{count}}',
+      active_other: '進行中 {{count}}',
+      label: '会話',
+      archivedTitle: 'アーカイブ済み',
+      back: '会話一覧に戻る',
+      all: 'すべて',
+      filters: '表示',
+      today: '今日',
+      yesterday: '昨日',
+      week: '今週',
+      earlier: 'それ以前',
+      restore: '復元',
+      offline: '実行環境がオフライン',
+      needsMe: '自分の対応が必要',
+      working: '進行中',
+      reply: '新しい返信',
+      failed: '失敗',
+      confirm: 'あなたへの質問',
+    },
+    loading: '読み込み中',
+    retry: '再試行',
+    errors: {
+      forbidden: 'この操作は許可されていません。',
+      notFound: 'もう存在しません。',
+      requestFailed: 'リクエストに失敗しました。もう一度お試しください。',
+    },
+    transcript: {
+      waiting: 'Agent の開始を待っています…',
+      empty: 'この実行にはイベントが記録されていません。',
+      fetchFailed: '新しいイベントを取得できません。再試行しています…',
+      expand: 'すべて表示',
+      truncated: '省略されました：全文が長すぎて保存できませんでした。',
+      events: '実行の記録',
+      inputDelivered: '{{count}} 件の入力を Agent に届けました',
+      tokens: '入力 {{input}} トークン、出力 {{output}} トークン',
+      kinds: {
+        text: 'エージェント',
+        thinking: '思考',
+        toolUse: 'ツール',
+        toolResult: '結果',
+        allowed: '許可済み',
+        denied: '拒否',
+        input: '入力',
+        checkout: 'チェックアウト',
+        status: '状態',
+        error: 'エラー',
+        usage: '使用量',
+      },
+    },
+    backToList: '一覧に戻る',
+    showDetails: '詳細を表示',
+    hideDetails: '詳細を隠す',
+    detailsTitle: 'セッションの詳細',
+    sessionDetails: 'セッション',
+    runtime: '実行環境',
+    agent: 'エージェント',
+    started: '開始',
+    usageTitle: '使用量',
+    relatedWork: '関連する作業',
+    unlink: '関連付けを解除',
+    unlinkFailed: '関連付けを解除できませんでした。',
+    expandPanel: '全幅',
+    restorePanel: 'パネルに戻す',
+    delete: '削除',
+    deleteDialog: {
+      menu: '削除',
+      title: '「{{title}}」を削除しますか？',
+      description:
+        'メッセージ、ファイル、関連付けは完全に削除され、進行中の実行は停止します。関連レコードは残ります。この操作は取り消せません。',
+      cancel: 'キャンセル',
+      confirm: '削除',
+      done: '「{{title}}」を削除しました',
+      body: 'メッセージ、ファイル、関連付けは完全に削除され、進行中の実行は停止します。関連レコードは残ります。この操作は取り消せません。',
+    },
+    usage: {
+      title: '使用量',
+      context: 'コンテキスト {{used}} / {{size}} トークン（{{percent}}%）',
+      window: 'コンテキストウィンドウ',
+      input: '入力',
+      cached: 'キャッシュ',
+      output: '出力',
+      cost: 'コスト',
     },
   },
   chatProfile: {
@@ -1275,8 +1693,6 @@ const jaJP: LocaleResource<typeof enUS> = {
     binaryFile: 'バイナリ ファイル、{{size}}。ここでは編集できません。',
     executable: '実行可能ファイル',
     scriptBadge: 'スクリプト',
-    scriptsNote:
-      'スクリプトがあります: オンライン Agentsはスクリプトを読み取ることはできますが、実行することはできません',
     compatibility: '互換性: {{value}}',
     fileContent: '{{path}}の内容',
     export: '輸出',
@@ -1309,8 +1725,7 @@ const jaJP: LocaleResource<typeof enUS> = {
       name: '名前',
       renameTitle: '「{{name}}」の名前を変更',
       conventional: {
-        scripts:
-          'コードAgentsを実行できます。オンライン Agentsは読むだけです。',
+        scripts: 'Agent が実行できるコードです。',
         references: '文書Agentsは必要なときに読みます。',
         assets: 'テンプレート、画像、その他のリソース。',
       },
@@ -1447,11 +1862,16 @@ const jaJP: LocaleResource<typeof enUS> = {
         runners: '実行環境',
         prices: 'モデルの価格',
         services: 'モデルサービス',
+        skills: 'スキル',
       },
     },
     actions: {
       read: '表示',
       manage: '管理する',
+    },
+    humanOnly: {
+      servicesManage:
+        'モデルサービスの管理ではプロバイダーのキーを書き込みます。人のみが実行できます。',
     },
     keyScopes: {
       agents: {
@@ -1473,6 +1893,41 @@ const jaJP: LocaleResource<typeof enUS> = {
         description:
           'モデル サービスとそれらが提供するモデルを参照し、そのキーを参照しないでください。',
       },
+    },
+  },
+  me: {
+    navigation: 'エージェント',
+    title: 'エージェント',
+    description:
+      '新しい会話の相手、追加した実行環境、実行の使用量を確認・設定します。',
+    defaultAgent: { title: '個人の既定のエージェント' },
+    effort: {
+      title: '推論の強さ',
+      description:
+        '開始する会話で使う推論の強度です。会話ごとに変更できます。コーディングツールが対応していない場合は、エージェントの既定値を使用します。',
+      label: '自分の推論の強度',
+      default: '各エージェントの既定値',
+      saved: '推論の強度を保存しました',
+    },
+    runtimes: {
+      title: '自分が追加した実行環境',
+      description:
+        '個人用実行環境は自分の作業だけを実行します。システム設定の実行環境ページで追加するか、管理者にご相談ください。',
+      none: '実行環境をまだ追加していません。',
+      loadFailed: '実行環境を読み込めませんでした',
+      status: {
+        online: 'オンライン',
+        offline: 'オフライン',
+        revoked: '取り消し済み',
+      },
+    },
+    usage: {
+      title: '自分の使用量',
+      description: '過去30日間の実行による使用量です。',
+      runs: '実行',
+      tokens: 'トークン',
+      cost: '推定コスト',
+      loadFailed: '使用量を読み込めませんでした',
     },
   },
 };

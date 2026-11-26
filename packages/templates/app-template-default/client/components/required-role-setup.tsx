@@ -1,7 +1,8 @@
 import { useCallback, useMemo, type ReactElement } from 'react';
 import { Link, useLocation } from 'react-router';
-import { useApiClient } from '@nocobase/app-client';
+import { useApiClient, useClientApplication } from '@nocobase/app-client';
 import { useCan } from '@nocobase/app-plugin-authorization/client';
+import { USERS_ROUTE_ID } from '@nocobase/app-plugin-users/client/routes';
 import { UsersClient } from '@nocobase/app-plugin-users/client/user-client';
 import { useTranslation } from '@nocobase/i18n/client';
 import { Button } from '#components/ui/button';
@@ -26,6 +27,15 @@ export function RequiredRoleSetup({
   const api = useApiClient();
   const client = useMemo(() => new UsersClient(api), [api]);
   const location = useLocation();
+  const { routes } = useClientApplication().runtime;
+  // The member list can be off with system settings or excluded by the application.
+  const hasUsersPage = useMemo(
+    () =>
+      routes.some(function visit(route): boolean {
+        return route.id === USERS_ROUTE_ID || !!route.children?.some(visit);
+      }),
+    [routes],
+  );
   const enabled = roles.length > 0;
   const read = useCan(
     { resource: { type: 'user', id: '*' }, action: 'read' },
@@ -45,23 +55,24 @@ export function RequiredRoleSetup({
             id: requiredRoleSetupId(role),
             title: role.title,
             description: role.description,
-            action: assign.can ? (
-              <Button
-                variant='outline'
-                size='sm'
-                aria-label={t('settings.setup.manageMembersFor', {
-                  role: role.title,
-                })}
-                render={<Link to={requiredRoleSetupLink(role, source)} />}
-              >
-                {t('settings.setup.manageMembers')}
-              </Button>
-            ) : undefined,
+            action:
+              assign.can && hasUsersPage ? (
+                <Button
+                  variant='outline'
+                  size='sm'
+                  aria-label={t('settings.setup.manageMembersFor', {
+                    role: role.title,
+                  })}
+                  render={<Link to={requiredRoleSetupLink(role, source)} />}
+                >
+                  {t('settings.setup.manageMembers')}
+                </Button>
+              ) : undefined,
           },
         ]),
       ).values(),
     ],
-    [roles, assign.can, source, t],
+    [roles, assign.can, hasUsersPage, source, t],
   );
   const inspect = useCallback(
     () => inspectRequiredRoles(client, roles),

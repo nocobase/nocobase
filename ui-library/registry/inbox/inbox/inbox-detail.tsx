@@ -1,3 +1,4 @@
+// Generated from packages/plugins/app-plugin-notification-in-app/client/inbox-page/inbox-detail.tsx: edit it there, then run `node scripts/sync-ui-library-inbox.mjs`.
 import { ArrowLeftIcon, ArrowUpRightIcon, InboxIcon } from 'lucide-react';
 import type { ReactElement, ReactNode } from 'react';
 import { Link } from 'react-router';
@@ -27,7 +28,7 @@ import {
   type InboxFrameText,
 } from './frame.js';
 import { InboxTypeIcon } from './inbox-item.js';
-import { entryLink, isSettled, type InboxEntry } from './model.js';
+import { entryLink, entryUrl, isSettled, type InboxEntry } from './model.js';
 import { ContributorScope } from './registry-scope.js';
 import {
   rendererKey,
@@ -141,7 +142,7 @@ function EntryDetail({
   const canAct = useCanAct(entry, model);
   const settled = isSettled(entry);
   const { title, sentence } = wording.text(entry, model);
-  const link = entryLink(entry);
+  const link = entryLink(entry) ?? entryUrl(entry);
   const context = renderer.context?.(entry, model) ?? {};
   const { Actions, Body } = renderer;
   const parts = {

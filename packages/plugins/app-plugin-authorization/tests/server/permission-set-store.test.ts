@@ -4,6 +4,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import permissionSetMigration from '../../database/migrations/202608210001_create_permission_set_tables.js';
 import {
   permissionSetsPlugin,
+  PermissionSetConflictError,
   PermissionSetLastAssignmentError,
 } from '@nocobase/authorization/permission-sets';
 import { databasePlugin } from '../../server/database/plugin.js';
@@ -60,6 +61,84 @@ describe('authorization plugin database stores', () => {
         (await bound.getMany(['batch-uncommitted'])).map((set) => set.key),
       ).toEqual(['batch-uncommitted']);
     });
+  });
+
+  it('reports a duplicate assignment as a conflict, also inside a transaction, and lets other failures through', async () => {
+    const conn = database.connection();
+    const store = new DatabasePermissionSetStore(() => conn);
+    await store.create({ key: 'duplicate-check', grants: [] });
+    const held = {
+      id: 'user:carol:duplicate-check',
+      subject: { type: 'user', id: 'carol' },
+      permissionSet: 'duplicate-check',
+    };
+    await store.assign(held);
+    await expect(store.assign(held)).rejects.toBeInstanceOf(
+      PermissionSetConflictError,
+    );
+    await expect(
+      store.assign({ ...held, id: 'carol-again' }),
+    ).rejects.toBeInstanceOf(PermissionSetConflictError);
+    // The insert fails in its own savepoint, so the caller's transaction stays usable.
+    await conn.transaction(async (tx) => {
+      const bound = store.withTransaction(tx);
+      await expect(bound.assign(held)).rejects.toBeInstanceOf(
+        PermissionSetConflictError,
+      );
+      expect(await bound.listAssignments('duplicate-check')).toEqual([held]);
+    });
+    // An id taken by another grant and a NOT NULL failure are not duplicate grants.
+    const collision = await store
+      .assign({ ...held, subject: { type: 'user', id: 'dave' } })
+      .catch((error: unknown) => error);
+    expect(collision).toBeInstanceOf(Error);
+    expect(collision).not.toBeInstanceOf(PermissionSetConflictError);
+    // With the grant also held, the error follows the key the database reports for the failed write: PostgreSQL
+    // reports the primary key, SQLite the grant. It holds when the grant holding the id is revoked right after the
+    // failure, before the error is classified.
+    const reportsGrant = conn.dialect === 'sqlite';
+    const daves = {
+      ...held,
+      id: 'user:dave:duplicate-check',
+      subject: { type: 'user', id: 'dave' },
+    };
+    await store.assign(daves);
+    let revokeIdHolder = false;
+    const hooked = new Proxy(conn, {
+      get(target, key) {
+        if (key === 'transaction')
+          return async (...args: Parameters<typeof conn.transaction>) => {
+            try {
+              return await target.transaction(...args);
+            } catch (error) {
+              if (revokeIdHolder) await store.revoke(daves.id);
+              throw error;
+            }
+          };
+        const value: unknown = Reflect.get(target, key, target);
+        return typeof value === 'function' ? value.bind(target) : value;
+      },
+    });
+    const hookedStore = new DatabasePermissionSetStore(() => hooked);
+    for (const revoked of [false, true]) {
+      revokeIdHolder = revoked;
+      const both = await hookedStore
+        .assign({ ...held, id: daves.id })
+        .catch((error: unknown) => error);
+      expect(both).toBeInstanceOf(Error);
+      if (reportsGrant) expect(both).toBeInstanceOf(PermissionSetConflictError);
+      else expect(both).not.toBeInstanceOf(PermissionSetConflictError);
+    }
+    const notNull = await store
+      .assign({
+        id: 'broken',
+        subject: { type: 'user', id: null as unknown as string },
+        permissionSet: 'duplicate-check',
+      })
+      .catch((error: unknown) => error);
+    expect(notNull).toBeInstanceOf(Error);
+    expect(notNull).not.toBeInstanceOf(PermissionSetConflictError);
+    expect(await store.listAssignments('duplicate-check')).toEqual([held]);
   });
 
   it('rejects a stale role revision atomically without losing a saved grant', async () => {

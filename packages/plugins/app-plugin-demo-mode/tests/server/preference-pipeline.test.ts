@@ -48,7 +48,7 @@ describe('preferences through the original Users API', () => {
     await visitor.signIn();
     for (const response of [
       await visitor.request('/users/me/preferences'),
-      await visitor.request('/users/me/preferences/locale', 'PUT', {
+      await visitor.request('/users/me/preferences/i18n.locale', 'PUT', {
         value: 'zh-CN',
       }),
     ]) {
@@ -72,7 +72,7 @@ describe('preferences through the original Users API', () => {
       .mockRejectedValueOnce(new Error('Preference read failed'));
     try {
       const response = await visitor.request('/users/me/preferences', 'PATCH', {
-        locale: 'zh-CN',
+        'i18n.locale': 'zh-CN',
       });
       expect(response.status).toBe(500);
       expect(response.headers.getSetCookie()).toEqual([]);
@@ -82,7 +82,7 @@ describe('preferences through the original Users API', () => {
           requestId: response.headers.get('x-request-id'),
         },
       });
-      expect((await visitor.preferences()).locale).toBe('en-US');
+      expect((await visitor.preferences())['i18n.locale']).toBe('en-US');
     } finally {
       failure.mockRestore();
     }
@@ -96,27 +96,27 @@ describe('preferences through the original Users API', () => {
     const preferences = app.application.container.resolve(
       userPreferencesServiceToken,
     );
-    await preferences.set(id, 'locale', 'fr-FR');
+    await preferences.set(id, 'i18n.locale', 'fr-FR');
     const responses = await Promise.all([
       first.request('/users/me/preferences', 'PATCH', {
-        locale: 'zh-CN',
+        'i18n.locale': 'zh-CN',
         'theme.mode': 'dark',
       }),
       second.request('/users/me/preferences', 'PATCH', {
-        locale: 'de-DE',
+        'i18n.locale': 'de-DE',
         'theme.mode': 'light',
       }),
     ]);
     expect(responses.map((response) => response.status)).toEqual([200, 200]);
     expect(await first.preferences()).toMatchObject({
-      locale: 'zh-CN',
+      'i18n.locale': 'zh-CN',
       'theme.mode': 'dark',
     });
     expect(await second.preferences()).toMatchObject({
-      locale: 'de-DE',
+      'i18n.locale': 'de-DE',
       'theme.mode': 'light',
     });
-    expect(await preferences.get(id, 'locale')).toBe('fr-FR');
+    expect(await preferences.get(id, 'i18n.locale')).toBe('fr-FR');
   });
 
   it('documents the adapted contract on the four declared Users operations', async () => {
@@ -152,7 +152,7 @@ describe('preferences through the original Users API', () => {
               {
                 type: 'object',
                 properties: Object.fromEntries(
-                  ['locale', 'theme.mode', 'theme.preset'].map((key) => [
+                  ['i18n.locale', 'theme.mode', 'theme.preset'].map((key) => [
                     key,
                     expect.objectContaining({
                       type: 'string',
@@ -230,26 +230,27 @@ it('keeps root and nested application cookies separate when choosing and deletin
     await first.signIn();
     expect(
       (
-        await first.request('/users/me/preferences/locale', 'PUT', {
+        await first.request('/users/me/preferences/i18n.locale', 'PUT', {
           value: 'zh-CN',
         })
       ).status,
     ).toBe(200);
     await second.signIn();
-    expect((await second.preferences()).locale).toBe('en-US');
+    expect((await second.preferences())['i18n.locale']).toBe('en-US');
     expect(
       (
-        await second.request('/users/me/preferences/locale', 'PUT', {
+        await second.request('/users/me/preferences/i18n.locale', 'PUT', {
           value: 'de-DE',
         })
       ).status,
     ).toBe(200);
-    expect((await first.preferences()).locale).toBe('zh-CN');
+    expect((await first.preferences())['i18n.locale']).toBe('zh-CN');
     expect(
-      (await second.request('/users/me/preferences/locale', 'DELETE')).status,
+      (await second.request('/users/me/preferences/i18n.locale', 'DELETE'))
+        .status,
     ).toBe(204);
-    expect((await second.preferences()).locale).toBe('en-US');
-    expect((await first.preferences()).locale).toBe('zh-CN');
+    expect((await second.preferences())['i18n.locale']).toBe('en-US');
+    expect((await first.preferences())['i18n.locale']).toBe('zh-CN');
   } finally {
     await nested?.close();
     await parent.close();

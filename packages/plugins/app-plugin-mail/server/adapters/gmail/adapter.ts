@@ -1,3 +1,10 @@
+import { MAIL_ORIGINAL_MAX_BYTES } from '../../../shared/original-message.js';
+import {
+  originalMessageBytes,
+  originalMessageMissing,
+  originalMessageTooLarge,
+} from '../original-message.js';
+import { diagnosticFetch } from '../../diagnostic-fetch.js';
 import { randomUUID } from 'node:crypto';
 import { incompleteMessage } from '../incomplete-message.js';
 import type {
@@ -6,6 +13,7 @@ import type {
   MailSyncCursor,
 } from '../../../shared/mail.js';
 import type {
+  MailOriginalMessageContent,
   MailProviderAdapter,
   MailProviderAccount,
   MailProviderChangePage,
@@ -68,7 +76,19 @@ import {
   normalizedDraft,
 } from './mime.js';
 import { gmailCursor, parseGmailCursor } from './sync.js';
-import { expiry, exchangeToken, required, splitScopes } from './auth.js';
+import {
+  expiry,
+  exchangeToken,
+  required,
+  splitScopes,
+  tokenEndpointError,
+} from './auth.js';
+
+const GMAIL_RAW_SCOPES = new Set([
+  'https://mail.google.com/',
+  'https://www.googleapis.com/auth/gmail.modify',
+  'https://www.googleapis.com/auth/gmail.readonly',
+]);
 
 export class GmailMailProviderAdapter implements MailProviderAdapter {
   public readonly identity: MailProviderAccount['provider'];
@@ -446,7 +466,7 @@ export class GmailMailProviderAdapter implements MailProviderAdapter {
         20 * ids.length,
         signal,
       );
-      const response = await fetchWithTimeout(gmailBatchUrl(this.config), {
+      const response = await this.fetch(gmailBatchUrl(this.config), {
         method: 'POST',
         headers: {
           authorization: `Bearer ${accessToken}`,
@@ -553,6 +573,49 @@ export class GmailMailProviderAdapter implements MailProviderAdapter {
     }
   }
 
+  public async getOriginalMessage(
+    providerMessageId: string,
+    signal: AbortSignal,
+  ): Promise<MailProviderResult<MailOriginalMessageContent>> {
+    const result = await this.request<{ raw?: unknown }>(
+      `/users/me/messages/${encodeURIComponent(providerMessageId)}?format=raw&fields=raw`,
+      { signal },
+      // Allow the JSON wrapper and padding around the encoded MIME.
+      Math.ceil(MAIL_ORIGINAL_MAX_BYTES / 3) * 4 + 1024,
+    );
+    if (!result.ok)
+      return result.error.code === 'GMAIL_HTTP_404'
+        ? originalMessageMissing()
+        : result;
+
+    const raw = result.value?.raw;
+    if (typeof raw !== 'string' || !raw) return invalidOriginal();
+    const unpaddedLength =
+      raw.length - (raw.endsWith('==') ? 2 : raw.endsWith('=') ? 1 : 0);
+    const remainder = unpaddedLength % 4;
+    if (
+      remainder === 1 ||
+      /[^A-Za-z0-9_-]/u.test(raw.slice(0, unpaddedLength)) ||
+      (raw.length !== unpaddedLength && raw.length % 4 !== 0)
+    )
+      return invalidOriginal();
+    const lastDigit =
+      'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_'.indexOf(
+        raw[unpaddedLength - 1],
+      );
+    if (
+      (remainder === 2 && (lastDigit & 15) !== 0) ||
+      (remainder === 3 && (lastDigit & 3) !== 0)
+    )
+      return invalidOriginal();
+    if (Math.floor((unpaddedLength * 3) / 4) > MAIL_ORIGINAL_MAX_BYTES)
+      return originalMessageTooLarge();
+    return {
+      ok: true,
+      value: originalMessageBytes(Buffer.from(raw, 'base64url')),
+    };
+  }
+
   public async getAttachment(
     providerMessageId: string,
     providerAttachmentId: string,
@@ -641,7 +704,7 @@ export class GmailMailProviderAdapter implements MailProviderAdapter {
         );
         input.signal?.throwIfAborted();
         submissionStarted = true;
-        const response = await fetchWithTimeout(
+        const response = await this.fetch(
           `${apiBase(this.config)}/users/me/drafts/send`,
           {
             method: 'POST',
@@ -679,7 +742,7 @@ export class GmailMailProviderAdapter implements MailProviderAdapter {
       );
       input.signal?.throwIfAborted();
       submissionStarted = true;
-      const response = await fetchWithTimeout(
+      const response = await this.fetch(
         `${apiBase(this.config)}/users/me/messages/send`,
         {
           method: 'POST',
@@ -734,7 +797,7 @@ export class GmailMailProviderAdapter implements MailProviderAdapter {
         10,
         input.signal,
       );
-      const response = await fetchWithTimeout(
+      const response = await this.fetch(
         `${apiBase(this.config)}/users/me/drafts`,
         {
           method: 'POST',
@@ -1057,16 +1120,13 @@ export class GmailMailProviderAdapter implements MailProviderAdapter {
         gmailQuotaUnits(path, init.method),
         init.signal ?? undefined,
       );
-      const response = await fetchWithTimeout(
-        `${apiBase(this.config)}${path}`,
-        {
-          ...init,
-          headers: {
-            authorization: `Bearer ${accessToken}`,
-            ...init.headers,
-          },
+      const response = await this.fetch(`${apiBase(this.config)}${path}`, {
+        ...init,
+        headers: {
+          authorization: `Bearer ${accessToken}`,
+          ...init.headers,
         },
-      );
+      });
       return response.ok
         ? { ok: true, value: undefined }
         : { ok: false, error: await responseError('GMAIL', response) };
@@ -1081,22 +1141,58 @@ export class GmailMailProviderAdapter implements MailProviderAdapter {
   private async request<T>(
     path: string,
     init: RequestInit,
+    originalMaxBytes?: number,
   ): Promise<MailProviderResult<T>> {
     try {
-      const accessToken = await this.accessToken(init.signal ?? undefined);
+      const accessToken = await this.accessToken(
+        init.signal ?? undefined,
+        originalMaxBytes !== undefined,
+      );
       await waitForGmailQuota(
         this.config,
         this.account.address,
         gmailQuotaUnits(path, init.method),
         init.signal ?? undefined,
       );
-      return await gmailRequest<T>(this.config, accessToken, path, init);
+      return await gmailRequest<T>(
+        this.config,
+        accessToken,
+        path,
+        init,
+        this.fetch,
+        originalMaxBytes,
+      );
     } catch (error) {
       return { ok: false, error: errorResult(error, 'GMAIL_REQUEST_FAILED') };
     }
   }
 
-  private async accessToken(signal?: AbortSignal): Promise<string> {
+  private readonly fetch = (
+    input: Parameters<typeof fetch>[0],
+    init?: RequestInit,
+  ): Promise<Response> =>
+    diagnosticFetch(fetchWithTimeout, input, init, {
+      logger: this.context.logger,
+      provider: 'gmail',
+      classifyResponse: (response) => responseError('GMAIL', response),
+      accountId: this.account.id,
+      address: this.account.address,
+      stage: /\/(?:send|sendMail)(?:$|\?)/u.test(
+        typeof input === 'string'
+          ? input
+          : input instanceof URL
+            ? input.href
+            : input.url,
+      )
+        ? 'send'
+        : 'sync',
+      secrets: [this.config.clientSecret, this.account.credentialReference],
+    });
+
+  private async accessToken(
+    signal?: AbortSignal,
+    requiresRawScope = false,
+  ): Promise<string> {
     const credential =
       await this.context.credentials.getOrRefresh<GmailCredential>(
         this.account.credentialReference,
@@ -1111,6 +1207,27 @@ export class GmailMailProviderAdapter implements MailProviderAdapter {
               grant_type: 'refresh_token',
             },
             refreshSignal ?? signal,
+            (input, init) =>
+              diagnosticFetch(fetchWithTimeout, input, init, {
+                logger: this.context.logger,
+                provider: 'gmail',
+                accountId: this.account.id,
+                address: this.account.address,
+                stage: 'auth',
+                classifyResponse: async (response) =>
+                  tokenEndpointError(
+                    'GMAIL',
+                    response,
+                    await readJson(response),
+                    'Mail OAuth request failed.',
+                  ),
+                secrets: [
+                  this.config.clientSecret,
+                  this.account.credentialReference,
+                  value.accessToken,
+                  value.refreshToken,
+                ],
+              }),
           );
           if (!refreshed.ok) throw new ProviderRequestError(refreshed.error);
           return {
@@ -1127,6 +1244,18 @@ export class GmailMailProviderAdapter implements MailProviderAdapter {
         },
         signal,
       );
+    if (
+      requiresRawScope &&
+      credential.scopes.length > 0 &&
+      !credential.scopes.some((scope) => GMAIL_RAW_SCOPES.has(scope))
+    )
+      throw new ProviderRequestError({
+        code: 'GMAIL_RAW_SCOPE_REQUIRED',
+        message:
+          'The Gmail account needs authorization to read complete messages.',
+        category: 'authentication',
+        retryable: false,
+      });
     return credential.accessToken;
   }
 }
@@ -1169,4 +1298,13 @@ function gmailQuotaUnits(path: string, method = 'GET'): number {
   if (/\/labels\/[^/?]+/.test(path)) return normalizedMethod === 'GET' ? 1 : 5;
   if (/\/labels(?:\?|$)/.test(path)) return normalizedMethod === 'GET' ? 1 : 5;
   return 5;
+}
+
+function invalidOriginal(): MailProviderResult<never> {
+  return failure(
+    'GMAIL_ORIGINAL_INVALID',
+    'Gmail returned invalid original message content.',
+    'provider',
+    true,
+  );
 }

@@ -1,3 +1,5 @@
+import type { I18nRuntime } from '@nocobase/i18n';
+import type { UserPreferencesService } from '../preferences/service.js';
 import type { InvitationWork } from '../invitations/lifecycle.js';
 import { lockUserForAdministration } from '@nocobase/app-plugin-authentication';
 import type { DatabaseConnection, DatabaseManager } from '@nocobase/db';
@@ -64,6 +66,10 @@ export interface CreateUserManagementServiceOptions {
   readonly mailer?: InvitationMailer;
   /** Links use publicOrigin when configured, or the origin each caller passes. */
   readonly site?: InvitationSite;
+  /** The application's languages, for an invitation's language; absent in an application assembled without i18n. */
+  readonly i18n?: Pick<I18nRuntime, 'getLocales' | 'getDefaultLocale'>;
+  /** Keeps the language an invited person accepted in as their new account's. */
+  readonly preferences?: Pick<UserPreferencesService, 'set'>;
 }
 
 export function createUserManagementService(
@@ -104,6 +110,8 @@ class DefaultUserManagementService implements UserManagementService {
       ...(services.onRoleScopesChanged
         ? { onRoleScopesChanged: services.onRoleScopesChanged }
         : {}),
+      ...(services.i18n ? { i18n: services.i18n } : {}),
+      ...(services.preferences ? { preferences: services.preferences } : {}),
     });
   }
 

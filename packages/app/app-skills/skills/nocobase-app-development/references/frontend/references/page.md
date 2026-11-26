@@ -213,13 +213,18 @@ Provide English and Chinese text without unresolved interpolation placeholders. 
 
 ## 5. Settings pages
 
-There is one kind of client route, `defineAppRoutes()`, and plugins contribute no settings pages of their own: a page that configures something is an ordinary App page. Place it in the application's System settings structure — one sidebar entry opening a home page of cards by category, with tabs inside a module — by registering it with `parent` naming a settings category, as [System settings navigation](../../settings-navigation.md) describes. Add the icons to the `lucide-react` import at the top of the file (here `SlidersHorizontal`):
+System and personal settings routes are enabled by default. Disable either surface in the application runtime with `systemSettingsRoutes: false` or `personalSettingsRoutes: false`.
+
+A page that configures something for the whole application is a System settings page, declared with `defineSystemSettingsRoutes()` by the application or a plugin; a page where each person configures their own account is a personal settings page, declared with `definePersonalSettingsRoutes()`. Place a System settings page in the application's System settings structure — one sidebar entry opening the first page the viewer may open, a settings menu by category, with tabs inside a module — by naming its category with `parent`, as [System settings navigation](../../settings-navigation.md) describes. Add the icons to the `lucide-react` import at the top of the file (here `SlidersHorizontal`):
+
+Both templates use the same registered personal settings routes for pages and dialogs. Set `client.personalSettings.openMode: dialog` in the application configuration to open the avatar menu entry over the current page. The default is `page`. Link to `/me/preferences` for a page or set `personalSettings=preferences` in the current URL's search parameters for a dialog. Relative React Router links and nested routes work inside either container.
 
 ```ts
-// Appended to the routes in client/routes.ts, beside the template's settings shell.
+// Declared in client/routes.ts inside defineSystemSettingsRoutes([...]), beside the template's settings shell.
 {
-  // A card in the Business configuration category of the System settings home.
-  parent: 'settingsBusiness',
+  // An entry in the application's own Projects category, which its settings routes declare once as
+  // `{ name: 'projects', category: true, navigation: { title: 'settings.categories.projects', order: 50 }, children: [] }`.
+  parent: 'projects',
   // Opens for identities granted read on the project-settings item; the endpoints check the same item.
   authz: {
     resource: { type: 'settings', id: 'project-settings' },
@@ -232,7 +237,7 @@ There is one kind of client route, `defineAppRoutes()`, and plugins contribute n
     description: 'navigation.projectSettingsDescription',
     icon: SlidersHorizontal,
   },
-  // In Default the settings group's path is a prefix: this page is at /settings/projects.
+  // Relative to /settings: this page is at /settings/projects.
   path: '/projects',
 },
 ```
@@ -241,7 +246,7 @@ A configuration page checks a **settings item** rather than a page grant: a name
 
 - **Register the item on the server** in the `boot()` of the provider that owns the feature, with the service resolved from `authorizationToken`: `authz.settings.add({ id: 'project-settings', title, actions: [{ name: 'read' }, { name: 'update' }] })`, placed in the permission workspace with `authz.ui.place` (after `authz.ui.sections.add` when it needs a subsection of its own); an unplaced item is listed under "Other" with a startup warning. The server denies an item or action nobody registered, so an unregistered item keeps the page closed. The endpoints check the same item per action, `read` for loading and `update` for saving; see ["Authorization, when identity is not enough" in `../../server-routes.md`](../../server-routes.md#authorization-when-identity-is-not-enough). Actions are business actions (`read`, `update`); there is no conversion such as `list`, `show` or `edit`. Read the `nocobase-app-plugin-authorization` Skill before designing several items or actions.
 - **Gate the write controls on the write action**: `useCan({ resource: { type: 'settings', id: 'project-settings' }, action: 'update' })` ([section 8](#8-show-actions-by-permission-usecan)). Without it, render the values read-only instead of hiding the page.
-- `authz` is checked before the page loads; without permission its card disappears from the settings home, and opening its URL directly does not load the component either. A category or module group whose pages are all denied disappears with them.
+- `authz` is checked before the page loads; without permission its entry disappears from the settings menu, and opening its URL directly does not load the component either. A category or module group whose pages are all denied disappears with them.
 - `navigation.order` sets the position in the menu; lower numbers come first.
 - For tabs and detail child pages, see [`child-routes.md`](child-routes.md).
 
@@ -279,7 +284,20 @@ Write `navigation` on the route. The application sidebar reads its menu entries 
 
 ### A count beside an entry
 
-An entry can show how many things wait on the viewer behind it, such as unread messages or requests to decide. A count changes while the page is open, so it is not part of the route's `navigation`: the App layout reads it with the hook that keeps it current and passes it to `NavigationMenu` in `badges`, keyed by the route's `name`:
+An entry can show how many things wait on the viewer behind it, such as unread messages or requests to decide. The route declares it with `navigation.badge`, a hook returning `{ count, tone? }` or `undefined` that the menu calls while it renders the entry; `tone: 'attention'` draws the count on the primary color. The hook runs inside the signed-in session, starts over when the person changes, and owns its data: it reads a query kept current by a realtime topic or a write's invalidation, and never starts a request on each render.
+
+```ts
+// client/routes.ts
+navigation: {
+  title: 'navigation.inbox',
+  badge: () => {
+    const { data: unread = 0 } = useInboxUnreadCount(); // @nocobase/app-plugin-notification-in-app/client/inbox
+    return { count: unread, tone: 'attention' };
+  },
+},
+```
+
+The App layout may instead pass a count to `NavigationMenu` in `badges`, keyed by the route's `name`, which replaces what the route declares — for a route the application does not own, or a `live` count:
 
 ```tsx
 // client/layouts/app-layout.tsx
@@ -293,11 +311,11 @@ const { data: unread = 0 } = useInboxUnreadCount(); // @nocobase/app-plugin-noti
 />;
 ```
 
-A number is something waiting; `{ count, live: true, hint }` is work under way, such as runs in progress, drawn in the primary color behind a pulsing dot, with `hint` (translated, such as "2 running") as its words. The menu does the rest: nothing at zero, "99+" above 99, the count in the entry's accessible name and tooltip, and in the collapsed sidebar a dot on the icon's corner. A count goes on a page entry the menu always shows — a top-level entry or a section's — not on a group or an entry inside a sub-menu. Which counts belong in the menu at all is guideline L8 of [`../ui-guidelines.md`](../ui-guidelines.md).
+In `badges` a number is something waiting; `{ count, live: true, hint }` is work under way, such as runs in progress, drawn in the primary color behind a pulsing dot, with `hint` (translated, such as "2 running") as its words. The menu does the rest: nothing at zero, "99+" above 99, the count in the entry's accessible name and tooltip, and in the collapsed sidebar a dot on the icon's corner. A count goes on a page entry the menu always shows — a top-level entry or a section's — not on a group or an entry inside a sub-menu. Which counts belong in the menu at all is guideline L8 of [`../ui-guidelines.md`](../ui-guidelines.md).
 
 ## 7. Back button and breadcrumbs
 
-The shell header shows the current page's breadcrumb after the sidebar toggle, on every page; pages never render breadcrumbs themselves. Under `AppLayout`, a covering child page, record detail or independent edit uses the header trail and mobile parent arrow. Do not render a duplicate page back button or add “Back to list” to `actions`. A standalone page without that header supplies its own validated parent navigation.
+The shell header shows the current page's breadcrumb after the sidebar toggle, on every page; pages never render breadcrumbs themselves. Under `AppLayout`, a covering child page, record detail or independent edit uses the header trail and mobile parent arrow. Do not render a duplicate page back button or add “Back to list” to `actions`. A signed-in page declared with `layout: 'none'` (no header) is inside `RouteTreeProvider`, so `BackButton` in its child pages returns to the validated parent; a guest or optional standalone page without that header supplies its own validated parent navigation.
 
 ### The back button
 
@@ -345,7 +363,7 @@ The header validates both automatic and explicit destinations against registered
 
 On a phone the header keeps the current title and a visible arrow to the nearest accessible parent, named “Back to <parent>” for assistive technology. It omits the duplicate brand. On a medium screen a trail of three or more levels folds the middle into a menu. Under `AppLayout`, omit the duplicate page `BackButton`. Detail tabs keep the same parent; an independent edit page declares detail as its parent and list as the preceding level. A dialog/drawer instead keeps the existing close/cancel semantics and does not add a breadcrumb level.
 
-`StandalonePageLayout` has no header. A standalone page supplies an explicit back link with the same destination validation and its route/access context; it must not use browser history as its only fallback.
+`StandalonePageLayout` has no header. A guest or optional standalone page supplies an explicit back link with the same destination validation and its route/access context; it must not use browser history as its only fallback. A signed-in page with `layout: 'none'` (declare it on the route or with `defineAppRoutes(routes, { layout: 'none' })`; a page and its nested pages share one layout) is wrapped in `RouteTreeProvider`, so its child pages use `BackButton` as usual. Its `access` is empty (no sidebar check), so `BackButton` validates only that the destination is a registered page.
 
 ## 8. Show actions by permission (useCan)
 
@@ -434,7 +452,7 @@ Do not declare a plugin's own page route a second time: registering another `/in
 
 The templates omit `route-overrides.ts` and `source-extensions.ts`. UI Library assets under `client/extensions/` are imported and composed like other application source; adding a file there does not register an extension automatically.
 
-For example, to replace the registered App Foundation page with an application-owned page, create the following optional module:
+For example, to replace the Plugins page that `@nocobase/app-plugin-foundation` registers in System settings with an application-owned page, create the following optional module:
 
 ```ts
 // client/route-overrides.ts
@@ -446,14 +464,16 @@ import {
 export const routeComponentOverrides: readonly AppClientRouteComponentOverrideDefinition[] =
   defineClientRouteComponentOverrides([
     {
-      routeId: '@nocobase/app-plugin-foundation:foundation',
-      componentEntry: './client/pages/foundation/index',
-      componentLoader: () => import('./pages/foundation/index.js'),
+      routeId: '@nocobase/app-plugin-foundation:plugins',
+      componentEntry: './client/pages/plugins/index',
+      componentLoader: () => import('./pages/plugins/index.js'),
     },
   ]);
 
 export default routeComponentOverrides;
 ```
+
+A plugin that expects its pages to be replaced exports their route ids, such as `USERS_ROUTE_ID` from `@nocobase/app-plugin-users/client`; use the constant rather than writing the id.
 
 Then explicitly import it in the existing `client/runtime.ts` and add it to the existing declaration, keeping all other runtime options:
 
@@ -470,6 +490,21 @@ const appRuntime = defineAppRuntime({
 - **An override does not inherit the route's `presentation`.** An override without one builds its own container, as overrides did before presentations existed. When the replacement renders the same `RouteDialog`, `RouteDrawer` or `RouteChildPage` root as the route it replaces, declare that `presentation` on the override too.
 - **A route can be overridden only once across all sources**, including plugin options and any explicitly configured source extensions; a second override raises an error that names the route id.
 - Sign-in, registration, forgot password and reset password are the application's own routes, not the plugin's: edit the matching page in `client/pages/auth/` directly, and do not add another mechanism.
+
+To remove a plugin page or group, set `excludedRouteIds` in the same `defineAppRuntime()` declaration. Excluding a parent removes descendants, their navigation entries, and component overrides over them. The removed routes free their paths for application-owned declarations. For example:
+
+```ts
+const appRuntime = defineAppRuntime({
+  ...runtimeDefinition,
+  excludedRouteIds: ['@example/app-plugin-orders:orders'],
+});
+```
+
+In system and personal settings, exclude pages or modules by ID. Passing a shared settings category ID to `excludedRouteIds` fails runtime setup. A category emptied by exclusions disappears from navigation. To hide only the category and move its pages to the fallback category, use `defineSettingsCategories()`.
+
+Some plugins offer an option that turns off their own pages, such as `agents({ chatRoutes: false })`, `notificationInApp({ inboxRoute: false })` or `mail({ workspaceRoutes: false })`. Prefer that option when it exists; use `excludedRouteIds` for other pages or finer control. Both behave the same: the paths stay free and overrides or header actions targeting those route IDs are dropped. A plugin implements such an option by passing `{ disabled: true }` to `defineAppRoutes()`, `defineSystemSettingsRoutes()` or `definePersonalSettingsRoutes()`.
+
+To hide a plugin toolbar shortcut while keeping its page, add `{ name, hidden: true }` to `headerActionOverrides` using the name documented by the plugin. A shortcut that declares its target's `routeId` is hidden automatically when that page is excluded or inaccessible to the viewer. A missing target or a group ID fails runtime setup.
 
 ## 11. Where rendering happens
 

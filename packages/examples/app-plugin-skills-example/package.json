@@ -2,7 +2,17 @@
   "name": "@nocobase/app-plugin-skills-example",
   "displayName": "Skills Example App Plugin",
   "description": "A small App Notice component and authenticated Server API for demonstrating Plugin Skills.",
-  "version": "1.0.0-beta.10",
+  "nocobase": {
+    "title": {
+      "en-US": "Plugin skills example",
+      "zh-CN": "插件技能示例"
+    },
+    "description": {
+      "en-US": "Use a plugin skill to integrate an application notice and its authenticated API.",
+      "zh-CN": "使用插件技能接入应用公告组件及其需要登录的 API。"
+    }
+  },
+  "version": "1.0.0-beta.12",
   "type": "module",
   "prettier": "@nocobase/dev-config/prettier",
   "engines": {

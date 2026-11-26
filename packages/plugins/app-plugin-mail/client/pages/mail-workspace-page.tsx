@@ -1,3 +1,8 @@
+import {
+  canHaveOriginalMessage,
+  MAIL_ORIGINAL_MAX_BYTES,
+  originalMessageFileName,
+} from '../../shared/original-message.js';
 import { PageContainer } from '../components/page-container.js';
 import { PageHeader } from '../components/page-header.js';
 import { prepareMailReply } from '../prepare-mail-reply.js';
@@ -84,17 +89,23 @@ import { useMailClient } from '../runtime.js';
 import { mailSyncDateMonthsAgo } from '../../shared/mail-sync-date.js';
 import { MAIL_VIRTUAL_FOLDER_IDS } from '../../shared/mail.js';
 import { MAIL_PLUGIN_NS } from '../namespace.js';
+import { useMailExtensions, type MailExtensions } from '../extensions.js';
+import { notifyComposerCompletion } from '../lib/mail-composer-completion.js';
+import { MailSlotBoundary } from '../components/mail-slot-boundary.js';
 
 export interface MailWorkspacePageProps {
   readonly title?: string;
   readonly description?: string;
-  /** Additional actions appended after the built-in workspace actions. */
+  /**
+   * Additional actions appended after the built-in workspace actions. Actions registered in
+   * `mail.slots.workspaceActions` follow them.
+   */
   readonly headerActions?: ReactNode;
   /** Values available to `{{path.to.value}}` placeholders in mail templates. */
   readonly templateVariables?: MailTemplateVariables;
   /**
-   * The application page that renders `MailAccountsPage`, relative to the application's base path. A user with no
-   * account is linked there; without it the empty state shows no link, because the plugin ships no such page.
+   * The page that renders `MailAccountsPage`, relative to the application's base path, such as the plugin's own
+   * `/me/mail`. A user with no account, or with an account to reauthorize, is linked there; without it no link is shown.
    */
   readonly accountsHref?: string;
 }
@@ -111,6 +122,7 @@ export default function MailWorkspacePage({
 }: MailWorkspacePageProps = {}): ReactElement {
   const { t } = useTranslation(MAIL_PLUGIN_NS);
   const mail = useMailClient();
+  const extensions = useMailExtensions();
   const [accounts, setAccounts] = useState<readonly MailAccountView[]>([]);
   const [providers, setProviders] = useState<readonly MailProviderView[]>([]);
   const [accountId, setAccountId] = useState('');
@@ -262,6 +274,10 @@ export default function MailWorkspacePage({
   const selectedMessageAccount = selected
     ? accounts.find((account) => account.id === selected.accountId)
     : undefined;
+  const selectedFullMessage = selected
+    ? conversation.find((message) => message.id === selected.id)
+    : undefined;
+  const reauthorizationAccounts = accounts.filter(needsReauthorization);
   const selectedMessageProviderCapabilities = findProviderCapabilities(
     selectedMessageAccount,
     providers,
@@ -833,6 +849,9 @@ export default function MailWorkspacePage({
         folders: t('workspace.folders', { defaultValue: 'Folders' }),
         accounts: t('workspace.accounts', { defaultValue: 'Accounts' }),
         labels: t('workspace.labels', { defaultValue: 'Labels' }),
+        needsReauthorization: t('pages.workspace.needsReauthorization', {
+          defaultValue: 'needs reauthorization',
+        }),
         folderNames,
         systemFolderNames,
       }}
@@ -951,9 +970,46 @@ export default function MailWorkspacePage({
               </Button>
             ) : null}
             {headerActions}
+            {extensions.slots.workspaceActions.list().map((action) => (
+              <MailSlotBoundary key={action.name}>
+                <action.component
+                  accounts={accounts}
+                  accountId={accountId}
+                  selectedMessage={selectedFullMessage}
+                  reload={() => setReloadVersion((version) => version + 1)}
+                />
+              </MailSlotBoundary>
+            ))}
           </div>
         }
       />
+      {reauthorizationAccounts.length > 0 ? (
+        <div
+          role='status'
+          data-slot='mail-reauthorization-notice'
+          className='flex flex-wrap items-center justify-between gap-3 rounded-xl border border-destructive/30 bg-destructive/5 px-4 py-3 text-sm text-destructive'
+        >
+          <span>
+            {t('pages.workspace.reauthorizationNotice', {
+              addresses: reauthorizationAccounts
+                .map((account) => account.address)
+                .join(', '),
+              defaultValue:
+                '{{addresses}} must be reconnected: it does not synchronize or send until then.',
+            })}
+          </span>
+          {accountsHref ? (
+            <a
+              className='font-medium underline underline-offset-4'
+              href={resolveAppUrl(accountsHref)}
+            >
+              {t('pages.workspace.reauthorize', {
+                defaultValue: 'Reconnect in Mail accounts',
+              })}
+            </a>
+          ) : null}
+        </div>
+      ) : null}
       <div
         ref={workspaceRef}
         data-slot='mail-workspace'
@@ -1284,6 +1340,27 @@ export default function MailWorkspacePage({
                         delete: (message) => deleteWorkspaceMessage(message),
                         canDelete: (message) => !deleteDisabledReason(message),
                         deleteDisabledReason,
+                        canDownloadOriginal: (message) => {
+                          const account = accounts.find(
+                            ({ id }) => id === message.accountId,
+                          );
+                          return (
+                            account?.status === 'active' &&
+                            canHaveOriginalMessage(message.providerMessageId) &&
+                            findProviderCapabilities(account, providers)
+                              ?.downloadOriginal === true
+                          );
+                        },
+                        downloadOriginal: (message) => {
+                          void downloadOriginal(mail, message).catch((cause) =>
+                            setError(
+                              mailErrorMessage(
+                                cause,
+                                t('workspace.downloadOriginalFailed'),
+                              ),
+                            ),
+                          );
+                        },
                         downloadAttachment: (message, attachment) => {
                           void downloadAttachment(
                             mail,
@@ -1469,6 +1546,13 @@ export default function MailWorkspacePage({
                 onLoadMore={loadMoreConversation}
                 subject={selected?.subject}
               />
+              {selectedFullMessage ? (
+                <MessageAsides
+                  accounts={accounts}
+                  extensions={extensions}
+                  message={selectedFullMessage}
+                />
+              ) : null}
             </div>
           </div>
         )}
@@ -1514,8 +1598,22 @@ export default function MailWorkspacePage({
             providers={providers}
             templateVariables={templateVariables}
             onClose={() => setComposerRequest(undefined)}
-            onComplete={(result, rejectedRecipients, operationError) => {
+            onComplete={(
+              result,
+              rejectedRecipients,
+              operationError,
+              details,
+            ) => {
               setReloadVersion((version) => version + 1);
+              for (const handler of extensions.composer.onComplete.list())
+                notifyComposerCompletion(
+                  handler,
+                  undefined,
+                  result,
+                  rejectedRecipients,
+                  operationError,
+                  details,
+                );
               const notice =
                 result === 'partial'
                   ? t('workspace.submissionPartial', {
@@ -1641,6 +1739,38 @@ function forwardSubject(subject: string): string {
   return /^fwd?:/iu.test(subject.trim()) ? subject : `Fwd: ${subject}`;
 }
 
+async function downloadOriginal(
+  mail: MailClient,
+  message: MailMessage,
+): Promise<void> {
+  const stream = await mail.downloadOriginalMessage(
+    message.accountId,
+    message.id,
+    AbortSignal.timeout(65_000),
+  );
+  let total = 0;
+  const bounded = stream.pipeThrough(
+    new TransformStream<Uint8Array, Uint8Array>({
+      transform(chunk, controller) {
+        total += chunk.byteLength;
+        if (total > MAIL_ORIGINAL_MAX_BYTES)
+          throw new Error(
+            'The original message exceeds the download size limit.',
+          );
+        controller.enqueue(chunk);
+      },
+      flush() {
+        if (total === 0) throw new Error('The original message is empty.');
+      },
+    }),
+  );
+  await saveDownload(
+    bounded,
+    'message/rfc822',
+    originalMessageFileName(message.subject),
+  );
+}
+
 async function downloadAttachment(
   mail: MailClient,
   message: MailMessage,
@@ -1651,13 +1781,67 @@ async function downloadAttachment(
     message.id,
     attachment.id,
   );
+  await saveDownload(stream, attachment.contentType, attachment.fileName);
+}
+
+async function saveDownload(
+  stream: ReadableStream<Uint8Array>,
+  contentType: string,
+  fileName: string,
+): Promise<void> {
   const blob = await new Response(stream, {
-    headers: { 'content-type': attachment.contentType },
+    headers: { 'content-type': contentType },
   }).blob();
   const url = URL.createObjectURL(blob);
   const anchor = document.createElement('a');
   anchor.href = url;
-  anchor.download = attachment.fileName;
+  anchor.download = fileName;
   anchor.click();
   URL.revokeObjectURL(url);
+}
+
+function needsReauthorization(account: MailAccountView): boolean {
+  return (
+    account.status === 'reauthorizationRequired' || account.status === 'revoked'
+  );
+}
+
+/** What applications registered beside the open message, given its counterpart addresses. */
+function MessageAsides({
+  accounts,
+  extensions,
+  message,
+}: {
+  readonly accounts: readonly MailAccountView[];
+  readonly extensions: MailExtensions;
+  readonly message: MailMessage;
+}): ReactElement | null {
+  const asides = extensions.slots.messageAside.list();
+  const addresses = useMemo(() => {
+    const own = new Set(
+      accounts.map((account) => account.address.toLowerCase()),
+    );
+    return [
+      ...new Set(
+        [message.from, ...message.to, ...message.cc]
+          .flatMap((address) =>
+            address ? [address.address.toLowerCase()] : [],
+          )
+          .filter((address) => !own.has(address)),
+      ),
+    ];
+  }, [accounts, message]);
+  if (asides.length === 0) return null;
+  return (
+    <aside
+      data-slot='mail-message-aside'
+      className='shrink-0 space-y-3 border-t bg-muted/10 p-4'
+    >
+      {asides.map((aside) => (
+        <MailSlotBoundary key={aside.name}>
+          <aside.component message={message} addresses={addresses} />
+        </MailSlotBoundary>
+      ))}
+    </aside>
+  );
 }

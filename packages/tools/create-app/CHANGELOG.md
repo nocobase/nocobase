@@ -1,5 +1,47 @@
 # @nocobase/create-app
 
+## 0.1.0-beta.41
+
+### Minor Changes
+
+- e376f8a: Create Main, child and multi-portal applications from the Enterprise edition's optional capabilities while preserving the existing creation aliases.
+
+## 0.1.0-beta.40
+
+### Minor Changes
+
+- a727ebe: Preinstall plugins with their Skills, unregister them while retaining the development dependency, and use plugin remove for a complete uninstall. Create apps from Professional and Enterprise template packages by alias. Default preinstalls Web Push and its Skill for opt-in registration. Default preinstalls SQLite, PostgreSQL, MySQL, SQL Server and Oracle as development dependencies. Source configuration promotes the selected driver. Configuration checks, migrations and builds report missing production driver declarations and how to fix them. The application upgrade Skill covers Community to Professional or Enterprise and Professional to Enterprise while preserving existing plugin registrations and database choices.
+
+### Patch Changes
+
+- 18636df: Retry private registry authorization failures once with the run's token and cover application creation and template downloads. Deploy the application before upgrading runners to protocol 17.
+
+## 0.1.0-beta.39
+
+### Patch Changes
+
+- 8339722: Recognize the commercial sub-app template alias for independent children with deployment tooling and platform SSO.
+
+## 0.1.0-beta.38
+
+### Patch Changes
+
+- dd0a34f: Use pnpm 11.11.0 for source and generated application builds. Its remote tarball integrity handling allows production installations of the official patched SheetJS distribution; applications using that distribution should update their packageManager pin before building with pnpm 11.
+
+## 0.1.0-beta.37
+
+### Minor Changes
+
+- cf13b3f: Support the commercial Main-only multi-app template alias with standard single-application creation and Skills synchronization. Keep commercial templates and plugins as licensed registry dependencies, scope private registry selection to NocoBase packages, and report recoverable installation failures without exposing credential settings.
+
+### Patch Changes
+
+- 9f74da7: Clarify that the commercial multi-app template creates Main only and children are added on demand. Keep the template alias while removing multi-application scaffolding and appDirectories processing. Main consumes child deployment archives rather than source directories.
+
+  Move multi-app scenario Skills out of the shared application guidance package; they are distributed by the commercial multi-app plugin.
+
+- 01c1cd5: Add --nocobase-registry and scope NOCOBASE_REGISTRY to @nocobase packages while respecting existing package-manager configuration. Keep --registry compatible with its legacy download behavior and display a migration warning, including in JSON output.
+
 ## 0.1.0-beta.36
 
 ### Patch Changes

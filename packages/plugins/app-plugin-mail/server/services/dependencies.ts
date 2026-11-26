@@ -15,6 +15,7 @@ import { type MailStore } from '../contracts/persistence.js';
 
 export interface MailOutboxPublisher {
   kick(): void;
+  accountChanged?(account: import('../../shared/mail.js').MailAccount): void;
 }
 
 export interface DefaultMailServiceDependencies {

@@ -9,6 +9,7 @@ const koKR: LocaleResource<typeof enUS> = {
   authorization: {
     title: '일정',
     read: '보기',
+    manage: '관리',
   },
 };
 

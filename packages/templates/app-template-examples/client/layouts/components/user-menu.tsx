@@ -1,8 +1,13 @@
 import { useAuthenticationErrorResolver } from '@nocobase/app-plugin-authentication/client/actions';
-import { getAvatarInitials, useToaster } from '@nocobase/app-client';
+import {
+  getAvatarInitials,
+  useClientApplication,
+  usePersonalSettingsNavigation,
+  useToaster,
+} from '@nocobase/app-client';
 import { useTranslation } from '@nocobase/i18n/client';
 import { useAuthentication } from '@nocobase/app-plugin-authentication/client';
-import { LogOut, UserRound } from 'lucide-react';
+import { LogOut, UserCog, UserRound } from 'lucide-react';
 import { useState, type ReactElement } from 'react';
 
 import {
@@ -35,6 +40,11 @@ export function UserMenu(): ReactElement {
   const { t } = useTranslation();
   const toaster = useToaster();
   const resolveError = useAuthenticationErrorResolver();
+  const { open } = usePersonalSettingsNavigation();
+  const { config, runtime } = useClientApplication();
+  const hasPersonalSettings = runtime.routes.some(
+    (route) => route.surface === 'personalSettings',
+  );
 
   const name =
     identity?.fullName ||
@@ -76,6 +86,22 @@ export function UserMenu(): ReactElement {
           ) : null}
         </div>
         <DropdownMenuSeparator />
+        {/* Personal settings come first; Language and Theme stay below as shortcuts to the same preferences. */}
+        {hasPersonalSettings && (
+          <DropdownMenuItem
+            className='gap-2'
+            onClick={() => {
+              open(
+                config.get('personalSettings.openMode') === 'dialog'
+                  ? 'dialog'
+                  : 'page',
+              );
+            }}
+          >
+            <UserCog className='size-4' />
+            {t('settings.personal.title')}
+          </DropdownMenuItem>
+        )}
         <LanguageSwitcher />
         <ThemeSettings />
         <DropdownMenuSeparator />

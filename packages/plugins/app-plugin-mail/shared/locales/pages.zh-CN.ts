@@ -1,0 +1,197 @@
+import type { MailPagesResource } from './pages.en-US.js';
+
+const pagesZhCN: MailPagesResource = {
+  navigation: {
+    mail: '邮件',
+    mailTeam: '团队邮件',
+    mailAccounts: '邮箱账号',
+    mailAccountsDescription: '连接你的邮箱，管理签名、模板和标签。',
+    mailSettings: '邮箱接入',
+    mailSettingsDescription: '邮件服务商、各账号状态、同步日志和发送日志。',
+  },
+  access: {
+    section: '邮件',
+    team: {
+      title: '团队邮件',
+      description: '成员已同步的邮件，只读。',
+      actions: {
+        view: '查看',
+        process: '处理（标记已读、星标、归档）',
+      },
+    },
+    settings: {
+      title: '邮箱接入',
+      actions: {
+        read: '查看',
+        manage: '管理（重试和取消成员的同步与发送）',
+      },
+    },
+  },
+  pages: {
+    loading: '加载中…',
+    empty: '暂无内容。',
+    member: '成员',
+    allMembers: '全部成员',
+    workspace: {
+      reauthorizationNotice:
+        '{{addresses}} 需要重新连接，在此之前不会同步或发送邮件。',
+      reauthorize: '前往邮箱账号重新连接',
+      needsReauthorization: '需要重新授权',
+    },
+    accounts: {
+      title: '邮箱账号',
+      description:
+        '连接你的邮箱，即可在邮件中收发邮件。你的邮件仅你本人可见；拥有团队邮件权限的人可以查看，但不能更改。',
+      reauthorizationNotice:
+        '{{addresses}} 的授权已失效，在你使用同一服务商重新连接之前，不会同步或发送邮件。',
+      reauthorize: '重新连接',
+      tabs: {
+        accounts: '账号',
+        signatures: '签名',
+        templates: '模板',
+        labels: '标签',
+        activity: '活动',
+      },
+    },
+    activity: {
+      sends: '发送',
+      syncs: '同步',
+    },
+    logs: {
+      started: '开始时间',
+      time: '时间',
+      account: '账号',
+      accountMember: '账号 · 成员',
+      mode: '方式',
+      initial: '首次同步',
+      incremental: '增量同步',
+      result: '结果',
+      allResults: '全部结果',
+      detail: '详情',
+      reason: '原因',
+      processed: '{{count}} 封邮件',
+      subject: '主题',
+      recipients: '收件人',
+      recipientCount: '收件人',
+      bulk: '批量发送',
+      bulkCount: '{{count}}（批量）',
+      showRecipients: '查看收件人',
+      hideRecipients: '收起收件人',
+      scheduled: '定时发送',
+      retry: '重试',
+      cancel: '取消',
+      window: '时间',
+      windows: {
+        day: '最近 24 小时',
+        week: '最近 7 天',
+        month: '最近 30 天',
+        all: '全部时间',
+      },
+    },
+    team: {
+      title: '团队邮件',
+      description:
+        '查看成员已同步的邮件，用于工作交接和合规检查。打开邮件不会将其标记为已读，也无法回复。',
+      account: '账号',
+      allAccounts: '全部账号',
+      participant: '地址或 @域名',
+      keyword: '主题关键词',
+      memberAccount: '成员 · 账号',
+      counterpart: '往来方',
+      view: '查看',
+      selectAll: '全选本页',
+      empty: '没有匹配的已同步邮件。',
+      readOnly: '只读。打开不会标记为已读。',
+      applied: '{{succeeded}} 封已更新，{{failed}} 封失败。',
+      actions: {
+        markRead: '标记为已读',
+        star: '添加星标',
+        archive: '归档',
+      },
+    },
+    settings: {
+      title: '邮箱接入',
+      description:
+        '成员可连接的邮件服务商，以及每个账号的连接、同步和发送状态。此处不显示任何邮件内容。系统通知邮件请在通知中配置。',
+      tabs: {
+        providers: '服务商',
+        accounts: '账号',
+        syncRuns: '同步日志',
+        submissions: '发送日志',
+        runtime: '运行配置',
+      },
+      sources: {
+        environment: '环境变量',
+        config: 'config.yml',
+        default: '默认值',
+        code: '代码',
+        unknown: '未知',
+      },
+      providers: {
+        name: '名称',
+        type: '类型',
+        capabilities: '能力',
+        accounts: '账号',
+        source: '来源',
+        attention: '{{count}} 个需要重新授权',
+        howTo: '如何添加服务商',
+        howToDescription:
+          '在应用配置的 mail.providers 下添加一项，并将密钥保存在环境变量中。重启应用后生效。',
+        callbackHint: '请在 Google 或 Microsoft 中登记以下 OAuth 回调地址：',
+      },
+      accounts: {
+        filter: {
+          all: '全部',
+          attention: '需要重新授权',
+          suspended: '已停用',
+        },
+        provider: '服务商',
+        allProviders: '全部服务商',
+        search: '成员或地址',
+        lastSynced: '最近同步',
+        status: '状态',
+        showRuns: '同步记录',
+        note: '管理员无法授权或移除成员的账号。成员需在 个人设置 › 邮箱账号 中自行重新连接。',
+      },
+      runtime: {
+        setting: '配置项',
+        value: '当前值',
+        effect: '影响',
+        automaticSyncInterval: '自动同步间隔',
+        automaticSyncIntervalEffect: '没有推送通知的账号检查新邮件的频率。',
+        syncBatchSize: '每批同步邮件数',
+        syncBatchSizeEffect:
+          '批次越大，首次同步完成越快，但也更容易触发服务商的速率限制。',
+        oauthCallbackUrl: 'OAuth 回调地址',
+        oauthCallbackUrlEffect: '请在 Google 或 Microsoft 开发者控制台中登记。',
+        oauthReturnUrl: '授权后返回页面',
+        oauthReturnUrlEffect: '连接 OAuth 账号后返回的页面。',
+        pushWebhook: '推送 Webhook',
+        pushWebhookEffect:
+          '未配置时，Gmail 和 Microsoft 365 也按同步间隔检查新邮件。',
+        jobs: '后台任务',
+        jobsEffect: '多实例部署需要共享队列。',
+        logRetention: '日志保留',
+        logRetentionEffect:
+          '超过此期限的已结束同步记录和发送记录会被自动删除。',
+        credentialVault: '凭据存储',
+        credentialVaultEffect: '已连接账号的 OAuth 令牌和密码的保存位置。',
+        minutes: '{{count}} 分钟',
+        days: '{{count}} 天',
+        keepForever: '永久保留',
+        notConfigured: '未配置',
+        secretConfigured: '已配置密钥',
+        secretMissing: '未配置密钥',
+        jobsDefault: '跟随 jobs.default',
+        vaultBuiltin: '内置，保存在应用数据库中',
+        vaultApplication: '由应用注册',
+        copy: '复制',
+        copied: '已复制',
+        readOnly:
+          '只读：这些配置来自 config.yml 和 MAIL_* 环境变量，重启后生效。',
+      },
+    },
+  },
+};
+
+export default pagesZhCN;

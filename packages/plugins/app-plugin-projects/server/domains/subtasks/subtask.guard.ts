@@ -5,10 +5,9 @@ import { conflict } from '../../kernel/errors.js';
 /**
  * Serialize relationship writes and issue transitions that change blockers across projects and processes until the outermost transaction
  * commits. The conditional update also rejects an old repeatable-read snapshot: a write lock cannot refresh the graph.
- * This row must be separate from settings/counters: writing those in a plan could otherwise expose the latest row
+ * This row must be separate from settings/counters: writing those in the same transaction could otherwise expose the latest row
  * version through MySQL's read-your-own-writes, while graph reads still use the old snapshot. Always take this guard
- * before issue rows and the issue counter. Plans take it before their first row, and standalone creates before their
- * counter. Taking it without advancing the revision preserves concurrent independent creates and plain-edit plans.
+ * before issue rows and the issue counter. Creates take it before their counter. Taking it without advancing the revision preserves concurrent independent creates.
  * The adapter reports matched rows for this no-op update (including mysql2's default FOUND_ROWS), not changed values.
  */
 export async function lockIssueGraph(

@@ -1,3 +1,9 @@
+export {
+  DistTargetParams,
+  DistFileParams,
+  DistTargetQuery,
+  DownloadTokenSchema,
+} from '@nocobase/app-cli-distribution';
 /**
  * The path parameters, query strings and small bodies of the plugin's routes. Bodies the services own (an agent, a
  * skill, a model service) keep their schemas beside the service, strict there too.
@@ -45,9 +51,9 @@ import {
   AGENT_SOURCES,
   AGENT_STATUSES,
   AGENT_UNUSABLE_REASONS,
-  CONFIRM_CHANGES,
   MODEL_AVAILABILITY_STATUSES,
   type Agent,
+  type ChatRole,
   type AgentActionOption,
   type AgentChange,
   type AgentName,
@@ -88,11 +94,10 @@ import type { I18nText } from '../../shared/i18n.js';
 import {
   MODEL_KINDS,
   type DefaultModels,
-  MODEL_PROVIDER_NAMES,
   type ModelCheck,
   type ModelKind,
-  type ModelProviderName,
   type ModelService,
+  type ModelProviderOption,
   type ModelServiceView,
   type ProviderModels,
 } from '../../shared/models.js';
@@ -106,7 +111,6 @@ import {
 import {
   RUNNER_STATUSES,
   RUNNER_TRUST,
-  type DownloadToken,
   type RegistrationToken,
   type RegistrationTokenSummary,
   type RegistrationTokenInput,
@@ -248,18 +252,6 @@ export const RunMountParams: z.ZodType<{ runId: string; name: string }> =
 export const CommandParams: z.ZodType<{ commandId: string }> = z.object({
   commandId: id.describe('The command identifier.'),
 });
-export const DistTargetParams: z.ZodType<{ product: string; target: string }> =
-  z.object({ product: id, target: id });
-export const DistFileParams: z.ZodType<{
-  product: string;
-  version: string;
-  file: string;
-}> = z.object({
-  product: id,
-  version: id.describe('The version to read or restore.'),
-  file: id.describe('The file to upload.'),
-});
-
 export const AgentListQuery: z.ZodType<{ includeArchived?: boolean }> =
   z.object({ includeArchived: queryBoolean.optional() });
 
@@ -511,17 +503,6 @@ export const ClaimQuery: z.ZodType<{ wait?: boolean | undefined }> = z.object({
   wait: queryBoolean.optional(),
 });
 
-export const DistTargetQuery: z.ZodType<{
-  format?: 'json' | 'env' | undefined;
-  accept?: string | undefined;
-}> = z.object({
-  format: z.enum(['json', 'env']).optional(),
-  accept: z.string().max(200).optional().meta({
-    description:
-      'The other answers the caller understands, comma-separated. `npm`: when the application has no tarball of the product but names its npm package, answer that package and exact version (`kind: npm`) instead of 404. Unknown values are ignored.',
-  }),
-});
-
 export const VariableValueInput: z.ZodType<{
   value?: string;
   teamRunnersOnly?: boolean;
@@ -550,8 +531,16 @@ export const SkillRestoreInput: z.ZodType<{ expectedRevision: number }> =
       .describe('The revision last read; reject if the record has changed.'),
   });
 
+const RunnerQuotaLimitsSchema = z.partialRecord(
+  AgentToolSchema,
+  z.number().int().min(1).max(100),
+);
+
 export const RunnerPatchInput: z.ZodType<RunnerPatch> = z
   .strictObject({
+    quotaLimits: RunnerQuotaLimitsSchema.nullable().describe(
+      'Pause new runs when a reported quota window reaches this percentage used. Omitted tools have no ceiling. Running work is unaffected.',
+    ),
     name: z.string().trim().min(1).max(200).describe('The name to display.'),
     trust: z
       .enum(RUNNER_TRUST)
@@ -696,10 +685,13 @@ const agentObject = z.object({
   }),
   instructions: z.string().nullable(),
   actions: z.array(z.string()),
-  confirmChanges: z.enum(CONFIRM_CHANGES),
   maxConcurrentRuns: z.number().int(),
   maxAttempts: z.number().int(),
   toolPolicy: toolPolicyOverrides.nullable(),
+  chatRoles: z.array(z.string()).nullable().meta({
+    description:
+      'Who may chat with it: null for every signed-in person, else the keys of the permission sets (roles) whose members may.',
+  }),
   lastReportedAt: dateTime.nullable().meta({
     description: 'When a runner last reported its tool and model.',
   }),
@@ -710,6 +702,16 @@ const agentObject = z.object({
   createdAt: dateTime,
   updatedAt: dateTime,
 });
+
+export const ChatRoleSchema: z.ZodType<ChatRole> = z
+  .object({
+    key: z.string().meta({ description: 'The permission set key.' }),
+    title: z
+      .union([z.string(), I18nTextSchema])
+      .nullable()
+      .meta({ description: 'Its title, or an i18n reference; null for none.' }),
+  })
+  .meta({ ref: 'AgentsChatRole' });
 
 export const AgentSchema: z.ZodType<Agent> = agentObject.meta({
   ref: 'AgentsAgent',
@@ -1076,6 +1078,10 @@ const skillObject = z.object({
     description:
       "The front matter's `compatibility`: what the skill needs of its environment.",
   }),
+  metadata: z.record(z.string(), z.string()).meta({
+    description:
+      "The front matter's `metadata`, string keys and values an application may read to classify the skill; empty when it has none.",
+  }),
   version: z.number().int().meta({
     description:
       "The current version and the skill's revision: a save names the version it was made against.",
@@ -1093,6 +1099,10 @@ const skillObject = z.object({
     .array(z.string())
     .meta({ description: 'The paths of those scripts.' }),
   createdById: z.string().nullable(),
+  updatedById: z.string().nullable().meta({
+    description:
+      'Who wrote the current version: null when the application did (a seed or a plugin).',
+  }),
   createdAt: dateTime,
   updatedAt: dateTime,
 });
@@ -1129,7 +1139,13 @@ const skillDetailObject = skillObject.extend({
 export const SkillDetailSchema: z.ZodType<SkillDetail> = skillDetailObject;
 
 export const SkillViewSchema: z.ZodType<SkillView> = skillDetailObject
-  .extend({ canEdit: z.boolean() })
+  .extend({
+    canEdit: z.boolean(),
+    canDelete: z.boolean().meta({
+      description:
+        "Whether the caller may delete it: a manager of skills, unless the application's skill policy protects it.",
+    }),
+  })
   .meta({ ref: 'AgentsSkillView' });
 
 const skillVersionObject = z.object({
@@ -1573,13 +1589,33 @@ export const DefaultModelsSchema: z.ZodType<DefaultModels> = z
   })
   .meta({ ref: 'AgentsDefaultModels' });
 
+export const ModelProviderSchema: z.ZodType<ModelProviderOption> = z
+  .object({
+    name: z.string().meta({
+      description: 'Its type, stored on each service that uses it.',
+    }),
+    title: z.string(),
+    defaultBaseUrl: z.string().nullable().meta({
+      description:
+        'The base URL it calls when a service sets none; null when a service must set one.',
+    }),
+    keyRequired: z
+      .boolean()
+      .meta({ description: 'Whether it answers nothing without an API key.' }),
+    kinds: z
+      .array(z.enum(['chat', 'embedding', 'rerank']))
+      .meta({ description: 'The kinds of model it serves.' }),
+  })
+  .meta({ ref: 'AgentsModelProvider' });
+
 export const ModelServiceViewSchema: z.ZodType<ModelServiceView> = z
   .object({
     name: z.string(),
     title: z.string(),
-    provider: z.enum(
-      MODEL_PROVIDER_NAMES as [ModelProviderName, ...ModelProviderName[]],
-    ),
+    provider: z.string().meta({
+      description:
+        'The provider type: a built-in one or one another plugin registered (`GET /api/agents/modelProviders`).',
+    }),
     baseUrl: z.string().nullable(),
     apiKeySet: z.boolean().meta({
       description: 'Whether a key is stored; the key itself is never answered.',
@@ -1699,6 +1735,24 @@ const conversationAgent = z.object({
   nameText: I18nTextSchema.nullable(),
   avatar: z.string().nullable(),
   archived: z.boolean(),
+  model: z
+    .string()
+    .optional()
+    .describe(
+      'Its whole model id, shown beside its name: with the provider for OpenCode and Pi ("example-provider/qwen3.8-flash"), and for a model the catalog does not know.',
+    ),
+  shortName: z
+    .string()
+    .optional()
+    .describe(
+      'Its name without its tool, for a narrow place; OpenCode and Pi only.',
+    ),
+  modelTitle: z
+    .string()
+    .optional()
+    .describe(
+      'Its tool and whole model id, shown on hover in a narrow place; OpenCode and Pi only.',
+    ),
 });
 
 const availability = z.object({
@@ -1844,7 +1898,6 @@ const notice = z.discriminatedUnion('code', [
     usage: z
       .object({ inputTokens: z.number(), outputTokens: z.number() })
       .nullable(),
-    plans: z.number().int(),
   }),
 ]);
 
@@ -1964,6 +2017,24 @@ export const ChatAgentSchema: z.ZodType<ChatAgent> = z.object({
   personalOnly: z.boolean().meta({
     description: 'Only personal runners have it.',
   }),
+  model: z
+    .string()
+    .optional()
+    .describe(
+      'Its whole model id, shown beside its name: with the provider for OpenCode and Pi ("example-provider/qwen3.8-flash"), and for a model the catalog does not know.',
+    ),
+  shortName: z
+    .string()
+    .optional()
+    .describe(
+      'Its name without its tool, for a narrow place; OpenCode and Pi only.',
+    ),
+  modelTitle: z
+    .string()
+    .optional()
+    .describe(
+      'Its tool and whole model id, shown on hover in a narrow place; OpenCode and Pi only.',
+    ),
 });
 
 export const ChatDefaultAgentSchema: z.ZodType<ChatPreferences> = z.object({
@@ -1971,6 +2042,10 @@ export const ChatDefaultAgentSchema: z.ZodType<ChatPreferences> = z.object({
   runnerPreference: z.enum(RUNNER_PREFERENCES).meta({
     description:
       'Which kind of runner runs queued from now on go to first: auto (whichever fits and asks first), personal (their own runners) or team (shared runners). The other kind takes a run about a second later when the preferred kind cannot.',
+  }),
+  effort: z.string().nullable().meta({
+    description:
+      'The reasoning effort conversations they start take when they choose none, where the agent’s tool offers it; null: each agent’s default.',
   }),
 });
 
@@ -2064,6 +2139,7 @@ const runnerObject = z.object({
     description:
       'The product it runs as and updates itself to (`nocobase-runner`, or a CLI that carries the runner); null when it reported none.',
   }),
+  quotaLimits: RunnerQuotaLimitsSchema.nullable().optional(),
   protocolVersion: z.number().int(),
   features: z.array(RunnerFeatureSchema),
   tools: z.array(ToolInfoSchema),
@@ -2294,8 +2370,33 @@ export const RunnerRecentRunSchema: z.ZodType<RunnerRecentRun> = z
       .nullable()
       .optional()
       .describe('Terminal failure classification, including toolQuota.'),
+    failureDetail: z
+      .string()
+      .nullable()
+      .optional()
+      .describe(
+        'What the tool said when the run failed: one redacted line of at most 300 characters; only for failed runs whose task or conversation the viewer can see.',
+      ),
     id: z.string(),
     title: z.string(),
+    model: z
+      .string()
+      .optional()
+      .describe(
+        'Its whole model id, shown beside its name: with the provider for OpenCode and Pi ("example-provider/qwen3.8-flash"), and for a model the catalog does not know.',
+      ),
+    shortName: z
+      .string()
+      .optional()
+      .describe(
+        'Its name without its tool, for a narrow place; OpenCode and Pi only.',
+      ),
+    modelTitle: z
+      .string()
+      .optional()
+      .describe(
+        'Its tool and whole model id, shown on hover in a narrow place; OpenCode and Pi only.',
+      ),
     status: RunStatusSchema,
     startedAt: dateTime.nullable(),
     finishedAt: dateTime.nullable(),
@@ -2347,17 +2448,6 @@ export const RegistrationTokenSummarySchema: z.ZodType<RegistrationTokenSummary>
     createdAt: dateTime,
     expiresAt: dateTime,
   });
-
-export const DownloadTokenSchema: z.ZodType<DownloadToken> = z.object({
-  token: z.string().meta({
-    description:
-      'The download token, shown only in this answer; the install script downloads the CLI with it.',
-  }),
-  expiresAt: dateTime,
-  maxDownloads: z.number().int().meta({
-    description: 'How many tarball downloads it allows, retries included.',
-  }),
-});
 
 /** A run's context as its subject assembles it: free-form, by subject kind. */
 export const RunContextSchema: z.ZodType<Readonly<Record<string, unknown>>> = z

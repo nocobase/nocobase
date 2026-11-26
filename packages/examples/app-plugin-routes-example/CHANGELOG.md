@@ -1,5 +1,47 @@
 # @nocobase/app-plugin-routes-example
 
+## 1.0.0-beta.28
+
+### Patch Changes
+
+- 8be5180: Show English and Simplified Chinese names and descriptions for example plugins in the plugin list.
+
+## 1.0.0-beta.27
+
+### Minor Changes
+
+- a6b9b74: Add a plugin system settings page declared with `defineSystemSettingsRoutes()`: it joins the built-in System category and opens at `/settings/routes-example`, admitting unrestricted administrators by default.
+
+### Patch Changes
+
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+  - @nocobase/app-client@4.0.0-beta.12
+  - @nocobase/app-plugin-authentication@2.0.0-beta.24
+  - @nocobase/app-server@5.0.0-beta.9
+  - @nocobase/i18n@2.0.0-beta.2
+  - @nocobase/service-provider@0.0.2-beta.2
+
+## 1.0.0-beta.26
+
+### Patch Changes
+
+- 1952789: Update authentication, editor, and validation dependencies to patched releases.
+- Updated dependencies [44bf26a]
+- Updated dependencies [1952789]
+  - @nocobase/app-server@5.0.0-beta.5
+  - @nocobase/app-plugin-authentication@2.0.0-beta.21
+
 ## 1.0.0-beta.25
 
 ### Patch Changes

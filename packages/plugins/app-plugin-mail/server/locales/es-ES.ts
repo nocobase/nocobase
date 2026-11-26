@@ -2,8 +2,33 @@ import type { LocaleResource } from '@nocobase/i18n';
 
 import type enUS from './en-US.js';
 
+import pagesEsES from '../../shared/locales/pages.es-ES.js';
+
 const esES: LocaleResource<typeof enUS> = {
+  access: pagesEsES.access,
   errors: {
+    originalNotFound:
+      'El mensaje original ya no está disponible en el proveedor de correo.',
+    originalTooLarge:
+      'El mensaje original supera el límite de descarga de 40 MiB.',
+    operationUnsupported: 'Esta operación de correo no está disponible.',
+    connectionAuthenticationFailed:
+      'Falló la autenticación {{protocol}}. Compruebe el usuario y la contraseña o contraseña de aplicación.',
+    connectionHostNotFound:
+      'No se pudo resolver el host {{protocol}}. Compruebe el nombre del servidor.',
+    connectionConnectionRefused:
+      'Se rechazó la conexión {{protocol}}. Compruebe el host, el puerto y la disponibilidad del servidor.',
+    connectionConnectionTimeout:
+      'La conexión {{protocol}} agotó el tiempo de espera. Compruebe el servidor y la red.',
+    connectionCertificateInvalid:
+      'Falló la validación del certificado {{protocol}}. Compruebe el certificado y el nombre del host.',
+    connectionTlsFailed:
+      'Falló la negociación TLS de {{protocol}}. Compruebe SSL/STARTTLS y el puerto.',
+    connectionConnectionFailed:
+      'Falló la conexión {{protocol}}. Compruebe el servidor y la red.',
+    connectionConnectionLost:
+      'Se perdió la conexión {{protocol}}. Inténtelo de nuevo.',
+
     imapMoveLocationChanged:
       'La carpeta o copia seleccionada ha cambiado. Sincronice el buzón y vuelva a abrir la carpeta de origen.',
     imapMoveNotWritable:

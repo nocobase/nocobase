@@ -1,5 +1,32 @@
 # @nocobase/app-plugin-i18n
 
+## 1.0.0-beta.24
+
+### Patch Changes
+
+- a6b9b74: Declare the plugin's title and one-line description in English and Chinese under `nocobase` in `package.json`, which the App Foundation plugins page lists it by.
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+  - @nocobase/app-client@4.0.0-beta.12
+  - @nocobase/app-server@5.0.0-beta.9
+  - @nocobase/i18n@2.0.0-beta.2
+
+## 1.0.0-beta.23
+
+### Patch Changes
+
+- 1952789: Update authentication, editor, and validation dependencies to patched releases.
+- Updated dependencies [44bf26a]
+- Updated dependencies [1952789]
+  - @nocobase/app-server@5.0.0-beta.5
+
 ## 1.0.0-beta.22
 
 ### Minor Changes

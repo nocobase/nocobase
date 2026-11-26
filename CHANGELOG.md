@@ -1,6 +1,245 @@
 # Changelog
 
-All notable changes to NocoBase 3 are documented in this file, one section per release: `nocobase-v3-beta/<date>.<n>` for a beta and `release/<date>.<n>` for a stable release. The versions each release published are on its GitHub Release, and every package's own changes are in its CHANGELOG.md.
+All notable changes to NocoBase 3 are documented in this file, one section per release: `nocobase-v3-beta/<date>.<n>` for a beta and `nocobase-v3/<date>.<n>` for a stable release. The versions each release published are on its GitHub Release, and every package's own changes are in its CHANGELOG.md.
+
+## [nocobase-v3-beta/2026-11-25.1](https://github.com/nocobase/nocobase/releases/tag/nocobase-v3-beta%2F2026-11-25.1)
+
+### 🚀 Improvements
+
+- **[Create app]** The multi-app, sub-app and multi-portal creation aliases can now enable their respective capabilities in Enterprise applications. ([#11702](https://github.com/nocobase/nocobase/pull/11702))
+- **[Interface]** Default lifecycle diagrams to compact process mode and support folding shared early-termination final states into node hover notes and execution outcome badges. ([#11707](https://github.com/nocobase/nocobase/pull/11707))
+
+### 🐛 Bug Fixes
+
+- **[App foundation]** Deployed applications now list development dependency plugins under Not enabled in Settings. ([#11704](https://github.com/nocobase/nocobase/pull/11704))
+
+## [nocobase-v3-beta/2026-11-24.2](https://github.com/nocobase/nocobase/releases/tag/nocobase-v3-beta%2F2026-11-24.2)
+
+### 🎉 New Features
+
+- **[App host]** A managed App Host can back up and restore its Apps, both in-process and on Docker, using each App's own backup commands, and the application images (amd64 and arm64) now include the PostgreSQL, MySQL and MariaDB client tools they need. ([#11668](https://github.com/nocobase/nocobase/pull/11668))
+
+### 🚀 Improvements
+
+- **[API keys]** Applications can turn off member key and rule administration while keeping personal and system key management available. ([#11696](https://github.com/nocobase/nocobase/pull/11696))
+
+### 🐛 Bug Fixes
+
+- **[Mail]** Saving a mail template under a name you already use now reports that the name is taken instead of a server error. ([#11682](https://github.com/nocobase/nocobase/pull/11682))
+- **[Permissions]** Assigning a permission set that a user already holds now reports a conflict instead of a server error. ([#11683](https://github.com/nocobase/nocobase/pull/11683))
+- **[Server]** Apps loaded in-process by the Host now record their migrations under the app's package name, like standalone, Docker and CLI runs, so version checks and backup restore work across entries. ([#11692](https://github.com/nocobase/nocobase/pull/11692))
+- **[Agent runner]** Stop rejecting task checkouts with benign linked-worktree metadata inside submodules, validate active submodule `core.worktree` settings with concise Git errors, and self-heal drifted permissions on owned run temporary directories with detailed diagnostics. ([#11701](https://github.com/nocobase/nocobase/pull/11701))
+
+## [nocobase-v3-beta/2026-11-24.1](https://github.com/nocobase/nocobase/releases/tag/nocobase-v3-beta%2F2026-11-24.1)
+
+### 🎉 New Features
+
+- **[Backup]** Create, inspect, verify, and restore application database and upload backups through the built-in backup commands. ([#11642](https://github.com/nocobase/nocobase/pull/11642))
+- **[Client]**
+  - Applications can remove plugin pages by ID and automatically hide their linked toolbar shortcuts. ([#11670](https://github.com/nocobase/nocobase/pull/11670))
+  - Applications can disable the built-in settings, chat, inbox and mail pages individually. ([#11679](https://github.com/nocobase/nocobase/pull/11679))
+- **[Authentication]** Server-side authentication extensions can use the active transaction to commit or roll back their database changes with authentication. ([#11681](https://github.com/nocobase/nocobase/pull/11681))
+- **[Files]** Applications can disable the file storage administration endpoints while keeping attachment services. ([#11685](https://github.com/nocobase/nocobase/pull/11685))
+- **[Agents]** Applications can disable hosted model services while retaining Runner models and usage reports. ([#11686](https://github.com/nocobase/nocobase/pull/11686))
+- **[API keys]** Applications can disable system API key management endpoints while existing keys continue to work. ([#11687](https://github.com/nocobase/nocobase/pull/11687))
+
+### 🚀 Improvements
+
+- **[Cluster and distributed]** Default and Examples no longer bundle the distributed plugin, and existing applications can migrate to the Pro cluster readiness plugin. ([#11678](https://github.com/nocobase/nocobase/pull/11678))
+
+### 🐛 Bug Fixes
+
+- **[Agents]** Demo datasets now work with model services disabled, and agent and inbox controls have translations in all supported languages. ([#11690](https://github.com/nocobase/nocobase/pull/11690))
+
+## [nocobase-v3-beta/2026-11-23.1](https://github.com/nocobase/nocobase/releases/tag/nocobase-v3-beta%2F2026-11-23.1)
+
+### 🎉 New Features
+
+- **[Interface]** The UI Library permission editor sets a role in three tabs: menus only control what shows in the sidebar, each business object's actions and data scope are set once with other actions following or narrowing View, and system settings pages are set on their own without data scopes. ([#11603](https://github.com/nocobase/nocobase/pull/11603))
+- **[Mail]**
+  - Choose which folders each mail account synchronizes; messages of folders you remove are deleted locally after a confirmation, while mail on the server is untouched. ([#11605](https://github.com/nocobase/nocobase/pull/11605))
+  - Download an individual mail message as an original .eml file, including its attachments. ([#11623](https://github.com/nocobase/nocobase/pull/11623))
+- **[Plugin lifecycle]** Lifecycle definitions can update related records in the same transaction when an instance resumes. ([#11659](https://github.com/nocobase/nocobase/pull/11659))
+- **[App templates]** Administrators can open Workflow management from System settings in new Default applications before the first workflow is added. ([#11660](https://github.com/nocobase/nocobase/pull/11660))
+- **[Client]** Members can manage their account security and personal API keys in Personal settings, and administrators can manage users, roles, storage and schedules in System settings. ([#11663](https://github.com/nocobase/nocobase/pull/11663))
+- **[Agents]** Runtimes can now use the Antigravity CLI as an Agent tool, and the tool list shows it after Pi. ([#11664](https://github.com/nocobase/nocobase/pull/11664))
+
+### 🚀 Improvements
+
+- **[Agents]**
+  - A new agent whose model another provider already has is named with the provider in half-width parentheses, such as "OpenCode · Qwen3.8 Flash (example-provider)". ([#11632](https://github.com/nocobase/nocobase/pull/11632))
+  - Skill pages no longer say online agents only read scripts, and the file tree marks the scripts folder with one icon instead of a badge on every file. ([#11635](https://github.com/nocobase/nocobase/pull/11635))
+- **[Skills]** The application development Skill now guides agents through adding controls to suspend, resume, reset, or restart lifecycle instances with record-level permissions and audit history. ([#11641](https://github.com/nocobase/nocobase/pull/11641))
+- **[Agent runner]** Codex, OpenCode and Pi suggest GPT-6.2 Sol and Astra and include their standard usage rates by default. ([#11645](https://github.com/nocobase/nocobase/pull/11645))
+- **[Plugin lifecycle]** Extensions can check whether a lifecycle instance has left a state since a recorded entry. ([#11661](https://github.com/nocobase/nocobase/pull/11661))
+- **[App templates]** Empty workflow lists now use consistent spacing, and the Definitions tab explains how to manage workflows with an Agent in the project repository. ([#11667](https://github.com/nocobase/nocobase/pull/11667))
+
+## [nocobase-v3-beta/2026-11-20.1](https://github.com/nocobase/nocobase/releases/tag/nocobase-v3-beta%2F2026-11-20.1)
+
+### 🎉 New Features
+
+- **[Agents]** Choose how hard an online agent thinks (default, off, or minimal to extra high) beside the model in the chat, for any online model, with a notice in the conversation when the model does not support the level. ([#11555](https://github.com/nocobase/nocobase/pull/11555))
+- **[Agent runner]** Runners can check out, push and build SSH repositories with deployment keys and verified host fingerprints. ([#11614](https://github.com/nocobase/nocobase/pull/11614))
+- **[Plugin lifecycle]** Administrators can suspend, resume, reset, or restart a lifecycle instance and review the changes in the ticket example. ([#11628](https://github.com/nocobase/nocobase/pull/11628))
+
+### 🚀 Improvements
+
+- **[Agents]** Show OpenCode and Pi models with their provider, and show what the coding tool said when a run fails. ([#11622](https://github.com/nocobase/nocobase/pull/11622))
+
+### 🐛 Bug Fixes
+
+- **[CLI]** Fixed CLI and runner installation behind gateways that redirect requests to the same origin ([#11616](https://github.com/nocobase/nocobase/pull/11616))
+- **[Agent runner]** Read-only runs can fetch over managed SSH, and the runner rejects pushes through that connection. ([#11627](https://github.com/nocobase/nocobase/pull/11627))
+
+## [nocobase-v3-beta/2026-11-19.1](https://github.com/nocobase/nocobase/releases/tag/nocobase-v3-beta%2F2026-11-19.1)
+
+### 🎉 New Features
+
+- **[CLI]** Preinstall plugins with their Skills, enable them for deployment, and use separate commands to unregister or uninstall them. ([#11612](https://github.com/nocobase/nocobase/pull/11612))
+
+### 🚀 Improvements
+
+- **[CLI]** `logs export` no longer has an `--issue` filter; exports cover the selected dates for every chosen runner. ([#11594](https://github.com/nocobase/nocobase/pull/11594))
+- **[Database]** Warn by default when applied migration sources are missing and report every missing or irreversible target before rolling back the latest batch. ([#11595](https://github.com/nocobase/nocobase/pull/11595))
+- **[Knowledge base]**
+  - Links in knowledge documents now open in a new tab, except links to a heading on the same page, and wide tables scroll sideways instead of squeezing columns. ([#11598](https://github.com/nocobase/nocobase/pull/11598))
+  - Knowledge base file entries gather Replace, Download and History in their header, preview Markdown like articles, show the extracted text with line numbers and highlighted citations, and open previews in full screen. ([#11601](https://github.com/nocobase/nocobase/pull/11601))
+- **[Projects]** Projects uses manual task and subtask forms and retires operation plans and intake tools, including their CLI commands. ([#11604](https://github.com/nocobase/nocobase/pull/11604))
+- **[App templates]** Applications created from the same Default or Examples release now install the same direct NocoBase package versions. ([#11613](https://github.com/nocobase/nocobase/pull/11613))
+
+### 🐛 Bug Fixes
+
+- **[Agent runner]** Retry private package registry authorization failures with the run's credentials and support application creation and template downloads. ([#11584](https://github.com/nocobase/nocobase/pull/11584))
+- **[Database]** Empty date and time values read back as empty on every database, instead of failing as the invalid value "Z" on KingbaseES in Oracle-compatible mode. ([#11597](https://github.com/nocobase/nocobase/pull/11597))
+- **[CLI]** Keep development runtime configuration out of deployment archives and preserve the previous archive when packing fails. ([#11600](https://github.com/nocobase/nocobase/pull/11600))
+- **[Server]** Show the correct application name and version in embedded application pages and API documentation. ([#11608](https://github.com/nocobase/nocobase/pull/11608))
+- **[Agents]** Remove retired quota windows from runtime usage when Codex reports its current set of windows ([#11609](https://github.com/nocobase/nocobase/pull/11609))
+
+## [nocobase-v3-beta/2026-11-17.2](https://github.com/nocobase/nocobase/releases/tag/nocobase-v3-beta%2F2026-11-17.2)
+
+### 🎉 New Features
+
+- **[Agents]**
+  - Export sanitized runtime logs and merge local timelines, with live collection progress and server-configured export date ranges. ([#11563](https://github.com/nocobase/nocobase/pull/11563))
+  - Choose the runtime for the next message in an idle Runner conversation while keeping its history. ([#11577](https://github.com/nocobase/nocobase/pull/11577))
+
+### 🚀 Improvements
+
+- **[Interface]** View workflow versions through a menu styled consistently with category tags, and reuse the version selector from the UI Library. ([#11569](https://github.com/nocobase/nocobase/pull/11569))
+- **[App host]** Allow operators to configure preview archive checksum and extraction timeouts. ([#11578](https://github.com/nocobase/nocobase/pull/11578))
+- **[Skills]** The upgrade Skill now upgrades to the `latest` release by default, so applications created from a beta keep receiving updates after the stable release. ([#11589](https://github.com/nocobase/nocobase/pull/11589))
+
+## [nocobase-v3-beta/2026-11-17.1](https://github.com/nocobase/nocobase/releases/tag/nocobase-v3-beta%2F2026-11-17.1)
+
+### 🚀 Improvements
+
+- **[App host]** Managed Hosts can allocate internal ports automatically and recover their current connection after a restart, while fixed-port conflicts fail explicitly. ([#11576](https://github.com/nocobase/nocobase/pull/11576))
+
+### 🐛 Bug Fixes
+
+- **[Agents]** Avoid redundant conversation list reloads when opening a conversation on a slow connection. ([#11571](https://github.com/nocobase/nocobase/pull/11571))
+- **[Authentication]** Return visitors to their original page with its query and fragment after signing in. ([#11573](https://github.com/nocobase/nocobase/pull/11573))
+
+## [nocobase-v3-beta/2026-11-16.1](https://github.com/nocobase/nocobase/releases/tag/nocobase-v3-beta%2F2026-11-16.1)
+
+### 🎉 New Features
+
+- **[Plugin lifecycle]** Lifecycle processes support independent versions, freeze record parameters at creation and supplement legacy live parameters once with visible upgrade provenance. ([#11507](https://github.com/nocobase/nocobase/pull/11507))
+- **[CLI]** Support child application creation and deployment command extensions, with request-based routing to independent App Hosts. ([#11557](https://github.com/nocobase/nocobase/pull/11557))
+- **[Files]** Configure separate upload storage directories for file repositories sharing the same storage bucket. ([#11565](https://github.com/nocobase/nocobase/pull/11565))
+
+### 🚀 Improvements
+
+- **[Permissions]** Let applications authorize agent configuration, protected deployments and knowledge editing through the initiating user's permissions. ([#11554](https://github.com/nocobase/nocobase/pull/11554))
+
+### 🐛 Bug Fixes
+
+- **[API keys]** Create and rotate API keys with names up to 100 characters by default and return name validation failures as client errors. ([#11558](https://github.com/nocobase/nocobase/pull/11558))
+- **[Server]** Keep child application pages and WebSocket connections accessible when the server uses an environment proxy. ([#11564](https://github.com/nocobase/nocobase/pull/11564))
+- **[Mail]** Explain mailbox connection failures by protocol and cause, with credential-safe diagnostic logs. ([#11566](https://github.com/nocobase/nocobase/pull/11566))
+
+## [nocobase-v3-beta/2026-11-13.2](https://github.com/nocobase/nocobase/releases/tag/nocobase-v3-beta%2F2026-11-13.2)
+
+### 🎉 New Features
+
+- **[CLI]** Safely reuse declared CLI operation keys, stream large uploads, and provide an independent public installer while preserving existing update and protected installation behavior. ([#11535](https://github.com/nocobase/nocobase/pull/11535))
+- **[Agents]** Enable Native OnlineAgent web search for configured DeepSeek models using existing service credentials. ([#11551](https://github.com/nocobase/nocobase/pull/11551))
+
+### 🚀 Improvements
+
+- **[Release management]** Keep app lists responsive as environments grow and match search text literally. ([#11553](https://github.com/nocobase/nocobase/pull/11553))
+
+### 🐛 Bug Fixes
+
+- **[Release management]** Time out stalled release downloads and allow cancellation so queued deployments can continue. ([#11547](https://github.com/nocobase/nocobase/pull/11547))
+
+## [nocobase-v3-beta/2026-11-13.1](https://github.com/nocobase/nocobase/releases/tag/nocobase-v3-beta%2F2026-11-13.1)
+
+### 🎉 New Features
+
+- **[Agents]** Applications can distribute their CLI independently of Agents while existing Agents installations keep their download and update protocols. ([#11539](https://github.com/nocobase/nocobase/pull/11539))
+
+### 🚀 Improvements
+
+- **[Agents]** The runtime list shows each coding tool's concurrency limit and current runs beside the tool. ([#11530](https://github.com/nocobase/nocobase/pull/11530))
+- **[App templates]** Run a new application's test files in parallel, so `pnpm test` finishes several times faster. ([#11543](https://github.com/nocobase/nocobase/pull/11543))
+
+### 🐛 Bug Fixes
+
+- **[Authentication]** Improve sign-in security and preserve password recovery after updating authentication dependencies. ([#11526](https://github.com/nocobase/nocobase/pull/11526))
+- **[Mail]**
+  - Import new IMAP messages promptly during mailbox verification and between synchronization runs, and resume large mailbox synchronization safely. ([#11529](https://github.com/nocobase/nocobase/pull/11529))
+  - The mail plugin now requires imapflow 2.2.9 or later, which its IMAP synchronization needs. ([#11550](https://github.com/nocobase/nocobase/pull/11550))
+- **[Agents]** Show files uploaded by conversation runners in their replies and retain them with the conversation. ([#11532](https://github.com/nocobase/nocobase/pull/11532))
+- **[Release management]** Retrying a deployment the app host refused for memory reuses the already expanded release, and each app shows a single clear state with readable capacity messages. ([#11544](https://github.com/nocobase/nocobase/pull/11544))
+
+## [nocobase-v3-beta/2026-11-12.1](https://github.com/nocobase/nocobase/releases/tag/nocobase-v3-beta%2F2026-11-12.1)
+
+### 🎉 New Features
+
+- **[Server]** Plugins can provide application-local ID generation without replacing the application's ID provider, while keeping synchronous generation and previously resolved service references. ([#11489](https://github.com/nocobase/nocobase/pull/11489))
+- **[Create app]** Create multi-app projects with a root Main application, independently deployed children, and synchronized development, migration and deployment Skills. ([#11497](https://github.com/nocobase/nocobase/pull/11497))
+
+### 🚀 Improvements
+
+- **[Users]** Invitation emails are now written in one language chosen when inviting, with a localized subject and expiry time, and the sign-up page opens in that language. ([#11482](https://github.com/nocobase/nocobase/pull/11482))
+- **[Skills]** Table row actions in new and template pages now sit in one consistent "⋮" menu at the end of the row, with no actions column header and no pinned column. ([#11484](https://github.com/nocobase/nocobase/pull/11484))
+- **[Agents]** The runtime list shows each coding tool's quota usage and when an exhausted quota resets, and its version column shows only Latest or Upgradable. ([#11494](https://github.com/nocobase/nocobase/pull/11494))
+- **[Projects]**
+  - Refresh task reminders faster for people responsible for a small part of a large project backlog. ([#11502](https://github.com/nocobase/nocobase/pull/11502))
+  - Reduce project task grouping work while preserving visible parent context and dependency counts. ([#11503](https://github.com/nocobase/nocobase/pull/11503))
+- **[Knowledge base]** Load knowledge-space directories with fewer queries while preserving document visibility and archived counts. ([#11506](https://github.com/nocobase/nocobase/pull/11506))
+- **[App templates]** Move the Main-only multi-app template and scenario Skills to Pro, delivering child applications through deployment archives. ([#11511](https://github.com/nocobase/nocobase/pull/11511))
+
+### 🐛 Bug Fixes
+
+- **[Demo mode]** Fix a blank application when Demo Mode is registered in an application whose System settings nest categories and modules under the same path. ([#11455](https://github.com/nocobase/nocobase/pull/11455))
+- **[Mail]** Speed up IMAP synchronization and attachment downloads, and tolerate mailbox changes during verification. ([#11490](https://github.com/nocobase/nocobase/pull/11490))
+- **[Agents]** Clarified runtime quota settings and empty states, kept thresholds visible to viewers, and displayed quota windows in readable units ([#11493](https://github.com/nocobase/nocobase/pull/11493))
+- **[Users]** After registering with automatic sign-in turned off, the register page now shows that the request was submitted instead of an empty form. ([#11495](https://github.com/nocobase/nocobase/pull/11495))
+- **[CLI]** Build applications without compiling unrelated example applications, with a larger default compiler heap. ([#11508](https://github.com/nocobase/nocobase/pull/11508))
+- **[Create app]** Add scoped NocoBase registry selection while preserving the legacy --registry option with migration guidance. ([#11512](https://github.com/nocobase/nocobase/pull/11512))
+
+## [nocobase-v3-beta/2026-11-11.1](https://github.com/nocobase/nocobase/releases/tag/nocobase-v3-beta%2F2026-11-11.1)
+
+### 🎉 New Features
+
+- **[Agents]** Show Claude quota windows and let runtime owners pause new work at a chosen usage threshold ([#11483](https://github.com/nocobase/nocobase/pull/11483)) by @2013xile
+
+### 🚀 Improvements
+
+- **[Skills]** Applications built with the development Skill now get phone-ready pages on first delivery, and the templates' data table can show records as cards on phones. ([#11402](https://github.com/nocobase/nocobase/pull/11402)) by @chenos
+- **[Files]** Configure attachment upload limits per storage disk, with consistent size hints and validation for tasks, comments and Agent conversations. ([#11460](https://github.com/nocobase/nocobase/pull/11460)) by @2013xile
+- **[Knowledge base]** Applications can turn off knowledge semantic indexing, which removes its settings, routes and permission; the Knowledge indexing permission is now translated and grouped. ([#11471](https://github.com/nocobase/nocobase/pull/11471)) by @2013xile
+- **[Interface]** The UI Library's issue table shows statuses as shapes, an agent owner's avatar and the project, and can add columns, group rows and a compact phone layout. ([#11478](https://github.com/nocobase/nocobase/pull/11478)) by @2013xile
+
+### 🐛 Bug Fixes
+
+- **[Agents]**
+  - Hide agent runs and transcripts when their subjects are not visible to the reader. ([#11470](https://github.com/nocobase/nocobase/pull/11470)) by @2013xile
+  - A message sent while an agent is still answering joins its queue instead of being refused as busy, and a run that fails while being prepared shows why without reloading. ([#11481](https://github.com/nocobase/nocobase/pull/11481)) by @2013xile
+- **[Agent runner]** Read native Claude user settings during model discovery and user, project and local settings during conversations so configured providers and model aliases work in the runner. ([#11480](https://github.com/nocobase/nocobase/pull/11480)) by @2013xile
+- **[Demo mode]** Keep a demo visitor's language choice in their own browser instead of saving it to the shared demo account. ([#11486](https://github.com/nocobase/nocobase/pull/11486)) by @gchust
 
 ## [nocobase-v3-beta/2026-11-10.2](https://github.com/nocobase/nocobase/releases/tag/nocobase-v3-beta%2F2026-11-10.2)
 

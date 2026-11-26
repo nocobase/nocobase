@@ -12,6 +12,12 @@ export const IMAP_SMTP_CAPABILITIES: MailProviderDefinition['capabilities'] = {
   aliases: false,
 };
 
+export const IMAP_SMTP_LOCATION_CAPABILITIES: MailProviderDefinition['capabilities'] =
+  {
+    ...IMAP_SMTP_CAPABILITIES,
+    downloadOriginal: true,
+  };
+
 export const CONNECTION_TIMEOUT_MS: number = 30 * 1_000;
 export const SOCKET_TIMEOUT_MS: number = 60 * 1_000;
 
@@ -25,3 +31,5 @@ export const MAX_IMAP_RAW_COMPARE_BUDGET: number = 8 * 1024 * 1024;
 export const MAX_IMAP_PROVIDER_ID_LENGTH: number = 500;
 export const MAX_IMAP_VERIFY_STATE_BYTES: number = 1024 * 1024;
 export const MAX_IMAP_VERIFY_ATTEMPTS: number = 5;
+export const MAX_IMAP_RECHECK_IDENTITIES: number = 1000;
+export const IMAP_RECHECK_BATCH_SIZE: number = 100;

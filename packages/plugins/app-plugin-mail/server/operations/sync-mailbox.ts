@@ -1,10 +1,16 @@
-import { mailLogError, writeMailLog, type MailLogger } from '../logging.js';
+import {
+  mailLogCode,
+  mailLogError,
+  writeMailLog,
+  type MailLogger,
+} from '../logging.js';
 import { randomUUID } from 'node:crypto';
 import { mailSyncDateMonthsAgo } from '../../shared/mail-sync-date.js';
 
 import type {
   MailProviderAdapter,
   MailProviderAdapterResolver,
+  NormalizedMailMessage,
 } from '../contracts/provider.js';
 import type {
   MailProviderError,
@@ -96,7 +102,12 @@ export class SyncMailboxOperation {
     writeMailLog(
       this.dependencies.logger,
       'info',
-      { event: 'mail.sync.started', ...this.logFields(run) },
+      {
+        event: 'mail.sync.started',
+        ...this.logFields(run),
+        claimedAt: new Date().toISOString(),
+        claimDurationMs: Math.max(0, Date.now() - now),
+      },
       'Mail synchronization step started.',
     );
     const signal = AbortSignal.timeout(SYNC_STEP_TIMEOUT_MS);
@@ -223,7 +234,7 @@ export class SyncMailboxOperation {
           {
             event: 'mail.sync.retry_scheduled',
             ...this.logFields(released),
-            errorCode: normalized.code,
+            errorCode: mailLogCode(normalized.code),
             category: normalized.category,
             retryable: true,
             retryAfterMs: retryDelayMs,
@@ -236,6 +247,18 @@ export class SyncMailboxOperation {
       await this.failSyncRun(run, normalized, error);
     } finally {
       stopLeaseHeartbeat();
+      if (adapter instanceof ImapSmtpAdapter)
+        writeMailLog(
+          this.dependencies.logger,
+          'info',
+          {
+            event: 'mail.sync.imap_commands',
+            ...this.logFields(run),
+            stepDurationMs: Math.max(0, Date.now() - now),
+            ...adapter.syncDiagnostics(),
+          },
+          'IMAP synchronization step command counts.',
+        );
       await closeQuietly(adapter);
     }
   }
@@ -254,7 +277,7 @@ export class SyncMailboxOperation {
         {
           event: 'mail.sync.failed',
           ...this.logFields(failed),
-          errorCode: error.code,
+          errorCode: mailLogCode(error.code),
           category: error.category,
           retryable: error.retryable,
           err: mailLogError(cause),
@@ -284,6 +307,7 @@ export class SyncMailboxOperation {
     input: MailSyncStepCommit,
     adapter?: MailProviderAdapter,
   ): Promise<MailSyncRun> {
+    const startedAt = Date.now();
     // The built-in IMAP adapter commits its copies' location evidence with the step.
     const result =
       adapter instanceof ImapSmtpAdapter && adapter.persistsLocations
@@ -299,6 +323,11 @@ export class SyncMailboxOperation {
             ? 'mail.sync.completed'
             : 'mail.sync.progress',
         ...this.logFields(result),
+        committedAt: new Date().toISOString(),
+        commitDurationMs: Math.max(0, Date.now() - startedAt),
+        previousPhase: input.run.phase,
+        previousRevision: input.run.revision,
+        importedMessages: input.messages.length,
       },
       'Mail synchronization progress saved.',
     );
@@ -405,8 +434,11 @@ export class SyncMailboxOperation {
         ),
       );
     }
+    const scope = run.policy.syncFolderIds;
+    // Without chosen folders a run only refreshes the folder list for the selection.
+    const foldersOnly = scope !== undefined && scope.length === 0;
     const baseline =
-      run.mode === 'initial'
+      run.mode === 'initial' && !foldersOnly
         ? (run.baselineCursor ??
           unwrap(await adapter.getCurrentSyncCursor!(signal)))
         : undefined;
@@ -432,13 +464,28 @@ export class SyncMailboxOperation {
       });
       return false;
     }
+    if (foldersOnly) {
+      await this.commitSyncStep({
+        run,
+        folders: folderPage.folders,
+        completeProviderFolderIds: folderPage.completeProviderFolderIds,
+        pruneToFolderIds: scope,
+        messages: [],
+        phase: 'completed',
+        status: 'completed',
+        createNextTask: false,
+      });
+      return false;
+    }
     const currentCursor =
       run.mode === 'initial'
         ? baseline
         : await this.dependencies.store.getSyncCursor(run.accountId);
-    const providerFolderIds =
+    const providerFolderIds = withinScope(
+      run,
       folderPage.completeProviderFolderIds ??
-      folderPage.folders.map((folder) => folder.providerFolderId);
+        folderPage.folders.map((folder) => folder.providerFolderId),
+    );
     const changeCursor = adapter.reconcileSyncCursor
       ? unwrap(adapter.reconcileSyncCursor(currentCursor, providerFolderIds))
       : currentCursor;
@@ -446,6 +493,8 @@ export class SyncMailboxOperation {
       run,
       folders: folderPage.folders,
       completeProviderFolderIds: folderPage.completeProviderFolderIds,
+      // Only an initial run, which follows every change of selection, prunes the whole account.
+      ...(scope && run.mode === 'initial' ? { pruneToFolderIds: scope } : {}),
       messages: [],
       phase: run.mode === 'initial' ? 'history' : 'incremental',
       status: 'running',
@@ -469,11 +518,33 @@ export class SyncMailboxOperation {
         ),
       );
     }
+    const providerFolderIds = withinScope(
+      run,
+      (await this.dependencies.store.listFolders(run.accountId)).map(
+        (folder) => folder.providerFolderId,
+      ),
+    );
+    if (providerFolderIds.length === 0 && run.policy.syncFolderIds) {
+      // Adapters read an empty folder list as every folder; none of the selected folders exists any more.
+      await this.commitSyncStep(
+        {
+          run,
+          messages: [],
+          historyPage: true,
+          phase: 'catchUp',
+          historyComplete: true,
+          status: 'running',
+          baselineCursor: run.baselineCursor,
+          changeCursor: run.changeCursor ?? run.baselineCursor,
+          createNextTask: true,
+        },
+        adapter,
+      );
+      return false;
+    }
     const page = unwrap(
       await adapter.listMessages({
-        providerFolderIds: (
-          await this.dependencies.store.listFolders(run.accountId)
-        ).map((folder) => folder.providerFolderId),
+        providerFolderIds,
         receivedAfter: run.policy.receivedAfter,
         baselineCursor: run.baselineCursor,
         cursor: run.historyCursor,
@@ -481,7 +552,11 @@ export class SyncMailboxOperation {
         signal,
       }),
     );
-    const imported = page.messages;
+    const { messages: imported, outOfScope } = scopeMessages(
+      run,
+      page.messages,
+      adapter,
+    );
     const hasMore = page.nextCursor !== undefined;
     if (hasMore && page.nextCursor === run.historyCursor) {
       throw new MailOperationError(
@@ -495,6 +570,7 @@ export class SyncMailboxOperation {
       {
         run,
         messages: imported,
+        outOfScopeProviderMessageIds: outOfScope,
         historyPage: true,
         phase: page.historyReady === false && hasMore ? 'history' : 'catchUp',
         historyComplete: !hasMore,
@@ -539,6 +615,7 @@ export class SyncMailboxOperation {
         ),
       );
     }
+    const { messages, outOfScope } = scopeMessages(run, page.messages, adapter);
     const resumeHistory =
       run.mode === 'initial' &&
       !run.historyComplete &&
@@ -547,7 +624,8 @@ export class SyncMailboxOperation {
       {
         run,
         historyCursor: run.historyCursor,
-        messages: page.messages,
+        messages,
+        outOfScopeProviderMessageIds: outOfScope,
         removedFromFolders: page.removedFromFolders,
         deletedProviderMessageIds: page.deletedProviderMessageIds,
         phase: resumeHistory
@@ -570,6 +648,50 @@ export class SyncMailboxOperation {
       (!page.hasMore && adapter instanceof ImapSmtpAdapter)
     );
   }
+}
+
+/** Keep the folders a run synchronizes; a run without a selection synchronizes every folder. */
+function withinScope(
+  run: MailSyncRun,
+  providerFolderIds: readonly string[],
+): readonly string[] {
+  const scope = run.policy.syncFolderIds;
+  if (!scope) return providerFolderIds;
+  const selected = new Set(scope);
+  return providerFolderIds.filter((id) => selected.has(id));
+}
+
+/**
+ * Drop unselected folders from Provider messages. A message left in no selected folder is not stored and is deleted
+ * locally if it was. IMAP copies already come only from selected folders and carry their own folder evidence.
+ */
+function scopeMessages(
+  run: MailSyncRun,
+  messages: readonly NormalizedMailMessage[],
+  adapter: MailProviderAdapter,
+): {
+  readonly messages: readonly NormalizedMailMessage[];
+  readonly outOfScope?: readonly string[];
+} {
+  const scope = run.policy.syncFolderIds;
+  if (!scope || adapter instanceof ImapSmtpAdapter) return { messages };
+  const selected = new Set(scope);
+  const kept: NormalizedMailMessage[] = [];
+  const outOfScope: string[] = [];
+  for (const message of messages) {
+    const providerFolderIds = message.providerFolderIds.filter((id) =>
+      selected.has(id),
+    );
+    if (providerFolderIds.length === 0)
+      outOfScope.push(message.providerMessageId);
+    else
+      kept.push(
+        providerFolderIds.length === message.providerFolderIds.length
+          ? message
+          : { ...message, providerFolderIds },
+      );
+  }
+  return { messages: kept, outOfScope };
 }
 
 function unwrap<T>(result: MailProviderResult<T>): T {

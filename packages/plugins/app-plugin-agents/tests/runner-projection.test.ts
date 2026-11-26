@@ -21,6 +21,38 @@ const row = (
   runId,
   createdAt: '2026-01-01T00:00:00Z',
 });
+it('groups attachment-only assistant records with the reply without empty text parts', () => {
+  const file = {
+    id: 'image',
+    filename: 'result.png',
+    ext: 'png',
+    mimeType: 'image/png',
+    size: 10,
+    contentUrl: '/main/api/agents/chatAttachments/image/content',
+    downloadUrl: '/main/api/agents/chatAttachments/image/content?download=true',
+    previewable: true,
+  };
+  const messages = runnerUIMessages([
+    row(1, 'Before', { runEventSeq: 1 }),
+    { ...row(2, '', { runEventSeq: 1 }), attachments: [file] },
+    row(3, '[Download]( /main/api/agents/chatAttachments/image/content )', {
+      runEventSeq: 2,
+    }),
+  ]);
+  expect(messages).toHaveLength(1);
+  expect(messages[0].parts.map((part) => part.type)).toEqual([
+    'text',
+    'file',
+    'text',
+  ]);
+  expect(messages[0].parts[1]).toMatchObject({
+    filename: 'result.png',
+    url: file.contentUrl,
+  });
+  expect(
+    messages[0].metadata?.sourceRecords?.map((source) => source.partIndex),
+  ).toEqual([0, 1, 2]);
+});
 it('preserves explicit blocks, whitespace, notices and independent parent/child and run boundaries', () => {
   const block = (phase: 'delta' | 'end', parentToolUseId?: string) => ({
     output: { blockId: 'same', phase },

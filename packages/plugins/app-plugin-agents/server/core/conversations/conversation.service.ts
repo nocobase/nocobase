@@ -40,7 +40,13 @@ import {
 } from '../../../shared/runners.js';
 import type { DatabaseConnection } from '@nocobase/db';
 
-import type { Agent } from '../../../shared/agents.js';
+import {
+  effortsFor,
+  mayChat,
+  type Agent,
+  type ChatAudience,
+} from '../../../shared/agents.js';
+import { agentModelOf } from '../../../shared/model-catalog.js';
 import {
   CONVERSATION_HISTORY_IN_PROMPT,
   CONVERSATION_PAGE_DEFAULT,
@@ -483,6 +489,7 @@ export function createConversationService(
       nameText: agent?.nameText ?? null,
       avatar: agent?.avatar ?? null,
       archived: agent ? agent.status !== 'enabled' : false,
+      ...(agent ? agentModelOf(agent) : {}),
     };
   }
 
@@ -617,6 +624,22 @@ export function createConversationService(
     );
   }
 
+  async function selectableRunners(
+    conn: DatabaseConnection,
+    record: ConversationRecord,
+    prepared: unknown,
+  ) {
+    if (record.mode !== 'runner' || jsonObject(record.metadata).onlineAgent)
+      throw invalid('Only Runner conversations can switch runtimes.');
+    const agent = await pickAgent(conn, record.userId, record.agentId);
+    const directories = await projectWorkspace(conn, refOf(record), prepared);
+    return deps.eligibility.runnersFor(conn, agent, {
+      actorUserId: record.userId,
+      scopes: directories.scopes,
+      workspaceKey: Boolean(record.projectId),
+    });
+  }
+
   async function effortOptions(
     conn: DatabaseConnection,
     agent: Agent,
@@ -628,17 +651,37 @@ export function createConversationService(
     return chatEffortCapabilities(agent.modelEntries[0], eligible);
   }
 
+  /** The person's own effort for a conversation they start without choosing one, where the agent's tool takes it. */
+  async function preferredEffort(
+    conn: DatabaseConnection,
+    agent: Agent,
+    userId: string,
+    loadOptions: () => Promise<readonly string[] | undefined> = () =>
+      effortOptions(conn, agent, userId),
+  ): Promise<string | undefined> {
+    const entry = agent.modelEntries[0];
+    if (agent.source !== 'runner' || !entry) return undefined;
+    const { effort } = await deps.settings.preferences(userId, conn);
+    if (!effort || !effortsFor(entry).includes(effort)) return undefined;
+    const options = await loadOptions();
+    return options === undefined || options.includes(effort)
+      ? effort
+      : undefined;
+  }
+
   async function validateEffort(
     conn: DatabaseConnection,
     agent: Agent,
     userId: string,
     selected: string | null | undefined,
+    loadOptions: () => Promise<readonly string[] | undefined> = () =>
+      effortOptions(conn, agent, userId),
   ): Promise<string | null> {
     // Only an explicitly selected non-default value is a conversation preference.
     const preference =
       selected && selected !== agent.modelEntries[0]?.effort ? selected : null;
     if (preference === null) return null;
-    const options = await effortOptions(conn, agent, userId);
+    const options = await loadOptions();
     if (options !== undefined && !options.includes(preference))
       throw invalid(
         'The reasoning effort is no longer supported. Select an available effort or restore the Agent default.',
@@ -719,6 +762,10 @@ export function createConversationService(
     const conn = tx.read();
     const { record, share } = await conversationAccess(conn, userId, id);
     if (!share) return detailOf(conn, record);
+    const agent =
+      !jsonObject(record.metadata).onlineAgent && record.agentId
+        ? await findAgent(conn, record.agentId)
+        : null;
     // Whitelist snapshot fields: no latest runner, project, execution, usage, wait or owner attention.
     return {
       id,
@@ -737,10 +784,7 @@ export function createConversationService(
             archived: false,
           }
         : {
-            ...agentRef(
-              record.agentId,
-              record.agentId ? await findAgent(conn, record.agentId) : null,
-            ),
+            ...agentRef(record.agentId, agent),
             avatar: null,
             archived: false,
           },
@@ -1737,6 +1781,11 @@ export function createConversationService(
       );
     if (request.agentId !== undefined && (!realtime || !request.agentId.trim()))
       throw invalid('Agent selection requires a Runner realtime message.');
+    if (
+      request.runnerId !== undefined &&
+      (!realtime || !request.runnerId.trim())
+    )
+      throw invalid('Runtime selection requires a Runner realtime message.');
     const content = request.content;
     const attachmentIds = readAttachmentIds(request.attachmentIds);
     if (
@@ -1752,7 +1801,11 @@ export function createConversationService(
       throw invalid('This application takes no files in chat.', {
         field: 'attachmentIds',
       });
-    await owned(tx.read(), userId, id);
+    const before = await owned(tx.read(), userId, id);
+    const preparedRunnerWorkspace =
+      request.runnerId && before.projectId
+        ? await workspace?.prepare(userId)
+        : undefined;
     // Resolved before the transaction: resolvers read through the services of the plugins that own the kinds.
     const context = request.context
       ? await deps.contextKinds.resolve(tx.read(), userId, request.context)
@@ -1792,6 +1845,16 @@ export function createConversationService(
           );
         const targetId = request.agentId ?? record.agentId;
         const switching = targetId !== record.agentId;
+        if (
+          request.runnerId !== undefined &&
+          (switching ||
+            realtime.queue ||
+            record.archivedAt ||
+            record.mode !== 'runner')
+        )
+          throw conflict(
+            'Select a runtime in an idle, unarchived Runner conversation without changing agents.',
+          );
         if ((realtime.config.agentId ?? 'online') !== targetId)
           throw conflict('Start a new conversation to choose another agent.');
         if (
@@ -1871,6 +1934,33 @@ export function createConversationService(
             true,
           );
           binding = runnerBinding(record.metadata)!;
+        }
+        if (request.runnerId !== undefined) {
+          const candidates = await selectableRunners(
+            unit.conn,
+            record,
+            preparedRunnerWorkspace,
+          );
+          if (!candidates.some((runner) => runner.id === request.runnerId))
+            throw invalid(
+              'The selected runtime is no longer available for this conversation.',
+              {
+                reason: 'runnerUnavailable',
+              },
+            );
+          if (request.runnerId !== record.runnerId) {
+            // A fresh thread avoids resuming stale tool state when returning to a previous machine.
+            const values = {
+              runnerId: request.runnerId,
+              thread: Number(record.thread) + 1,
+              updatedAt: now(),
+            };
+            await conversationsRepo(unit.conn).updateMany({
+              filter: { id },
+              values,
+            });
+            record = { ...record, ...values };
+          }
         }
         if (!isDeepStrictEqual(binding.config, realtime.config))
           await conversationsRepo(unit.conn).updateMany({
@@ -2170,11 +2260,18 @@ export function createConversationService(
           throw invalid('Select a callable Runner agent.');
         if (runnerConfig && !(await canAnswer(unit.conn, agent, userId)))
           throw conflict('This agent has no available execution environment.');
+        // The runners that could take it are read once, for the preferred effort and its check alike.
+        let options: Promise<readonly string[] | undefined> | undefined;
+        const loadOptions = () =>
+          (options ??= effortOptions(unit.conn, agent, userId));
         const effort = await validateEffort(
           unit.conn,
           agent,
           userId,
-          request.effort,
+          request.effort !== undefined
+            ? request.effort
+            : await preferredEffort(unit.conn, agent, userId, loadOptions),
+          loadOptions,
         );
         const title =
           request.title === undefined
@@ -2683,6 +2780,16 @@ export function createConversationService(
       return detail(userId, id);
     },
 
+    async runners(userId, id) {
+      const record = await owned(tx.read(), userId, id);
+      const prepared = record.projectId
+        ? await workspace?.prepare(userId)
+        : undefined;
+      return (await selectableRunners(tx.read(), record, prepared)).map(
+        (runner) => runnerOf(runner.id, runner),
+      );
+    },
+
     async switchRunner(userId, id) {
       await tx.run(async (unit) => {
         const record = await lockOwned(unit, userId, id, true);
@@ -3012,6 +3119,39 @@ export function createConversationService(
       },
     },
 
+    async attachFromRun(runId, fileId) {
+      const stored = await findRunRecord(tx.read(), runId);
+      if (!stored) throw notFound('Run');
+      const run = toRun(stored);
+      if (run.subject.kind !== CONVERSATION_SUBJECT || !deps.attachments)
+        return;
+      await tx.run(async (unit) => {
+        const record = await lockConversation(unit.conn, run.subject.id, now());
+        if (!record || record.userId !== run.actorUserId) return;
+        await syncIn(unit, run, record);
+        const synced = await findConversation(unit.conn, record.id);
+        const message = await append(unit, record, {
+          role: 'assistant',
+          text: '',
+          runId: run.id,
+          metadata: {
+            agentId: run.agentId,
+            runEventSeq: Number(synced!.syncSeq),
+          },
+        });
+        const files = await deps.attachments!.attach(
+          unit.conn,
+          run.actorUserId,
+          { conversationId: record.id, messageId: message.id },
+          [fileId],
+        );
+        await messagesRepo(unit.conn).updateMany({
+          filter: { id: message.id },
+          values: { attachments: asJson(files) },
+        });
+      });
+    },
+
     async syncRun(runId) {
       const stored = await findRunRecord(tx.read(), runId);
       if (!stored) throw notFound('Run');
@@ -3025,7 +3165,7 @@ export function createConversationService(
       return run;
     },
 
-    async chatAgents(userId) {
+    async chatAgents(userId, audience) {
       const conn = tx.read();
       const [agents, runners, settings, preferences] = await Promise.all([
         deps.agents.list(),
@@ -3035,6 +3175,8 @@ export function createConversationService(
         deps.settings.settings(conn),
         deps.settings.preferences(userId, conn),
       ]);
+      const limited = agents.some((agent) => agent.chatRoles?.length);
+      const who: ChatAudience = limited && audience ? await audience() : 'all';
       const variableStates = await deps.eligibility.prepare(conn, agents, {});
       const now = clock.now().getTime();
       const catalog = await Promise.all(
@@ -3042,7 +3184,9 @@ export function createConversationService(
           // People talk to the agents discovered from runners; an application's own agents do work of its own.
           .filter(
             (agent) =>
-              agent.source === 'runner' && deps.agents.mayInvoke(agent, userId),
+              agent.source === 'runner' &&
+              deps.agents.mayInvoke(agent, userId) &&
+              mayChat(agent, who),
           )
           .map(async (agent): Promise<ChatAgent> => {
             const fitting = runners.filter((runner) =>
@@ -3064,6 +3208,7 @@ export function createConversationService(
               avatar: agent.avatar,
               isSystemDefault: agent.id === settings.defaultAgentId,
               isMyDefault: agent.id === preferences.defaultAgentId,
+              ...agentModelOf(agent),
               availability: availabilityOf(
                 agent,
                 userId,

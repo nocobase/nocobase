@@ -1,5 +1,17 @@
 # @nocobase/jobs
 
+## 1.0.0-beta.8
+
+### Patch Changes
+
+- 28a7606: Expose configured memory backend persistence paths so application backups can exclude runtime state.
+
+## 1.0.0-beta.7
+
+### Minor Changes
+
+- a6b9b74: Add the read-only Cluster and distributed settings page and `GET /api/distributed/status`, which show the backend each shared service selected on the answering instance, whether it is shared between instances, and what must change before running several instances, with server and client extension points. Caching, concurrency, Jobs, Queue and Realtime gain a read-only `describe()` and let an adapter declare `sharing: 'local' | 'shared'` when it registers. The file plugin reports the file collections stored on a local disk. Both application templates register the plugin.
+
 ## 1.0.0-beta.6
 
 ### Minor Changes

@@ -69,15 +69,14 @@ const idID: LocaleResource<typeof enUS> = {
             all: 'Terapkan (semua)',
           },
           deployProtected: {
-            title: 'Menyetujui penerapan yang dilindungi',
+            title: 'Deploy ke lingkungan terlindungi',
             description:
-              'Menyetujui penerapan pada lingkungan yang dilindungi tanpa menyebutkan nama pemberi persetujuan; hanya orang',
-            related:
-              'Menyetujui penerapan yang dilindungi (yang terkait dengannya)',
+              'Jika penyetuju lingkungan tidak ditemukan, setujui permintaan secara pribadi atau deploy langsung sebagai orang tersebut atau prosesnya',
+            related: 'Deploy ke lingkungan terlindungi (terkait)',
             relatedLabel: 'Yang aku buat',
             relatedHint:
               'Aplikasi yang saya buat, dan aplikasi apa pun yang berhubungan dengan saya',
-            all: 'Menyetujui penerapan yang dilindungi (semua)',
+            all: 'Deploy ke lingkungan terlindungi (semua)',
           },
           operate: {
             title: 'Mulai dan berhenti',
@@ -107,6 +106,14 @@ const idID: LocaleResource<typeof enUS> = {
       rel: {
         environments: 'Menyebarkan lingkungan',
       },
+    },
+    humanOnly: {
+      deployProtected:
+        'Deploy ke lingkungan terlindungi perlu disetujui seseorang; kunci hanya dapat memintanya.',
+      delete:
+        'Menghapus aplikasi menghapus datanya; hanya orang yang boleh melakukannya.',
+      configure:
+        'Mengonfigurasi aplikasi mengubah pengaturan dan rahasianya; hanya orang yang boleh melakukannya.',
     },
     keyScopes: {
       apps: {
@@ -155,6 +162,7 @@ const idID: LocaleResource<typeof enUS> = {
       environments: 'Menyebarkan lingkungan',
     },
     apps: {
+      lastFailure: 'Kegagalan terakhir: {{detail}}',
       title: 'Aplikasi',
       create: 'Buat aplikasi',
       id: 'ID Aplikasi',
@@ -771,6 +779,12 @@ const idID: LocaleResource<typeof enUS> = {
           'Tidak ada administrator pertama yang ditampilkan.',
       },
       messages: {
+        artifactReadIdleTimeout:
+          'Tidak ada data paket rilis yang diterima selama {{seconds}} detik. Deployment belum selesai; coba lagi.',
+        artifactReadTotalTimeout:
+          'Pembacaan paket rilis melebihi {{seconds}} detik. Deployment belum selesai; coba lagi.',
+        artifactReadTimeout:
+          'Waktu pembacaan paket rilis habis. Deployment belum selesai; coba lagi.',
         hostExited: 'Proses aplikasi dihentikan sebelum siap.',
         hostDisabled: 'Host aplikasi dimatikan.',
         hostShutDown: 'Host aplikasi telah dimatikan.',
@@ -785,6 +799,18 @@ const idID: LocaleResource<typeof enUS> = {
         notReady: 'Ia belum siap; coba lagi sebentar lagi.',
         checkTimeout: 'Tes tidak selesai dalam 20 detik.',
         hostNoSettings: 'Runtime lokal tidak memerlukan pengaturan koneksi.',
+        recycleWait:
+          'Host aplikasi sedang membebaskan memori; penerapan berlanjut setelah selesai.',
+        recycleRetry:
+          'Host aplikasi masih membebaskan memori, sehingga penerapan tidak selesai. Coba lagi nanti.',
+        capacityExceeded:
+          'Host aplikasi kekurangan memori atau slot kosong, sehingga penerapan tidak selesai. Coba lagi nanti.',
+        replacementMemory:
+          'Host aplikasi kekurangan memori untuk memulai versi baru; versi saat ini tetap berjalan. Coba lagi nanti.',
+        startQueueFull:
+          'Terlalu banyak aplikasi yang sedang dimulai di host. Coba lagi nanti.',
+        activeLimit:
+          'Jumlah aplikasi yang berjalan telah mencapai batas. Coba lagi nanti.',
       },
       prefixed: {
         startFailed: 'Mulai gagal: {{detail}}',

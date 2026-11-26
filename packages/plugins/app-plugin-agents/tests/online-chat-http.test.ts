@@ -119,8 +119,8 @@ async function fixture() {
     c.set('caller', {
       userId: id,
       can: async () => false,
-      opens: async () => true,
       scope: async () => 'none',
+      chatAudience: async () => 'all' as const,
       onlineContext: {
         user: { id },
         authorization: {
@@ -525,7 +525,7 @@ it('accepts declared business variables but rejects browser policy overrides on 
   const configuration = {
     scope: ['business-input'],
     context: { variable: { count: 2 } },
-    thinking: 'unregistered-level',
+    thinking: 'high',
   };
   const created = await f.request('/conversations', 'POST', {
     config: configuration,
@@ -537,7 +537,7 @@ it('accepts declared business variables but rejects browser policy overrides on 
     systemPrompt: 'Count 2',
     variable: { count: 2 },
     tool: ['business'],
-    thinking: 'unregistered-level',
+    thinking: 'high',
   });
   const savedBeforeRefusals = (await (await f.request(path)).json()).data;
   const conversationsBeforeRefusals = await h.database
@@ -607,6 +607,71 @@ it('accepts declared business variables but rejects browser policy overrides on 
       }),
     ]),
   );
+});
+
+it('refuses a thinking level other than the seven, of any type, on create and configure, and saves each as it is', async () => {
+  const f = await fixture();
+  const created = await f.request('/conversations', 'POST', {});
+  expect(created.status).toBe(201);
+  const path = `/conversations/${(await created.json()).data.id}/config`;
+  for (const thinking of [
+    'bogus',
+    'default',
+    'off',
+    'max',
+    false,
+    1,
+    null,
+    ['high'],
+    { level: 'high' },
+  ]) {
+    for (const response of [
+      await f.request('/conversations', 'POST', { config: { thinking } }),
+      await f.request(path, 'PATCH', { config: { thinking } }),
+    ]) {
+      // The ordinary validation error, naming the field.
+      expect(response.status).toBe(400);
+      expect(JSON.stringify(await response.json())).toContain('thinking');
+    }
+  }
+  for (const thinking of ['provider-default', 'none', 'xhigh']) {
+    const saved = await f.request(path, 'PATCH', { config: { thinking } });
+    expect(saved.status).toBe(200);
+    expect((await saved.json()).data.thinking).toBe(thinking);
+    expect((await (await f.request(path)).json()).data.thinking).toBe(thinking);
+  }
+  const fresh = await f.request('/conversations', 'POST', {
+    config: { thinking: 'none' },
+  });
+  expect(fresh.status).toBe(201);
+  const freshId = (await fresh.json()).data.id as string;
+  expect(
+    (await (await f.request(`/conversations/${freshId}/config`)).json()).data
+      .thinking,
+  ).toBe('none');
+});
+
+it('keeps the saved thinking level when a configuration update leaves it out, and resets it on an explicit provider-default', async () => {
+  const f = await fixture();
+  const created = await f.request('/conversations', 'POST', {
+    config: { thinking: 'xhigh' },
+  });
+  const path = `/conversations/${(await created.json()).data.id}/config`;
+  const thinking = async () =>
+    (await (await f.request(path)).json()).data.thinking;
+  expect(await thinking()).toBe('xhigh');
+  expect(
+    (await f.request(path, 'PATCH', { config: { webSearch: false } })).status,
+  ).toBe(200);
+  expect(await thinking()).toBe('xhigh');
+  expect(
+    (
+      await f.request(path, 'PATCH', {
+        config: { thinking: 'provider-default' },
+      })
+    ).status,
+  ).toBe(200);
+  expect(await thinking()).toBe('provider-default');
 });
 
 it('filters visibility before pagination for HTTP and its derived CLI, preserving owned direct reads', async () => {

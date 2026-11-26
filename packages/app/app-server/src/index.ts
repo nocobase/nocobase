@@ -7,6 +7,7 @@ export * from './id-generator/index.js';
 export * from './i18n/index.js';
 export * from './logging/index.js';
 export * from './queue/index.js';
+export * from './message-broker/index.js';
 export * from './secrets/index.js';
 export * from './session/index.js';
 export * from './node/index.js';
@@ -17,3 +18,10 @@ export * from './router/index.js';
 export * from './runtime/index.js';
 export * from './spa/index.js';
 export * from './support/index.js';
+
+export { resolveAppBackupTarget } from './backup/target.js';
+export { enterRunningApplication } from './backup/runtime-guard.js';
+export type {
+  AppBackupConfig,
+  AppBackupFileReference,
+} from './backup/config.js';
