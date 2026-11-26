@@ -110,6 +110,98 @@ describe('native online model usage', () => {
     });
   }
 
+  it('runs the host policy before a native call while keeping original history', async () => {
+    const model = new MockLanguageModelV4({ doStream: [streamed(answer(1))] });
+    const modelFactory = vi
+      .spyOn(NativeFileInputs.prototype, 'model')
+      .mockResolvedValue(model);
+    const recorded = vi.fn(async () => {});
+    await h.services.models.services.update('fixture', {
+      models: [{ value: 'chat' }, { value: 'routine' }],
+    });
+    const release = h.services.onlineAgent.configurator.provideNativeTurn(
+      async ({ context, sessionId }) => {
+        expect(context.user.id).toBe('alice');
+        expect(sessionId).toBeTruthy();
+        return {
+          models: ['fixture/routine'],
+          messages: (messages) =>
+            messages.map((message) =>
+              message.role === 'user'
+                ? { ...message, content: '[masked]' }
+                : message,
+            ),
+          usage: recorded,
+        };
+      },
+    );
+    const id = await createConversation();
+    expect((await send(id)).status).toBe(200);
+    expect(modelFactory).toHaveBeenCalledWith(
+      { modelService: 'fixture', model: 'routine' },
+      id,
+    );
+    expect(JSON.stringify(model.doStreamCalls[0]?.prompt)).toContain(
+      '[masked]',
+    );
+    expect(JSON.stringify(model.doStreamCalls[0]?.prompt)).not.toContain(
+      'What is the result?',
+    );
+    expect(recorded).toHaveBeenCalledExactlyOnceWith(
+      {
+        inputTokens: 20,
+        outputTokens: 8,
+        cacheReadTokens: 5,
+        cacheWriteTokens: 3,
+        reasoningTokens: 2,
+      },
+      { modelService: 'fixture', model: 'routine' },
+    );
+    const messages = await h.request(
+      'GET',
+      `/agents/conversations/${id}/messages`,
+      { user: 'alice' },
+    );
+    expect(JSON.stringify(messages.body)).toContain('What is the result?');
+    release();
+  });
+
+  it('falls back before output and charges usage to the backup model', async () => {
+    await h.services.models.services.update('fixture', {
+      models: [{ value: 'chat' }, { value: 'backup' }],
+    });
+    const primary = new MockLanguageModelV4({
+      doStream: [
+        streamed([
+          { type: 'error' as const, error: new Error('not reachable') },
+        ]),
+      ],
+    });
+    const backup = new MockLanguageModelV4({ doStream: [streamed(answer(1))] });
+    vi.spyOn(NativeFileInputs.prototype, 'model').mockImplementation(
+      async ({ model }) => (model === 'backup' ? backup : primary),
+    );
+    const recorded = vi.fn(async () => {});
+    h.services.onlineAgent.configurator.provideNativeTurn(async () => ({
+      models: ['fixture/chat', 'fixture/backup'],
+      fallback: async () => 'network',
+      usage: recorded,
+    }));
+    const id = await createConversation();
+    expect((await send(id)).status).toBe(200);
+    expect(backup.doStreamCalls).toHaveLength(1);
+    expect(recorded).toHaveBeenCalledExactlyOnceWith(
+      expect.objectContaining({ inputTokens: 20, outputTokens: 8 }),
+      { modelService: 'fixture', model: 'backup' },
+    );
+    const history = await h.request(
+      'GET',
+      `/agents/conversations/${id}/messages`,
+      { user: 'alice' },
+    );
+    expect(JSON.stringify(history.body)).toContain('Hello.');
+  });
+
   it('stores one row per turn and prices all steps under their agent source', async () => {
     const model = new MockLanguageModelV4({
       doStream: [

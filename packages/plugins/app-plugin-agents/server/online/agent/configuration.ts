@@ -1,7 +1,9 @@
 import { isDeepStrictEqual } from 'node:util';
 import { WEB_SEARCH_TOOL } from '../../../shared/web-search.js';
 import { registerSandboxTools } from '../sandbox/tools.js';
-import type { Tool } from 'ai';
+import type { ModelMessage, Tool } from 'ai';
+import type { ModelRef } from '../../../shared/models.js';
+import type { ModelUsage } from '../gateway.js';
 import type { ServiceResolver } from '@nocobase/service-provider';
 import { invalid } from '../../kernel/errors.js';
 import { isReasoningLevel, REASONING_LEVELS } from '../../../shared/models.js';
@@ -66,6 +68,37 @@ export function effectiveTools(config: OnlineAgentConfig): string[] {
     ]),
   ];
 }
+export interface OnlineAgentNativeTurn {
+  readonly context: OnlineAgentContext;
+  readonly sessionId: string;
+  readonly executionId: string;
+  readonly model: ModelRef;
+  readonly scopes: readonly string[];
+}
+
+export interface OnlineAgentNativeTurnPolicy {
+  /** Replace the persisted model candidates for this admission. The first is the selected candidate. */
+  readonly models?: readonly [string, ...string[]];
+  /** Transform only model-facing copies. The original messages and tool results stay intact. */
+  readonly messages?: (messages: ModelMessage[]) => ModelMessage[];
+  /** Aggregate provider-reported usage for this execution, including interrupted turns. */
+  readonly usage?: (usage: ModelUsage, model: ModelRef) => Promise<void>;
+  /** Return a safe reason to switch to the next candidate before the first text-only response produces output. */
+  readonly fallback?: (
+    error: unknown,
+    model: ModelRef,
+  ) => Promise<string | undefined>;
+  /** Safe, application-owned failure parameters to expose on the execution notice. */
+  readonly failure?: (
+    error: unknown,
+    model: ModelRef,
+  ) => Promise<Readonly<Record<string, string>> | undefined>;
+}
+
+export type OnlineAgentNativeTurnProvider = (
+  turn: OnlineAgentNativeTurn,
+) => Promise<OnlineAgentNativeTurnPolicy | undefined>;
+
 export class OnlineAgentConfigurator {
   private globals: (OnlineAgentScope | OnlineAgentScopeProvider)[] = [];
   private scopes = new Map<
@@ -73,6 +106,23 @@ export class OnlineAgentConfigurator {
     (OnlineAgentScope | OnlineAgentScopeProvider)[]
   >();
   private tools = new Map<string, OnlineAgentRegisteredTool>();
+  private nativeTurn?: OnlineAgentNativeTurnProvider;
+
+  /** Register one host policy. It runs on every native admission, including resend and approval. */
+  provideNativeTurn(provider: OnlineAgentNativeTurnProvider): () => void {
+    if (this.nativeTurn)
+      throw invalid('A native turn policy is already registered.');
+    this.nativeTurn = provider;
+    return () => {
+      if (this.nativeTurn === provider) this.nativeTurn = undefined;
+    };
+  }
+
+  prepareNativeTurn(
+    turn: OnlineAgentNativeTurn,
+  ): Promise<OnlineAgentNativeTurnPolicy | undefined> | undefined {
+    return this.nativeTurn?.(turn);
+  }
 
   constructor() {
     registerSandboxTools(this);

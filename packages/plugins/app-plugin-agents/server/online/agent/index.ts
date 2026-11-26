@@ -34,7 +34,12 @@ export type {
 } from './types.js';
 export { OnlineAgentResultError } from './errors.js';
 export { OnlineAgentService } from './service.js';
-export { OnlineAgentConfigurator } from './configuration.js';
+export {
+  OnlineAgentConfigurator,
+  type OnlineAgentNativeTurn,
+  type OnlineAgentNativeTurnPolicy,
+  type OnlineAgentNativeTurnProvider,
+} from './configuration.js';
 export { NativeOnlineAgentBackend } from './native/backend.js';
 export {
   NativeRealtimeOnlineAgent,
