@@ -168,10 +168,11 @@ async function dshVersion(
  */
 async function dshMissingCredential(
   env: Record<string, string>,
+  cwd: string,
   command: string,
 ): Promise<(ToolDetection & ToolCapabilities) | undefined> {
   if (env[DSH_KEY_NAME]?.trim()) return undefined;
-  const web = await inspectDshWebKey(env);
+  const web = await inspectDshWebKey(env, cwd);
   if (web.state === 'present') return undefined;
   const found = { installed: true, path: command, authenticated: false };
   if (web.state === 'absent')
@@ -216,17 +217,22 @@ async function inspect(
         `${resolved.command} answers to ${spec.identify!.args.join(' ')} like a different program.`,
       ),
     };
-  if (spec.id === 'dsh') {
-    const missing = await dshMissingCredential(env, resolved.command);
-    if (missing) return missing;
-  }
-  const cliVersion =
-    spec.id === 'dsh'
-      ? await dshVersion(resolved.command, env, signal)
-      : undefined;
   return withDetectionEnvironment(
     signal,
     async (cwd, guardedEnv) => {
+      // Looked up from the directory dsh is started in, so a relative DSH_HOME means the same directory to both.
+      if (spec.id === 'dsh') {
+        const missing = await dshMissingCredential(
+          guardedEnv,
+          cwd,
+          resolved.command,
+        );
+        if (missing) return missing;
+      }
+      const cliVersion =
+        spec.id === 'dsh'
+          ? await dshVersion(resolved.command, guardedEnv, signal)
+          : undefined;
       let process: AgentProcess | undefined;
       try {
         process = await AgentProcess.start(resolved, {

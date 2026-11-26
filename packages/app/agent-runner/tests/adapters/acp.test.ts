@@ -9,7 +9,7 @@ import {
 } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
-import { afterEach, expect, it } from 'vitest';
+import { afterEach, expect, it, vi } from 'vitest';
 import { acpSpec, createAcpAdapter } from '../../src/agent/adapters/acp.ts';
 import { loadAdapters } from '../../src/agent/adapters/registry.ts';
 import type {
@@ -496,6 +496,59 @@ it('treats a blank DSH_HOME as unset', async () => {
   expect(await f.adapter.detect()).toMatchObject({ status: 'ready' });
 });
 
+it('keeps the spaces at the end of a DSH_HOME that is not blank', async () => {
+  const f = await dshFixture();
+  const spaced = path.join(f.root, 'spaced ');
+  await saveDshWebKey(spaced);
+  f.env.DSH_HOME = spaced;
+  expect(await f.adapter.detect()).toMatchObject({ status: 'ready' });
+  // The trimmed directory holds no key, and is not the one dsh reads.
+  f.env.DSH_HOME = path.join(f.root, 'spaced');
+  expect(await f.adapter.detect()).toMatchObject({ status: 'needsLogin' });
+});
+
+/** Runs `detect` with the temporary directory moved to `tmp`, where the probe's working directory is created. */
+async function detectWithTmpdir<T>(tmp: string, detect: () => Promise<T>) {
+  const before = process.env.TMPDIR;
+  process.env.TMPDIR = tmp;
+  try {
+    return await detect();
+  } finally {
+    if (before === undefined) delete process.env.TMPDIR;
+    else process.env.TMPDIR = before;
+  }
+}
+
+it('resolves a relative DSH_HOME from the directory dsh is started in', async () => {
+  const f = await dshFixture();
+  // Deeper than the runner's own directory, so a path climbing out of it never ends up at the same place.
+  const tmp = path.join(f.root, ...Array.from({ length: 24 }, () => 't'));
+  await mkdir(tmp, { recursive: true });
+  f.env.DSH_HOME = '../shared-home';
+
+  // Only the directory next to the probe's working directory holds a key: that is the one dsh reads.
+  await saveDshWebKey(path.join(tmp, 'shared-home'));
+  expect(await detectWithTmpdir(tmp, () => f.adapter.detect())).toMatchObject({
+    authenticated: true,
+    status: 'ready',
+  });
+  await rm(path.join(tmp, 'shared-home'), { recursive: true });
+  await rm(f.trace);
+
+  // Only the directory a relative path names from the runner's own directory holds a key: dsh never sees it.
+  const keyed = path.join(f.root, 'runner-home');
+  await saveDshWebKey(keyed);
+  f.env.DSH_HOME = path.relative(process.cwd(), keyed);
+  expect(path.resolve(process.cwd(), f.env.DSH_HOME)).toBe(keyed);
+  const detected = await detectWithTmpdir(tmp, () => f.adapter.detect());
+  expect(detected).toMatchObject({
+    authenticated: false,
+    status: 'needsLogin',
+    statusReason: 'notLoggedIn',
+  });
+  await expectNoHandshake(f);
+});
+
 it('does not read the saved credentials when the key variable is set', async () => {
   const f = await dshFixture({ DEEPSEEK_API_KEY: 'test-key' });
   // A directory at the file's path would fail any read; the variable alone is enough.
@@ -524,6 +577,58 @@ it('tells how to fix a saved credential file the Runner cannot read', async () =
   expect(detected.statusDetail).toContain('EISDIR');
   expect(detected.statusDetail).toContain('account that saved the key');
   expect(detected.statusDetail).toContain('--pass-env DEEPSEEK_API_KEY');
+  await expectNoHandshake(f);
+});
+
+it('prints nothing and reports a fixed message when the parser would warn about the key line', async () => {
+  const f = await dshFixture();
+  // An unknown tag makes the YAML parser warn with the whole source line, secret included.
+  await saveDshWebKey(
+    path.join(f.root, '.dsh'),
+    'refs:\n  DEEPSEEK_API_KEY: !unknown-tag sk-web-secret-value\n',
+  );
+  const printed: string[] = [];
+  const warnings: string[] = [];
+  const onWarning = (warning: Error) => warnings.push(warning.message);
+  const write = vi
+    .spyOn(process.stderr, 'write')
+    .mockImplementation((chunk: unknown) => {
+      printed.push(String(chunk));
+      return true;
+    });
+  process.on('warning', onWarning);
+  let detected;
+  try {
+    detected = await f.adapter.detect();
+    // Node prints a process warning on the next tick.
+    await new Promise((resolve) => setTimeout(resolve, 20));
+  } finally {
+    process.off('warning', onWarning);
+    write.mockRestore();
+  }
+  expect(detected).toMatchObject({
+    status: 'failed',
+    statusReason: 'startFailed',
+  });
+  expect(detected.statusDetail).toContain('invalid YAML');
+  expect(JSON.stringify(detected)).not.toContain('sk-web-secret-value');
+  expect(printed.join('')).not.toContain('sk-web-secret-value');
+  expect(warnings).toEqual([]);
+  await expectNoHandshake(f);
+});
+
+it('refuses a credential file larger than its limit', async () => {
+  const f = await dshFixture();
+  await saveDshWebKey(
+    path.join(f.root, '.dsh'),
+    `refs:\n  DEEPSEEK_API_KEY: sk-web-secret-value\n# ${'x'.repeat(1024 * 1024)}\n`,
+  );
+  const detected = await f.adapter.detect();
+  expect(detected).toMatchObject({
+    status: 'failed',
+    statusReason: 'startFailed',
+  });
+  expect(detected.statusDetail).toContain('too large');
   await expectNoHandshake(f);
 });
 

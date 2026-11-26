@@ -1,7 +1,7 @@
-import { readFile } from 'node:fs/promises';
+import { open } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
-import { parse } from 'yaml';
+import { parseDocument } from 'yaml';
 
 /** The one credential reference the dsh adapter authenticates with. */
 export const DSH_KEY_NAME = 'DEEPSEEK_API_KEY';
@@ -26,18 +26,20 @@ export type DshWebKey =
     };
 
 /**
- * Where dsh keeps its state for the environment `env`: `$DSH_HOME` (a blank value counts as unset, `~` expands to the
- * home directory), otherwise `.dsh` under the home of the account the runner runs as. `env` is what the runner passes
- * to dsh, so a `DSH_HOME` that was not passed with `--pass-env` does not apply, exactly as for dsh itself.
+ * Where dsh keeps its state for the environment `env`, as dsh resolves it: `$DSH_HOME` unless it is blank (a value
+ * that is not blank is used exactly as written, spaces at its ends included), `~` expanded against the home
+ * directory, a relative path taken from `cwd`, the directory dsh is started in; otherwise `.dsh` under the home of
+ * the account the runner runs as. `env` is what the runner passes to dsh, so a `DSH_HOME` that was not passed with
+ * `--pass-env` does not apply, exactly as for dsh itself.
  */
-export function dshHome(env: Record<string, string>): string {
-  const home = env.HOME?.trim() || env.USERPROFILE?.trim() || os.homedir();
-  const configured = env.DSH_HOME?.trim();
-  if (!configured) return path.join(home, '.dsh');
+export function dshHome(env: Record<string, string>, cwd: string): string {
+  const home = env.HOME || env.USERPROFILE || os.homedir();
+  const configured = env.DSH_HOME;
+  if (!configured?.trim()) return path.join(home, '.dsh');
   if (configured === '~') return home;
   if (configured.startsWith('~/') || configured.startsWith('~\\'))
     return path.join(home, configured.slice(2));
-  return path.resolve(configured);
+  return path.resolve(cwd, configured);
 }
 
 /** Whether `refs` of a parsed credentials document stores a non-empty `DEEPSEEK_API_KEY`. */
@@ -54,18 +56,47 @@ function storesKey(document: unknown): boolean {
 }
 
 /**
- * Whether the key saved in the dsh Web settings is there: `refs.DEEPSEEK_API_KEY` of `<DSH_HOME>/.credentials.yaml`.
- * Reads one small file and reports presence only; the value never leaves this function.
+ * Read at most `MAX_CREDENTIALS_BYTES` of `file`: the bytes, or `undefined` when the file is larger. The size is
+ * enforced while reading, so a huge file never gets into memory.
+ */
+async function readBounded(file: string): Promise<Buffer | undefined> {
+  const handle = await open(file, 'r');
+  try {
+    const buffer = Buffer.alloc(MAX_CREDENTIALS_BYTES + 1);
+    let length = 0;
+    while (length < buffer.length) {
+      const { bytesRead } = await handle.read(
+        buffer,
+        length,
+        buffer.length - length,
+        null,
+      );
+      if (bytesRead === 0) break;
+      length += bytesRead;
+    }
+    return length > MAX_CREDENTIALS_BYTES
+      ? undefined
+      : buffer.subarray(0, length);
+  } finally {
+    await handle.close();
+  }
+}
+
+/**
+ * Whether the key saved in the dsh Web settings is there: `refs.DEEPSEEK_API_KEY` of `<DSH_HOME>/.credentials.yaml`,
+ * with a relative `DSH_HOME` taken from `cwd`. Reads one small file and reports presence only; the value never
+ * leaves this function. The parser is silent: its warnings and error messages quote the offending source line, which
+ * can be the key, so anything it objects to becomes the fixed `invalid YAML`.
  */
 export async function inspectDshWebKey(
   env: Record<string, string>,
+  cwd: string,
 ): Promise<DshWebKey> {
-  const file = path.join(dshHome(env), CREDENTIALS_FILENAME);
+  const file = path.join(dshHome(env, cwd), CREDENTIALS_FILENAME);
   let text: string;
   try {
-    const raw = await readFile(file);
-    if (raw.length > MAX_CREDENTIALS_BYTES)
-      return { state: 'invalid', file, cause: 'too large' };
+    const raw = await readBounded(file);
+    if (!raw) return { state: 'invalid', file, cause: 'too large' };
     text = raw.toString('utf8');
   } catch (error) {
     const code = (error as NodeJS.ErrnoException).code;
@@ -75,9 +106,14 @@ export async function inspectDshWebKey(
     return { state: 'unreadable', file, cause: code ?? 'read error' };
   }
   try {
-    return { state: storesKey(parse(text)) ? 'present' : 'absent', file };
+    const document = parseDocument(text, { logLevel: 'silent' });
+    if (document.errors.length > 0 || document.warnings.length > 0)
+      return { state: 'invalid', file, cause: 'invalid YAML' };
+    return {
+      state: storesKey(document.toJS()) ? 'present' : 'absent',
+      file,
+    };
   } catch {
-    // The parser's own message quotes the source line, which can hold the key: report none of it.
     return { state: 'invalid', file, cause: 'invalid YAML' };
   }
 }
