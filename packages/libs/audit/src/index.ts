@@ -56,6 +56,7 @@ export {
 export {
   defineAuditConfig,
   type AuditConfig,
+  type AuditConfigFactory,
   type AuditDestinationConfig,
 } from './config.js';
 export {

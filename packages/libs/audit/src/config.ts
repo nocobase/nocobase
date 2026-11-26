@@ -80,7 +80,7 @@ export function defineAuditConfig(
   });
 }
 
-interface AuditConfigFactory {
+export interface AuditConfigFactory {
   (): AuditConfig;
   readonly rules: {
     readonly public: readonly string[];

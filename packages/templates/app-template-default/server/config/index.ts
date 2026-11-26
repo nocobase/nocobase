@@ -1,4 +1,4 @@
-import { defineAuditConfig } from '@nocobase/audit';
+import { defineAuditConfig, type AuditConfig } from '@nocobase/audit';
 import agents from './agents.js';
 import mailers from './mailers.js';
 import {
@@ -53,7 +53,7 @@ const defaultConfigs: AppConfigFactory<{
   i18n: ReturnType<typeof i18n>;
   app: ReturnType<typeof app>;
   api: ReturnType<typeof api>;
-  audit: ReturnType<typeof audit>;
+  audit: AuditConfig;
   database: ReturnType<typeof database>;
   snowflake: ReturnType<typeof snowflake>;
   users: ReturnType<typeof users>;
