@@ -1169,6 +1169,7 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
       runner: Runner;
       assembly: SubjectAssembly;
     }[] = [];
+    let sharedAssembly: SubjectAssembly | undefined;
     for (const runner of registered) {
       if (
         (reserved && runner.id !== reserved) ||
@@ -1180,22 +1181,25 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
         (runner.trust !== 'team' && runner.ownerUserId !== run.actorUserId)
       )
         continue;
-      const assembly = await binding.context
-        .assemble(
-          conn,
-          {
-            run,
-            agent,
-            runner,
-            inputs,
-            cli: deps.cli.name,
-            appName: deps.app.name,
-          },
-          preparedSubject,
-        )
-        .catch(() => null);
+      const assembly =
+        sharedAssembly ??
+        (await binding.context
+          .assemble(
+            conn,
+            {
+              run,
+              agent,
+              runner,
+              inputs,
+              cli: deps.cli.name,
+              appName: deps.app.name,
+            },
+            preparedSubject,
+          )
+          .catch(() => null));
       // The diagnostic path treats an unreadable context as unknown and waits for the preferred model.
       if (!assembly) return true;
+      if (binding.context.runnerIndependent) sharedAssembly = assembly;
       checks.push({ agent: single, runner, assembly });
     }
     await metadata.load(checks);

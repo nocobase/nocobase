@@ -146,7 +146,7 @@ export type SubjectCompatibility = Pick<
 >;
 
 export interface ContextProvider {
-  /** The assembly used for selection diagnostics can be shared across runners. */
+  /** The assembly for a run can be shared when checking selection across runners. */
   readonly runnerIndependent?: boolean;
   /** The assembly is the same with or without `ClaimContext.freshSession`. */
   readonly recoveryIndependent?: boolean;

@@ -134,45 +134,55 @@ describe('heartbeat capacity diagnostics', () => {
 });
 
 describe('ordered models opt-in policy', () => {
-  it('reuses the prepared subject when the first model is incompatible', async () => {
-    const { preferred, fallback, manager, run } = await setup();
-    await h.services.variables.set(
-      { scope: 'agent', scopeId: manager },
-      'LOCAL',
-      undefined,
-      'owner',
-      { fromRunner: true },
-    );
-    const machines = runnersRepo(h.database.connection());
-    await machines.updateMany({
-      filter: { id: preferred.runnerId },
-      values: { variables: [] },
-    });
-    await machines.updateMany({
-      filter: { id: fallback.runnerId },
-      values: { variables: ['LOCAL'] },
-    });
+  it.each([false, true])(
+    'reuses the prepared subject in fallback checks (runner independent: %s)',
+    async (runnerIndependent) => {
+      const { preferred, fallback, manager, run } = await setup();
+      const another = await h.registerRunner({ name: 'another-preferred' });
+      await h.services.variables.set(
+        { scope: 'agent', scopeId: manager },
+        'LOCAL',
+        undefined,
+        'owner',
+        { fromRunner: true },
+      );
+      const machines = runnersRepo(h.database.connection());
+      await machines.updateMany({
+        filter: { id: preferred.runnerId },
+        values: { variables: [] },
+      });
+      await machines.updateMany({
+        filter: { id: another.runnerId },
+        values: { variables: [] },
+      });
+      await machines.updateMany({
+        filter: { id: fallback.runnerId },
+        values: { variables: ['LOCAL'] },
+      });
 
-    const context = h.services.subjects.get('sample')!.context;
-    const prepared = { run };
-    context.prepare = vi.fn(async () => prepared);
-    const assemble = vi.spyOn(context, 'assemble');
+      const context = h.services.subjects.get('sample')!.context;
+      const prepared = { run };
+      Object.assign(context, { runnerIndependent });
+      context.prepare = vi.fn(async () => prepared);
+      const assemble = vi.spyOn(context, 'assemble');
 
-    expect((await claim(h, fallback))[0].run.id).toBe(run);
-    expect(
-      (await h.services.runs.get(run)).executions?.[0].selection?.reason,
-    ).toBe('preferredUnavailable');
-    expect(context.prepare).toHaveBeenCalledTimes(1);
-    expect(
-      assemble.mock.calls.map(([, candidate, sample]) => [
-        candidate.runner?.id,
-        sample,
-      ]),
-    ).toEqual([
-      [preferred.runnerId, prepared],
-      [fallback.runnerId, prepared],
-    ]);
-  });
+      expect((await claim(h, fallback))[0].run.id).toBe(run);
+      expect(
+        (await h.services.runs.get(run)).executions?.[0].selection?.reason,
+      ).toBe('preferredUnavailable');
+      expect(context.prepare).toHaveBeenCalledTimes(1);
+      const calls = assemble.mock.calls;
+      expect(calls).toHaveLength(runnerIndependent ? 2 : 3);
+      expect(calls.every(([, , sample]) => sample === prepared)).toBe(true);
+      expect(calls.at(-1)?.[1].runner?.id).toBe(fallback.runnerId);
+      const preferredIds = calls
+        .slice(0, -1)
+        .map(([, candidate]) => candidate.runner?.id);
+      expect([preferred.runnerId, another.runnerId]).toEqual(
+        expect.arrayContaining(preferredIds),
+      );
+    },
+  );
 
   it.each([
     { variables: [] as string[], immediate: true },
