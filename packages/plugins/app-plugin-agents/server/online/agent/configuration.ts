@@ -118,6 +118,11 @@ export class OnlineAgentConfigurator {
     };
   }
 
+  /** @internal Registered hosts can resolve configuration-time connection errors at turn admission. */
+  hasNativeTurnPolicy(): boolean {
+    return this.nativeTurn !== undefined;
+  }
+
   prepareNativeTurn(
     turn: OnlineAgentNativeTurn,
   ): Promise<OnlineAgentNativeTurnPolicy | undefined> | undefined {

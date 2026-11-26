@@ -112,6 +112,171 @@ describe('native online model usage', () => {
     });
   }
 
+  it.each(['new conversation', 'model change'] as const)(
+    'uses the authorized backup after a connection failure during %s',
+    async (entry) => {
+      await h.services.models.services.update('fixture', {
+        models: [
+          { value: 'chat' },
+          { value: 'new-primary' },
+          { value: 'backup' },
+        ],
+      });
+      const primaryRef =
+        entry === 'new conversation'
+          ? modelRef
+          : { ...modelRef, model: 'new-primary' };
+      const primaryError = new ModelError(
+        'network',
+        'Primary connection offline.',
+      );
+      const backup = new MockLanguageModelV4({
+        doStream: [streamed(answer(1))],
+      });
+      const modelFactory = vi
+        .spyOn(NativeFileInputs.prototype, 'model')
+        .mockImplementation(async ({ model }) => {
+          if (model === primaryRef.model) throw primaryError;
+          return backup;
+        });
+      const fallback = vi.fn(async () => 'network');
+      const usage = vi.fn(async () => {});
+      const prepare = vi.fn(async () => ({
+        models: [`fixture/${primaryRef.model}`, 'fixture/backup'] as const,
+        messages: (messages: ModelMessage[]) =>
+          messages.map((message) =>
+            message.role === 'user'
+              ? { ...message, content: '[masked]' }
+              : message,
+          ),
+        fallback,
+        usage,
+      }));
+      h.services.onlineAgent.configurator.provideNativeTurn(prepare);
+      const id = await createConversation();
+      if (entry === 'model change') {
+        const changed = await h.request(
+          'PATCH',
+          `/agents/conversations/${id}/config`,
+          {
+            user: 'alice',
+            body: { config: {}, selectedModel: primaryRef },
+          },
+        );
+        expect(changed.status).toBe(200);
+        expect(changed.body.data.selectedModel).toEqual(primaryRef);
+      }
+      expect(prepare).not.toHaveBeenCalled();
+      expect(backup.doStreamCalls).toHaveLength(0);
+      modelFactory.mockClear();
+
+      const sent = await send(id);
+      expect(sent.status).toBe(200);
+      expect(sent.body).toContain('Hello.');
+      expect(sent.body).toContain('"fallbackReason":"network"');
+      expect(prepare).toHaveBeenCalledExactlyOnceWith(
+        expect.objectContaining({
+          context: expect.objectContaining({
+            user: expect.objectContaining({ id: 'alice' }),
+          }),
+          sessionId: id,
+          model: primaryRef,
+        }),
+      );
+      expect(fallback).toHaveBeenCalledExactlyOnceWith(
+        primaryError,
+        primaryRef,
+      );
+      const backupRef = { ...modelRef, model: 'backup' };
+      expect(modelFactory.mock.calls).toEqual([
+        [primaryRef, id],
+        [backupRef, id],
+      ]);
+      expect(backup.doStreamCalls).toHaveLength(1);
+      expect(JSON.stringify(backup.doStreamCalls[0].prompt)).toContain(
+        '[masked]',
+      );
+      expect(JSON.stringify(backup.doStreamCalls[0].prompt)).not.toContain(
+        'What is the result?',
+      );
+      expect(usage).toHaveBeenCalledExactlyOnceWith(
+        expect.objectContaining({ inputTokens: 20, outputTokens: 8 }),
+        backupRef,
+      );
+      expect(await entries()).toEqual([
+        expect.objectContaining({ model: 'backup', ...storedCounts }),
+      ]);
+    },
+  );
+
+  it('returns safe details on the first send if both new conversation candidates fail to connect', async () => {
+    const primaryError = new ModelError('network', 'Primary endpoint offline.');
+    const backupError = new ModelError(
+      'auth',
+      'Backup credentials cannot be read.',
+    );
+    const backupRef = { ...modelRef, model: 'backup' };
+    vi.spyOn(NativeFileInputs.prototype, 'model').mockImplementation(
+      async ({ model }) => {
+        throw model === modelRef.model ? primaryError : backupError;
+      },
+    );
+    const fallback = vi.fn(async () => 'network');
+    const failure = vi.fn(async () => ({
+      unavailableReason: 'invalidKey',
+      settingsPath: '/settings/ai',
+    }));
+    h.services.onlineAgent.configurator.provideNativeTurn(async () => ({
+      models: ['fixture/chat', 'fixture/backup'],
+      fallback,
+      failure,
+    }));
+    const id = await createConversation();
+    const sent = await send(id);
+    expect(sent.status).toBe(400);
+    expect(sent.body).toMatchObject({
+      error: {
+        reason: 'MODEL_UNAVAILABLE',
+        metadata: {
+          unavailableReason: 'invalidKey',
+          settingsPath: '/settings/ai',
+        },
+      },
+    });
+    expect(JSON.stringify(sent.body)).not.toContain(backupError.message);
+    expect(fallback).toHaveBeenCalledExactlyOnceWith(primaryError, modelRef);
+    expect(failure).toHaveBeenCalledExactlyOnceWith(backupError, backupRef);
+    expect(await entries()).toEqual([]);
+  });
+
+  it('continues to validate connections when no native turn policy is registered', async () => {
+    const model = new MockLanguageModelV4();
+    const factory = vi
+      .spyOn(NativeFileInputs.prototype, 'model')
+      .mockResolvedValue(model);
+    const id = await createConversation();
+    const error = new ModelError('network', 'The connection is unavailable.');
+    factory.mockRejectedValue(error);
+    const configured = await h.request(
+      'PATCH',
+      `/agents/conversations/${id}/config`,
+      {
+        user: 'alice',
+        body: { config: {}, selectedModel: { ...modelRef, model: 'other' } },
+      },
+    );
+    expect(configured.status).toBe(500);
+    const created = await h.request('POST', '/agents/conversations', {
+      user: 'alice',
+      body: { selectedModel: modelRef },
+    });
+    expect(created.status).toBe(500);
+    const saved = await h.request('GET', `/agents/conversations/${id}/config`, {
+      user: 'alice',
+    });
+    expect(saved.body.data.selectedModel).toEqual(modelRef);
+  });
+
   it('runs the host policy before a native call while keeping original history', async () => {
     const model = new MockLanguageModelV4({ doStream: [streamed(answer(1))] });
     const modelFactory = vi

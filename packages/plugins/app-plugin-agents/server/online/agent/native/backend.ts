@@ -218,8 +218,7 @@ export class NativeOnlineAgentBackend implements OnlineAgentBackend {
         : (initial.defaultModel ?? (await this.deps.defaultModel())));
     if (!model) throw invalid('No enabled chat model is configured.');
     this.validateModel(config.model, model);
-    await validateWebSearch(config, model, this.deps.webSearch);
-    await this.deps.model(model, '');
+    await this.validateConfiguredModel(config, model, '');
     this.available();
     return this.deps.sessions.create(context.user.id, kind, config, model, {
       source: options.source,
@@ -355,13 +354,12 @@ export class NativeOnlineAgentBackend implements OnlineAgentBackend {
       const changed =
         model.modelService !== session.model.modelService ||
         model.model !== session.model.model;
-      await validateWebSearch(
+      await this.validateConfiguredModel(
         config,
         model,
-        this.deps.webSearch,
+        id,
         changed && options.webSearch === undefined,
       );
-      await this.deps.model(model, id);
       this.available();
       await this.deps.sessions.configure(context.user.id, id, config, model);
       return { ...config, selectedModel: model };
@@ -392,6 +390,29 @@ export class NativeOnlineAgentBackend implements OnlineAgentBackend {
       !allowed.includes(`${model.modelService}/${model.model}`)
     )
       throw invalid('The selected model is outside this configuration.');
+  }
+  private async validateConfiguredModel(
+    config: OnlineAgentConfig,
+    model: ModelRef,
+    sessionId: string,
+    clearInheritedSearch = false,
+  ): Promise<void> {
+    const hostPolicy = this.configurator.hasNativeTurnPolicy();
+    if (hostPolicy) {
+      try {
+        await this.deps.model(model, sessionId);
+      } catch {
+        // Retry the connection under the authorized turn policy, which can select and classify a backup.
+        return;
+      }
+    }
+    await validateWebSearch(
+      config,
+      model,
+      this.deps.webSearch,
+      clearInheritedSearch,
+    );
+    if (!hostPolicy) await this.deps.model(model, sessionId);
   }
   private notifyObservers(
     execution: OnlineAgentExecution,
