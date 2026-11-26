@@ -404,7 +404,7 @@ it('attributes native audit events without retaining credentials or duplicating 
     action: 'auditOrders:createOne',
     operationName: '创建记录',
     operationNameI18n: {
-      ns: '@nocobase/app-server',
+      ns: '@nocobase/audit',
       key: 'audit.operations.createOne',
     },
     actor: repositoryActor,
