@@ -27,7 +27,7 @@ await notification.send({
 });
 ```
 
-Email requires a native email address or a non-empty readonly array of addresses, a subject, and text or HTML. Each address receives a separate email and retries independently. In-app messages require application user IDs in the same string/array shape, title, and body; final delivery checks that each user still exists. Webhook messages forbid `to`. The service does not resolve application users into email addresses or phone numbers and never defaults to the current user.
+Email requires a native email address or a non-empty readonly array of addresses, a subject, and text or HTML. Each address receives a separate email and retries independently. In-app messages require application user IDs in the same string/array shape, title, and body; final delivery checks that each user still exists. Webhook messages forbid `to`. An SMS message takes E.164 numbers and a configured `template`; its channel settings are in the `nocobase-app-plugin-notification-providers` Skill. The service does not resolve application users into email addresses or phone numbers and never defaults to the current user.
 
 IM targets accept complete HTTP(S) URLs only. In-app targets accept a route without a deployment prefix or a complete HTTP(S) URL. React Router supplies the basename once for routes; URL targets use native links. Email links belong in text/HTML. Legacy `actionUrl` is ignored.
 

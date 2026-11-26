@@ -219,7 +219,7 @@ await notification.send({
 
 Built-in class registration preserves historical `channelType` (`email` for SMTP/Resend, `im` for the two webhooks) and `providerType`, so pending deliveries, retries, status results retain their identities. These storage and response fields are compatibility details, not additional registration concepts. Custom legacy extensions can keep their existing factories to retain their historical message-family identity; migrating a custom type with a different historical message family requires an explicit history migration or draining that work first.
 
-`send()` and `sendTransient()` inputs, outputs, message maps, recipient rules, queue behavior and retry classification are unchanged. There is no new `submit()` API. SMTP and Resend still share email helpers; Feishu and DingTalk share IM helpers. No new SMS transport is bundled.
+`send()` and `sendTransient()` inputs, outputs, message maps, recipient rules, queue behavior and retry classification are unchanged. There is no new `submit()` API. SMTP and Resend still share email helpers; Feishu and DingTalk share IM helpers. SMS is a built-in `sms` channel type of `@nocobase/app-plugin-notification-providers`: register another SMS service through its service registry, as that package's Skill describes, instead of writing a new channel class.
 
 ## Result classification
 

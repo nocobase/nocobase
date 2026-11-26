@@ -5,9 +5,9 @@ description: Configure and integrate NocoBase one-time verification codes, verif
 
 # Integrate verification in a NocoBase application
 
-Register the default export from `@nocobase/app-plugin-verification/server` after Authentication, Notification, and Notification Providers, including their setup dependencies. Install or apply database migrations before serving traffic. The plugin owns `userPhones`; account identity, sessions, and passwords belong to Authentication and Users. The plugin contributes no pages or login or password reset routes.
+Register the default export from `@nocobase/app-plugin-verification/server` after Authentication, Notification, and Notification Providers, including their setup dependencies. Install or apply database migrations before serving traffic. The plugin owns `userPhones`; account identity, sessions, and passwords belong to Authentication and Users. The plugin contributes no pages, no sign-in by SMS and no password reset routes: the application builds those flows on `verify()`. Installing it does not make a given application capable of any of them, so inspect the registered plugins and the `verification` configuration first. Verification codes and step-up credentials must never travel through ordinary `notification.send()`, which persists messages; this plugin delivers them through `sendTransient()`.
 
-Import the API and hooks from `@nocobase/app-plugin-verification/client`. Use them inside the host application's Authentication and query providers. The [client integration guide](references/client.md) shows binding, changing a number, and confirming a sensitive operation. The business server must check permissions and consume its own step-up credential.
+Import the API and hooks from `@nocobase/app-plugin-verification/client`. Use them inside the host application's Authentication and query providers. The [client integration guide](references/client.md) shows binding, changing a number, and confirming a sensitive operation. The hooks improve the user experience only: the business server must check permissions and consume its own step-up credential with `consumeStepUp`, whatever the caller. Notification channel and SMS provider settings stay in the `nocobase-app-plugin-notification-providers` Skill; ordinary notifications stay in `nocobase-app-plugin-notification`.
 
 ## Configure SMS
 
