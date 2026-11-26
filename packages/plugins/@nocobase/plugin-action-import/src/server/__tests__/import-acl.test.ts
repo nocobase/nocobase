@@ -7,7 +7,9 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import type { Context } from '@nocobase/actions';
 import { MockServer, createMockServer } from '@nocobase/test';
+import { importXlsx } from '../actions/import-xlsx';
 import { TemplateCreator } from '../services/template-creator';
 import * as XLSX from 'xlsx';
 import { XlsxImporter } from '../services/xlsx-importer';
@@ -111,6 +113,35 @@ describe('xlsx importer', () => {
     expect(test.f5).toBe('f5');
   });
 
+  it('keeps collection defaults when importing through the action', async () => {
+    const posts = app.db.collection({
+      name: 'posts',
+      fields: [
+        { name: 'title', type: 'string' },
+        { name: 'category', type: 'string', defaultValue: 'general' },
+      ],
+    });
+    await app.db.sync();
+
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, XLSX.utils.aoa_to_sheet([['Title'], ['First post']]), 'Posts');
+    const ctx = {
+      action: { params: { rowDefaultValues: { category: 'other' } } },
+      permission: { can: { params: { fields: ['title'] } } },
+      request: { body: { columns: [{ dataIndex: ['title'], defaultTitle: 'Title' }] } },
+      file: { buffer: XLSX.write(workbook, { type: 'buffer', bookType: 'xlsx' }) },
+      dataSource: app.mainDataSource,
+      getCurrentRepository: () => posts.repository,
+    } as unknown as Context;
+
+    await importXlsx(ctx, async () => {});
+
+    const record = await posts.repository.findOne();
+    expect(record.get('id')).toBeTruthy();
+    expect(record.get('title')).toBe('First post');
+    expect(record.get('category')).toBe('general');
+  });
+
   it('should not treat acl fixed params as field restrictions', async () => {
     const Test = app.db.collection({
       name: 'test_with_filter_only_acl',
@@ -123,6 +154,7 @@ describe('xlsx importer', () => {
           type: 'string',
           name: 'content',
         },
+        { type: 'string', name: 'source' },
       ],
     });
 
@@ -155,6 +187,7 @@ describe('xlsx importer', () => {
       collection: Test,
       columns,
       workbook: template,
+      rowDefaultValues: { source: 'server', title: 'default title' },
     });
 
     await importer.run({
@@ -174,5 +207,6 @@ describe('xlsx importer', () => {
     const record = await Test.repository.findOne();
     expect(record.title).toBe('hello');
     expect(record.content).toBe('world');
+    expect(record.source).toBe('server');
   });
 });
