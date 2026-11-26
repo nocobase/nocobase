@@ -155,6 +155,7 @@ const jaJP: LocaleResource<typeof enUS> = {
       'feishu-webhook': 'Feishu group',
       'dingtalk-webhook': 'DingTalk group',
       'web-push': 'Browser push',
+      sms: 'SMS',
       retry: 'Retry policy',
     },
     title: 'チャネル',
@@ -214,6 +215,7 @@ const jaJP: LocaleResource<typeof enUS> = {
     'in-app': 'アプリ内メッセージ',
     email: 'メール',
     'web-push': 'ブラウザープッシュ',
+    sms: 'SMS',
     im: 'グループチャット',
   },
   deliveries: {

@@ -4,6 +4,8 @@ import {
 } from '@nocobase/app-server/mailers/config';
 import { validateEmailChannelReference } from './reference-config.js';
 import { isMailChannelConfig } from '@nocobase/mailer/config';
+import { validateSmsChannelConfig } from '../sms/config.js';
+import type { SmsChannelConfig } from '../sms/types.js';
 import {
   defineAppConfig,
   resolveChannelType,
@@ -49,6 +51,10 @@ export const validateMailChannels: ConfigValidator<MailChannelsConfig> = (
         throw new Error('Inline channels cannot include a mailer reference.');
       if (Reflect.get(channel, 'enabled') === false) continue;
       const provider: unknown = Reflect.get(normalized, 'provider');
+      if (provider === 'sms') {
+        validateSmsChannelConfig(normalized as unknown as SmsChannelConfig);
+        continue;
+      }
       if (
         (provider === 'smtp' || provider === 'resend') &&
         !isMailChannelConfig(normalized)
@@ -91,6 +97,26 @@ export function defineMailChannelsConfig<T extends MailChannelsConfig>(
       }),
       RESEND_API_KEY: envString('channels.system-email.apiKey', {
         secret: true,
+        required: false,
+      }),
+      // Private SMS credentials and the signature of the conventional `system-sms` channel.
+      SMS_ALIYUN_ACCESS_KEY_ID: envString(
+        'channels.system-sms.aliyun.accessKeyId',
+        { secret: true, required: false },
+      ),
+      SMS_ALIYUN_ACCESS_KEY_SECRET: envString(
+        'channels.system-sms.aliyun.accessKeySecret',
+        { secret: true, required: false },
+      ),
+      SMS_TENCENT_SECRET_ID: envString('channels.system-sms.tencent.secretId', {
+        secret: true,
+        required: false,
+      }),
+      SMS_TENCENT_SECRET_KEY: envString(
+        'channels.system-sms.tencent.secretKey',
+        { secret: true, required: false },
+      ),
+      SMS_SIGN_NAME: envString('channels.system-sms.signName', {
         required: false,
       }),
       ...definition.env,

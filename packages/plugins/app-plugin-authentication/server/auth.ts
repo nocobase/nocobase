@@ -6,6 +6,7 @@ import { createPasswordResetSender } from './reset-sender.js';
 import type { AuthEmailConfig } from './email-config.js';
 import {
   PasswordResetPolicy,
+  resolveClientAddress,
   type PasswordResetConfig,
   type PasswordResetDiagnosis,
   type PasswordResetServices,
@@ -508,6 +509,16 @@ export class Auth {
         },
       },
     });
+  }
+
+  /** Resolve a client address using the same peer-anchored proxy policy as password reset. */
+  clientAddress(
+    request: Request,
+    peer: string | undefined,
+  ): string | undefined {
+    return (
+      resolveClientAddress(request.headers, peer, this.options) ?? undefined
+    );
   }
 
   handler(

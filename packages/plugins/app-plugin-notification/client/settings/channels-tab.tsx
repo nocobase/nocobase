@@ -221,6 +221,7 @@ const guideTypes = [
   'feishu-webhook',
   'dingtalk-webhook',
   'web-push',
+  'sms',
   'retry',
 ] as const;
 const guideFields = {
@@ -229,6 +230,7 @@ const guideFields = {
   'dingtalk-webhook':
     'notification.channels · type: dingtalk-webhook · webhookUrl',
   'web-push': 'notification.channels · type: web-push · WEB_PUSH_PRIVATE_KEY',
+  sms: 'notification.channels · type: sms · service · signName · templates · SMS_ALIYUN_ACCESS_KEY_SECRET',
   retry: 'notification.retry.maxAttempts · notification.retry.intervalMs',
 } as const;
 function ChannelGuide({

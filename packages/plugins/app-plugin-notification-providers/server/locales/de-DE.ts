@@ -8,6 +8,7 @@ const deDE: LocaleResource<typeof enUS> = {
     resend: 'Erneut senden',
     feishuWebhook: 'Feishu Webhook',
     dingtalkWebhook: 'DingTalk Webhook',
+    sms: 'SMS',
   },
 };
 

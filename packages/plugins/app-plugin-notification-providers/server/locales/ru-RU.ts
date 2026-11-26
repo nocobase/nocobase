@@ -8,6 +8,7 @@ const ruRU: LocaleResource<typeof enUS> = {
     resend: 'Resend',
     feishuWebhook: 'Вебхук Feishu',
     dingtalkWebhook: 'Вебхук DingTalk',
+    sms: 'SMS',
   },
 };
 

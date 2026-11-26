@@ -8,6 +8,7 @@ const jaJP: LocaleResource<typeof enUS> = {
     resend: '再送信',
     feishuWebhook: 'Feishu ウェブフック',
     dingtalkWebhook: 'DingTalk ウェブフック',
+    sms: 'SMS',
   },
 };
 
