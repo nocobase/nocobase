@@ -61,11 +61,13 @@ NocoBase packages may publish Skills under `.agents/skills/`. Current applicatio
 
 | The requirement sounds like                                    | Read the Skill for                                      |
 | -------------------------------------------------------------- | ------------------------------------------------------- |
-| Email, IM, or in-app messages                                  | `@nocobase/app-plugin-notification`                     |
+| Email, SMS, IM, or in-app messages                             | `@nocobase/app-plugin-notification`                     |
+| Setting up built-in channels: email, SMS, Feishu, DingTalk     | `@nocobase/app-plugin-notification-providers`           |
+| Verification codes, phone binding, step-up confirmation        | `@nocobase/app-plugin-verification`                     |
 | Knowledge bases, document spaces, search and document review   | `@nocobase/app-plugin-knowledge`                        |
 | Approval processes, joint decisions and approval tasks         | `@nocobase/app-plugin-approval` (commercial Pro plugin) |
 | Roles, permissions, per-user or per-record access              | `@nocobase/app-plugin-authorization`                    |
-| Sign-in, registration, sessions                                | `@nocobase/app-plugin-authentication`                   |
+| Sign-in, registration, account policy, sessions                | `@nocobase/app-plugin-authentication`                   |
 | File upload and metadata through Repository                    | `@nocobase/app-plugin-file`                             |
 | File storage, disk configuration, or custom drivers            | `@nocobase/drive`                                       |
 | Translated text and language switching                         | `@nocobase/app-plugin-i18n`                             |
@@ -86,6 +88,10 @@ When the stages of a business record are fixed by developers rather than drawn b
 When requirements call for administrators to suspend, resume, reset, or restart an existing record's process, follow [administrator controls for lifecycle instances](references/lifecycle-management.md). Define which commands and reentry targets the business supports, wire record-scoped authorization, and use the runtime's management commands and audit history.
 
 Before changing lifecycle behavior or removing a version, read [versions of a process](references/lifecycle-versions.md): behavior freezes against the target main branch, unmerged new versions can be edited continuously, and deleting a frozen version requires explicit user retirement confirmation.
+
+Messages, channels and codes are three layers: `notification` sends, `notification-providers` supplies and configures the built-in channels (email transports, Alibaba Cloud or Tencent Cloud SMS with signature, templates and credentials, Feishu, DingTalk), and `verification` owns one-time codes, verified phones, step-up credentials and their browser hooks. Sign-in, account policy and sessions stay with `authentication` and the application's business code; installing `verification` adds no sign-in by SMS, no password-reset flow and no pages. Check `package.json`, `server/plugins.ts`, `client/plugins.ts` and the effective `notification` configuration before relying on any of them, and register a missing plugin as [plugins](references/plugins.md) describes.
+
+Never send a verification code, one-time password or other credential with an ordinary `notification.send()`, because it persists the message in the delivery history, queue and logs. Use the `verification` service, which delivers the code without storing it; SMS transport settings stay in the `notification-providers` Skill. A verification client hook only improves the user experience: the business server still checks the caller's permission on the target and consumes the step-up credential with `consumeStepUp` before the write. For browser integration, read `.agents/skills/nocobase-app-plugin-verification/references/client.md` once the Skill is synchronized instead of rewriting its hooks.
 
 For notification configuration or sending, follow the notification plugin Skill: `notification.channels` maps each name to one flat channel configuration with `type` (`provider` remains a compatibility alias), and `send({ idempotencyKey, messages })` supplies a complete message per Channel. Use native addresses; email and in-app arrays create independent deliveries, while Webhooks forbid `to`.
 
