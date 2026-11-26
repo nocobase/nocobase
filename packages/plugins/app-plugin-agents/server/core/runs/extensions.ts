@@ -159,6 +159,8 @@ export interface RunMountProvider {
   /** `MOUNT_NAME_PATTERN`; unique among the providers. */
   readonly name: string;
   readonly prepare?: ExtensionPrepare;
+  /** Collection definitions for delivering this prepared mount. A pure hint, used before the PostgreSQL claim lock. */
+  claimCollections?(prepared: unknown): readonly string[];
   /**
    * In the claim's transaction, through its connection: database reads, and writes of the provider's own records.
    * Null mounts nothing.

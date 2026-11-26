@@ -12,7 +12,21 @@ it.runIf(testDatabaseDialect() === 'postgres')(
   async () => {
     h = await createHarness();
     const agentId = await h.createAgent();
-    const registration = await h.registerRunner();
+    const registration = await h.registerRunner({
+      features: ['input', 'mounts'],
+    });
+    h.services.subjects.get('sample')!.context.claimCollections = () => [
+      'agRunUsage',
+    ];
+    const preparedMount = {};
+    const mountCollections = vi.fn(() => ['agRunUsage', 'agRunRepos']);
+    h.services.mounts.register({
+      name: 'example',
+      prepare: async () => preparedMount,
+      claimCollections: mountCollections,
+      forRun: async () => null,
+      bundle: async () => null,
+    });
     const runId = await h.enqueue(agentId);
     const runner = await h.services.runners.authenticate(registration.key, {
       touch: false,
@@ -79,6 +93,14 @@ it.runIf(testDatabaseDialect() === 'postgres')(
     const lockIndex = queries.indexOf(lock!);
     const beforeLock = queries.slice(0, lockIndex);
     expect(beforeLock.filter(isBriefDefinition)).toHaveLength(1);
+    for (const table of ['ag_run_usage', 'ag_run_repos']) {
+      expect(
+        beforeLock.filter(
+          (query) => isCatalog(query) && query.bindings?.includes(table),
+        ),
+      ).toHaveLength(1);
+    }
+    expect(mountCollections).toHaveBeenLastCalledWith(preparedMount);
     expect(
       beforeLock.every(
         (query) => /^begin\b/iu.test(query.sql) || isCatalog(query),

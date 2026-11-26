@@ -150,6 +150,14 @@ export interface ContextProvider {
   readonly runnerIndependent?: boolean;
   /** The assembly is the same with or without `ClaimContext.freshSession`. */
   readonly recoveryIndependent?: boolean;
+  /**
+   * Collection definitions this claim is expected to use. PostgreSQL resolves them on its transaction connection
+   * before locking the agent. This hint performs no I/O and leaves admission and selection to the locked claim.
+   */
+  claimCollections?(
+    run: Run,
+    checkingPreferredModel: boolean,
+  ): readonly string[];
   /** Shared compatibility facts for prospective roster work on this subject. */
   rosterCompatibility?(
     conn: DatabaseConnection,

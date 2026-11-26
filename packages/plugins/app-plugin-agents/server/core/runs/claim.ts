@@ -1977,11 +1977,13 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
         return { kind: 'skipped' };
       }
     // Before the transaction: on SQLite it holds the only connection, so the providers read what else they need now.
+    const runView = toRun(candidate);
+    const mounts = runner.features.includes('mounts') ? deps.mounts : undefined;
     const prepared = new Map(
       await prepareExtensions(
-        toRun(candidate),
+        runView,
         deps.sections,
-        runner.features.includes('mounts') ? deps.mounts : undefined,
+        mounts,
         (error) => deps.onClaimFailure?.(candidate.id, error),
         deps.repoAccess,
         {
@@ -1995,7 +1997,7 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
     const subjectContext = deps.subjects.get(candidate.subjectKind)?.context;
     if (subjectContext?.prepare) {
       try {
-        prepared.set('subject', await subjectContext.prepare(toRun(candidate)));
+        prepared.set('subject', await subjectContext.prepare(runView));
       } catch (error) {
         deps.onClaimFailure?.(candidate.id, error);
       }
@@ -2012,12 +2014,25 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
         if (conn.dialect === 'postgres') {
           // Warm the registry on this transaction's connection. Its first business
           // statement still locks the agent, and every admission read happens after it.
-          const collections =
+          const checkingPreferredModel = Boolean(
             paced !== agent.modelEntries[0] &&
             deps.runners &&
-            deps.selectionPolicies
-              ? [...claimCollections, 'agRunners']
-              : claimCollections;
+            deps.selectionPolicies,
+          );
+          const collections = new Set<string>([
+            ...claimCollections,
+            ...(checkingPreferredModel ? ['agRunners'] : []),
+            ...(subjectContext?.claimCollections?.(
+              runView,
+              checkingPreferredModel,
+            ) ?? []),
+            ...(mounts?.list() ?? []).flatMap(
+              (provider) =>
+                provider.claimCollections?.(
+                  prepared.get(`mount:${provider.name}`),
+                ) ?? [],
+            ),
+          ]);
           for (const collection of collections) {
             if (pass.signal?.aborted) throw new ClaimAborted();
             await conn.collections.get(collection);
