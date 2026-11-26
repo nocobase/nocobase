@@ -3,11 +3,11 @@ import { lstatSync, readdirSync, statSync } from 'node:fs';
 import path from 'node:path';
 import {
   appendJournal,
-  appendPrivateJournalLine,
   assertJournalDirectory,
   pruneJournals,
   sanitizeLog,
   serializeJournalEntry,
+  tryAppendPrivateJournalLine,
   validateJournalPolicy,
   type JournalEntry,
   type JournalPolicy,
@@ -170,6 +170,7 @@ function selectLogSegment(
   maxBytes: number,
   bytes: number,
   active?: LogSegment,
+  tryAppend?: (filename: string) => boolean,
 ): LogSegment {
   const date = new Date().toISOString().slice(0, 10);
   const prefix = `${name}.${date}.`;
@@ -207,8 +208,9 @@ function selectLogSegment(
       throw new Error('Log destination must be a regular file');
     // A record larger than the limit gets its own segment.
     if (
-      !stats?.size ||
-      (stats.size < maxBytes && stats.size + bytes <= maxBytes)
+      (!stats?.size ||
+        (stats.size < maxBytes && stats.size + bytes <= maxBytes)) &&
+      (tryAppend?.(filename) ?? true)
     )
       return { date, part, filename };
     if (part === Number.MAX_SAFE_INTEGER)
@@ -227,6 +229,8 @@ export interface JsonLinesLogOptions {
   name: string;
   maxFileSizeMB: number;
   retentionDays: number;
+  /** Called when an incomplete trailing line causes a segment to be skipped. */
+  onIncompleteLine?: () => void;
   onCleanupError?: (error: unknown) => void;
 }
 
@@ -314,8 +318,23 @@ export function createJsonLinesLogOutput(
         state.maxFileSizeMB * bytesPerMB,
         Buffer.byteLength(line),
         state.active,
+        (filename) => {
+          if (tryAppendPrivateJournalLine(filename, line)) return true;
+          try {
+            if (options.onIncompleteLine) options.onIncompleteLine();
+            else
+              reportLoggingFailure(
+                'Log destination ends with an incomplete line',
+              );
+          } catch (error) {
+            reportLoggingFailure(
+              'Could not report an incomplete log line',
+              error,
+            );
+          }
+          return false;
+        },
       );
-      appendPrivateJournalLine(segment.filename, line);
       const rotated = state.active?.filename !== segment.filename;
       state.active = segment;
       const now = Date.now();

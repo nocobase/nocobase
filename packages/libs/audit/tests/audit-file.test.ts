@@ -5,6 +5,7 @@ import {
   readFile,
   readdir,
   mkdir,
+  link,
   symlink,
   utimes,
   rename,
@@ -157,15 +158,57 @@ it('appends complete private JSON lines to multiple named destinations under con
   }
 });
 
+it('resumes audit writes in the next segment after a same-day restart with an incomplete line', async () => {
+  const root = await mkdtemp(path.join(tmpdir(), 'audit-file-'));
+  const file = path.join(root, 'audit.jsonl');
+  const config: AuditConfig = {
+    transports: { audit: { driver: 'file', options: { path: file } } },
+  };
+  const restartTime = new Date('2026-11-26T12:00:00Z');
+  vi.useFakeTimers({ toFake: ['Date'] });
+  vi.setSystemTime(restartTime);
+  const damaged = path.join(root, 'audit.2026-11-26.000003.jsonl');
+  const recovered = path.join(root, 'audit.2026-11-26.000004.jsonl');
+  const damagedContent = '{"requestId":"earlier"}\n{"requestId":';
+  const report = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+  const app = await start(root, config);
+  try {
+    await writeFile(damaged, damagedContent, { mode: 0o600 });
+    await utimes(damaged, restartTime, restartTime);
+    expect((await send(app, 'after-restart')).status).toBe(200);
+    expect((await send(app, 'next-event')).status).toBe(200);
+    await app.shutdown();
+
+    expect(await segmentPaths(file)).toEqual([damaged, recovered]);
+    expect(await readFile(damaged, 'utf8')).toBe(damagedContent);
+    const records = (await readFile(recovered, 'utf8')).split('\n');
+    expect(records.pop()).toBe('');
+    expect(records.map((record) => JSON.parse(record))).toMatchObject([
+      { requestId: 'after-restart' },
+      { requestId: 'next-event' },
+    ]);
+    expect(report).toHaveBeenCalledExactlyOnceWith(
+      'Audit file ends with an incomplete line. Destination: audit.',
+    );
+  } finally {
+    await app.shutdown();
+    report.mockRestore();
+    vi.useRealTimers();
+    await rm(root, { recursive: true, force: true });
+  }
+});
+
 it('isolates an unsafe file and continues writing to another destination', async () => {
   const root = await mkdtemp(path.join(tmpdir(), 'audit-file-'));
   const unsafe = path.join(root, 'unsafe.jsonl');
   const good = path.join(root, 'good.jsonl');
+  const linkedFile = path.join(root, 'linked.jsonl');
   const date = new Date().toISOString().slice(0, 10);
-  const partialSegment = path.join(root, `unsafe.${date}.000000.jsonl`);
-  await writeFile(partialSegment, 'incomplete private content', {
+  const linkedSegment = path.join(root, `unsafe.${date}.000000.jsonl`);
+  await writeFile(linkedFile, 'incomplete private content', {
     mode: 0o600,
   });
+  await link(linkedFile, linkedSegment);
   const report = vi.spyOn(console, 'error').mockImplementation(() => undefined);
   const app = await start(root, {
     enabled: true,
@@ -176,7 +219,8 @@ it('isolates an unsafe file and continues writing to another destination', async
   });
   try {
     expect((await send(app, 'recoverable')).status).toBe(200);
-    expect(await readFile(partialSegment, 'utf8')).toBe(
+    expect(await segmentPaths(unsafe)).toEqual([linkedSegment]);
+    expect(await readFile(linkedSegment, 'utf8')).toBe(
       'incomplete private content',
     );
     expect(await lines(good)).toMatchObject([{ requestId: 'recoverable' }]);

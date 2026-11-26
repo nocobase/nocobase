@@ -250,8 +250,11 @@ function isPrivateFile(stats: Stats): boolean {
   );
 }
 
-/** Append a caller-serialized record, restoring the original length on a partial write. */
-export function appendPrivateJournalLine(file: string, line: string): void {
+/** Skip an incomplete tail and roll back any partial write of the new record. */
+export function tryAppendPrivateJournalLine(
+  file: string,
+  line: string,
+): boolean {
   const fd = openSync(
     file,
     constants.O_CREAT |
@@ -267,11 +270,9 @@ export function appendPrivateJournalLine(file: string, line: string): void {
       throw new Error('Log destination must be a private regular file');
     if (info.size > 0) {
       const lastByte = Buffer.alloc(1);
-      if (
-        readSync(fd, lastByte, 0, 1, info.size - 1) !== 1 ||
-        lastByte[0] !== 10
-      )
-        throw new Error('Log destination ends with an incomplete line');
+      if (readSync(fd, lastByte, 0, 1, info.size - 1) !== 1)
+        throw new Error('Could not read the end of the log destination');
+      if (lastByte[0] !== 10) return false;
     }
     const buffer = Buffer.from(line);
     let written = 0;
@@ -285,6 +286,7 @@ export function appendPrivateJournalLine(file: string, line: string): void {
       if (written > 0) ftruncateSync(fd, info.size);
       throw error;
     }
+    return true;
   } finally {
     closeSync(fd);
   }

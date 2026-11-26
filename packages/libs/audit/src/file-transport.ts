@@ -1,5 +1,6 @@
 import {
   createJsonLinesLogOutput,
+  type JsonLinesLogOptions,
   type JsonLinesLogOutput,
 } from '@nocobase/logging';
 import { mkdir, realpath } from 'node:fs/promises';
@@ -21,7 +22,7 @@ function within(root: string, target: string): boolean {
 export function createFileAuditTransport(
   options: AuditFileOptions,
   paths: AuditTransportContext['paths'],
-  onCleanupError: () => void,
+  reports: Pick<JsonLinesLogOptions, 'onIncompleteLine' | 'onCleanupError'>,
 ): AuditTransport & { prepare(): Promise<JsonLinesLogOutput> } {
   const { path: value, maxFileSizeMB = 50, retentionDays = 180 } = options;
   const relative = !path.isAbsolute(value);
@@ -59,7 +60,7 @@ export function createFileAuditTransport(
       name: path.basename(destination, '.jsonl'),
       maxFileSizeMB,
       retentionDays,
-      onCleanupError,
+      ...reports,
     });
   };
   const prepare = (): Promise<JsonLinesLogOutput> =>

@@ -125,7 +125,12 @@ export class AuditCoordinator implements AuditService {
             const file = createFileAuditTransport(
               options as AuditFileOptions,
               paths,
-              () => this.report('Could not clean up audit files.', name),
+              {
+                onIncompleteLine: () =>
+                  this.report('Audit file ends with an incomplete line.', name),
+                onCleanupError: () =>
+                  this.report('Could not clean up audit files.', name),
+              },
             );
             files.push(file);
             transport = file;
