@@ -36,7 +36,6 @@ import {
   docsOf,
   filesOf as fileRecordsOf,
   findSpace,
-  findVersion,
   iso,
   isoOrNull,
   json,
@@ -150,7 +149,23 @@ interface StoredDoc extends SnapshotDoc {
   readonly verifiedAt: string | null;
 }
 
+export type ComposedSnapshot = Omit<KnowledgeSnapshot, 'docs' | 'changed'> & {
+  readonly docs: readonly StoredDoc[];
+};
+
 export interface KnowledgeSnapshots {
+  /** Read and render the snapshot before taking the caller's dispatch lock. */
+  compose(
+    conn: DatabaseConnection,
+    readable: ReadableSpaces,
+    request: Pick<TakeSnapshotRequest, 'layout' | 'limits'>,
+  ): Promise<ComposedSnapshot | null>;
+  /** Record the prepared snapshot in the caller's transaction. */
+  record(
+    conn: DatabaseConnection,
+    composed: ComposedSnapshot,
+    request: Pick<TakeSnapshotRequest, 'key' | 'seriesKey'>,
+  ): Promise<KnowledgeSnapshot>;
   /** In the caller's transaction: a snapshot of the readable spaces, recorded under `key`; null with nothing to give. */
   take(
     conn: DatabaseConnection,
@@ -458,14 +473,11 @@ async function contentsOf(
   conn: DatabaseConnection,
   docs: readonly StoredDoc[],
 ): Promise<Map<string, string>> {
-  const contents = new Map<string, string>();
-  for (const doc of docs)
-    if (doc.path && !(doc.file && doc.file.parse !== 'ready'))
-      contents.set(
-        doc.docId,
-        (await findVersion(conn, doc.docId, doc.version))?.content ?? '',
-      );
-  return contents;
+  const versions = await currentVersionsOf(
+    conn,
+    docs.map((doc) => ({ id: doc.docId, currentVersion: doc.version })),
+  );
+  return new Map([...versions].map(([id, version]) => [id, version.content]));
 }
 
 /** The file entries' files, and where their text stands, by document id. */
@@ -514,8 +526,8 @@ export function createSnapshots(deps: {
     );
   }
 
-  return {
-    async take(conn, readable, request) {
+  const snapshots: KnowledgeSnapshots = {
+    async compose(conn, readable, request) {
       const spaces: ExportedSpace[] = [];
       for (const space of readable.spaces) {
         const record = await findSpace(conn, space.ref);
@@ -549,24 +561,35 @@ export function createSnapshots(deps: {
       let written = 0;
       const sized: StoredDoc[] = [];
       const contents = new Map<string, string>();
-      for (const doc of arranged) {
-        if (doc.kind === 'folder') {
+      for (let at = 0; at < arranged.length; at += 100) {
+        const batch = arranged.slice(at, at + 100);
+        const bodies =
+          written >= limits.maxDocs
+            ? new Map<string, string>()
+            : await contentsOf(
+                conn,
+                batch.filter(
+                  (doc) =>
+                    doc.kind !== 'folder' &&
+                    (!doc.file || doc.file.parse === 'ready'),
+                ),
+              );
+        for (const doc of batch) {
+          if (doc.kind === 'folder') {
+            sized.push(doc);
+            continue;
+          }
+          const content = bodyOf(doc, bodies.get(doc.docId) ?? '');
+          const size = Buffer.byteLength(content);
+          if (written >= limits.maxDocs || bytes + size > limits.maxBytes) {
+            sized.push({ ...doc, path: '' });
+            continue;
+          }
+          written += 1;
+          bytes += size;
+          contents.set(doc.docId, content);
           sized.push(doc);
-          continue;
         }
-        const content = bodyOf(
-          doc,
-          (await findVersion(conn, doc.docId, doc.version))?.content ?? '',
-        );
-        const size = Buffer.byteLength(content);
-        if (written >= limits.maxDocs || bytes + size > limits.maxBytes) {
-          sized.push({ ...doc, path: '' });
-          continue;
-        }
-        written += 1;
-        bytes += size;
-        contents.set(doc.docId, content);
-        sized.push(doc);
       }
       const files = filesOf(sized, contents, request.layout);
       const hashes = new Map(
@@ -576,7 +599,16 @@ export function createSnapshots(deps: {
         ...doc,
         hash: doc.path ? (hashes.get(doc.path) ?? '') : '',
       }));
-      const hash = hashOf(files);
+      return {
+        hash: hashOf(files),
+        docs,
+        omitted: sized.filter((doc) => !doc.path && doc.kind !== 'folder')
+          .length,
+      };
+    },
+
+    async record(conn, composed, request) {
+      const { hash, docs, omitted } = composed;
       const seriesKey = sha256(request.seriesKey);
       const previous = (
         await snapshotsRepo(conn).findMany({
@@ -588,9 +620,6 @@ export function createSnapshots(deps: {
           limit: 1,
         })
       )[0];
-      const omitted = sized.filter(
-        (doc) => !doc.path && doc.kind !== 'folder',
-      ).length;
       await snapshotsRepo(conn).createOne({
         values: {
           id: deps.newId(),
@@ -603,15 +632,23 @@ export function createSnapshots(deps: {
         },
       });
       // Keep the last few per series: enough to tell a later one what changed.
-      const older = await snapshotsRepo(conn).findMany({
-        filter: { seriesKey },
-        sort: (sort) => [
-          sort.field('createdAt').desc(),
-          sort.field('id').desc(),
-        ],
-      });
-      for (const stale of older.slice(5))
-        await snapshotsRepo(conn).deleteMany({ filter: { id: stale.id } });
+      await conn.query
+        .deleteFrom('kbSnapshots')
+        .where('seriesKey', '=', seriesKey)
+        .where((eb) =>
+          eb(
+            'id',
+            'not in',
+            eb
+              .selectFrom('kbSnapshots')
+              .select('id')
+              .where('seriesKey', '=', seriesKey)
+              .orderBy('createdAt', 'desc')
+              .orderBy('id', 'desc')
+              .limit(5),
+          ),
+        )
+        .execute();
 
       return {
         hash,
@@ -623,11 +660,25 @@ export function createSnapshots(deps: {
       };
     },
 
+    async take(conn, readable, request) {
+      const composed = await snapshots.compose(conn, readable, request);
+      return composed ? snapshots.record(conn, composed, request) : null;
+    },
+
     async files(conn, key, layout) {
       const snapshot = await latest(conn, key);
       if (!snapshot) return null;
       const docs = json<StoredDoc[]>(snapshot.docs, []);
-      const files = filesOf(docs, await contentsOf(conn, docs), layout);
+      const files = filesOf(
+        docs,
+        await contentsOf(
+          conn,
+          docs.filter(
+            (doc) => doc.path && (!doc.file || doc.file.parse === 'ready'),
+          ),
+        ),
+        layout,
+      );
       return { hash: snapshot.hash, files };
     },
 
@@ -636,6 +687,7 @@ export function createSnapshots(deps: {
       return snapshot ? json<StoredDoc[]>(snapshot.docs, []) : [];
     },
   };
+  return snapshots;
 }
 
 /** The documents new or changed since the previous snapshot; null when none. */

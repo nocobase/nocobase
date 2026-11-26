@@ -167,12 +167,21 @@ const LenientHeartbeatSchema: z.ZodType<HeartbeatRequest> = z.preprocess(
   HeartbeatRequestSchema,
 );
 
+// The runner's HTTP timeout adds 10 seconds to its poll. Use only half of that margin in the server.
+const CLAIM_MARGIN_MS = 5_000;
+
+type ClaimRouteEnv = RunnerEnv & {
+  Variables: {
+    claimBudget: { readonly deadline: number; readonly signal: AbortSignal };
+  };
+};
+
 export function createRunnerRoutes(
   services: Agents,
   options: RunnerRoutesOptions = {},
 ): Hono<RunnerEnv> {
   const pollTimeoutMs = options.pollTimeoutMs ?? TIMINGS.pollTimeoutMs;
-  const router = domainRouter<RunnerEnv>();
+  const router = domainRouter<ClaimRouteEnv>();
 
   const authenticate = (context: Context<RunnerEnv>, touch: boolean) => {
     const protocolVersion = protocolOf(context);
@@ -410,6 +419,7 @@ export function createRunnerRoutes(
     scan: ClaimScan,
     signal: AbortSignal,
   ) => {
+    if (signal.aborted) return { runs: [], jobs: [] };
     const { free } = request;
     const jobs = await services.jobs.runner.claim(runner, free);
     const runs =
@@ -420,6 +430,17 @@ export function createRunnerRoutes(
   };
   router.post(
     '/claim',
+    async (context, next) => {
+      const budget = pollTimeoutMs + CLAIM_MARGIN_MS;
+      context.set('claimBudget', {
+        deadline: performance.now() + budget,
+        signal: AbortSignal.any([
+          context.req.raw.signal,
+          AbortSignal.timeout(budget),
+        ]),
+      });
+      await next();
+    },
     authenticated,
     describeRoute({
       tags,
@@ -446,26 +467,34 @@ export function createRunnerRoutes(
     }),
     apiValidator('query', ClaimQuery),
     async (context) => {
+      const { deadline, signal } = context.get('claimBudget');
       const runner = context.get('runner');
       const wait = context.req.valid('query').wait === true;
       if (runner.status === 'upgrade_required') {
         // No work until it is upgraded; hold the poll as for an empty queue, so it does not ask again at once.
-        if (wait) await pause(pollTimeoutMs, context.req.raw.signal);
+        if (wait) await pause(pollTimeoutMs, signal);
         return context.json({ data: { runs: [] } satisfies ClaimResponse });
       }
       const request = parseApiInput(ClaimRequestSchema, await jsonOf(context));
       const { free } = request;
       const scan = createClaimScan();
-      const { signal } = context.req.raw;
       let work = await claimWork(runner, request, scan, signal);
       if (
         work.runs.length === 0 &&
         work.jobs.length === 0 &&
         free > 0 &&
-        wait
+        wait &&
+        !signal.aborted
       ) {
-        const outcome = await services.signal.wait(pollTimeoutMs, signal);
-        if (outcome !== 'aborted')
+        const remaining = Math.max(
+          0,
+          Math.floor(deadline - performance.now() - CLAIM_MARGIN_MS),
+        );
+        const outcome =
+          remaining > 0
+            ? await services.signal.wait(remaining, signal)
+            : 'timeout';
+        if (outcome !== 'aborted' && !signal.aborted)
           // The runner may have been revoked while it waited.
           work = await claimWork(
             await authenticate(context, true),

@@ -140,7 +140,20 @@ export interface SubjectAssembly {
   readonly readOnly?: boolean;
 }
 
+export type SubjectCompatibility = Pick<
+  SubjectAssembly,
+  'subject' | 'dirs' | 'scopes' | 'workspaceKey'
+>;
+
 export interface ContextProvider {
+  /** The assembly used for selection diagnostics can be shared across runners. */
+  readonly runnerIndependent?: boolean;
+  /** Shared compatibility facts for prospective roster work on this subject. */
+  rosterCompatibility?(
+    conn: DatabaseConnection,
+    run: Run,
+  ): Promise<SubjectCompatibility>;
+
   /** Read external permissions before the claim transaction; assembly receives this result as its third argument. */
   prepare?(run: Run): Promise<unknown>;
   /**

@@ -1,0 +1,6 @@
+---
+"@nocobase/app-plugin-agents": patch
+"@nocobase/app-plugin-knowledge": patch
+---
+
+Reuse runner selection diagnostics and abort cancelled run claims before dispatch. Prepare and batch knowledge snapshot reads separately from recording the snapshot.
