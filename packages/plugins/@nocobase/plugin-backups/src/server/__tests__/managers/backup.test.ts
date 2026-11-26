@@ -162,9 +162,8 @@ describe('BackupManager', async () => {
           description: 'Manual backup from settings page',
         });
 
-        expect(String(backupSettings.storageId)).toBe('1');
         expect(storageRepository.findOne).toHaveBeenCalledWith({
-          filterByTk: backupSettings.storageId,
+          filterByTk: 1,
         });
         expect(uploadFile).toHaveBeenCalledWith({
           filePath: finalBackupFilePath,

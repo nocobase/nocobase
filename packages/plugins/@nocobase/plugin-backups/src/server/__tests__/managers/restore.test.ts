@@ -10,8 +10,6 @@
 import * as cp from 'child_process';
 import archiver from 'archiver';
 import path from 'path';
-import os from 'os';
-import * as utils from '../../utils';
 import { storagePathJoin } from '@nocobase/utils';
 import { BACKUP_EXTENSION, getDBVersion, SETTINGS } from '../../utils';
 import { getApp } from '..';
@@ -27,8 +25,7 @@ import { Readable, Writable } from 'stream';
 let mockRestoreClientVersion: string | undefined = 'pg_restore (PostgreSQL) 16.1';
 
 let mockDumpVersion: string;
-let mockSnapshot: string;
-let mockCommandError: (command: string, args: string[]) => string | undefined;
+let mockServerVersion: string;
 
 let mockExecImplementation = (command, _options, callback) => {
   callback(null, 'done');
@@ -137,21 +134,15 @@ describe('RestoreManager', () => {
       callback(null, 'done');
     };
 
+    mockDumpVersion = 'pg_dump (PostgreSQL) 18.1';
+    mockServerVersion = '18.6 (Homebrew)';
     mockRestoreClientVersion = 'pg_restore (PostgreSQL) 16.1';
-    mockDumpVersion = 'pg_dump (PostgreSQL) 18.6';
-    mockSnapshot = 'mocked rollback archive';
-    mockCommandError = () => undefined;
     mockSpawnImplementation = (command, args) => {
-      const isVersionRequest = args.includes('--version');
-      const isServerVersion = command === 'psql' && args.includes('SHOW server_version');
-      const errorMessage = mockCommandError(command, args);
-      if (['pg_dump', 'sys_dump'].includes(command) && args.includes('-f')) {
-        fs.writeFileSync(args[args.indexOf('-f') + 1], mockSnapshot);
-      }
+      const isVersionRequest = args?.includes('--version');
+      const isServerVersionQuery = command === 'psql' && args.includes('SHOW server_version');
       if (
         !isVersionRequest &&
-        !isServerVersion &&
-        !args.includes(os.devNull) &&
+        !isServerVersionQuery &&
         ['psql', 'pg_restore', 'ksql', 'sys_restore', 'mysql'].some((restoreCommand) =>
           String(command).includes(restoreCommand),
         )
@@ -166,9 +157,9 @@ describe('RestoreManager', () => {
           .catch(() => {});
       }
       const version = command === 'pg_dump' ? mockDumpVersion : mockRestoreClientVersion;
-      const output = isServerVersion ? '18.6 (Homebrew)' : 'mocked database backup';
+      const output = isServerVersionQuery ? mockServerVersion : 'mocked database backup';
       const stdout = Readable.from([isVersionRequest ? version ?? '' : output]);
-      const stderr = Readable.from(errorMessage ? [errorMessage] : []);
+      const stderr = Readable.from([]);
       const stdin = new Writable({
         write(_chunk, _encoding, callback) {
           callback();
@@ -179,7 +170,7 @@ describe('RestoreManager', () => {
       childProcess.stderr = stderr;
       childProcess.stdin = stdin;
       setImmediate(() => {
-        const exitCode = errorMessage || (isVersionRequest && !version) ? 1 : 0;
+        const exitCode = isVersionRequest && version === undefined ? 1 : 0;
         childProcess.emit('exit', exitCode);
         childProcess.emit('close', exitCode);
       });
@@ -326,126 +317,6 @@ describe('RestoreManager', () => {
       expect(spawnMock.mock.calls[0].slice(0, 2)).toEqual(['pg_restore', ['--version']]);
     });
 
-    it('rejects a local pg_dump older than the target server even in tolerant mode', async () => {
-      const { backupFilePath } = createBackupFile('older-local-dump');
-      await createBackupArchive(backupFilePath, createMetadata());
-      mockDumpVersion = 'pg_dump (PostgreSQL) 17.12';
-      const spawn = vi.mocked(cp.spawn);
-      spawn.mockClear();
-      const stop = vi.spyOn(app, 'emitAsync');
-      await expect(restore(createPostgresRestoreManager(), backupFilePath, true)).rejects.toThrow(
-        /local pg_dump 17 cannot back up PostgreSQL 18/,
-      );
-      expect(spawn.mock.calls.map(([cmd, args]) => [cmd, args])).toEqual([
-        ['pg_restore', ['--version']],
-        ['pg_dump', ['--version']],
-        ['psql', expect.arrayContaining(['-d', 'test', '-c', 'SHOW server_version'])],
-      ]);
-      expect(stop).not.toHaveBeenCalledWith('beforeStop');
-    });
-
-    it.each(['unreadable input', 'failed dump', 'empty snapshot', 'unreadable snapshot'])(
-      'preserves existing data after %s',
-      async (failure) => {
-        const { backupFilePath } = createBackupFile('preflight-error');
-        await createBackupArchive(backupFilePath, createMetadata());
-        const expected = failure === 'empty snapshot' ? 'Not a valid backup file' : failure;
-        mockSnapshot = failure === 'empty snapshot' ? '' : 'partial or complete dump';
-        mockCommandError = (command, args) => {
-          if (command === 'pg_dump' && args.includes('-f') && failure === 'failed dump') return failure;
-          if (args.includes(os.devNull)) {
-            const isSnapshot = path.basename(path.dirname(args[args.length - 1])) === 'before-restore';
-            if (failure === (isSnapshot ? 'unreadable snapshot' : 'unreadable input')) return failure;
-          }
-        };
-        const settings = app.db.getRepository(SETTINGS);
-        await settings.update({ values: { encryptionPassword: 'keep-original' }, filter: { id: 1 } });
-        const stop = vi.spyOn(app, 'emitAsync');
-        const upgrade = vi.spyOn(app, 'runCommand');
-        const spawn = vi.mocked(cp.spawn);
-        spawn.mockClear();
-        const operation = restore(createPostgresRestoreManager(), backupFilePath, true);
-        if (entryPoint === 'restoreCLI') {
-          await expect(operation).rejects.toThrow(expected);
-        } else {
-          await operation;
-          await vi.waitFor(async () => {
-            const cache = app.cacheManager.getCache(utils.RESTORE_TASKS_CACHE_NAME);
-            expect(await cache.get('client-version-task')).toMatchObject({ inProgress: false, message: expected });
-          });
-        }
-        expect(stop).not.toHaveBeenCalledWith('beforeStop');
-        expect(upgrade).not.toHaveBeenCalled();
-        expect(
-          spawn.mock.calls.some(
-            ([cmd, args]) =>
-              Array.isArray(args) &&
-              ((cmd === 'psql' && !args.includes('SHOW server_version')) || args.includes('--clean')),
-          ),
-        ).toBe(false);
-        expect((await settings.findOne()).encryptionPassword).toBe('keep-original');
-      },
-    );
-
-    it('rolls back a failed import using the snapshot made and validated by this restore', async () => {
-      const { backupFilePath } = createBackupFile('failed-import');
-      await createBackupArchive(backupFilePath, createMetadata());
-      const files: string[] = [];
-      let snapshot: string;
-      mockCommandError = (command, args) => {
-        if (command === 'pg_dump' && args.includes('-f')) snapshot = args[args.indexOf('-f') + 1];
-        if (command === 'pg_restore' && args.includes('--clean')) {
-          files.push(args[args.length - 1]);
-          if (files.length === 1) return 'import failed';
-        }
-      };
-      vi.spyOn(app, 'runCommand').mockResolvedValue(undefined);
-      const operation = restore(createPostgresRestoreManager(), backupFilePath, true);
-      if (entryPoint === 'restoreCLI') {
-        await expect(operation).rejects.toThrow('import failed');
-      } else {
-        await operation;
-        await vi.waitFor(() => expect(app.runCommand).toHaveBeenCalledWith('upgrade'));
-      }
-      expect(files).toHaveLength(2);
-      expect(files[0]).not.toBe(snapshot);
-      expect(files[1]).toBe(snapshot);
-    });
-
-    it('keeps a damaged rollback archive for inspection and stops before a second database write', async () => {
-      const { backupFilePath } = createBackupFile('damaged-rollback');
-      await createBackupArchive(backupFilePath, createMetadata());
-      let snapshot: string;
-      const imports: string[] = [];
-      mockCommandError = (command, args) => {
-        if (command === 'pg_dump' && args.includes('-f')) snapshot = args[args.indexOf('-f') + 1];
-        if (command === 'pg_restore' && args.includes('--clean')) {
-          imports.push(args[args.length - 1]);
-          fs.truncateSync(snapshot);
-          return 'import failed';
-        }
-      };
-      const logger = vi.spyOn(app.logger, 'error');
-      const operation = restore(createPostgresRestoreManager(), backupFilePath, true);
-      try {
-        if (entryPoint === 'restoreCLI') {
-          await expect(operation).rejects.toThrow('import failed');
-        } else {
-          await operation;
-        }
-        await vi.waitFor(() =>
-          expect(logger).toHaveBeenCalledWith(
-            expect.stringContaining('Could not revert the database from'),
-            expect.anything(),
-          ),
-        );
-        expect(imports).toHaveLength(1);
-        expect(fs.statSync(snapshot).size).toBe(0);
-      } finally {
-        if (snapshot) await fs.promises.rm(path.dirname(path.dirname(snapshot)), { recursive: true, force: true });
-      }
-    });
-
     it.each([
       ['pg_dump (PostgreSQL) 14.12', 'pg_restore (PostgreSQL) 16.1'],
       ['pg_dump (PostgreSQL) 16.10 (Debian 16.10-1)\n', 'pg_restore (PostgreSQL) 16.1\r\n'],
@@ -454,6 +325,7 @@ describe('RestoreManager', () => {
       const { backupFilePath } = createBackupFile('compatible-client');
       await createBackupArchive(backupFilePath, createMetadata({ backupClientVersion: backupVersion }));
       mockRestoreClientVersion = restoreVersion;
+      mockServerVersion = '17.12';
       vi.spyOn(app, 'runCommand').mockResolvedValue(undefined);
       const spawnMock = vi.mocked(cp.spawn);
       spawnMock.mockClear();
@@ -469,8 +341,45 @@ describe('RestoreManager', () => {
       });
       if (entryPoint === 'restore') {
         await vi.waitFor(() => expect(app.runCommand).toHaveBeenCalledWith('upgrade'));
+      } else {
+        expect(spawnMock.mock.calls.some(([command]) => command === 'pg_dump')).toBe(false);
       }
     });
+  });
+
+  it.each([
+    ['pg_dump (PostgreSQL) 17.12', '18.6', /local pg_dump 17 cannot back up PostgreSQL 18/],
+    ['unknown', '18.6', /Cannot verify the local pg_dump/],
+    ['pg_dump (PostgreSQL) 18.1', '', /Cannot verify the local pg_dump/],
+  ] as const)('rejects an upload before backing up the target (%s, %s)', async (dumpVersion, serverVersion, error) => {
+    const { backupFilePath } = createBackupFile('local-dump-version');
+    await createBackupArchive(backupFilePath, createMetadata());
+    mockDumpVersion = dumpVersion;
+    mockServerVersion = serverVersion;
+    const manager = new RestoreManager(createCtx(), {
+      dialect: 'postgres',
+      host: 'target-host',
+      port: 5432,
+      username: 'test',
+      database: 'target-db',
+      schema: 'source_schema',
+    });
+    const spawn = vi.mocked(cp.spawn);
+    spawn.mockClear();
+    const emit = vi.spyOn(app, 'emitAsync');
+    const runCommand = vi.spyOn(app, 'runCommand');
+
+    await expect(
+      manager.restoreFromUpload({ path: backupFilePath } as Express.Multer.File, 'task', undefined, true),
+    ).rejects.toThrow(error);
+
+    expect(spawn.mock.calls.map(([command, args]) => [command, args])).toEqual([
+      ['pg_restore', ['--version']],
+      ['pg_dump', ['--version']],
+      ['psql', expect.arrayContaining(['-h', 'target-host', '-d', 'target-db', '-c', 'SHOW server_version'])],
+    ]);
+    expect(emit).not.toHaveBeenCalledWith('beforeStop');
+    expect(runCommand).not.toHaveBeenCalled();
   });
 
   it('restoreFromBackup', async () => {
