@@ -1,9 +1,92 @@
+import type { EventEmitter } from 'node:events';
 import { afterEach, expect, it, vi } from 'vitest';
+import { testDatabaseDialect } from '@nocobase/app-testing/server';
 import { runsRepo, sessionsRepo } from '../server/core/runs/run.store.js';
 import { createHarness, type Harness } from './harness.js';
 
 let h: Harness;
 afterEach(async () => h?.close());
+
+it.runIf(testDatabaseDialect() === 'postgres')(
+  'reads claim collection definitions before locking the agent and stops before locking if aborted',
+  async () => {
+    h = await createHarness();
+    const agentId = await h.createAgent();
+    const registration = await h.registerRunner();
+    const runId = await h.enqueue(agentId);
+    const runner = await h.services.runners.authenticate(registration.key, {
+      touch: false,
+    });
+    const conn = h.database.connection();
+    type Query = {
+      sql: string;
+      bindings?: readonly unknown[];
+      __knexTxId?: string;
+    };
+    type QueryEvents = EventEmitter<{
+      query: [Query];
+      'query-response': [unknown, Query];
+    }>;
+    const knex = await conn.client<QueryEvents>();
+    const collected: Query[] = [];
+    const record = (query: Query) => collected.push(query);
+    const isAgentLock = ({ sql }: Query) =>
+      /^update.*ag_agents.*last_claim_at/isu.test(sql);
+    const isCatalog = ({ sql }: Query) =>
+      /pg_catalog|information_schema|__nocobase_/u.test(sql);
+    const isBriefDefinition = (query: Query) =>
+      isCatalog(query) && query.bindings?.includes('ag_run_briefs');
+    const controller = new AbortController();
+    const abortDuringPreparation = (_response: unknown, query: Query) => {
+      if (query.__knexTxId && isBriefDefinition(query)) controller.abort();
+    };
+
+    knex.on('query', record);
+    knex.on('query-response', abortDuringPreparation);
+    try {
+      expect(
+        await h.services.claims.claim(
+          runner,
+          1,
+          undefined,
+          undefined,
+          controller.signal,
+        ),
+      ).toEqual([]);
+      expect(controller.signal.aborted).toBe(true);
+      expect(collected.some(isAgentLock)).toBe(false);
+    } finally {
+      knex.off('query-response', abortDuringPreparation);
+      knex.off('query', record);
+    }
+    expect(await h.services.runs.get(runId)).toMatchObject({
+      status: 'queued',
+      runnerId: null,
+    });
+
+    collected.length = 0;
+    knex.on('query', record);
+    try {
+      expect((await h.services.claims.claim(runner, 1))[0]?.run.id).toBe(runId);
+    } finally {
+      knex.off('query', record);
+    }
+    const lock = collected.find(isAgentLock);
+    expect(lock?.__knexTxId).toBeDefined();
+    const queries = collected.filter(
+      (query) => query.__knexTxId === lock!.__knexTxId,
+    );
+    const lockIndex = queries.indexOf(lock!);
+    const beforeLock = queries.slice(0, lockIndex);
+    expect(beforeLock.filter(isBriefDefinition)).toHaveLength(1);
+    expect(
+      beforeLock.every(
+        (query) => /^begin\b/iu.test(query.sql) || isCatalog(query),
+      ),
+    ).toBe(true);
+    expect(queries.slice(lockIndex + 1).filter(isCatalog)).toHaveLength(0);
+  },
+);
 
 it.each([false, true])(
   'reuses diagnostic assembly across models (runner independent: %s)',

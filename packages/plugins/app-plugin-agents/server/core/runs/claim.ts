@@ -656,6 +656,23 @@ async function settleClaimInputs(
   if (delivered.length !== given.length) throw new NotForThisRunner();
 }
 
+const claimCollections = [
+  'agAgents',
+  'agRuns',
+  'agJobs',
+  'agRunInputs',
+  'agSkillAttachments',
+  'agSkills',
+  'agSkillVersions',
+  'agSecrets',
+  'agRunnerVariables',
+  'agWorkspaceResets',
+  'agSessions',
+  'agRunTokens',
+  'agRunEvents',
+  'agRunBriefs',
+] as const;
+
 export function createClaimService(deps: ClaimDeps): ClaimService {
   const { tx, clock } = deps;
 
@@ -1992,6 +2009,21 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
     try {
       taken = await tx.run(async (unit): Promise<RunPayload | null> => {
         const { conn } = unit;
+        if (conn.dialect === 'postgres') {
+          // Warm the registry on this transaction's connection. Its first business
+          // statement still locks the agent, and every admission read happens after it.
+          const collections =
+            paced !== agent.modelEntries[0] &&
+            deps.runners &&
+            deps.selectionPolicies
+              ? [...claimCollections, 'agRunners']
+              : claimCollections;
+          for (const collection of collections) {
+            if (pass.signal?.aborted) throw new ClaimAborted();
+            await conn.collections.get(collection);
+          }
+          if (pass.signal?.aborted) throw new ClaimAborted();
+        }
         const now = clock.now();
         const nowText = now.toISOString();
         await lockAgentForClaim(conn, agent.id, nowText);
