@@ -47,9 +47,7 @@ export function createSampleDataService(): SampleDataService {
       for (const registration of registrations.values()) {
         const name = sampleDataRecordName(registration.name);
         const status = recorded.get(name);
-        const build = rerun
-          ? status !== 'executed'
-          : status === undefined && enabled;
+        const build = (enabled || rerun) && status !== 'executed';
         if (!build) {
           if (status === undefined) {
             await ledger.record({

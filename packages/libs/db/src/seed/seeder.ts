@@ -41,9 +41,9 @@ import type {
 /** Executes pending seed definitions for one database connection. */
 export interface Seeder {
   /**
-   * Executes every seed that has no matching history record. A sample seed
-   * runs only when `sample.enabled` is set; otherwise it is recorded as
-   * skipped, and a later run leaves it alone.
+   * Executes unrecorded seeds and, when `sample.enabled` is set, previously
+   * skipped sample seeds. When disabled, unrecorded sample seeds are recorded
+   * as skipped.
    */
   run(): Promise<SeedRunResult>;
   /**
@@ -162,16 +162,24 @@ class DefaultSeeder implements Seeder {
           history,
         );
 
-        const appliedNames = new Set(history.map((record) => record.name));
-        const pending = seeds.filter((seed) => !appliedNames.has(seed.name));
-        const skipped = seeds
-          .filter((seed) => appliedNames.has(seed.name))
-          .map((seed) => seed.name);
+        const recorded = new Map(
+          history.map((record) => [record.name, record.status]),
+        );
         const executed: string[] = [];
+        const skipped: string[] = [];
         const skippedSamples: string[] = [];
         const samplesEnabled = this.options.sample?.enabled === true;
 
-        for (const seed of pending) {
+        for (const seed of seeds) {
+          const status = recorded.get(seed.name);
+          if (
+            status === 'executed' ||
+            (status === 'skipped' &&
+              !(samplesEnabled && seed.seed.sample === true))
+          ) {
+            skipped.push(seed.name);
+            continue;
+          }
           if (this.options.taskFilter && !this.options.taskFilter(seed))
             continue;
           if (seed.seed.sample === true && !samplesEnabled) {
@@ -186,7 +194,11 @@ class DefaultSeeder implements Seeder {
             skippedSamples.push(seed.name);
             continue;
           }
-          await this.runSeed(connection, seed);
+          await this.runSeed(
+            connection,
+            seed,
+            status === 'skipped' ? 'update' : 'insert',
+          );
           executed.push(seed.name);
         }
 

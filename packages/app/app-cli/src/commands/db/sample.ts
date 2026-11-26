@@ -12,7 +12,7 @@ export default class AppDbSample extends AppCommand {
   static override summary =
     'Load the sample data an installation skipped, for development.';
   static override description =
-    'Sample data — seeds declared with sample: true and what plugins register on sampleDataToken — loads by itself only when the database is installed with app.sampleData set (APP_SAMPLE_DATA=true); otherwise each is recorded as skipped. This runs every sample seed recorded as skipped on the selected connections, then starts the application without serving it and builds every registered sample data service recorded as skipped or not at all, recording each as executed. A deployment refuses it: sample data never goes into a production database this way.';
+    'Sample data — seeds declared with sample: true and what plugins register on sampleDataToken — loads automatically when app.sampleData is enabled (APP_SAMPLE_DATA=true), including samples previously recorded as skipped. While disabled, new samples are recorded as skipped. This runs every sample seed recorded as skipped on the selected connections, then starts the application without serving it and builds every registered sample data service recorded as skipped or not at all, recording each as executed. A deployment refuses it: sample data never goes into a production database this way.';
 
   static override examples: Command.Example[] = [
     '<%= config.bin %> <%= command.id %>',

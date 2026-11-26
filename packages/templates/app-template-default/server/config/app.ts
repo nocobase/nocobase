@@ -20,9 +20,8 @@ const app: AppConfigFactory<AppIdentityConfig> = defineAppConfig({
     }),
     APP_SAMPLE_DATA: envBoolean('sampleData', {
       description:
-        'Load sample data while the database is first installed: seeds declared with sample: true and sampleDataToken registrations.',
+        'Run outstanding sample seeds and sampleDataToken registrations, including previously skipped entries.',
       required: false,
-      firstStartOnly: true,
     }),
   },
   defaults: (runtime) => {

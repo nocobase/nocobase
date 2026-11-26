@@ -1,16 +1,22 @@
+import { databaseManagerToken } from '@nocobase/db';
 import type { Knex } from 'knex';
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { createAppPaths } from '../src/config/index.js';
+import { Application } from '../src/application/index.js';
+import { ServiceProvider } from '@nocobase/service-provider';
+import { AppConfig, createAppPaths } from '../src/config/index.js';
 import {
   createAppDatabaseManager,
+  createAppSeeder,
+  DatabaseProvider,
   runAppDatabaseTasks,
   type AppDatabaseConfig,
   type AppDatabaseTaskContributions,
 } from '../src/database/index.js';
 import {
   createSampleDataService,
+  sampleDataToken,
   type SampleDataLedger,
   type SampleDataRecord,
 } from '../src/sample-data/index.js';
@@ -60,12 +66,13 @@ await query.insertInto('rows').values({ value: '${name}' }).execute();
 } });`,
     );
   }
-  function run(sampleData: boolean, operation?: 'sample') {
+  function run(sampleData: boolean, operation?: 'sample', dryRun = false) {
     return runAppDatabaseTasks(config, {
       paths,
       contributions,
       kind: operation ? 'seeds' : ['migrations', 'seeds'],
       ...(operation ? { operation } : {}),
+      dryRun,
       runtimeConfig: {
         get: <T>(key: string): T | undefined =>
           (key === 'app.sampleData' ? sampleData : undefined) as T | undefined,
@@ -82,11 +89,58 @@ await query.insertInto('rows').values({ value: '${name}' }).execute();
       await database.destroy();
     }
   }
-  return { seed, run, rows };
+  async function history() {
+    const database = createAppDatabaseManager(config)!;
+    try {
+      return await createAppSeeder({
+        database,
+        config: {
+          directory: paths.database('main/seeds'),
+          autoRun: true,
+        },
+      }).history();
+    } finally {
+      await database.destroy();
+    }
+  }
+  async function start(sampleData: boolean | undefined, names: string[]) {
+    const appConfig = new AppConfig();
+    await appConfig.loadAll();
+    appConfig.mergeDefaults({
+      app: { name: 'sample-data-test', sampleData },
+      database: config,
+    });
+    class SamplesProvider extends ServiceProvider<Application> {
+      public readonly name = 'sample-data-test';
+      public override boot(): void {
+        const samples = this.app.container.resolve(sampleDataToken);
+        for (const name of names) {
+          samples.register({
+            name,
+            packageName: 'test-app',
+            run: async () => {
+              const database = this.app.container.resolve(databaseManagerToken);
+              const client = await database.connection('main').client<Knex>();
+              await client('rows').insert({ value: name });
+            },
+          });
+        }
+      }
+    }
+    const app = new Application({ config: appConfig, paths });
+    app.addServiceProvider(DatabaseProvider);
+    app.addServiceProvider(SamplesProvider);
+    try {
+      await app.start();
+    } finally {
+      await app.shutdown();
+    }
+  }
+  return { seed, run, rows, history, start };
 }
 
 describe('sample seeds', () => {
-  it('run on a fresh install with app.sampleData, and never on a later run', async () => {
+  it('run on fresh and existing databases with app.sampleData', async () => {
     const { seed, run, rows } = await fixture();
     seed('001_required', false);
     seed('002_sample', true);
@@ -101,11 +155,14 @@ describe('sample seeds', () => {
     seed('003_later_sample', true);
     const upgraded = await run(true);
     expect(upgraded.results[1]).toMatchObject({
-      executed: [],
-      skippedSamples: ['003_later_sample'],
+      executed: ['003_later_sample'],
       freshInstall: false,
     });
-    expect(await rows()).toEqual(['001_required', '002_sample']);
+    expect(await rows()).toEqual([
+      '001_required',
+      '002_sample',
+      '003_later_sample',
+    ]);
   });
 
   it('are recorded as skipped without app.sampleData, and run on request', async () => {
@@ -120,6 +177,11 @@ describe('sample seeds', () => {
       freshInstall: true,
     });
     expect(await rows()).toEqual(['001_required']);
+    expect((await run(true, undefined, true)).results[1]).toMatchObject({
+      pending: ['002_sample'],
+      skipped: ['001_required'],
+    });
+    expect(await rows()).toEqual(['001_required']);
 
     const sampled = await run(false, 'sample');
     expect(sampled.results[0]).toMatchObject({
@@ -129,6 +191,63 @@ describe('sample seeds', () => {
     });
     expect(await rows()).toEqual(['001_required', '002_sample']);
   });
+});
+
+it('runs skipped and newly added samples once on subsequent enabled starts', async () => {
+  const { seed, start, rows, history } = await fixture();
+  seed('001_required', false);
+  seed('002_sample', true);
+
+  await start(undefined, ['demo']);
+  expect(await rows()).toEqual(['001_required']);
+  expect(await history()).toMatchObject([
+    { name: '001_required', status: 'executed' },
+    { name: '002_sample', status: 'skipped' },
+    { name: 'sample-data:demo', status: 'skipped' },
+  ]);
+
+  seed('003_sample', true);
+  await start(false, ['demo', 'demo-upgrade']);
+  expect(await rows()).toEqual(['001_required']);
+  expect(await history()).toMatchObject([
+    { name: '001_required', status: 'executed' },
+    { name: '002_sample', status: 'skipped' },
+    { name: 'sample-data:demo', status: 'skipped' },
+    { name: '003_sample', status: 'skipped' },
+    { name: 'sample-data:demo-upgrade', status: 'skipped' },
+  ]);
+
+  seed('004_sample', true);
+  const registrations = ['demo', 'demo-upgrade', 'demo-new'];
+  await start(true, registrations);
+  await start(true, registrations);
+
+  expect(await rows()).toEqual([
+    '001_required',
+    '002_sample',
+    '003_sample',
+    '004_sample',
+    ...registrations,
+  ]);
+  expect((await history()).map(({ name, status }) => [name, status])).toEqual([
+    ['001_required', 'executed'],
+    ['002_sample', 'executed'],
+    ['sample-data:demo', 'executed'],
+    ['003_sample', 'executed'],
+    ['sample-data:demo-upgrade', 'executed'],
+    ['004_sample', 'executed'],
+    ['sample-data:demo-new', 'executed'],
+  ]);
+});
+
+it('builds registrations when the app has no seed files', async () => {
+  const { start, rows, history } = await fixture();
+  await start(true, ['demo']);
+
+  expect(await rows()).toEqual(['demo']);
+  expect(await history()).toMatchObject([
+    { name: 'sample-data:demo', status: 'executed' },
+  ]);
 });
 
 describe('sample data service', () => {
@@ -173,14 +292,10 @@ describe('sample data service', () => {
       ['sample-data:broken', 'skipped'],
     ]);
 
-    await service.run();
-    expect(built).toHaveBeenCalledOnce();
-    expect(broken).toHaveBeenCalledOnce();
-
-    service.rerunSkipped();
     broken.mockResolvedValueOnce(undefined);
     expect((await service.run()).executed).toEqual(['broken']);
     expect(built).toHaveBeenCalledOnce();
+    expect(broken).toHaveBeenCalledTimes(2);
     expect(store.records.get('sample-data:broken')).toBe('executed');
   });
 
@@ -197,5 +312,10 @@ describe('sample data service', () => {
     expect(await service.run()).toMatchObject({ skipped: ['demo'] });
     expect(run).not.toHaveBeenCalled();
     expect(store.records.get('sample-data:demo')).toBe('skipped');
+
+    service.rerunSkipped();
+    expect((await service.run()).executed).toEqual(['demo']);
+    expect(run).toHaveBeenCalledOnce();
+    expect(store.records.get('sample-data:demo')).toBe('executed');
   });
 });

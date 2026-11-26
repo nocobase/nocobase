@@ -35,7 +35,7 @@ describeIntegrationDatabases('sample seeds', (context) => {
     return { directory, tableName, lockTableName, dataTableName };
   }
 
-  it('records a sample seed as skipped unless enabled, and runs it later on request', async () => {
+  it('records a sample seed as skipped unless enabled, and runs it once when enabled', async () => {
     const { directory, tableName, lockTableName, dataTableName } =
       await prepare('sampleSkip');
     const seeder = createSeeder({
@@ -60,21 +60,26 @@ describeIntegrationDatabases('sample seeds', (context) => {
       { name: '202610060002_sample', status: 'skipped', durationMs: null },
     ]);
 
-    // Recorded, so a later run, even one that enables sample data, leaves it alone.
-    await expect(
-      createSeeder({
-        database: context.database,
-        connection: context.spec.name,
-        directory,
-        tableName,
-        lockTableName,
-        sample: { enabled: true },
-      }).run(),
-    ).resolves.toMatchObject({ executed: [], skippedSamples: [] });
-
-    await expect(seeder.runSamples()).resolves.toEqual({
-      executed: ['202610060002_sample'],
+    await expect(seeder.run()).resolves.toMatchObject({
+      executed: [],
+      skippedSamples: [],
     });
+
+    const enabledSeeder = createSeeder({
+      database: context.database,
+      connection: context.spec.name,
+      directory,
+      tableName,
+      lockTableName,
+      sample: { enabled: true },
+    });
+    await expect(enabledSeeder.run()).resolves.toEqual({
+      executed: ['202610060002_sample'],
+      skipped: ['202610060001_required'],
+      skippedSamples: [],
+      warnings: [],
+    });
+    await expect(enabledSeeder.run()).resolves.toMatchObject({ executed: [] });
     await expect(
       context.db(dataTableName).select('event').orderBy('id'),
     ).resolves.toEqual([

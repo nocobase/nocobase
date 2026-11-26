@@ -85,7 +85,7 @@ export interface LoadSeedsOptions {
   readonly sources?: readonly SeedSource[];
 }
 
-/** Whether pending sample seeds run, or are recorded as skipped. */
+/** Whether unrecorded and previously skipped sample seeds run. */
 export interface SeedSampleOptions {
   readonly enabled: boolean;
 }

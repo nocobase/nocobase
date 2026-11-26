@@ -134,7 +134,7 @@ export interface AppDatabasePlanExecutionOptions {
     readonly name: string;
     readonly packageName: string;
   }) => boolean;
-  /** Coordinators may enable sample seeds on a module's first installation. */
+  /** Coordinators may override whether sample seeds run. */
   readonly sample?: { readonly enabled: boolean };
   readonly runtimeConfig?: DatabaseTaskConfig;
   readonly container?: ServiceResolver;
@@ -314,6 +314,7 @@ async function executeDatabasePlan(
     }
   }
   const sampleData = taskConfig.get<unknown>('app.sampleData') === true;
+  const seedSample = { enabled: sample?.enabled ?? sampleData };
   for (const [index, task] of plan.entries()) {
     const identity = { connection: task.connection, kind: task.kind };
     if (task.skipReason) {
@@ -364,16 +365,15 @@ async function executeDatabasePlan(
                   : dryRun
                     ? task.kind === 'migrations'
                       ? await createAppMigrator(options).pending({ fresh })
-                      : await createAppSeeder(options).pending({ fresh })
+                      : await createAppSeeder({
+                          ...options,
+                          sample: seedSample,
+                        }).pending({ fresh })
                     : task.kind === 'migrations'
                       ? await runMigrations(options, fresh)
                       : await createAppSeeder({
                           ...options,
-                          sample: {
-                            enabled:
-                              sample?.enabled ??
-                              (freshInstall === true && sampleData),
-                          },
+                          sample: seedSample,
                         }).run();
       result.results.push({
         ...identity,

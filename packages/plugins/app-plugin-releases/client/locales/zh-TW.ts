@@ -769,9 +769,9 @@ const zhTW: LocaleResource<typeof enUS> = {
       apps: '應用程式',
       appsDescription: '部署到此環境的應用程式。',
       appsEmpty: '此處尚未部署任何應用程式。',
-      sampleData: '在首次部署時載入範例資料',
+      sampleData: '部署時載入範例資料',
       sampleDataHint:
-        '應用程式在此處的首次部署會安裝其範例資料 (APP_SAMPLE_DATA=true)。將其用於預覽，而不是用於生產。',
+        '每次部署時載入尚未執行的範例資料（APP_SAMPLE_DATA=true）。請在預覽環境使用，在正式環境保持關閉。',
       add: '新增環境',
       edit: '編輯',
       delete: '刪除',

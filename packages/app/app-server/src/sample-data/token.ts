@@ -5,9 +5,9 @@ import {
 
 /**
  * Sample data a service builds rather than a seed: what has to go through other plugins' services, such as projects
- * with issues and comments. It runs once the application is ready, under the same condition as a seed declared with
- * `sample: true` — the database was installed by this start and `app.sampleData` is set — and is recorded in the
- * seed history of the default connection as `sample-data:<name>`, so it never runs twice on its own.
+ * with issues and comments. When `app.sampleData` is enabled, the application runs unrecorded and previously
+ * skipped registrations once every provider is ready. Each successful run is recorded in the default connection's
+ * seed history as `sample-data:<name>` and never runs again.
  */
 export interface SampleDataRegistration {
   /** Unique within the application, such as `acme/demo`. */
@@ -51,8 +51,8 @@ export interface SampleDataService {
   register(registration: SampleDataRegistration): void;
   registrations(): readonly SampleDataRegistration[];
   /**
-   * Called by the database provider once startup tasks ran: where samples are recorded, and whether this start
-   * installed the database with `app.sampleData` set. Without it, a run does nothing.
+   * Called by the database provider after startup tasks run. Supplies the ledger and whether `app.sampleData`
+   * is enabled. Without it, a run does nothing.
    */
   prepare(state: {
     readonly ledger: SampleDataLedger;
@@ -63,7 +63,7 @@ export interface SampleDataService {
    * `nocobase db sample` uses it.
    */
   rerunSkipped(): void;
-  /** Builds or skips what is not recorded yet. The application calls it once every provider is ready. */
+  /** Builds outstanding samples when enabled, or records new samples as skipped. */
   run(): Promise<SampleDataRunResult>;
 }
 

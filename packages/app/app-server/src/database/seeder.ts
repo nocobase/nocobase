@@ -123,11 +123,22 @@ export function createAppSeeder(options: CreateAppSeederOptions): AppSeeder {
       }
       const seeds = await loadSeeds(createDatabaseSeederOptions(options));
       // A fresh run drops the seed history with the rest of the schema.
-      return pendingTasksResult(
-        options.taskFilter ? seeds.filter(options.taskFilter) : seeds,
+      const history =
         pendingOptions.fresh || pendingOptions.withoutHistory
           ? []
-          : await createDatabaseSeeder(options).history(),
+          : await createDatabaseSeeder(options).history();
+      const samples = new Set(
+        options.sample?.enabled
+          ? seeds
+              .filter(({ seed }) => seed.sample === true)
+              .map(({ name }) => name)
+          : [],
+      );
+      return pendingTasksResult(
+        options.taskFilter ? seeds.filter(options.taskFilter) : seeds,
+        history.filter(
+          ({ name, status }) => status !== 'skipped' || !samples.has(name),
+        ),
       );
     },
 
