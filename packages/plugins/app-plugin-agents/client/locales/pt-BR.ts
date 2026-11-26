@@ -436,7 +436,7 @@ const ptBR: LocaleResource<typeof enUS> = {
       purposes: {
         embedding: 'Incorporações',
         rerank: 'Reclassificação',
-        text: 'Texto utilitário',
+        text: 'Geração de texto',
       },
     },
     title: 'Uso',

@@ -56,6 +56,10 @@ export const IDENTITY_SENSITIVE_PACKAGES = new Map([
     'types the host-owned QueueService that plugins resolve from queueServiceToken',
   ],
   [
+    '@nocobase/message-broker',
+    'types the host-owned MessageBrokerService that plugins resolve from messageBrokerServiceToken and shares its error classes',
+  ],
+  [
     '@nocobase/jobs',
     'types host-owned executors and shares Job and deployment-error class identities across adapters',
   ],

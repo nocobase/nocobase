@@ -70,6 +70,12 @@ Declare `authz` on the first page of every path, a stable `{ resource: { type, i
 
 Client `auth` and `authz` control navigation and page loading only. Every Server Route called by the page must install and test its own authentication and authorization. Similar Client and Server route names create no automatic connection.
 
+## Pages with their own layout
+
+For a signed-in page that provides its own layout, such as a fullscreen display or a print view, set `layout: 'none'` on the page or use `defineAppRoutes(routes, { layout: 'none' })` as the default for the contribution's signed-in pages. The application still requires sign-in, prepares the session, and enforces each page's `authz`.
+
+A group can declare the layout for its descendants. A page and its nested pages share one layout. Set the option on the parent page when that branch should render without the application's header and sidebar. Omit the option to use the standard application layout. Guest, optional, and settings routes keep their existing layouts.
+
 ## Navigation, breadcrumbs, groups, and child pages
 
 `navigation` adds a static route to the matching menu. Its title is a key in the owning plugin namespace, and its optional icon is a component that accepts `className`, such as a Lucide icon. Dynamic or wildcard paths cannot declare navigation because they do not produce a static target.

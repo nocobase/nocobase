@@ -441,7 +441,7 @@ const frFR: LocaleResource<typeof enUS> = {
       purposes: {
         embedding: 'Intégrations',
         rerank: 'Reclassement',
-        text: 'Texte utilitaire',
+        text: 'Génération de texte',
       },
     },
     title: 'Utilisation',

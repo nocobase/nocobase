@@ -135,17 +135,24 @@ it('audits forwarded settings writes and records a default-access receipt only o
         }
         const receipts = connection.repository(mutationReceiptCollection);
         const before = await receipts.count();
-        expect(
-          (await admin.fetch(`${url}/renamed-rule`, mutation('DELETE'))).status,
-        ).toBe(404);
-        expect(await receipts.count()).toBe(before);
-        expect(events.at(-1)).toMatchObject({
-          action: 'delete',
-          resource,
-          outcome: 'failure',
-          status: 404,
-          targets: [{ collection, key: 'renamed-rule' }],
-        });
+        for (const [action, input] of [
+          ['update', mutation('PATCH', { key: 'missing-rule' })],
+          ['delete', mutation('DELETE')],
+        ] as const) {
+          const missing = await admin.fetch(`${url}/renamed-rule`, input);
+          expect(missing.status).toBe(404);
+          await expect(missing.json()).resolves.toMatchObject({
+            error: { reason: 'RULE_NOT_FOUND' },
+          });
+          expect(await receipts.count()).toBe(before);
+          expect(events.at(-1)).toMatchObject({
+            action,
+            resource,
+            outcome: 'failure',
+            status: 404,
+            targets: [{ collection, key: 'renamed-rule' }],
+          });
+        }
       }
       expect(
         events.filter(

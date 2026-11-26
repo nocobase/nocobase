@@ -29,8 +29,8 @@ import {
  *   subscription: `agents.prices` read shows them with the models coding tools reported, manage replaces them.
  * - Usage (`GET /agents/usage`, `shared/reports.ts`): what runs used and cost, for anyone signed in: every run for a
  *   reader of usage (`agents.prices` read), otherwise the runs the caller started or owns, on subjects
- *   they may see; and `GET /agents/usage/models`, the model calls made outside runs (embeddings, reranking, utility
- *   texts), rows only for the same readers. Other reports are the application's: it reads them from `agents.reporting`.
+ *   they may see; and `GET /agents/usage/models`, the model use outside runs, rows only for the same readers.
+ *   Other reports are the application's: it reads them from `agents.reporting`.
  */
 import {
   apiErrorResponse,
@@ -1862,7 +1862,7 @@ export function createAdminRoutes(
     },
   );
 
-  // What model calls outside runs used (embeddings, reranking, utility texts).
+  // Model use outside runs, including native online agent turns.
   router.get(
     '/usage/models',
     scoped,
@@ -1872,7 +1872,7 @@ export function createAdminRoutes(
       operationId: 'agentsGetModelUsage',
       ...cliRoute({ command: 'model usage' }),
       description:
-        "The model calls made outside runs (embeddings, reranking, utility texts), over `from` to `to`. Rows only for a reader of usage (`agents.prices` read, or whom the application's usage policy admits).",
+        "Model use outside runs, including native online agent turns, over `from` to `to`. Rows only for a reader of usage (`agents.prices` read, or whom the application's usage policy admits).",
       responses: {
         200: dataResponse(ModelUsageReportSchema),
         400: apiErrorResponse(

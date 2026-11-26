@@ -438,7 +438,7 @@ const esES: LocaleResource<typeof enUS> = {
       purposes: {
         embedding: 'Incrustaciones',
         rerank: 'Reclasificación',
-        text: 'Texto de utilidad',
+        text: 'Generación de texto',
       },
     },
     title: 'Uso',

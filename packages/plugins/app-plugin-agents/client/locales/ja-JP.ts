@@ -421,7 +421,7 @@ const jaJP: LocaleResource<typeof enUS> = {
       purposes: {
         embedding: '埋め込み',
         rerank: 'リランキング',
-        text: 'ユーティリティテキスト',
+        text: 'テキスト生成',
       },
     },
     title: '利用状況',

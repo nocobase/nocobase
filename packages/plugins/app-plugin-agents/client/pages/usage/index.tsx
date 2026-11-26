@@ -528,7 +528,7 @@ function UsageTable({
   );
 }
 
-/** Model calls outside runs (embeddings, reranking, utility texts), one row per use, caller and model. */
+/** Model use outside runs, one row per purpose, caller and model. */
 function OtherModelUse({
   report,
 }: {

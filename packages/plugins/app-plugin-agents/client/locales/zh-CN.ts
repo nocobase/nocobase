@@ -373,7 +373,7 @@ const zhCN: AgentsResource = {
       purposes: {
         embedding: '向量化',
         rerank: '重排序',
-        text: '辅助文本',
+        text: '文本生成',
       },
     },
     title: '用量',

@@ -70,11 +70,11 @@ export function createDefaultAccessHandler(
     validateDataScopeRule(authz, rule);
     return rule;
   };
-  const existing = async (
-    bound: DefaultAccessAdministrationApi,
+  const requireExisting = async (
+    rules: DefaultAccessAdministrationApi,
     key: string,
   ): Promise<DefaultAccessRule> => {
-    const rule = await bound.get(key);
+    const rule = await rules.get(key);
     if (rule) return rule;
     throw new ApiError({
       status: 'NOT_FOUND',
@@ -249,7 +249,7 @@ export function createDefaultAccessHandler(
         changes,
         async (transaction) => {
           const bound = transaction ? api.withTransaction(transaction) : api;
-          const previous = await existing(bound, key);
+          const previous = await requireExisting(bound, key);
           const rule = checked({ ...previous, ...changes });
           await assertRuleKeyAvailable(
             (next) => bound.get(next),
@@ -304,7 +304,7 @@ export function createDefaultAccessHandler(
         { key },
         async (transaction) => {
           const bound = transaction ? api.withTransaction(transaction) : api;
-          await existing(bound, key);
+          await requireExisting(bound, key);
           await bound.delete(key);
           return null;
         },

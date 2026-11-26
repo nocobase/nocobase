@@ -239,3 +239,21 @@ test('default-access create update and delete replay without repeating precondit
     expect(replay.headers.get('Idempotency-Replayed')).toBe('true');
   }
 });
+
+for (const method of ['PATCH', 'DELETE'] as const) {
+  test(`${method} returns 404 for a missing default-access rule with an operation key`, async ({
+    testApp,
+  }) => {
+    const admin = await signIn(testApp, DEFAULT_ADMIN_CREDENTIALS);
+    const init = request({}, createOperationKey(), method);
+    const response = await admin.fetch(
+      '/authorization/defaultAccess/missing-rule',
+      { ...init, body: method === 'PATCH' ? init.body : undefined },
+    );
+
+    expect(response.status).toBe(404);
+    await expect(response.json()).resolves.toMatchObject({
+      error: { reason: 'RULE_NOT_FOUND', domain: 'authorization' },
+    });
+  });
+}

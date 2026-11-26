@@ -144,6 +144,16 @@
     "zh": "并发控制",
     "ja": "同時実行制御"
   },
+  "message-broker": {
+    "en": "Message broker",
+    "zh": "消息代理",
+    "ja": "メッセージブローカー"
+  },
+  "app-plugin-message-broker": {
+    "en": "Message broker",
+    "zh": "消息代理",
+    "ja": "メッセージブローカー"
+  },
   "logging": { "en": "Logging", "zh": "日志", "ja": "ログ" },
   "lifecycle": {
     "en": "Plugin lifecycle",

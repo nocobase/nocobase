@@ -8,6 +8,7 @@
  * 1.x server API (`/session`, `/event`, `/session/:id/permissions/:id`),
  * which OpenCode 2.x no longer serves.
  */
+import { setTimeout as sleep } from 'node:timers/promises';
 import { isRecord } from './util.ts';
 
 export type FetchFn = typeof fetch;
@@ -191,6 +192,35 @@ export class OpencodeClient {
       'DELETE',
       `/api/session/${encodeURIComponent(sessionId)}/form/${encodeURIComponent(formId)}`,
     );
+  }
+
+  /** OpenCode 2.4+ can return an empty or partial catalog until plugins activate. */
+  async waitForPlugins(signal: AbortSignal): Promise<void> {
+    const startup = AbortSignal.any([
+      signal,
+      AbortSignal.timeout(REQUEST_TIMEOUT_MS),
+    ]);
+    try {
+      for (;;) {
+        const plugins = OpencodeClient.data<unknown>(
+          await this.request(
+            'GET',
+            '/api/plugin',
+            undefined,
+            undefined,
+            startup,
+          ),
+        );
+        if (!Array.isArray(plugins))
+          throw new Error('Invalid plugin listing response');
+        if (plugins.length) return;
+        await sleep(100, undefined, { signal: startup });
+      }
+    } catch (error) {
+      // Servers without plugin inventory can still provide a model catalog.
+      if (!(error instanceof OpencodeHttpError && error.status === 404))
+        throw error;
+    }
   }
 
   async listModels(signal?: AbortSignal): Promise<ModelInfo[]> {

@@ -443,7 +443,7 @@ const ruRU: LocaleResource<typeof enUS> = {
       purposes: {
         embedding: 'Эмбеддинги',
         rerank: 'Переранжирование',
-        text: 'Служебный текст',
+        text: 'Генерация текста',
       },
     },
     title: 'Использование',

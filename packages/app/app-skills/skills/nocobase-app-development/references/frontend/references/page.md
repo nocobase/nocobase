@@ -315,7 +315,7 @@ In `badges` a number is something waiting; `{ count, live: true, hint }` is work
 
 ## 7. Back button and breadcrumbs
 
-The shell header shows the current page's breadcrumb after the sidebar toggle, on every page; pages never render breadcrumbs themselves. Under `AppLayout`, a covering child page, record detail or independent edit uses the header trail and mobile parent arrow. Do not render a duplicate page back button or add “Back to list” to `actions`. A standalone page without that header supplies its own validated parent navigation.
+The shell header shows the current page's breadcrumb after the sidebar toggle, on every page; pages never render breadcrumbs themselves. Under `AppLayout`, a covering child page, record detail or independent edit uses the header trail and mobile parent arrow. Do not render a duplicate page back button or add “Back to list” to `actions`. A signed-in page declared with `layout: 'none'` (no header) is inside `RouteTreeProvider`, so `BackButton` in its child pages returns to the validated parent; a guest or optional standalone page without that header supplies its own validated parent navigation.
 
 ### The back button
 
@@ -363,7 +363,7 @@ The header validates both automatic and explicit destinations against registered
 
 On a phone the header keeps the current title and a visible arrow to the nearest accessible parent, named “Back to <parent>” for assistive technology. It omits the duplicate brand. On a medium screen a trail of three or more levels folds the middle into a menu. Under `AppLayout`, omit the duplicate page `BackButton`. Detail tabs keep the same parent; an independent edit page declares detail as its parent and list as the preceding level. A dialog/drawer instead keeps the existing close/cancel semantics and does not add a breadcrumb level.
 
-`StandalonePageLayout` has no header. A standalone page supplies an explicit back link with the same destination validation and its route/access context; it must not use browser history as its only fallback.
+`StandalonePageLayout` has no header. A guest or optional standalone page supplies an explicit back link with the same destination validation and its route/access context; it must not use browser history as its only fallback. A signed-in page with `layout: 'none'` (declare it on the route or with `defineAppRoutes(routes, { layout: 'none' })`; a page and its nested pages share one layout) is wrapped in `RouteTreeProvider`, so its child pages use `BackButton` as usual. Its `access` is empty (no sidebar check), so `BackButton` validates only that the destination is a registered page.
 
 ## 8. Show actions by permission (useCan)
 

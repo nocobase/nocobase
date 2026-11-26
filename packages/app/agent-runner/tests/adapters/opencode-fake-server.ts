@@ -39,6 +39,7 @@ export interface FakeOptions {
   /** Status for PUT instructions (default 204). */
   instructionStatus?: number;
   models?: unknown[];
+  plugins?: () => unknown[];
   /** Sessions GET /api/session/:id knows (resume). */
   knownSessions?: string[];
 }
@@ -209,6 +210,8 @@ export class FakeOpencode {
     }
     if (method === 'POST' && p === '/api/session')
       return json(200, { data: { id: this.sessionId } });
+    if (method === 'GET' && p === '/api/plugin' && this.options.plugins)
+      return json(200, { data: this.options.plugins() });
     if (method === 'GET' && p === '/api/model')
       return json(200, { data: this.options.models ?? [] });
     let m = /^\/api\/session\/([^/]+)$/.exec(p);

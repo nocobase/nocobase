@@ -1,0 +1,62 @@
+{
+  "name": "@nocobase/app-plugin-message-broker-example",
+  "displayName": "Message Broker Example App Plugin",
+  "description": "Example app plugin that publishes an order event in the business transaction and consumes it in independent subscriptions that update business tables through the inbox.",
+  "version": "0.0.1",
+  "type": "module",
+  "prettier": "@nocobase/dev-config/prettier",
+  "engines": {
+    "node": ">=24.0.0"
+  },
+  "exports": {
+    "./server": {
+      "types": "./server/index.ts",
+      "import": "./server/index.ts"
+    },
+    "./package.json": "./package.json"
+  },
+  "publishConfig": {
+    "access": "public",
+    "exports": {
+      "./server": {
+        "types": "./dist/server/index.d.ts",
+        "import": "./dist/server/index.js"
+      },
+      "./package.json": "./package.json"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.json && nocobase-db-manifests",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run --passWithNoTests",
+    "lint": "eslint . --max-warnings 0",
+    "lint:fix": "eslint . --fix --max-warnings 0",
+    "format": "prettier . --write",
+    "format:check": "prettier . --check",
+    "check": "pnpm lint && pnpm format:check && pnpm typecheck && pnpm test && pnpm build",
+    "fix": "pnpm lint:fix && pnpm format"
+  },
+  "dependencies": {
+    "zod": "catalog:"
+  },
+  "devDependencies": {
+    "@nocobase/app-testing": "workspace:*",
+    "@nocobase/dev-config": "workspace:*",
+    "@types/node": "catalog:",
+    "eslint": "catalog:",
+    "hono": "catalog:",
+    "prettier": "catalog:",
+    "typescript": "catalog:",
+    "vitest": "catalog:"
+  },
+  "peerDependencies": {
+    "@nocobase/app-plugin-message-broker": "workspace:^",
+    "@nocobase/app-server": "workspace:^",
+    "@nocobase/db": "workspace:^",
+    "@nocobase/message-broker": "workspace:^",
+    "@nocobase/service-provider": "workspace:^"
+  }
+}
