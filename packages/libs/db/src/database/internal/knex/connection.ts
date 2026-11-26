@@ -480,7 +480,8 @@ export class KnexDatabaseConnection implements DatabaseConnection {
       throw error;
     } finally {
       if (invalidateAll) {
-        registry.invalidateLocal();
+        if (this.usesSchemaVersions) registry.invalidateLocal();
+        else registry.invalidateAll();
         this.transactionInvalidations?.record();
       }
     }
@@ -564,7 +565,10 @@ export class KnexDatabaseConnection implements DatabaseConnection {
     // transaction commits, so the enclosing transaction has to publish them to
     // the root Registry as well, not just this transaction's own.
     this.transactionInvalidations?.absorb(invalidations);
-    invalidations.apply(this.collections as CollectionRegistry);
+    invalidations.apply(
+      this.collections as CollectionRegistry,
+      this.usesSchemaVersions,
+    );
     collectionCache?.commit();
     if (callbacks.parent) {
       callbacks.release();
@@ -575,9 +579,13 @@ export class KnexDatabaseConnection implements DatabaseConnection {
     return result;
   }
 
+  private get usesSchemaVersions(): boolean {
+    return this.dialect === 'postgres' || this.dialect === 'sqlite';
+  }
+
   private get reusesTransactionCollections(): boolean {
     return (
-      (this.dialect === 'postgres' || this.dialect === 'sqlite') &&
+      this.usesSchemaVersions &&
       (this.config.transactionCollectionCache ??
         this.schemaManagement === 'managed')
     );
@@ -705,9 +713,10 @@ class TransactionInvalidationCollector {
     this.namingIndex ||= change.namingIndex;
   }
 
-  apply(target: CollectionRegistry): void {
+  apply(target: CollectionRegistry, usesSchemaVersions: boolean): void {
     if (this.all) {
-      target.invalidateLocal();
+      if (usesSchemaVersions) target.invalidateLocal();
+      else target.invalidateAll();
     } else if (this.collections.size > 0 || this.namingIndex) {
       target.invalidate({
         collections: [...this.collections],
