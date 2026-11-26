@@ -813,7 +813,9 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
         )
       ).length > 0;
     const assemblies = new Map<string, SubjectCompatibility | null>();
-    const slots: SlotSamples = roster?.slots ?? new Map();
+    const slots =
+      roster?.slots ??
+      new Map<string, Awaited<ReturnType<ClaimDeps['slotsHeld']>>>();
     const entries: ModelSelectionWait['entries'][number][] = [];
     for (const entry of agent.modelEntries) {
       const single = { ...agent, modelEntries: [entry] };
