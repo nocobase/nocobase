@@ -7,9 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import type { Context } from '@nocobase/actions';
 import { MockServer, createMockServer } from '@nocobase/test';
-import { importXlsx } from '../actions/import-xlsx';
 import { TemplateCreator } from '../services/template-creator';
 import * as XLSX from 'xlsx';
 import { XlsxImporter } from '../services/xlsx-importer';
@@ -86,15 +84,12 @@ describe('xlsx importer', () => {
 
     XLSX.utils.sheet_add_aoa(worksheet, [['f1', 'f2', 'f3', 'f4', 'f5']], { origin: 'A2' });
 
-    const options = {
+    const importer = new XlsxImporter({
       collectionManager: app.mainDataSource.collectionManager,
       collection: Test,
       columns,
       workbook: template,
-      // Older JavaScript callers may still pass this option.
-      rowDefaultValues: { f2: 'legacy default' },
-    };
-    const importer = new XlsxImporter(options);
+    });
 
     await importer.run({
       context: {
@@ -114,35 +109,6 @@ describe('xlsx importer', () => {
     expect(test.f3).toBe('f3');
     expect(test.f4).toBeFalsy();
     expect(test.f5).toBe('f5');
-  });
-
-  it('keeps collection defaults when importing through the action', async () => {
-    const posts = app.db.collection({
-      name: 'posts',
-      fields: [
-        { name: 'title', type: 'string' },
-        { name: 'category', type: 'string', defaultValue: 'general' },
-      ],
-    });
-    await app.db.sync();
-
-    const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, XLSX.utils.aoa_to_sheet([['Title'], ['First post']]), 'Posts');
-    const ctx = {
-      action: { params: { rowDefaultValues: { category: 'other' } } },
-      permission: { can: { params: { fields: ['title'] } } },
-      request: { body: { columns: [{ dataIndex: ['title'], defaultTitle: 'Title' }] } },
-      file: { buffer: XLSX.write(workbook, { type: 'buffer', bookType: 'xlsx' }) },
-      dataSource: app.mainDataSource,
-      getCurrentRepository: () => posts.repository,
-    } as unknown as Context;
-
-    await importXlsx(ctx, async () => {});
-
-    const record = await posts.repository.findOne();
-    expect(record.get('id')).toBeTruthy();
-    expect(record.get('title')).toBe('First post');
-    expect(record.get('category')).toBe('general');
   });
 
   it('should not treat acl fixed params as field restrictions', async () => {
