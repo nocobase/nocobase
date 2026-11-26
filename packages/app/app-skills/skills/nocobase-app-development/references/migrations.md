@@ -28,9 +28,9 @@ Add sample data for new business models, business pages and core workflows. Use 
 
 Put sample data in the same `seeds` directory as `defineSeed({ name, sample: true, run })`. When the data has to go through plugin services, register it on `sampleDataToken` from `@nocobase/app-server/sample-data` in a service provider's `boot()`. See section 2 of `.agents/skills/nocobase-db/SKILL.md`.
 
-Start the app with `APP_SAMPLE_DATA=true` in development to verify your samples. This runs all outstanding samples, including entries previously recorded as skipped on an existing database. Successful entries are recorded as executed and run only once. Without this setting, new samples are recorded as skipped. Keep it off in production.
+Start the app with `APP_SAMPLE_DATA=true` in development to verify your samples. This runs all outstanding samples on new and existing databases, including legacy skipped entries. Successful runs are recorded as executed and run only once. Disabled samples leave seed history untouched. Keep sample data off in production.
 
-`db reset` and `db apply` can run seed files, and starting the app with sample data enabled also runs service registrations once their providers are ready. `pnpm nocobase db sample` remains available in development to run skipped sample seeds and outstanding service registrations manually.
+`db reset` and `db apply` can run seed files, and starting the app with sample data enabled also runs service registrations once their providers are ready. `db apply --dry-run` lists pending sample seeds only when enabled. In development, `pnpm nocobase db sample` runs outstanding sample seeds and service registrations on demand.
 
 ## Multiple connections
 

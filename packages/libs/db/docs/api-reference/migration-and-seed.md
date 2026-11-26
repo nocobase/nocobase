@@ -27,7 +27,7 @@ Migrations describe schema evolution and seeds describe installation or sample d
 
 `defineSeed()`, `loadSeeds()` and `validateSeeds()` describe and load installation data. `SeedContext` exposes repository/query access, configuration and service resolution through a restricted connection; it has no schema builder.
 
-`run()` handles pending seeds. With sample loading enabled, it runs new and previously skipped sample seeds. While disabled, it records new sample seeds as skipped. `runSamples()` executes previously skipped sample seeds; it leaves never-run seeds to `run()`. `record()` writes a history entry without executing a seed. See [Seed signatures](./signatures/seed.md) and [seed examples](../zh-CN/seed/define-seed.md).
+`run()` handles pending seeds. With sample loading enabled, it runs samples without a successful run, including legacy skipped entries. Disabled samples leave seed history untouched. `runSamples()` runs all outstanding sample seeds on demand. `record()` writes a history entry without executing a seed. See [Seed signatures](./signatures/seed.md) and [seed examples](../zh-CN/seed/define-seed.md).
 
 ## History, checksums and task locks
 

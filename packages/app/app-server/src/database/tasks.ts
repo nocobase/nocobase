@@ -43,8 +43,8 @@ import type {
 /**
  * `repair` realigns recorded checksums; it executes no migration or seed.
  * `rollback` runs the latest migration batch's `down`, and applies to
- * migrations alone: seeds have no inverse. `sample` runs the sample seeds a
- * run recorded as skipped, and applies to seeds alone.
+ * migrations alone: seeds have no inverse. `sample` runs outstanding sample
+ * seeds and applies to seeds alone.
  */
 export type AppDatabaseTaskOperation =
   'run' | 'repair' | 'rollback' | 'unlock' | 'sample';
@@ -58,7 +58,7 @@ export interface AppDatabaseTaskResult {
   batch?: number;
   executed?: string[];
   skipped?: string[];
-  /** Sample seeds a run recorded as skipped without running them. */
+  /** Pending sample seeds skipped because sample data is disabled. */
   skippedSamples?: string[];
   /**
    * Seeds only: whether this run installed the connection — it held no
@@ -343,6 +343,7 @@ async function executeDatabasePlan(
         connection: task.connection,
         config: task.config,
         sources: task.config.sources,
+        sample: seedSample,
         taskFilter,
         onStaleLock: (takeover: StaleTaskLockTakeover): void =>
           reportStaleLock(container, task, takeover),
@@ -364,16 +365,10 @@ async function executeDatabasePlan(
                   : dryRun
                     ? task.kind === 'migrations'
                       ? await createAppMigrator(options).pending({ fresh })
-                      : await createAppSeeder({
-                          ...options,
-                          sample: seedSample,
-                        }).pending({ fresh })
+                      : await createAppSeeder(options).pending({ fresh })
                     : task.kind === 'migrations'
                       ? await runMigrations(options, fresh)
-                      : await createAppSeeder({
-                          ...options,
-                          sample: seedSample,
-                        }).run();
+                      : await createAppSeeder(options).run();
       result.results.push({
         ...identity,
         ...completed,
@@ -592,13 +587,13 @@ async function detectFreshInstalls(
 }
 
 /**
- * What a dry run reports for a database that does not exist yet: every task
- * pending, nothing to roll back, nothing to repair.
+ * What a dry run reports for a database that does not exist yet: all
+ * eligible tasks pending, nothing to roll back, nothing to repair.
  */
 async function emptyDatabasePreview(
   operation: Exclude<AppDatabaseTaskOperation, 'unlock'>,
   task: AppDatabaseTask,
-  options: Parameters<typeof createAppMigrator>[0],
+  options: Parameters<typeof createAppSeeder>[0],
   fresh: boolean,
 ): Promise<Omit<AppDatabaseTaskResult, 'connection' | 'kind'>> {
   if (operation === 'rollback') {

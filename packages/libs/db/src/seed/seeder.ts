@@ -41,14 +41,12 @@ import type {
 /** Executes pending seed definitions for one database connection. */
 export interface Seeder {
   /**
-   * Executes unrecorded seeds and, when `sample.enabled` is set, previously
-   * skipped sample seeds. When disabled, unrecorded sample seeds are recorded
-   * as skipped.
+   * Executes pending seeds. Sample seeds run when `sample.enabled` is set.
+   * Disabled sample seeds are skipped without writing history.
    */
   run(): Promise<SeedRunResult>;
   /**
-   * Executes every sample seed recorded as skipped and records it as
-   * executed. Seeds that never ran at all are left to `run()`.
+   * Executes sample seeds with no successful run, regardless of `sample.enabled`.
    */
   runSamples(): Promise<SeedSampleRunResult>;
   /**
@@ -154,12 +152,15 @@ class DefaultSeeder implements Seeder {
           seedConnection,
           this.options.tableName,
         );
-        const warnings = this.validateAppliedHistory(seeds, history);
+        const applied = history.filter(
+          (record) => record.status === 'executed',
+        );
+        const warnings = this.validateAppliedHistory(seeds, applied);
         await upgradeTaskChecksums(
           seedConnection,
           this.options.tableName ?? DEFAULT_SEED_TABLE,
           seeds,
-          history,
+          applied,
         );
 
         const recorded = new Map(
@@ -172,25 +173,13 @@ class DefaultSeeder implements Seeder {
 
         for (const seed of seeds) {
           const status = recorded.get(seed.name);
-          if (
-            status === 'executed' ||
-            (status === 'skipped' &&
-              !(samplesEnabled && seed.seed.sample === true))
-          ) {
+          if (status === 'executed') {
             skipped.push(seed.name);
             continue;
           }
           if (this.options.taskFilter && !this.options.taskFilter(seed))
             continue;
           if (seed.seed.sample === true && !samplesEnabled) {
-            await recordSeedCompleted(seedConnection, {
-              tableName: this.options.tableName,
-              packageName: seed.packageName,
-              name: seed.name,
-              checksum: seed.checksum,
-              durationMs: null,
-              status: 'skipped',
-            });
             skippedSamples.push(seed.name);
             continue;
           }
@@ -229,18 +218,20 @@ class DefaultSeeder implements Seeder {
           seedConnection,
           this.options.tableName,
         );
-        const skippedNames = new Set(
-          history
-            .filter((record) => record.status === 'skipped')
-            .map((record) => record.name),
+        const recorded = new Map(
+          history.map((record) => [record.name, record.status]),
         );
         const executed: string[] = [];
         for (const seed of seeds) {
           if (this.options.taskFilter && !this.options.taskFilter(seed))
             continue;
-          if (seed.seed.sample !== true || !skippedNames.has(seed.name))
-            continue;
-          await this.runSeed(connection, seed, 'update');
+          const status = recorded.get(seed.name);
+          if (seed.seed.sample !== true || status === 'executed') continue;
+          await this.runSeed(
+            connection,
+            seed,
+            status === 'skipped' ? 'update' : 'insert',
+          );
           executed.push(seed.name);
         }
         return { executed };
@@ -292,7 +283,10 @@ class DefaultSeeder implements Seeder {
     if (options.dryRun) {
       const history = await this.readHistoryIfPresent(seedConnection);
       return {
-        repaired: collectChecksumMismatches(seeds, history),
+        repaired: collectChecksumMismatches(
+          seeds,
+          history.filter((record) => record.status === 'executed'),
+        ),
         dryRun: true,
       };
     }
@@ -309,7 +303,10 @@ class DefaultSeeder implements Seeder {
           seedConnection,
           this.options.tableName,
         );
-        const repaired = collectChecksumMismatches(seeds, history);
+        const repaired = collectChecksumMismatches(
+          seeds,
+          history.filter((record) => record.status === 'executed'),
+        );
         await writeTaskChecksums(seedConnection, tableName, repaired);
         return { repaired, dryRun: false };
       },
@@ -332,7 +329,7 @@ class DefaultSeeder implements Seeder {
   private async runSeed(
     connection: ReturnType<CreateSeederOptions['database']['connection']>,
     loaded: LoadedSeed,
-    write: 'insert' | 'update' = 'insert',
+    write: 'insert' | 'update',
   ): Promise<void> {
     const recordRun = async (
       seedConnection: MigrationConnection,

@@ -37,9 +37,9 @@ export interface SampleDataLedger {
 export interface SampleDataRunResult {
   /** Registration names that ran. */
   readonly executed: readonly string[];
-  /** Registration names recorded as skipped without running. */
+  /** Outstanding registration names skipped because sample data is disabled. */
   readonly skipped: readonly string[];
-  /** Registrations that threw; each is recorded as skipped, so `nocobase db sample` can run it again. */
+  /** Registrations that threw and remain eligible for a later run. */
   readonly failed: readonly {
     readonly name: string;
     readonly error: unknown;
@@ -59,11 +59,11 @@ export interface SampleDataService {
     readonly enabled: boolean;
   }): void;
   /**
-   * Makes the next run build every registration recorded as skipped, or not recorded at all, whatever `prepare` said.
+   * Makes the next run build every outstanding registration, even when disabled.
    * `nocobase db sample` uses it.
    */
   rerunSkipped(): void;
-  /** Builds outstanding samples when enabled, or records new samples as skipped. */
+  /** Builds outstanding samples when enabled. Disabled samples leave history untouched. */
   run(): Promise<SampleDataRunResult>;
 }
 

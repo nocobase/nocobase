@@ -31,7 +31,7 @@ import {
 
 export interface AppSeeder {
   run(): Promise<AppSeedRunResult>;
-  /** Runs the sample seeds recorded as skipped; see `Seeder.runSamples()`. */
+  /** Runs outstanding sample seeds; see `Seeder.runSamples()`. */
   runSamples(): Promise<AppSeedRunResult>;
   /** The seed history, without creating its table. */
   history(): Promise<SeedHistoryRecord[]>;
@@ -50,7 +50,7 @@ export interface AppSeedRunResult {
   reason?: AppSeedSkippedReason;
   executed?: string[];
   skipped?: string[];
-  /** Sample seeds recorded as skipped without running. */
+  /** Pending sample seeds skipped because sample data is disabled. */
   skippedSamples?: string[];
   warnings?: ChecksumMismatch[];
 }
@@ -76,7 +76,7 @@ export interface CreateAppSeederOptions {
   sources?: readonly SeedSource[];
   /** Reported when a lock whose holder stopped beating is taken over. */
   onStaleLock?: (takeover: StaleTaskLockTakeover) => void;
-  /** Whether pending sample seeds run; recorded as skipped otherwise. */
+  /** Whether normal runs and previews include pending sample seeds. */
   sample?: { readonly enabled: boolean };
 }
 
@@ -121,24 +121,21 @@ export function createAppSeeder(options: CreateAppSeederOptions): AppSeeder {
           reason: 'missing-directory',
         };
       }
-      const seeds = await loadSeeds(createDatabaseSeederOptions(options));
+      const seeds = (
+        await loadSeeds(createDatabaseSeederOptions(options))
+      ).filter(
+        (seed) =>
+          (options.sample?.enabled === true || seed.seed.sample !== true) &&
+          (!options.taskFilter || options.taskFilter(seed)),
+      );
       // A fresh run drops the seed history with the rest of the schema.
       const history =
         pendingOptions.fresh || pendingOptions.withoutHistory
           ? []
           : await createDatabaseSeeder(options).history();
-      const samples = new Set(
-        options.sample?.enabled
-          ? seeds
-              .filter(({ seed }) => seed.sample === true)
-              .map(({ name }) => name)
-          : [],
-      );
       return pendingTasksResult(
-        options.taskFilter ? seeds.filter(options.taskFilter) : seeds,
-        history.filter(
-          ({ name, status }) => status !== 'skipped' || !samples.has(name),
-        ),
+        seeds,
+        history.filter(({ status }) => status === 'executed'),
       );
     },
 

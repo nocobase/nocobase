@@ -13,6 +13,7 @@ import {
   runAppDatabaseTasks,
   type AppDatabaseConfig,
   type AppDatabaseTaskContributions,
+  type AppSeeder,
 } from '../src/database/index.js';
 import {
   createSampleDataService,
@@ -39,7 +40,12 @@ async function fixture() {
   const databases = await provision(['main']);
   const config: AppDatabaseConfig = {
     default: 'main',
-    connections: { main: databases.connectionConfig('main') },
+    connections: {
+      main: {
+        ...databases.connectionConfig('main'),
+        seeds: { onChecksumMismatch: 'error' },
+      },
+    },
   };
   const contributions: AppDatabaseTaskContributions = {
     appPackageName: 'test-app',
@@ -89,16 +95,18 @@ await query.insertInto('rows').values({ value: '${name}' }).execute();
       await database.destroy();
     }
   }
-  async function history() {
+  async function withSeeder<T>(work: (seeder: AppSeeder) => Promise<T>) {
     const database = createAppDatabaseManager(config)!;
     try {
-      return await createAppSeeder({
-        database,
-        config: {
-          directory: paths.database('main/seeds'),
-          autoRun: true,
-        },
-      }).history();
+      return await work(
+        createAppSeeder({
+          database,
+          config: {
+            directory: paths.database('main/seeds'),
+            autoRun: true,
+          },
+        }),
+      );
     } finally {
       await database.destroy();
     }
@@ -136,7 +144,17 @@ await query.insertInto('rows').values({ value: '${name}' }).execute();
       await app.shutdown();
     }
   }
-  return { seed, run, rows, history, start };
+  return {
+    seed,
+    run,
+    rows,
+    history: () => withSeeder((seeder) => seeder.history()),
+    start,
+    recordLegacySample: (name: string) =>
+      withSeeder((seeder) =>
+        seeder.record({ name, packageName: 'test-app', status: 'skipped' }),
+      ),
+  };
 }
 
 describe('sample seeds', () => {
@@ -165,8 +183,8 @@ describe('sample seeds', () => {
     ]);
   });
 
-  it('are recorded as skipped without app.sampleData, and run on request', async () => {
-    const { seed, run, rows } = await fixture();
+  it('leave no history while disabled and run unrecorded and legacy samples on request', async () => {
+    const { seed, run, rows, history, recordLegacySample } = await fixture();
     seed('001_required', false);
     seed('002_sample', true);
 
@@ -177,8 +195,19 @@ describe('sample seeds', () => {
       freshInstall: true,
     });
     expect(await rows()).toEqual(['001_required']);
+    expect(await history()).toMatchObject([
+      { name: '001_required', status: 'executed' },
+    ]);
+    seed('003_legacy_sample', true);
+    seed('004_now_required', false);
+    await recordLegacySample('003_legacy_sample');
+    await recordLegacySample('004_now_required');
+    expect((await run(false, undefined, true)).results[1]).toMatchObject({
+      pending: ['004_now_required'],
+      skipped: ['001_required'],
+    });
     expect((await run(true, undefined, true)).results[1]).toMatchObject({
-      pending: ['002_sample'],
+      pending: ['002_sample', '003_legacy_sample', '004_now_required'],
       skipped: ['001_required'],
     });
     expect(await rows()).toEqual(['001_required']);
@@ -187,14 +216,22 @@ describe('sample seeds', () => {
     expect(sampled.results[0]).toMatchObject({
       kind: 'seeds',
       status: 'completed',
-      executed: ['002_sample'],
+      executed: ['002_sample', '003_legacy_sample'],
     });
-    expect(await rows()).toEqual(['001_required', '002_sample']);
+    expect(await rows()).toEqual([
+      '001_required',
+      '002_sample',
+      '003_legacy_sample',
+    ]);
+    expect((await run(false, 'sample')).results[0].executed).toEqual([]);
+    expect((await run(false)).results[1].executed).toEqual([
+      '004_now_required',
+    ]);
   });
 });
 
-it('runs skipped and newly added samples once on subsequent enabled starts', async () => {
-  const { seed, start, rows, history } = await fixture();
+it('runs unrecorded and legacy samples once on subsequent enabled starts', async () => {
+  const { seed, start, rows, history, recordLegacySample } = await fixture();
   seed('001_required', false);
   seed('002_sample', true);
 
@@ -202,20 +239,15 @@ it('runs skipped and newly added samples once on subsequent enabled starts', asy
   expect(await rows()).toEqual(['001_required']);
   expect(await history()).toMatchObject([
     { name: '001_required', status: 'executed' },
-    { name: '002_sample', status: 'skipped' },
-    { name: 'sample-data:demo', status: 'skipped' },
   ]);
 
+  await recordLegacySample('002_sample');
+  await recordLegacySample('sample-data:demo');
+  const beforeUpgrade = await history();
   seed('003_sample', true);
   await start(false, ['demo', 'demo-upgrade']);
   expect(await rows()).toEqual(['001_required']);
-  expect(await history()).toMatchObject([
-    { name: '001_required', status: 'executed' },
-    { name: '002_sample', status: 'skipped' },
-    { name: 'sample-data:demo', status: 'skipped' },
-    { name: '003_sample', status: 'skipped' },
-    { name: 'sample-data:demo-upgrade', status: 'skipped' },
-  ]);
+  expect(await history()).toEqual(beforeUpgrade);
 
   seed('004_sample', true);
   const registrations = ['demo', 'demo-upgrade', 'demo-new'];
@@ -229,14 +261,16 @@ it('runs skipped and newly added samples once on subsequent enabled starts', asy
     '004_sample',
     ...registrations,
   ]);
-  expect((await history()).map(({ name, status }) => [name, status])).toEqual([
+  expect(
+    (await history()).map(({ name, status }) => [name, status]).sort(),
+  ).toEqual([
     ['001_required', 'executed'],
     ['002_sample', 'executed'],
-    ['sample-data:demo', 'executed'],
     ['003_sample', 'executed'],
-    ['sample-data:demo-upgrade', 'executed'],
     ['004_sample', 'executed'],
+    ['sample-data:demo', 'executed'],
     ['sample-data:demo-new', 'executed'],
+    ['sample-data:demo-upgrade', 'executed'],
   ]);
 });
 
@@ -260,21 +294,26 @@ describe('sample data service', () => {
           name,
           status: status as SampleDataRecord['status'],
         })),
-      record: async (entry) => {
+      record: vi.fn(async (entry) => {
         records.set(entry.name, entry.status);
-      },
+      }),
     };
   }
 
-  it('builds unrecorded samples once when enabled, and records the outcome', async () => {
+  it('records only successful registrations and retries failures', async () => {
     const service = createSampleDataService();
     const built = vi.fn(async () => {});
     const broken = vi.fn(async () => {
       throw new Error('broken');
     });
+    const legacy = vi.fn(async () => {
+      throw new Error('legacy');
+    });
     service.register({ name: 'demo', packageName: 'app', run: built });
     service.register({ name: 'broken', packageName: 'app', run: broken });
+    service.register({ name: 'legacy', packageName: 'app', run: legacy });
     const store = ledger();
+    store.records.set('sample-data:legacy', 'skipped');
 
     // Nothing runs before the database provider prepares the service.
     expect(await service.run()).toEqual({
@@ -286,20 +325,26 @@ describe('sample data service', () => {
     service.prepare({ ledger: store, enabled: true });
     const result = await service.run();
     expect(result.executed).toEqual(['demo']);
-    expect(result.failed.map((entry) => entry.name)).toEqual(['broken']);
-    expect([...store.records]).toEqual([
-      ['sample-data:demo', 'executed'],
-      ['sample-data:broken', 'skipped'],
+    expect(result.failed.map((entry) => entry.name)).toEqual([
+      'broken',
+      'legacy',
     ]);
+    expect([...store.records]).toEqual([
+      ['sample-data:legacy', 'skipped'],
+      ['sample-data:demo', 'executed'],
+    ]);
+    expect(store.record).toHaveBeenCalledOnce();
 
     broken.mockResolvedValueOnce(undefined);
-    expect((await service.run()).executed).toEqual(['broken']);
+    legacy.mockResolvedValueOnce(undefined);
+    expect((await service.run()).executed).toEqual(['broken', 'legacy']);
     expect(built).toHaveBeenCalledOnce();
     expect(broken).toHaveBeenCalledTimes(2);
     expect(store.records.get('sample-data:broken')).toBe('executed');
+    expect(store.records.get('sample-data:legacy')).toBe('executed');
   });
 
-  it('records samples as skipped when not enabled, and refuses a duplicate name', async () => {
+  it('reports disabled samples without writing history and can run them on request', async () => {
     const service = createSampleDataService();
     const run = vi.fn(async () => {});
     service.register({ name: 'demo', packageName: 'app', run });
@@ -307,15 +352,19 @@ describe('sample data service', () => {
       service.register({ name: 'demo', packageName: 'other', run }),
     ).toThrow('Sample data "demo" is already registered.');
     const store = ledger();
+    store.records.set('sample-data:legacy', 'skipped');
+    service.register({ name: 'legacy', packageName: 'app', run });
     service.prepare({ ledger: store, enabled: false });
 
-    expect(await service.run()).toMatchObject({ skipped: ['demo'] });
+    expect(await service.run()).toMatchObject({ skipped: ['demo', 'legacy'] });
     expect(run).not.toHaveBeenCalled();
-    expect(store.records.get('sample-data:demo')).toBe('skipped');
+    expect([...store.records]).toEqual([['sample-data:legacy', 'skipped']]);
+    expect(store.record).not.toHaveBeenCalled();
 
     service.rerunSkipped();
-    expect((await service.run()).executed).toEqual(['demo']);
-    expect(run).toHaveBeenCalledOnce();
+    expect((await service.run()).executed).toEqual(['demo', 'legacy']);
+    expect((await service.run()).executed).toEqual([]);
+    expect(run).toHaveBeenCalledTimes(2);
     expect(store.records.get('sample-data:demo')).toBe('executed');
   });
 });

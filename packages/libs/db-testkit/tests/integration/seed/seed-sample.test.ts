@@ -35,7 +35,7 @@ describeIntegrationDatabases('sample seeds', (context) => {
     return { directory, tableName, lockTableName, dataTableName };
   }
 
-  it('records a sample seed as skipped unless enabled, and runs it once when enabled', async () => {
+  it('skips disabled samples without a history write and runs them once when enabled', async () => {
     const { directory, tableName, lockTableName, dataTableName } =
       await prepare('sampleSkip');
     const seeder = createSeeder({
@@ -57,12 +57,11 @@ describeIntegrationDatabases('sample seeds', (context) => {
     ).resolves.toEqual([{ event: '202610060001_required' }]);
     await expect(seeder.history()).resolves.toMatchObject([
       { name: '202610060001_required', status: 'executed' },
-      { name: '202610060002_sample', status: 'skipped', durationMs: null },
     ]);
 
     await expect(seeder.run()).resolves.toMatchObject({
       executed: [],
-      skippedSamples: [],
+      skippedSamples: ['202610060002_sample'],
     });
 
     const enabledSeeder = createSeeder({
@@ -91,6 +90,38 @@ describeIntegrationDatabases('sample seeds', (context) => {
       { name: '202610060002_sample', status: 'executed' },
     ]);
     await expect(seeder.runSamples()).resolves.toEqual({ executed: [] });
+  });
+
+  it('runs a legacy skipped sample despite checksum drift and updates its row', async () => {
+    const { directory, tableName, lockTableName } =
+      await prepare('sampleLegacy');
+    const seeder = createSeeder({
+      database: context.database,
+      connection: context.spec.name,
+      directory,
+      tableName,
+      lockTableName,
+      sample: { enabled: true },
+      onChecksumMismatch: 'error',
+    });
+    await seeder.record({
+      packageName: 'app',
+      name: '202610060002_sample',
+      status: 'skipped',
+    });
+    const [legacy] = await seeder.history();
+
+    await expect(seeder.repair({ dryRun: true })).resolves.toMatchObject({
+      repaired: [],
+    });
+    await expect(seeder.run()).resolves.toMatchObject({
+      executed: ['202610060001_required', legacy.name],
+      warnings: [],
+    });
+    const [executed] = await seeder.history();
+    expect(executed).toMatchObject({ id: legacy.id, status: 'executed' });
+    expect(executed.checksum).not.toBe(legacy.checksum);
+    await expect(seeder.run()).resolves.toMatchObject({ executed: [] });
   });
 
   it('runs a sample seed when enabled', async () => {

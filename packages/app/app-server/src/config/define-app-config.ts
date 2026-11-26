@@ -127,6 +127,7 @@ export interface AppIdentityConfig {
   readonly publicApiUrl: string;
   /**
    * Run outstanding sample seeds and `sampleDataToken` registrations, including previously skipped entries.
+   * Only successful runs are recorded in seed history.
    * Set with `APP_SAMPLE_DATA`. Leave disabled in production.
    */
   readonly sampleData?: boolean;

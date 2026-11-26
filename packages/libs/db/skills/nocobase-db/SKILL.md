@@ -144,11 +144,11 @@ The rules are absolute, because these files are history that has already run on 
 
 A backfill belongs in the migration that makes it necessary, using `query` from the same context — not in a seed.
 
-Sample data goes in the same `seeds` directory, declared with `defineSeed({ name, sample: true, run })`. Enable `app.sampleData` with `APP_SAMPLE_DATA=true` to run unrecorded and previously skipped sample seeds on new or existing databases. While disabled, new sample seeds are recorded as skipped. Leave it off in production.
+Sample data goes in the same `seeds` directory, declared with `defineSeed({ name, sample: true, run })`. Enable `app.sampleData` with `APP_SAMPLE_DATA=true` to run outstanding sample seeds on new and existing databases, including legacy skipped entries. Disabled samples leave seed history untouched. Leave sample data off in production.
 
 For data that needs other plugins' services, register it on `sampleDataToken` from `@nocobase/app-server/sample-data` in a service provider's `boot()`: `container.resolve(sampleDataToken).register({ name, packageName, run })`. With sample data enabled, the application runs outstanding registrations after all providers are ready. The seed history records successful seeds and registrations as `executed` so they run only once. Registration entries use `sample-data:<name>` in the default connection's seed history.
 
-`db reset` and `db apply` run database tasks without starting the app's providers. Start the app with sample data enabled to run registrations after those commands. In development, `pnpm nocobase db sample` can also run skipped sample seeds and outstanding registrations on demand.
+`db reset` and `db apply` run database tasks without starting the app's providers. Start the app with sample data enabled to run registrations after those commands. In development, `pnpm nocobase db sample` can also run all outstanding sample seeds and registrations on demand.
 
 Both run inside a transaction by default. `transaction: false` opts out, and a failure then leaves partial work behind with no history record, so take it only when the operation genuinely cannot run in one.
 

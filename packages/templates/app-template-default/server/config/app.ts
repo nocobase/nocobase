@@ -20,7 +20,7 @@ const app: AppConfigFactory<AppIdentityConfig> = defineAppConfig({
     }),
     APP_SAMPLE_DATA: envBoolean('sampleData', {
       description:
-        'Run outstanding sample seeds and sampleDataToken registrations, including previously skipped entries.',
+        'Run outstanding sample seeds and service registrations. Successful runs are recorded in seed history.',
       required: false,
     }),
   },
