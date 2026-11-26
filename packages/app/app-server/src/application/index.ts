@@ -1,4 +1,3 @@
-import { createAuditRuntime, type AuditRuntime } from '@nocobase/audit/runtime';
 import { enterRunningApplication } from '../backup/runtime-guard.js';
 import type { ReleaseStorageLock } from '@nocobase/drive';
 import { MailSenderFactoryProvider } from '../mailers/index.js';
@@ -14,10 +13,6 @@ import {
 import type { AppPaths } from '../config/index.js';
 import {
   apiErrorHandler,
-  declaredRouteActionOf,
-  declaredRouteOf,
-  getClientAddress,
-  getRequestId,
   apiNotFoundHandler,
   type ApiConfig,
   type AppHttpMiddleware,
@@ -32,14 +27,6 @@ import {
   assertNoDuplicateApiRoutes,
   type OwnedApiRouter,
 } from '../router/duplicate-routes.js';
-import {
-  apiExecutionResultOf,
-  enableApiExecutionResult,
-} from '../router/execution-result.js';
-import {
-  matchForwardedApiRoute,
-  observeForwardedApiContext,
-} from '../router/forwarded-context.js';
 import { createApiDocsRouter } from '../router/openapi/docs-routes.js';
 import { createCliRouter } from '../router/cli/routes.js';
 import { cliToken } from '../router/cli/service.js';
@@ -156,7 +143,6 @@ export class Application<
   };
   public readonly websocket: AppWebSocketHandler;
 
-  private readonly audit: AuditRuntime;
   private readonly providerRegistry: ServiceProviderRegistry =
     new ServiceProviderRegistry();
   private readonly websocketFactory: ApplicationWebSocketFactory;
@@ -165,6 +151,8 @@ export class Application<
   private routesRegistered = false;
   private apiRouterValue: Hono | undefined;
   private readonly httpMiddleware: AppHttpMiddleware<Application<TConfig>>[] =
+    [];
+  private readonly apiMiddleware: AppHttpMiddleware<Application<TConfig>>[] =
     [];
   private readonly routes: {
     readonly contribution: AppRouteContribution<Application<TConfig>>;
@@ -200,25 +188,6 @@ export class Application<
     this.paths = options.paths;
     this.configurationFile = options.configurationFile;
     this.container = new ServiceContainer();
-    this.audit = createAuditRuntime({
-      container: this.container,
-      config: this.config,
-      paths: this.paths,
-      logger: () =>
-        this.container.resolveIfCreated(loggingToken)?.getLogger('audit'),
-      i18n: () => this.container.resolveIfCreated(i18nToken),
-      router: {
-        declaredRouteOf,
-        declaredRouteActionOf,
-        matchForwardedRoute: (context) =>
-          matchForwardedApiRoute(context, this.forwardedApiRoutes.routers),
-        observeForwardedContext: observeForwardedApiContext,
-        enableExecutionResult: enableApiExecutionResult,
-        executionResultOf: apiExecutionResultOf,
-        getClientAddress,
-        getRequestId,
-      },
-    });
     this.usesDefaultWebSocket = options.websocket === undefined;
     this.websocketFactory = options.websocket ?? createRealtimeWebSocketHandler;
     this.websocket = async (request, env) => {
@@ -370,6 +339,14 @@ export class Application<
     this.httpMiddleware.push(middleware);
   }
 
+  /** Registers middleware after request ID assignment and before API limits and route handlers. */
+  public addApiMiddleware(
+    middleware: AppHttpMiddleware<Application<TConfig>>,
+  ): void {
+    this.assertRoutesMutable();
+    this.apiMiddleware.push(middleware);
+  }
+
   public registerProviders(): void {
     if (this.serviceProvidersRegistered) {
       return;
@@ -394,7 +371,6 @@ export class Application<
   private async shutdownProviders(): Promise<void> {
     await this.startPromise?.catch(() => undefined);
     try {
-      await this.audit.close();
       await this.providerRegistry.shutdown();
     } finally {
       this.releaseStorage?.();
@@ -478,7 +454,6 @@ export class Application<
     }
 
     const runtime = this.container.resolve(i18nToken);
-    this.audit.registerLocales(runtime);
     const sources = [
       ...(this.applicationLocales
         ? [
@@ -513,8 +488,9 @@ export class Application<
     const api = new Hono();
     api.use('*', requestIdMiddleware());
     const apiConfig = this.config.get<ApiConfig>('api');
-    const audit = await this.audit.start();
-    if (audit) api.use('*', audit);
+    for (const middleware of this.apiMiddleware) {
+      await middleware.register(api, this);
+    }
     // The `api` section's global limits, each installed only when configured.
     installApiLimits(api, apiConfig);
     // The last resort: anything no router recognized is an unexpected failure, answered with an opaque 500.

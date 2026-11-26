@@ -1,21 +1,19 @@
-import type { MiddlewareHandler } from 'hono';
-
 import labels from './locales/en-US.js';
-import { describeAudit } from './request.js';
+import type { AuditRouteOptions } from './request.js';
 
 /** Declare audit on a generated Repository endpoint. Repository queries also use POST, so explicitly exclude them. */
-export function describeRepositoryAudit(
+export function repositoryAuditOptions(
   exposure: string,
   collection: string,
   action: string,
-): MiddlewareHandler {
+): AuditRouteOptions | false {
   if (
     action !== 'createOne' &&
     action !== 'updateOne' &&
     action !== 'deleteOne'
   )
-    return describeAudit(false);
-  return describeAudit({
+    return false;
+  return {
     action: `${exposure}:${action}`,
     resource: exposure,
     operationName: {
@@ -28,5 +26,5 @@ export function describeRepositoryAudit(
     // Collection values and filter operands can contain application secrets under arbitrary names.
     captureBody: false,
     resultFrom: 'context',
-  });
+  };
 }

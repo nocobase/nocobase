@@ -37,6 +37,17 @@ export interface RepositoryEndpointDescriptor {
   readonly loadCollection: () => Promise<CollectionDefinition | undefined>;
 }
 
+/** Read generated Repository endpoint metadata from a matched route's API declaration. */
+export function repositoryEndpointOf(
+  spec: DescribeRouteOptions | undefined,
+):
+  | Pick<RepositoryEndpointDescriptor, 'exposure' | 'collection' | 'action'>
+  | undefined {
+  const described: Readonly<Record<string, unknown>> | undefined = spec;
+  return described?.[repositoryExtension] as
+    RepositoryEndpointDescriptor | undefined;
+}
+
 type SchemaObject = OpenAPIV3_1.SchemaObject;
 type SchemaOrRef = OpenAPIV3_1.SchemaObject | OpenAPIV3_1.ReferenceObject;
 

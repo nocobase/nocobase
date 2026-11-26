@@ -1,89 +1,123 @@
-import type { I18nRuntime } from '@nocobase/i18n';
+import type {
+  Application,
+  ApplicationConfig,
+} from '@nocobase/app-server/application';
+import { i18nToken } from '@nocobase/app-server/i18n';
+import { loggingToken } from '@nocobase/app-server/logging';
+import {
+  apiExecutionResultOf,
+  declaredRouteActionOf,
+  declaredRouteOf,
+  enableApiExecutionResult,
+  getClientAddress,
+  getRequestId,
+  matchForwardedApiRoute,
+  observeForwardedApiContext,
+  repositoryEndpointOf,
+} from '@nocobase/app-server/router';
 import { getRequestLocale } from '@nocobase/i18n/server';
-import type { ServiceContainer } from '@nocobase/service-provider';
-import type { MiddlewareHandler } from 'hono';
+import { ServiceProvider } from '@nocobase/service-provider';
 
 import { auditDefaults, type AuditConfig } from './config.js';
 import { createTrustedAuditProxies } from './ip.js';
 import locales from './locales/index.js';
-import { auditMiddleware, type AuditRequestHost } from './request.js';
-import {
-  AuditCoordinator,
-  auditServiceToken,
-  type AuditTransportContext,
-} from './service.js';
-
-export { describeRepositoryAudit } from './repository.js';
+import { auditMiddleware } from './request.js';
+import { AuditCoordinator, auditServiceToken } from './service.js';
 
 const namespace = '@nocobase/audit';
 
-interface AuditLogger {
-  error(fields: { destination?: string }, message: string): void;
-  warn(message: string): void;
-}
+/** Installs request auditing in an application assembled with app-server. */
+export class AuditProvider<
+  TConfig extends ApplicationConfig = ApplicationConfig,
+> extends ServiceProvider<Application<TConfig>> {
+  public readonly name: string = namespace;
+  private readonly coordinator: AuditCoordinator;
 
-export interface AuditRuntimeOptions {
-  readonly container: ServiceContainer;
-  readonly config: { get<T = unknown>(path: string): T | undefined };
-  readonly paths: AuditTransportContext['paths'];
-  readonly router: AuditRequestHost;
-  readonly logger: () => AuditLogger | undefined;
-  readonly i18n: () => I18nRuntime | undefined;
-}
+  public constructor(app: Application<TConfig>) {
+    super(app);
+    this.coordinator = new AuditCoordinator((message, destination) =>
+      this.report(message, destination),
+    );
+    // Providers can register drivers in either register() or boot(). Introduce
+    // the service during composition so audit can shut down before those providers.
+    app.container.instance(auditServiceToken, this.coordinator);
+    const { config, paths, container } = app;
+    app.addApiMiddleware({
+      name: namespace,
+      register: async (router) => {
+        const audit = config.get<AuditConfig>('audit');
+        if (!(await this.coordinator.start(audit, paths))) return;
+        const i18n = container.resolveIfCreated(i18nToken);
+        const proxies = createTrustedAuditProxies(
+          config.get('auth.advanced.ipAddress.trustedProxies'),
+          (message) => {
+            const logger = this.logger();
+            if (logger) logger.warn(message);
+            else console.warn(message);
+          },
+        );
+        router.use(
+          '*',
+          auditMiddleware({
+            host: {
+              declaredRouteOf(context) {
+                const spec = declaredRouteOf(context);
+                return (
+                  spec && { ...spec, repository: repositoryEndpointOf(spec) }
+                );
+              },
+              declaredRouteActionOf,
+              matchForwardedRoute: (context) =>
+                matchForwardedApiRoute(context, app.forwardedApiRoutes.routers),
+              observeForwardedContext: observeForwardedApiContext,
+              enableExecutionResult: enableApiExecutionResult,
+              executionResultOf: apiExecutionResultOf,
+              getClientAddress,
+              getRequestId,
+            },
+            service: this.coordinator,
+            autoDetect: audit?.autoDetect ?? auditDefaults.autoDetect,
+            proxies,
+            ipAddressHeaders: config.get<readonly string[]>(
+              'auth.advanced.ipAddress.ipAddressHeaders',
+            ) ?? ['x-forwarded-for'],
+            translate: ({ ns, key }, fallback, context) => {
+              const locale =
+                getRequestLocale(context) ?? i18n?.getDefaultLocale();
+              const translated = i18n?.getFixedT(ns, locale)(key, {
+                defaultValue: fallback,
+              });
+              return translated?.trim() || fallback;
+            },
+            report: () => this.report('Could not collect audit event.'),
+          }),
+        );
+      },
+    });
+  }
 
-export interface AuditRuntime {
-  registerLocales(runtime: I18nRuntime): void;
-  start(): Promise<MiddlewareHandler | undefined>;
-  close(): Promise<void>;
-}
+  public override register(): void {
+    this.app.container
+      .resolveIfCreated(i18nToken)
+      ?.registerNamespace(namespace, locales);
+  }
 
-/** Connect the audit service to the application's router and lifecycle. */
-export function createAuditRuntime(options: AuditRuntimeOptions): AuditRuntime {
-  const { config, paths, router } = options;
-  const report = (message: string, destination?: string): void => {
-    const logger = options.logger();
+  public override async shutdown(): Promise<void> {
+    await this.coordinator.close();
+  }
+
+  private logger() {
+    return this.app.container
+      .resolveIfCreated(loggingToken)
+      ?.getLogger('audit');
+  }
+
+  private report(message: string, destination?: string): void {
+    const logger = this.logger();
     if (logger) logger.error({ destination }, message);
     else
       console.error(
         destination ? `${message} Destination: ${destination}.` : message,
       );
-  };
-  const coordinator = new AuditCoordinator(report);
-  options.container.instance(auditServiceToken, coordinator);
-  return {
-    registerLocales(runtime) {
-      runtime.registerNamespace(namespace, locales);
-    },
-    async start() {
-      const audit = config.get<AuditConfig>('audit');
-      if (!(await coordinator.start(audit, paths))) return undefined;
-      const proxies = createTrustedAuditProxies(
-        config.get('auth.advanced.ipAddress.trustedProxies'),
-        (message) => {
-          const logger = options.logger();
-          if (logger) logger.warn(message);
-          else console.warn(message);
-        },
-      );
-      return auditMiddleware({
-        host: router,
-        service: coordinator,
-        autoDetect: audit?.autoDetect ?? auditDefaults.autoDetect,
-        proxies,
-        ipAddressHeaders: config.get<readonly string[]>(
-          'auth.advanced.ipAddress.ipAddressHeaders',
-        ) ?? ['x-forwarded-for'],
-        translate: ({ ns, key }, fallback, context) => {
-          const i18n = options.i18n();
-          const locale = getRequestLocale(context) ?? i18n?.getDefaultLocale();
-          const translated = i18n?.getFixedT(ns, locale)(key, {
-            defaultValue: fallback,
-          });
-          return translated?.trim() || fallback;
-        },
-        report: () => report('Could not collect audit event.'),
-      });
-    },
-    close: () => coordinator.close(),
-  };
+  }
 }

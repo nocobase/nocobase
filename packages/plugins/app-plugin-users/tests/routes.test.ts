@@ -10,6 +10,7 @@ import {
 import { loggingToken } from '@nocobase/app-server/logging';
 import { Application } from '@nocobase/app-server/application';
 import { auditServiceToken, type AuditEvent } from '@nocobase/audit';
+import { AuditProvider } from '@nocobase/audit/runtime';
 import { AppConfig, createAppPaths } from '@nocobase/app-server/config';
 import {
   defineApiRoutes,
@@ -52,6 +53,7 @@ describe('@nocobase/app-plugin-users API routes', () => {
       config,
       paths: createAppPaths({ rootDir: import.meta.dirname }),
     });
+    app.addServiceProvider(AuditProvider);
     const events: AuditEvent[] = [];
     app.container.resolve(auditServiceToken).registerDriver({
       name: 'memory',

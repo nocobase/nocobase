@@ -1,26 +1,27 @@
+import { AuditProvider } from '../src/runtime.js';
 import { databaseManagerToken } from '@nocobase/db';
 import { provisionTestDatabases } from '@nocobase/db-testing';
 import { Hono } from 'hono';
 import { expect, it, vi } from 'vitest';
 
-import { Application } from '../src/application/index.js';
+import { Application } from '@nocobase/app-server/application';
 import {
   describeAudit,
   auditServiceToken,
   type AuditConfig,
   type AuditEvent,
-} from '@nocobase/audit';
+} from '../src/index.js';
 import {
   I18nProvider,
   i18nHttpMiddleware,
   i18nToken,
-} from '../src/i18n/index.js';
-import { AppConfig, createAppPaths } from '../src/config/index.js';
+} from '@nocobase/app-server/i18n';
+import { AppConfig, createAppPaths } from '@nocobase/app-server/config';
 import {
   defineApiRoutes,
   defineRepositoryApiRoutes,
   describeRoute,
-} from '../src/router/index.js';
+} from '@nocobase/app-server/router';
 
 async function appWithAudit(
   settings: AuditConfig = {},
@@ -45,6 +46,7 @@ async function appWithAudit(
     config,
     paths: createAppPaths({ rootDir: '/test/audit' }),
   });
+  app.addServiceProvider(AuditProvider);
   const events: AuditEvent[] = [];
   app.container.resolve(auditServiceToken).registerDriver({
     name: 'memory',

@@ -1,0 +1,120 @@
+import { readFile } from 'node:fs/promises';
+import path from 'node:path';
+
+import { defineStandaloneServer } from '@nocobase/app-server/node';
+import { defineServerPlugins } from '@nocobase/app-server/plugins';
+import {
+  defineApiRoutes,
+  defineRepositoryApiRoutes,
+} from '@nocobase/app-server/router';
+import {
+  resolveAppRuntime,
+  startApplicationInScope,
+} from '@nocobase/app-server/runtime';
+import { createTestApp } from '@nocobase/app-testing/server';
+import type { AuditEvent } from '@nocobase/audit';
+import { databaseManagerToken } from '@nocobase/db';
+import { expect, it } from 'vitest';
+
+import { createApp } from '../../server/app.js';
+import appRuntime from '../../server/runtime.js';
+
+// Exercise the template composition and generated routes with a single test collection.
+const runtimeDefinition = {
+  ...appRuntime,
+  plugins: defineServerPlugins([]),
+  serviceProviders: [],
+  routes: [],
+};
+
+it('records Repository mutations with only a file destination configured', async () => {
+  const app = await createTestApp({
+    createServer: defineStandaloneServer({
+      rootDir: path.resolve(import.meta.dirname, '../..'),
+      appRuntime: runtimeDefinition,
+      async createServer(scope) {
+        const runtime = await resolveAppRuntime(runtimeDefinition, scope);
+        const app = createApp(runtime);
+        const repository = defineRepositoryApiRoutes({
+          principal: (context) => context.req.header('x-test-principal'),
+          repositories: [
+            {
+              name: 'auditOrders',
+              policy: () => ({
+                read: true,
+                create: true,
+                update: false,
+                delete: false,
+              }),
+              actions: { createOne: {}, count: {} },
+            },
+          ],
+        });
+        app.addRoutes(
+          defineApiRoutes(async (app) => {
+            const connection = app.container
+              .resolve(databaseManagerToken)
+              .connection();
+            await connection.builder.createCollection(
+              'auditOrders',
+              (collection) => {
+                collection.string('id').primary();
+              },
+            );
+            return repository.createRouter(app);
+          }),
+        );
+        return startApplicationInScope(scope, app);
+      },
+    }).create,
+    install: false,
+    config: {
+      app: { publicOrigin: 'http://localhost' },
+      audit: {
+        transports: {
+          capture: { driver: 'file', options: { path: 'audit.jsonl' } },
+        },
+      },
+    },
+  });
+  try {
+    const post = (action: string, body: unknown, principal?: string) =>
+      app.request(`/auditOrders/${action}`, {
+        method: 'POST',
+        headers: {
+          'content-type': 'application/json',
+          ...(principal ? { 'x-test-principal': principal } : {}),
+        },
+        body: JSON.stringify(body),
+      });
+    const input = { values: { id: 'order-1' } };
+    expect((await post('createOne', input)).status).toBe(403);
+    const created = await post('createOne', input, 'operator');
+    if (!created.ok) throw new Error(await created.text());
+    expect((await post('count', {}, 'operator')).ok).toBe(true);
+
+    const lines = await readFile(
+      app.application.paths.storage('audit.jsonl'),
+      'utf8',
+    );
+    const repositoryEvents = lines
+      .trim()
+      .split('\n')
+      .map((line) => JSON.parse(line) as AuditEvent)
+      .filter(({ resource }) => resource === 'auditOrders');
+    expect(repositoryEvents).toMatchObject([
+      {
+        action: 'auditOrders:createOne',
+        outcome: 'denied',
+        targets: [{ collection: 'auditOrders' }],
+      },
+      {
+        action: 'auditOrders:createOne',
+        outcome: 'success',
+        targets: [{ collection: 'auditOrders', key: { id: 'order-1' } }],
+      },
+    ]);
+  } finally {
+    await app.close();
+  }
+});

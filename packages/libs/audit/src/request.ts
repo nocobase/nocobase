@@ -11,6 +11,7 @@ import {
 } from './redact.js';
 import type { AuditActor, AuditTarget, AuditTranslation } from './index.js';
 import type { AuditCoordinator } from './service.js';
+import { repositoryAuditOptions } from './repository.js';
 
 export interface AuditTargets {
   readonly source?: AuditTarget;
@@ -76,6 +77,11 @@ export interface AuditRequestHost {
           string | ((route: Context['req']['matchedRoutes'][number]) => string);
         readonly summary?: string;
         readonly tags?: readonly string[];
+        readonly repository?: {
+          readonly exposure: string;
+          readonly collection: string;
+          readonly action: string;
+        };
       }
     | undefined;
   declaredRouteActionOf(context: Context): string | undefined;
@@ -172,9 +178,15 @@ function routeAudit(
       context.req.routeIndex = previous;
     }
   }
+  const spec = host.declaredRouteOf(context);
+  if (spec?.repository) {
+    const { exposure, collection, action } = spec.repository;
+    const repository = repositoryAuditOptions(exposure, collection, action);
+    if (repository === false) return false;
+    declaration = { ...repository, ...declaration };
+  }
   if (!declaration && (!autoDetect || !writes.has(context.req.method)))
     return undefined;
-  const spec = host.declaredRouteOf(context);
   if (!declaration && (spec?.hide || !spec?.operationId)) return undefined;
   const operationId =
     typeof spec?.operationId === 'string'

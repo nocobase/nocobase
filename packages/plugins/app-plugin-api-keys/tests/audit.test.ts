@@ -12,6 +12,7 @@ import authorization, {
 import { I18nProvider } from '@nocobase/app-server/i18n';
 import { Application } from '@nocobase/app-server/application';
 import { auditServiceToken, type AuditEvent } from '@nocobase/audit';
+import { AuditProvider } from '@nocobase/audit/runtime';
 import { CachingProvider } from '@nocobase/app-server/caching';
 import {
   createAppPaths,
@@ -124,6 +125,7 @@ beforeAll(async () => {
       defineServerPlugins([authentication, authorization, apiKeys]),
     ),
   );
+  app.addServiceProvider(AuditProvider);
   app.container.resolve(auditServiceToken).registerDriver({
     name: 'memory',
     createTransport: () => ({

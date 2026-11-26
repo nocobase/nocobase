@@ -1,6 +1,6 @@
 # NocoBase Audit
 
-`@nocobase/audit` provides request auditing, route declarations, and event delivery. The application supplies this package as a production dependency. The application server starts it automatically and includes the `file` driver. Plugins that import its route declarations or service token declare a peer dependency on `@nocobase/audit`.
+`@nocobase/audit` provides request auditing, route declarations, and event delivery. The application supplies this package as a production dependency. The official application templates include its provider and the built-in `file` driver. An application assembled separately with `@nocobase/app-server` can add `AuditProvider` from `@nocobase/audit/runtime` with `app.addServiceProvider(AuditProvider)` in its server composition root. Add it after the other providers and runtime contributions so its transports close before the services they use. Register `defineAuditConfig()` from `@nocobase/audit` in the application config factories. Plugins that import its route declarations or service token declare a peer dependency on `@nocobase/audit`.
 
 ## Configuration
 
@@ -15,7 +15,7 @@ audit:
         path: logs/audit.jsonl
 ```
 
-With at least one destination, `audit.enabled` defaults to `true` and the app records explicitly declared operations. `audit.enabled: false` disables collection and delivery. `audit.autoDetect` defaults to `false`. Enable it to also record documented POST, PATCH, PUT, and DELETE operations that have an operation ID and are visible in the API document. An explicit `describeAudit(false)` excludes a route. A dynamic declaration that returns `undefined` leaves the route eligible for automatic detection. Repository mutations have declarations, and Repository queries are excluded.
+With at least one destination, `audit.enabled` defaults to `true` and the app records explicitly declared operations. `audit.enabled: false` disables collection and delivery. `audit.autoDetect` defaults to `false`. Enable it to also record documented POST, PATCH, PUT, and DELETE operations that have an operation ID and are visible in the API document. An explicit `describeAudit(false)` excludes a route. A dynamic declaration that returns `undefined` leaves the route eligible for automatic detection. The audit provider reads generated Repository endpoint metadata before guards, records mutations, and excludes queries.
 
 Relative file paths resolve under application storage. Absolute paths are supported. The driver creates directories with mode `0700` and opens files with mode `0600` on POSIX, subject to the process umask. Destinations that share a local file serialize appends within one process. Each file must have a single writer process. Complete records are written as JSON Lines and the file handle closes after each append. Use your deployment's log management for file rotation and retention.
 

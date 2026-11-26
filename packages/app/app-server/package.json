@@ -276,7 +276,6 @@
     "swagger-ui-dist": "^5.33.1"
   },
   "peerDependencies": {
-    "@nocobase/audit": "workspace:^",
     "@nocobase/i18n": "workspace:^",
     "@nocobase/caching": "workspace:^",
     "@nocobase/db": "workspace:^",

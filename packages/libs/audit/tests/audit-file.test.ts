@@ -1,3 +1,4 @@
+import { AuditProvider } from '../src/runtime.js';
 import {
   mkdtemp,
   readFile,
@@ -9,26 +10,33 @@ import {
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 
-import { Application } from '../src/application/index.js';
+import { Application } from '@nocobase/app-server/application';
 import {
   auditServiceToken,
   describeAudit,
   type AuditConfig,
   type AuditEvent,
-} from '@nocobase/audit';
-import { AppConfig, createAppPaths } from '../src/config/index.js';
-import { defineApiRoutes } from '../src/router/index.js';
+} from '../src/index.js';
+import { AppConfig, createAppPaths } from '@nocobase/app-server/config';
+import { defineApiRoutes } from '@nocobase/app-server/router';
 import { Hono } from 'hono';
+import {
+  ServiceProvider,
+  type ServiceProviderConstructor,
+} from '@nocobase/service-provider';
 import { expect, it, vi } from 'vitest';
 
 async function start(
   rootDir: string,
   audit: AuditConfig,
+  providers: readonly ServiceProviderConstructor<Application>[] = [],
 ): Promise<Application> {
   const config = new AppConfig();
   await config.loadAll();
   config.mergeDefaults({ audit: { ...audit } });
   const app = new Application({ config, paths: createAppPaths({ rootDir }) });
+  app.addServiceProviders(providers);
+  app.addServiceProvider(AuditProvider);
   app.addRoutes(
     defineApiRoutes(() => {
       const router = new Hono();
@@ -142,43 +150,78 @@ it('isolates an unsafe file and continues writing to another destination', async
   }
 });
 
-it('uses the file driver with a registered driver and closes the registered destination', async () => {
-  const root = await mkdtemp(path.join(tmpdir(), 'audit-file-'));
-  const file = path.join(root, 'storage', 'audit.jsonl');
-  const app = await start(root, {
-    transports: {
-      file: { driver: 'file', options: { path: 'audit.jsonl' } },
-      custom: { driver: 'custom' },
-    },
-  });
-  const write = vi.fn((event: AuditEvent) => {
-    Object.assign(event, { action: 'changed-by-custom' });
-    throw new Error('Destination failed');
-  });
-  const close = vi.fn();
-  const report = vi.spyOn(console, 'error').mockImplementation(() => undefined);
-  app.container.resolve(auditServiceToken).registerDriver({
-    name: 'custom',
-    createTransport: () => ({ write, close }),
-  });
-  try {
-    expect((await send(app, 'shared-event')).status).toBe(200);
-    expect(write).toHaveBeenCalledOnce();
-    expect(await lines(file)).toMatchObject([
-      { requestId: 'shared-event', action: 'test:example' },
-    ]);
-    expect(report).toHaveBeenCalledWith(
-      'Could not write audit event. Destination: custom.',
+it.each(['register', 'boot'] as const)(
+  'combines file and plugin drivers registered during %s and closes transports first',
+  async (phase) => {
+    const root = await mkdtemp(path.join(tmpdir(), 'audit-file-'));
+    const file = path.join(root, 'storage', 'audit.jsonl');
+    const write = vi.fn((event: AuditEvent) => {
+      Object.assign(event, { action: 'changed-by-custom' });
+      throw new Error('Destination failed');
+    });
+    const close = vi.fn();
+    const pluginShutdown = vi.fn();
+    const createTransport = vi.fn(() => ({ write, close }));
+    class TestTransportProvider extends ServiceProvider<Application> {
+      public readonly name = 'test-transport';
+
+      public override register(): void {
+        if (phase === 'register') this.registerDriver();
+      }
+
+      public override async boot(): Promise<void> {
+        if (phase === 'boot') this.registerDriver();
+        expect(createTransport).not.toHaveBeenCalled();
+      }
+
+      public override async start(): Promise<void> {
+        expect(createTransport).toHaveBeenCalledOnce();
+      }
+
+      public override async shutdown(): Promise<void> {
+        pluginShutdown();
+      }
+
+      private registerDriver(): void {
+        this.app.container.resolve(auditServiceToken).registerDriver({
+          name: 'custom',
+          createTransport,
+        });
+      }
+    }
+    const app = await start(
+      root,
+      {
+        transports: {
+          file: { driver: 'file', options: { path: 'audit.jsonl' } },
+          custom: { driver: 'custom' },
+        },
+      },
+      [TestTransportProvider],
     );
-    await app.shutdown();
-    expect(close).toHaveBeenCalledOnce();
-    await rename(file, path.join(root, 'moved.jsonl'));
-  } finally {
-    report.mockRestore();
-    await app.shutdown();
-    await rm(root, { recursive: true, force: true });
-  }
-});
+    const report = vi
+      .spyOn(console, 'error')
+      .mockImplementation(() => undefined);
+    try {
+      expect((await send(app, 'shared-event')).status).toBe(200);
+      expect(write).toHaveBeenCalledOnce();
+      expect(await lines(file)).toMatchObject([
+        { requestId: 'shared-event', action: 'test:example' },
+      ]);
+      expect(report).toHaveBeenCalledWith(
+        'Could not write audit event. Destination: custom.',
+      );
+      await app.shutdown();
+      expect(close).toHaveBeenCalledExactlyOnceWith();
+      expect(close).toHaveBeenCalledBefore(pluginShutdown);
+      await rename(file, path.join(root, 'moved.jsonl'));
+    } finally {
+      report.mockRestore();
+      await app.shutdown();
+      await rm(root, { recursive: true, force: true });
+    }
+  },
+);
 
 it('rejects invalid built-in file options during startup', async () => {
   const root = await mkdtemp(path.join(tmpdir(), 'audit-file-'));

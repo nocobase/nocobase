@@ -1,4 +1,3 @@
-import { describeRepositoryAudit } from '@nocobase/audit/runtime';
 import { setApiExecutionResult } from './execution-result.js';
 import {
   databaseManagerToken,
@@ -357,7 +356,6 @@ export function defineRepositoryApiRoutes<P = unknown>(
           action === 'deleteOne';
         router.post(
           `/${entry.name}/${action}`,
-          describeRepositoryAudit(entry.name, entry.collection, action),
           // Documented from the Collection when the API document is generated, not declared by hand.
           describeRepositoryEndpoint({
             exposure: entry.name,

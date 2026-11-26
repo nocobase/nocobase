@@ -1,3 +1,4 @@
+import { AuditProvider } from '@nocobase/audit/runtime';
 import type { Application } from '@nocobase/app-server/application';
 import { DatabaseProvider } from '@nocobase/app-server/database';
 import { I18nProvider, i18nHttpMiddleware } from '@nocobase/app-server/i18n';
@@ -47,6 +48,7 @@ export function createApp(runtime: AppRuntimeContext): Application {
   app.addRoutes(healthCheckApiRoutes);
   app.addRuntimeContributions(runtime);
   app.addRoutes(spaRootRoutes);
+  app.addServiceProvider(AuditProvider);
 
   return app;
 }
