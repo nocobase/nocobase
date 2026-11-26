@@ -16,7 +16,7 @@ description: >-
   for upgrading an already deployed build on a server, which the app installer
   handles.
 metadata:
-  short-description: Merge a newer template release into this application
+  short-description: Merge a newer template release or switch editions in this application
 ---
 
 # Upgrading the application template
@@ -44,7 +44,7 @@ When the App already supplies the project plugin development Skill, check for a 
 
 ## 1. Secure a way back
 
-For a retry on an existing upgrade branch, verify its original checkpoint and pinned artifacts, review the pending upgrade edits, and resume the failed step. For a new upgrade in a Git project, require a clean tree (ask the user to commit anything outstanding — do not stash or commit it for them), record `git rev-parse HEAD`, then `git checkout -b template-upgrade-<target>`. Editing the project directly is safe on a branch, and it is what lets `typecheck`/`test`/`build` actually run.
+For a retry on an existing upgrade branch, verify its original checkpoint and pinned artifacts, review the pending upgrade edits, and resume the failed step. For a new upgrade in a Git project, require a clean tree (ask the user to commit anything outstanding — do not stash or commit it for them) and record `git rev-parse HEAD`. After the read-only artifact and access checks in steps 3 and 3a pass, create the branch with `git checkout -b template-upgrade-<target>` before presenting the plan. Wait for the user's agreement before changing application files, registry routing, dependencies, configuration or data.
 
 Not a Git project: do not touch it. Offer `git init` plus a commit, or a full copy in a scratch directory to upgrade and verify before moving back. Never proceed with no way back.
 
@@ -66,7 +66,7 @@ For an edition change, select the destination package's exact release or request
 
 `latest` comes first because of how NocoBase 3 publishes: every beta release has also moved `latest`, so before the first stable release `latest` and `beta` point to the same version. From the first stable release on, `latest` carries stable releases and `beta` follows them only for a transition period, after which it stays on the last version it pointed at. An application created from a beta therefore keeps upgrading by following `latest`, while retaining `beta` would leave it stuck once the transition ends. Before a stable release exists `latest` still resolves to a beta; that is expected, not an error. If the user explicitly asks for a stable release and `latest` resolves to a prerelease, explain that no stable release exists yet and clarify before proceeding. Do not otherwise pick the highest version across all tags, and do not treat a missing requested tag as permission to fall back to another.
 
-Run these commands from the application root so npm uses the project and user registry settings for each package scope. For a commercial template, verify read access to both releases through the configured `@nocobase:registry` (normally `https://pkg-v3.nocobase.com/`). If access fails, restore the scoped registry or login and retry the same edition and version.
+Run these commands from the application root so npm uses its native authentication and package scope settings. For a commercial TARGET set the scope override below, even if the generated application's `.npmrc` still selects a public registry. Use the same override when fetching TARGET's guidance. Follow the [commercial registry checks](references/edition-transition.md#check-commercial-registry-access) before editing. A BASE taken from Default still uses its original public registry.
 
 ```bash
 # For an edition change, set REQUESTED_TEMPLATE to its full package name.
@@ -74,13 +74,23 @@ Run these commands from the application root so npm uses the project and user re
 BASE_PACKAGE=$(node -p "require('./package.json').nocobase.templatePackage")
 BASE=$(node -p "require('./package.json').nocobase.defaultTemplateVersion")
 TARGET_PACKAGE=${REQUESTED_TEMPLATE:-$BASE_PACKAGE}
+COMMERCIAL_SCOPE=(--@nocobase:registry=https://pkg-v3.nocobase.com/)
+BASE_REGISTRY_ARGS=()
+TARGET_REGISTRY_ARGS=()
+case "$BASE_PACKAGE" in
+  @nocobase/app-template-pro|@nocobase/app-template-enterprise) BASE_REGISTRY_ARGS=("${COMMERCIAL_SCOPE[@]}") ;;
+esac
+case "$TARGET_PACKAGE" in
+  @nocobase/app-template-pro|@nocobase/app-template-enterprise) TARGET_REGISTRY_ARGS=("${COMMERCIAL_SCOPE[@]}") ;;
+esac
 if [ -n "${REQUESTED_VERSION:-}" ]; then
   TARGET=$REQUESTED_VERSION
 else
   CHANNEL=${REQUESTED_TAG:-latest}
-  npm view "$TARGET_PACKAGE" dist-tags --json
-  TARGET=$(npm view "$TARGET_PACKAGE@$CHANNEL" version)
+  TARGET=$(npm "${TARGET_REGISTRY_ARGS[@]}" view "$TARGET_PACKAGE@$CHANNEL" version --prefer-online)
 fi
+# Stop on a failed lookup or an empty result. Verify read access even for an exact version.
+npm "${TARGET_REGISTRY_ARGS[@]}" view "$TARGET_PACKAGE@$TARGET" dist.integrity --prefer-online
 ```
 
 When BASE_PACKAGE and TARGET_PACKAGE are the same, use semantic version ordering to compare the resolved TARGET with BASE. Within that package, equal versions mean no source upgrade and an older version would be a downgrade. Resolve a tag once, then use that exact version for fetching, the source diff and `defaultTemplateVersion`, even if the tag moves during the upgrade. Fetch dependencies from the target template's manifest; do not independently move every `@nocobase/*` dependency to a dist-tag, since packages have separate versions and release schedules.
@@ -90,12 +100,14 @@ WORK=$(mktemp -d)
 
 fetch_release() {
   local spec=$1 output=$2 archive
+  shift 2
   mkdir -p "$output" || return 1
-  npm pack "$spec" --ignore-scripts --json --pack-destination "$WORK" > "$output.pack.json" || return 1
+  npm "$@" pack "$spec" --prefer-online --ignore-scripts --json --pack-destination "$WORK" > "$output.pack.json" || return 1
   archive=$(node -p 'require(process.argv[1])[0].filename' "$output.pack.json") || return 1
   tar -xzf "$WORK/$archive" -C "$output" --strip-components=1
 }
-fetch_release "$BASE_PACKAGE@$BASE" "$WORK/base" && fetch_release "$TARGET_PACKAGE@$TARGET" "$WORK/target"
+fetch_release "$BASE_PACKAGE@$BASE" "$WORK/base" "${BASE_REGISTRY_ARGS[@]}" &&
+  fetch_release "$TARGET_PACKAGE@$TARGET" "$WORK/target" "${TARGET_REGISTRY_ARGS[@]}"
 ```
 
 Record the registry, selected channel or explicit version, exact BASE/TARGET versions, tarball integrity and source checkpoints. A missing target, missing required guidance package, invalid integrity or incompatible target baseline stops the upgrade before editing dependencies, source or the completion marker. Do not substitute a Git checkout, same-version snapshot or another channel.
@@ -109,8 +121,8 @@ Read TARGET’s `AGENTS.md` and `README.MD` from the extracted package, even whe
 ```bash
 SKILLS_RANGE=$(node -p "const p=require('$WORK/target/package.json'); p.devDependencies?.['@nocobase/app-skills'] ?? p.dependencies?.['@nocobase/app-skills'] ?? ''")
 # Stop if the target declares no guidance package; do not guess a replacement.
-npm pack "@nocobase/app-skills@$SKILLS_RANGE" --ignore-scripts --json --pack-destination "$WORK"
-# Extract the returned filename into a separate target-guidance directory; record version and integrity.
+fetch_release "@nocobase/app-skills@$SKILLS_RANGE" "$WORK/target-guidance" "${TARGET_REGISTRY_ARGS[@]}"
+# Record the version and integrity from target-guidance.pack.json.
 # Read target-guidance/skills/nocobase-app-upgrade/SKILL.md and its applicable references.
 ```
 
