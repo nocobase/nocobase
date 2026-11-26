@@ -126,6 +126,24 @@ describe('tree path test', () => {
     expect(await db.getCollection(name).existsInDb()).toBeTruthy();
   });
 
+  it('should keep the update condition of a loaded path bound to its own node', async () => {
+    const first = await treeCollection.repository.create({ values: { name: 'first' } });
+    const second = await treeCollection.repository.create({ values: { name: 'second' } });
+    const pathModel = db.getCollection(name).model;
+    const firstPath = await pathModel.findOne({ where: { nodePk: first.get('id') }, rejectOnEmpty: true });
+    const firstKey = firstPath.get('nodePk');
+
+    // Resolve the predicate used by Sequelize for instance updates using only SELECTs.
+    const matchedBefore = await pathModel.findAll({ where: firstPath.where() });
+    expect(matchedBefore.map((row) => row.get('nodePk'))).toEqual([firstKey]);
+
+    const secondPath = await pathModel.findOne({ where: { nodePk: second.get('id') }, rejectOnEmpty: true });
+    expect(secondPath.get('nodePk')).not.toEqual(firstKey);
+
+    const matchedAfter = await pathModel.findAll({ where: firstPath.where() });
+    expect(matchedAfter.map((row) => row.get('nodePk'))).toEqual([firstKey]);
+  });
+
   it('test path table data correction', async () => {
     await treeCollection.repository.create({
       values,

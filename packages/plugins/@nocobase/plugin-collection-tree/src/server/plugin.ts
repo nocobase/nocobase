@@ -207,6 +207,7 @@ class PluginCollectionTreeServer extends Plugin {
     this.db.collection({
       name,
       autoGenId: false,
+      filterTargetKey: 'nodePk',
       timestamps: false,
       fields: [
         { type: nodePkType, name: 'nodePk' },
