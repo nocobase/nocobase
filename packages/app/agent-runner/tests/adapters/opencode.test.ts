@@ -57,6 +57,79 @@ describe('model capabilities', () => {
       code: 'ENOENT',
     });
   });
+  it.each([false, true])(
+    'waits for OpenCode 2.4 plugins before reporting the catalog (partial catalog: %s)',
+    async (partial) => {
+      const models = partial ? [{ providerID: 'opencode', id: 'default' }] : [];
+      let polls = 0;
+      const fake = new FakeOpencode({
+        script: [],
+        models,
+        plugins: () => {
+          if (++polls === 1) return [];
+          models.push({ providerID: 'deepseek', id: 'deepseek-flash' });
+          return [{ id: 'deepseek' }];
+        },
+      });
+      const adapter = adapterFor(fake, '2.4.2');
+      expect(await adapter.detectModels(new AbortController().signal)).toEqual({
+        modelsDetectionStatus: 'detected',
+        models: [
+          ...(partial ? [{ id: 'opencode/default' }] : []),
+          { id: 'deepseek/deepseek-flash' },
+        ],
+      });
+      expect(fake.requests.map((request) => request.path)).toEqual([
+        '/api/plugin',
+        '/api/plugin',
+        '/api/model',
+      ]);
+      expect(fake.closed).toBe(true);
+    },
+  );
+
+  it('reports an empty catalog once plugins are active', async () => {
+    const fake = new FakeOpencode({
+      script: [],
+      plugins: () => [{ id: 'provider' }],
+    });
+    const result = await adapterFor(fake, '2.4.2').detectModels(
+      new AbortController().signal,
+    );
+    expect(result).toEqual({ modelsDetectionStatus: 'detected', models: [] });
+  });
+
+  it('still reads the model catalog when plugin inventory is unavailable', async () => {
+    const fake = new FakeOpencode({ script: [], models: [MODEL] });
+    const adapter = adapterFor(fake, '2.4.2');
+    expect(await adapter.detectModels(new AbortController().signal)).toEqual({
+      modelsDetectionStatus: 'detected',
+      models: [{ id: 'prov/m1' }],
+    });
+    expect(fake.requests.map((request) => request.path)).toEqual([
+      '/api/plugin',
+      '/api/model',
+    ]);
+  });
+
+  it('closes the server on cancellation during plugin startup', async () => {
+    const controller = new AbortController();
+    const fake = new FakeOpencode({
+      script: [],
+      plugins: () => {
+        controller.abort();
+        return [];
+      },
+    });
+    await expect(
+      adapterFor(fake, '2.4.2').detectModels(controller.signal),
+    ).rejects.toThrow();
+    expect(fake.requests.map((request) => request.path)).toEqual([
+      '/api/plugin',
+    ]);
+    expect(fake.closed).toBe(true);
+  });
+
   it('closes the server when listing fails', async () => {
     const fake = new FakeOpencode({ script: [], models: [] });
     const adapter = new OpencodeAdapter({
