@@ -35,6 +35,8 @@ Ranges in a published template are already resolved (`pnpm pack` expands `worksp
 
 Preserve the application identity and migration owners throughout. For an explicit Community → Professional/Enterprise or Professional → Enterprise transition, follow [switching editions](edition-transition.md). Other template-family changes require a separate migration plan.
 
+For a retired Multi-app, Sub-app or Multi-portal template, follow [the scenario template migration](scenario-template-migration.md), including the original release check for Main projects that share a historical version marker.
+
 For a Community → Enterprise upgrade, merge the target's capability packaging and script entries as described in [Enterprise capability tooling](edition-transition.md#carry-enterprise-capability-tooling).
 
 ### Preinstalled plugins and database drivers

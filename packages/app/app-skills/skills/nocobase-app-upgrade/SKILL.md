@@ -10,8 +10,10 @@ description: >-
   "升级 NocoBase", "升级 NocoBase 内核版本", "更新 NocoBase 到最新版" — as well as
   when they ask to upgrade the template, pull in template changes, move to a
   newer template version, or reconcile the application with upstream. Also use
-  for explicit Community to Professional or Enterprise and Professional to
-  Enterprise requests, including “社区版转专业版” and “专业版转企业版”. Do not
+  for applications upgrading from the retired multi-app, sub-app or
+  multi-portal templates to Enterprise, and for explicit Community to
+  Professional or Enterprise and Professional to Enterprise requests,
+  including “社区版转专业版” and “专业版转企业版”. Do not
   use for ordinary feature development, for upgrading a single dependency, or
   for upgrading an already deployed build on a server, which the app installer
   handles.
@@ -55,6 +57,8 @@ node -p "JSON.stringify(require('./package.json').nocobase, null, 2)"
 ```
 
 `templatePackage` names the template; `defaultTemplateVersion` is BASE. Treat that package name as authoritative even when it names a template this Skill has never seen. If it is missing, the application predates the field: inspect `templateKind`, dependency history, plugin registrations, database directories, and published template versions, then confirm the source package before fetching. `templateKind: "app"` alone does not distinguish Default from Examples, while `templateKind: "hub"` identifies the discontinued Hub template, which has no newer version to upgrade to: tell the user rather than picking another template as BASE. If `defaultTemplateVersion` itself is missing or was bumped without a merge, the baseline is unknown — work it out with the user from Git history rather than guessing, since too old a baseline replays changes already present and too new a one skips changes never applied.
+
+If `templatePackage` is `@nocobase/app-template-multi-app`, `@nocobase/app-template-sub-app` or `@nocobase/app-template-multi-portal`, switch to the [scenario template migration workflow](references/scenario-template-migration.md). It selects an Enterprise release, resolves the exact original archive and uses the Enterprise tool to preview and apply the source migration.
 
 For a same-edition upgrade of Professional or Enterprise, compare two releases of the recorded edition package (`@nocobase/app-template-pro` or `@nocobase/app-template-enterprise`). Its `defaultTemplateVersion` is the edition release. The `upstreamTemplateVersion` and `upstreamTemplateCommit` fields identify the Default source used to build that release. When the user explicitly requests Community → Professional, Community → Enterprise or Professional → Enterprise, follow [switching editions](references/edition-transition.md) alongside the shared source merge. Read the source package and version from the project and select the destination separately. Keep the recorded identity until acceptance passes.
 
