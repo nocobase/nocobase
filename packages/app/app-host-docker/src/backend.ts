@@ -77,6 +77,7 @@ export const DOCKER_BACKEND_CAPABILITIES: HostBackendCapabilities = {
   rollout: 'start-first',
   images: true,
   backup: true,
+  keepBackupsOnPurge: true,
   logs: true,
   urlModes: ['path', 'subdomain'],
 };
@@ -367,23 +368,40 @@ export class DockerBackend implements ServiceBackend {
     return container.State.Running ? 'running' : 'stopped';
   }
 
-  async dispose(
+  dispose(
     definition: AppDefinition,
     options: { readonly purgeData: boolean },
   ): Promise<void> {
-    assertAppId(definition.id);
-    const service = serviceOptions(definition);
-    const scope = this.scope(service.scope);
+    return this.disposeApp(
+      definition.id,
+      serviceOptions(definition).scope,
+      options.purgeData,
+      false,
+    );
+  }
+
+  disposeKeepingBackups(appId: string, scopeId: string): Promise<void> {
+    return this.disposeApp(appId, scopeId, true, true);
+  }
+
+  private async disposeApp(
+    appId: string,
+    scopeId: string,
+    purgeData: boolean,
+    keepBackups: boolean,
+  ): Promise<void> {
+    assertAppId(appId);
+    const scope = this.scope(scopeId);
     const { docker, names } = scope;
-    await this.locked(definition.id, async () => {
+    await this.locked(appId, async () => {
       for (const container of await docker.listContainers(
-        names.selector('app', definition.id),
+        names.selector('app', appId),
       ))
         await docker.removeContainer(container.Id);
-      if (!options.purgeData) return;
-      await docker.removeVolume(names.volume(definition.id));
-      await docker.removeVolume(names.backupVolume(definition.id));
-      for (const image of await this.appImages(scope, definition.id))
+      if (!purgeData) return;
+      await docker.removeVolume(names.volume(appId));
+      if (!keepBackups) await docker.removeVolume(names.backupVolume(appId));
+      for (const image of await this.appImages(scope, appId))
         for (const reference of image.RepoTags?.length
           ? image.RepoTags
           : [image.Id])

@@ -12,7 +12,7 @@
  * `app-host-docker-backup-it-*` and removed afterwards.
  */
 import { randomUUID } from 'node:crypto';
-import { mkdtemp, rm } from 'node:fs/promises';
+import { mkdtemp, readFile, readdir, rm, stat } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 
@@ -119,14 +119,16 @@ async function follow(
 /** Runs `script` with Node in a container of the image on the App's storage volume; answers its output. */
 /** The archives in the App's backup volume, read by a probe container of the image under test. */
 async function inBackups(): Promise<string[]> {
+  return probeBackups(
+    `console.log(JSON.stringify(require('node:fs').readdirSync(${JSON.stringify(DOCKER_DEFAULT_SETTINGS.backupsPath)}).filter((name) => name.endsWith('.tar.gz')).sort()))`,
+  );
+}
+
+async function probeBackups<T>(script: string): Promise<T> {
   const container = await docker.createContainer({
     name: `${PREFIX}probe-${randomUUID().slice(0, 8)}`,
     Image: IMAGE!,
-    Cmd: [
-      'node',
-      '-e',
-      `console.log(JSON.stringify(require('node:fs').readdirSync(${JSON.stringify(DOCKER_DEFAULT_SETTINGS.backupsPath)}).filter((name) => name.endsWith('.tar.gz')).sort()))`,
-    ],
+    Cmd: ['node', '-e', script],
     HostConfig: {
       Mounts: [
         {
@@ -141,7 +143,7 @@ async function inBackups(): Promise<string[]> {
     await container.start();
     await container.wait();
     const frames = await container.logs({ stdout: true });
-    return JSON.parse(frames.subarray(8).toString('utf8').trim()) as string[];
+    return JSON.parse(frames.subarray(8).toString('utf8').trim()) as T;
   } finally {
     await container.remove({ force: true });
   }
@@ -407,17 +409,73 @@ describe.runIf(IMAGE)(
         service.deleteBackup!('shop', 'b-1', { scope: scope() }),
       ).resolves.toEqual({ deleted: false });
 
-      // Removed with its data kept, the App's backup is still deleted from the backup volume.
-      await service.createBackup!('shop', {
+      const kept = await service.createBackup!('shop', {
         operationId: 'b-2',
         scope: scope(),
       });
-      expect(await inBackups()).toEqual(['b-2.tar.gz']);
-      await service.removeDeployment('shop', { purgeData: false });
+      await service.createBackup!('shop', {
+        operationId: 'b-3',
+        scope: scope(),
+      });
+      const volume = path.join(dir, 'volumes', 'shop');
+      const record = (id: string) => path.join(volume, 'backups', `${id}.json`);
+      for (let attempt = 0; attempt < 2; attempt++)
+        expect(
+          (
+            await service.removeDeploymentKeepingBackups!('shop', {
+              scope: scope(),
+            })
+          ).deployments,
+        ).toEqual([]);
+      expect(await readdir(volume)).toEqual(['backups']);
+      await expect(
+        stat(path.join(dir, 'revisions', 'shop')),
+      ).rejects.toMatchObject({ code: 'ENOENT' });
+      expect(
+        await docker.listContainers({
+          all: true,
+          filters: { label: [`${LABEL.app}=shop`] },
+        }),
+      ).toEqual([]);
+      await expect(
+        docker.getVolume(`${PREFIX}shop-storage`).inspect(),
+      ).rejects.toMatchObject({ statusCode: 404 });
+      expect(JSON.parse(await readFile(record('b-2'), 'utf8'))).toMatchObject(
+        kept,
+      );
+      expect(
+        await probeBackups(
+          `console.log(JSON.stringify(require('node:crypto').createHash('sha256').update(require('node:fs').readFileSync(${JSON.stringify(`${DOCKER_DEFAULT_SETTINGS.backupsPath}/b-2.tar.gz`)})).digest('hex')))`,
+        ),
+      ).toBe(kept.sha256);
+      expect(await inBackups()).toEqual(['b-2.tar.gz', 'b-3.tar.gz']);
       await expect(
         service.deleteBackup!('shop', 'b-2', { scope: scope() }),
       ).resolves.toEqual({ deleted: true });
-      expect(await inBackups()).toEqual([]);
+      await expect(stat(record('b-2'))).rejects.toMatchObject({
+        code: 'ENOENT',
+      });
+      await expect(stat(record('b-3'))).resolves.toBeDefined();
+      expect(await inBackups()).toEqual(['b-3.tar.gz']);
+
+      expect(
+        (await service.applyDeployment(deployment('d-2'))).deployments[0],
+      ).toMatchObject({ observedState: 'running' });
+      expect(JSON.parse(await inStorage(MARKER()))).toEqual({
+        marker: null,
+        uploads: [],
+      });
+      // Existing full-purge callers use the same legacy request, including temporary instances.
+      await service.removeDeployment('shop', { purgeData: true });
+      await expect(
+        docker.getVolume(`${PREFIX}shop-storage`).inspect(),
+      ).rejects.toMatchObject({ statusCode: 404 });
+      await expect(
+        docker.getVolume(`${PREFIX}shop-backups`).inspect(),
+      ).rejects.toMatchObject({ statusCode: 404 });
+      await expect(stat(record('b-3'))).rejects.toMatchObject({
+        code: 'ENOENT',
+      });
     }, 900_000);
   },
 );

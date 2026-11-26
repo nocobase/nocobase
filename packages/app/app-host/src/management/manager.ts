@@ -92,6 +92,11 @@ export interface HostManagementService {
     appId: string,
     options?: { purgeData?: boolean },
   ): Promise<HostStatus>;
+  /** Removes the App and its business data, keeping its backups. Pass the scope of external-service Apps for retries. */
+  removeDeploymentKeepingBackups?(
+    appId: string,
+    options?: { scope?: HostScope },
+  ): Promise<HostStatus>;
   /** The Host's status, or one scope's or some Apps' part of it. */
   getStatus(query?: HostStatusQuery): Promise<HostStatus>;
   restartApp(appId: string): Promise<HostStatus>;
@@ -358,6 +363,19 @@ export class HostManager implements HostManagementService {
     const status = await this.state.reconciler.removeDeployment(appId, options);
     this.state.scopes.forget(appId);
     return status;
+  }
+
+  removeDeploymentKeepingBackups(
+    appId: string,
+    options: { scope?: HostScope } = {},
+  ): Promise<HostStatus> {
+    if (this.state.mode !== 'managed') {
+      throw new Error('Deployments require managed host mode');
+    }
+    return this.state.scopes.removeDeploymentKeepingBackups(
+      appId,
+      options.scope,
+    );
   }
 
   getOperation(
