@@ -1,3 +1,4 @@
+import { auditOperationName } from './audit-operation-name.js';
 import { auditRecordKey, describeAudit } from '@nocobase/audit';
 import {
   ApiError,
@@ -99,6 +100,7 @@ export function createRestrictionRulesHandler(
   routes.post(
     RESTRICTION_RULES_PATH,
     describeAudit({
+      operationName: auditOperationName('createRule'),
       action: 'create',
       resource: `settings:${RESTRICTION_RULES_SETTINGS}`,
       target: (context) => ({
@@ -152,6 +154,7 @@ export function createRestrictionRulesHandler(
   routes.patch(
     `${RESTRICTION_RULES_PATH}/:key`,
     describeAudit({
+      operationName: auditOperationName('updateRule'),
       action: 'update',
       resource: `settings:${RESTRICTION_RULES_SETTINGS}`,
       target: (context) => ({
@@ -212,6 +215,7 @@ export function createRestrictionRulesHandler(
   routes.delete(
     `${RESTRICTION_RULES_PATH}/:key`,
     describeAudit({
+      operationName: auditOperationName('deleteRule'),
       action: 'delete',
       resource: `settings:${RESTRICTION_RULES_SETTINGS}`,
       target: (context) => ({

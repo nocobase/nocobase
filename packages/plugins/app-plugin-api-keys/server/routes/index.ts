@@ -1,3 +1,4 @@
+import { auditOperationName } from '../audit-operation-name.js';
 import { auditRecordKey, describeAudit } from '@nocobase/audit';
 import { authenticationToken } from '@nocobase/app-plugin-authentication/server';
 import {
@@ -318,6 +319,7 @@ export const apiRoutes: AppApiRouteContribution<AppPluginApplication> =
     routes.post(
       '/',
       describeAudit({
+        operationName: auditOperationName('createPersonalKey'),
         resource: 'apikey',
         target: () => ({ collection: 'apikey' }),
         captureBody: false,
@@ -412,6 +414,7 @@ export const apiRoutes: AppApiRouteContribution<AppPluginApplication> =
     routes.post(
       '/:keyId/rotate',
       describeAudit({
+        operationName: auditOperationName('rotatePersonalKey'),
         resource: 'apikey',
         captureBody: false,
         resolveTargets: ({ response }, context) => {
@@ -463,6 +466,7 @@ export const apiRoutes: AppApiRouteContribution<AppPluginApplication> =
     routes.delete(
       '/:keyId',
       describeAudit({
+        operationName: auditOperationName('revokePersonalKey'),
         resource: 'apikey',
         target: (context) => ({
           collection: 'apikey',

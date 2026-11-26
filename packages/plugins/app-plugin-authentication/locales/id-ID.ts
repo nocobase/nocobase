@@ -3,7 +3,8 @@ import type { AuditLocaleResource } from './en-US.js';
 const idID: AuditLocaleResource = {
   audit: {
     operations: {
-      signIn: 'Masuk',
+      signIn: 'Masuk dengan email',
+      signInWithUsername: 'Masuk dengan nama pengguna',
       signUp: 'Daftar',
       signOut: 'Keluar',
       changePassword: 'Ubah kata sandi',

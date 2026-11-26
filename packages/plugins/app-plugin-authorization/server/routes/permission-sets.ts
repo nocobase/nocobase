@@ -1,3 +1,4 @@
+import { auditOperationName } from '../audit-operation-name.js';
 import { auditRecordKey, describeAudit } from '@nocobase/audit';
 import { z } from 'zod';
 import { submitSettingsMutation } from '../extension/submission.js';
@@ -195,6 +196,7 @@ export function createPermissionSetHandler(
   routes.post(
     '/permissionSets',
     describeAudit({
+      operationName: auditOperationName('createPermissionSet'),
       action: 'create',
       resource: `settings:${PERMISSION_SETS_SETTINGS}`,
       target: (context) => ({
@@ -297,6 +299,7 @@ export function createPermissionSetHandler(
   routes.post(
     '/permissionSets/:key/assignments',
     describeAudit({
+      operationName: auditOperationName('assignPermissionSet'),
       action: 'assign',
       resource: `settings:${PERMISSION_SETS_SETTINGS}`,
       target: (context) => ({
@@ -361,6 +364,7 @@ export function createPermissionSetHandler(
   routes.delete(
     '/permissionSets/:key/assignments/:assignmentId',
     describeAudit({
+      operationName: auditOperationName('unassignPermissionSet'),
       action: 'assign',
       resource: `settings:${PERMISSION_SETS_SETTINGS}`,
       target: (context) => ({
@@ -438,6 +442,7 @@ export function createPermissionSetHandler(
   routes.patch(
     '/permissionSets/:key',
     describeAudit({
+      operationName: auditOperationName('updatePermissionSet'),
       action: 'update',
       resource: `settings:${PERMISSION_SETS_SETTINGS}`,
       target: (context) => ({
@@ -546,6 +551,7 @@ export function createPermissionSetHandler(
   routes.delete(
     '/permissionSets/:key',
     describeAudit({
+      operationName: auditOperationName('deletePermissionSet'),
       action: 'delete',
       resource: `settings:${PERMISSION_SETS_SETTINGS}`,
       target: (context) => ({

@@ -1,3 +1,4 @@
+import { auditOperationName } from './audit-operation-name.js';
 import { auditRecordKey, describeAudit } from '@nocobase/audit';
 import {
   ApiError,
@@ -111,6 +112,7 @@ export function createSharingRulesHandler(
   routes.post(
     SHARING_RULES_PATH,
     describeAudit({
+      operationName: auditOperationName('createRule'),
       action: 'create',
       resource: `settings:${SHARING_RULES_SETTINGS}`,
       target: (context) => ({
@@ -164,6 +166,7 @@ export function createSharingRulesHandler(
   routes.patch(
     `${SHARING_RULES_PATH}/:key`,
     describeAudit({
+      operationName: auditOperationName('updateRule'),
       action: 'update',
       resource: `settings:${SHARING_RULES_SETTINGS}`,
       target: (context) => ({
@@ -224,6 +227,7 @@ export function createSharingRulesHandler(
   routes.delete(
     `${SHARING_RULES_PATH}/:key`,
     describeAudit({
+      operationName: auditOperationName('deleteRule'),
       action: 'delete',
       resource: `settings:${SHARING_RULES_SETTINGS}`,
       target: (context) => ({

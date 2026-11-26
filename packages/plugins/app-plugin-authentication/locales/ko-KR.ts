@@ -3,7 +3,8 @@ import type { AuditLocaleResource } from './en-US.js';
 const koKR: AuditLocaleResource = {
   audit: {
     operations: {
-      signIn: '로그인',
+      signIn: '이메일로 로그인',
+      signInWithUsername: '사용자 이름으로 로그인',
       signUp: '회원 가입',
       signOut: '로그아웃',
       changePassword: '비밀번호 변경',

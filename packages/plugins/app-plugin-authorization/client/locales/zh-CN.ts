@@ -6,6 +6,7 @@ import settings from './settings-zh-CN.js';
 const zhCN: AuthorizationResource = {
   ...components,
   settings,
+  audit: optionMessages.audit,
   options: optionMessages.options,
   sections: optionMessages.sections,
   permissionSets: {

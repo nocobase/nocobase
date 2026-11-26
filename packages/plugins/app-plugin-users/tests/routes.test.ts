@@ -80,6 +80,11 @@ describe('@nocobase/app-plugin-users API routes', () => {
       expect(await response.json()).toEqual({ data: [result] });
       expect(events[0]).toMatchObject({
         action: 'usersInviteUsers',
+        operationName: 'Invite people by email',
+        operationNameI18n: {
+          ns: '@nocobase/app-plugin-users',
+          key: 'audit.operations.inviteUsers',
+        },
         response: { data: [{ ...result, inviteUrl: '******' }] },
       });
     } finally {

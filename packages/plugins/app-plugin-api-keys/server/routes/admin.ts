@@ -1,3 +1,4 @@
+import { auditOperationName } from '../audit-operation-name.js';
 import { auditRecordKey, describeAudit } from '@nocobase/audit';
 /**
  * The administration of keys, for System settings › API keys: system keys (`/api/systemApiKeys`), members' personal
@@ -233,6 +234,7 @@ export function installKeyAdministration(
   routes.delete(
     '/members/:keyId',
     describeAudit({
+      operationName: auditOperationName('revokeMemberKey'),
       resource: 'apikey',
       target: (context) => ({
         collection: 'apikey',
@@ -277,6 +279,7 @@ export function installKeyAdministration(
   routes.put(
     '/rules',
     describeAudit({
+      operationName: auditOperationName('updateRules'),
       resource: 'settings:apiKeys',
       target: () => ({ collection: 'apiKeyRules', key: 'default' }),
     }),
@@ -332,6 +335,7 @@ export function installSystemKeys(
   routes.post(
     '/',
     describeAudit({
+      operationName: auditOperationName('createSystemKey'),
       resource: 'apikey',
       target: () => ({ collection: 'apikey' }),
       captureBody: false,
@@ -387,16 +391,20 @@ export function installSystemKeys(
         data: await systemKeys.get(context.req.valid('param').identityId),
       }),
   );
-  const systemKeyAudit = describeAudit({
-    resource: 'apikey',
-    target: (context) => ({
-      collection: 'apiKeySystemKeys',
-      key: context.req.param('identityId'),
-    }),
-  });
+  const systemKeyAudit = (
+    operation: Parameters<typeof auditOperationName>[0],
+  ) =>
+    describeAudit({
+      operationName: auditOperationName(operation),
+      resource: 'apikey',
+      target: (context) => ({
+        collection: 'apiKeySystemKeys',
+        key: context.req.param('identityId'),
+      }),
+    });
   routes.patch(
     '/:identityId',
-    systemKeyAudit,
+    systemKeyAudit('updateSystemKey'),
     access('manage'),
     describeRoute({
       ...offCommandLine,
@@ -423,7 +431,7 @@ export function installSystemKeys(
   );
   routes.put(
     '/:identityId/permissions',
-    systemKeyAudit,
+    systemKeyAudit('replaceSystemKeyPermissions'),
     access('manage'),
     describeRoute({
       ...offCommandLine,
@@ -451,6 +459,7 @@ export function installSystemKeys(
   routes.post(
     '/:identityId/rotate',
     describeAudit({
+      operationName: auditOperationName('rotateSystemKey'),
       resource: 'apikey',
       captureBody: false,
       target: (context) => ({
@@ -500,7 +509,7 @@ export function installSystemKeys(
   ] as const)
     routes.post(
       `/:identityId/${path}`,
-      systemKeyAudit,
+      systemKeyAudit(enabled ? 'enableSystemKey' : 'disableSystemKey'),
       access('manage'),
       describeRoute({
         ...offCommandLine,
@@ -530,7 +539,7 @@ export function installSystemKeys(
     );
   routes.delete(
     '/:identityId',
-    systemKeyAudit,
+    systemKeyAudit('deleteSystemKey'),
     access('manage'),
     describeRoute({
       ...offCommandLine,

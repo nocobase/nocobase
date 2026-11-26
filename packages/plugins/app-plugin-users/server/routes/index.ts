@@ -1,3 +1,4 @@
+import { auditOperationName } from '../audit-operation-name.js';
 import { auditRecordKey, describeAudit } from '@nocobase/audit';
 import {
   authenticationToken,
@@ -86,31 +87,38 @@ export const apiRoutes: AppApiRouteContribution<AppPluginApplication> =
     const authentication = container.resolve(authenticationToken);
     const authorization = container.resolve(authorizationToken);
     const users = container.resolve(userManagementServiceToken);
-    const userAudit = describeAudit({
-      resource: 'user',
-      target: (context) => ({
-        collection: 'user',
-        key: context.req.param('userId'),
-      }),
-      resolveTargets: ({ response }, context) => ({
-        collection: 'user',
-        key:
-          context.req.param('userId') ?? auditRecordKey(response, 'data', 'id'),
-      }),
-    });
-    const invitationAudit = describeAudit({
-      redact: [{ field: 'inviteUrl' }],
-      target: (context) => ({
-        collection: 'userInvitations',
-        key: context.req.param('invitationId'),
-      }),
-      resolveTargets: ({ response }, context) => ({
-        collection: 'userInvitations',
-        key:
-          context.req.param('invitationId') ??
-          auditRecordKey(response, 'data', 'id'),
-      }),
-    });
+    const userAudit = (operation: Parameters<typeof auditOperationName>[0]) =>
+      describeAudit({
+        operationName: auditOperationName(operation),
+        resource: 'user',
+        target: (context) => ({
+          collection: 'user',
+          key: context.req.param('userId'),
+        }),
+        resolveTargets: ({ response }, context) => ({
+          collection: 'user',
+          key:
+            context.req.param('userId') ??
+            auditRecordKey(response, 'data', 'id'),
+        }),
+      });
+    const invitationAudit = (
+      operation: Parameters<typeof auditOperationName>[0],
+    ) =>
+      describeAudit({
+        operationName: auditOperationName(operation),
+        redact: [{ field: 'inviteUrl' }],
+        target: (context) => ({
+          collection: 'userInvitations',
+          key: context.req.param('invitationId'),
+        }),
+        resolveTargets: ({ response }, context) => ({
+          collection: 'userInvitations',
+          key:
+            context.req.param('invitationId') ??
+            auditRecordKey(response, 'data', 'id'),
+        }),
+      });
     const submit = async <T>(
       context: import('hono').Context<AuthorizationEnv>,
       input: unknown,
@@ -246,7 +254,7 @@ export const apiRoutes: AppApiRouteContribution<AppPluginApplication> =
 
     routes.post(
       '/invitations',
-      invitationAudit,
+      invitationAudit('inviteUsers'),
       allowed('invite', '*'),
       describeRoute({
         tags,
@@ -299,7 +307,7 @@ export const apiRoutes: AppApiRouteContribution<AppPluginApplication> =
 
     routes.post(
       '/invitations/:invitationId/resend',
-      invitationAudit,
+      invitationAudit('resendInvitation'),
       allowed('invite', '*'),
       describeRoute({
         tags,
@@ -426,7 +434,7 @@ export const apiRoutes: AppApiRouteContribution<AppPluginApplication> =
 
     routes.post(
       '/',
-      userAudit,
+      userAudit('createUser'),
       allowed('create', '*'),
       allowed('assign-role', '*'),
       describeRoute({
@@ -504,7 +512,7 @@ export const apiRoutes: AppApiRouteContribution<AppPluginApplication> =
 
     routes.patch(
       '/:userId',
-      userAudit,
+      userAudit('updateUser'),
       createMiddleware<AuthorizationEnv>(async (context, next) => {
         try {
           await requireUserAction(
@@ -590,7 +598,7 @@ export const apiRoutes: AppApiRouteContribution<AppPluginApplication> =
 
     routes.delete(
       '/:userId',
-      userAudit,
+      userAudit('deleteUser'),
       allowed('delete'),
       describeRoute({
         tags,
@@ -634,7 +642,7 @@ export const apiRoutes: AppApiRouteContribution<AppPluginApplication> =
 
     routes.post(
       '/:userId/disable',
-      userAudit,
+      userAudit('disableUser'),
       allowed('disable'),
       describeRoute({
         tags,
@@ -673,7 +681,7 @@ export const apiRoutes: AppApiRouteContribution<AppPluginApplication> =
 
     routes.post(
       '/:userId/enable',
-      userAudit,
+      userAudit('enableUser'),
       allowed('enable'),
       describeRoute({
         tags,
@@ -713,7 +721,7 @@ export const apiRoutes: AppApiRouteContribution<AppPluginApplication> =
     // API rules keep PUT for; there are no fields to merge, so PATCH would mean the same thing less precisely.
     routes.put(
       '/:userId/roleScopes/:scope',
-      userAudit,
+      userAudit('replaceUserRoles'),
       allowed('assign-role'),
       describeRoute({
         tags,
@@ -760,7 +768,7 @@ export const apiRoutes: AppApiRouteContribution<AppPluginApplication> =
 
     routes.post(
       '/:userId/resetPassword',
-      userAudit,
+      userAudit('resetUserPassword'),
       allowed('reset-password'),
       describeRoute({
         tags,
@@ -808,7 +816,7 @@ export const apiRoutes: AppApiRouteContribution<AppPluginApplication> =
 
     routes.post(
       '/:userId/revokeSessions',
-      userAudit,
+      userAudit('revokeUserSessions'),
       allowed('revoke-sessions'),
       describeRoute({
         tags,

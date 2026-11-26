@@ -105,11 +105,21 @@ it('records Repository mutations with only a file destination configured', async
     expect(repositoryEvents).toMatchObject([
       {
         action: 'auditOrders:createOne',
+        operationName: 'Create a record',
+        operationNameI18n: {
+          ns: '@nocobase/audit',
+          key: 'audit.operations.createOne',
+        },
         outcome: 'denied',
         targets: [{ collection: 'auditOrders' }],
       },
       {
         action: 'auditOrders:createOne',
+        operationName: 'Create a record',
+        operationNameI18n: {
+          ns: '@nocobase/audit',
+          key: 'audit.operations.createOne',
+        },
         outcome: 'success',
         targets: [{ collection: 'auditOrders', key: { id: 'order-1' } }],
       },

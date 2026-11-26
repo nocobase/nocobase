@@ -3,7 +3,8 @@ import type { AuditLocaleResource } from './en-US.js';
 const jaJP: AuditLocaleResource = {
   audit: {
     operations: {
-      signIn: 'ログイン',
+      signIn: 'メールアドレスでサインイン',
+      signInWithUsername: 'ユーザー名でサインイン',
       signUp: 'アカウント登録',
       signOut: 'ログアウト',
       changePassword: 'パスワードを変更',

@@ -84,6 +84,12 @@ it('audits forwarded settings writes and records a default-access receipt only o
     for (const [route, settings, collection, assignmentCollection] of rules) {
       const key = 'audit-rule';
       const resource = `settings:authorization.${settings}`;
+      const namespace = `@nocobase/app-plugin-authz-${settings}`;
+      const ruleName = {
+        defaultAccess: 'default access rule',
+        restrictionRules: 'restriction rule',
+        sharingRules: 'sharing rule',
+      }[route];
       const url = `/authorization/${route}`;
       const mutation = (method: string, body?: unknown): RequestInit => ({
         method,
@@ -147,6 +153,11 @@ it('audits forwarded settings writes and records a default-access receipt only o
           expect(await receipts.count()).toBe(before);
           expect(events.at(-1)).toMatchObject({
             action,
+            operationName: `${action === 'update' ? 'Edit' : 'Delete'} a ${ruleName}`,
+            operationNameI18n: {
+              ns: namespace,
+              key: `audit.operations.${action}Rule`,
+            },
             resource,
             outcome: 'failure',
             status: 404,
@@ -159,15 +170,34 @@ it('audits forwarded settings writes and records a default-access receipt only o
           (event) => event.resource === resource && event.outcome === 'success',
         ),
       ).toMatchObject([
-        { action: 'create', status: 201, targets: [{ collection, key }] },
+        {
+          action: 'create',
+          operationName: `Create a ${ruleName}`,
+          operationNameI18n: {
+            ns: namespace,
+            key: 'audit.operations.createRule',
+          },
+          status: 201,
+          targets: [{ collection, key }],
+        },
         {
           action: 'update',
+          operationName: `Edit a ${ruleName}`,
+          operationNameI18n: {
+            ns: namespace,
+            key: 'audit.operations.updateRule',
+          },
           status: 200,
           targets: [{ collection, key: 'renamed-rule' }],
           source: { collection, key },
         },
         {
           action: 'delete',
+          operationName: `Delete a ${ruleName}`,
+          operationNameI18n: {
+            ns: namespace,
+            key: 'audit.operations.deleteRule',
+          },
           status: 204,
           targets: [{ collection, key: 'renamed-rule' }],
         },

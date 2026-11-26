@@ -1,3 +1,4 @@
+import { auditOperationName } from './audit-operation-name.js';
 import { auditRecordKey, describeAudit } from '@nocobase/audit';
 import { z } from 'zod';
 import {
@@ -115,6 +116,7 @@ export function createDefaultAccessHandler(
   routes.post(
     DEFAULT_ACCESS_PATH,
     describeAudit({
+      operationName: auditOperationName('createRule'),
       action: 'create',
       resource: `settings:${DEFAULT_ACCESS_SETTINGS}`,
       target: (context) => ({
@@ -187,6 +189,7 @@ export function createDefaultAccessHandler(
   routes.patch(
     `${DEFAULT_ACCESS_PATH}/:key`,
     describeAudit({
+      operationName: auditOperationName('updateRule'),
       action: 'update',
       resource: `settings:${DEFAULT_ACCESS_SETTINGS}`,
       target: (context) => ({
@@ -271,6 +274,7 @@ export function createDefaultAccessHandler(
   routes.delete(
     `${DEFAULT_ACCESS_PATH}/:key`,
     describeAudit({
+      operationName: auditOperationName('deleteRule'),
       action: 'delete',
       resource: `settings:${DEFAULT_ACCESS_SETTINGS}`,
       target: (context) => ({

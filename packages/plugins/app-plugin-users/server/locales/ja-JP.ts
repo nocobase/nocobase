@@ -1,8 +1,10 @@
+import auditLabels from '../../locales/ja-JP.js';
 import type { LocaleResource } from '@nocobase/i18n';
 
 import type enUS from './en-US.js';
 
 const jaJP: LocaleResource<typeof enUS> = {
+  ...auditLabels,
   invitationEmail: {
     subject: '{{inviter}} が {{app}} に招待しました',
     intro: '{{inviter}} があなたを {{app}} に招待しました。',

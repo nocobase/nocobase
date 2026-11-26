@@ -548,6 +548,19 @@ it('stores a localized label with its descriptor and preserves a readable fallba
         (context) => context.body(null, 204),
       );
       router.post(
+        '/missing-label',
+        describeAudit({
+          action: 'missingLabel',
+          operationName: {
+            ns: '@example/audit',
+            key: 'actions.missingLabel',
+            defaultValue: 'English operation name',
+          },
+        }),
+        describeRoute({ summary: 'Unused API summary' }),
+        (context) => context.body(null, 204),
+      );
+      router.post(
         '/blank',
         describeAudit({
           action: 'blank',
@@ -565,6 +578,9 @@ it('stores a localized label with its descriptor and preserves a readable fallba
   );
   try {
     await app.fetch(request('create', {}, { 'accept-language': 'zh-CN' }));
+    await app.fetch(
+      request('missing-label', {}, { 'accept-language': 'zh-CN' }),
+    );
     for (const action of ['update', 'delete', 'blank'])
       await app.fetch(request(action, {}));
     expect(
@@ -576,6 +592,13 @@ it('stores a localized label with its descriptor and preserves a readable fallba
       {
         operationName: '创建审计示例',
         operationNameI18n: { ns: '@example/audit', key: 'actions.create' },
+      },
+      {
+        operationName: 'English operation name',
+        operationNameI18n: {
+          ns: '@example/audit',
+          key: 'actions.missingLabel',
+        },
       },
       {
         operationName: 'Update an audit example',

@@ -9,9 +9,14 @@ import authentication, {
 import authorization, {
   authorizationToken,
 } from '@nocobase/app-plugin-authorization/server';
-import { I18nProvider } from '@nocobase/app-server/i18n';
+import {
+  I18nProvider,
+  i18nHttpMiddleware,
+  i18nToken,
+} from '@nocobase/app-server/i18n';
 import { Application } from '@nocobase/app-server/application';
 import { auditServiceToken, type AuditEvent } from '@nocobase/audit';
+import repositoryLocales from '@nocobase/audit/locales';
 import { AuditProvider } from '@nocobase/audit/runtime';
 import { CachingProvider } from '@nocobase/app-server/caching';
 import {
@@ -34,10 +39,12 @@ import {
   type ProvisionedTestDatabases,
 } from '@nocobase/app-testing/server';
 import { databaseManagerToken } from '@nocobase/db';
+import { I18nRuntime } from '@nocobase/i18n';
 import { Hono } from 'hono';
 import { afterAll, beforeAll, expect, it } from 'vitest';
 
 import apiKeys, { apiKey } from '../server/index.js';
+import apiKeyClientLocales from '../client/locales/index.js';
 
 const origin = 'http://localhost';
 const credentials = {
@@ -126,6 +133,12 @@ beforeAll(async () => {
     ),
   );
   app.addServiceProvider(AuditProvider);
+  app.registerProviders();
+  app.container.resolve(i18nToken).registerApplicationNamespace('@test/audit', {
+    'en-US': () => Promise.resolve({}),
+    'zh-CN': () => Promise.resolve({}),
+  });
+  app.addHttpMiddleware(i18nHttpMiddleware);
   app.container.resolve(auditServiceToken).registerDriver({
     name: 'memory',
     createTransport: () => ({
@@ -253,7 +266,7 @@ it('attributes native audit events without retaining credentials or duplicating 
   ).toBe(2);
   expect(events.at(-1)).toMatchObject({
     action: 'auth:signIn',
-    operationName: '登录',
+    operationName: '使用邮箱登录',
     operationNameI18n: {
       ns: '@nocobase/app-plugin-authentication',
       key: 'audit.operations.signIn',
@@ -271,7 +284,7 @@ it('attributes native audit events without retaining credentials or duplicating 
   const actor = { type: 'user', userId: user.id };
   expect(events.at(-1)).toMatchObject({
     action: 'auth:signIn',
-    operationName: '登录',
+    operationName: '使用邮箱登录',
     operationNameI18n: {
       ns: '@nocobase/app-plugin-authentication',
       key: 'audit.operations.signIn',
@@ -325,6 +338,11 @@ it('attributes native audit events without retaining credentials or duplicating 
   expect(events.at(-1)).toMatchObject({
     resource: 'settings:authorization.permission-sets',
     action: 'update',
+    operationName: '修改权限集',
+    operationNameI18n: {
+      ns: '@nocobase/app-plugin-authorization',
+      key: 'audit.operations.updatePermissionSet',
+    },
     actor,
     outcome: 'success',
     targets: [{ collection: 'authorizationPermissionSets', key: 'audit-test' }],
@@ -334,13 +352,55 @@ it('attributes native audit events without retaining credentials or duplicating 
     'PATCH',
     '/api/authorization/permissionSets/audit-test',
     { title: 'Denied' },
+    { 'accept-language': 'en-US' },
   );
   expect(denied.status).toBe(401);
   expect(events.at(-1)).toMatchObject({
     action: 'update',
+    operationName: 'Edit a permission set',
+    operationNameI18n: {
+      ns: '@nocobase/app-plugin-authorization',
+      key: 'audit.operations.updatePermissionSet',
+    },
     actor: { type: 'anonymous' },
     outcome: 'denied',
     targets: [{ collection: 'authorizationPermissionSets', key: 'audit-test' }],
+  });
+
+  const assignment = await request(
+    'POST',
+    '/api/authorization/permissionSets/audit-test/assignments',
+    { subject: { type: 'user', id: user.id } },
+    { cookie },
+  );
+  if (assignment.status !== 201) throw new Error(await assignment.text());
+  const {
+    data: { id: assignmentId },
+  } = (await assignment.json()) as {
+    data: { id: string };
+  };
+  expect(events.at(-1)).toMatchObject({
+    action: 'assign',
+    operationName: '分配权限集',
+    operationNameI18n: {
+      ns: '@nocobase/app-plugin-authorization',
+      key: 'audit.operations.assignPermissionSet',
+    },
+  });
+  const unassignment = await request(
+    'DELETE',
+    `/api/authorization/permissionSets/audit-test/assignments/${assignmentId}`,
+    undefined,
+    { cookie },
+  );
+  if (unassignment.status !== 204) throw new Error(await unassignment.text());
+  expect(events.at(-1)).toMatchObject({
+    action: 'assign',
+    operationName: '取消分配权限集',
+    operationNameI18n: {
+      ns: '@nocobase/app-plugin-authorization',
+      key: 'audit.operations.unassignPermissionSet',
+    },
   });
 
   const created = await request(
@@ -357,6 +417,11 @@ it('attributes native audit events without retaining credentials or duplicating 
   };
   expect(events.at(-1)).toMatchObject({
     action: 'apiKeysCreateKey',
+    operationName: '创建个人 API 密钥',
+    operationNameI18n: {
+      ns: '@nocobase/app-plugin-api-keys',
+      key: 'audit.operations.createPersonalKey',
+    },
     actor,
     outcome: 'success',
     targets: [{ collection: 'apikey', key: key.id }],
@@ -523,9 +588,33 @@ it('attributes native audit events without retaining credentials or duplicating 
   };
   expect(events.at(-1)).toMatchObject({
     action: 'apiKeysCreateSystemKey',
+    operationName: '创建系统 API 密钥',
     actor,
     targets: [{ collection: 'apikey', key: systemData.key.id }],
   });
+  for (const [operation, operationId, operationName] of [
+    ['disable', 'disableSystemKey', '停用系统 API 密钥'],
+    ['enable', 'enableSystemKey', '启用系统 API 密钥'],
+  ] as const) {
+    const response = await request(
+      'POST',
+      `/api/systemApiKeys/${systemData.key.identityId}/${operation}`,
+      undefined,
+      { cookie },
+    );
+    if (!response.ok) throw new Error(await response.text());
+    expect(events.at(-1)).toMatchObject({
+      operationName,
+      operationNameI18n: {
+        ns: '@nocobase/app-plugin-api-keys',
+        key: `audit.operations.${operationId}`,
+      },
+      outcome: 'success',
+      targets: [
+        { collection: 'apiKeySystemKeys', key: systemData.key.identityId },
+      ],
+    });
+  }
   const revokeSystem = await request(
     'DELETE',
     `/api/systemApiKeys/${systemData.key.identityId}`,
@@ -599,3 +688,32 @@ it('attributes native audit events without retaining credentials or duplicating 
   ])
     expect(serialized).not.toContain(value);
 }, 20_000);
+
+it('loads business and Repository labels in the viewer locale', async () => {
+  const viewer = new I18nRuntime({
+    defaultLocale: 'en-US',
+    locales: ['en-US', 'zh-CN', 'de-DE'],
+  });
+  viewer.registerNamespace(
+    '@nocobase/app-plugin-api-keys',
+    apiKeyClientLocales,
+  );
+  viewer.registerNamespace('@nocobase/audit', repositoryLocales);
+  await viewer.init('en-US');
+
+  const personalKey = () =>
+    viewer.getFixedT('@nocobase/app-plugin-api-keys')(
+      'audit.operations.rotatePersonalKey',
+    );
+  const record = () =>
+    viewer.getFixedT('@nocobase/audit')('audit.operations.createOne');
+
+  expect(personalKey()).toBe('Rotate a personal API key');
+  expect(record()).toBe('Create a record');
+  await viewer.changeLanguage('zh-CN');
+  expect(personalKey()).toBe('轮换个人 API 密钥');
+  expect(record()).toBe('创建记录');
+  await viewer.changeLanguage('de-DE');
+  expect(personalKey()).toBe('Persönlichen API-Schlüssel rotieren');
+  expect(record()).toBe('Datensatz erstellen');
+});

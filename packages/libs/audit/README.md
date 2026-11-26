@@ -23,6 +23,8 @@ Audit uses `auth.advanced.ipAddress.trustedProxies` and `auth.advanced.ipAddress
 
 ## Routes and transports
 
+Audit viewers can register the lazy loader from `@nocobase/audit/locales` in their i18n runtime under `@nocobase/audit`. Installed business plugins provide their operation labels through their existing client locale contributions. Resolve an event's `operationNameI18n` in the viewer's language and use the stored `operationName` as the fallback, then `action` for older events.
+
 Import `describeAudit` from `@nocobase/audit` and declare it alongside the route. Set an action, resource, and optional operation name for display. Use `target` for identifiers available before guards and `resolveTargets` for identifiers derived from a successful handler result. Use `captureBody: false` to omit both snapshots and `redact` to mask additional fields with `{ field: 'name' }` or paths with `{ path: 'parent.name' }`. The built-in credential masking and snapshot limits always apply.
 
 In a service provider's `register` or `boot`, resolve `auditServiceToken` and register the transport with `registerDriver({ name, createTransport })`. Configure each named destination under `audit.transports` with its driver and driver-specific options. The synchronous factory receives the options and `{ name, paths }`, with the application storage directory available as `paths.storageDir`. The transport implements `write(event, { signal })` and can implement `close()` to release resources. The application validates active destination names, drivers, and factory options at startup. The commercial audit plugin supplies the `database` driver, which can be configured alongside `file`.

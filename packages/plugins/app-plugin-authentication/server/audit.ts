@@ -5,17 +5,22 @@ import type { AuthEnv } from './auth.js';
 
 const labels = auditLabels.audit.operations;
 type Operation = keyof typeof labels;
-const operations: ReadonlyMap<string, readonly [Operation, boolean?]> = new Map(
-  [
-    ['/sign-in/email', ['signIn', true]],
-    ['/sign-in/username', ['signIn', true]],
-    ['/sign-up/email', ['signUp', true]],
-    ['/sign-out', ['signOut']],
-    ['/change-password', ['changePassword']],
-    ['/reset-password', ['resetPassword', true]],
-    ['/update-user', ['updateProfile']],
-  ],
-);
+const operations: ReadonlyMap<
+  string,
+  readonly [
+    action: Operation,
+    authenticationAttempt?: boolean,
+    label?: Operation,
+  ]
+> = new Map([
+  ['/sign-in/email', ['signIn', true]],
+  ['/sign-in/username', ['signIn', true, 'signInWithUsername']],
+  ['/sign-up/email', ['signUp', true]],
+  ['/sign-out', ['signOut']],
+  ['/change-password', ['changePassword']],
+  ['/reset-password', ['resetPassword', true]],
+  ['/update-user', ['updateProfile']],
+]);
 
 function operationName(
   operation: Operation,
@@ -47,10 +52,10 @@ export function authAuditOptions(path: string): AuditRouteOptions | false {
   }
   const operation = operations.get(path);
   if (!operation) return false;
-  const [name, authenticationAttempt] = operation;
+  const [name, authenticationAttempt, label = name] = operation;
   return {
     action: `auth:${name}`,
-    operationName: operationName(name),
+    operationName: operationName(label),
     resource: 'user',
     captureBody: false,
     resultFrom: 'context',

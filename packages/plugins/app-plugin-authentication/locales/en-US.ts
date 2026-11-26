@@ -3,7 +3,8 @@ import type { LocaleResource } from '@nocobase/i18n';
 const enUS = {
   audit: {
     operations: {
-      signIn: 'Sign in',
+      signIn: 'Sign in with email',
+      signInWithUsername: 'Sign in with a username',
       signUp: 'Sign up',
       signOut: 'Sign out',
       changePassword: 'Change password',

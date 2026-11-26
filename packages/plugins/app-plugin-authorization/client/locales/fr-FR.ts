@@ -1,3 +1,4 @@
+import auditLabels from '../../locales/fr-FR.js';
 import type { LocaleResource } from '@nocobase/i18n';
 
 import type enUS from './en-US.js';
@@ -5,6 +6,7 @@ import components from './components-en-US.js';
 import settings from './settings-en-US.js';
 
 const frFR: LocaleResource<typeof enUS> = {
+  audit: auditLabels.audit,
   // The Roles and permissions pages are not translated into this language yet and show in English.
   ...components,
   settings: {

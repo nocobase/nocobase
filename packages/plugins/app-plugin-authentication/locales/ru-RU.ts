@@ -3,7 +3,8 @@ import type { AuditLocaleResource } from './en-US.js';
 const ruRU: AuditLocaleResource = {
   audit: {
     operations: {
-      signIn: 'Войти',
+      signIn: 'Войти по электронной почте',
+      signInWithUsername: 'Войти по имени пользователя',
       signUp: 'Зарегистрироваться',
       signOut: 'Выйти',
       changePassword: 'Изменить пароль',
