@@ -74,7 +74,7 @@ The filename and exported `name` should match and remain globally stable. Task s
 
 ### Test a Migration against a real database
 
-Use the Collection Builder or `connection.schema.execute()` to change managed schema. If you need native DDL, run it in a callback passed to `connection.notifySchemaChange()` and use that connection's client. The notification also refreshes the current transaction's Collection definitions after the callback. For a new migration that inspects a Collection before changing it with native DDL, call the notification around the DDL even though the Migrator also announces the migration to other replicas.
+Use the Collection Builder in migrations. Runtime code with a full Database Connection can also use `connection.schema.execute()`. If you need native DDL, run it in a callback passed to `connection.notifySchemaChange()` and use that connection's client. The notification also refreshes the current transaction's Collection definitions after the callback. For a new migration that inspects a Collection before changing it with native DDL, call the notification around the DDL even though the Migrator also announces the migration to other replicas.
 
 Every Migration needs a migration-level test that runs `up()` through the real Migrator and, when reversible, `down()`. Verify both logical metadata and the physical schema: Collection and field definitions, table and column names, types, nullability, relations, foreign keys, indexes, and constraints relevant to the change. An import test or `validateMigrations()` proves only shape and discovery, not DDL correctness.
 
