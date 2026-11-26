@@ -23,3 +23,4 @@ export {
   type SecretsEnvelopeInfo,
   type SecretsSealOptions,
 } from './keyring.js';
+export { sensitiveParameterName } from './sensitive-name.js';

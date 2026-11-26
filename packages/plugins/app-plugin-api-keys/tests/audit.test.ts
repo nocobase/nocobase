@@ -11,7 +11,7 @@ import authorization, {
 } from '@nocobase/app-plugin-authorization/server';
 import { I18nProvider } from '@nocobase/app-server/i18n';
 import { Application } from '@nocobase/app-server/application';
-import { auditServiceToken, type AuditEvent } from '@nocobase/app-server/audit';
+import { auditServiceToken, type AuditEvent } from '@nocobase/audit';
 import { CachingProvider } from '@nocobase/app-server/caching';
 import {
   createAppPaths,
@@ -469,7 +469,7 @@ it('attributes native audit events without retaining credentials or duplicating 
     action: 'auditOrders:createOne',
     operationName: '创建记录',
     operationNameI18n: {
-      ns: '@nocobase/app-server',
+      ns: '@nocobase/audit',
       key: 'audit.operations.createOne',
     },
     actor,

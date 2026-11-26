@@ -99,6 +99,7 @@
   "peerDependencies": {
     "@nocobase/app-client": "workspace:^",
     "@nocobase/app-server": "workspace:^",
+    "@nocobase/audit": "workspace:^",
     "@nocobase/db": "workspace:^",
     "@nocobase/service-provider": "workspace:^",
     "react": "^19.0.0",

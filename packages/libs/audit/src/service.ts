@@ -4,18 +4,18 @@ import {
 } from '@nocobase/service-provider';
 import type { Context } from 'hono';
 
-import type { AppPaths } from '../config/paths.js';
 import {
   auditDefaults,
   isAuditName,
   validateAuditConfig,
   type AuditConfig,
 } from './config.js';
+import { fileAuditDriver } from './file-transport.js';
 import type { AuditActor, AuditEvent } from './index.js';
 
 export interface AuditTransportContext {
   readonly name: string;
-  readonly paths: AppPaths;
+  readonly paths: { readonly storageDir: string };
 }
 
 export interface AuditTransport {
@@ -44,7 +44,7 @@ export interface AuditService {
 }
 
 export const auditServiceToken: ServiceToken<AuditService> =
-  createServiceToken<AuditService>('@nocobase/app-server/audit');
+  createServiceToken<AuditService>('@nocobase/audit');
 
 type Report = (message: string, destination?: string) => void;
 
@@ -58,7 +58,9 @@ const deliveryTimeout = 1_000;
 const maxPendingPerDestination = 64;
 
 export class AuditCoordinator implements AuditService {
-  private readonly drivers = new Map<string, AuditTransportDriver>();
+  private readonly drivers = new Map<string, AuditTransportDriver>([
+    [fileAuditDriver.name, fileAuditDriver],
+  ]);
   private readonly actorResolvers: AuditActorResolver[] = [];
   private readonly destinations: Destination[] = [];
   private started = false;
@@ -93,7 +95,7 @@ export class AuditCoordinator implements AuditService {
 
   async start(
     config: AuditConfig | undefined,
-    paths: AppPaths,
+    paths: AuditTransportContext['paths'],
   ): Promise<boolean> {
     this.started = true;
     if (config === undefined) return false;

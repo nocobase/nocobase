@@ -1,4 +1,4 @@
-import { describeAudit } from '@nocobase/app-server/audit';
+import { describeAudit } from '@nocobase/audit';
 import type { AuthEnv } from '../auth.js';
 import { authAuditOptions } from '../audit.js';
 import type { AppPluginApplication } from '@nocobase/app-server/plugins';

@@ -1,4 +1,4 @@
-import { auditRecordKey, describeAudit } from '@nocobase/app-server/audit';
+import { auditRecordKey, describeAudit } from '@nocobase/audit';
 /**
  * The administration of keys, for System settings › API keys: system keys (`/api/systemApiKeys`), members' personal
  * keys (`/api/apiKeys/members`) and the rules (`/api/apiKeys/rules`). Reading takes `settings:apiKeys/read`, every

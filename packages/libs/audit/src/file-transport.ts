@@ -1,7 +1,7 @@
 import { constants } from 'node:fs';
 import { mkdir, open, realpath } from 'node:fs/promises';
 import path from 'node:path';
-import type { AuditTransportDriver } from '@nocobase/app-server/audit';
+import type { AuditTransportDriver } from './index.js';
 
 interface AppendQueue {
   tail: Promise<void>;

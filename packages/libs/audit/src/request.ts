@@ -1,22 +1,8 @@
 import type { BlockList } from 'node:net';
 
-import { Context, type MiddlewareHandler } from 'hono';
+import type { Context, MiddlewareHandler } from 'hono';
 import { findTargetHandler } from 'hono/utils/handler';
 
-import { getClientAddress } from '../router/api-limits.js';
-import { getRequestId } from '../router/api-error.js';
-import {
-  isForwardedTo,
-  type ApiForwardedRouter,
-} from '../router/openapi/document.js';
-import {
-  declaredRouteActionOf,
-  declaredRouteOf,
-} from '../router/openapi/declared.js';
-import {
-  apiExecutionResultOf,
-  enableApiExecutionResult,
-} from '../router/execution-result.js';
 import { parseAuditAddress } from './ip.js';
 import {
   auditSnapshot,
@@ -79,12 +65,28 @@ interface RouteAudit {
   readonly context: Context;
 }
 
-interface Forwarding {
-  context?: Context;
-}
-
-interface AuditEnv {
-  Variables: { auditForwarding: Forwarding };
+/** Router capabilities supplied by the host at composition time. */
+export interface AuditRequestHost {
+  declaredRouteOf(context: Context):
+    | {
+        readonly hide?:
+          | boolean
+          | ((input: { c?: Context; method: string; path: string }) => boolean);
+        readonly operationId?: string | ((route: Context['req']['matchedRoutes'][number]) => string);
+        readonly summary?: string;
+        readonly tags?: readonly string[];
+      }
+    | undefined;
+  declaredRouteActionOf(context: Context): string | undefined;
+  matchForwardedRoute(context: Context): Context | undefined;
+  observeForwardedContext(
+    context: Context,
+    observe: (child: Context) => void,
+  ): void;
+  enableExecutionResult(context: Context): void;
+  executionResultOf(context: Context): unknown;
+  getClientAddress(context: Context): string | undefined;
+  getRequestId(context: Context): string;
 }
 
 export function describeAudit(
@@ -102,18 +104,6 @@ export function describeAudit(
 function staticResolver(declaration: Declaration): Resolver {
   const captured = copyDeclaration(declaration);
   return () => captured;
-}
-
-/** Let a dispatcher pass its child context to the request collector. */
-export function forwardedAuditContext(
-  context: Context,
-): ((child: Context) => void) | undefined {
-  const state = (context as Context<AuditEnv>).get('auditForwarding');
-  if (!state) return undefined;
-  return (child) => {
-    state.context = child;
-    enableApiExecutionResult(child);
-  };
 }
 
 function copyDeclaration(declaration: Declaration): Declaration {
@@ -148,6 +138,7 @@ function copyDeclaration(declaration: Declaration): Declaration {
 
 function routeAudit(
   context: Context,
+  host: AuditRequestHost,
   autoDetect: boolean,
   report: () => void,
 ): RouteAudit | false | undefined {
@@ -182,7 +173,7 @@ function routeAudit(
   }
   if (!declaration && (!autoDetect || !writes.has(context.req.method)))
     return undefined;
-  const spec = declaredRouteOf(context);
+  const spec = host.declaredRouteOf(context);
   if (!declaration && (spec?.hide || !spec?.operationId)) return undefined;
   const operationId =
     typeof spec?.operationId === 'string'
@@ -191,7 +182,7 @@ function routeAudit(
   return {
     action:
       declaration?.action ??
-      declaredRouteActionOf(context) ??
+      host.declaredRouteActionOf(context) ??
       operationId ??
       `${context.req.method} ${route.path}`,
     resource: declaration?.resource ?? spec?.tags?.[0] ?? route.path,
@@ -199,22 +190,6 @@ function routeAudit(
     options: declaration ?? {},
     context,
   };
-}
-
-function forwardedRoute(
-  context: Context,
-  routers: readonly ApiForwardedRouter[],
-): Context | undefined {
-  const entry = routers.find((registration) =>
-    isForwardedTo(registration, context.req.path),
-  );
-  if (!entry) return undefined;
-  const path = context.req.path.slice(entry.prefix.length) || '/';
-  return new Context(context.req.raw, {
-    path,
-    matchResult: entry.router.router.match(context.req.method, path),
-    env: context.env as unknown,
-  });
 }
 
 /** Read a scalar record key from a bounded execution result. */
@@ -255,10 +230,10 @@ function withRouteParams<T>(context: Context, resolve: () => T): T {
 
 function clientIp(
   context: Context,
+  peer: string | undefined,
   proxies: BlockList,
   ipAddressHeaders: readonly string[],
 ): string | undefined {
-  const peer = getClientAddress(context);
   if (!peer) return undefined;
   const parsed = parseAuditAddress(peer);
   if (!parsed || !proxies.check(parsed.address, parsed.family)) return peer;
@@ -308,11 +283,11 @@ function actorOf(context: Context, service: AuditCoordinator): AuditActor {
 }
 
 export function auditMiddleware(options: {
+  readonly host: AuditRequestHost;
   readonly service: AuditCoordinator;
   readonly autoDetect: boolean;
   readonly proxies: BlockList;
   readonly ipAddressHeaders: readonly string[];
-  readonly forwarded: () => readonly ApiForwardedRouter[];
   readonly translate: (
     text: AuditTranslation,
     fallback: string,
@@ -320,16 +295,16 @@ export function auditMiddleware(options: {
   ) => string;
   readonly report: () => void;
 }): MiddlewareHandler {
+  const { host, autoDetect, report } = options;
   return async (context, next) => {
     const started = performance.now();
     let route: RouteAudit | false | undefined;
     let before: AuditTargets | undefined;
     try {
-      route = routeAudit(context, options.autoDetect, options.report);
+      route = routeAudit(context, host, autoDetect, report);
       if (route === undefined) {
-        const forwarded = forwardedRoute(context, options.forwarded());
-        if (forwarded)
-          route = routeAudit(forwarded, options.autoDetect, options.report);
+        const forwarded = host.matchForwardedRoute(context);
+        if (forwarded) route = routeAudit(forwarded, host, autoDetect, report);
       }
       if (route) {
         const matched = route;
@@ -354,10 +329,13 @@ export function auditMiddleware(options: {
       capture || resultFrom === 'request'
         ? readAuditBody(context.req.raw)
         : undefined;
-    if (declaration.resolveTargets) enableApiExecutionResult(context);
-    const forwarding: Forwarding = {};
+    if (declaration.resolveTargets) host.enableExecutionResult(context);
+    let actual: Context = context;
     if (route.context !== context)
-      (context as Context<AuditEnv>).set('auditForwarding', forwarding);
+      host.observeForwardedContext(context, (child) => {
+        actual = child;
+        if (declaration.resolveTargets) host.enableExecutionResult(child);
+      });
     let thrown = false;
     try {
       await next();
@@ -374,7 +352,6 @@ export function auditMiddleware(options: {
         try {
           const failedAuthentication =
             !success && declaration.authenticationAttempt;
-          const actual = forwarding.context ?? context;
           const request = failedAuthentication ? undefined : await body;
           const response =
             success && (capture || resultFrom === 'response')
@@ -388,7 +365,7 @@ export function auditMiddleware(options: {
                       status,
                       request,
                       response,
-                      value: apiExecutionResultOf(actual),
+                      value: host.executionResultOf(actual),
                     },
                     actual,
                   ),
@@ -429,7 +406,7 @@ export function auditMiddleware(options: {
           )
             actor = actorOf(actual, options.service);
           await options.service.record({
-            requestId: getRequestId(context),
+            requestId: host.getRequestId(context),
             action: route.action,
             operationName: operationNameI18n
               ? options.translate(operationNameI18n, fallback, context)
@@ -448,7 +425,12 @@ export function auditMiddleware(options: {
                 ].slice(0, 256),
             source: targets?.source && safeTarget(targets.source),
             targets: targets?.targets.slice(0, 64).map(safeTarget) ?? [],
-            ip: clientIp(context, options.proxies, options.ipAddressHeaders),
+            ip: clientIp(
+              context,
+              host.getClientAddress(context),
+              options.proxies,
+              options.ipAddressHeaders,
+            ),
             userAgent: context.req.header('user-agent')?.slice(0, 512),
             outcome: success
               ? 'success'

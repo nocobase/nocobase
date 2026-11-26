@@ -1,4 +1,4 @@
-import { auditServiceToken } from '@nocobase/app-server/audit';
+import { auditServiceToken } from '@nocobase/audit';
 import type { Context } from 'hono';
 import type { AuthEnv } from '@nocobase/app-plugin-authentication/server';
 import { isApiKeySession } from '../key-sessions.js';

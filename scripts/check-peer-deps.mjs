@@ -35,6 +35,10 @@ export const IDENTITY_SENSITIVE_PACKAGES = new Map([
     'exports the service tokens every server plugin resolves against',
   ],
   [
+    '@nocobase/audit',
+    'exports auditServiceToken and route declarations the application reads by identity',
+  ],
+  [
     '@nocobase/app-client',
     'exports React contexts plus identity-keyed API and realtime client tokens',
   ],

@@ -1,7 +1,7 @@
 import path from 'node:path';
 
-import type { AuditTransport } from '@nocobase/app-server/audit';
-import { auditServiceToken } from '@nocobase/app-server/audit';
+import type { AuditTransport } from '@nocobase/audit';
+import { auditServiceToken } from '@nocobase/audit';
 import {
   defineStandaloneServer,
   type StandaloneServer,

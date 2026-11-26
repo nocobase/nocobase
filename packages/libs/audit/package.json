@@ -1,7 +1,5 @@
 {
-  "name": "@nocobase/app-plugin-audit",
-  "displayName": "Audit File Transport",
-  "description": "Write NocoBase audit events to a JSON Lines file.",
+  "name": "@nocobase/audit",
   "version": "0.0.1",
   "type": "module",
   "prettier": "@nocobase/dev-config/prettier",
@@ -9,32 +7,38 @@
     "node": ">=24.0.0"
   },
   "sideEffects": false,
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
   "exports": {
-    "./server": {
-      "types": "./server/index.ts",
-      "import": "./server/index.ts"
+    ".": {
+      "types": "./src/index.ts",
+      "import": "./src/index.ts"
     },
-    "./package.json": "./package.json"
-  },
-  "files": [
-    "dist",
-    "README.md",
-    "CHANGELOG.md"
-  ],
-  "publishConfig": {
-    "access": "public",
-    "exports": {
-      "./server": {
-        "types": "./dist/server/index.d.ts",
-        "import": "./dist/server/index.js"
-      },
-      "./package.json": "./package.json"
+    "./runtime": {
+      "types": "./src/runtime.ts",
+      "import": "./src/runtime.ts"
     }
   },
+  "publishConfig": {
+    "exports": {
+      ".": {
+        "types": "./dist/index.d.ts",
+        "import": "./dist/index.js"
+      },
+      "./runtime": {
+        "types": "./dist/runtime.d.ts",
+        "import": "./dist/runtime.js"
+      }
+    },
+    "access": "public"
+  },
+  "files": [
+    "dist"
+  ],
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "test": "vitest run --passWithNoTests",
+    "test": "vitest run",
     "lint": "eslint . --max-warnings 0",
     "lint:fix": "eslint . --fix --max-warnings 0",
     "format": "prettier . --write",
@@ -42,17 +46,21 @@
     "check": "pnpm lint && pnpm format:check && pnpm typecheck && pnpm test && pnpm build",
     "fix": "pnpm lint:fix && pnpm format"
   },
-  "peerDependencies": {
-    "@nocobase/app-server": "workspace:^",
-    "@nocobase/service-provider": "workspace:^"
+  "dependencies": {
+    "@nocobase/secrets": "workspace:^",
+    "hono": "catalog:"
   },
   "devDependencies": {
     "@nocobase/dev-config": "workspace:*",
     "@types/node": "catalog:",
     "eslint": "catalog:",
-    "hono": "catalog:",
     "prettier": "catalog:",
     "typescript": "catalog:",
     "vitest": "catalog:"
+  },
+  "description": "Declarative request audit events, configurable transports, and JSON Lines file output.",
+  "peerDependencies": {
+    "@nocobase/i18n": "workspace:^",
+    "@nocobase/service-provider": "workspace:^"
   }
 }

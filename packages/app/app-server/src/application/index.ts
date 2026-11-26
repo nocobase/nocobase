@@ -1,8 +1,4 @@
-import { auditServiceToken, AuditCoordinator } from '../audit/service.js';
-import { auditDefaults, type AuditConfig } from '../audit/config.js';
-import { auditMiddleware } from '../audit/request.js';
-import auditLocales from '../audit/locales/index.js';
-import { createTrustedAuditProxies } from '../audit/ip.js';
+import { createAuditRuntime, type AuditRuntime } from '@nocobase/audit/runtime';
 import { enterRunningApplication } from '../backup/runtime-guard.js';
 import type { ReleaseStorageLock } from '@nocobase/drive';
 import { MailSenderFactoryProvider } from '../mailers/index.js';
@@ -18,6 +14,10 @@ import {
 import type { AppPaths } from '../config/index.js';
 import {
   apiErrorHandler,
+  declaredRouteActionOf,
+  declaredRouteOf,
+  getClientAddress,
+  getRequestId,
   apiNotFoundHandler,
   type ApiConfig,
   type AppHttpMiddleware,
@@ -32,6 +32,14 @@ import {
   assertNoDuplicateApiRoutes,
   type OwnedApiRouter,
 } from '../router/duplicate-routes.js';
+import {
+  apiExecutionResultOf,
+  enableApiExecutionResult,
+} from '../router/execution-result.js';
+import {
+  matchForwardedApiRoute,
+  observeForwardedApiContext,
+} from '../router/forwarded-context.js';
 import { createApiDocsRouter } from '../router/openapi/docs-routes.js';
 import { createCliRouter } from '../router/cli/routes.js';
 import { cliToken } from '../router/cli/service.js';
@@ -66,7 +74,6 @@ import {
 } from '../plugins/index.js';
 import type { AppDatabaseTaskContributions } from '../database/types.js';
 import { resolveLocalesContribution } from '@nocobase/i18n';
-import { getRequestLocale } from '@nocobase/i18n/server';
 import { i18nToken, registerAppLocales } from '../i18n/index.js';
 import { sampleDataToken } from '../sample-data/token.js';
 
@@ -149,18 +156,7 @@ export class Application<
   };
   public readonly websocket: AppWebSocketHandler;
 
-  private readonly audit: AuditCoordinator = new AuditCoordinator(
-    (message, destination) => {
-      const logger = this.container
-        .resolveIfCreated(loggingToken)
-        ?.getLogger('audit');
-      if (logger) logger.error({ destination }, message);
-      else
-        console.error(
-          destination ? `${message} Destination: ${destination}.` : message,
-        );
-    },
-  );
+  private readonly audit: AuditRuntime;
   private readonly providerRegistry: ServiceProviderRegistry =
     new ServiceProviderRegistry();
   private readonly websocketFactory: ApplicationWebSocketFactory;
@@ -204,7 +200,25 @@ export class Application<
     this.paths = options.paths;
     this.configurationFile = options.configurationFile;
     this.container = new ServiceContainer();
-    this.container.instance(auditServiceToken, this.audit);
+    this.audit = createAuditRuntime({
+      container: this.container,
+      config: this.config,
+      paths: this.paths,
+      logger: () =>
+        this.container.resolveIfCreated(loggingToken)?.getLogger('audit'),
+      i18n: () => this.container.resolveIfCreated(i18nToken),
+      router: {
+        declaredRouteOf,
+        declaredRouteActionOf,
+        matchForwardedRoute: (context) =>
+          matchForwardedApiRoute(context, this.forwardedApiRoutes.routers),
+        observeForwardedContext: observeForwardedApiContext,
+        enableExecutionResult: enableApiExecutionResult,
+        executionResultOf: apiExecutionResultOf,
+        getClientAddress,
+        getRequestId,
+      },
+    });
     this.usesDefaultWebSocket = options.websocket === undefined;
     this.websocketFactory = options.websocket ?? createRealtimeWebSocketHandler;
     this.websocket = async (request, env) => {
@@ -464,7 +478,7 @@ export class Application<
     }
 
     const runtime = this.container.resolve(i18nToken);
-    runtime.registerNamespace('@nocobase/app-server', auditLocales);
+    this.audit.registerLocales(runtime);
     const sources = [
       ...(this.applicationLocales
         ? [
@@ -499,46 +513,8 @@ export class Application<
     const api = new Hono();
     api.use('*', requestIdMiddleware());
     const apiConfig = this.config.get<ApiConfig>('api');
-    const auditConfig = this.config.get<AuditConfig>('audit');
-    if (await this.audit.start(auditConfig, this.paths)) {
-      const logger = this.container
-        .resolveIfCreated(loggingToken)
-        ?.getLogger('audit');
-      api.use(
-        '*',
-        auditMiddleware({
-          service: this.audit,
-          autoDetect: auditConfig?.autoDetect ?? auditDefaults.autoDetect,
-          forwarded: () => this.forwardedApiRoutes.routers,
-          proxies: createTrustedAuditProxies(
-            this.config.get('auth.advanced.ipAddress.trustedProxies'),
-            (message) => {
-              if (logger) logger.warn(message);
-              else console.warn(message);
-            },
-          ),
-          ipAddressHeaders: this.config.get<readonly string[]>(
-            'auth.advanced.ipAddress.ipAddressHeaders',
-          ) ?? ['x-forwarded-for'],
-          translate: ({ ns, key }, fallback, context) => {
-            const runtime = this.container.resolveIfCreated(i18nToken);
-            const locale =
-              getRequestLocale(context) ?? runtime?.getDefaultLocale();
-            const translated = runtime?.getFixedT(ns, locale)(key, {
-              defaultValue: fallback,
-            });
-            return translated?.trim() || fallback;
-          },
-          report: () => {
-            const logger = this.container
-              .resolveIfCreated(loggingToken)
-              ?.getLogger('audit');
-            if (logger) logger.error('Could not collect audit event.');
-            else console.error('Could not collect audit event.');
-          },
-        }),
-      );
-    }
+    const audit = await this.audit.start();
+    if (audit) api.use('*', audit);
     // The `api` section's global limits, each installed only when configured.
     installApiLimits(api, apiConfig);
     // The last resort: anything no router recognized is an unexpected failure, answered with an opaque 500.

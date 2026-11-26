@@ -8,7 +8,7 @@ import * as appMailers from '@nocobase/app-server/mailers';
 import { MailSenderFactory } from '@nocobase/app-server/mailers';
 import { Auth } from '../../auth.js';
 import { createPasswordResetSender } from '../../reset-sender.js';
-import type { AuditEvent } from '@nocobase/app-server/audit';
+import type { AuditEvent } from '@nocobase/audit';
 import {
   createStandaloneServer,
   resetServerFactory,

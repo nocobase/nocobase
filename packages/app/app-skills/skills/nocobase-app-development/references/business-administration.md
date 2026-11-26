@@ -43,7 +43,7 @@ Test concurrent allocation, a replayed request, a failed transaction, a period b
 
 ## Important operation records
 
-When implementing account and role administration, configurable business rules or other important administrator actions, use the audit contract in `@nocobase/app-server/audit`. Declare the action and target on HTTP routes with `describeAudit()`. Configure one or more audit destinations for the application. If the App needs a searchable history, verify that it registers and selects a transport capable of querying events before building the history page.
+When implementing account and role administration, configurable business rules or other important administrator actions, use the audit contract in `@nocobase/audit`. Declare the action and target on HTTP routes with `describeAudit()`. Configure one or more audit destinations for the application. If the App needs a searchable history, verify that it registers and selects a transport capable of querying events before building the history page.
 
 The coordinator captures the authenticated actor, request time, action, target and HTTP outcome. Use route-local target resolution for created records. Delivery runs after the business operation and follows the actual request result. A process failure can lose an event. Verify alternate routes and bulk actions that make the same change, and check that a successful idempotent replay yields a single event.
 

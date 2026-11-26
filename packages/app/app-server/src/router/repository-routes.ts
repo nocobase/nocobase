@@ -1,5 +1,4 @@
-import { describeAudit } from '../audit/index.js';
-import auditLabels from '../audit/locales/en-US.js';
+import { describeRepositoryAudit } from '@nocobase/audit/runtime';
 import { setApiExecutionResult } from './execution-result.js';
 import {
   databaseManagerToken,
@@ -356,27 +355,9 @@ export function defineRepositoryApiRoutes<P = unknown>(
           action === 'createOne' ||
           action === 'updateOne' ||
           action === 'deleteOne';
-        const collection = entry.collection;
         router.post(
           `/${entry.name}/${action}`,
-          describeAudit(
-            write
-              ? {
-                  action: `${entry.name}:${action}`,
-                  resource: entry.name,
-                  operationName: {
-                    ns: '@nocobase/app-server',
-                    key: `audit.operations.${action}`,
-                    defaultValue: auditLabels.audit.operations[action],
-                  },
-                  target: () => ({ collection }),
-                  resolveTargets: ({ value }) => ({ collection, key: value }),
-                  // Collection values and filter operands can contain application secrets under arbitrary names.
-                  captureBody: false,
-                  resultFrom: 'context',
-                }
-              : false,
-          ),
+          describeRepositoryAudit(entry.name, entry.collection, action),
           // Documented from the Collection when the API document is generated, not declared by hand.
           describeRepositoryEndpoint({
             exposure: entry.name,

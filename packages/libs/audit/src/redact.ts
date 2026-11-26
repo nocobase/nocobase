@@ -1,4 +1,4 @@
-import { sensitiveParameterName } from '../secrets/sensitive-name.js';
+import { sensitiveParameterName } from '@nocobase/secrets';
 
 export type AuditRedactRule =
   | { readonly field: string; readonly path?: never }

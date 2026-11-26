@@ -9,7 +9,7 @@ import {
 } from '@nocobase/app-plugin-authorization';
 import { loggingToken } from '@nocobase/app-server/logging';
 import { Application } from '@nocobase/app-server/application';
-import { auditServiceToken, type AuditEvent } from '@nocobase/app-server/audit';
+import { auditServiceToken, type AuditEvent } from '@nocobase/audit';
 import { AppConfig, createAppPaths } from '@nocobase/app-server/config';
 import {
   defineApiRoutes,

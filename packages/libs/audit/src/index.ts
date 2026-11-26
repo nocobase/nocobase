@@ -61,7 +61,6 @@ export {
 export {
   describeAudit,
   auditRecordKey,
-  forwardedAuditContext,
   type AuditRouteOptions,
   type AuditExecutionResult,
   type AuditTargets,

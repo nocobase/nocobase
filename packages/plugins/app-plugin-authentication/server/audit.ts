@@ -1,7 +1,4 @@
-import {
-  auditRecordKey,
-  type AuditRouteOptions,
-} from '@nocobase/app-server/audit';
+import { auditRecordKey, type AuditRouteOptions } from '@nocobase/audit';
 import type { Context } from 'hono';
 import auditLabels from '../locales/en-US.js';
 import type { AuthEnv } from './auth.js';

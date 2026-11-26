@@ -1,8 +1,3 @@
-import {
-  defineAppConfig,
-  type AppConfigFactory,
-} from '../config/define-app-config.js';
-
 export interface AuditDestinationConfig {
   readonly driver: string;
   readonly options?: Readonly<Record<string, unknown>>;
@@ -75,12 +70,27 @@ export function validateAuditConfig(
 
 export function defineAuditConfig(
   defaults: AuditConfig = {},
-): AppConfigFactory<AuditConfig> {
-  return defineAppConfig({
-    defaults: { ...auditDefaults, ...defaults },
-    validate: (value, context) =>
-      validateAuditConfig(value, (path, message) =>
-        context.error(path, message),
-      ),
+): AuditConfigFactory {
+  const values = { ...auditDefaults, ...defaults };
+  return Object.assign(() => values, {
+    rules: Object.freeze({
+      public: Object.freeze([]),
+      validators: Object.freeze([validateSection]),
+    }),
   });
+}
+
+interface AuditConfigFactory {
+  (): AuditConfig;
+  readonly rules: {
+    readonly public: readonly string[];
+    readonly validators: readonly (typeof validateSection)[];
+  };
+}
+
+function validateSection(
+  value: unknown,
+  context: { error(path: string, message: string): void },
+): void {
+  validateAuditConfig(value, (path, message) => context.error(path, message));
 }

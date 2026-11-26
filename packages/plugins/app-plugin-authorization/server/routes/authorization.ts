@@ -1,9 +1,9 @@
-import { forwardedAuditContext } from '@nocobase/app-server/audit';
 import { withSettingsSubmission } from '../extension/submission.js';
 import type { DatabaseConnection } from '@nocobase/db';
 import type { RepositoryIdempotencyConfig } from '@nocobase/app-server/router';
 import type { Auth } from '@nocobase/app-plugin-authentication';
 import {
+  getForwardedApiContextObserver,
   apiErrorHandler,
   apiErrorResponse,
   dataResponse,
@@ -61,7 +61,7 @@ export function createAuthorizationRoutes(
         request: withRequestId(context.req.raw, getRequestId(context)),
         path: mountedPath(context),
         authorization: context.get('authz'),
-        onContext: forwardedAuditContext(context),
+        onContext: getForwardedApiContextObserver(context),
       });
     const response = submission
       ? withSettingsSubmission({ ...submission, context }, dispatch)

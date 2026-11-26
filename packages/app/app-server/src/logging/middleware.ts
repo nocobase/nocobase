@@ -8,7 +8,7 @@ import {
   getRequestId,
   type AppHttpMiddleware,
 } from '../router/index.js';
-import { sensitiveParameterName } from '../secrets/sensitive-name.js';
+import { sensitiveParameterName } from '@nocobase/secrets';
 import { loggingToken } from './token.js';
 
 const defaultRequestHeaders = [

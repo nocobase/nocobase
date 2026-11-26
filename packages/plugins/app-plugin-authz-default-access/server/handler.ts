@@ -1,4 +1,4 @@
-import { auditRecordKey, describeAudit } from '@nocobase/app-server/audit';
+import { auditRecordKey, describeAudit } from '@nocobase/audit';
 import { z } from 'zod';
 import {
   ApiError,

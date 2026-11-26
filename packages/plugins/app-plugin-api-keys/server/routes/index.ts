@@ -1,4 +1,4 @@
-import { auditRecordKey, describeAudit } from '@nocobase/app-server/audit';
+import { auditRecordKey, describeAudit } from '@nocobase/audit';
 import { authenticationToken } from '@nocobase/app-plugin-authentication/server';
 import {
   authorizationOptions,

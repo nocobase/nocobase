@@ -1,4 +1,4 @@
-import { describeAudit } from '@nocobase/app-server/audit';
+import { describeAudit } from '@nocobase/audit';
 import type {
   Authorization,
   AuthorizationContext,

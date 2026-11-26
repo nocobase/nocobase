@@ -6,7 +6,7 @@ import {
   DEFAULT_ADMIN_CREDENTIALS,
   signIn,
 } from '@nocobase/app-plugin-authentication/testing';
-import { auditServiceToken, type AuditEvent } from '@nocobase/app-server/audit';
+import { auditServiceToken, type AuditEvent } from '@nocobase/audit';
 import { defineStandaloneServer } from '@nocobase/app-server/node';
 import {
   resolveAppRuntime,
