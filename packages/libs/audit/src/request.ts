@@ -72,7 +72,8 @@ export interface AuditRequestHost {
         readonly hide?:
           | boolean
           | ((input: { c?: Context; method: string; path: string }) => boolean);
-        readonly operationId?: string | ((route: Context['req']['matchedRoutes'][number]) => string);
+        readonly operationId?:
+          string | ((route: Context['req']['matchedRoutes'][number]) => string);
         readonly summary?: string;
         readonly tags?: readonly string[];
       }
