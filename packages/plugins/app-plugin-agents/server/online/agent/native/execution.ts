@@ -194,6 +194,17 @@ export class NativeOnlineAgent {
     let background = false;
     let result: OnlineAgentJson | undefined;
     let outputInvalid = false;
+    const resolveModel = async (clearInheritedSearch = false) => {
+      // Resolve the connection first so an unavailable service keeps its own error.
+      const resolved = await this.deps.model(selected, id);
+      await validateWebSearch(
+        config,
+        selected,
+        this.deps.webSearch,
+        clearInheritedSearch,
+      );
+      return resolved;
+    };
     const readFailure = async (error: unknown) => {
       try {
         return await policy?.failure?.(error, selected);
@@ -221,8 +232,7 @@ export class NativeOnlineAgent {
       selected = modelRef(fallbackCandidate);
       fallbackCandidate = undefined;
       // The backup must support the same search tool before receiving the prompt.
-      await validateWebSearch(config, selected, this.deps.webSearch);
-      const backup = await this.deps.model(selected, id);
+      const backup = await resolveModel();
       fallbackReason = reason;
       return backup;
     };
@@ -280,13 +290,9 @@ export class NativeOnlineAgent {
       config = structuredClone(config);
       try {
         try {
-          await validateWebSearch(
-            config,
-            selected,
-            this.deps.webSearch,
+          model = await resolveModel(
             changedModel && input?.overrides?.webSearch === undefined,
           );
-          model = await this.deps.model(selected, id);
         } catch (error) {
           const backup = await recoverModel(error);
           if (!backup) throw error;

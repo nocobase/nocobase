@@ -352,9 +352,11 @@ describe('native online model usage', () => {
         ]),
       ],
     });
-    const resolveModel = vi
-      .spyOn(NativeFileInputs.prototype, 'model')
-      .mockResolvedValue(primary);
+    const backup = new MockLanguageModelV4({ doStream: [streamed(answer(1))] });
+    vi.spyOn(NativeFileInputs.prototype, 'model').mockImplementation(
+      async ({ modelService }) =>
+        modelService === service.name ? backup : primary,
+    );
     const id = await createConversation(undefined, true);
     const failure = vi.fn(async () => ({ unavailableReason: 'modelFailed' }));
     h.services.onlineAgent.configurator.provideNativeTurn(async () => ({
@@ -371,10 +373,40 @@ describe('native online model usage', () => {
       }),
       { modelService: service.name, model: 'chat' },
     );
-    expect(resolveModel).not.toHaveBeenCalledWith(
-      { modelService: service.name, model: 'chat' },
-      id,
+    expect(backup.doStreamCalls).toHaveLength(0);
+  });
+
+  it('keeps the connection error when a search-enabled primary is disabled', async () => {
+    const service = await h.services.models.services.create({
+      title: 'Backup service',
+      provider: 'openai',
+      apiKey: 'fixture-key',
+      models: [{ value: 'chat' }],
+    });
+    const backup = new MockLanguageModelV4({ doStream: [streamed(answer(1))] });
+    const originalModel = NativeFileInputs.prototype.model;
+    vi.spyOn(NativeFileInputs.prototype, 'model').mockImplementation(
+      async function (this: NativeFileInputs, ref, sessionId) {
+        return ref.modelService === service.name
+          ? backup
+          : originalModel.call(this, ref, sessionId);
+      },
     );
+    const id = await createConversation(undefined, true);
+    await h.services.models.services.update('fixture', { enabled: false });
+    const fallback = vi.fn(async () => 'serviceDisabled');
+    h.services.onlineAgent.configurator.provideNativeTurn(async () => ({
+      models: ['fixture/chat', `${service.name}/chat`],
+      fallback,
+    }));
+    const sent = await send(id);
+    expect(sent.status).toBe(200);
+    expect(sent.body).toContain('"fallbackReason":"serviceDisabled"');
+    expect(fallback).toHaveBeenCalledExactlyOnceWith(
+      expect.objectContaining({ code: 'config' }),
+      modelRef,
+    );
+    expect(backup.doStreamCalls).toHaveLength(1);
   });
 
   it.each([
