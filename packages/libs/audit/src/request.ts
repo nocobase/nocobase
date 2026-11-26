@@ -301,11 +301,6 @@ export function auditMiddleware(options: {
   readonly autoDetect: boolean;
   readonly proxies: BlockList;
   readonly ipAddressHeaders: readonly string[];
-  readonly translate: (
-    text: AuditTranslation,
-    fallback: string,
-    context: Context,
-  ) => string;
   readonly report: () => void;
 }): MiddlewareHandler {
   const { host, autoDetect, report } = options;
@@ -395,7 +390,7 @@ export function auditMiddleware(options: {
             key: failedAuthentication ? undefined : snapshot(key),
           });
           const operation = declaration.operationName;
-          const fallback =
+          const operationName =
             (typeof operation === 'string'
               ? operation.trim()
               : operation?.defaultValue?.trim()) ||
@@ -421,9 +416,7 @@ export function auditMiddleware(options: {
           await options.service.record({
             requestId: host.getRequestId(context),
             action: route.action,
-            operationName: operationNameI18n
-              ? options.translate(operationNameI18n, fallback, context)
-              : fallback,
+            operationName,
             operationNameI18n,
             resource: route.resource,
             actor,

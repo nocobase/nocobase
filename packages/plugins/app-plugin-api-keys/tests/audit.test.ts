@@ -223,7 +223,7 @@ it('attributes native audit events without retaining credentials or duplicating 
   const { user } = (await signup.json()) as { user: { id: string } };
   expect(events.at(-1)).toMatchObject({
     action: 'auth:signUp',
-    operationName: '注册',
+    operationName: 'Sign up',
     operationNameI18n: {
       ns: '@nocobase/app-plugin-authentication',
       key: 'audit.operations.signUp',
@@ -266,7 +266,7 @@ it('attributes native audit events without retaining credentials or duplicating 
   ).toBe(2);
   expect(events.at(-1)).toMatchObject({
     action: 'auth:signIn',
-    operationName: '使用邮箱登录',
+    operationName: 'Sign in with email',
     operationNameI18n: {
       ns: '@nocobase/app-plugin-authentication',
       key: 'audit.operations.signInWithEmail',
@@ -284,7 +284,7 @@ it('attributes native audit events without retaining credentials or duplicating 
   const actor = { type: 'user', userId: user.id };
   expect(events.at(-1)).toMatchObject({
     action: 'auth:signIn',
-    operationName: '使用邮箱登录',
+    operationName: 'Sign in with email',
     operationNameI18n: {
       ns: '@nocobase/app-plugin-authentication',
       key: 'audit.operations.signInWithEmail',
@@ -312,7 +312,7 @@ it('attributes native audit events without retaining credentials or duplicating 
   expect(changed.status).toBe(200);
   expect(events.at(-1)).toMatchObject({
     action: 'auth:changePassword',
-    operationName: '修改密码',
+    operationName: 'Change password',
     operationNameI18n: {
       ns: '@nocobase/app-plugin-authentication',
       key: 'audit.operations.changePassword',
@@ -338,7 +338,7 @@ it('attributes native audit events without retaining credentials or duplicating 
   expect(events.at(-1)).toMatchObject({
     resource: 'settings:authorization.permission-sets',
     action: 'update',
-    operationName: '修改权限集',
+    operationName: 'Edit a permission set',
     operationNameI18n: {
       ns: '@nocobase/app-plugin-authorization',
       key: 'audit.operations.updatePermissionSet',
@@ -381,7 +381,7 @@ it('attributes native audit events without retaining credentials or duplicating 
   };
   expect(events.at(-1)).toMatchObject({
     action: 'assign',
-    operationName: '分配权限集',
+    operationName: 'Assign a permission set',
     operationNameI18n: {
       ns: '@nocobase/app-plugin-authorization',
       key: 'audit.operations.assignPermissionSet',
@@ -396,7 +396,7 @@ it('attributes native audit events without retaining credentials or duplicating 
   if (unassignment.status !== 204) throw new Error(await unassignment.text());
   expect(events.at(-1)).toMatchObject({
     action: 'assign',
-    operationName: '取消分配权限集',
+    operationName: 'Remove a permission set assignment',
     operationNameI18n: {
       ns: '@nocobase/app-plugin-authorization',
       key: 'audit.operations.unassignPermissionSet',
@@ -417,7 +417,7 @@ it('attributes native audit events without retaining credentials or duplicating 
   };
   expect(events.at(-1)).toMatchObject({
     action: 'apiKeysCreateKey',
-    operationName: '创建个人 API 密钥',
+    operationName: 'Create a personal API key',
     operationNameI18n: {
       ns: '@nocobase/app-plugin-api-keys',
       key: 'audit.operations.createPersonalKey',
@@ -469,7 +469,7 @@ it('attributes native audit events without retaining credentials or duplicating 
   ).toHaveLength(1);
   expect(events.at(-1)).toMatchObject({
     action: 'auditOrders:createOne',
-    operationName: '创建记录',
+    operationName: 'Create a record',
     operationNameI18n: {
       ns: '@nocobase/audit',
       key: 'audit.operations.createOne',
@@ -534,7 +534,7 @@ it('attributes native audit events without retaining credentials or duplicating 
   ).toBe(1);
   expect(events.at(-1)).toMatchObject({
     action: 'auditOrders:createOne',
-    operationName: '创建记录',
+    operationName: 'Create a record',
     operationNameI18n: {
       ns: '@nocobase/audit',
       key: 'audit.operations.createOne',
@@ -588,13 +588,13 @@ it('attributes native audit events without retaining credentials or duplicating 
   };
   expect(events.at(-1)).toMatchObject({
     action: 'apiKeysCreateSystemKey',
-    operationName: '创建系统 API 密钥',
+    operationName: 'Create a system API key',
     actor,
     targets: [{ collection: 'apikey', key: systemData.key.id }],
   });
   for (const [operation, operationId, operationName] of [
-    ['disable', 'disableSystemKey', '停用系统 API 密钥'],
-    ['enable', 'enableSystemKey', '启用系统 API 密钥'],
+    ['disable', 'disableSystemKey', 'Disable a system API key'],
+    ['enable', 'enableSystemKey', 'Enable a system API key'],
   ] as const) {
     const response = await request(
       'POST',
@@ -640,7 +640,7 @@ it('attributes native audit events without retaining credentials or duplicating 
   const nativeKey = (await native.json()) as { id: string; key: string };
   expect(events.at(-1)).toMatchObject({
     action: 'auth:createApiKey',
-    operationName: '创建 API 密钥',
+    operationName: 'Create an API key',
     operationNameI18n: {
       ns: '@nocobase/app-plugin-authentication',
       key: 'audit.operations.createApiKey',
@@ -657,7 +657,7 @@ it('attributes native audit events without retaining credentials or duplicating 
   if (nativeDelete.status !== 200) throw new Error(await nativeDelete.text());
   expect(events.at(-1)).toMatchObject({
     action: 'auth:revokeApiKey',
-    operationName: '撤销 API 密钥',
+    operationName: 'Revoke an API key',
     operationNameI18n: {
       ns: '@nocobase/app-plugin-authentication',
       key: 'audit.operations.revokeApiKey',
@@ -669,7 +669,7 @@ it('attributes native audit events without retaining credentials or duplicating 
   if (signOut.status !== 200) throw new Error(await signOut.text());
   expect(events.at(-1)).toMatchObject({
     action: 'auth:signOut',
-    operationName: '退出登录',
+    operationName: 'Sign out',
     operationNameI18n: {
       ns: '@nocobase/app-plugin-authentication',
       key: 'audit.operations.signOut',

@@ -23,7 +23,9 @@ Audit uses `auth.advanced.ipAddress.trustedProxies` and `auth.advanced.ipAddress
 
 ## Routes and transports
 
-Audit viewers can register the lazy loader from `@nocobase/audit/locales` in their i18n runtime under `@nocobase/audit`. Installed business plugins provide their operation labels through their existing client locale contributions. Resolve an event's `operationNameI18n` in the viewer's language and use the stored `operationName` as the fallback, then `action` for older events.
+Audit events store the operation's declared name or its English default, with API summary and action as fallbacks. The name is independent of the request language. JSON Lines contains the event as recorded, including any `operationNameI18n` namespace and key.
+
+The official templates contribute the lazy loader from `@nocobase/audit/locales` as a locales-only entry in their client plugin list. Custom applications can add the same entry with `defineClientPlugin({ packageName: '@nocobase/audit', locales: auditLocales })()` before client initialization. Installed business plugins provide their labels through their own locale contributions. Resolve `operationNameI18n` in the viewer's language, falling back to the stored `operationName`, then `action` for older events. The audit provider also registers the Repository labels on the server for localized exports.
 
 Import `describeAudit` from `@nocobase/audit` and declare it alongside the route. Set an action, resource, and optional operation name for display. Use `target` for identifiers available before guards and `resolveTargets` for identifiers derived from a successful handler result. Use `captureBody: false` to omit both snapshots and `redact` to mask additional fields with `{ field: 'name' }` or paths with `{ path: 'parent.name' }`. The built-in credential masking and snapshot limits always apply.
 

@@ -2,6 +2,7 @@ import { AuditProvider } from '../src/runtime.js';
 import { databaseManagerToken } from '@nocobase/db';
 import { provisionTestDatabases } from '@nocobase/db-testing';
 import { Hono } from 'hono';
+import { getRequestLocale } from '@nocobase/i18n/server';
 import { expect, it, vi } from 'vitest';
 
 import { Application } from '@nocobase/app-server/application';
@@ -502,7 +503,7 @@ it('honors explicit declarations before guards and uses inference only for suppo
   }
 });
 
-it('stores a localized label with its descriptor and preserves a readable fallback', async () => {
+it('stores the same default operation name and descriptor across request languages and outcomes', async () => {
   const { app, events } = await appWithAudit();
   app.addServiceProvider(I18nProvider);
   app.registerProviders();
@@ -523,12 +524,23 @@ it('stores a localized label with its descriptor and preserves a readable fallba
     defineApiRoutes(() => {
       const router = new Hono();
       router.post(
-        '/create',
+        '/create/:result',
         describeAudit({
           action: 'create',
-          operationName: { ns: '@example/audit', key: 'actions.create' },
+          operationName: {
+            ns: '@example/audit',
+            key: 'actions.create',
+            defaultValue: 'Create an audit example',
+          },
         }),
-        (context) => context.body(null, 204),
+        (context) => {
+          context.header('x-test-locale', getRequestLocale(context));
+          const result = context.req.param('result');
+          return context.body(
+            null,
+            result === 'denied' ? 403 : result === 'failure' ? 422 : 204,
+          );
+        },
       );
       router.post(
         '/update',
@@ -577,22 +589,32 @@ it('stores a localized label with its descriptor and preserves a readable fallba
     }),
   );
   try {
-    await app.fetch(request('create', {}, { 'accept-language': 'zh-CN' }));
+    for (const locale of ['en-US', 'zh-CN']) {
+      for (const outcome of ['success', 'failure', 'denied']) {
+        const response = await app.fetch(
+          request(`create/${outcome}`, {}, { 'accept-language': locale }),
+        );
+        expect(response.headers.get('x-test-locale')).toBe(locale);
+        expect(events.at(-1)).toMatchObject({
+          action: 'create',
+          operationName: 'Create an audit example',
+          operationNameI18n: { ns: '@example/audit', key: 'actions.create' },
+          outcome,
+        });
+      }
+    }
+    expect(events).toHaveLength(6);
     await app.fetch(
       request('missing-label', {}, { 'accept-language': 'zh-CN' }),
     );
     for (const action of ['update', 'delete', 'blank'])
       await app.fetch(request(action, {}));
     expect(
-      events.map(({ operationName, operationNameI18n }) => ({
+      events.slice(6).map(({ operationName, operationNameI18n }) => ({
         operationName,
         operationNameI18n,
       })),
     ).toEqual([
-      {
-        operationName: '创建审计示例',
-        operationNameI18n: { ns: '@example/audit', key: 'actions.create' },
-      },
       {
         operationName: 'English operation name',
         operationNameI18n: {

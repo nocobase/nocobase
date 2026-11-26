@@ -1,6 +1,7 @@
 import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 
+import { i18nToken } from '@nocobase/app-server/i18n';
 import { defineStandaloneServer } from '@nocobase/app-server/node';
 import { defineServerPlugins } from '@nocobase/app-server/plugins';
 import {
@@ -78,20 +79,26 @@ it('records Repository mutations with only a file destination configured', async
     },
   });
   try {
-    const post = (action: string, body: unknown, principal?: string) =>
+    const post = (
+      action: string,
+      body: unknown,
+      locale: string,
+      principal?: string,
+    ) =>
       app.request(`/auditOrders/${action}`, {
         method: 'POST',
         headers: {
+          'accept-language': locale,
           'content-type': 'application/json',
           ...(principal ? { 'x-test-principal': principal } : {}),
         },
         body: JSON.stringify(body),
       });
     const input = { values: { id: 'order-1' } };
-    expect((await post('createOne', input)).status).toBe(403);
-    const created = await post('createOne', input, 'operator');
+    expect((await post('createOne', input, 'zh-CN')).status).toBe(403);
+    const created = await post('createOne', input, 'en-US', 'operator');
     if (!created.ok) throw new Error(await created.text());
-    expect((await post('count', {}, 'operator')).ok).toBe(true);
+    expect((await post('count', {}, 'en-US', 'operator')).ok).toBe(true);
 
     const lines = await readFile(
       app.application.paths.storage('audit.jsonl'),
@@ -124,6 +131,12 @@ it('records Repository mutations with only a file destination configured', async
         targets: [{ collection: 'auditOrders', key: { id: 'order-1' } }],
       },
     ]);
+
+    const i18n = app.application.container.resolve(i18nToken);
+    await i18n.ensureLocaleLoaded('zh-CN');
+    expect(
+      i18n.getFixedT('@nocobase/audit', 'zh-CN')('audit.operations.createOne'),
+    ).toBe('创建记录');
   } finally {
     await app.close();
   }

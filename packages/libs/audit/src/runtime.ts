@@ -15,7 +15,6 @@ import {
   observeForwardedApiContext,
   repositoryEndpointOf,
 } from '@nocobase/app-server/router';
-import { getRequestLocale } from '@nocobase/i18n/server';
 import { ServiceProvider } from '@nocobase/service-provider';
 
 import { auditDefaults, type AuditConfig } from './config.js';
@@ -41,13 +40,12 @@ export class AuditProvider<
     // Providers can register drivers in either register() or boot(). Introduce
     // the service during composition so audit can shut down before those providers.
     app.container.instance(auditServiceToken, this.coordinator);
-    const { config, paths, container } = app;
+    const { config, paths } = app;
     app.addApiMiddleware({
       name: namespace,
       register: async (router) => {
         const audit = config.get<AuditConfig>('audit');
         if (!(await this.coordinator.start(audit, paths))) return;
-        const i18n = container.resolveIfCreated(i18nToken);
         const proxies = createTrustedAuditProxies(
           config.get('auth.advanced.ipAddress.trustedProxies'),
           (message) => {
@@ -81,14 +79,6 @@ export class AuditProvider<
             ipAddressHeaders: config.get<readonly string[]>(
               'auth.advanced.ipAddress.ipAddressHeaders',
             ) ?? ['x-forwarded-for'],
-            translate: ({ ns, key }, fallback, context) => {
-              const locale =
-                getRequestLocale(context) ?? i18n?.getDefaultLocale();
-              const translated = i18n?.getFixedT(ns, locale)(key, {
-                defaultValue: fallback,
-              });
-              return translated?.trim() || fallback;
-            },
             report: () => this.report('Could not collect audit event.'),
           }),
         );
