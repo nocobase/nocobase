@@ -248,6 +248,16 @@ describe('RestoreManager', () => {
   }
 
   describe.each(['restore', 'restoreCLI'] as const)('%s client version check', (entryPoint) => {
+    const archiveVersionCheck = ['pg_restore', ['--version']];
+    const expectedVersionChecks =
+      entryPoint === 'restore'
+        ? [
+            ['pg_dump', ['--version']],
+            ['psql', expect.arrayContaining(['-c', 'SHOW server_version'])],
+            archiveVersionCheck,
+          ]
+        : [archiveVersionCheck];
+
     function createPostgresRestoreManager() {
       return new RestoreManager(createCtx(), {
         dialect: 'postgres',
@@ -285,8 +295,7 @@ describe('RestoreManager', () => {
           /pg_dump 16.*newer than pg_restore 14/,
         );
 
-        expect(spawnMock).toHaveBeenCalledTimes(1);
-        expect(spawnMock.mock.calls[0].slice(0, 2)).toEqual(['pg_restore', ['--version']]);
+        expect(spawnMock.mock.calls.map(([command, args]) => [command, args])).toEqual(expectedVersionChecks);
         expect(emitSpy).not.toHaveBeenCalledWith('beforeStop');
         expect(emitSpy).not.toHaveBeenCalledWith('afterStop');
         expect(upgradeSpy).not.toHaveBeenCalled();
@@ -313,8 +322,7 @@ describe('RestoreManager', () => {
         /Cannot verify PostgreSQL backup compatibility/,
       );
 
-      expect(spawnMock).toHaveBeenCalledTimes(1);
-      expect(spawnMock.mock.calls[0].slice(0, 2)).toEqual(['pg_restore', ['--version']]);
+      expect(spawnMock.mock.calls.map(([command, args]) => [command, args])).toEqual(expectedVersionChecks);
     });
 
     it.each([
@@ -351,8 +359,8 @@ describe('RestoreManager', () => {
     ['pg_dump (PostgreSQL) 17.12', '18.6', /local pg_dump 17 cannot back up PostgreSQL 18/],
     ['unknown', '18.6', /Cannot verify the local pg_dump/],
     ['pg_dump (PostgreSQL) 18.1', '', /Cannot verify the local pg_dump/],
-  ] as const)('rejects an upload before backing up the target (%s, %s)', async (dumpVersion, serverVersion, error) => {
-    const { backupFilePath } = createBackupFile('local-dump-version');
+  ] as const)('rejects an upload before extraction (%s, %s)', async (dumpVersion, serverVersion, error) => {
+    const { backupFileBaseName, backupFilePath } = createBackupFile('local-dump-version');
     await createBackupArchive(backupFilePath, createMetadata());
     mockDumpVersion = dumpVersion;
     mockServerVersion = serverVersion;
@@ -373,8 +381,8 @@ describe('RestoreManager', () => {
       manager.restoreFromUpload({ path: backupFilePath } as Express.Multer.File, 'task', undefined, true),
     ).rejects.toThrow(error);
 
+    expect(fs.existsSync(storagePathJoin('tmp', 'backups', app.name, backupFileBaseName))).toBe(false);
     expect(spawn.mock.calls.map(([command, args]) => [command, args])).toEqual([
-      ['pg_restore', ['--version']],
       ['pg_dump', ['--version']],
       ['psql', expect.arrayContaining(['-h', 'target-host', '-d', 'target-db', '-c', 'SHOW server_version'])],
     ]);

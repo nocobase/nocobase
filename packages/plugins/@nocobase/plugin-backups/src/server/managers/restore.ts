@@ -231,6 +231,7 @@ export class RestoreManager {
     options?: RestoreOptions,
   ): Promise<void> {
     await this.#dbAdapter.check('restore');
+    await this.#assertPreRestoreDumpVersion();
     const extractedDir = await this.#decompressFiles(filePath, password);
     const backupFiles = await fsPromises.readdir(extractedDir);
     const dbFile = backupFiles.find((file) => file === 'data');
@@ -242,7 +243,6 @@ export class RestoreManager {
     }
     // check the metadata file
     const metadata = await this.#parseMetadataFile(path.join(extractedDir, metadataFile), tolerentMode, options);
-    await this.#assertPreRestoreDumpVersion();
     this.#restoreData(extractedDir, dbFile, uploadsExist, taskId, metadata, options).catch(async (error) => {
       try {
         const dbVersion = await getDBVersion(this.ctx.app.db);
