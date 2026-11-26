@@ -1,6 +1,8 @@
+import auditLabels from '../../locales/zh-CN.js';
 import type { UsersResource } from './en-US.js';
 
 const zhCN: UsersResource = {
+  ...auditLabels,
   invitationEmail: {
     subject: '{{inviter}} 邀请你加入 {{app}}',
     intro: '{{inviter}} 邀请你加入 {{app}}。',

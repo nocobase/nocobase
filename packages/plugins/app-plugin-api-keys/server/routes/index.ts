@@ -1,3 +1,5 @@
+import { auditOperationName } from '../audit-operation-name.js';
+import { auditRecordKey, describeAudit } from '@nocobase/audit';
 import { authenticationToken } from '@nocobase/app-plugin-authentication/server';
 import {
   authorizationOptions,
@@ -316,6 +318,16 @@ export const apiRoutes: AppApiRouteContribution<AppPluginApplication> =
     );
     routes.post(
       '/',
+      describeAudit({
+        operationName: auditOperationName('createPersonalKey'),
+        resource: 'apikey',
+        target: () => ({ collection: 'apikey' }),
+        captureBody: false,
+        resolveTargets: ({ response }) => ({
+          collection: 'apikey',
+          key: auditRecordKey(response, 'data', 'key', 'id'),
+        }),
+      }),
       mayCreate,
       describeRoute({
         tags,
@@ -346,16 +358,12 @@ export const apiRoutes: AppApiRouteContribution<AppPluginApplication> =
       apiValidator('json', CreateApiKeyInput),
       async (context) => {
         context.header('Cache-Control', 'no-store');
-        return context.json(
-          {
-            data: await keys.create(
-              userId(context),
-              context.req.valid('json'),
-              await identity(context),
-            ),
-          },
-          201,
+        const data = await keys.create(
+          userId(context),
+          context.req.valid('json'),
+          await identity(context),
         );
+        return context.json({ data }, 201);
       },
     );
     // The permission catalogue a key's detail shows: what the caller holds, plus the actions this key still names after
@@ -405,6 +413,27 @@ export const apiRoutes: AppApiRouteContribution<AppPluginApplication> =
     );
     routes.post(
       '/:keyId/rotate',
+      describeAudit({
+        operationName: auditOperationName('rotatePersonalKey'),
+        resource: 'apikey',
+        captureBody: false,
+        resolveTargets: ({ response }, context) => {
+          const key = auditRecordKey(response, 'data', 'key', 'id');
+          return key === undefined
+            ? undefined
+            : {
+                source: {
+                  collection: 'apikey',
+                  key: context.req.param('keyId'),
+                },
+                targets: [{ collection: 'apikey', key }],
+              };
+        },
+        target: (context) => ({
+          collection: 'apikey',
+          key: context.req.param('keyId'),
+        }),
+      }),
       mayCreate,
       describeRoute({
         tags,
@@ -436,6 +465,14 @@ export const apiRoutes: AppApiRouteContribution<AppPluginApplication> =
     );
     routes.delete(
       '/:keyId',
+      describeAudit({
+        operationName: auditOperationName('revokePersonalKey'),
+        resource: 'apikey',
+        target: (context) => ({
+          collection: 'apikey',
+          key: context.req.param('keyId'),
+        }),
+      }),
       describeRoute({
         tags,
         summary: 'Revoke an API key',

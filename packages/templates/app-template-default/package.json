@@ -194,6 +194,7 @@
     "@nocobase/app-plugin-scheduler": "workspace:*",
     "@nocobase/app-plugin-users": "workspace:*",
     "@nocobase/app-server": "workspace:*",
+    "@nocobase/audit": "workspace:*",
     "@nocobase/config": "workspace:*",
     "@nocobase/db": "workspace:*",
     "@nocobase/service-provider": "workspace:*",

@@ -1,6 +1,7 @@
+import auditLabels from '../../locales/en-US.js';
 import type { LocaleResource } from '@nocobase/i18n';
 
-const enUS = {
+const messages = {
   // The shared list, form and overlay components (`components/`).
   actions: {
     close: 'Close',
@@ -198,6 +199,11 @@ const enUS = {
       failed: 'Something went wrong. Please try again.',
     },
   },
+};
+
+const enUS: typeof messages & typeof auditLabels = {
+  ...auditLabels,
+  ...messages,
 };
 
 /**

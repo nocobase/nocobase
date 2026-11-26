@@ -1,9 +1,11 @@
+import auditLabels from '../../locales/ko-KR.js';
 import type { LocaleResource } from '@nocobase/i18n';
 
 import { withPluralForms } from '../plural-forms.js';
 import enUS from './en-US.js';
 
 const koKR: LocaleResource<typeof enUS> = {
+  ...auditLabels,
   errors: {
     generic: '문제가 발생했습니다. 다시 시도하세요.',
     network: '서버에 연결할 수 없습니다. 연결 상태를 확인하고 다시 시도하세요.',

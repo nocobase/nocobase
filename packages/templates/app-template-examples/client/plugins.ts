@@ -4,9 +4,11 @@ import defaultAccess from '@nocobase/app-plugin-authz-default-access/client';
 import sharingRules from '@nocobase/app-plugin-authz-sharing-rules/client';
 import restrictionRules from '@nocobase/app-plugin-authz-restriction-rules/client';
 import {
+  defineClientPlugin,
   defineClientPlugins,
   type AppClientPlugins,
 } from '@nocobase/app-client/plugins';
+import auditLocales from '@nocobase/audit/locales';
 import authentication from '@nocobase/app-plugin-authentication/client';
 import authorization from '@nocobase/app-plugin-authorization/client';
 import { pagePermissionTitles } from './pages/settings/page-permission-titles.js';
@@ -37,6 +39,11 @@ import knowledge from '@nocobase/app-plugin-knowledge/client';
 import { FormProposalRenderer } from '#components/online-agent/form-proposal-card';
 import { EXAMPLES_FORM_TOOL } from '../shared/ai-form-fill.js';
 
+const auditLabels = defineClientPlugin({
+  packageName: '@nocobase/audit',
+  locales: auditLocales,
+});
+
 // The AI form demonstration's proposal card, shown in the Agent panel wherever the agent calls its tool.
 agents.toolRenderers.add({
   name: EXAMPLES_FORM_TOOL,
@@ -62,6 +69,7 @@ const clientPlugins: AppClientPlugins = defineClientPlugins([
   databaseExplorer(),
   apiKeys(),
   i18n(),
+  auditLabels(),
   notificationInApp(),
   notificationExample(),
   jobsExample(),

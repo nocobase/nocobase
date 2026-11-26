@@ -1,6 +1,8 @@
+import auditLabels from '../../locales/zh-CN.js';
 import type { UsersResource } from './en-US.js';
 
 const zhCN: UsersResource = {
+  ...auditLabels,
   // The shared list, form and overlay components (`components/`).
   actions: {
     close: '关闭',

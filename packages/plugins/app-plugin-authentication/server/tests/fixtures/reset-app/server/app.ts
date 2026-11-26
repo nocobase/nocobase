@@ -1,3 +1,4 @@
+import { AuditProvider } from '@nocobase/audit/runtime';
 import { CachingProvider } from '@nocobase/app-server/caching';
 import { IdGeneratorProvider } from '@nocobase/app-server/id-generator';
 import type { Application } from '@nocobase/app-server/application';
@@ -13,5 +14,6 @@ export function createApp(runtime: AppRuntimeContext): Application {
   app.addServiceProvider(CachingProvider);
   app.addServiceProvider(IdGeneratorProvider);
   app.addRuntimeContributions(runtime);
+  app.addServiceProvider(AuditProvider);
   return app;
 }

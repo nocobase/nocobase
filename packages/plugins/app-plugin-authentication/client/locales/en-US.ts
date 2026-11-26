@@ -1,10 +1,11 @@
+import auditLabels from '../../locales/en-US.js';
 import type { LocaleResource } from '@nocobase/i18n';
 
 /**
  * Messages for the errors the authentication actions report (`actions/errors.ts`), keyed by the server's error code:
  * Better Auth's own codes, its username plugin's, and the ones this plugin's server adds.
  */
-const enUS = {
+const messages = {
   errors: {
     generic: 'Something went wrong. Please try again.',
     network: 'Could not reach the server. Check your connection and try again.',
@@ -437,6 +438,11 @@ const enUS = {
       lastMethod: 'You cannot unlink your only way to sign in.',
     },
   },
+};
+
+const enUS: typeof messages & typeof auditLabels = {
+  ...messages,
+  ...auditLabels,
 };
 
 export type AuthenticationResource = LocaleResource<typeof enUS>;

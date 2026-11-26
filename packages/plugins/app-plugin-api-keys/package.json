@@ -104,6 +104,7 @@
     "@nocobase/app-plugin-notification": "workspace:^",
     "@nocobase/app-plugin-scheduler": "workspace:^",
     "@nocobase/app-server": "workspace:^",
+    "@nocobase/audit": "workspace:^",
     "@nocobase/authorization": "workspace:^",
     "@nocobase/db": "workspace:^",
     "@nocobase/i18n": "workspace:^",

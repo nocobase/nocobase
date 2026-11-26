@@ -22,6 +22,22 @@ import notificationInApp from '@nocobase/app-plugin-notification-in-app/client';
 import appRuntime from '../../client/runtime.ts';
 
 describe('app client runtime', () => {
+  it('loads Repository audit labels when the viewer switches language', async () => {
+    const { i18n } = await resolveAppRuntime(appRuntime);
+    const namespace = '@nocobase/audit';
+    const name = () =>
+      i18n.getFixedT(namespace)('audit.operations.createOne', {
+        defaultValue: 'Stored operation name',
+      });
+
+    expect(name()).toBe('Create a record');
+    expect(i18n.i18n.hasResourceBundle('zh-CN', namespace)).toBe(false);
+    await i18n.changeLanguage('zh-CN');
+    expect(name()).toBe('创建记录');
+    await i18n.changeLanguage('en-US');
+    expect(name()).toBe('Create a record');
+  });
+
   it('removes the registered settings shortcut when system settings routes are disabled', async () => {
     const enabled = await resolveAppRuntime(appRuntime);
     expect(enabled.headerActions).toContainEqual(

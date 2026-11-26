@@ -217,6 +217,7 @@
     "@nocobase/app-plugin-skills-example": "workspace:*",
     "@nocobase/app-plugin-users": "workspace:*",
     "@nocobase/app-server": "workspace:*",
+    "@nocobase/audit": "workspace:*",
     "@nocobase/config": "workspace:*",
     "@nocobase/db": "workspace:*",
     "@nocobase/db-sqlite": "workspace:*",

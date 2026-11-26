@@ -1,3 +1,4 @@
+import type { Context } from 'hono';
 import type { AuthorizationContext } from './authorization.js';
 
 export interface AuthorizationRouteRequest {
@@ -5,6 +6,8 @@ export interface AuthorizationRouteRequest {
   /** The request path relative to where the application mounted the dispatcher. */
   path: string;
   authorization: AuthorizationContext;
+  /** Lets HTTP middleware observe the context created by an internal dispatcher. */
+  onContext?: (context: Context) => void;
 }
 
 export type AuthorizationRouteHandler = (

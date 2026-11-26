@@ -23,6 +23,7 @@ import {
 export interface SettingsRouterEnv {
   Bindings: {
     authorization: AuthorizationContext;
+    onContext?: (context: import('hono').Context) => void;
   };
 }
 
@@ -185,6 +186,13 @@ export function createSettingsRouter(
   translate?: AuthorizationErrorTranslator,
 ): Hono<SettingsRouterEnv> {
   const routes = new Hono<SettingsRouterEnv>();
+  routes.use(
+    '*',
+    createMiddleware<SettingsRouterEnv>(async (context, next) => {
+      context.env.onContext?.(context);
+      await next();
+    }),
+  );
   routes.onError((error, context) =>
     apiErrorHandler(
       translate?.(error) ?? toAuthorizationApiError(error) ?? error,
@@ -257,6 +265,7 @@ export function createRouteHandler(
     Promise.resolve(
       routes.fetch(atPath(input.request, input.path), {
         authorization: input.authorization,
+        onContext: input.onContext,
       }),
     );
   settingsRouters.set(handler, routes);

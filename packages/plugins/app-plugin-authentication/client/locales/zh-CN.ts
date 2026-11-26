@@ -1,6 +1,8 @@
+import auditLabels from '../../locales/zh-CN.js';
 import type { AuthenticationResource } from './en-US.js';
 
 const zhCN: AuthenticationResource = {
+  ...auditLabels,
   errors: {
     generic: '出了点问题，请重试。',
     network: '无法连接服务器，请检查网络后重试。',

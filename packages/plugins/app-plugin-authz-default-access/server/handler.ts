@@ -1,3 +1,5 @@
+import { auditOperationName } from './audit-operation-name.js';
+import { auditRecordKey, describeAudit } from '@nocobase/audit';
 import { z } from 'zod';
 import {
   ApiError,
@@ -41,6 +43,8 @@ export const DEFAULT_ACCESS_RULE = 'default-access';
 export const DEFAULT_ACCESS_SETTINGS: string = `authorization.${DEFAULT_ACCESS_RULE}`;
 /** The route prefix under `/api/authorization`. */
 export const DEFAULT_ACCESS_PATH = '/defaultAccess';
+
+const auditCollection = 'authorizationDefaultAccessRules';
 
 type DefaultAccessAdministrationApi = DefaultAccessApi;
 
@@ -111,6 +115,26 @@ export function createDefaultAccessHandler(
   );
   routes.post(
     DEFAULT_ACCESS_PATH,
+    describeAudit({
+      operationName: auditOperationName('createRule'),
+      action: 'create',
+      resource: `settings:${DEFAULT_ACCESS_SETTINGS}`,
+      target: (context) => ({
+        collection: auditCollection,
+        key: context.req.param('key'),
+      }),
+      resolveTargets: ({ response }, context) => {
+        const previous = context.req.param('key');
+        const key = auditRecordKey(response, 'data', 'key') ?? previous;
+        return {
+          source:
+            previous && previous !== key
+              ? { collection: auditCollection, key: previous }
+              : undefined,
+          targets: [{ collection: auditCollection, key }],
+        };
+      },
+    }),
     settingsAccess(DEFAULT_ACCESS_SETTINGS, 'create'),
     describeRoute({
       tags,
@@ -164,6 +188,26 @@ export function createDefaultAccessHandler(
   );
   routes.patch(
     `${DEFAULT_ACCESS_PATH}/:key`,
+    describeAudit({
+      operationName: auditOperationName('updateRule'),
+      action: 'update',
+      resource: `settings:${DEFAULT_ACCESS_SETTINGS}`,
+      target: (context) => ({
+        collection: auditCollection,
+        key: context.req.param('key'),
+      }),
+      resolveTargets: ({ response }, context) => {
+        const previous = context.req.param('key');
+        const key = auditRecordKey(response, 'data', 'key') ?? previous;
+        return {
+          source:
+            previous && previous !== key
+              ? { collection: auditCollection, key: previous }
+              : undefined,
+          targets: [{ collection: auditCollection, key }],
+        };
+      },
+    }),
     settingsAccess(DEFAULT_ACCESS_SETTINGS, 'update'),
     describeRoute({
       tags,
@@ -229,6 +273,15 @@ export function createDefaultAccessHandler(
   );
   routes.delete(
     `${DEFAULT_ACCESS_PATH}/:key`,
+    describeAudit({
+      operationName: auditOperationName('deleteRule'),
+      action: 'delete',
+      resource: `settings:${DEFAULT_ACCESS_SETTINGS}`,
+      target: (context) => ({
+        collection: auditCollection,
+        key: context.req.param('key'),
+      }),
+    }),
     settingsAccess(DEFAULT_ACCESS_SETTINGS, 'delete'),
     describeRoute({
       tags,

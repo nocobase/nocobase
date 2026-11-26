@@ -78,6 +78,8 @@ export interface AuthorizationGrantService {
   ): Promise<readonly AuthorizationGrant[]>;
   /** A service bound to one identity, sharing reads across its checks. */
   for?(identity: AuthorizationIdentity): AuthorizationGrantService;
+  /** Sources already resolved for this identity. Reading them does not load grants. */
+  resolvedSources?(): readonly AuthorizationGrantSource[];
   /** True when the identity skips per-resource authorization. */
   unrestricted?(identity: AuthorizationIdentity): Promise<boolean>;
   /** Notifies when the grants a subject resolves to may have changed. */

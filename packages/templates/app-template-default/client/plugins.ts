@@ -4,9 +4,11 @@ import defaultAccess from '@nocobase/app-plugin-authz-default-access/client';
 import sharingRules from '@nocobase/app-plugin-authz-sharing-rules/client';
 import restrictionRules from '@nocobase/app-plugin-authz-restriction-rules/client';
 import {
+  defineClientPlugin,
   defineClientPlugins,
   type AppClientPlugins,
 } from '@nocobase/app-client/plugins';
+import auditLocales from '@nocobase/audit/locales';
 import apiKeys from '@nocobase/app-plugin-api-keys/client';
 import authentication from '@nocobase/app-plugin-authentication/client';
 import authorization from '@nocobase/app-plugin-authorization/client';
@@ -21,6 +23,11 @@ import notification from '@nocobase/app-plugin-notification/client';
 import scheduler from '@nocobase/app-plugin-scheduler/client';
 import file from '@nocobase/app-plugin-file/client';
 import mail from '@nocobase/app-plugin-mail/client';
+
+const auditLabels = defineClientPlugin({
+  packageName: '@nocobase/audit',
+  locales: auditLocales,
+});
 
 // Array order is contribution order. A plugin is enabled by appearing in this
 // list; removing its entry and its import disables it.
@@ -39,6 +46,7 @@ const clientPlugins: AppClientPlugins = defineClientPlugins([
   users(),
   apiKeys(),
   i18n(),
+  auditLabels(),
   notificationInApp(),
   notification(),
   file(),

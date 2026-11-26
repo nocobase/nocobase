@@ -1,5 +1,6 @@
+import auditLabels from '../../locales/en-US.js';
 // Every visible string of the API keys pages, and the titles the server registers in this namespace.
-const enUS = {
+const messages = {
   navigation: {
     personal: 'API keys',
     system: 'API keys',
@@ -313,5 +314,10 @@ const enUS = {
     records: 'Records: {{records}}',
   },
 } as const;
+
+const enUS: typeof messages & typeof auditLabels = {
+  ...auditLabels,
+  ...messages,
+};
 
 export default enUS;

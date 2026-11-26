@@ -1,9 +1,11 @@
+import auditLabels from '../../locales/vi-VN.js';
 import type { LocaleResource } from '@nocobase/i18n';
 
 import { withPluralForms } from '../plural-forms.js';
 import enUS from './en-US.js';
 
 const viVN: LocaleResource<typeof enUS> = {
+  ...auditLabels,
   errors: {
     generic: 'Đã xảy ra lỗi. Vui lòng thử lại.',
     network:
