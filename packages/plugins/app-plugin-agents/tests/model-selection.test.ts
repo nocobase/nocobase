@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { claim, createHarness, type Harness } from './harness.js';
 import { supportsWorkspaceKey } from '../shared/runners.js';
 import { queueStart } from '../server/core/runs/selection.js';
@@ -134,6 +134,46 @@ describe('heartbeat capacity diagnostics', () => {
 });
 
 describe('ordered models opt-in policy', () => {
+  it('reuses the prepared subject when the first model is incompatible', async () => {
+    const { preferred, fallback, manager, run } = await setup();
+    await h.services.variables.set(
+      { scope: 'agent', scopeId: manager },
+      'LOCAL',
+      undefined,
+      'owner',
+      { fromRunner: true },
+    );
+    const machines = runnersRepo(h.database.connection());
+    await machines.updateMany({
+      filter: { id: preferred.runnerId },
+      values: { variables: [] },
+    });
+    await machines.updateMany({
+      filter: { id: fallback.runnerId },
+      values: { variables: ['LOCAL'] },
+    });
+
+    const context = h.services.subjects.get('sample')!.context;
+    const prepared = { run };
+    context.prepare = vi.fn(async () => prepared);
+    const assemble = vi.spyOn(context, 'assemble');
+
+    expect((await claim(h, fallback))[0].run.id).toBe(run);
+    expect(
+      (await h.services.runs.get(run)).executions?.[0].selection?.reason,
+    ).toBe('preferredUnavailable');
+    expect(context.prepare).toHaveBeenCalledTimes(1);
+    expect(
+      assemble.mock.calls.map(([, candidate, sample]) => [
+        candidate.runner?.id,
+        sample,
+      ]),
+    ).toEqual([
+      [preferred.runnerId, prepared],
+      [fallback.runnerId, prepared],
+    ]);
+  });
+
   it.each([
     { variables: [] as string[], immediate: true },
     { variables: null, immediate: false },

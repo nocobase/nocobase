@@ -1135,6 +1135,7 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
     run: Run,
     agent: Agent,
     inputs: readonly RunInput[],
+    preparedSubject: unknown,
     metadata: ReturnType<typeof admissionResources>,
     inventory: () => Promise<readonly Runner[]>,
   ): Promise<boolean> {
@@ -1163,14 +1164,18 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
       )
         continue;
       const assembly = await binding.context
-        .assemble(conn, {
-          run,
-          agent,
-          runner,
-          inputs,
-          cli: deps.cli.name,
-          appName: deps.app.name,
-        })
+        .assemble(
+          conn,
+          {
+            run,
+            agent,
+            runner,
+            inputs,
+            cli: deps.cli.name,
+            appName: deps.app.name,
+          },
+          preparedSubject,
+        )
         .catch(() => null);
       // The diagnostic path treats an unreadable context as unknown and waits for the preferred model.
       if (!assembly) return true;
@@ -1209,8 +1214,15 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
     agent: Agent,
     entry: RunnerModelEntry,
     inputs: readonly RunInput[],
-    metadata = admissionResources(conn),
-    inventory: () => Promise<readonly Runner[]> = () => deps.runners!.all(conn),
+    {
+      preparedSubject,
+      metadata = admissionResources(conn),
+      inventory = () => deps.runners!.all(conn),
+    }: {
+      preparedSubject?: unknown;
+      metadata?: ReturnType<typeof admissionResources>;
+      inventory?: () => Promise<readonly Runner[]>;
+    } = {},
   ): Promise<RunExecutionSnapshot['selection'] | false> {
     if (agent.modelEntries.indexOf(entry) <= 0 || !deps.runners)
       return undefined;
@@ -1225,6 +1237,7 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
       run,
       agent,
       inputs,
+      preparedSubject,
       metadata,
       inventory,
     );
@@ -2082,6 +2095,7 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
             agent,
             entry,
             pending.map(toInput),
+            { preparedSubject: prepared.get('subject') },
           );
           if (admission === false) throw new NotForThisRunner();
           selectionSnapshot = admission;
@@ -2636,15 +2650,10 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
     if (agent.modelEntries.indexOf(entry) > 0) {
       const inputs = (await pendingInputs(conn, run.id)).map(toInput);
       if (
-        (await modelAdmission(
-          conn,
-          toRun(run),
-          agent,
-          entry,
-          inputs,
+        (await modelAdmission(conn, toRun(run), agent, entry, inputs, {
           metadata,
           inventory,
-        )) === false
+        })) === false
       )
         return false;
     }
