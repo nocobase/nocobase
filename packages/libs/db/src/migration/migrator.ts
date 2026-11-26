@@ -36,6 +36,7 @@ import type {
   MigrationWarning,
   MissingMigrationSource,
   MigrationConnection,
+  MigrationContext,
   TaskLockReleaseOptions,
   TaskLockReleaseResult,
   TaskLockState,
@@ -181,7 +182,6 @@ class DefaultMigrator implements Migrator {
         return { batch, executed, skipped, warnings };
       },
     );
-    if (result.executed.length > 0) connection.collections.invalidate();
     return result;
   }
 
@@ -346,8 +346,6 @@ class DefaultMigrator implements Migrator {
             );
           },
         );
-    if (!dryRun && result.rolledBack.length > 0)
-      connection.collections.invalidate();
     return result;
   }
 
@@ -462,40 +460,7 @@ class DefaultMigrator implements Migrator {
     loaded: LoadedMigration,
     batch: number,
   ): Promise<void> {
-    const mode = loaded.migration.transaction ?? 'auto';
-    if (mode === false) {
-      const context = {
-        ...createMigrationContext(
-          connection,
-          this.options.config,
-          this.options.container,
-        ),
-        parameters: loaded.parameters,
-        configuration: loaded.configuration,
-      };
-      const startedAt = Date.now();
-      await loaded.migration.up(context);
-      await recordMigrationCompleted(context.connection, {
-        tableName: this.options.tableName,
-        packageName: loaded.packageName,
-        name: loaded.name,
-        batch,
-        checksum: loaded.checksum,
-        durationMs: Date.now() - startedAt,
-      });
-      return;
-    }
-
-    await connection.transaction(async (trxConnection) => {
-      const context = {
-        ...createMigrationContext(
-          trxConnection,
-          this.options.config,
-          this.options.container,
-        ),
-        parameters: loaded.parameters,
-        configuration: loaded.configuration,
-      };
+    await this.runMigration(connection, loaded, async (context) => {
       const startedAt = Date.now();
       await loaded.migration.up(context);
       await recordMigrationCompleted(context.connection, {
@@ -513,41 +478,53 @@ class DefaultMigrator implements Migrator {
     connection: ReturnType<CreateMigratorOptions['database']['connection']>,
     loaded: LoadedMigration,
   ): Promise<void> {
-    const mode = loaded.migration.transaction ?? 'auto';
-    if (mode === false) {
-      const context = {
-        ...createMigrationContext(
-          connection,
-          this.options.config,
-          this.options.container,
-        ),
-        parameters: loaded.parameters,
-        configuration: loaded.configuration,
-      };
-      await loaded.migration.down?.(context);
-      await deleteMigrationHistoryRecord(context.connection, {
-        tableName: this.options.tableName,
-        name: loaded.name,
-      });
-      return;
-    }
-
-    await connection.transaction(async (trxConnection) => {
-      const context = {
-        ...createMigrationContext(
-          trxConnection,
-          this.options.config,
-          this.options.container,
-        ),
-        parameters: loaded.parameters,
-        configuration: loaded.configuration,
-      };
+    await this.runMigration(connection, loaded, async (context) => {
       await loaded.migration.down?.(context);
       await deleteMigrationHistoryRecord(context.connection, {
         tableName: this.options.tableName,
         name: loaded.name,
       });
     });
+  }
+
+  private async runMigration(
+    connection: ReturnType<CreateMigratorOptions['database']['connection']>,
+    loaded: LoadedMigration,
+    execute: (context: MigrationContext) => Promise<void>,
+  ): Promise<void> {
+    const run = (bound: typeof connection): Promise<void> =>
+      execute({
+        ...createMigrationContext(
+          bound,
+          this.options.config,
+          this.options.container,
+        ),
+        parameters: loaded.parameters,
+        configuration: loaded.configuration,
+      });
+    // The non-transactional path must remain registered across partial DDL
+    // commits. Each operation, including a failed one, settles its own entry.
+    if (loaded.migration.transaction === false) {
+      await connection.notifySchemaChange(() => run(connection));
+      return;
+    }
+    try {
+      await connection.transaction(
+        (transaction) => transaction.notifySchemaChange(() => run(transaction)),
+        { collectionCache: 'isolated' },
+      );
+    } catch (error) {
+      // Run after the rollback releases the pool connection.
+      try {
+        await connection.notifySchemaChange(async () => {});
+      } catch (notificationError) {
+        throw new AggregateError(
+          [error, notificationError],
+          'Migration and schema invalidation both failed.',
+        );
+      }
+      throw error;
+    }
   }
 }
 

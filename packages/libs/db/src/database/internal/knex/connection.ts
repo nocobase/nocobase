@@ -1,5 +1,9 @@
 import type { Knex } from 'knex';
 import { CollectionBuilder } from '../../../collection/builder/builder.js';
+import {
+  CommittedCollectionCache,
+  TransactionCollectionCache,
+} from '../../../collection/registry/transaction-cache.js';
 import { CollectionRegistry } from '../../../collection/registry/registry.js';
 import { RegistryMetadataDocumentValidator } from '../../../collection/registry/metadata-validator.js';
 import type { ConnectionCollections } from '../../../collection/registry/types.js';
@@ -63,6 +67,7 @@ import type {
 } from '../../config.js';
 import type {
   DatabaseConnection,
+  DatabaseTransactionOptions,
   ScopedDatabaseConnection,
 } from '../../connection.js';
 import { SchemaManagementSchemaAdapter } from '../../schema-management.js';
@@ -106,6 +111,7 @@ export class KnexDatabaseConnection implements DatabaseConnection {
   private knexInstance?: Knex;
   private readonly config: KnexConnectionConfig;
   private readonly metadataStore: CollectionMetadataStore;
+  private readonly committedCollections = new CommittedCollectionCache();
 
   constructor(
     readonly name: string,
@@ -123,6 +129,9 @@ export class KnexDatabaseConnection implements DatabaseConnection {
     /** The connection this transaction connection was opened from; none on the root. */
     private readonly rootConnection:
       KnexDatabaseConnection | undefined = undefined,
+    private readonly transactionCache:
+      TransactionCollectionCache | undefined = undefined,
+    private readonly isolatedCollections: boolean = false,
   ) {
     const maxDepth = sourceConfig.repositoryEventMaxDepth;
     if (
@@ -179,22 +188,25 @@ export class KnexDatabaseConnection implements DatabaseConnection {
       config: this.config,
       resolveClient: () => this.resolveClient(),
     });
+    const schema = new LazySchemaAdapter(
+      () => this.resolveClient(),
+      (client) =>
+        new KnexSchemaAdapter(client, {
+          dialect: this.dialect,
+          capabilities: this.capabilities,
+          runtime: this.runtime,
+        }),
+      this.dialect,
+      this.capabilities,
+    );
+    const management = {
+      connectionName: this.name,
+      mode: this.schemaManagement,
+    };
     this.schema = new SchemaManagementSchemaAdapter(
-      new LazySchemaAdapter(
-        () => this.resolveClient(),
-        (client) =>
-          new KnexSchemaAdapter(client, {
-            dialect: this.dialect,
-            capabilities: this.capabilities,
-            runtime: this.runtime,
-          }),
-        this.dialect,
-        this.capabilities,
-      ),
-      {
-        connectionName: this.name,
-        mode: this.schemaManagement,
-      },
+      schema,
+      management,
+      (execute) => this.notifySchemaChange(execute),
     );
     this.query = new KnexQueryAdapter(
       () => this.getClient(),
@@ -209,6 +221,17 @@ export class KnexDatabaseConnection implements DatabaseConnection {
       inspector: this.schemaInspector,
       metadataStore: this.metadataStore,
       naming: this.config.naming,
+      ...(transactionCache &&
+      this.metadataStore instanceof DatabaseCollectionMetadataStore
+        ? {
+            transactionCache: {
+              store: this.metadataStore,
+              cache: transactionCache,
+            },
+          }
+        : {}),
+      onInvalidateAll: () => this.committedCollections.reset(),
+      transactional: Boolean(transactionInvalidations),
       isInternalPhysicalCollection: (identity) =>
         isNocoBaseInternalTable(identity.tableName) ||
         (this.config.internalTables?.includes(identity.tableName) ?? false) ||
@@ -236,7 +259,8 @@ export class KnexDatabaseConnection implements DatabaseConnection {
         this.reportCollectionMetadataInvalidationError(error),
     });
     this.builder = new CollectionBuilder({
-      schemaAdapter: this.schema,
+      schemaAdapter: new SchemaManagementSchemaAdapter(schema, management),
+      executeSchemaChange: (execute) => this.changeSchema(execute, false),
       collections,
       collectionMetadata: this.collectionMetadata,
       schemaInvalidator: invalidator,
@@ -424,16 +448,59 @@ export class KnexDatabaseConnection implements DatabaseConnection {
     this.transactionCallbacks?.afterRollback(callback);
   }
 
+  notifySchemaChange<T>(operation: () => Promise<T>): Promise<T> {
+    return this.changeSchema(operation, true);
+  }
+
+  private async changeSchema<T>(
+    operation: () => Promise<T>,
+    invalidateAll: boolean,
+  ): Promise<T> {
+    const registry = this.collections as CollectionRegistry;
+    this.transactionCache?.invalidate();
+    if (invalidateAll && this.transactionInvalidations)
+      registry.invalidateLocal();
+    try {
+      return await (this.metadataStore instanceof
+      DatabaseCollectionMetadataStore
+        ? this.metadataStore.changeSchema(operation)
+        : operation());
+    } catch (error) {
+      // An adapter can fail after applying some of its operations.
+      invalidateAll = true;
+      throw error;
+    } finally {
+      if (invalidateAll) {
+        registry.invalidateLocal();
+        this.transactionInvalidations?.record();
+      }
+    }
+  }
+
   async transaction<T>(
     fn: (connection: DatabaseConnection) => Promise<T>,
+    options?: DatabaseTransactionOptions,
   ): Promise<T> {
     const client = await this.resolveClient();
     // Prepare bookkeeping and capture cache eligibility before BEGIN. A
     // savepoint inherits the enclosing transaction's invalidation generation.
+    const isolated =
+      this.isolatedCollections || options?.collectionCache === 'isolated';
     const bindMetadataTransaction =
       this.metadataStore instanceof DatabaseCollectionMetadataStore
-        ? await this.metadataStore.prepareTransaction()
+        ? await this.metadataStore.prepareTransaction(isolated)
         : undefined;
+    const root = this.rootConnection ?? this;
+    const cacheEnabled =
+      !isolated &&
+      (this.config.transactionCollectionCache ??
+        this.schemaManagement === 'managed');
+    const dialect = this.dialect;
+    const cacheGeneration =
+      this.metadataStore instanceof DatabaseCollectionMetadataStore
+        ? this.metadataStore.cacheGeneration
+        : 0;
+    let collectionCache: TransactionCollectionCache | undefined;
     let stagedMetadata: TransactionCollectionMetadataStore | undefined;
     const invalidations = new TransactionInvalidationCollector();
     // A transaction opened on a transaction connection is a savepoint; its
@@ -449,6 +516,20 @@ export class KnexDatabaseConnection implements DatabaseConnection {
           : (stagedMetadata = new TransactionCollectionMetadataStore(
               this.metadataStore,
             ));
+        if (
+          cacheEnabled &&
+          (dialect === 'postgres' || dialect === 'sqlite') &&
+          metadataStore instanceof DatabaseCollectionMetadataStore
+        ) {
+          collectionCache = new TransactionCollectionCache(
+            metadataStore,
+            root.committedCollections,
+            dialect,
+            cacheGeneration,
+            this.transactionCache,
+          );
+          metadataStore.onSchemaWrite = () => collectionCache?.invalidate();
+        }
         const connection = new KnexDatabaseConnection(
           this.name,
           this.sourceConfig,
@@ -458,7 +539,9 @@ export class KnexDatabaseConnection implements DatabaseConnection {
           this.dialectDriver,
           callbacks,
           this.mutationRegistry,
-          this.rootConnection ?? this,
+          root,
+          collectionCache,
+          isolated,
         );
         const transactionResult = await fn(connection);
         await invalidations.validateRelations(connection.collections);
@@ -476,6 +559,7 @@ export class KnexDatabaseConnection implements DatabaseConnection {
     // the root Registry as well, not just this transaction's own.
     this.transactionInvalidations?.absorb(invalidations);
     invalidations.apply(this.collections as CollectionRegistry);
+    collectionCache?.commit();
     if (callbacks.parent) {
       callbacks.release();
     } else {
@@ -607,9 +691,9 @@ class TransactionInvalidationCollector {
     this.namingIndex ||= change.namingIndex;
   }
 
-  apply(target: CollectionMetadataInvalidator): void {
+  apply(target: CollectionRegistry): void {
     if (this.all) {
-      target.invalidateAll();
+      target.invalidateLocal();
     } else if (this.collections.size > 0 || this.namingIndex) {
       target.invalidate({
         collections: [...this.collections],

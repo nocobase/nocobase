@@ -377,3 +377,5 @@ function defaultDatabaseContract<TContext extends DatabaseContractContext>(
     });
   });
 }
+
+export { describeCollectionCache } from './collection-cache-contract.js';

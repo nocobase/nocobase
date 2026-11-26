@@ -54,14 +54,18 @@ describeIntegrationDatabases('Collection metadata naming cache', (context) => {
     await context.db.transaction(async (transaction) => {
       const child = bindTransaction(transaction);
       const list = vi.spyOn(child, 'list');
-      expect(await CollectionNamingIndex.create(child)).toBe(original);
+      const index = await CollectionNamingIndex.create(child);
+      expect(index.metadata('orders')).toEqual(original.metadata('orders'));
+      if (!context.profile.coldTransactionNaming) expect(index).toBe(original);
       const prefixed = await CollectionNamingIndex.create(child, {
         tablePrefix: 'app_',
       });
       expect(prefixed.resolveLogicalCollection('orders').tableName).toBe(
         'app_orders',
       );
-      expect(list).not.toHaveBeenCalled();
+      expect(list).toHaveBeenCalledTimes(
+        context.profile.coldTransactionNaming ? 2 : 0,
+      );
     });
   });
 

@@ -17,6 +17,11 @@ import type { DatabaseDriverRuntime } from './runtime.js';
 import type { RestrictedDatabase } from './restricted-database.js';
 import type { DatabasePolicyMap } from './policy-map.js';
 
+export interface DatabaseTransactionOptions {
+  /** Resolve Collections from the transaction's database view without shared caches. */
+  readonly collectionCache?: 'isolated';
+}
+
 export interface DatabaseConnection {
   name: string;
   driver: DatabaseDriver;
@@ -74,8 +79,15 @@ export interface DatabaseConnection {
   /** Destructively clears the objects owned by this managed connection. */
   resetManagedSchema(): Promise<void>;
 
+  /**
+   * Bracket schema changes made with the native client. Inside a transaction,
+   * use the same client for the DDL so the version and schema commit together.
+   */
+  notifySchemaChange<T>(operation: () => Promise<T>): Promise<T>;
+
   transaction<T>(
     fn: (connection: DatabaseConnection) => Promise<T>,
+    options?: DatabaseTransactionOptions,
   ): Promise<T>;
 
   /**
@@ -146,5 +158,6 @@ export interface ScopedDatabaseConnection extends Omit<
   reconnect(): Promise<ScopedDatabaseConnection>;
   transaction<T>(
     fn: (connection: ScopedDatabaseConnection) => Promise<T>,
+    options?: DatabaseTransactionOptions,
   ): Promise<T>;
 }

@@ -20,6 +20,11 @@ import type {
   PhysicalCollectionSummary,
   SchemaInspector,
 } from '../../schema/inspector/types.js';
+import type {
+  CollectionSchemaVersion,
+  DatabaseCollectionMetadataStore,
+} from '../../metadata/internal/database-document-store.js';
+import type { TransactionCollectionCache } from './transaction-cache.js';
 import { CollectionNamingIndex } from './naming-index.js';
 import { CollectionRelationValidator } from './relation-validator.js';
 import type {
@@ -40,6 +45,12 @@ export interface CollectionRegistryOptions {
   readonly metadataStore: CollectionMetadataStore;
   readonly naming?: NamingOptions;
   readonly resolver?: CollectionResolver;
+  readonly transactionCache?: {
+    readonly store: DatabaseCollectionMetadataStore;
+    readonly cache: TransactionCollectionCache;
+  };
+  readonly onInvalidateAll?: () => void;
+  readonly transactional?: boolean;
   readonly isInternalPhysicalCollection?: (identity: {
     readonly tableName: string;
     readonly schema: string;
@@ -91,10 +102,14 @@ export class CollectionRegistry
 
   /** Resolve Query's relative table identifiers without treating them as logical names. */
   async getForQuery(name: string): Promise<CollectionDefinition | undefined> {
-    const index = await this.namingIndex();
     const tableName = new DefaultNamingStrategy(
       this.options.naming,
     ).collectionToTableName(name);
+    if (this.options.transactionCache?.cache.eligible) {
+      const result = await this.resolveInTransaction(tableName, true);
+      return result ? structuredClone(result.collection) : undefined;
+    }
+    const index = await this.namingIndex();
     const identity = index.resolvePhysicalCollection({ tableName });
     return identity ? this.get(identity.name) : undefined;
   }
@@ -119,6 +134,8 @@ export class CollectionRegistry
     name: string,
   ): Promise<CollectionResolutionResult | undefined> {
     validateName(name);
+    if (this.options.transactionCache?.cache.eligible)
+      return this.resolveInTransaction(name, false);
     const cached = this.cache.get(name);
     if (cached) return cached;
     const loading = this.inFlight.get(name);
@@ -229,12 +246,14 @@ export class CollectionRegistry
   invalidate(change: CollectionMetadataInvalidation): void;
   invalidate(input?: string | CollectionMetadataInvalidation): void {
     if (typeof input === 'string') {
+      this.options.transactionCache?.cache.invalidate();
       this.bumpCollectionGeneration(input);
       this.cache.delete(input);
       this.inFlight.delete(input);
       return;
     }
     if (input) {
+      this.options.transactionCache?.cache.invalidate();
       for (const name of input.collections) {
         this.bumpCollectionGeneration(name);
         this.cache.delete(name);
@@ -247,7 +266,14 @@ export class CollectionRegistry
   }
 
   invalidateAll(): void {
-    invalidateMetadataNamingSnapshot(this.options.metadataStore);
+    if (!this.options.transactional)
+      invalidateMetadataNamingSnapshot(this.options.metadataStore);
+    this.options.onInvalidateAll?.();
+    this.invalidateLocal();
+  }
+
+  invalidateLocal(): void {
+    this.options.transactionCache?.cache.invalidate();
     this.generation += 1;
     this.collectionGenerations.clear();
     this.cache.clear();
@@ -309,10 +335,24 @@ export class CollectionRegistry
     return { checked, issues };
   }
 
+  private resolveInTransaction(
+    name: string,
+    forQuery: boolean,
+  ): Promise<CollectionResolutionResult | undefined> {
+    const { cache, store } = this.options.transactionCache!;
+    return cache.resolve(
+      name,
+      forQuery,
+      (version) => this.createTransactionIndex(store, version),
+      (logicalName, index) => this.load(logicalName, index),
+    );
+  }
+
   private async load(
     name: string,
+    namingIndex?: CollectionNamingIndex,
   ): Promise<CollectionResolutionResult | undefined> {
-    const index = await this.namingIndex();
+    const index = namingIndex ?? (await this.namingIndex());
     const inspected = await this.inspectLogicalCollection(name, index);
     if (!inspected) return undefined;
     return this.resolver.resolve({
@@ -375,7 +415,24 @@ export class CollectionRegistry
     return { physical, stored };
   }
 
+  private async createTransactionIndex(
+    store: DatabaseCollectionMetadataStore,
+    version?: CollectionSchemaVersion,
+  ): Promise<CollectionNamingIndex> {
+    return CollectionNamingIndex.create(
+      store,
+      this.options.naming,
+      [],
+      await store.readSchemaNaming(version),
+    );
+  }
+
   private namingIndex(): Promise<CollectionNamingIndex> {
+    const transaction = this.options.transactionCache;
+    const transactionIndex = transaction?.cache.namingForInspection((version) =>
+      this.createTransactionIndex(transaction.store, version),
+    );
+    if (transactionIndex) return transactionIndex;
     if (!this.namingIndexPromise) {
       const created = this.initialize().then(() =>
         CollectionNamingIndex.create(
