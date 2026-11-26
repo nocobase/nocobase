@@ -376,8 +376,9 @@ export class CollectionRegistry
     // Root reads run in separate autocommit statements even on SQLite.
     const verified = await store.readSchemaVersion();
     if (verified && generation === store.cacheGeneration) {
-      cache.observe(verified);
+      const current = cache.observe(verified);
       if (
+        current &&
         this.sameGeneration(name, token) &&
         verified.sequence === version.sequence &&
         verified.version === version.version
