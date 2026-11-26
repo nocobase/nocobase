@@ -31,6 +31,8 @@ Lampiran cocok untuk skenario bisnis berikut:
 
 ## Pembuatan dan konfigurasi
 
+Langkah-langkah berikut berlaku untuk antarmuka lama. Di antarmuka v2, field Lampiran sudah tidak tersedia di menu «Add field».
+
 Di halaman «Configure fields» pada tabel data, klik «Add field», lalu pilih «Lampiran» untuk membuat field lampiran.
 
 ![20240512180916](https://static-docs.nocobase.com/20251031000729.png)

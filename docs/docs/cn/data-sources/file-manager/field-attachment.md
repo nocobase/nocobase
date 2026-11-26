@@ -31,6 +31,8 @@ keywords: "附件,attachment,文件上传,文件表,NocoBase"
 
 ## 创建配置
 
+以下步骤适用于旧版界面。v2 的「添加字段」菜单已移除附件字段。
+
 在数据表的「Configure fields」页面中，点击「Add field」，选择「附件」可以创建附件字段。
 
 ![20240512180916](https://static-docs.nocobase.com/20251031000729.png)

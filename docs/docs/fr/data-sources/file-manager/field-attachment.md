@@ -31,6 +31,8 @@ Le champ Pièce jointe convient aux scénarios métier suivants :
 
 ## Création et configuration
 
+Ces étapes concernent l’ancienne interface. Dans l’interface v2, le menu « Add field » ne propose plus le champ Pièce jointe.
+
 Sur la page « Configure fields » de la table de données, cliquez sur « Add field », puis sélectionnez « Pièce jointe » pour créer un champ Pièce jointe.
 
 ![20240512180916](https://static-docs.nocobase.com/20251031000729.png)

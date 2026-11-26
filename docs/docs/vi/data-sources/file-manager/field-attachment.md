@@ -31,6 +31,8 @@ Tệp đính kèm phù hợp với các trường hợp nghiệp vụ sau:
 
 ## Tạo cấu hình
 
+Các bước sau áp dụng cho giao diện cũ. Trên giao diện v2, mục «Add field» không còn tùy chọn trường tệp đính kèm.
+
 Trên trang「Configure fields」của bảng dữ liệu, nhấp vào「Add field」, chọn「Tệp đính kèm」để tạo trường tệp đính kèm.
 
 ![20240512180916](https://static-docs.nocobase.com/20251031000729.png)

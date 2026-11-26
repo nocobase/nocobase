@@ -31,6 +31,8 @@ Los adjuntos son adecuados para estos casos de negocio:
 
 ## Creación y configuración
 
+Estos pasos corresponden a la interfaz clásica. En la interfaz v2, el menú «Add field» ya no ofrece el campo de adjuntos.
+
 En la página «Configure fields» de la tabla de datos, haz clic en «Add field» y selecciona «Adjunto» para crear un campo de adjuntos.
 
 ![20240512180916](https://static-docs.nocobase.com/20251031000729.png)
