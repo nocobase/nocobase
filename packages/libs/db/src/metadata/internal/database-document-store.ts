@@ -1,5 +1,6 @@
 import { createHash, randomUUID } from 'node:crypto';
 import type { Knex } from 'knex';
+import { getDatabaseDriverRuntime } from '../../database/runtime.js';
 import type {
   CollectionMetadataStore,
   CollectionMetadataPage,
@@ -539,7 +540,11 @@ export class DatabaseCollectionMetadataStore implements CollectionMetadataStore 
       }
     }
     this.cacheInitialized = true;
-    if (['pg', 'better-sqlite3'].includes(knex.client.config.client)) {
+    const dialect = getDatabaseDriverRuntime(knex)?.dialect;
+    const supportsSchemaVersions = dialect
+      ? dialect === 'postgres' || dialect === 'sqlite'
+      : ['pg', 'better-sqlite3'].includes(knex.client.config.client);
+    if (supportsSchemaVersions) {
       await this.ensureVersionColumn(knex, 'schema_seq');
       await this.ensureVersionColumn(knex, 'schema_changes');
       this.schemaVersionInitialized = true;
