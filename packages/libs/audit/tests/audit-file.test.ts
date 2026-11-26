@@ -454,6 +454,7 @@ it.each([
   { path: 'audit.log' },
   { path: 'audit.events.jsonl' },
   { path: 'audit.jsonl/' },
+  { path: 'audit.jsonl\\' },
   { path: 'audit.jsonl', enabled: true },
   { path: 'audit.jsonl', maxFileSizeMB: 0 },
   { path: 'audit.jsonl', maxFileSizeMB: Infinity },

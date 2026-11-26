@@ -38,7 +38,7 @@ function validateAuditFileOptions(
   if (
     typeof value !== 'string' ||
     value.includes('\0') ||
-    value.endsWith(path.sep) ||
+    /[/\\]$/.test(value) ||
     !/^[a-zA-Z0-9_-]+\.jsonl$/.test(path.basename(value))
   )
     error(
