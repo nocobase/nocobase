@@ -1084,9 +1084,8 @@ describe('managed host reconciliation', () => {
     expect(await readdir(volume)).toContain('storage');
 
     for (let attempt = 0; attempt < 2; attempt++) {
-      const status = await host.management.removeDeploymentKeepingBackups!(
-        appId,
-      );
+      const status =
+        await host.management.removeDeploymentKeepingBackups!(appId);
       expect(status.deployments).toEqual([]);
       expect(host.registry.definition(appId)).toBeUndefined();
       await expect(
