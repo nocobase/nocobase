@@ -53,6 +53,7 @@
     "@oclif/core": "catalog:",
     "ini": "6.0.0",
     "pnpm": "11.11.0",
+    "yaml": "catalog:",
     "zod": "catalog:",
     "@nocobase/acp-bridge": "workspace:^",
     "@nocobase/logging": "workspace:^"
