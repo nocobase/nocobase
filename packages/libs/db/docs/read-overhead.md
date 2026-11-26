@@ -130,3 +130,23 @@ The two-table baseline includes one additional naming-summary read in each diale
 | Claim lock interval     |  40.36 / 58.13 → 37.22 / 64.01 | 84.07 / 126.80 → 72.96 / 119.76 |
 
 For the claim lock interval, the test harness records elapsed time from the Knex driver acknowledging the first agent-row lock update through its acknowledgment of COMMIT on the same transaction. This interval approximates the lock hold from the client and includes COMMIT acknowledgment latency. PostgreSQL's claim median improved in this sample and its p95 increased. These timings describe the local fixture. The SQL counts are the regression gates, and Studio production latency requires a deployment measurement.
+
+## SQL Server naming cost
+
+On the first naming lookup in a prepared SQL Server transaction, the baseline read the version row once and reused the warmed naming snapshot and its index. That cache hit read zero metadata documents and performed zero document parses. The new path skips the version query, reads the metadata documents in pages of 1,000, parses each returned document, and builds a transaction-local index. For a store with 136 documents this changes the naming work from one version read, zero documents and zero parses to one metadata page, 136 documents and 136 parses. For larger stores the page reader also reads and parses one lookahead row per nonfinal page. Physical inspection and individual Collection metadata reads are separate costs in both versions.
+
+These are counts derived from the Store implementation. The scan runs with both SQL Server RCSI settings. With READ COMMITTED and RCSI disabled, it can still wait for an exclusive lock held by a metadata writer. No SQL Server parse-time or lock-duration measurements were collected.
+
+## PostgreSQL claim lock interval follow-up
+
+The local rerun used the same Agents claim fixture on baseline `26ba2431542` and candidate `bacf4854698`. Each version ran in four blocks of 50 measured claims, with 10 warmups and a fresh fixture per block. The paired order was baseline then candidate, candidate then baseline, baseline then candidate, and candidate then baseline. The fixture authenticated once and enqueued each run outside the sample. Each measurement started at acknowledgment of the first agent-row update and ended at acknowledgment of COMMIT on the same transaction.
+
+| Pair and order              | Baseline median / p95, ms | Candidate median / p95, ms |
+| --------------------------- | ------------------------: | -------------------------: |
+| 1, baseline then candidate  |             26.23 / 32.24 |              20.71 / 31.40 |
+| 2, candidate then baseline  |             25.36 / 33.53 |              19.77 / 26.89 |
+| 3, baseline then candidate  |             26.72 / 39.45 |              23.05 / 27.53 |
+| 4, candidate then baseline  |             38.75 / 60.14 |              23.09 / 34.22 |
+| All 200 samples per version |             27.79 / 48.63 |              21.80 / 28.15 |
+
+Median and nearest-rank p95 were lower in each pair. The baseline timings varied across pairs on the shared runner. PostgreSQL 16.15 ran on loopback with READ COMMITTED, `fsync=on`, `synchronous_commit=on` and `shared_buffers=128MB`. The Linux runner exposed six logical CPUs on an Intel Xeon E-2386G and used Node 24.22.2. The suite ran one benchmark block at a time. Every sampled claim retained the same statement count in its variant, with transaction/complete totals of 51/62 → 36/47 and version/catalog/per-Collection metadata counts of 1/14/14 → 14/0/0. These timings describe the local claim fixture.
