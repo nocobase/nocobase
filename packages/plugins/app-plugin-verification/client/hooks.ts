@@ -1,6 +1,11 @@
-import { useApiClient, type ApiClient } from '@nocobase/app-client';
+import {
+  ApiClientError,
+  useApiClient,
+  type ApiClient,
+} from '@nocobase/app-client';
 import { useAuthentication } from '@nocobase/app-plugin-authentication/client';
 import {
+  isServer,
   skipToken,
   useQuery,
   useQueryClient,
@@ -39,12 +44,27 @@ function phoneKey(
 export function useMyVerifiedPhone(): UseQueryResult<PhoneView, Error> {
   const api = useApiClient();
   const sessionKey = useSessionKey();
+  const queryKey = phoneKey(sessionKey);
+  const queryClient = useQueryClient();
+  const { retry = isServer ? 0 : 3 } = queryClient.defaultQueryOptions({
+    queryKey,
+  });
   return useQuery({
-    queryKey: phoneKey(sessionKey),
+    queryKey,
     queryFn:
       sessionKey === null
         ? skipToken
         : ({ signal }) => getMyVerifiedPhone(api, signal),
+    retry(failureCount, error) {
+      if (
+        error instanceof ApiClientError &&
+        error.status >= 400 &&
+        error.status < 500
+      )
+        return false;
+      if (typeof retry === 'function') return retry(failureCount, error);
+      return typeof retry === 'number' ? failureCount < retry : retry;
+    },
     // The application's default placeholder would display the former account's result.
     placeholderData: undefined,
     // Also discard inactive phone data in hosts that keep their query client across sessions.

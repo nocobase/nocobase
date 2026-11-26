@@ -1,3 +1,4 @@
+import { ApiClientError } from '@nocobase/app-client';
 import {
   AuthenticationProvider,
   authenticationClientToken,
@@ -71,6 +72,55 @@ async function setup(
 }
 
 afterEach(() => vi.restoreAllMocks());
+
+it.each([
+  [401, 'AUTHENTICATION_REQUIRED'],
+  [403, 'VERIFICATION_SESSION_REQUIRED'],
+])(
+  'reports HTTP %i from the phone query after a single request',
+  async (status, reason) => {
+    const payload = {
+      error: {
+        code: status,
+        domain: 'verification',
+        reason,
+        message: 'A signed-in person is required.',
+      },
+    };
+    const fetch = vi.fn(() =>
+      Response.json(payload, {
+        status,
+        headers: { 'x-request-id': 'phone-request' },
+      }),
+    );
+    const probe = await setup(fetch, { readPhone: true });
+
+    await waitFor(() => expect(probe.phone()?.isError).toBe(true));
+    expect(fetch).toHaveBeenCalledOnce();
+    const error = probe.phone()?.error;
+    expect(error).toBeInstanceOf(ApiClientError);
+    expect(error).toMatchObject({
+      status,
+      reason,
+      domain: 'verification',
+      requestId: 'phone-request',
+      payload,
+    });
+  },
+);
+
+it('still retries a transient server error on the phone query', async () => {
+  const fetch = vi
+    .fn<() => Response>()
+    .mockReturnValueOnce(new Response(null, { status: 503 }))
+    .mockReturnValueOnce(Response.json({ data: { phone: null } }));
+  const probe = await setup(fetch, { readPhone: true });
+
+  await waitFor(() => expect(probe.phone()?.data).toEqual({ phone: null }), {
+    timeout: 3000,
+  });
+  expect(fetch).toHaveBeenCalledTimes(2);
+});
 
 it('refreshes the masked phone after binding and changing it, even with a stale read in flight', async () => {
   const started = Promise.withResolvers<AbortSignal>();
