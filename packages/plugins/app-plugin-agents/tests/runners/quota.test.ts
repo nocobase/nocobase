@@ -435,7 +435,7 @@ it('adds no SQL, writes, transactions or locks to heartbeat or an excluded claim
   const agent = await h.createAgent();
   await h.enqueue(agent);
   const client = await h.database.connection().client<Knex>();
-  const measure = async (name: string, action: () => Promise<unknown>) => {
+  const measure = async (action: () => Promise<unknown>) => {
     const sql: string[] = [];
     const listen = (query: { sql: string }) => sql.push(query.sql);
     client.on('query', listen);
@@ -444,9 +444,15 @@ it('adds no SQL, writes, transactions or locks to heartbeat or an excluded claim
     } finally {
       client.off('query', listen);
     }
+    const reads = sql.filter((q) => /^\s*select\b/i.test(q));
     const result = {
-      name,
-      reads: sql.filter((q) => /^select/i.test(q)).length,
+      reads: reads.length,
+      businessReads: reads.filter(
+        (q) =>
+          !/\b(?:pragma_\w+|sqlite_schema|pg_catalog|information_schema|__nocobase_collection_metadata\w*)\b/i.test(
+            q,
+          ),
+      ),
       writes: sql.filter((q) => /^(insert|update|delete)/i.test(q)).length,
       transactions: sql.filter((q) => /^begin/i.test(q)).length,
       locks: sql.filter((q) => /for update|for share/i.test(q)).length,
@@ -462,10 +468,10 @@ it('adds no SQL, writes, transactions or locks to heartbeat or an excluded claim
     load: { slots: runner.slots, free: runner.slots },
   };
   await h.services.runners.heartbeat(runner, heartbeat);
-  const beforeHeartbeat = await measure('heartbeat-before', () =>
+  const beforeHeartbeat = await measure(() =>
     h.services.runners.heartbeat(runner, heartbeat),
   );
-  const beforeClaim = await measure('claim-incompatible-tool', () =>
+  const beforeClaim = await measure(() =>
     h.services.claims.claim({ ...runner, enabledTools: [] }, 1),
   );
   await h.services.tx.run((unit) =>
@@ -482,21 +488,21 @@ it('adds no SQL, writes, transactions or locks to heartbeat or an excluded claim
     }),
   );
   const marked = await h.services.runners.get(runner.id);
-  const afterHeartbeat = await measure('heartbeat-with-quota', () =>
+  const afterHeartbeat = await measure(() =>
     h.services.runners.heartbeat(marked, heartbeat),
   );
-  const afterClaim = await measure('claim-quota-filtered', () =>
-    h.services.claims.claim(marked, 1),
-  );
-  const { name: _beforeH, ...costBeforeH } = beforeHeartbeat;
-  const { name: _afterH, ...costAfterH } = afterHeartbeat;
-  const { name: _beforeC, ...costBeforeC } = beforeClaim;
-  const { name: _afterC, ...costAfterC } = afterClaim;
-  expect(costAfterH).toEqual(costBeforeH);
-  expect(costAfterC.reads).toBeLessThanOrEqual(costBeforeC.reads);
-  expect(costAfterC.writes).toBe(0);
-  expect(costAfterC.transactions).toBe(0);
-  expect(costAfterC.locks).toBe(0);
+  const afterClaim = await measure(() => h.services.claims.claim(marked, 1));
+  // Collection metadata can be warmer on the second call. The quota mark
+  // must preserve the business reads and add no SQL to either path.
+  expect(afterHeartbeat.businessReads).toEqual(beforeHeartbeat.businessReads);
+  expect(afterHeartbeat.reads).toBeLessThanOrEqual(beforeHeartbeat.reads);
+  expect(afterHeartbeat.writes).toBe(beforeHeartbeat.writes);
+  expect(afterHeartbeat.transactions).toBe(beforeHeartbeat.transactions);
+  expect(afterHeartbeat.locks).toBe(beforeHeartbeat.locks);
+  expect(afterClaim.reads).toBeLessThanOrEqual(beforeClaim.reads);
+  expect(afterClaim.writes).toBe(0);
+  expect(afterClaim.transactions).toBe(0);
+  expect(afterClaim.locks).toBe(0);
 });
 it('saves small usage changes and broadcasts uncapped usage only on mark changes', async () => {
   h = await createHarness();

@@ -387,6 +387,9 @@ export class CollectionRegistry
           index,
           collections: new Map([[name, result]]),
         });
+        // Query lookups can use the same verified naming index as root
+        // Repository lookups, without reloading metadata for the same view.
+        this.namingIndexPromise ??= Promise.resolve(index);
       }
     }
     return result;
