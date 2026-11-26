@@ -1,5 +1,13 @@
+import { createApiClient } from '@nocobase/app-client';
 import { signIn } from '@nocobase/app-plugin-authentication/testing';
 import { userPhoneDirectoryToken } from '@nocobase/app-plugin-notification-providers/sms';
+import {
+  bindPhone,
+  getMyVerifiedPhone,
+  getVerificationRateLimit,
+  issueStepUpToken,
+  sendVerificationCode,
+} from '@nocobase/app-plugin-verification/client';
 import { loggingToken } from '@nocobase/app-server/logging';
 import {
   findApiDocumentSchemaProblems,
@@ -445,6 +453,61 @@ test('binds to the signed-in person and changes a phone only with new and old ph
       )
     ).status,
   ).toBe(409);
+});
+
+test('drives the application routes through the public client API and a real session', async ({
+  app,
+  testApp,
+}) => {
+  const clock = time();
+  const transport = captureSms();
+  const owner = await person(testApp, 'client-owner');
+  const api = createApiClient({
+    baseURL: `http://localhost${testApp.publicBasePath}/api`,
+    fetch: async (url, init) => owner.fetch(String(url), init),
+    headers: { origin: 'http://localhost' },
+  });
+  const purpose = 'tenants.disable';
+  app.container
+    .resolve(verificationServiceToken)
+    .registerStepUpPurpose(purpose);
+
+  await expect(getMyVerifiedPhone(api)).resolves.toEqual({ phone: null });
+  const input = { scene: 'bindPhone', phone };
+  const timing = await sendVerificationCode(api, input);
+  expect(timing).toEqual({
+    expiresAt: '2026-11-25T17:05:00.000Z',
+    resendAt: '2026-11-25T17:00:10.000Z',
+  });
+  const limited = await sendVerificationCode(api, input).catch(
+    (error: unknown) => error,
+  );
+  expect(limited).toMatchObject({ status: 429 });
+  expect(getVerificationRateLimit(limited)).toEqual({
+    retryAfter: '10',
+    retryAt: timing.resendAt,
+  });
+  await expect(
+    bindPhone(api, { phone, code: transport.code() }),
+  ).resolves.toEqual({
+    phone: '••••0105',
+  });
+  await expect(getMyVerifiedPhone(api)).resolves.toEqual({ phone: '••••0105' });
+
+  // The step-up send uses the same phone's cooldown, including across scenes.
+  clock.advance(10_000);
+  await sendVerificationCode(api, { scene: 'stepUp', purpose });
+  const credential = await issueStepUpToken(api, {
+    purpose,
+    code: transport.code(),
+  });
+  await expect(
+    app.container.resolve(verificationServiceToken).consumeStepUp({
+      userId: owner.user.id,
+      purpose,
+      token: credential.token,
+    }),
+  ).resolves.toBeUndefined();
 });
 
 test('allows only one of two valid phone changes to consume the old proof', async ({

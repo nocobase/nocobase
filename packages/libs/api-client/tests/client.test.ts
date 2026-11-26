@@ -86,7 +86,10 @@ describe('createApiClient', () => {
               message: 'Order is invalid',
             },
           },
-          { status: 400, headers: { 'x-request-id': 'request-1' } },
+          {
+            status: 400,
+            headers: { 'x-request-id': 'request-1', 'Retry-After': '120' },
+          },
         ),
       );
     const api = createApiClient({ baseURL: '/api', fetch: request });
@@ -109,6 +112,7 @@ describe('createApiClient', () => {
       reason: 'ORDER_INVALID',
       domain: 'orders',
       requestId: 'request-1',
+      retryAfter: '120',
       method: 'GET',
       url: '/api/orders/order-1',
     });

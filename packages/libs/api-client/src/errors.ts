@@ -4,6 +4,7 @@ export interface ApiClientErrorOptions {
   readonly status: number;
   readonly payload?: unknown;
   readonly requestId?: string;
+  readonly retryAfter?: string;
   readonly reason?: string;
   readonly domain?: string;
   readonly method: ApiRequestMethod;
@@ -18,6 +19,8 @@ export class ApiClientError extends Error {
   public readonly status: number;
   public readonly payload: unknown;
   public readonly requestId?: string;
+  /** The Retry-After response header as received, when available. */
+  public readonly retryAfter?: string;
   public readonly reason?: string;
   public readonly domain?: string;
   public readonly method: ApiRequestMethod;
@@ -29,6 +32,7 @@ export class ApiClientError extends Error {
     this.status = options.status;
     this.payload = options.payload;
     this.requestId = options.requestId;
+    this.retryAfter = options.retryAfter;
     this.reason = options.reason;
     this.domain = options.domain;
     this.method = options.method;

@@ -1,11 +1,13 @@
 ---
 name: nocobase-app-plugin-verification
-description: Configure and integrate NocoBase one-time verification codes, verified phone binding, and step-up credentials in an application server.
+description: Configure and integrate NocoBase one-time verification codes, verified phone binding, and step-up credentials using server services and React hooks.
 ---
 
 # Integrate verification in a NocoBase application
 
 Register the default export from `@nocobase/app-plugin-verification/server` after Authentication, Notification, and Notification Providers, including their setup dependencies. Install or apply database migrations before serving traffic. The plugin owns `userPhones`; account identity, sessions, and passwords belong to Authentication and Users. The plugin contributes no pages or login or password reset routes.
+
+Import the API and hooks from `@nocobase/app-plugin-verification/client`. Use them inside the host application's Authentication and query providers. The [client integration guide](references/client.md) shows binding, changing a number, and confirming a sensitive operation. The business server must check permissions and consume its own step-up credential.
 
 ## Configure SMS
 
