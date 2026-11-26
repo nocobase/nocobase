@@ -114,13 +114,15 @@ A local comparison used baseline `26ba2431542`, PostgreSQL 16.15, SQLite in memo
 
 Each table cell below shows baseline → candidate. Counts include BEGIN and COMMIT. The complete invocation captures every statement up to the returned promise, including any after-commit work. The captured query events contained one SQL statement each.
 
-| Workload and scope                            | PostgreSQL total statements | SQLite total statements | PostgreSQL version / catalog / per-table metadata | SQLite version / catalog / per-table metadata |
-| --------------------------------------------- | --------------------------: | ----------------------: | ------------------------------------------------: | --------------------------------------------: |
-| Prepared empty transaction, inside / complete |               2 / 2 → 2 / 2 |           2 / 2 → 2 / 2 |                             0 / 0 / 0 → 0 / 0 / 0 |                         0 / 0 / 0 → 0 / 0 / 0 |
-| Twelve tables, inside / complete              |           39 / 39 → 26 / 26 |       87 / 87 → 15 / 15 |                          1 / 12 / 12 → 12 / 0 / 0 |                       1 / 60 / 12 → 1 / 0 / 0 |
-| Warm claim, inside / complete                 |           51 / 62 → 36 / 47 |     107 / 118 → 23 / 34 |                          1 / 14 / 14 → 14 / 0 / 0 |                       1 / 70 / 14 → 1 / 0 / 0 |
+| Workload and scope                                                                | PostgreSQL total statements | SQLite total statements | PostgreSQL version / catalog / per-table metadata | SQLite version / catalog / per-table metadata |
+| --------------------------------------------------------------------------------- | --------------------------: | ----------------------: | ------------------------------------------------: | --------------------------------------------: |
+| Prepared empty transaction, inside / complete                                     |               2 / 2 → 2 / 2 |           2 / 2 → 2 / 2 |                             0 / 0 / 0 → 0 / 0 / 0 |                         0 / 0 / 0 → 0 / 0 / 0 |
+| Twelve tables, inside / complete                                                  |           39 / 39 → 26 / 26 |       87 / 87 → 15 / 15 |                          1 / 12 / 12 → 12 / 0 / 0 |                       1 / 60 / 12 → 1 / 0 / 0 |
+| Second two-table transaction with no root prewarm, inside / complete              |             10 / 10 → 6 / 6 |         18 / 18 → 5 / 5 |                             1 / 2 / 2 → 2 / 0 / 0 |                        1 / 10 / 2 → 1 / 0 / 0 |
+| Warm root write with in-transaction and after-commit listeners, inside / complete |               7 / 8 → 5 / 6 |         11 / 12 → 5 / 6 |                             1 / 1 / 1 → 1 / 0 / 0 |                         1 / 5 / 1 → 1 / 0 / 0 |
+| Warm claim, inside / complete                                                     |           51 / 62 → 36 / 47 |     107 / 118 → 23 / 34 |                          1 / 14 / 14 → 14 / 0 / 0 |                       1 / 70 / 14 → 1 / 0 / 0 |
 
-The claim inspects 14 distinct Collections in both baselines. In steady state, 14 Collections therefore map to 14 PostgreSQL probes and one SQLite probe. The claim executes the same 33 business and control statements in every variant. The shared integration contract separately checks the second call to a root Repository with a transaction listener and a transaction whose tables were never read on the root.
+The two-table baseline includes one additional naming-summary read in each dialect. The observed root write reads one Collection inside its listener and issues one business read after COMMIT. The claim inspects 14 distinct Collections in both baselines. In steady state, 14 Collections therefore map to 14 PostgreSQL probes and one SQLite probe. The claim executes the same 33 business and control statements in every variant. The shared integration contract separately checks the second call to a root Repository with a transaction listener and a transaction whose tables were never read on the root.
 
 | Timing, ms              |        PostgreSQL median / p95 |             SQLite median / p95 |
 | ----------------------- | -----------------------------: | ------------------------------: |
