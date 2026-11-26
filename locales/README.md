@@ -19,7 +19,7 @@
 | fa-IR         | فارسی          |
 | fi-FI         | Suomi          |
 | fr-BE         | Français(BE)   |
-| fr-CA         | Français(CA)   |
+| [fr-CA](./fr-CA.json)         | Français(CA)   |
 | [fr-FR](./fr-FR.json)         | Français       |
 | ga-IE         | Gaeilge        |
 | gl-ES         | Galego         |
