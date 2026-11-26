@@ -628,9 +628,9 @@ const zhCN: typeof enUS = {
       apps: '应用',
       appsDescription: '部署在此环境中的应用。',
       appsEmpty: '还没有应用部署在这里。',
-      sampleData: '首次部署时加载示例数据',
+      sampleData: '部署时加载示例数据',
       sampleDataHint:
-        '应用在此环境首次部署时安装示例数据（APP_SAMPLE_DATA=true）。用于预览，不要用于生产环境。',
+        '每次部署时加载尚未执行的示例数据（APP_SAMPLE_DATA=true）。请在预览环境使用，在生产环境保持关闭。',
       add: '添加环境',
       edit: '编辑',
       delete: '删除',

@@ -173,7 +173,7 @@ export interface EnvironmentRecord {
    */
   readonly registryId: string | null;
   readonly capabilities: EnvironmentCapabilities;
-  /** An App's first deployment here loads its sample data (`APP_SAMPLE_DATA=true`, generated). */
+  /** Each deployment here loads any outstanding sample data (`APP_SAMPLE_DATA=true`, generated). */
   readonly sampleDataOnFirstDeploy: boolean;
   /** What the environment is for. */
   readonly purpose: EnvironmentPurpose;

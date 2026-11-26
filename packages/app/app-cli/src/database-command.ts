@@ -113,7 +113,7 @@ export interface DatabaseCommandResult {
 export interface DatabaseSampleDataResult {
   /** Registration names that ran. */
   readonly executed: readonly string[];
-  /** Registrations that threw, with the error message; each stays recorded as skipped. */
+  /** Registrations that threw, with the error message. They can run again. */
   readonly failed: readonly { readonly name: string; readonly error: string }[];
 }
 
@@ -358,9 +358,8 @@ export async function runDatabaseRedoCommand(
 }
 
 /**
- * Loads the sample data an installation skipped: every sample seed recorded as skipped on the selected connections,
- * then — with the application started, so they can reach every plugin's services — the sample data services registered
- * on `sampleDataToken` that are recorded as skipped or not at all. For development only: a deployment refuses it.
+ * Runs outstanding sample seeds on the selected connections, then starts the
+ * application to run outstanding `sampleDataToken` registrations. Development only.
  */
 export async function runDatabaseSampleCommand(
   command: DatabaseCommandOutput,

@@ -860,9 +860,9 @@ const ptBR: LocaleResource<typeof enUS> = {
       apps: 'Aplicativos',
       appsDescription: 'Os aplicativos implantados neste ambiente.',
       appsEmpty: 'Nenhum aplicativo foi implantado aqui ainda.',
-      sampleData: 'Carregar dados de amostra na primeira implantação',
+      sampleData: 'Carregar dados de amostra na implantação',
       sampleDataHint:
-        'A primeira implantação de um aplicativo aqui instala seus dados de amostra (APP_SAMPLE_DATA=true). Use-o para visualizações, não para produção.',
+        'Cada implantação carrega os dados de amostra pendentes (APP_SAMPLE_DATA=true). Ative esta opção em ambientes de prévia e mantenha-a desativada em produção.',
       add: 'Adicionar ambiente',
       edit: 'Editar',
       delete: 'Excluir',

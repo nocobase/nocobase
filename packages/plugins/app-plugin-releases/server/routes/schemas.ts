@@ -269,7 +269,7 @@ const environmentFields = {
     .describe('The registry identifier.'),
   sampleDataOnFirstDeploy: z.boolean().optional().meta({
     description:
-      'An App’s first deployment here loads its sample data (`APP_SAMPLE_DATA=true`).',
+      'Each deployment here loads any outstanding sample data (`APP_SAMPLE_DATA=true`).',
   }),
   purpose: z.enum(ENVIRONMENT_PURPOSES).optional().meta({
     description:
@@ -674,7 +674,7 @@ const environmentRecordFields = {
   }),
   sampleDataOnFirstDeploy: z.boolean().meta({
     description:
-      'An App’s first deployment here loads its sample data (`APP_SAMPLE_DATA=true`).',
+      'Each deployment here loads any outstanding sample data (`APP_SAMPLE_DATA=true`).',
   }),
   capabilities: z
     .object({

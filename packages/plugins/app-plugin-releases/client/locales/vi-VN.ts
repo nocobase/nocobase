@@ -846,9 +846,9 @@ const viVN: LocaleResource<typeof enUS> = {
       apps: 'Ứng dụng',
       appsDescription: 'Các ứng dụng được triển khai vào môi trường này.',
       appsEmpty: 'Chưa có ứng dụng nào được triển khai ở đây.',
-      sampleData: 'Tải dữ liệu mẫu vào lần triển khai đầu tiên',
+      sampleData: 'Tải dữ liệu mẫu khi triển khai',
       sampleDataHint:
-        'Lần triển khai đầu tiên của ứng dụng tại đây sẽ cài đặt dữ liệu mẫu của ứng dụng đó (APP_SAMPLE_DATA=true). Sử dụng nó để xem trước, không phải để sản xuất.',
+        'Mỗi lần triển khai sẽ tải dữ liệu mẫu chưa được chạy (APP_SAMPLE_DATA=true). Bật tùy chọn này trong môi trường xem trước và giữ tắt trong môi trường sản xuất.',
       add: 'Thêm môi trường',
       edit: 'Chỉnh sửa',
       delete: 'Xóa',
