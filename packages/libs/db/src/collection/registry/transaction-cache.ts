@@ -130,7 +130,8 @@ export class TransactionCollectionCache {
   ): Promise<CollectionNamingIndex> | undefined {
     if (!this.eligible) return undefined;
     const result = this.queue.then(async () => {
-      if (this.dialect === 'postgres') return this.index ?? createIndex();
+      // An explicit scan has no per-Collection version probe on PostgreSQL.
+      if (this.dialect === 'postgres') return createIndex();
       this.select(await this.probe());
       const index = await this.namingIndex(createIndex);
       if (this.pending) this.pending.index = index;

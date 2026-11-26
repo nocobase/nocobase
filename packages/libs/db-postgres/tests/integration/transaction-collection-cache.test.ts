@@ -65,6 +65,12 @@ it('probes the first member read after another connection commits DDL', async ()
         name: 'added',
         type: 'string',
       });
+      await writer.collectionMetadata.updateCollection('members', {
+        title: 'Changed members',
+      });
+      expect((await transaction.collections.list()).items).toContainEqual(
+        expect.objectContaining({ name: 'members', title: 'Changed members' }),
+      );
       expect(
         (await transaction.collections.get('members'))?.fields?.map(
           (field) => field.name,
