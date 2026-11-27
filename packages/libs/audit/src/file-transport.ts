@@ -1,14 +1,15 @@
-import {
-  createJsonLinesLogOutput,
-  type JsonLinesLogOptions,
-  type JsonLinesLogOutput,
-} from '@nocobase/logging';
 import { mkdir, realpath } from 'node:fs/promises';
 import path from 'node:path';
-import type { AuditFileOptions } from './config.js';
-import type { AuditTransport, AuditTransportContext } from './service.js';
 
-export const fileAuditDriverName = 'file';
+import type { AuditFileOptions } from './config.js';
+import { FileAuditOutput } from './file-output.js';
+import type {
+  AuditTransport,
+  AuditTransportContext,
+  AuditTransportDriver,
+} from './service.js';
+
+const outputs = new Map<string, FileAuditOutput>();
 
 function within(root: string, target: string): boolean {
   const relative = path.relative(root, target);
@@ -19,11 +20,36 @@ function within(root: string, target: string): boolean {
   );
 }
 
-export function createFileAuditTransport(
+export function createFileAuditDriver(): AuditTransportDriver & {
+  prepare(): Promise<void>;
+} {
+  const files: Array<() => Promise<FileAuditOutput>> = [];
+  return {
+    name: 'file',
+    createTransport(options, context) {
+      const transport = createFileAuditTransport(
+        options as AuditFileOptions,
+        context,
+      );
+      files.push(() => transport.prepare());
+      return transport;
+    },
+    async prepare() {
+      // Resolve and register every policy before allowing startup cleanup.
+      const prepared = await Promise.allSettled(
+        files.map((prepare) => prepare()),
+      );
+      files.length = 0;
+      for (const result of prepared)
+        if (result.status === 'fulfilled') result.value.start();
+    },
+  };
+}
+
+function createFileAuditTransport(
   options: AuditFileOptions,
-  paths: AuditTransportContext['paths'],
-  reports: Pick<JsonLinesLogOptions, 'onIncompleteLine' | 'onCleanupError'>,
-): AuditTransport & { prepare(): Promise<JsonLinesLogOutput> } {
+  { paths, report }: AuditTransportContext,
+): AuditTransport & { prepare(): Promise<FileAuditOutput> } {
   const { path: value, maxFileSizeMB = 50, retentionDays = 180 } = options;
   const relative = !path.isAbsolute(value);
   const storage = path.resolve(paths.storageDir);
@@ -33,8 +59,10 @@ export function createFileAuditTransport(
       'Relative audit paths must stay inside application storage.',
     );
 
-  let preparing: Promise<JsonLinesLogOutput> | undefined;
-  const createOutput = async (): Promise<JsonLinesLogOutput> => {
+  const reportTarget = (message: string): void => report?.(message);
+  let outputKey: string;
+  let preparing: Promise<FileAuditOutput> | undefined;
+  const createOutput = async (): Promise<FileAuditOutput> => {
     const parent = path.dirname(destination);
     let directory: string;
     if (relative) {
@@ -55,15 +83,19 @@ export function createFileAuditTransport(
       await mkdir(parent, { recursive: true, mode: 0o700 });
       directory = await realpath(parent);
     }
-    return createJsonLinesLogOutput({
-      directory,
-      name: path.basename(destination, '.jsonl'),
-      maxFileSizeMB,
-      retentionDays,
-      ...reports,
-    });
+    outputKey = path.join(directory, path.basename(destination));
+    let output = outputs.get(outputKey);
+    if (!output) {
+      output = new FileAuditOutput(
+        directory,
+        path.basename(destination, '.jsonl'),
+      );
+      outputs.set(outputKey, output);
+    }
+    output.attach(reportTarget, maxFileSizeMB, retentionDays);
+    return output;
   };
-  const prepare = (): Promise<JsonLinesLogOutput> =>
+  const prepare = (): Promise<FileAuditOutput> =>
     (preparing ??= createOutput().catch((error: unknown) => {
       preparing = undefined;
       throw error;
@@ -73,11 +105,11 @@ export function createFileAuditTransport(
     async write(event, { signal }) {
       const output = await prepare();
       signal.throwIfAborted();
-      output.writeLine(JSON.stringify(event) + '\n');
+      await output.write(Buffer.from(JSON.stringify(event) + '\n'), signal);
     },
     async close() {
       const output = await preparing?.catch(() => undefined);
-      await output?.close();
+      await output?.detach(reportTarget, () => outputs.delete(outputKey));
     },
   };
 }

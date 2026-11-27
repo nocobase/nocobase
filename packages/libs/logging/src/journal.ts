@@ -2,15 +2,9 @@ import {
   constants,
   closeSync,
   fstatSync,
-  ftruncateSync,
-  lstatSync,
   mkdirSync,
   openSync,
-  readSync,
-  realpathSync,
-  unlinkSync,
   writeSync,
-  type Stats,
 } from 'node:fs';
 import { lstat, open, readdir, unlink } from 'node:fs/promises';
 import path from 'node:path';
@@ -237,111 +231,14 @@ export function appendJournal(
   }
 }
 
-export function assertJournalDirectory(directory: string): void {
-  if (realpathSync.native(directory) !== directory)
-    throw new Error('Log directory must remain at its resolved path');
-}
-
-function isPrivateFile(stats: Stats): boolean {
-  return (
-    stats.isFile() &&
-    stats.nlink === 1 &&
-    (process.platform === 'win32' || (stats.mode & 0o077) === 0)
-  );
-}
-
-/** Skip an incomplete tail and roll back any partial write of the new record. */
-export function tryAppendPrivateJournalLine(
-  file: string,
-  line: string,
-): boolean {
-  const fd = openSync(
-    file,
-    constants.O_CREAT |
-      constants.O_APPEND |
-      constants.O_RDWR |
-      (constants.O_NOFOLLOW ?? 0) |
-      (constants.O_NONBLOCK ?? 0),
-    0o600,
-  );
-  try {
-    const info = fstatSync(fd);
-    if (!isPrivateFile(info))
-      throw new Error('Log destination must be a private regular file');
-    if (info.size > 0) {
-      const lastByte = Buffer.alloc(1);
-      if (readSync(fd, lastByte, 0, 1, info.size - 1) !== 1)
-        throw new Error('Could not read the end of the log destination');
-      if (lastByte[0] !== 10) return false;
-    }
-    const buffer = Buffer.from(line);
-    let written = 0;
-    try {
-      while (written < buffer.length) {
-        const count = writeSync(fd, buffer, written, buffer.length - written);
-        if (count === 0) throw new Error('Log append made no progress');
-        written += count;
-      }
-    } catch (error) {
-      if (written > 0) ftruncateSync(fd, info.size);
-      throw error;
-    }
-    return true;
-  } finally {
-    closeSync(fd);
-  }
-}
-
-function isExpired(modified: number, policy: JournalPolicy): boolean {
-  return modified < Date.now() - (policy.retentionDays ?? 7) * 86400000;
-}
-
 export async function pruneJournals(
   directory: string,
   policy: JournalPolicy,
   protectedFile?: string,
-  options: {
-    recursive?: boolean;
-    retentionOnly?: boolean;
-    scope?: {
-      matches: (name: string) => boolean;
-      isActive: (name: string) => boolean;
-    };
-  } = {},
+  options: { recursive?: boolean; retentionOnly?: boolean } = {},
 ): Promise<void> {
   validateJournalPolicy(policy);
-  const files = await listFiles(
-    directory,
-    options.recursive,
-    options.scope?.matches,
-  );
-  if (options.scope) {
-    for (const file of files) {
-      // Selection and unlink must not yield to a writer after the active-file check.
-      if (
-        !isExpired(file.modified, policy) ||
-        options.scope.isActive(file.name)
-      )
-        continue;
-      assertJournalDirectory(directory);
-      const target = path.join(directory, file.name);
-      const current = lstatSync(target, { throwIfNoEntry: false });
-      if (
-        current &&
-        current.ino === file.inode &&
-        current.dev === file.device &&
-        isPrivateFile(current) &&
-        isExpired(current.mtimeMs, policy)
-      ) {
-        try {
-          unlinkSync(target);
-        } catch (error) {
-          if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw error;
-        }
-      }
-    }
-    return;
-  }
+  const files = await listFiles(directory, options.recursive);
   let total = options.retentionOnly
     ? 0
     : files.reduce((sum, file) => sum + file.size, 0);
@@ -374,14 +271,11 @@ interface LogFile {
   name: string;
   size: number;
   inode: number;
-  device: number;
   modified: number;
 }
 async function listFiles(
   directory: string,
   recursive = false,
-  matches = (name: string) =>
-    /^[a-zA-Z0-9_.-]+\.(?:log(?:\.\d+)?|stderr)$/.test(name),
 ): Promise<LogFile[]> {
   try {
     if ((await lstat(directory)).isSymbolicLink())
@@ -397,22 +291,20 @@ async function listFiles(
         for (const file of await listFiles(
           path.join(directory, entry.name),
           true,
-          matches,
         ))
           files.push({ ...file, name: path.join(entry.name, file.name) });
       }
-      if (!entry.isFile() || !matches(entry.name)) continue;
-      const stats = await lstat(path.join(directory, entry.name)).catch(
-        (error: NodeJS.ErrnoException) => {
-          if (error.code !== 'ENOENT') throw error;
-        },
-      );
-      if (stats?.isFile())
+      if (
+        !entry.isFile() ||
+        !/^[a-zA-Z0-9_.-]+\.(?:log(?:\.\d+)?|stderr)$/.test(entry.name)
+      )
+        continue;
+      const stats = await lstat(path.join(directory, entry.name));
+      if (stats.isFile())
         files.push({
           name: entry.name,
           size: stats.size,
           inode: stats.ino,
-          device: stats.dev,
           modified: stats.mtimeMs,
         });
     }

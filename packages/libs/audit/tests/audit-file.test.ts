@@ -28,6 +28,7 @@ import { LoggingProvider, loggingToken } from '@nocobase/app-server/logging';
 import { AppConfig, createAppPaths } from '@nocobase/app-server/config';
 import { defineApiRoutes } from '@nocobase/app-server/router';
 import { Hono } from 'hono';
+import { RotatingFileStream } from 'rotating-file-stream';
 import {
   ServiceProvider,
   type ServiceProviderConstructor,
@@ -258,7 +259,14 @@ it('resumes audit writes in the next segment after a same-day restart with an in
     expect((await send(app, 'after-restart')).status).toBe(200);
     expect((await send(app, 'next-event')).status).toBe(200);
     await app.shutdown();
-
+    for (let index = 0; index < 3; index++) {
+      const restarted = await start(root, config);
+      try {
+        expect((await send(restarted, `restart-${index}`)).status).toBe(200);
+      } finally {
+        await restarted.shutdown();
+      }
+    }
     expect(await segmentPaths(file)).toEqual([damaged, recovered]);
     expect(await readFile(damaged, 'utf8')).toBe(damagedContent);
     const records = (await readFile(recovered, 'utf8')).split('\n');
@@ -266,6 +274,9 @@ it('resumes audit writes in the next segment after a same-day restart with an in
     expect(records.map((record) => JSON.parse(record))).toMatchObject([
       { requestId: 'after-restart' },
       { requestId: 'next-event' },
+      { requestId: 'restart-0' },
+      { requestId: 'restart-1' },
+      { requestId: 'restart-2' },
     ]);
     expect(report).toHaveBeenCalledExactlyOnceWith(
       'Audit file ends with an incomplete line. Destination: audit.',
@@ -464,7 +475,7 @@ it('registers shared retention before writing and records with application loggi
   }
 });
 
-it('keeps the previous segment and the HTTP result when the next segment cannot open', async () => {
+it('keeps oversized records intact and recovers after a failed rotation', async () => {
   const root = await mkdtemp(path.join(tmpdir(), 'audit-file-'));
   const file = path.join(root, 'rotating.jsonl');
   const good = path.join(root, 'good.jsonl');
@@ -480,21 +491,26 @@ it('keeps the previous segment and the HTTP result when the next segment cannot 
   });
   try {
     expect((await send(app, 'first')).status).toBe(200);
-    const [segment] = await segmentPaths(file);
-    const next = segment.replace(/\.000000\.jsonl$/, '.000001.jsonl');
+    const [first, second] = await segmentPaths(file);
+    expect((await stat(first)).size).toBeGreaterThan(10);
+    expect(await readFile(second, 'utf8')).toBe('');
+    const next = second.replace(/\.000001\.jsonl$/, '.000002.jsonl');
     await mkdir(next);
     expect(await (await send(app, 'rotation-failed')).json()).toEqual({
       data: 'done',
     });
-    expect(await readFile(segment, 'utf8')).toContain('"requestId":"first"');
-    expect(await readFile(segment, 'utf8')).not.toContain('rotation-failed');
-    expect(await lines(good)).toMatchObject([
-      { requestId: 'first' },
-      { requestId: 'rotation-failed' },
-    ]);
     expect(report).toHaveBeenCalledWith(
       'Could not write audit event. Destination: rotating.',
     );
+    await rm(next, { recursive: true });
+    expect((await send(app, 'recovered')).status).toBe(200);
+    const expected = [
+      { requestId: 'first' },
+      { requestId: 'rotation-failed' },
+      { requestId: 'recovered' },
+    ];
+    expect(await lines(file)).toMatchObject(expected);
+    expect(await lines(good)).toMatchObject(expected);
   } finally {
     report.mockRestore();
     await app.shutdown();
@@ -541,6 +557,189 @@ it('warns about cleanup failure without changing the HTTP result or another targ
     await rm(root, { recursive: true, force: true });
   }
 });
+
+it('verifies a short append before delivering another record to the same file', async () => {
+  const root = await mkdtemp(path.join(tmpdir(), 'audit-file-'));
+  const file = path.join(root, 'audit.jsonl');
+  const report = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+  const app = await start(root, {
+    transports: { file: { driver: 'file', options: { path: file } } },
+  });
+  const append = RotatingFileStream.prototype._write;
+  const short = vi.spyOn(RotatingFileStream.prototype, '_write');
+  try {
+    expect((await send(app, 'before-short-write')).status).toBe(200);
+    const [first] = await segmentPaths(file);
+    const complete = await readFile(first, 'utf8');
+    short.mockImplementationOnce(function (chunk, encoding, done) {
+      append.call(this, chunk.subarray(0, 10), encoding, done);
+    });
+    expect((await send(app, 'short-write')).status).toBe(200);
+    const damaged = await readFile(first, 'utf8');
+    expect(damaged.slice(0, -10)).toBe(complete);
+    expect(damaged.endsWith('\n')).toBe(false);
+    expect(report).toHaveBeenCalledWith(
+      'Could not write audit event. Destination: file.',
+    );
+    expect((await send(app, 'after-short-write')).status).toBe(200);
+    const [, recovered] = await segmentPaths(file);
+    expect(await readFile(first, 'utf8')).toBe(damaged);
+    expect(JSON.parse(await readFile(recovered, 'utf8'))).toMatchObject({
+      requestId: 'after-short-write',
+    });
+  } finally {
+    short.mockRestore();
+    report.mockRestore();
+    await app.shutdown();
+    await rm(root, { recursive: true, force: true });
+  }
+});
+
+it('bounds pending file writes and closes the stream after accepted writes settle', async () => {
+  const root = await mkdtemp(path.join(tmpdir(), 'audit-file-'));
+  const file = path.join(root, 'audit.jsonl');
+  const entered = Promise.withResolvers<void>();
+  const release = Promise.withResolvers<void>();
+  const overflow = Promise.withResolvers<void>();
+  const report = vi.spyOn(console, 'error').mockImplementation((message) => {
+    if (
+      message ===
+      'Audit destination has too many pending writes. Destination: file.'
+    )
+      overflow.resolve();
+  });
+  const app = await start(root, {
+    transports: { file: { driver: 'file', options: { path: file } } },
+  });
+  const append = RotatingFileStream.prototype._write;
+  const closed = vi.fn();
+  const write = vi.spyOn(RotatingFileStream.prototype, '_write');
+  write.mockImplementationOnce(function (chunk, encoding, done) {
+    this.once('close', closed);
+    entered.resolve();
+    void release.promise.then(() => append.call(this, chunk, encoding, done));
+  });
+  try {
+    await app.start();
+    const requests = Array.from({ length: 65 }, (_, index) =>
+      send(app, `queued-${index}`),
+    );
+    await entered.promise;
+    await overflow.promise;
+    expect(write).toHaveBeenCalledTimes(1);
+    release.resolve();
+    expect(
+      (await Promise.all(requests)).every(({ status }) => status === 200),
+    ).toBe(true);
+    expect(await lines(file)).toHaveLength(64);
+    await app.shutdown();
+    expect(closed).toHaveBeenCalledOnce();
+  } finally {
+    release.resolve();
+    write.mockRestore();
+    report.mockRestore();
+    await app.shutdown();
+    await rm(root, { recursive: true, force: true });
+  }
+});
+
+it('retains recent and unrelated files and prunes again on an idle UTC rollover', async () => {
+  const root = await mkdtemp(path.join(tmpdir(), 'audit-file-'));
+  const file = path.join(root, 'audit.jsonl');
+  const now = new Date('2026-11-26T23:00:00Z');
+  const retention = 180 * 86_400_000;
+  const expired = path.join(root, 'audit.2025-01-01.000000.jsonl');
+  const recent = path.join(root, 'audit.2025-01-01.000001.jsonl');
+  const active = path.join(root, 'audit.2026-11-26.000000.jsonl');
+  const next = path.join(root, 'audit.2026-11-27.000000.jsonl');
+  const unrelated = [
+    file,
+    path.join(root, 'other.2025-01-01.000000.jsonl'),
+    path.join(root, 'audit.2025-02-30.000000.jsonl'),
+    path.join(root, 'audit.2025-01-01.000002.log'),
+  ];
+  const old = (age: number): Date => new Date(now.getTime() - age);
+  for (const entry of [expired, recent, ...unrelated]) {
+    await writeFile(entry, '{}\n', { mode: 0o600 });
+    const modified = old(retention + (entry === recent ? -60_000 : 60_000));
+    await utimes(entry, modified, modified);
+  }
+  const archiveLink = path.join(root, 'audit.2025-01-01.000003.jsonl');
+  await link(file, archiveLink);
+  const seed = '{"requestId":"seed"}\n';
+  await writeFile(active, seed, { mode: 0o600 });
+  await utimes(active, 0, 0);
+  vi.useFakeTimers({ toFake: ['Date', 'setTimeout', 'clearTimeout'] });
+  vi.setSystemTime(now);
+  const app = await start(root, {
+    transports: { file: { driver: 'file', options: { path: file } } },
+  });
+  try {
+    await app.start();
+    await vi.waitFor(async () =>
+      expect(await readdir(root)).not.toContain(path.basename(expired)),
+    );
+    expect(await readFile(active, 'utf8')).toBe(seed);
+    expect(await readFile(recent, 'utf8')).toBe('{}\n');
+    expect((await send(app, 'before-midnight')).status).toBe(200);
+    expect(await readFile(active, 'utf8')).toContain(
+      '"requestId":"before-midnight"',
+    );
+    await vi.advanceTimersByTimeAsync(3_600_000);
+    await vi.waitFor(async () => expect(await readFile(next, 'utf8')).toBe(''));
+    await app.shutdown();
+    const remaining = await readdir(root);
+    expect(remaining).not.toContain(path.basename(recent));
+    expect(remaining).toEqual(
+      expect.arrayContaining(
+        [active, next, archiveLink, ...unrelated].map((entry) =>
+          path.basename(entry),
+        ),
+      ),
+    );
+  } finally {
+    await app.shutdown();
+    vi.useRealTimers();
+    await rm(root, { recursive: true, force: true });
+  }
+});
+
+it.skipIf(process.platform === 'win32')(
+  'refuses an unsafe segment after the library opens it during rotation',
+  async () => {
+    const root = await mkdtemp(path.join(tmpdir(), 'audit-file-'));
+    const file = path.join(root, 'logs', 'audit.jsonl');
+    const target = path.join(root, 'outside.jsonl');
+    const report = vi
+      .spyOn(console, 'error')
+      .mockImplementation(() => undefined);
+    const app = await start(root, {
+      transports: {
+        file: {
+          driver: 'file',
+          options: { path: file, maxFileSizeMB: 10 / 1024 ** 2 },
+        },
+      },
+    });
+    try {
+      expect((await send(app, 'before-link')).status).toBe(200);
+      const [, empty] = await segmentPaths(file);
+      const linked = empty.replace(/\.000001\.jsonl$/, '.000002.jsonl');
+      await symlink(target, linked);
+      expect((await send(app, 'rotated')).status).toBe(200);
+      await app.shutdown();
+      expect(await readFile(target, 'utf8')).toBe('');
+      expect(await readFile(empty, 'utf8')).toContain('"requestId":"rotated"');
+      expect(report).toHaveBeenCalledWith(
+        'Could not write audit event. Destination: file.',
+      );
+    } finally {
+      await app.shutdown();
+      report.mockRestore();
+      await rm(root, { recursive: true, force: true });
+    }
+  },
+);
 
 it.skipIf(process.platform === 'win32')(
   'keeps a relative destination inside storage after symlink resolution',

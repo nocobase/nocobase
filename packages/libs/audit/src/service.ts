@@ -9,17 +9,15 @@ import {
   isAuditName,
   validateAuditConfig,
   type AuditConfig,
-  type AuditFileOptions,
 } from './config.js';
-import {
-  createFileAuditTransport,
-  fileAuditDriverName,
-} from './file-transport.js';
+import { createFileAuditDriver } from './file-transport.js';
 import type { AuditActor, AuditEvent } from './index.js';
 
 export interface AuditTransportContext {
   readonly name: string;
   readonly paths: { readonly storageDir: string };
+  /** Report a destination warning without including event contents. */
+  readonly report?: (message: string) => void;
 }
 
 export interface AuditTransport {
@@ -62,7 +60,10 @@ const deliveryTimeout = 1_000;
 const maxPendingPerDestination = 64;
 
 export class AuditCoordinator implements AuditService {
-  private readonly drivers = new Map<string, AuditTransportDriver>();
+  private readonly fileDriver = createFileAuditDriver();
+  private readonly drivers = new Map<string, AuditTransportDriver>([
+    [this.fileDriver.name, this.fileDriver],
+  ]);
   private readonly actorResolvers: AuditActorResolver[] = [];
   private readonly destinations: Destination[] = [];
   private started = false;
@@ -78,7 +79,7 @@ export class AuditCoordinator implements AuditService {
       typeof driver.createTransport !== 'function'
     )
       throw new Error('An audit driver requires a valid name and a factory.');
-    if (driver.name === fileAuditDriverName || this.drivers.has(driver.name))
+    if (this.drivers.has(driver.name))
       throw new Error(`Audit driver "${driver.name}" is already registered.`);
     this.drivers.set(driver.name, driver);
   }
@@ -107,38 +108,20 @@ export class AuditCoordinator implements AuditService {
     if (!(config.enabled ?? auditDefaults.enabled)) return false;
     const definitions = Object.entries(config.transports ?? {});
     for (const [name, definition] of definitions) {
-      if (
-        definition.driver !== fileAuditDriverName &&
-        !this.drivers.has(definition.driver)
-      )
+      if (!this.drivers.has(definition.driver))
         throw new Error(
           `Audit destination "${name}" uses unregistered driver "${definition.driver}".`,
         );
     }
-    const files: ReturnType<typeof createFileAuditTransport>[] = [];
     try {
       for (const [name, definition] of definitions) {
         const { driver, options = {} } = definition;
         try {
-          let transport: AuditTransport;
-          if (driver === fileAuditDriverName) {
-            const file = createFileAuditTransport(
-              options as AuditFileOptions,
-              paths,
-              {
-                onIncompleteLine: () =>
-                  this.report('Audit file ends with an incomplete line.', name),
-                onCleanupError: () =>
-                  this.report('Could not clean up audit files.', name),
-              },
-            );
-            files.push(file);
-            transport = file;
-          } else {
-            transport = this.drivers
-              .get(driver)!
-              .createTransport(options, { name, paths });
-          }
+          const transport = this.drivers.get(driver)!.createTransport(options, {
+            name,
+            paths,
+            report: (message) => this.report(message, name),
+          });
           if (!transport || typeof transport.write !== 'function')
             throw new Error();
           this.destinations.push({ name, transport, pending: new Map() });
@@ -152,11 +135,7 @@ export class AuditCoordinator implements AuditService {
       await this.close();
       throw error;
     }
-    // Register all resolved file policies before one destination can start retention.
-    // An unavailable directory remains isolated and can be retried on the next write.
-    await Promise.all(
-      files.map((file) => file.prepare().catch(() => undefined)),
-    );
+    await this.fileDriver.prepare();
     return this.destinations.length > 0;
   }
 

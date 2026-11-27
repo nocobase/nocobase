@@ -55,9 +55,9 @@
     "fix": "pnpm lint:fix && pnpm format"
   },
   "dependencies": {
-    "@nocobase/logging": "workspace:^",
     "@nocobase/secrets": "workspace:^",
-    "hono": "catalog:"
+    "hono": "catalog:",
+    "rotating-file-stream": "catalog:"
   },
   "devDependencies": {
     "@nocobase/db": "workspace:^",
