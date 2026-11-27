@@ -44,6 +44,9 @@ export interface MissingResource {
 /**
  * The outcome the runtime carries out for one delivery. `deadLetter` marks a final failure that the runtime
  * settles according to the subscription's configuration.
+ * A missing handler or shutdown interruption can return an immediate `retry` regardless of the attempt limit.
+ * If the subscription has no application retry route, leave that delivery eligible for broker redelivery
+ * at the same attempt.
  */
 export type DeliveryOutcome =
   | { readonly kind: 'ack' }

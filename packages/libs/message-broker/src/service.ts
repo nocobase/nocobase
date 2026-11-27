@@ -754,7 +754,8 @@ class DefaultMessageBrokerService implements MessageBrokerService {
     };
     return async (encoded, { attempt }) => {
       const handler = subscription.handler;
-      if (!handler) return { kind: 'retry', delay: 0 };
+      if (!handler || this.abort.signal.aborted)
+        return { kind: 'retry', delay: 0 };
       let body: unknown;
       try {
         body = codec.decode(encoded.body, encoded.contentType);
@@ -816,6 +817,7 @@ class DefaultMessageBrokerService implements MessageBrokerService {
       } catch (error) {
         if (error instanceof SettleWithoutCommit)
           return settle(error.result, attempt);
+        if (this.abort.signal.aborted) return { kind: 'retry', delay: 0 };
         const reason = errorMessage(error);
         this.logger.warn(
           { ...log, messageId: encoded.messageId, attempt, error: reason },

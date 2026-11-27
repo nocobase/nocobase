@@ -11,6 +11,7 @@ import {
   type BrokerImplementation,
   type BrokerMessage,
   type BrokerTransaction,
+  type DeliveryOutcome,
   type EncodedMessage,
   type HandlerContext,
   type MessageBrokerConfig,
@@ -234,6 +235,52 @@ describe('subscription attempt defaults', () => {
     await service.publisher('late').publish({ body: {} });
     await waitFor(() => inMemory.deadLetters('late').length === 1);
     expect(attempts).toEqual([1]);
+  });
+
+  it('keeps an interrupted delivery eligible for retry at the adapter limit of one', async () => {
+    const inMemory = createInMemoryBroker();
+    const service = create({
+      default: 'custom',
+      backends: { custom: { adapter: 'custom' } },
+    });
+    const started = Promise.withResolvers<void>();
+    const interrupted = Promise.withResolvers<DeliveryOutcome>();
+    service.registerImplementation('custom', {
+      ...inMemory,
+      defaultMaxAttempts: () => 1,
+      createRuntime(context) {
+        const runtime = inMemory.createRuntime(context);
+        return {
+          open: () => runtime.open(),
+          checkTopology: (bindings) => runtime.checkTopology(bindings),
+          publish: (binding, message) => runtime.publish(binding, message),
+          close: () => runtime.close(),
+          startConsuming: (binding, deliver) =>
+            runtime.startConsuming(binding, async (message, delivery) => {
+              const outcome = await deliver(message, delivery);
+              interrupted.resolve(outcome);
+              return outcome;
+            }),
+        };
+      },
+    });
+    service.subscription('worker').consume(async (_message, { signal }) => {
+      const abort = new Promise<never>((_resolve, reject) => {
+        signal.addEventListener('abort', () => reject(signal.reason), {
+          once: true,
+        });
+      });
+      started.resolve();
+      return await abort;
+    });
+    await service.setup();
+    await service.publisher('worker').publish({ body: {} });
+    await started.promise;
+    await service.shutdown();
+    await expect(interrupted.promise).resolves.toEqual({
+      kind: 'retry',
+      delay: 0,
+    });
   });
 
   it('rejects an invalid adapter default before opening the backend', async () => {
