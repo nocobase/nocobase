@@ -144,7 +144,7 @@ beforeAll(async () => {
     createTransport: () => ({
       write(event) {
         if (rejectAudit) throw new Error('Audit storage failed');
-        events.push(event);
+        if ('requestId' in event) events.push(event);
       },
     }),
   });

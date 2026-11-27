@@ -54,6 +54,7 @@ it('audits forwarded settings writes and records a default-access receipt only o
           createTransport: () => ({
             write(event) {
               if (
+                'requestId' in event &&
                 rules.some(
                   ([, settings]) =>
                     event.resource === `settings:authorization.${settings}`,

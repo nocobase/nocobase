@@ -9,7 +9,7 @@ import {
 } from '@nocobase/app-plugin-authorization';
 import { loggingToken } from '@nocobase/app-server/logging';
 import { Application } from '@nocobase/app-server/application';
-import { auditServiceToken, type AuditEvent } from '@nocobase/audit';
+import { auditServiceToken, type AuditTransportEvent } from '@nocobase/audit';
 import { AuditProvider } from '@nocobase/audit/runtime';
 import { AppConfig, createAppPaths } from '@nocobase/app-server/config';
 import {
@@ -54,7 +54,7 @@ describe('@nocobase/app-plugin-users API routes', () => {
       paths: createAppPaths({ rootDir: import.meta.dirname }),
     });
     app.addServiceProvider(AuditProvider);
-    const events: AuditEvent[] = [];
+    const events: AuditTransportEvent[] = [];
     app.container.resolve(auditServiceToken).registerDriver({
       name: 'memory',
       createTransport: () => ({

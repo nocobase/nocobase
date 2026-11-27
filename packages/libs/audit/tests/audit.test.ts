@@ -53,7 +53,7 @@ async function appWithAudit(
     name: 'memory',
     createTransport: () => ({
       write: (event) => {
-        events.push(event);
+        if ('requestId' in event) events.push(event);
       },
     }),
   });
@@ -415,6 +415,13 @@ it('honors explicit declarations before guards and uses inference only for suppo
   const second = await appWithAudit();
   const disabled = await appWithAudit({ enabled: false, autoDetect: true });
   const noDestinations = await appWithAudit({ transports: {} });
+  const readPolicy = vi.fn(() =>
+    Promise.resolve({ recordExports: false, captureBody: false, redact: [] }),
+  );
+  for (const { app } of [disabled, noDestinations])
+    app.container
+      .resolve(auditServiceToken)
+      .registerCapturePolicyProvider(readPolicy);
   const resolve = vi.fn(() => undefined);
   const declared = {
     action: 'explicit',
@@ -451,6 +458,11 @@ it('honors explicit declarations before guards and uses inference only for suppo
   child.get('/read', describeRoute({ operationId: 'read' }), (context) =>
     context.body(null, 204),
   );
+  child.get(
+    '/export',
+    describeAudit({ action: 'export', category: 'export' }),
+    (context) => context.body(null, 204),
+  );
   router.route('/mounted', child);
   for (const { app } of [first, second, disabled, noDestinations])
     app.addRoutes(defineApiRoutes(() => router));
@@ -467,10 +479,12 @@ it('honors explicit declarations before guards and uses inference only for suppo
         ])
           await app.fetch(request(`mounted/${suffix}`, {}));
         await app.fetch(new Request('http://localhost/api/mounted/read'));
+        await app.fetch(new Request('http://localhost/api/mounted/export'));
         await app.fetch(request('mounted/missing', {}));
       }),
     );
     expect(resolve).toHaveBeenCalledTimes(2);
+    expect(readPolicy).not.toHaveBeenCalled();
     expect(
       first.events.map(({ action, operationName, outcome }) => ({
         action,
@@ -489,8 +503,12 @@ it('honors explicit declarations before guards and uses inference only for suppo
         outcome: 'success',
       },
       { action: 'documented', operationName: 'documented', outcome: 'success' },
+      { action: 'export', operationName: 'export', outcome: 'success' },
     ]);
-    expect(second.events.map(({ action }) => action)).toEqual(['explicit']);
+    expect(second.events.map(({ action }) => action)).toEqual([
+      'explicit',
+      'export',
+    ]);
     expect(disabled.events).toEqual([]);
     expect(noDestinations.events).toEqual([]);
   } finally {

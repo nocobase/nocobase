@@ -45,10 +45,21 @@ export interface AuditEvent {
   readonly metadata?: unknown;
 }
 
+/** The request result retained when the application policy could not be read. */
+export type AuditOutcomeEvent = Pick<
+  AuditEvent,
+  'action' | 'occurredAt' | 'outcome' | 'status'
+>;
+
+/** Full events carry a requestId. Outcome-only events contain no request or identity data. */
+export type AuditTransportEvent = AuditEvent | AuditOutcomeEvent;
+
 export {
   auditServiceToken,
   type AuditService,
   type AuditActorResolver,
+  type AuditCapturePolicy,
+  type AuditCapturePolicyProvider,
   type AuditTransport,
   type AuditTransportDriver,
   type AuditTransportContext,

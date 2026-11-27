@@ -4,6 +4,33 @@ export type AuditRedactRule =
   | { readonly field: string; readonly path?: never }
   | { readonly path: string; readonly field?: never };
 
+export function copyAuditRedactRules(
+  rules: readonly AuditRedactRule[],
+): readonly AuditRedactRule[] {
+  if (!Array.isArray(rules))
+    throw new TypeError('Audit redaction rules must be an array.');
+  return Object.freeze(
+    Array.from(rules, (rule: AuditRedactRule) => {
+      if (
+        !rule ||
+        Object.keys(rule).length !== 1 ||
+        !(
+          (Object.hasOwn(rule, 'field') &&
+            typeof rule.field === 'string' &&
+            rule.field.trim()) ||
+          (Object.hasOwn(rule, 'path') &&
+            typeof rule.path === 'string' &&
+            rule.path.trim())
+        )
+      )
+        throw new TypeError(
+          'An audit redaction rule requires exactly one field or path.',
+        );
+      return Object.freeze({ ...rule });
+    }),
+  );
+}
+
 const rawLimit = 256 * 1024;
 const snapshotLimit = 16 * 1024;
 // A JSON stream may never finish. Collection must not hold the HTTP response open indefinitely.

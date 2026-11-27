@@ -16,6 +16,7 @@ import {
   describeAudit,
   type AuditConfig,
   type AuditEvent,
+  type AuditTransportEvent,
 } from '../src/index.js';
 import { AppConfig, createAppPaths } from '@nocobase/app-server/config';
 import { defineApiRoutes } from '@nocobase/app-server/router';
@@ -155,7 +156,7 @@ it.each(['register', 'boot'] as const)(
   async (phase) => {
     const root = await mkdtemp(path.join(tmpdir(), 'audit-file-'));
     const file = path.join(root, 'storage', 'audit.jsonl');
-    const write = vi.fn((event: AuditEvent) => {
+    const write = vi.fn((event: AuditTransportEvent) => {
       Object.assign(event, { action: 'changed-by-custom' });
       throw new Error('Destination failed');
     });

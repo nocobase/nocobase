@@ -44,6 +44,7 @@ import {
   type ApiResponseObject,
   type OpenAPIV3_1,
 } from '@nocobase/app-server/router';
+import { describeAudit } from '@nocobase/audit';
 import type { Context, Hono, MiddlewareHandler } from 'hono';
 import { bodyLimit } from 'hono/body-limit';
 import { z } from 'zod';
@@ -1287,6 +1288,7 @@ export function createAdminRoutes(
   );
   router.get(
     '/skills/:skillId/archive',
+    describeAudit({ category: 'export' }),
     scoped,
     can('agents.skills', 'read'),
     describeRoute({
