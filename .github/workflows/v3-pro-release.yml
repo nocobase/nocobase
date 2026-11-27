@@ -62,6 +62,7 @@ jobs:
       pro_sha: ${{ steps.commits.outputs.pro_sha }}
       oss_sha: ${{ steps.commits.outputs.oss_sha }}
       channel: ${{ steps.channel.outputs.channel }}
+      exiting: ${{ steps.channel.outputs.exiting }}
       branch_prefix: ${{ steps.channel.outputs.branch_prefix }}
       dist_tag: ${{ steps.channel.outputs.dist_tag }}
       dist_tags: ${{ steps.channel.outputs.dist_tags }}
@@ -223,10 +224,17 @@ jobs:
           NODE_AUTH_TOKEN: ${{ secrets.PRO_NPM_TOKEN }}
         run: node ./scripts/sync-release-oss.mjs --branch develop --sha "$OSS_SHA"
 
+      # Leaving prerelease mode, the first stable CHANGELOG sections list only what is new since the last beta, as V3 Release writes them.
       - name: Version Pro packages
+        env:
+          EXITING: ${{ needs.prepare.outputs.exiting }}
         run: |
           node ./vendor/nocobase3/scripts/list-package-versions.mjs > "$RUNNER_TEMP/pro-versions-before.json"
-          pnpm changeset version
+          if [ "$EXITING" = true ]; then
+            node ./vendor/nocobase3/scripts/version-first-stable.mjs --root .
+          else
+            pnpm changeset version
+          fi
           CHANGED=$(node ./vendor/nocobase3/scripts/list-package-versions.mjs --changed "$RUNNER_TEMP/pro-versions-before.json")
           test -n "$CHANGED" || { echo '::error::Pro changesets changed no package versions'; exit 1; }
           echo "$CHANGED"
@@ -355,10 +363,17 @@ jobs:
           echo "batch=$BATCH" >> "$GITHUB_OUTPUT"
           echo "name=$NAME" >> "$GITHUB_OUTPUT"
 
+      # Leaving prerelease mode, the first stable CHANGELOG sections list only what is new since the last beta, as the check legs wrote them.
       - name: Version Pro packages
         id: changed
+        env:
+          EXITING: ${{ needs.prepare.outputs.exiting }}
         run: |
-          pnpm changeset version
+          if [ "$EXITING" = true ]; then
+            node ./vendor/nocobase3/scripts/version-first-stable.mjs --root .
+          else
+            pnpm changeset version
+          fi
           CHANGED=$(node ./vendor/nocobase3/scripts/list-package-versions.mjs --changed "$RUNNER_TEMP/pro-versions-before.json")
           test -n "$CHANGED" || { echo '::error::Pro changesets changed no package versions'; exit 1; }
           echo "$CHANGED"
