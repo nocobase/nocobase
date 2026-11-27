@@ -2,6 +2,12 @@
 
 このファイルには NocoBase 3 の主な変更を、リリースごとに 1 セクションずつ記録します。`nocobase-v3-beta/<日付>.<連番>` はベータ版、`nocobase-v3/<日付>.<連番>` は正式版です。各リリースで公開されたパッケージのバージョンは対応する GitHub Release を、各パッケージ自体の変更はパッケージ内の CHANGELOG.md を参照してください。
 
+## [nocobase-v3-beta/2026-11-27.3](https://github.com/nocobase/nocobase/releases/tag/nocobase-v3-beta%2F2026-11-27.3)
+
+### 🎉 新機能
+
+- **[メッセージブローカー]** メッセージブローカーのアダプターでサブスクリプションごとの既定の試行回数を設定でき、明示した回数が優先されます。 ([#11760](https://github.com/nocobase/nocobase/pull/11760))
+
 ## [nocobase-v3-beta/2026-11-27.2](https://github.com/nocobase/nocobase/releases/tag/nocobase-v3-beta%2F2026-11-27.2)
 
 ### 🎉 新機能

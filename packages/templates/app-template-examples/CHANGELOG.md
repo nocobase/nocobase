@@ -1,5 +1,12 @@
 # @nocobase/app-template-examples
 
+## 2.0.0-beta.6
+
+### Patch Changes
+
+- Updated dependencies [37ad166]
+  - @nocobase/message-broker@0.1.0-beta.1
+
 ## 2.0.0-beta.5
 
 ### Patch Changes
