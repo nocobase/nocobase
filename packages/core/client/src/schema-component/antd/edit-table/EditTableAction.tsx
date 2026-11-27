@@ -7,6 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { useDirectionalPlacement } from '@nocobase/flow-engine';
 import { css } from '@emotion/css';
 import { createForm, Field, Form } from '@formily/core';
 import { observer, useField, useFieldSchema } from '@formily/react';
@@ -153,6 +154,7 @@ export type EditTableActionProps<T = {}> = ActionProps & {
 };
 
 const InternalEditTableAction = React.memo((props: EditTableActionProps) => {
+  const placement = useDirectionalPlacement('bottomLeft');
   const field = useField<Field>();
   const [visible, setVisible] = useState(false);
   const { designable, dn } = useDesignable();
@@ -202,7 +204,7 @@ const InternalEditTableAction = React.memo((props: EditTableActionProps) => {
     <EditTableActionContext.Provider value={editTableActionContextValue}>
       <Container
         destroyTooltipOnHide
-        placement={'bottomLeft'}
+        placement={placement}
         open={visible}
         onOpenChange={onOpenChange}
         trigger={'click'}

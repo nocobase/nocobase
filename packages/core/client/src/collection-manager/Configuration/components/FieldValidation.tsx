@@ -7,6 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { useDirectionalPlacement } from '@nocobase/flow-engine';
 import { PlusOutlined, DeleteOutlined, DownOutlined, RightOutlined, UpOutlined } from '@ant-design/icons';
 import { observer, useField } from '@formily/react';
 import { List, Input, Switch, InputNumber, Form, Button, Dropdown, Checkbox, Radio, Select, DatePicker } from 'antd';
@@ -42,6 +43,7 @@ interface FieldValidationProps {
 }
 
 export const FieldValidation = observer((props: FieldValidationProps) => {
+  const addRulePlacement = useDirectionalPlacement('bottomLeft');
   const { value, onChange, type, availableValidationOptions, excludeValidationOptions, isAssociation } = props;
   const { t } = useTranslation();
   const token = useAntdToken();
@@ -606,7 +608,7 @@ export const FieldValidation = observer((props: FieldValidationProps) => {
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <div>
           {menuItems.length > 0 && validationOptions.length > 0 && (
-            <Dropdown menu={menu} placement="bottomLeft">
+            <Dropdown menu={menu} placement={addRulePlacement}>
               <Button type="dashed" icon={<PlusOutlined />} size="small">
                 {t('Add rule')} <DownOutlined />
               </Button>
