@@ -357,7 +357,9 @@ async function createRelease(cn, en, to) {
     await execa('gh', ['release', 'create', to, '-t', to, '-n', en, '-p']);
     return;
   }
-  await execa('gh', ['release', 'create', to, '-t', to, '-n', en]);
+  // NocoBase 3's stable releases (on the v3 branch) hold the repository's "Latest" marker. v1/v2 stable releases are
+  // still full (non-prerelease) releases but must not take that marker, and GitHub would otherwise mark them Latest.
+  await execa('gh', ['release', 'create', to, '-t', to, '-n', en, '--latest=false']);
 }
 
 async function getExistsChangelog(from, to) {
