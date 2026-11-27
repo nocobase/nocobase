@@ -58,6 +58,7 @@ export type AdminLayoutMenuNode = {
   icon?: React.ReactNode;
   path: string;
   redirect?: string;
+  _landingPage?: NocoBaseDesktopRoute;
   hideInMenu?: boolean;
   disabled?: boolean;
   _runtimePath?: string | null;

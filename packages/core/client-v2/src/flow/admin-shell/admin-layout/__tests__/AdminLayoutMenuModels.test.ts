@@ -22,6 +22,8 @@ import {
   buildMenuTitleWithIcon,
   getAdminLayoutMenuMovePositionOptions,
   normalizeAdminLayoutMenuLegacyVariables,
+  observeAdminMenuRoutes,
+  findFirstV2LandingRoute,
   openAdminLayoutMenuLink,
   resolveAdminLayoutMenuLink,
   resolveAdminLayoutMenuDragMoveOptionsFromEvent,
@@ -1438,6 +1440,150 @@ describe('AdminLayoutModel menu items', () => {
 
     expect(customAdminLayoutModel.menuRouteRefreshVersion).toBe(customRefreshBefore + 1);
     expect(defaultAdminLayoutModel.menuRouteRefreshVersion).toBe(defaultRefreshBefore);
+  });
+
+  it('should open the first visible page in a nested menu group', () => {
+    const layout = engine.createModel<AdminLayoutModel>({
+      uid: ADMIN_LAYOUT_MODEL_UID,
+      use: AdminLayoutModel,
+    });
+    const { group, flowPage } = NocoBaseDesktopRouteType;
+    layout.syncMenuRoutes([
+      {
+        id: 1,
+        type: group,
+        children: [
+          {
+            id: 2,
+            type: group,
+            children: [
+              { id: 3, type: flowPage, schemaUid: 'first' },
+              { id: 4, type: flowPage, schemaUid: 'second' },
+            ],
+          },
+        ],
+      },
+    ]);
+    const nested = layout.subModels.menuItems[0].subModels.menuItems[0];
+    const [firstPage, secondPage] = nested.subModels.menuItems;
+    const options = { designable: false, isMobile: false, t: (title: string) => title };
+    const topGroup = () => layout.toProLayoutRoute(options).children[0];
+
+    firstPage.setHidden(true);
+    expect(topGroup()).toMatchObject({
+      redirect: '/admin/second',
+      _runtimePath: '/apps/demo/v2/admin/second',
+      routes: [{ redirect: '/admin/second', routes: [{ path: '/admin/second' }] }],
+    });
+    secondPage.setHidden(true);
+    expect(topGroup()).toMatchObject({ redirect: '/admin/1', _runtimePath: null });
+    firstPage.setHidden(false);
+    expect(topGroup().redirect).toBe('/admin/first');
+  });
+
+  it('should resolve the home page from settled menu rules in accessible route order', async () => {
+    let finishRule!: () => void;
+    const rule = new Promise<void>((resolve) => {
+      finishRule = resolve;
+    });
+    const findOne = vi.fn(async ({ uid }) => ({
+      uid,
+      stepParams: { menuSettings: { linkageRules: { value: [{ enable: true }] } } },
+    }));
+    engine.setModelRepository({ findOne, save: vi.fn(), destroy: vi.fn(), move: vi.fn(), duplicate: vi.fn() });
+    const layout = engine.createModel<AdminLayoutModel>({ uid: ADMIN_LAYOUT_MODEL_UID, use: AdminLayoutModel });
+    const { group, page, flowPage } = NocoBaseDesktopRouteType;
+    const routes = [
+      { id: 1, type: page, schemaUid: 'classic' },
+      {
+        id: 2,
+        type: group,
+        children: [
+          {
+            id: 3,
+            type: group,
+            children: [
+              { id: 4, type: flowPage, schemaUid: 'first', options: { hasPersistedMenuInstanceFlow: true } },
+              { id: 5, type: flowPage, schemaUid: 'second' },
+            ],
+          },
+        ],
+      },
+      { id: 6, type: flowPage, schemaUid: 'sibling' },
+    ];
+    const resolveHome = () => layout.resolveDefaultPage(routes, findFirstV2LandingRoute);
+    const landed = vi.fn();
+    const navigation = resolveHome().then(landed);
+    const nested = layout.subModels.menuItems[1].subModels.menuItems[0];
+    const first = nested.subModels.menuItems[0];
+    const rerender = vi.spyOn(first, 'rerender').mockImplementation(async () => {
+      await rule;
+      first.setHidden(true);
+    });
+    await waitFor(() => expect(rerender).toHaveBeenCalled());
+    expect(landed).not.toHaveBeenCalled();
+    finishRule();
+    await navigation;
+    expect(landed).toHaveBeenCalledWith(expect.objectContaining({ schemaUid: 'second' }));
+    first.setHidden(false);
+    expect((await resolveHome())?.schemaUid).toBe('first');
+    nested.setHidden(true);
+    expect((await resolveHome())?.schemaUid).toBe('sibling');
+    layout.subModels.menuItems[2].setHidden(true);
+    expect(await resolveHome()).toBeUndefined();
+    expect(findOne).toHaveBeenCalledTimes(1);
+  });
+
+  it('should wait for the first nested page visibility before publishing a group link on refresh', async () => {
+    const findOne = vi.fn(async ({ uid }) => ({
+      uid,
+      stepParams: { menuSettings: { linkageRules: { value: [{ enable: true }] } } },
+    }));
+    engine.setModelRepository({ findOne, save: vi.fn(), destroy: vi.fn(), move: vi.fn(), duplicate: vi.fn() });
+    const layout = engine.createModel<AdminLayoutModel>({ uid: ADMIN_LAYOUT_MODEL_UID, use: AdminLayoutModel });
+    const { group, flowPage } = NocoBaseDesktopRouteType;
+    layout.syncMenuRoutes([
+      { id: 1, type: flowPage, schemaUid: 'sibling' },
+      {
+        id: 2,
+        type: group,
+        children: [
+          {
+            id: 3,
+            type: group,
+            children: [
+              { id: 4, type: flowPage, schemaUid: 'hidden', options: { hasPersistedMenuInstanceFlow: true } },
+              { id: 5, type: flowPage, schemaUid: 'visible' },
+            ],
+          },
+        ],
+      },
+    ]);
+    const first = layout.subModels.menuItems[1].subModels.menuItems[0].subModels.menuItems[0];
+    let finishRule!: () => void;
+    const rule = new Promise<void>((resolve) => {
+      finishRule = resolve;
+    });
+    const rerender = vi.spyOn(first, 'rerender').mockImplementation(async () => {
+      await rule;
+      first.setHidden(true);
+    });
+    const publish = vi.fn();
+    const stop = observeAdminMenuRoutes(
+      () => layout.toProLayoutRoute({ designable: false, isMobile: false, t: (title) => title }),
+      publish,
+      false,
+    );
+    await waitFor(() => expect(rerender).toHaveBeenCalled());
+    expect(publish).toHaveBeenCalledTimes(1);
+    expect(publish.mock.calls[0][0].children.map((item) => item.redirect)).toEqual(['/admin/sibling']);
+    finishRule();
+    await waitFor(() => expect(publish).toHaveBeenCalledTimes(2));
+    expect(publish.mock.calls[1][0].children[1]).toMatchObject({
+      redirect: '/admin/visible',
+      routes: [{ redirect: '/admin/visible', routes: [{ path: '/admin/visible' }] }],
+    });
+    stop();
   });
 
   it('should render hidden menu item with opacity and keep original title in config mode', () => {

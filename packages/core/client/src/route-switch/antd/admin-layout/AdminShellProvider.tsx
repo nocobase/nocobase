@@ -8,7 +8,7 @@
  */
 
 import React, { FC, useEffect } from 'react';
-import { Navigate, useLocation, useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { ACLRolesCheckProvider } from '../../../acl/ACLProvider';
 import { CurrentAppInfoProvider } from '../../../appInfo/CurrentAppInfoProvider';
 import {
@@ -16,13 +16,13 @@ import {
   CurrentTabUidProvider,
   IsSubPageClosedByPageMenuProvider,
   useCurrentPageUid,
-  useLocationNoUpdate,
 } from '../../../application/CustomRouterContextProvider';
 import { RemoteCollectionManagerProvider } from '../../../collection-manager/CollectionManagerProvider';
 import { RemoteSchemaTemplateManagerProvider } from '../../../schema-templates/SchemaTemplateManagerProvider';
 import { RoutesRequestProvider, useAllAccessDesktopRoutes } from './route-runtime';
 import { NocoBaseDesktopRoute } from './route-types';
 import { findFirstPageRoute } from './route-utils';
+import type { AdminLayoutModelV1 } from './AdminLayoutModel';
 
 const findRouteByMenuSchemaUid = (schemaUid: string, routes: NocoBaseDesktopRoute[]) => {
   if (!routes) return;
@@ -41,20 +41,29 @@ const findRouteByMenuSchemaUid = (schemaUid: string, routes: NocoBaseDesktopRout
   }
 };
 
-export const NavigateToDefaultPage: FC = (props) => {
+type AdminShellProps = { model?: Pick<AdminLayoutModelV1, 'resolveDefaultPage'> };
+
+export const NavigateToDefaultPage: FC<AdminShellProps> = ({ model, children }) => {
   const { allAccessRoutes } = useAllAccessDesktopRoutes();
-  const location = useLocationNoUpdate();
+  const { pathname } = useLocation();
+  const navigate = useNavigate();
 
-  const defaultPageUid = findFirstPageRoute(allAccessRoutes)?.schemaUid;
+  useEffect(() => {
+    if (pathname !== '/admin' && pathname !== '/admin/') return;
+    let active = true;
+    const redirect = async () => {
+      const page = model
+        ? await model.resolveDefaultPage(allAccessRoutes, findFirstPageRoute)
+        : findFirstPageRoute(allAccessRoutes);
+      if (active && page?.schemaUid) navigate(`/admin/${page.schemaUid}`, { replace: true });
+    };
+    redirect();
+    return () => {
+      active = false;
+    };
+  }, [allAccessRoutes, model, navigate, pathname]);
 
-  return (
-    <>
-      {props.children}
-      {defaultPageUid && (location.pathname === '/admin' || location.pathname === '/admin/') && (
-        <Navigate replace to={`/admin/${defaultPageUid}`} />
-      )}
-    </>
-  );
+  return <>{children}</>;
 };
 
 export const LegacyRouteCompat: FC = (props) => {
@@ -73,18 +82,18 @@ export const LegacyRouteCompat: FC = (props) => {
   return <>{props.children}</>;
 };
 
-export const AdminShellProvider = (props) => {
+export const AdminShellProvider: FC<AdminShellProps> = ({ children, model }) => {
   return (
     <CurrentPageUidProvider>
       <CurrentTabUidProvider>
         <IsSubPageClosedByPageMenuProvider>
           <ACLRolesCheckProvider>
             <RoutesRequestProvider>
-              <NavigateToDefaultPage>
+              <NavigateToDefaultPage model={model}>
                 <LegacyRouteCompat>
                   <RemoteCollectionManagerProvider>
                     <CurrentAppInfoProvider>
-                      <RemoteSchemaTemplateManagerProvider>{props.children}</RemoteSchemaTemplateManagerProvider>
+                      <RemoteSchemaTemplateManagerProvider>{children}</RemoteSchemaTemplateManagerProvider>
                     </CurrentAppInfoProvider>
                   </RemoteCollectionManagerProvider>
                 </LegacyRouteCompat>

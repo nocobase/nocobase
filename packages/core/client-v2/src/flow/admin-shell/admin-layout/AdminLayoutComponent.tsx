@@ -29,6 +29,7 @@ import {
   resolveAdminLayoutMenuDragMoveOptionsFromEvent,
 } from './AdminLayoutMenuModels';
 import type { AdminLayoutModel } from './AdminLayoutModel';
+import { observeAdminMenuRoutes } from './observeAdminMenuRoutes';
 import { AdminLayoutContent } from './AdminLayoutSlotModels';
 import { ADMIN_LAYOUT_MODEL_UID } from './constants';
 import { ResetThemeTokenAndKeepAlgorithm } from './ResetThemeTokenAndKeepAlgorithm';
@@ -120,7 +121,7 @@ const resetStyle = css`
   }
 
   .ant-menu-item:has([data-nb-hidden-menu-item='true']),
-  .ant-menu-submenu:has([data-nb-hidden-menu-item='true']) {
+  .ant-menu-submenu:has(> .ant-menu-submenu-title [data-nb-hidden-menu-item='true']) {
     display: none !important;
   }
 `;
@@ -554,15 +555,12 @@ export const AdminLayoutComponent = observer((props: any) => {
 
   useLayoutEffect(() => {
     adminLayoutModel?.syncMenuRoutes(allAccessRoutes);
-    const nextRoute = adminLayoutModel?.toProLayoutRoute({
+    return observeAdminMenuRoutes(
+      () =>
+        adminLayoutModel?.toProLayoutRoute({ designable, isMobile: isMobileSider, t }) || { path: '/', children: [] },
+      setRoute,
       designable,
-      isMobile: isMobileSider,
-      t,
-    }) || {
-      path: '/',
-      children: [],
-    };
-    setRoute(nextRoute);
+    );
   }, [adminLayoutModel, allAccessRoutes, designable, isMobileSider, menuRouteRefreshVersion, t]);
 
   useEffect(() => {
