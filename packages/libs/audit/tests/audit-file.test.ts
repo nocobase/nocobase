@@ -65,7 +65,10 @@ function send(app: Application, requestId: string): Promise<Response> {
         'x-request-id': requestId,
         'content-type': 'application/json',
       },
-      body: JSON.stringify({ password: 'not-for-the-log' }),
+      body: JSON.stringify({
+        password: 'not-for-the-log',
+        profile: { privateCode: 'private-code', label: 'visible' },
+      }),
     }),
   );
 }
@@ -110,7 +113,10 @@ it('applies YAML settings at startup and isolates running applications', async (
         first.paths.storage('audit.jsonl'),
       );
       expect(beforeEdit).toMatchObject({
-        request: { password: '******' },
+        request: {
+          password: '******',
+          profile: { privateCode: '******', label: 'visible' },
+        },
         response: { data: '******' },
       });
       expect(originalApp).toMatchObject({
