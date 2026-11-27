@@ -802,6 +802,12 @@ const jaJP: LocaleResource<typeof enUS> = {
       noneChecked:
         '制限するには、上記のコーディング ツールを確認してください。',
     },
+    modelDetection: {
+      failed: 'モデルの検出に失敗しました',
+      timedOut: 'モデルの検出がタイムアウトしました',
+      commandFailed: 'モデル一覧を取得するコマンドが失敗しました',
+      invalidResponse: 'モデル一覧の応答が無効です',
+    },
     toolTable: {
       tool: 'ツール',
       enabled: 'オン',

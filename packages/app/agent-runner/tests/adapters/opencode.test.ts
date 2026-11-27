@@ -524,6 +524,32 @@ describe('session setup', () => {
     expect(fake.closed).toBe(true);
   });
 
+  it('keeps the operator config directory when adding the run skills', () => {
+    const env = opencodeEnv(
+      session({
+        env: {
+          OPENCODE_CONFIG_DIR: '/operator/opencode',
+          OPENCODE_CONFIG: '/operator/config.jsonc',
+          OPENCODE_CONFIG_CONTENT:
+            '{"skills":["/operator/skills",],"shell":"/bin/sh"}',
+        },
+        skills: {
+          root: '/run/plugin',
+          dir: '/run/plugin/skills',
+          slugs: ['example'],
+        },
+      }),
+    );
+    expect(env).toMatchObject({
+      OPENCODE_CONFIG_DIR: '/operator/opencode',
+      OPENCODE_CONFIG: '/operator/config.jsonc',
+      OPENCODE_CONFIG_CONTENT: JSON.stringify({
+        skills: ['/operator/skills', '/run/plugin/skills'],
+        shell: '/bin/sh',
+      }),
+    });
+  });
+
   it.each([false, true])(
     'retries model and session setup on the same server (resume: %s)',
     async (resume) => {

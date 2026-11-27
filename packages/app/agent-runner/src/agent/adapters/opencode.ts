@@ -51,7 +51,11 @@ import type {
 import { classifyOpencodeFailure } from './opencode/classify.ts';
 import type { OpencodeFailureSignal } from './opencode/classify.ts';
 import { launchServer, ServerStartError } from './opencode/server.ts';
-import { globalConfigFor, hasConfiguredKey } from './opencode/config.ts';
+import {
+  globalConfigFor,
+  hasConfiguredKey,
+  parseOpencodeConfig,
+} from './opencode/config.ts';
 import type { LaunchFn, ServerHandle } from './opencode/server.ts';
 import {
   Channel,
@@ -95,16 +99,16 @@ export function opencodeEnv(session: AdapterSession): Record<string, string> {
     env.OPENCODE_CONFIG_DIR = session.skills.root;
   else if (session.skills) {
     // OpenCode accepts additional skill directories in its per-process inline config.
-    const inline = env.OPENCODE_CONFIG_CONTENT
-      ? (JSON.parse(env.OPENCODE_CONFIG_CONTENT) as Record<string, unknown>)
-      : {};
-    env.OPENCODE_CONFIG_CONTENT = JSON.stringify({
-      ...inline,
-      skills: [
-        ...(Array.isArray(inline.skills) ? inline.skills : []),
-        session.skills.dir,
-      ],
-    });
+    const inline = parseOpencodeConfig(env.OPENCODE_CONFIG_CONTENT ?? '{}');
+    if (inline) {
+      const configuredSkills: unknown[] = Array.isArray(inline.skills)
+        ? inline.skills
+        : [];
+      env.OPENCODE_CONFIG_CONTENT = JSON.stringify({
+        ...inline,
+        skills: [...configuredSkills, session.skills.dir],
+      });
+    }
   }
   return withGlobalConfig(env);
 }

@@ -101,7 +101,12 @@ export async function retryPluginActivation<T>(
       backoff = Math.min(backoff * 2, 1000);
     }
   } catch (error) {
-    if (waitingForPlugins && signal.reason?.name === 'TimeoutError') {
+    const reason: unknown = signal.reason;
+    if (
+      waitingForPlugins &&
+      reason instanceof DOMException &&
+      reason.name === 'TimeoutError'
+    ) {
       throw new PluginActivationTimeout();
     }
     throw error;

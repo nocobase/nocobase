@@ -25,6 +25,14 @@ export function globalConfigFor(env: NodeJS.ProcessEnv): string | undefined {
   return home && globalOpencodeConfig(home);
 }
 
+export function parseOpencodeConfig(
+  text: string,
+): Record<string, unknown> | undefined {
+  const errors: ParseError[] = [];
+  const config: unknown = parse(text, errors, { allowTrailingComma: true });
+  return errors.length === 0 && isRecord(config) ? config : undefined;
+}
+
 function hasKey(
   providers: unknown,
   field: string,
@@ -39,7 +47,10 @@ function hasKey(
         return false;
       const key = options.apiKey.trim();
       const reference = /^\{env:([^}]+)\}$/u.exec(key);
-      if (reference) return Boolean(env[reference[1]]?.trim());
+      if (reference) {
+        const value = env[reference[1]];
+        return typeof value === 'string' && value.trim() !== '';
+      }
       // File substitutions cannot be confirmed without opening the referenced secret file.
       return key !== '' && !key.startsWith('{file:');
     })
@@ -65,11 +76,9 @@ export async function hasConfiguredKey(
     );
     signal?.throwIfAborted();
     if (text === undefined) continue;
-    const errors: ParseError[] = [];
-    const config: unknown = parse(text, errors, { allowTrailingComma: true });
+    const config = parseOpencodeConfig(text);
     if (
-      errors.length === 0 &&
-      isRecord(config) &&
+      config &&
       (hasKey(config.providers, 'settings', env) ||
         hasKey(config.provider, 'options', env))
     )

@@ -802,6 +802,12 @@ const viVN: LocaleResource<typeof enUS> = {
         'Giới hạn của {{tools}} cao hơn số lần chạy đồng thời tối đa ({{slots}}): nhiều nhất là {{slots}} chạy cùng một lúc.',
       noneChecked: 'Kiểm tra công cụ mã hóa ở trên để hạn chế.',
     },
+    modelDetection: {
+      failed: 'Không thể phát hiện mô hình',
+      timedOut: 'Đã hết thời gian phát hiện mô hình',
+      commandFailed: 'Lệnh liệt kê mô hình thất bại',
+      invalidResponse: 'Phản hồi danh sách mô hình không hợp lệ',
+    },
     toolTable: {
       tool: 'Công cụ',
       enabled: 'Bật',

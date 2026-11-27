@@ -839,6 +839,12 @@ const esES: LocaleResource<typeof enUS> = {
       noneChecked:
         'Marque una herramienta de codificación arriba para limitarla.',
     },
+    modelDetection: {
+      failed: 'No se pudieron detectar los modelos',
+      timedOut: 'Se agotó el tiempo de detección de modelos',
+      commandFailed: 'Falló el comando para listar los modelos',
+      invalidResponse: 'La respuesta de la lista de modelos no es válida',
+    },
     toolTable: {
       tool: 'Herramienta',
       enabled: 'En',

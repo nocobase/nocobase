@@ -837,6 +837,12 @@ const frFR: LocaleResource<typeof enUS> = {
         "La limite de {{tools}} est supérieure au nombre maximal d'exécutions simultanées ({{slots}}) : au plus {{slots}} s'exécute en même temps.",
       noneChecked: 'Vérifiez un outil de codage ci-dessus pour le limiter.',
     },
+    modelDetection: {
+      failed: 'Échec de la détection des modèles',
+      timedOut: 'Délai de détection des modèles dépassé',
+      commandFailed: 'Échec de la commande de liste des modèles',
+      invalidResponse: 'Réponse de liste des modèles non valide',
+    },
     toolTable: {
       tool: 'Outil',
       enabled: 'Sur',
