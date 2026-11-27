@@ -3,7 +3,7 @@ import { mkdtemp, readdir } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 
 import {
   ASK_EVERYTHING,
@@ -17,6 +17,7 @@ import {
 import { classifyOpencodeFailure } from '../../src/agent/adapters/opencode/classify.ts';
 import { parseEventStream } from '../../src/agent/adapters/opencode/client.ts';
 import { ServerStartError } from '../../src/agent/adapters/opencode/server.ts';
+import { ToolCapabilitiesCache } from '../../src/core/tool-capabilities.ts';
 import { loadAdapters } from '../../src/agent/adapters/registry.ts';
 import type {
   AdapterEvent,
@@ -28,8 +29,128 @@ import type { ScriptItem } from './opencode-fake-server.ts';
 
 const SID = 'ses_test';
 const MODEL = { id: 'm1', providerID: 'prov' };
+const activationFailure = {
+  status: 503,
+  body: {
+    _tag: 'ServiceUnavailableError',
+    message: 'Location plugins did not finish activating',
+    service: 'plugin',
+    internal: 'synthetic-unlabelled-secret',
+  },
+};
 
 describe('model capabilities', () => {
+  it('retries the cold catalog on one server and never sends a prompt', async () => {
+    let requests = 0;
+    const fake = new FakeOpencode({
+      script: [],
+      models: [MODEL],
+      failure: ({ path }) =>
+        path === '/api/model' && ++requests <= 2
+          ? activationFailure
+          : undefined,
+    });
+    const result = await adapterFor(fake, '2.3.2').detectModels(
+      new AbortController().signal,
+    );
+    expect(result.models).toEqual([{ id: 'prov/m1' }]);
+    expect(fake.launches).toHaveLength(1);
+    expect(fake.requests.map(({ path }) => path)).toEqual(
+      Array(3).fill('/api/model'),
+    );
+    expect(fake.closed).toBe(true);
+  });
+
+  it.each([401, 404, 500, 503])(
+    'leaves other HTTP %i errors and response bodies out of retries and reports',
+    async (status) => {
+      const fake = new FakeOpencode({
+        script: [],
+        failure: () => ({
+          status,
+          body: { message: 'Bad response', token: 'synthetic-password' },
+        }),
+      });
+      const result = await adapterFor(fake).detectModels(
+        new AbortController().signal,
+      );
+      expect(result).toEqual({
+        modelsDetectionStatus: 'failed',
+        modelsDetectionError: 'Model detection failed',
+        modelsDetectionDetail: `OpenCode model discovery returned HTTP ${status}`,
+      });
+      expect(fake.requests).toHaveLength(1);
+      expect(fake.closed).toBe(true);
+    },
+  );
+
+  it('reports the activation reason when the shared startup budget expires', async () => {
+    const nativeTimeout = AbortSignal.timeout.bind(AbortSignal);
+    const timeout = vi
+      .spyOn(AbortSignal, 'timeout')
+      .mockImplementation((ms) => nativeTimeout(ms === 45_000 ? 450 : ms));
+    const fake = new FakeOpencode({
+      script: [],
+      failure: () => activationFailure,
+    });
+    const cache = new ToolCapabilitiesCache(
+      () => new Map([['opencode', adapterFor(fake, '2.3.2')]]),
+      [],
+    );
+    try {
+      cache.refresh();
+      await vi.waitFor(() =>
+        expect(cache.tools[0]).toMatchObject({
+          modelsDetectionStatus: 'failed',
+          modelsDetectionError: 'Model detection timed out',
+          modelsDetectionDetail:
+            'HTTP 503: Location plugins did not finish activating',
+        }),
+      );
+      expect(fake.requests.length).toBeGreaterThan(1);
+      expect(fake.launches).toHaveLength(1);
+      expect(fake.closed).toBe(true);
+    } finally {
+      timeout.mockRestore();
+      await cache.stop();
+    }
+  });
+
+  it('cancels while the catalog retry is waiting', async () => {
+    const abort = new AbortController();
+    const fake = new FakeOpencode({
+      script: [],
+      failure: () => {
+        abort.abort();
+        return activationFailure;
+      },
+    });
+    await expect(adapterFor(fake).detectModels(abort.signal)).rejects.toThrow();
+    expect(fake.requests).toHaveLength(1);
+    expect(fake.closed).toBe(true);
+  });
+
+  it('reports the startup exit reason without stderr, even for secrets with no recognizable prefix', async () => {
+    const adapter = new OpencodeAdapter({
+      searchPath: '',
+      fallbackPaths: [process.execPath],
+      exec: async () => ({ code: 0, stdout: '2.3.2' }),
+      launch: async () => {
+        throw new ServerStartError(
+          'opencode serve exited before listening (exited with code 3)',
+          'synthetic-unlabelled-secret',
+        );
+      },
+    });
+    expect(
+      await adapter.detectModels(new AbortController().signal),
+    ).toMatchObject({
+      modelsDetectionStatus: 'failed',
+      modelsDetectionDetail:
+        'opencode serve exited before listening (exited with code 3)',
+    });
+  });
+
   it('lists provider/model ids and actual variants and closes the server without creating a session', async () => {
     const fake = new FakeOpencode({
       script: [],
@@ -144,9 +265,12 @@ describe('model capabilities', () => {
         throw new Error('secret=private');
       },
     });
-    await expect(
-      adapter.detectModels(new AbortController().signal),
-    ).rejects.toThrow();
+    expect(
+      await adapter.detectModels(new AbortController().signal),
+    ).toMatchObject({
+      modelsDetectionStatus: 'failed',
+      modelsDetectionDetail: 'Could not list OpenCode models',
+    });
     expect(fake.closed).toBe(true);
     await expect(readdir(fake.launches[0]!.cwd)).rejects.toMatchObject({
       code: 'ENOENT',
@@ -397,6 +521,138 @@ describe('session setup', () => {
       location: { directory: '/work' },
       permissions: ASK_EVERYTHING,
     });
+    expect(fake.closed).toBe(true);
+  });
+
+  it.each([
+    {
+      format: 'JSONC array',
+      inline: '{"skills":["/operator/skills",],"shell":"/bin/sh"}',
+      expected: {
+        skills: ['/operator/skills', '/run/plugin/skills'],
+        shell: '/bin/sh',
+      },
+    },
+    {
+      format: 'legacy object',
+      inline:
+        '{"skills":{"paths":["/operator/skills"],"urls":["https://example.test/catalog/"]},"shell":"/bin/sh"}',
+      expected: {
+        skills: [
+          '/operator/skills',
+          'https://example.test/catalog/',
+          '/run/plugin/skills',
+        ],
+        shell: '/bin/sh',
+      },
+    },
+    {
+      format: 'malformed JSONC',
+      inline: '{"skills": [',
+      expected: { skills: ['/run/plugin/skills'] },
+    },
+  ])(
+    'keeps the operator config directory and adds the run skills with a $format',
+    async ({ inline, expected }) => {
+      const fake = new FakeOpencode({
+        script: [...begin(), succeeded],
+      });
+      const env = {
+        OPENCODE_CONFIG_DIR: '/operator/opencode',
+        OPENCODE_CONFIG: '/operator/config.jsonc',
+        OPENCODE_CONFIG_CONTENT: inline,
+      };
+      const handle = adapterFor(fake).start(
+        session({
+          env,
+          skills: {
+            root: '/run/plugin',
+            dir: '/run/plugin/skills',
+            slugs: ['example'],
+          },
+        }),
+      );
+      await collect(handle.events);
+      expect((await handle.result).exit).toBe('completed');
+      expect(fake.launches[0].env).toEqual({
+        ...env,
+        OPENCODE_CONFIG_CONTENT: JSON.stringify(expected),
+      });
+      expect(env.OPENCODE_CONFIG_CONTENT).toBe(inline);
+    },
+  );
+
+  it.each([false, true])(
+    'retries model and session setup on the same server (resume: %s)',
+    async (resume) => {
+      const sessionPath = resume ? `/api/session/${SID}` : '/api/session';
+      const failures = new Set(['/api/model', sessionPath]);
+      const fake = new FakeOpencode({
+        script: [...begin(), succeeded],
+        models: [MODEL],
+        knownSessions: resume ? [SID] : [],
+        failure: ({ method, path }) =>
+          method !== 'PATCH' && failures.delete(path)
+            ? activationFailure
+            : undefined,
+      });
+      const handle = adapterFor(fake, '2.3.2').start(
+        session({
+          model: 'm1',
+          ...(resume ? { resumeSessionId: SID } : {}),
+        }),
+      );
+      expect(await handle.result).toMatchObject({
+        exit: 'completed',
+        sessionId: SID,
+      });
+      expect(fake.launches).toHaveLength(1);
+      expect(fake.requestsTo('GET', /^\/api\/model$/)).toHaveLength(2);
+      expect(
+        fake.requests.filter(
+          ({ method, path }) => method !== 'PATCH' && path === sessionPath,
+        ),
+      ).toHaveLength(2);
+      expect(fake.requestsTo('POST', /\/prompt$/)).toHaveLength(1);
+      expect(fake.closed).toBe(true);
+    },
+  );
+
+  it('stops a run at a permanent model lookup failure', async () => {
+    const fake = new FakeOpencode({
+      script: [],
+      failure: ({ path }) =>
+        path === '/api/model'
+          ? { status: 401, body: { message: 'Unauthorized' } }
+          : undefined,
+    });
+    const handle = adapterFor(fake).start(
+      session({ model: 'prov/m1', effort: 'high' }),
+    );
+    expect(await handle.result).toMatchObject({ exit: 'error' });
+    expect(fake.requests.map(({ path }) => path)).toEqual([
+      '/api/event',
+      '/api/model',
+    ]);
+    expect(fake.closed).toBe(true);
+  });
+
+  it('stops startup retries without creating a session when the run is cancelled', async () => {
+    const abort = new AbortController();
+    const fake = new FakeOpencode({
+      script: [],
+      failure: ({ path }) => {
+        if (path !== '/api/model') return;
+        abort.abort();
+        return activationFailure;
+      },
+    });
+    const handle = adapterFor(fake).start(
+      session({ model: 'm1', abort: abort.signal }),
+    );
+    expect(await handle.result).toMatchObject({ exit: 'aborted' });
+    expect(fake.requestsTo('GET', /^\/api\/model$/)).toHaveLength(1);
+    expect(fake.requestsTo('POST', /^\/api\/session$/)).toHaveLength(0);
     expect(fake.closed).toBe(true);
   });
 

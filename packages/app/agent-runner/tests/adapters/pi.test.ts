@@ -140,6 +140,7 @@ describe('detect', () => {
     expect(await adapter.detectModels()).toEqual({
       modelsDetectionStatus: 'failed',
       modelsDetectionError: 'Model listing command failed',
+      modelsDetectionDetail: 'pi --list-models exited with code 1',
     });
     code = 0;
     output = 'No models available. Use /login or set an API key.';

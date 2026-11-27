@@ -832,6 +832,12 @@ const deDE: LocaleResource<typeof enUS> = {
       noneChecked:
         'Überprüfen Sie oben ein Codierungstool, um es einzuschränken.',
     },
+    modelDetection: {
+      failed: 'Modellerkennung fehlgeschlagen',
+      timedOut: 'Zeitüberschreitung bei der Modellerkennung',
+      commandFailed: 'Befehl zum Auflisten der Modelle fehlgeschlagen',
+      invalidResponse: 'Ungültige Antwort beim Auflisten der Modelle',
+    },
     toolTable: {
       tool: 'Werkzeug',
       enabled: 'An',

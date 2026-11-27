@@ -1,7 +1,12 @@
 import { Fragment, useState, type ReactElement } from 'react';
 import { useTranslation } from '@nocobase/i18n/client';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { AGENT_TOOLS, type AgentTool } from '@nocobase/agent-protocol';
+import {
+  AGENT_TOOLS,
+  type AgentTool,
+  type ModelsDetectionError,
+  type ToolInfo,
+} from '@nocobase/agent-protocol';
 import {
   toolState,
   type RunnerSummary,
@@ -13,6 +18,14 @@ import { agentsKeys } from '../../api/keys.js';
 import { useAgentsApi } from '../../hooks/use-agents-api.js';
 import { useNotify } from '../../hooks/use-notify.js';
 import { useMediaQuery } from '../../hooks/use-media-query.js';
+import { TriangleAlertIcon } from 'lucide-react';
+import {
+  Popover,
+  PopoverContent,
+  PopoverDescription,
+  PopoverTitle,
+  PopoverTrigger,
+} from '../../components/ui/popover.js';
 import { Switch } from '../../components/ui/switch.js';
 import {
   Table,
@@ -27,6 +40,55 @@ import { ToolStateTag } from './runner-cells.js';
 import { ToolLimitInput } from './tool-slots-fields.js';
 import { quotaTargets } from './quota-targets.js';
 import { QuotaCell, QuotaClearDialog } from './quota.js';
+
+const modelDetectionErrorKeys: Record<ModelsDetectionError, string> = {
+  'Model detection failed': 'failed',
+  'Model detection timed out': 'timedOut',
+  'Model listing command failed': 'commandFailed',
+  'Invalid model listing response': 'invalidResponse',
+};
+
+/**
+ * An amber warning after a tool's state when it is usable but could not list its models; hovering or clicking it opens
+ * the reported reason. An older runner reports no detail, so only the title shows.
+ */
+function ModelDetectionWarning({
+  info,
+}: {
+  readonly info?: ToolInfo;
+}): ReactElement | null {
+  const { t } = useTranslation();
+  if (info?.modelsDetectionStatus !== 'failed') return null;
+  const title = t(
+    `runtimes.modelDetection.${
+      modelDetectionErrorKeys[
+        info.modelsDetectionError ?? 'Model detection failed'
+      ]
+    }`,
+  );
+  return (
+    <Popover>
+      <PopoverTrigger
+        openOnHover
+        aria-label={title}
+        className='inline-flex size-5 shrink-0 items-center justify-center rounded-sm text-amber-700 outline-none focus-visible:ring-2 focus-visible:ring-ring dark:text-amber-400'
+      >
+        <TriangleAlertIcon aria-hidden='true' className='size-3.5' />
+      </PopoverTrigger>
+      <PopoverContent
+        align='start'
+        className='gap-1 text-xs [overflow-wrap:anywhere]'
+      >
+        <PopoverTitle className='text-xs font-semibold text-amber-700 dark:text-amber-400'>
+          {title}
+        </PopoverTitle>
+        {info.modelsDetectionDetail ? (
+          <PopoverDescription>{info.modelsDetectionDetail}</PopoverDescription>
+        ) : null}
+      </PopoverContent>
+    </Popover>
+  );
+}
 
 /** One form state, rendered as full-width rows on desktop and one card per tool on phones. */
 export function ToolTable({
@@ -123,10 +185,16 @@ export function ToolTable({
       onCheckedChange={(value) => onSwitch(tool, value)}
     />
   );
-  const state = (tool: AgentTool) => (
-    <ToolStateTag
-      state={toolState({ enabledTools, tools: runner.tools }, tool)}
-    />
+  const state = (tool: AgentTool, tagClassName?: string) => (
+    <span className='flex min-w-0 items-center gap-1'>
+      <ToolStateTag
+        className={tagClassName}
+        state={toolState({ enabledTools, tools: runner.tools }, tool)}
+      />
+      <ModelDetectionWarning
+        info={runner.tools.find((item) => item.kind === tool)}
+      />
+    </span>
   );
   if (!tools.length)
     return (
@@ -185,7 +253,7 @@ export function ToolTable({
         <colgroup>
           <col className='w-36' />
           <col className='w-14' />
-          <col className='w-28' />
+          <col className='w-36' />
           <col />
           <col className='w-28' />
           <col className='w-20' />
@@ -193,7 +261,12 @@ export function ToolTable({
         <TableHeader>
           <TableRow>
             {['tool', 'enabled', 'state'].map((key) => (
-              <TableHead key={key}>{t(`runtimes.toolTable.${key}`)}</TableHead>
+              <TableHead
+                key={key}
+                className={key === 'state' ? 'px-1!' : undefined}
+              >
+                {t(`runtimes.toolTable.${key}`)}
+              </TableHead>
             ))}
             <TableHead>{t('runtimes.quota.title')}</TableHead>
             <TableHead>{t('runtimes.toolTable.limit')}</TableHead>
@@ -233,8 +306,9 @@ export function ToolTable({
                 <TableCell>
                   <div className='flex items-center'>{toggle(tool)}</div>
                 </TableCell>
-                <TableCell>
-                  <div className='flex items-center'>{state(tool)}</div>
+                {/* Tight padding, important over the theme's unlayered table-cell padding, keeps every English state and a warning after it on one line in the w-36 column. */}
+                <TableCell className='px-px!'>
+                  {state(tool, 'px-[3px]')}
                 </TableCell>
                 <TableCell>
                   <div className='flex items-center'>{quota(tool)}</div>

@@ -123,6 +123,64 @@ describe('runtimes page', () => {
     );
   };
 
+  it('shows a model discovery failure behind a warning beside the tool state and supports old runner reports', async () => {
+    runners[0] = runner('r1', {
+      tools: [
+        {
+          kind: 'opencode',
+          authenticated: true,
+          modelsDetectionStatus: 'failed',
+          modelsDetectionError: 'Model detection timed out',
+          modelsDetectionDetail:
+            'HTTP 503: Location plugins did not finish activating',
+        },
+        {
+          kind: 'pi',
+          authenticated: true,
+          modelsDetectionStatus: 'failed',
+          modelsDetectionError: 'Model listing command failed',
+        },
+        { kind: 'claude', authenticated: true },
+      ],
+    });
+    renderPage(<RuntimesPage />);
+    const sheet = await openSheet();
+    const opencode = within(sheet).getByTestId('runner-tool-opencode');
+    expect(
+      within(sheet).queryByText(
+        'HTTP 503: Location plugins did not finish activating',
+      ),
+    ).not.toBeInTheDocument();
+    expect(
+      within(within(sheet).getByTestId('runner-tool-claude')).queryByRole(
+        'button',
+        { name: /runtimes\.modelDetection\./ },
+      ),
+    ).not.toBeInTheDocument();
+
+    fireEvent.click(
+      within(opencode).getByRole('button', {
+        name: 'runtimes.modelDetection.timedOut',
+      }),
+    );
+    const dialog = await screen.findByRole('dialog', {
+      name: 'runtimes.modelDetection.timedOut',
+    });
+    expect(dialog).toHaveAccessibleDescription(
+      'HTTP 503: Location plugins did not finish activating',
+    );
+
+    fireEvent.click(
+      within(within(sheet).getByTestId('runner-tool-pi')).getByRole('button', {
+        name: 'runtimes.modelDetection.commandFailed',
+      }),
+    );
+    const popup = await screen.findByRole('dialog', {
+      name: 'runtimes.modelDetection.commandFailed',
+    });
+    expect(popup).not.toHaveAttribute('aria-describedby');
+  });
+
   it('shows loading and a retryable failure while fetching a runner instead of an empty diagnostic', async () => {
     let rejectDetail!: (error: Error) => void;
     api.routes['agents/runners/r1'] = () =>

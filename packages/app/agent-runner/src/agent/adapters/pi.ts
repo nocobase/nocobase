@@ -252,6 +252,7 @@ export class PiAdapter implements AgentAdapter {
       return {
         modelsDetectionStatus: 'failed',
         modelsDetectionError: 'Model listing command failed',
+        modelsDetectionDetail: `pi --list-models exited with code ${response.code}`,
       };
     try {
       return {

@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
   MAX_TOOL_MODELS,
+  MAX_STATUS_DETAIL_LENGTH,
   MAX_MODEL_EFFORTS,
   type AgentTool,
 } from '@nocobase/agent-protocol';
@@ -265,6 +266,41 @@ describe('capability refresh', () => {
     await vi.advanceTimersByTimeAsync(51);
     expect(cache.tools[0]?.models).toEqual([{ id: 'gpt-6-sol' }]);
     cache.stop();
+  });
+
+  it('redacts and bounds adapter model failure details before reporting', async () => {
+    const cache = new ToolCapabilitiesCache(
+      () =>
+        new Map([
+          [
+            'opencode',
+            {
+              ...createEchoAdapter({ kind: 'opencode' }),
+              detectModels: async () => ({
+                modelsDetectionStatus: 'failed' as const,
+                modelsDetectionDetail:
+                  'x-api-key: synthetic-key\nheader: Basic ' +
+                  Buffer.from('test:synthetic-password').toString('base64') +
+                  '\u0000' +
+                  'x'.repeat(350),
+              }),
+            },
+          ],
+        ]),
+      [],
+    );
+    try {
+      cache.refresh();
+      await vi.waitFor(() =>
+        expect(cache.tools[0]?.modelsDetectionStatus).toBe('failed'),
+      );
+      const detail = cache.tools[0]?.modelsDetectionDetail;
+      expect(detail).toHaveLength(MAX_STATUS_DETAIL_LENGTH);
+      expect(detail).toMatch(/^x-api-key: \[REDACTED\]/u);
+      expect(detail).not.toMatch(/synthetic|[\p{Cc}]/u);
+    } finally {
+      await cache.stop();
+    }
   });
 
   it('aborts discovery on stop and ignores late results', async () => {

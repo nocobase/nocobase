@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { z } from 'zod';
 import {
   MAX_TOOL_MODELS,
+  MAX_STATUS_DETAIL_LENGTH,
   MAX_MODEL_ID_LENGTH,
   MAX_MODEL_EFFORTS,
   MAX_EFFORT_LENGTH,
@@ -59,6 +60,43 @@ describe('tool capabilities within protocol 7', () => {
       ReportedToolInfoSchema.safeParse({ ...tool, kind: 'unknown-tool' })
         .success,
     ).toBe(false);
+  });
+
+  it('preserves safe model failure details and ignores invalid details from a runner', () => {
+    const tool = {
+      ...legacy,
+      modelsDetectionStatus: 'failed',
+      modelsDetectionError: 'Model detection timed out',
+    };
+    const detail = 'HTTP 503: Location plugins did not finish activating';
+    for (const schema of [ToolInfoSchema, ReportedToolInfoSchema]) {
+      expect(
+        schema.parse({ ...tool, modelsDetectionDetail: detail }),
+      ).toMatchObject({
+        modelsDetectionDetail: detail,
+      });
+      expect(schema.parse(tool)).toMatchObject(tool);
+    }
+    for (const invalid of [
+      'line\nnext line',
+      'secret\x00text',
+      'a'.repeat(MAX_STATUS_DETAIL_LENGTH + 1),
+      'header: Basic ' +
+        Buffer.from('test:synthetic-password').toString('base64'),
+      'x-api-key: synthetic-key',
+      { message: detail },
+    ]) {
+      expect(
+        ToolInfoSchema.safeParse({ ...tool, modelsDetectionDetail: invalid })
+          .success,
+      ).toBe(false);
+      expect(
+        ReportedToolInfoSchema.parse({
+          ...tool,
+          modelsDetectionDetail: invalid,
+        }),
+      ).toEqual(tool);
+    }
   });
 
   it('accepts where a model list came from', () => {

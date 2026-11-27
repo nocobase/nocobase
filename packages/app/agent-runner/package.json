@@ -52,6 +52,7 @@
     "@nocobase/cli-envelope": "workspace:^",
     "@oclif/core": "catalog:",
     "ini": "6.0.0",
+    "jsonc-parser": "3.3.1",
     "pnpm": "11.11.0",
     "yaml": "catalog:",
     "zod": "catalog:",

@@ -554,6 +554,9 @@ importers:
       ini:
         specifier: 6.0.0
         version: 6.0.0
+      jsonc-parser:
+        specifier: 3.3.1
+        version: 3.3.1
       pnpm:
         specifier: 11.11.0
         version: 11.11.0

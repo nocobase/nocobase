@@ -804,6 +804,12 @@ const idID: LocaleResource<typeof enUS> = {
         'Batas {{tools}} berada di atas maksimum proses bersamaan ({{slots}}): paling banyak {{slots}} dijalankan sekaligus.',
       noneChecked: 'Periksa alat pengkodean di atas untuk membatasinya.',
     },
+    modelDetection: {
+      failed: 'Deteksi model gagal',
+      timedOut: 'Waktu deteksi model habis',
+      commandFailed: 'Perintah untuk menampilkan daftar model gagal',
+      invalidResponse: 'Respons daftar model tidak valid',
+    },
     toolTable: {
       tool: 'Alat',
       enabled: 'Aktif',

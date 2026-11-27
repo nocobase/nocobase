@@ -834,6 +834,12 @@ const ptBR: LocaleResource<typeof enUS> = {
       noneChecked:
         'Verifique uma ferramenta de codificação acima para limitá-la.',
     },
+    modelDetection: {
+      failed: 'Falha ao detectar modelos',
+      timedOut: 'Tempo limite excedido na detecção de modelos',
+      commandFailed: 'Falha no comando para listar modelos',
+      invalidResponse: 'Resposta da lista de modelos inválida',
+    },
     toolTable: {
       tool: 'Ferramenta',
       enabled: 'Ligado',

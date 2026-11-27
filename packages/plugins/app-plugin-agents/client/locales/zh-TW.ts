@@ -767,6 +767,12 @@ const zhTW: LocaleResource<typeof enUS> = {
         '{{tools}} 的限制高於最大並發執行數 ({{slots}})：最多同時執行 {{slots}}。',
       noneChecked: '檢查上面的編碼工具來限制它。',
     },
+    modelDetection: {
+      failed: '模型偵測失敗',
+      timedOut: '模型偵測逾時',
+      commandFailed: '模型清單命令執行失敗',
+      invalidResponse: '模型清單回應無效',
+    },
     toolTable: {
       tool: '工具',
       enabled: '開啟',

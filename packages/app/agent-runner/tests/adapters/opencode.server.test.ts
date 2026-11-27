@@ -46,7 +46,12 @@ describe('launchServer', () => {
     const server = await launchServer({
       binary: bin,
       cwd: dir,
-      env: { PATH: process.env.PATH ?? '/usr/bin:/bin', ONLY: 'yes' },
+      env: {
+        PATH: process.env.PATH ?? '/usr/bin:/bin',
+        ONLY: 'yes',
+        OPENCODE_SERVER_USERNAME: 'external',
+        OPENCODE_SERVER_PASSWORD: 'bad',
+      },
     });
     expect(server.baseUrl).toBe('http://127.0.0.1:4567');
     expect(server.username).toBe('opencode');
@@ -157,7 +162,7 @@ describe('launchServer', () => {
     );
     await expect(
       launchServer({ binary: bin, cwd: dir, env: { PATH: '/usr/bin:/bin' } }),
-    ).rejects.toThrow(/not 127\.0\.0\.1/);
+    ).rejects.toThrow(/non-loopback address/);
   });
 
   it('gives up on a server that never reports, or when aborted', async () => {

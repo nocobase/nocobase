@@ -60,6 +60,59 @@ export class OpencodeHttpError extends Error {
 
 const REQUEST_TIMEOUT_MS = 30_000;
 
+export function isPluginActivationError(error: unknown): boolean {
+  if (!(error instanceof OpencodeHttpError) || error.status !== 503)
+    return false;
+  try {
+    const body: unknown = JSON.parse(error.body);
+    return (
+      isRecord(body) &&
+      (body.message === 'Location plugins did not finish activating' ||
+        (body._tag === 'ServiceUnavailableError' && body.service === 'plugin'))
+    );
+  } catch {
+    return false;
+  }
+}
+
+export class PluginActivationTimeout extends Error {
+  constructor() {
+    super('HTTP 503: Location plugins did not finish activating');
+  }
+}
+
+/** Retry only requests refused before the plugins became available. */
+export async function retryPluginActivation<T>(
+  request: () => Promise<T>,
+  signal: AbortSignal,
+): Promise<T> {
+  let backoff = 100;
+  let waitingForPlugins = false;
+  try {
+    for (;;) {
+      signal.throwIfAborted();
+      try {
+        return await request();
+      } catch (error) {
+        if (!isPluginActivationError(error)) throw error;
+        waitingForPlugins = true;
+      }
+      await sleep(backoff, undefined, { signal });
+      backoff = Math.min(backoff * 2, 1000);
+    }
+  } catch (error) {
+    const reason: unknown = signal.reason;
+    if (
+      waitingForPlugins &&
+      reason instanceof DOMException &&
+      reason.name === 'TimeoutError'
+    ) {
+      throw new PluginActivationTimeout();
+    }
+    throw error;
+  }
+}
+
 export interface ClientOptions {
   baseUrl: string;
   username: string;
@@ -110,20 +163,29 @@ export class OpencodeClient {
     ) as T;
   }
 
-  async createSession(body: {
-    model?: ModelRef;
-    permissions?: PermissionRule[];
-    location?: { directory: string };
-    title?: string;
-  }): Promise<SessionInfo> {
+  async createSession(
+    body: {
+      model?: ModelRef;
+      permissions?: PermissionRule[];
+      location?: { directory: string };
+      title?: string;
+    },
+    signal?: AbortSignal,
+  ): Promise<SessionInfo> {
     return OpencodeClient.data(
-      await this.request('POST', '/api/session', body),
+      await this.request('POST', '/api/session', body, undefined, signal),
     );
   }
 
-  async getSession(id: string): Promise<SessionInfo> {
+  async getSession(id: string, signal?: AbortSignal): Promise<SessionInfo> {
     return OpencodeClient.data(
-      await this.request('GET', `/api/session/${encodeURIComponent(id)}`),
+      await this.request(
+        'GET',
+        `/api/session/${encodeURIComponent(id)}`,
+        undefined,
+        undefined,
+        signal,
+      ),
     );
   }
 
@@ -196,10 +258,6 @@ export class OpencodeClient {
 
   /** OpenCode 2.4+ can return an empty or partial catalog until plugins activate. */
   async waitForPlugins(signal: AbortSignal): Promise<void> {
-    const startup = AbortSignal.any([
-      signal,
-      AbortSignal.timeout(REQUEST_TIMEOUT_MS),
-    ]);
     try {
       for (;;) {
         const plugins = OpencodeClient.data<unknown>(
@@ -208,13 +266,13 @@ export class OpencodeClient {
             '/api/plugin',
             undefined,
             undefined,
-            startup,
+            signal,
           ),
         );
         if (!Array.isArray(plugins))
           throw new Error('Invalid plugin listing response');
         if (plugins.length) return;
-        await sleep(100, undefined, { signal: startup });
+        await sleep(100, undefined, { signal });
       }
     } catch (error) {
       // Servers without plugin inventory can still provide a model catalog.
