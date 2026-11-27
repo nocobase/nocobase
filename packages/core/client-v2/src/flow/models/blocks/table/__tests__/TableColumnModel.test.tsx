@@ -12,7 +12,33 @@ import { describe, expect, it, vi } from 'vitest';
 // Prime the model module graph so the editable field bindings used by the quick edit data scope setting are registered.
 import '../../../index';
 import { RecordSelectFieldModel } from '../../../fields/AssociationFieldModel/RecordSelectFieldModel';
+import { TableBlockModel } from '../TableBlockModel';
 import { TableColumnModel } from '../TableColumnModel';
+import { TableJSFieldItemModel } from '../TableJSFieldItemModel';
+
+describe('table JS field menu', () => {
+  it('excludes the tree children relationship by metadata and keeps ordinary associations', async () => {
+    const engine = new FlowEngine();
+    engine.registerModels({ TableBlockModel });
+    engine.dataSourceManager.getDataSource('main').addCollection({
+      name: 'categories',
+      fields: [
+        { name: 'descendants', type: 'hasMany', target: 'categories', interface: 'o2m', treeChildren: true },
+        { name: 'children', type: 'hasMany', target: 'categories', interface: 'o2m' },
+        { name: 'parent', type: 'belongsTo', target: 'categories', interface: 'm2o' },
+        { name: 'title', type: 'string', interface: 'input' },
+      ],
+    });
+    const table = engine.createModel<TableBlockModel>({
+      use: 'TableBlockModel',
+      stepParams: { resourceSettings: { init: { dataSourceKey: 'main', collectionName: 'categories' } } },
+    });
+
+    const items = await TableJSFieldItemModel.defineChildren(table.context);
+
+    expect(items.map((item) => item.key)).toEqual(['children', 'parent', 'title', 'js-association-fields']);
+  });
+});
 
 const createQuickEditDataScopeCtx = (
   overrides: { associationPathName?: string; editable?: boolean; isAssociation?: boolean } = {},
