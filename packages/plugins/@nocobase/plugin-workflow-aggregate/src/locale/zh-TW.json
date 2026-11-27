@@ -1,13 +1,13 @@
 {
-  "Aggregate": "Aggregate",
-  "Aggregator function": "Aggregator function",
-  "Counting, summing, finding maximum, minimum, and average values for multiple records of a collection or associated data of a record.": "Counting, summing, finding maximum, minimum, and average values for multiple records of a collection or associated data of a record.",
-  "Data of associated collection": "Data of associated collection",
-  "Data of collection": "Data of collection",
-  "Distinct": "Distinct",
-  "Field to aggregate": "Field to aggregate",
-  "Number of decimal places for query result.": "Number of decimal places for query result.",
-  "Query result": "Query result",
-  "Result precision": "Result precision",
-  "Target type": "Target type"
+  "Aggregate": "聚合查詢",
+  "Aggregator function": "聚合函式",
+  "Counting, summing, finding maximum, minimum, and average values for multiple records of a collection or associated data of a record.": "對一個資料表裡的多條資料或者一條資料裡的關係資料進行統計、求和、求最大值、最小值、平均值。",
+  "Data of associated collection": "關聯資料表資料",
+  "Data of collection": "資料表資料",
+  "Distinct": "去重",
+  "Field to aggregate": "聚合欄位",
+  "Number of decimal places for query result.": "查詢結果小數位數",
+  "Query result": "查詢結果",
+  "Result precision": "結果精度",
+  "Target type": "目標類型"
 }

@@ -1,7 +1,15 @@
 {
-  "Expand all": "Expand all",
-  "Root records per page": "Root records per page",
-  "Search": "Search",
-  "Searchable": "Searchable",
-  "Tree": "Tree"
+  "Connect data blocks": "Connect data blocks",
+  "Configured": "Configured",
+  "Expand all": "展開所有",
+  "Foreign key": "Foreign key",
+  "No supported data blocks": "沒有支援的資料區塊",
+  "Root records per page": "每頁根記錄數量",
+  "Search": "搜尋",
+  "Searchable": "搜尋",
+  "Select field": "Select 欄位",
+  "Tree settings": "Tree settings",
+  "Tree": "樹",
+  "Unconnected": "Unconnected",
+  "Include child nodes when filtering": "篩選時包含子節點"
 }

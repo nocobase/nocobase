@@ -1,5 +1,18 @@
 {
-  "Bulk edit": "Bulk edit",
-  "Data will be updated": "Data will be updated",
-  "Entire collection": "Entire collection"
+  "Bulk edit": "批次編輯",
+  "Data will be updated": "更新的資料",
+  "Entire collection": "全表",
+  "Bulk edit action settings": "批次編輯動作設定",
+  "Secondary confirmation": "二次確認",
+  "Are you sure you want to perform the bulk edit action?": "確定要執行批次編輯動作嗎？",
+  "Data scope to edit": "Data scope to edit",
+  "Selected": "Selected",
+  "Assign field values": "Assign 欄位 values",
+  "No assigned fields configured": "尚未設定指派欄位",
+  "Collection is required to perform this action": "資料表 is required to perform this action",
+  "Please select the records to be edited": "請選擇要編輯的資料",
+  "Saved successfully": "Saved successfully",
+  "Remains the same": "Remains the same",
+  "Changed to": "Changed to",
+  "Clear": "Clear"
 }
