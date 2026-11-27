@@ -1,5 +1,11 @@
 # @nocobase/acp-bridge
 
+## 1.0.0-beta.9
+
+### Patch Changes
+
+- cf23bfe: Stop publishing CHANGELOG.md in the package; the changelog stays in the repository.
+
 ## 1.0.0-beta.8
 
 ### Patch Changes

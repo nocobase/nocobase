@@ -1,5 +1,16 @@
 # @nocobase/app-plugin-file-example
 
+## 1.0.0-beta.29
+
+### Patch Changes
+
+- cf23bfe: Stop publishing CHANGELOG.md in the package; the changelog stays in the repository.
+- Updated dependencies [888bca5]
+- Updated dependencies [1952789]
+- Updated dependencies [cf23bfe]
+  - @nocobase/app-plugin-authentication@2.0.0-beta.27
+  - @nocobase/app-plugin-file@1.0.0-beta.35
+
 ## 1.0.0-beta.28
 
 ### Patch Changes

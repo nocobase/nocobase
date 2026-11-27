@@ -1,5 +1,14 @@
 # @nocobase/app-plugin-message-broker
 
+## 0.1.0-beta.1
+
+### Patch Changes
+
+- 1952789: Declare whether each product plugin is enabled by default, preinstalled only, available separately, or deprecated.
+- cf23bfe: Stop publishing CHANGELOG.md in the package; the changelog stays in the repository.
+- Updated dependencies [1952789]
+  - @nocobase/app-plugin-concurrency@0.1.0-beta.5
+
 ## 0.1.0-beta.0
 
 ### Minor Changes

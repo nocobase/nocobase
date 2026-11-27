@@ -2,7 +2,7 @@
   "name": "@nocobase/app-plugin-verification",
   "displayName": "Verification App Plugin",
   "description": "One-time verification codes, verified phone numbers, and step-up credentials.",
-  "version": "0.1.0-beta.0",
+  "version": "0.1.0-beta.1",
   "type": "module",
   "prettier": "@nocobase/dev-config/prettier",
   "engines": {

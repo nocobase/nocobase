@@ -2,6 +2,23 @@
 
 このファイルには NocoBase 3 の主な変更を、リリースごとに 1 セクションずつ記録します。`nocobase-v3-beta/<日付>.<連番>` はベータ版、`nocobase-v3/<日付>.<連番>` は正式版です。各リリースで公開されたパッケージのバージョンは対応する GitHub Release を、各パッケージ自体の変更はパッケージ内の CHANGELOG.md を参照してください。
 
+## [nocobase-v3-beta/2026-11-27.2](https://github.com/nocobase/nocobase/releases/tag/nocobase-v3-beta%2F2026-11-27.2)
+
+### 🎉 新機能
+
+- **[サーバー]** 監査ファイルを UTC の日付とサイズでローテーションし、最終書き込みから設定された期間以上アーカイブを保持します。 ([#11742](https://github.com/nocobase/nocobase/pull/11742))
+- **[アプリホスティング]** マネージド App Host で、アプリと業務データを削除してもバックアップを有効期限まで保持できるようになりました。 ([#11743](https://github.com/nocobase/nocobase/pull/11743))
+- **[監査]** アプリケーションの YAML で監査スナップショットとマスキングを設定でき、リクエストとレスポンスの本文は既定で記録しません。 ([#11745](https://github.com/nocobase/nocobase/pull/11745))
+
+### 🚀 改善
+
+- **[アプリテンプレート]** デフォルトアプリにはナレッジと検証のプラグインがプリインストールされ、必要に応じて有効化できます。 ([#11747](https://github.com/nocobase/nocobase/pull/11747))
+- **[全般]** 公開パッケージに CHANGELOG.md を含めなくなり、サイズが小さくなりました。 ([#11754](https://github.com/nocobase/nocobase/pull/11754))
+
+### 🐛 不具合修正
+
+- **[Agent]** オフラインのランタイムで OpenCode の起動を待ち、モデル検出に失敗した原因をランタイムの詳細に表示します。 ([#11751](https://github.com/nocobase/nocobase/pull/11751))
+
 ## [nocobase-v3-beta/2026-11-27.1](https://github.com/nocobase/nocobase/releases/tag/nocobase-v3-beta%2F2026-11-27.1)
 
 ### 🎉 新機能

@@ -1,5 +1,13 @@
 # @nocobase/agent-protocol
 
+## 0.1.0-beta.25
+
+### Patch Changes
+
+- 24d0cad: Give OpenCode time to activate providers on offline machines, recognize credentials configured in OpenCode JSONC, and show model discovery failures with safe diagnostics on the runtime details page. Load run skills alongside skills from the operator's OpenCode configuration.
+- Updated dependencies [cf23bfe]
+  - @nocobase/acp-bridge@1.0.0-beta.9
+
 ## 0.1.0-beta.24
 
 ### Minor Changes

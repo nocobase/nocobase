@@ -1,5 +1,18 @@
 # @nocobase/app-plugin-notification-web-push
 
+## 0.1.0-beta.12
+
+### Patch Changes
+
+- 1952789: Declare whether each product plugin is enabled by default, preinstalled only, available separately, or deprecated.
+- cf23bfe: Stop publishing CHANGELOG.md in the package; the changelog stays in the repository.
+- Updated dependencies [888bca5]
+- Updated dependencies [1952789]
+- Updated dependencies [cf23bfe]
+  - @nocobase/app-plugin-authentication@2.0.0-beta.27
+  - @nocobase/app-plugin-i18n@1.0.0-beta.25
+  - @nocobase/app-plugin-notification@2.0.0-beta.12
+
 ## 0.1.0-beta.11
 
 ### Patch Changes

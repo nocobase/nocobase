@@ -1,5 +1,21 @@
 # @nocobase/app-plugin-users
 
+## 2.0.0-beta.24
+
+### Patch Changes
+
+- 888bca5: Configure audit body capture and additional redaction in application YAML. Body capture defaults to off, and target resolution can use any available context without reading disabled bodies. Application and route redaction use `{ fields, paths }`.
+- 1952789: Declare whether each product plugin is enabled by default, preinstalled only, available separately, or deprecated.
+- cf23bfe: Stop publishing CHANGELOG.md in the package; the changelog stays in the repository.
+- Updated dependencies [888bca5]
+- Updated dependencies [1952789]
+- Updated dependencies [c1f20c6]
+- Updated dependencies [cf23bfe]
+  - @nocobase/audit@0.1.0-beta.1
+  - @nocobase/app-plugin-authentication@2.0.0-beta.27
+  - @nocobase/app-plugin-authorization@1.0.0-beta.42
+  - @nocobase/app-plugin-notification@2.0.0-beta.12
+
 ## 2.0.0-beta.23
 
 ### Patch Changes

@@ -1,5 +1,38 @@
 # @nocobase/app-template-default
 
+## 2.0.0-beta.5
+
+### Patch Changes
+
+- 334439b: Preinstall the Knowledge and Verification plugins for optional registration in Default applications.
+- c1f20c6: Rotate audit JSON Lines files by UTC date and configurable size with `rotating-file-stream`, and retain archives for at least the configured duration after the last write. Existing file paths become prefixes for dated, numbered segments. The previous unsegmented files stay in place.
+- Updated dependencies [888bca5]
+- Updated dependencies [1952789]
+- Updated dependencies [c1f20c6]
+- Updated dependencies [24d0cad]
+- Updated dependencies [cf23bfe]
+  - @nocobase/audit@0.1.0-beta.1
+  - @nocobase/app-plugin-authentication@2.0.0-beta.27
+  - @nocobase/app-plugin-users@2.0.0-beta.24
+  - @nocobase/app-plugin-agents@2.0.0-beta.22
+  - @nocobase/app-plugin-api-keys@1.0.0-beta.30
+  - @nocobase/app-plugin-authorization@1.0.0-beta.42
+  - @nocobase/app-plugin-authz-default-access@1.0.0-beta.24
+  - @nocobase/app-plugin-authz-restriction-rules@1.0.0-beta.22
+  - @nocobase/app-plugin-authz-sharing-rules@1.0.0-beta.23
+  - @nocobase/app-plugin-concurrency@0.1.0-beta.5
+  - @nocobase/app-plugin-database-explorer@1.0.0-beta.22
+  - @nocobase/app-plugin-file@1.0.0-beta.35
+  - @nocobase/app-plugin-foundation@0.1.0-beta.24
+  - @nocobase/app-plugin-i18n@1.0.0-beta.25
+  - @nocobase/app-plugin-mail@1.0.0-beta.31
+  - @nocobase/app-plugin-message-broker@0.1.0-beta.1
+  - @nocobase/app-plugin-notification@2.0.0-beta.12
+  - @nocobase/app-plugin-notification-in-app@2.0.0-beta.10
+  - @nocobase/app-plugin-notification-providers@1.0.0-beta.23
+  - @nocobase/app-plugin-scheduler@1.0.0-beta.28
+  - @nocobase/app-cli@1.0.0-beta.41
+
 ## 2.0.0-beta.4
 
 ### Minor Changes
