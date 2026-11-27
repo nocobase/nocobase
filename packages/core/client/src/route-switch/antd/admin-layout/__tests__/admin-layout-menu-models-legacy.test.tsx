@@ -909,6 +909,44 @@ describe('AdminLayoutMenuItemModel legacy behavior', () => {
     expect(adminLayoutModel.menuRouteRefreshVersion).toBe(refreshBefore + 1);
   });
 
+  it('should open the first visible page in a nested menu group', () => {
+    const layout = engine.createModel<AdminLayoutModelV1>({
+      uid: ADMIN_LAYOUT_MODEL_UID,
+      use: AdminLayoutModelV1,
+    });
+    const { group, flowPage } = NocoBaseDesktopRouteType;
+    layout.syncMenuRoutes([
+      {
+        id: 1,
+        type: group,
+        children: [
+          {
+            id: 2,
+            type: group,
+            children: [
+              { id: 3, type: flowPage, schemaUid: 'first' },
+              { id: 4, type: flowPage, schemaUid: 'second' },
+            ],
+          },
+        ],
+      },
+    ]);
+    const nested = layout.subModels.menuItems[0].subModels.menuItems[0];
+    const [firstPage, secondPage] = nested.subModels.menuItems;
+    const options = { designable: false, isMobile: false, t: (title: string) => title };
+    const topGroup = () => layout.toProLayoutRoute(options).children[0];
+
+    firstPage.setHidden(true);
+    expect(topGroup()).toMatchObject({
+      redirect: '/admin/second',
+      routes: [{ redirect: '/admin/second', routes: [{ path: '/admin/second' }] }],
+    });
+    secondPage.setHidden(true);
+    expect(topGroup()).toMatchObject({ redirect: '/admin/1' });
+    firstPage.setHidden(false);
+    expect(topGroup().redirect).toBe('/admin/first');
+  });
+
   it('should render hidden menu item with opacity and keep original title in config mode in client v1', () => {
     const model = engine.createModel<AdminLayoutMenuItemModel>({
       uid: 'legacy-menu-item-hidden-in-config',

@@ -43,9 +43,6 @@ import {
 import { ADMIN_LAYOUT_MODEL_UID } from './constants';
 import {
   type AdminLayoutRoutePathLike,
-  findFirstAccessiblePageRoute,
-  findFirstV2LandingRoute,
-  isV2AdminRuntime,
   joinAdminLayoutRoutePath,
   resolveAdminRouteRuntimeTarget,
   toRouterNavigationPath,
@@ -669,6 +666,7 @@ export class AdminLayoutMenuItemModel extends FlowModel<AdminLayoutMenuItemStruc
         path,
         redirect: route.schemaUid ? joinAdminLayoutRoutePath(layout, route.schemaUid) : undefined,
         hideInMenu: route.hideInMenu,
+        _landingPage: runtimeTarget.runtimePath && !route.hideInMenu && !route.hidden ? route : undefined,
         disabled: !runtimeTarget.runtimePath,
         _runtimePath: runtimeTarget.runtimePath,
         _navigationMode: runtimeTarget.navigationMode,
@@ -681,27 +679,18 @@ export class AdminLayoutMenuItemModel extends FlowModel<AdminLayoutMenuItemStruc
     }
 
     if (route.type === NocoBaseDesktopRouteType.group) {
-      const itemChildren = Array.isArray(route.children) ? route.children : [];
-      const children =
-        (this.subModels.menuItems || [])
-          .map((item: AdminLayoutMenuItemModel) =>
-            item.toProLayoutRoute({
-              ...options,
-              depth: depth + 1,
-            }),
-          )
-          .filter(Boolean) || [];
+      const children = (this.subModels.menuItems || [])
+        .map((item: AdminLayoutMenuItemModel) => item.toProLayoutRoute({ ...options, depth: depth + 1 }))
+        .filter((item): item is AdminLayoutMenuNode => item !== null);
+      const landingPage = children.find((item) => item._landingPage)?._landingPage;
 
       if (options.designable && depth === 0) {
         children.push(getAdminLayoutMenuInitializerButton('schema-initializer-Menu-side', this, route, layout));
       }
 
-      const landingRoute = isV2AdminRuntime(this.context.app)
-        ? findFirstV2LandingRoute(itemChildren)
-        : findFirstAccessiblePageRoute(itemChildren);
       const runtimeTarget = resolveAdminRouteRuntimeTarget({
         app: this.context.app,
-        route: isV2AdminRuntime(this.context.app) && landingRoute ? landingRoute : route,
+        route: landingPage,
         layout,
       });
 
@@ -712,8 +701,9 @@ export class AdminLayoutMenuItemModel extends FlowModel<AdminLayoutMenuItemStruc
         redirect:
           children[0]?.key === 'x-designer-button'
             ? undefined
-            : joinAdminLayoutRoutePath(layout, landingRoute?.schemaUid || route.id),
+            : joinAdminLayoutRoutePath(layout, landingPage?.schemaUid || route.id),
         hideInMenu: route.hideInMenu,
+        _landingPage: route.hideInMenu || route.hidden ? undefined : landingPage,
         _runtimePath: runtimeTarget.runtimePath,
         _navigationMode: runtimeTarget.navigationMode,
         _isLegacy: runtimeTarget.isLegacy,
@@ -724,7 +714,7 @@ export class AdminLayoutMenuItemModel extends FlowModel<AdminLayoutMenuItemStruc
       };
 
       if (children.length > 0) {
-        groupRoute.routes = children as AdminLayoutMenuNode[];
+        groupRoute.routes = children;
       }
 
       return groupRoute;

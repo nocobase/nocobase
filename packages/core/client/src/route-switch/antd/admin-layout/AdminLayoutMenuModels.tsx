@@ -28,7 +28,6 @@ import {
   reconcileAdminLayoutMenuItems,
   shouldRenderIconInTitle,
 } from './AdminLayoutMenuUtils';
-import { findFirstPageRoute } from './AdminLayoutCompat';
 import { NocoBaseDesktopRouteType, type NocoBaseDesktopRoute } from './route-types';
 import {
   buildMenuBasicSchema,
@@ -616,6 +615,7 @@ export class AdminLayoutMenuItemModel extends FlowModel<AdminLayoutMenuItemStruc
         path: `/admin/${route.schemaUid}`,
         redirect: `/admin/${route.schemaUid}`,
         hideInMenu: route.hideInMenu,
+        _landingPage: route.schemaUid && !route.hideInMenu ? route : undefined,
         _route: route,
         _parentRoute: parentRoute,
         _depth: depth,
@@ -624,16 +624,10 @@ export class AdminLayoutMenuItemModel extends FlowModel<AdminLayoutMenuItemStruc
     }
 
     if (route.type === NocoBaseDesktopRouteType.group) {
-      const itemChildren = Array.isArray(route.children) ? route.children : [];
-      const children =
-        (this.subModels.menuItems || [])
-          .map((item: AdminLayoutMenuItemModel) =>
-            item.toProLayoutRoute({
-              ...options,
-              depth: depth + 1,
-            }),
-          )
-          .filter(Boolean) || [];
+      const children = (this.subModels.menuItems || [])
+        .map((item: AdminLayoutMenuItemModel) => item.toProLayoutRoute({ ...options, depth: depth + 1 }))
+        .filter((item): item is AdminLayoutMenuNode => item !== null);
+      const landingPage = children.find((item) => item._landingPage)?._landingPage;
 
       if (options.designable && depth === 0) {
         children.push(getAdminLayoutMenuInitializerButton('schema-initializer-Menu-side', this, route));
@@ -643,11 +637,9 @@ export class AdminLayoutMenuItemModel extends FlowModel<AdminLayoutMenuItemStruc
         name,
         icon,
         path: `/admin/${route.id}`,
-        redirect:
-          children[0]?.key === 'x-designer-button'
-            ? undefined
-            : `/admin/${findFirstPageRoute(itemChildren)?.schemaUid || route.id}`,
+        redirect: children[0]?.key === 'x-designer-button' ? undefined : `/admin/${landingPage?.schemaUid || route.id}`,
         hideInMenu: route.hideInMenu,
+        _landingPage: route.hideInMenu ? undefined : landingPage,
         _route: route,
         _parentRoute: parentRoute,
         _depth: depth,

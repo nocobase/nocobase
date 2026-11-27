@@ -120,7 +120,7 @@ const resetStyle = css`
   }
 
   .ant-menu-item:has([data-nb-hidden-menu-item='true']),
-  .ant-menu-submenu:has([data-nb-hidden-menu-item='true']) {
+  .ant-menu-submenu:has(> .ant-menu-submenu-title [data-nb-hidden-menu-item='true']) {
     display: none !important;
   }
 `;
