@@ -47,6 +47,7 @@ import type PluginFileManagerServer from '@nocobase/plugin-file-manager';
 import { CheckpointCleaner, SequelizeCollectionSaver } from './ai-employees/checkpoints';
 import { mimoProviderOptions } from './llm-providers/mimo';
 import { mistralProviderOptions } from './llm-providers/mistral';
+import { atlascloudProviderOptions } from './llm-providers/atlascloud';
 import { orcarouterProviderOptions } from './llm-providers/orcarouter';
 import { shengsuanyunProviderOptions } from './llm-providers/shengsuanyun';
 import { SubAgentsDispatcher } from './ai-employees/sub-agents';
@@ -190,6 +191,7 @@ export class PluginAIServer extends Plugin {
     this.aiManager.registerLLMProvider('kimi', kimiProviderOptions);
     this.aiManager.registerLLMProvider('xai', xaiProviderOptions);
     this.aiManager.registerLLMProvider('orcarouter', orcarouterProviderOptions);
+    this.aiManager.registerLLMProvider('atlascloud', atlascloudProviderOptions);
     this.aiManager.registerLLMProvider('shengsuanyun', shengsuanyunProviderOptions);
   }
 
