@@ -1,3 +1,4 @@
+import { once } from 'node:events';
 import {
   closeSync,
   lstatSync,
@@ -108,24 +109,26 @@ export class FileAuditOutput {
       signal.throwIfAborted();
       this.start();
       const output = this.output!;
-      const write: NonNullable<OutputStream['write']> = {
-        segment: output.active,
-      };
+      const write: NonNullable<OutputStream['write']> = {};
       output.write = write;
       try {
+        // During idle rotation the library can queue a write before the next
+        // open event. Wait for our file checks before submitting any bytes.
+        if (!output.active) await once(output.stream, 'open', { signal });
+        const segment = output.active;
+        if (!segment)
+          throw output.error ?? new Error('Audit segment is not open.');
+        signal.throwIfAborted();
+        write.segment = segment;
         await new Promise<void>((resolve, reject) => {
           output.stream.write(line, (error) =>
             error ? reject(error) : resolve(),
           );
         });
         if (output.error) throw output.error;
-        const segment = write.segment;
         // The pinned stream ignores FileHandle.write's byte count. Detect a
         // short append before allowing another record into that segment.
-        if (
-          !segment ||
-          (await lstat(segment.file)).size !== segment.size + line.length
-        )
+        if ((await lstat(segment.file)).size !== segment.size + line.length)
           throw new Error('Audit record was not written in full.');
         segment.size += line.length;
       } catch (error) {
@@ -233,7 +236,6 @@ export class FileAuditOutput {
         const segment = { file, size: info.size };
         output.active = segment;
         output.opening = undefined;
-        if (output.write) output.write.segment ??= segment;
         lastOpened = number;
         this.scheduleCleanup();
       } catch (error) {

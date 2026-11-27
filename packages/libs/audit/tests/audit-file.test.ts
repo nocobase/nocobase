@@ -1,4 +1,5 @@
-import { unlinkSync } from 'node:fs';
+import { chmodSync, unlinkSync } from 'node:fs';
+import { FileAuditOutput } from '../src/file-output.js';
 import { AuditProvider } from '../src/runtime.js';
 import {
   mkdtemp,
@@ -736,6 +737,53 @@ it.skipIf(process.platform === 'win32')(
     } finally {
       await app.shutdown();
       report.mockRestore();
+      await rm(root, { recursive: true, force: true });
+    }
+  },
+);
+
+it.skipIf(process.platform === 'win32')(
+  'holds a write during idle rotation until the new segment passes its file checks',
+  async () => {
+    const root = await mkdtemp(path.join(tmpdir(), 'audit-file-'));
+    const report = vi.fn();
+    const output = new FileAuditOutput(root, 'audit');
+    output.attach(report, 50, 180);
+    const signal = new AbortController().signal;
+    const rejected = Promise.withResolvers<boolean>();
+    const append = RotatingFileStream.prototype._write;
+    const write = vi.spyOn(RotatingFileStream.prototype, '_write');
+    write.mockImplementationOnce(function (chunk, encoding, done) {
+      this.once('rotation', () => {
+        this.prependOnceListener('open', (file: string) =>
+          chmodSync(file, 0o644),
+        );
+        void output
+          .write(Buffer.from('{"requestId":"waiting"}\n'), signal)
+          .then(
+            () => rejected.resolve(false),
+            () => rejected.resolve(true),
+          );
+      });
+      append.call(this, chunk, encoding, done);
+    });
+    vi.useFakeTimers({ toFake: ['Date', 'setTimeout', 'clearTimeout'] });
+    vi.setSystemTime(new Date('2026-11-26T23:59:59Z'));
+    try {
+      await output.write(Buffer.from('{}\n'), signal);
+      await vi.advanceTimersByTimeAsync(1_000);
+      expect(await rejected.promise).toBe(true);
+      expect(
+        await readFile(
+          path.join(root, 'audit.2026-11-27.000000.jsonl'),
+          'utf8',
+        ),
+      ).toBe('');
+      expect(write).toHaveBeenCalledOnce();
+    } finally {
+      await output.detach(report, () => undefined);
+      vi.useRealTimers();
+      write.mockRestore();
       await rm(root, { recursive: true, force: true });
     }
   },
