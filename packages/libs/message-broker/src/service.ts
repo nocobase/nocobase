@@ -512,12 +512,17 @@ class DefaultMessageBrokerService implements MessageBrokerService {
   private subscriptionBinding(
     backendName: string,
     name: string,
+    implementation: BrokerImplementation,
   ): SubscriptionBinding {
     const entry = this.config!.backends![backendName];
+    const options = bindingOptions(entry, 'subscription', name);
     return resolveSubscriptionBinding(
       name,
-      bindingOptions(entry, 'subscription', name),
+      options,
       `messageBroker.backends.${backendName}`,
+      options.maxAttempts === undefined
+        ? implementation.defaultMaxAttempts?.(options)
+        : undefined,
     );
   }
 
@@ -582,7 +587,7 @@ class DefaultMessageBrokerService implements MessageBrokerService {
           options: bindingOptions(entry, 'publisher', publisher),
         })),
         subscriptions: [...bindings.subscriptions].map((subscription) =>
-          this.subscriptionBinding(name, subscription),
+          this.subscriptionBinding(name, subscription, implementation),
         ),
       };
       for (const subscription of config.subscriptions) {
@@ -608,7 +613,7 @@ class DefaultMessageBrokerService implements MessageBrokerService {
         );
       }
     };
-    needs('deadLetter', 'every subscription');
+    needs('deadLetter', 'final failure handling');
     if (binding.concurrency > 1)
       needs('perMessageAck', `concurrency ${binding.concurrency}`);
     if (binding.retryDelay > 0)
@@ -644,7 +649,7 @@ class DefaultMessageBrokerService implements MessageBrokerService {
             options: bindingOptions(backend.config.entry, 'publisher', name),
           })
         : (backend.config.subscriptions.find((entry) => entry.name === name) ??
-          this.subscriptionBinding(backendName, name));
+          this.subscriptionBinding(backendName, name, backend.implementation));
     const known =
       kind === 'publisher'
         ? backend.config.publishers.some((entry) => entry.name === name)
@@ -710,12 +715,14 @@ class DefaultMessageBrokerService implements MessageBrokerService {
     const usage = `subscription "${subscription.name}"`;
     const retryOutcome = (
       attempt: number,
+      failure: 'handlerError' | 'retryExhausted',
       reason: string,
       delay: number | undefined,
     ): DeliveryOutcome => {
       if (attempt >= binding.maxAttempts) {
         return {
           kind: 'deadLetter',
+          failure,
           reason: `Gave up after ${attempt} attempt(s): ${reason}`,
         };
       }
@@ -727,7 +734,12 @@ class DefaultMessageBrokerService implements MessageBrokerService {
     ): DeliveryOutcome => {
       if (result === undefined || result.kind === 'ack') return { kind: 'ack' };
       if (result.kind === 'reject')
-        return { kind: 'deadLetter', reason: result.reason };
+        return {
+          kind: 'deadLetter',
+          failure: 'handlerRejected',
+          reason: result.reason,
+        };
+      if (this.abort.signal.aborted) return { kind: 'retry', delay: 0 };
       if (
         result.delay !== undefined &&
         result.delay > 0 &&
@@ -743,19 +755,30 @@ class DefaultMessageBrokerService implements MessageBrokerService {
           { ...log, capability: 'delayedRetry' },
           error.message,
         );
-        return { kind: 'deadLetter', reason: error.message };
+        return {
+          kind: 'deadLetter',
+          failure: 'unsupportedRetryDelay',
+          reason: error.message,
+        };
       }
-      return retryOutcome(attempt, 'the handler asked to retry', result.delay);
+      return retryOutcome(
+        attempt,
+        'retryExhausted',
+        'the handler asked to retry',
+        result.delay,
+      );
     };
     return async (encoded, { attempt }) => {
       const handler = subscription.handler;
-      if (!handler) return { kind: 'retry', delay: 0 };
+      if (!handler || this.abort.signal.aborted)
+        return { kind: 'retry', delay: 0 };
       let body: unknown;
       try {
         body = codec.decode(encoded.body, encoded.contentType);
       } catch (error) {
         return {
           kind: 'deadLetter',
+          failure: 'decodeError',
           reason: `Cannot decode the body: ${errorMessage(error)}`,
         };
       }
@@ -765,6 +788,7 @@ class DefaultMessageBrokerService implements MessageBrokerService {
           if (result.issues) {
             return {
               kind: 'deadLetter',
+              failure: 'schemaMismatch',
               reason: `The body does not match the schema: ${result.issues.map((issue) => issue.message).join('; ')}`,
             };
           }
@@ -772,6 +796,7 @@ class DefaultMessageBrokerService implements MessageBrokerService {
         } catch (error) {
           return {
             kind: 'deadLetter',
+            failure: 'schemaError',
             reason: `Schema validation failed: ${errorMessage(error)}`,
           };
         }
@@ -811,12 +836,17 @@ class DefaultMessageBrokerService implements MessageBrokerService {
       } catch (error) {
         if (error instanceof SettleWithoutCommit)
           return settle(error.result, attempt);
-        const reason = errorMessage(error);
+        if (this.abort.signal.aborted) return { kind: 'retry', delay: 0 };
         this.logger.warn(
-          { ...log, messageId: encoded.messageId, attempt, error: reason },
+          { ...log, messageId: encoded.messageId, attempt },
           'Message broker handler failed.',
         );
-        return retryOutcome(attempt, reason, undefined);
+        return retryOutcome(
+          attempt,
+          'handlerError',
+          errorMessage(error),
+          undefined,
+        );
       }
     };
   }
