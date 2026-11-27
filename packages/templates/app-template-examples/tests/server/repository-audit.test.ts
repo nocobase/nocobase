@@ -1,4 +1,4 @@
-import { readFile } from 'node:fs/promises';
+import { readFile, readdir } from 'node:fs/promises';
 import path from 'node:path';
 
 import { i18nToken } from '@nocobase/app-server/i18n';
@@ -100,10 +100,15 @@ it('records Repository mutations with only a file destination configured', async
     if (!created.ok) throw new Error(await created.text());
     expect((await post('count', {}, 'en-US', 'operator')).ok).toBe(true);
 
-    const lines = await readFile(
-      app.application.paths.storage('audit.jsonl'),
-      'utf8',
-    );
+    const { paths } = app.application;
+    const segments = (await readdir(paths.storageDir))
+      .filter((name) => /^audit\.\d{4}-\d{2}-\d{2}\.\d{6}\.jsonl$/.test(name))
+      .sort();
+    const lines = (
+      await Promise.all(
+        segments.map((name) => readFile(paths.storage(name), 'utf8')),
+      )
+    ).join('');
     const repositoryEvents = lines
       .trim()
       .split('\n')

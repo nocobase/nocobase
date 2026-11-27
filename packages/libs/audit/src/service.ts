@@ -10,12 +10,14 @@ import {
   validateAuditConfig,
   type AuditConfig,
 } from './config.js';
-import { fileAuditDriver } from './file-transport.js';
+import { createFileAuditDriver } from './file-transport.js';
 import type { AuditActor, AuditEvent } from './index.js';
 
 export interface AuditTransportContext {
   readonly name: string;
   readonly paths: { readonly storageDir: string };
+  /** Report a destination warning without including event contents. */
+  readonly report?: (message: string) => void;
 }
 
 export interface AuditTransport {
@@ -58,8 +60,9 @@ const deliveryTimeout = 1_000;
 const maxPendingPerDestination = 64;
 
 export class AuditCoordinator implements AuditService {
+  private readonly fileDriver = createFileAuditDriver();
   private readonly drivers = new Map<string, AuditTransportDriver>([
-    [fileAuditDriver.name, fileAuditDriver],
+    [this.fileDriver.name, this.fileDriver],
   ]);
   private readonly actorResolvers: AuditActorResolver[] = [];
   private readonly destinations: Destination[] = [];
@@ -112,18 +115,19 @@ export class AuditCoordinator implements AuditService {
     }
     try {
       for (const [name, definition] of definitions) {
-        const driver = this.drivers.get(definition.driver)!;
+        const { driver, options = {} } = definition;
         try {
-          const transport = driver.createTransport(definition.options ?? {}, {
+          const transport = this.drivers.get(driver)!.createTransport(options, {
             name,
             paths,
+            report: (message) => this.report(message, name),
           });
           if (!transport || typeof transport.write !== 'function')
             throw new Error();
           this.destinations.push({ name, transport, pending: new Map() });
         } catch {
           throw new Error(
-            `Invalid configuration for audit destination "${name}" (driver "${driver.name}").`,
+            `Invalid configuration for audit destination "${name}" (driver "${driver}").`,
           );
         }
       }
@@ -131,6 +135,7 @@ export class AuditCoordinator implements AuditService {
       await this.close();
       throw error;
     }
+    await this.fileDriver.prepare();
     return this.destinations.length > 0;
   }
 

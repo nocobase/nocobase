@@ -56,7 +56,8 @@
   },
   "dependencies": {
     "@nocobase/secrets": "workspace:^",
-    "hono": "catalog:"
+    "hono": "catalog:",
+    "rotating-file-stream": "catalog:"
   },
   "devDependencies": {
     "@nocobase/db": "workspace:^",

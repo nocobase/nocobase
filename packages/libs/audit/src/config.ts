@@ -1,4 +1,12 @@
+import path from 'node:path';
+
 import { validateAuditRedactRules, type AuditRedactRules } from './redact.js';
+
+export type AuditFileOptions = {
+  readonly path: string;
+  readonly maxFileSizeMB?: number;
+  readonly retentionDays?: number;
+};
 
 export interface AuditDestinationConfig {
   readonly driver: string;
@@ -26,6 +34,35 @@ const validName = /^[a-zA-Z0-9][a-zA-Z0-9_.-]{0,63}$/u;
 
 export function isAuditName(value: unknown): value is string {
   return typeof value === 'string' && validName.test(value);
+}
+
+function validateAuditFileOptions(
+  options: Readonly<Record<string, unknown>>,
+  error: (key: string, message: string) => void,
+): void {
+  const value = options.path;
+  if (
+    typeof value !== 'string' ||
+    value.includes('\0') ||
+    /[/\\]$/.test(value) ||
+    !/^[a-zA-Z0-9_-]+\.jsonl$/.test(path.basename(value))
+  )
+    error(
+      'path',
+      'must name a .jsonl file with letters, numbers, underscores or hyphens.',
+    );
+  for (const key of Object.keys(options)) {
+    if (key !== 'path' && key !== 'maxFileSizeMB' && key !== 'retentionDays')
+      error(key, 'is not a file audit option.');
+  }
+  for (const key of ['maxFileSizeMB', 'retentionDays'] as const) {
+    const value = options[key];
+    if (
+      value !== undefined &&
+      (typeof value !== 'number' || !Number.isFinite(value) || value <= 0)
+    )
+      error(key, 'must be a positive finite number.');
+  }
 }
 
 function isMapping(value: unknown): value is Record<string, unknown> {
@@ -81,8 +118,14 @@ export function validateAuditConfig(
       )
     )
       error(path, 'accepts only driver and options.');
-    if (destination.options !== undefined && !isMapping(destination.options))
+    if (destination.options !== undefined && !isMapping(destination.options)) {
       error(`${path}.options`, 'must be a mapping.');
+      continue;
+    }
+    if (value.enabled !== false && destination.driver === 'file')
+      validateAuditFileOptions(destination.options ?? {}, (key, message) =>
+        error(`${path}.options.${key}`, message),
+      );
   }
 }
 
