@@ -1,0 +1,66 @@
+name: V3 Studio Installer Images
+run-name: studio-installer-images
+
+# Copies Gitea's image, which the one-command installer of NocoBase Studio community edition runs (scripts/get-studio in
+# nocobase/studio), to the Shanghai public registry, where `--mirror registry.cn-shanghai.aliyuncs.com` pulls every
+# image from, so that a machine in mainland China does not need Gitea's own registry:
+#
+#   docker.gitea.com/gitea:1.24  ->  registry.cn-shanghai.aliyuncs.com/nocobase/gitea:1.24
+#
+# The installer's other images are there already: Studio CE, which V3 Studio Release (v3-studio-release.yml) copies,
+# and nocobase/postgres:16. The path on the right is STACK_MIRROR_GITEA_IMAGE in scripts/get-studio/src/lib/stack.sh,
+# and the tag follows its default: when the installer moves to another tag, change both. Nothing runs it on its own; run
+# it by hand from the default branch after such a change:
+#
+#   gh workflow run v3-studio-installer-images.yml -R nocobase/nocobase
+#
+# The copy keeps every platform (`skopeo copy --all`), and the run then checks that the tag reads without credentials,
+# as the installer pulls it. A repository the push created private fails that check: make it public in the Alibaba Cloud
+# Container Registry console and run the workflow again. It signs in with ALI_DOCKER_USERNAME and ALI_DOCKER_PASSWORD,
+# the account V3 Studio Release copies Studio CE with.
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: v3-studio-installer-images
+  cancel-in-progress: false
+
+jobs:
+  copy:
+    name: Copy Gitea
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      REGISTRY: registry.cn-shanghai.aliyuncs.com
+      SOURCE: docker.gitea.com/gitea:1.24
+      TARGET: nocobase/gitea:1.24
+    steps:
+      - name: Sign in to the Shanghai public registry
+        uses: docker/login-action@v3
+        with:
+          registry: registry.cn-shanghai.aliyuncs.com
+          username: ${{ secrets.ALI_DOCKER_USERNAME }}
+          password: ${{ secrets.ALI_DOCKER_PASSWORD }}
+
+      - name: Install skopeo
+        run: |
+          if ! command -v skopeo >/dev/null; then
+            sudo apt-get update && sudo apt-get install -y skopeo
+          fi
+
+      - name: Copy the image with every platform
+        run: |
+          skopeo copy --all --retry-times 3 "docker://$SOURCE" "docker://$REGISTRY/$TARGET"
+
+      - name: Check that the copy reads without credentials
+        run: |
+          if ! platforms=$(skopeo inspect --raw --no-creds "docker://$REGISTRY/$TARGET" |
+            jq -r '[.manifests[]?.platform | select(.os != "unknown") | "\(.os)/\(.architecture)"] | join(", ")'); then
+            echo "::error::$REGISTRY/$TARGET cannot be read without credentials. Make the repository public in the Alibaba Cloud Container Registry console and run this workflow again."
+            exit 1
+          fi
+          echo "$REGISTRY/$TARGET: ${platforms:-a single platform}" | tee -a "$GITHUB_STEP_SUMMARY"

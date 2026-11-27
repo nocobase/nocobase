@@ -10,10 +10,14 @@ import {
 } from './composite.js';
 import {
   AccessConstraintRegistry,
+  type AccessConstraint,
   type AccessConstraintService,
 } from './constraints.js';
+import { CredentialCatalog } from './credentials.js';
 import type {
+  AuthorizationGrant,
   AuthorizationGrantService,
+  AuthorizationGrantSource,
   AuthorizationGrantsChangedListener,
 } from './grants.js';
 import {
@@ -29,7 +33,9 @@ import {
 import { RecordAccessRegistry } from './record-access.js';
 import { ResourceTypeRegistry, resourceTypeHandler } from './resource-types.js';
 import { AuthorizationRouteRegistry } from './routes.js';
+import { parseRecordSelection, type RecordSelection } from './selection.js';
 import { AuthorizationSubjectRegistry } from './subjects.js';
+import type { AuthorizationTitle } from './titles.js';
 import {
   AuthorizationDeniedError,
   type AuthorizationDecision,
@@ -77,6 +83,8 @@ export interface AuthorizationContext {
     request: AuthorizationCheckRequest<TParams>,
   ): Promise<void>;
   snapshot(): Promise<AuthorizationSnapshot>;
+  /** The sources resolved while checking this context, without running another check. */
+  resolvedGrantSources?(): readonly AuthorizationGrantSource[];
 }
 
 export interface AuthorizationEnv {
@@ -115,6 +123,8 @@ export class Authorization {
     new AuthorizationSubjectRegistry();
   readonly routes: AuthorizationRouteRegistry =
     new AuthorizationRouteRegistry();
+  /** Templates and record sources for credentials such as API keys. */
+  readonly credentials: CredentialCatalog = new CredentialCatalog();
   private readonly plugins: readonly AuthorizationPlugin[];
   private readonly provider: AuthorizationGrantService;
   private readonly compositeResourceRegistry: CompositeResourceRegistry;
@@ -193,10 +203,45 @@ export class Authorization {
     return this.provider.onChange?.(listener) ?? ((): void => {});
   }
 
+  /** Why no credential may hold `action` on `resource`; undefined when a credential may. */
+  humanOnly(
+    resource: ResourceRef,
+    action: string,
+  ): AuthorizationTitle | undefined {
+    return this.resourceTypes.action(resource, action)?.humanOnly;
+  }
+
+  /**
+   * Whether a credential's scope covers `action` on `resource`. A composite action whose record scopes the scope sets
+   * in a policy that does not expand is not covered: a damaged policy never falls back to the identity's own scopes.
+   */
+  private keyScopeAllows(
+    scope: KeyScope,
+    resource: ResourceRef,
+    action: string,
+  ): boolean {
+    if (!scope.allows(resource, action)) return false;
+    if (resource.type !== COMPOSITE_RESOURCE_TYPE || !scope.policy) return true;
+    const policy = scope.policy(resource, action);
+    return (
+      policy === undefined ||
+      this.compositeResourceRegistry.validateGrant({
+        resource,
+        action,
+        policy,
+      }) === undefined
+    );
+  }
+
   for(identity: AuthorizationIdentity): AuthorizationContext {
-    const constraints = this.constraints.for(identity);
+    const constraints = keyScopeConstraints(
+      this.constraints.for(identity),
+      identity.keyScope,
+      this.recordAccess,
+    );
+    const provider = this.provider.for?.(identity) ?? this.provider;
     const grants = composedGrants(
-      this.provider.for?.(identity) ?? this.provider,
+      provider,
       this.compositeResourceRegistry,
       constraints,
     );
@@ -212,18 +257,34 @@ export class Authorization {
       }) as AuthorizationRequest<TParams>;
     // A scoped credential is checked on the action requested only: the grants a composite action expands into are
     // the composite's business, so its internal checks run unscoped.
-    const outOfScope = (input: AuthorizationCheckRequest<unknown>) =>
-      identity.keyScope &&
-      !identity.keyScope.allows(input.resource, input.action)
-        ? keyScopeDenial(identity.keyScope, input.resource, input.action)
-        : undefined;
+    // An action a person's only is denied to any credential, whatever the scope and the holder's grants say.
+    // The human-only check comes first, so such an action is always refused with the same reason.
+    const outOfScope = (input: AuthorizationCheckRequest<unknown>) => {
+      const scope = identity.keyScope;
+      if (!scope) return undefined;
+      const reason = this.humanOnly(input.resource, input.action);
+      if (reason !== undefined)
+        return humanOnlyDenial(scope, input.resource, input.action, reason);
+      return this.keyScopeAllows(scope, input.resource, input.action)
+        ? undefined
+        : keyScopeDenial(scope, input.resource, input.action);
+    };
     const authorize = async <TParams>(
       input: AuthorizationCheckRequest<TParams>,
     ): Promise<AuthorizationDecision> =>
       outOfScope(input) ??
-      (await this.authorizeWithGrants(request(input), grants, constraints));
+      (await this.authorizeWithGrants(
+        request(input),
+        grants,
+        constraints,
+        true,
+        identity.keyScope,
+      ));
     return {
       identity,
+      ...(provider.resolvedSources
+        ? { resolvedGrantSources: () => provider.resolvedSources!() }
+        : {}),
       authorize: authorize as AuthorizationContext['authorize'],
       can: async (input) =>
         !outOfScope(input) &&
@@ -274,8 +335,10 @@ export class Authorization {
         permissions: unscoped.permissions
           .map((permission) => ({
             resource: permission.resource,
-            actions: permission.actions.filter((action) =>
-              scope.allows(permission.resource, action),
+            actions: permission.actions.filter(
+              (action) =>
+                this.keyScopeAllows(scope, permission.resource, action) &&
+                this.humanOnly(permission.resource, action) === undefined,
             ),
           }))
           .filter((permission) => permission.actions.length > 0),
@@ -287,7 +350,8 @@ export class Authorization {
         actions: (
           await Promise.all(
             permission.actions.map(async (action) =>
-              scope.allows(permission.resource, action) &&
+              this.keyScopeAllows(scope, permission.resource, action) &&
+              this.humanOnly(permission.resource, action) === undefined &&
               (
                 await this.authorizeWithGrants<undefined>(
                   { ...identity, resource: permission.resource, action },
@@ -333,6 +397,7 @@ export class Authorization {
     grants: AuthorizationGrantService,
     constraints: AccessConstraintService,
     resolveConditions = true,
+    keyScope?: KeyScope,
   ): Promise<AuthorizationDecision> {
     const handler = resourceTypeHandler(
       this.resourceTypes,
@@ -371,7 +436,13 @@ export class Authorization {
         request.resource.type !== COMPOSITE_RESOURCE_TYPE
       )
         return decision;
-      return await this.composeComposite(stored, decision, grants, constraints);
+      return await this.composeComposite(
+        stored,
+        decision,
+        grants,
+        constraints,
+        unrestricted ? keyScope : undefined,
+      );
     } catch (error) {
       return deny(
         'AUTHORIZATION_HANDLER_FAILED',
@@ -380,12 +451,17 @@ export class Authorization {
     }
   }
 
-  /** Checks each grant target a composite action composes, with its grants only. */
+  /**
+   * Checks each grant target a composite action composes, with its grants only. `unrestrictedKey` is the credential of
+   * an unrestricted identity: a target whose data scope the credential's policy sets is then checked as if the
+   * identity held exactly that policy, so the credential's record scopes restrict it as they restrict anyone else's.
+   */
   private async composeComposite(
     request: AuthorizationRequest<unknown>,
     decision: AuthorizationDecision,
     grants: AuthorizationGrantService,
     constraints: AccessConstraintService,
+    unrestrictedKey?: KeyScope,
   ): Promise<AuthorizationDecision> {
     const action = this.compositeResourceRegistry.getAction(
       request.resource.id,
@@ -405,18 +481,53 @@ export class Authorization {
       resolve: async (input) =>
         (await grants.resolve(input)).filter(fromThisAction),
     };
+    const policy = unrestrictedKey?.policy?.(request.resource, request.action);
+    const policyScopes: unknown = policy?.scopes;
+    const setByKey = (scopeKey: string | undefined) =>
+      scopeKey !== undefined &&
+      typeof policyScopes === 'object' &&
+      policyScopes !== null &&
+      Reflect.get(policyScopes, scopeKey) !== undefined;
+    let keyed: AuthorizationGrantService | undefined;
+    if (unrestrictedKey && policy) {
+      const synthetic: AuthorizationGrant = {
+        source: { plugin: 'key-scope', id: unrestrictedKey.keyId },
+        resource: request.resource,
+        action: request.action,
+        policy,
+      };
+      const composed = composedGrants(
+        {
+          resolve: () => Promise.resolve([synthetic]),
+          resolveAll: () => Promise.resolve([synthetic]),
+        },
+        this.compositeResourceRegistry,
+        constraints,
+      );
+      keyed = {
+        resolveAll: async (input) =>
+          (await composed.resolveAll(input)).filter(fromThisAction),
+        resolve: async (input) =>
+          (await composed.resolve(input)).filter(fromThisAction),
+      };
+    }
     const targets = new Map<
       string,
-      { resource: ResourceRef; action: string }
+      { resource: ResourceRef; action: string; keyed: boolean }
     >();
     for (const grant of action.grants)
-      for (const entry of grant.actions)
-        targets.set(JSON.stringify([grant.resource, entry.action]), {
+      for (const entry of grant.actions) {
+        const key = JSON.stringify([grant.resource, entry.action]);
+        targets.set(key, {
           resource: grant.resource,
           action: entry.action,
+          keyed:
+            (targets.get(key)?.keyed ?? false) ||
+            (keyed !== undefined && setByKey(entry.scopeKey)),
         });
+      }
     const checks: CompositeResourceCheck[] = await Promise.all(
-      [...targets.values()].map(async (target) => ({
+      [...targets.values()].map(async ({ keyed: byKey, ...target }) => ({
         ...target,
         decision: await this.authorizeWithGrants(
           {
@@ -432,7 +543,7 @@ export class Authorization {
               },
             },
           },
-          scoped,
+          byKey && keyed ? keyed : scoped,
           constraints,
         ),
       })),
@@ -551,6 +662,84 @@ function keyScopeDenial(
     'KEY_SCOPE',
     `The credential ${scope.keyId} is not scoped to ${resource.type}:${resource.id}.${action}`,
   );
+}
+
+/** The decision for an action no credential may hold. */
+function humanOnlyDenial(
+  scope: KeyScope,
+  resource: ResourceRef,
+  action: string,
+  reason: AuthorizationTitle,
+): AuthorizationDecision {
+  return {
+    effect: 'deny',
+    reasons: [
+      {
+        code: 'KEY_HUMAN_ONLY',
+        message: `${resource.type}:${resource.id}.${action} is a person's only; the credential ${scope.keyId} may not take it`,
+        details: { keyId: scope.keyId, reason },
+      },
+    ],
+  };
+}
+
+/**
+ * The identity's rule constraints, plus the record scopes a credential's scope sets on a composite action: each one
+ * restricts that branch the way a restriction rule does, so the credential reaches at most what both allow.
+ */
+function keyScopeConstraints(
+  base: AccessConstraintService,
+  scope: KeyScope | undefined,
+  recordAccess: Pick<RecordAccessRegistry, 'get'>,
+): AccessConstraintService {
+  const policyOf = scope?.policy?.bind(scope);
+  if (!scope || (!policyOf && !scope.personless)) return base;
+  // A credential that acts as no person gets no records a rule adds by counting from the principal.
+  const counted = (constraint: AccessConstraint): boolean =>
+    constraint.effect === 'expand' &&
+    constraint.selection.type === 'recordAccess' &&
+    recordAccess.get(constraint.selection.key)?.personal === true;
+  return {
+    resolve: async (input) => {
+      const resolved = await base.resolve(input);
+      const own = scope.personless
+        ? resolved.filter((constraint) => !counted(constraint))
+        : resolved;
+      if (input.scopeKey === undefined || !policyOf) return own;
+      const selection = keyScopeSelection(
+        policyOf(input.resource, input.action),
+        input.scopeKey,
+      );
+      if (!selection) return own;
+      const restriction: AccessConstraint = {
+        source: { plugin: 'key-scope', id: scope.keyId },
+        effect: 'restrict',
+        selection,
+      };
+      return [...own, restriction];
+    },
+  };
+}
+
+/** The records a credential's policy keeps for one data scope; undefined when it keeps the identity's own. */
+function keyScopeSelection(
+  policy:
+    { readonly type: string; readonly [key: string]: unknown } | undefined,
+  scopeKey: string,
+): RecordSelection | undefined {
+  if (policy?.type !== COMPOSITE_RESOURCE_TYPE) return undefined;
+  const scopes: unknown = policy.scopes;
+  if (typeof scopes !== 'object' || scopes === null) return undefined;
+  const value: unknown = Reflect.get(scopes, scopeKey);
+  if (value === undefined) return undefined;
+  // A value that does not parse reaches nothing, so a damaged scope only narrows.
+  if (value === '') return { type: 'records', ids: [] };
+  if (typeof value === 'string') return { type: 'recordAccess', key: value };
+  try {
+    return parseRecordSelection(value);
+  } catch {
+    return { type: 'records', ids: [] };
+  }
 }
 
 function deny(code: string, message: string): AuthorizationDecision {

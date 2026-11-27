@@ -1,5 +1,5 @@
 import { setTimeout as abortableDelay } from 'node:timers/promises';
-import type { GitInvocationOptions } from './git.ts';
+import { GitSshError, type GitInvocationOptions } from './git.ts';
 // Retrying transient Git preparation failures, including network transfers and short metadata lock conflicts.
 //
 // Only a failure whose message names a passing cause is retried: a TLS handshake cut off, a connection reset, refused
@@ -88,9 +88,15 @@ export class GitNetworkError extends Error {
   /** The last attempt's error. */
   readonly lastError: string;
 
-  constructor(operation: string, retries: number, lastError: string) {
+  constructor(
+    operation: string,
+    retries: number,
+    lastError: string,
+    cause?: unknown,
+  ) {
     super(
       `${operation} failed after ${retries} ${retries === 1 ? 'retry' : 'retries'} on this runner; the last error: ${lastError}`,
+      { cause },
     );
     this.retries = retries;
     this.lastError = lastError;
@@ -140,7 +146,12 @@ export async function retryGit<T>(
     } catch (error) {
       options.signal?.throwIfAborted();
       const message = messageOf(error);
-      const failure = classifyGitFailure(message);
+      const failure: GitFailure =
+        error instanceof GitSshError
+          ? {
+              kind: error.failure === 'unreachable' ? 'transient' : 'permanent',
+            }
+          : classifyGitFailure(message);
       if (failure.kind === 'permanent') {
         if (failure.hint === undefined || !(error instanceof Error))
           throw error;
@@ -149,7 +160,7 @@ export async function retryGit<T>(
       }
       const wait = delays[retries];
       if (wait === undefined)
-        throw new GitNetworkError(operation, retries, message);
+        throw new GitNetworkError(operation, retries, message, error);
       options.onRetry?.({
         operation,
         attempt: retries + 1,

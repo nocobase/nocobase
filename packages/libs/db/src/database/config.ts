@@ -236,6 +236,8 @@ export interface BaseConnectionConfig {
    */
   repositoryEventMaxDepth?: number;
   schemaManagement?: SchemaManagementMode;
+  /** Reuse committed Collection definitions in PostgreSQL and SQLite transactions. */
+  transactionCollectionCache?: boolean;
   /**
    * Physical tables on this connection that are NocoBase bookkeeping rather
    * than Collections — a migration or seed history or lock table given a

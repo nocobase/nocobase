@@ -1,4 +1,4 @@
-// Issue descriptions, comments and plans hand `mermaid` code blocks to @nocobase/markdown-mermaid, whose own tests
+// Issue descriptions and comments hand `mermaid` code blocks to @nocobase/markdown-mermaid, whose own tests
 // cover the drawing; until a diagram is drawn, and when it cannot be, the block shows its source.
 import { render } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';

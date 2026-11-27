@@ -1,3 +1,4 @@
+// Generated from packages/plugins/app-plugin-notification-in-app/client/inbox-page/inbox-actions.ts: edit it there, then run `node scripts/sync-ui-library-inbox.mjs`.
 import {
   MailIcon,
   MailOpenIcon,

@@ -1,5 +1,11 @@
 # @nocobase/app-plugin-template-print
 
+## 0.0.2-beta.3
+
+### Patch Changes
+
+- a6b9b74: Declare the plugin's title and one-line description in English and Chinese under `nocobase` in `package.json`, which the App Foundation plugins page lists it by.
+
 ## 0.0.2-beta.2
 
 ### Patch Changes

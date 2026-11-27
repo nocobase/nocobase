@@ -21,7 +21,11 @@ import {
   removeDirectory,
   scaffoldFromTemplate,
 } from './lib/scaffold.ts';
-import { downloadTemplate, resolveTemplateSource } from './lib/template.ts';
+import {
+  downloadTemplate,
+  lookupTemplateAlias,
+  resolveTemplateSource,
+} from './lib/template.ts';
 import { buildNpmrcFile } from './lib/npmrc.ts';
 import {
   FAILURE_CODES,
@@ -192,7 +196,9 @@ async function run(
   });
   state.stage = 'download';
   progress(`Downloading ${source}`);
+  const preset = lookupTemplateAlias(input.flags.template.trim())?.preset;
   const template = await downloadTemplate({
+    ...(preset ? { preset } : {}),
     nocobaseRegistry,
     source,
     ...(input.flags.registry !== undefined &&
@@ -216,13 +222,17 @@ async function run(
     // Creation stops at a project that can be configured, not at one that can run. Which database an application uses
     // is decided by the driver it depends on, and configuring it is `config init`'s job — so the next steps name it
     // rather than this command writing a configuration nobody asked for.
+    const initCommand = template.hasSqliteDriver
+      ? 'pnpm nocobase config init --dialect sqlite'
+      : 'pnpm nocobase config init';
     state.nextCommands = [
-      'pnpm nocobase config init',
+      initCommand,
       'pnpm nocobase config check',
       'pnpm dev',
     ];
-    state.message =
-      'Configure the application with pnpm nocobase config init before starting it. That uses SQLite; for another database, install its driver and name the dialect, for example: pnpm add @nocobase/db-postgres, then pnpm nocobase config init --dialect postgres';
+    state.message = template.hasSqliteDriver
+      ? `Configure SQLite with ${initCommand}. Choose another preinstalled driver with pnpm nocobase config init --dialect <dialect>. Initialization moves the selected driver into dependencies for deployment.`
+      : 'Configure the application with pnpm nocobase config init before starting it. Use --dialect to select an installed database driver.';
     progress(`Created ${name}. ${state.message}`);
   } finally {
     await removeDirectory(template.directory);

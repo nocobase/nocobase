@@ -7,6 +7,8 @@ import {
 } from '@nocobase/app-server/config';
 import { joinBasePath, normalizeBasePath } from '@nocobase/app-server/support';
 
+import { MAIL_ACCOUNTS_PAGE_PATH } from '../shared/paths.js';
+
 export interface MailProviderConfigEntry {
   readonly type: string;
   readonly enabled?: boolean;
@@ -23,9 +25,13 @@ export const MAX_MAIL_SYNC_BATCH_SIZE = 200;
 export const DEFAULT_GMAIL_QUOTA_UNITS_PER_USER_PER_MINUTE = 6_000;
 export const DEFAULT_GMAIL_QUOTA_UNITS_PER_PROJECT_PER_MINUTE = 1_200_000;
 export const DEFAULT_MAIL_OAUTH_CALLBACK_PATH = '/mail/oauth/callback';
-// The plugin ships no page, so the default returns to the application's root. An application that renders
-// `MailAccountsPage` sets `mail.oauthReturnUrl` to that page, which reads the `mailAuthorization` result.
-export const DEFAULT_MAIL_OAUTH_RETURN_PATH = '/';
+/**
+ * The plugin's own Mail accounts page in personal settings (route `mailAccounts`), which reads the `mailAuthorization`
+ * result. An application that removes or replaces that page sets `mail.oauthReturnUrl` to its own.
+ */
+export const DEFAULT_MAIL_OAUTH_RETURN_PATH: string = MAIL_ACCOUNTS_PAGE_PATH;
+/** How long finished sync runs and submissions are kept; `0` keeps them forever. */
+export const DEFAULT_MAIL_LOG_RETENTION_DAYS = 90;
 export const DEFAULT_MAIL_AUTOMATIC_SYNC_INTERVAL_MS = 300_000;
 export const DEFAULT_MAIL_AUTOMATIC_SYNC_INTERVAL_MINUTES = 5;
 export const MIN_MAIL_AUTOMATIC_SYNC_INTERVAL_MINUTES = 1;
@@ -45,6 +51,11 @@ export interface MailConfig {
    * every other consumer of the jobs service.
    */
   readonly jobs?: string;
+  /**
+   * Days a finished sync run or submission is kept before maintenance deletes it; `0` keeps every record. Pending,
+   * running and scheduled ones are never deleted.
+   */
+  readonly logRetentionDays: number;
   readonly providers: Readonly<Record<string, MailProviderConfigEntry>>;
 }
 
@@ -53,10 +64,12 @@ export const DEFAULT_MAIL_CONFIG: MailConfig = Object.freeze({
   oauthReturnUrl: DEFAULT_MAIL_OAUTH_RETURN_PATH,
   automaticSyncIntervalMs: DEFAULT_MAIL_AUTOMATIC_SYNC_INTERVAL_MS,
   syncBatchSize: DEFAULT_MAIL_SYNC_BATCH_SIZE,
+  logRetentionDays: DEFAULT_MAIL_LOG_RETENTION_DAYS,
   providers: {},
 });
 
-const mailSectionEnvironmentMappings: Readonly<
+/** The environment variable that sets each Mail setting, as `mailConfig` maps them. */
+export const mailSectionEnvironmentMappings: Readonly<
   Record<string, EnvironmentMapping>
 > = {
   MAIL_OAUTH_CALLBACK_URL: envString('oauthCallbackUrl'),
@@ -69,6 +82,7 @@ const mailSectionEnvironmentMappings: Readonly<
     secret: true,
   }),
   MAIL_JOBS: envString('jobs', { required: false }),
+  MAIL_LOG_RETENTION_DAYS: envInteger('logRetentionDays'),
 };
 
 /** Fully prefixed mappings for legacy application-level providers; current apps compose mailConfig. */
@@ -231,11 +245,26 @@ export function resolveMailConfig(value: unknown): MailConfig {
     configuredSyncBatchSize ?? DEFAULT_MAIL_CONFIG.syncBatchSize;
   resolveMailSyncBatchSize(syncBatchSize);
 
+  const configuredLogRetentionDays = value.logRetentionDays;
+  if (
+    configuredLogRetentionDays !== undefined &&
+    (typeof configuredLogRetentionDays !== 'number' ||
+      !Number.isSafeInteger(configuredLogRetentionDays) ||
+      configuredLogRetentionDays < 0)
+  ) {
+    throw new TypeError(
+      'Mail configuration at "mail.logRetentionDays" must be a non-negative integer.',
+    );
+  }
+  const logRetentionDays =
+    configuredLogRetentionDays ?? DEFAULT_MAIL_CONFIG.logRetentionDays;
+
   return {
     oauthCallbackUrl,
     oauthReturnUrl,
     automaticSyncIntervalMs,
     syncBatchSize,
+    logRetentionDays,
     ...(pushWebhookUrl === undefined ? {} : { pushWebhookUrl }),
     ...(pushWebhookSecret === undefined ? {} : { pushWebhookSecret }),
     ...(jobs === undefined ? {} : { jobs }),
@@ -325,6 +354,8 @@ export function resolveMailOAuthReturnUrl(
   origin: string,
   publicBasePath: string,
   result: 'success' | 'failure',
+  /** The connected account, so the page continues with that account's folder selection. */
+  accountId?: string,
 ): string {
   const value = configuredUrl?.trim() || DEFAULT_MAIL_OAUTH_RETURN_PATH;
   const absolute = parseAbsoluteMailUrl(value, 'Mail OAuth return URL');
@@ -336,6 +367,7 @@ export function resolveMailOAuthReturnUrl(
     new URL(joinBasePath(publicBasePath, relative!.pathname), origin);
   if (relative) resolved.search = relative.search;
   resolved.searchParams.set('mailAuthorization', result);
+  if (accountId) resolved.searchParams.set('mailAccountId', accountId);
   return absolute
     ? resolved.toString()
     : `${resolved.pathname}${resolved.search}`;

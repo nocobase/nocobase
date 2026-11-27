@@ -40,7 +40,13 @@ import {
 } from '../../../shared/runners.js';
 import type { DatabaseConnection } from '@nocobase/db';
 
-import type { Agent } from '../../../shared/agents.js';
+import {
+  effortsFor,
+  mayChat,
+  type Agent,
+  type ChatAudience,
+} from '../../../shared/agents.js';
+import { agentModelOf } from '../../../shared/model-catalog.js';
 import {
   CONVERSATION_HISTORY_IN_PROMPT,
   CONVERSATION_PAGE_DEFAULT,
@@ -483,6 +489,7 @@ export function createConversationService(
       nameText: agent?.nameText ?? null,
       avatar: agent?.avatar ?? null,
       archived: agent ? agent.status !== 'enabled' : false,
+      ...(agent ? agentModelOf(agent) : {}),
     };
   }
 
@@ -644,17 +651,37 @@ export function createConversationService(
     return chatEffortCapabilities(agent.modelEntries[0], eligible);
   }
 
+  /** The person's own effort for a conversation they start without choosing one, where the agent's tool takes it. */
+  async function preferredEffort(
+    conn: DatabaseConnection,
+    agent: Agent,
+    userId: string,
+    loadOptions: () => Promise<readonly string[] | undefined> = () =>
+      effortOptions(conn, agent, userId),
+  ): Promise<string | undefined> {
+    const entry = agent.modelEntries[0];
+    if (agent.source !== 'runner' || !entry) return undefined;
+    const { effort } = await deps.settings.preferences(userId, conn);
+    if (!effort || !effortsFor(entry).includes(effort)) return undefined;
+    const options = await loadOptions();
+    return options === undefined || options.includes(effort)
+      ? effort
+      : undefined;
+  }
+
   async function validateEffort(
     conn: DatabaseConnection,
     agent: Agent,
     userId: string,
     selected: string | null | undefined,
+    loadOptions: () => Promise<readonly string[] | undefined> = () =>
+      effortOptions(conn, agent, userId),
   ): Promise<string | null> {
     // Only an explicitly selected non-default value is a conversation preference.
     const preference =
       selected && selected !== agent.modelEntries[0]?.effort ? selected : null;
     if (preference === null) return null;
-    const options = await effortOptions(conn, agent, userId);
+    const options = await loadOptions();
     if (options !== undefined && !options.includes(preference))
       throw invalid(
         'The reasoning effort is no longer supported. Select an available effort or restore the Agent default.',
@@ -735,6 +762,10 @@ export function createConversationService(
     const conn = tx.read();
     const { record, share } = await conversationAccess(conn, userId, id);
     if (!share) return detailOf(conn, record);
+    const agent =
+      !jsonObject(record.metadata).onlineAgent && record.agentId
+        ? await findAgent(conn, record.agentId)
+        : null;
     // Whitelist snapshot fields: no latest runner, project, execution, usage, wait or owner attention.
     return {
       id,
@@ -753,10 +784,7 @@ export function createConversationService(
             archived: false,
           }
         : {
-            ...agentRef(
-              record.agentId,
-              record.agentId ? await findAgent(conn, record.agentId) : null,
-            ),
+            ...agentRef(record.agentId, agent),
             avatar: null,
             archived: false,
           },
@@ -2232,11 +2260,18 @@ export function createConversationService(
           throw invalid('Select a callable Runner agent.');
         if (runnerConfig && !(await canAnswer(unit.conn, agent, userId)))
           throw conflict('This agent has no available execution environment.');
+        // The runners that could take it are read once, for the preferred effort and its check alike.
+        let options: Promise<readonly string[] | undefined> | undefined;
+        const loadOptions = () =>
+          (options ??= effortOptions(unit.conn, agent, userId));
         const effort = await validateEffort(
           unit.conn,
           agent,
           userId,
-          request.effort,
+          request.effort !== undefined
+            ? request.effort
+            : await preferredEffort(unit.conn, agent, userId, loadOptions),
+          loadOptions,
         );
         const title =
           request.title === undefined
@@ -3130,7 +3165,7 @@ export function createConversationService(
       return run;
     },
 
-    async chatAgents(userId) {
+    async chatAgents(userId, audience) {
       const conn = tx.read();
       const [agents, runners, settings, preferences] = await Promise.all([
         deps.agents.list(),
@@ -3140,6 +3175,8 @@ export function createConversationService(
         deps.settings.settings(conn),
         deps.settings.preferences(userId, conn),
       ]);
+      const limited = agents.some((agent) => agent.chatRoles?.length);
+      const who: ChatAudience = limited && audience ? await audience() : 'all';
       const variableStates = await deps.eligibility.prepare(conn, agents, {});
       const now = clock.now().getTime();
       const catalog = await Promise.all(
@@ -3147,7 +3184,9 @@ export function createConversationService(
           // People talk to the agents discovered from runners; an application's own agents do work of its own.
           .filter(
             (agent) =>
-              agent.source === 'runner' && deps.agents.mayInvoke(agent, userId),
+              agent.source === 'runner' &&
+              deps.agents.mayInvoke(agent, userId) &&
+              mayChat(agent, who),
           )
           .map(async (agent): Promise<ChatAgent> => {
             const fitting = runners.filter((runner) =>
@@ -3169,6 +3208,7 @@ export function createConversationService(
               avatar: agent.avatar,
               isSystemDefault: agent.id === settings.defaultAgentId,
               isMyDefault: agent.id === preferences.defaultAgentId,
+              ...agentModelOf(agent),
               availability: availabilityOf(
                 agent,
                 userId,

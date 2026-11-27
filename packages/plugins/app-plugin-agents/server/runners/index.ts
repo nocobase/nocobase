@@ -29,5 +29,8 @@ export {
 
 /** What the runner routes set for a request authenticated by a runner key. */
 export interface RunnerEnv {
-  Variables: { runner: Runner };
+  Variables: {
+    runner: Runner;
+    claimBudget?: { readonly deadline: number; readonly signal: AbortSignal };
+  };
 }

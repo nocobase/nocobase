@@ -1,3 +1,5 @@
+import { auditOperationName } from './audit-operation-name.js';
+import { auditRecordKey, describeAudit } from '@nocobase/audit';
 import {
   ApiError,
   apiErrorResponse,
@@ -38,6 +40,8 @@ export const SHARING_RULES_SETTINGS: string = `authorization.${SHARING_RULES_RUL
 /** The route prefix under `/api/authorization`. */
 export const SHARING_RULES_PATH = '/sharingRules';
 
+const auditCollection = 'authorizationSharingRules';
+
 type SharingRulesAdministrationApi = Omit<SharingRulesApi, 'withTransaction'>;
 
 /** Every `/sharingRules` route, gated by `settings:authorization.sharing-rules`. */
@@ -46,10 +50,25 @@ export function createSharingRulesHandler(
   api: SharingRulesAdministrationApi,
 ): AuthorizationRouteHandler {
   const routes = createSettingsRouter();
-  const checked = (value: unknown): SharingRule => {
+  const checked = async (value: unknown): Promise<SharingRule> => {
     const rule = parse.rule(value, { withSubjects: true });
     validateDataScopeRule(authz, rule);
-    return { ...rule, subjects: rule.subjects ?? [] };
+    const subjects = rule.subjects ?? [];
+    // A subject type may keep some of its ids from being shared with, such as service accounts, which act as no person.
+    for (const type of new Set(subjects.map((subject) => subject.type))) {
+      const definition = authz.subjects.get(type);
+      if (!definition?.filterShareable) continue;
+      const ids = subjects
+        .filter((subject) => subject.type === type)
+        .map((subject) => subject.id);
+      const shareable = new Set(await definition.filterShareable(ids));
+      const refused = ids.filter((id) => !shareable.has(id));
+      if (refused.length)
+        throw new TypeError(
+          `A sharing rule cannot name ${type} ${refused.join(', ')}: only people can be shared with.`,
+        );
+    }
+    return { ...rule, subjects };
   };
   const existing = async (key: string): Promise<SharingRule> => {
     const rule = await api.get(key);
@@ -92,6 +111,26 @@ export function createSharingRulesHandler(
   );
   routes.post(
     SHARING_RULES_PATH,
+    describeAudit({
+      operationName: auditOperationName('createRule'),
+      action: 'create',
+      resource: `settings:${SHARING_RULES_SETTINGS}`,
+      target: (context) => ({
+        collection: auditCollection,
+        key: context.req.param('key'),
+      }),
+      resolveTargets: ({ response }, context) => {
+        const previous = context.req.param('key');
+        const key = auditRecordKey(response, 'data', 'key') ?? previous;
+        return {
+          source:
+            previous && previous !== key
+              ? { collection: auditCollection, key: previous }
+              : undefined,
+          targets: [{ collection: auditCollection, key }],
+        };
+      },
+    }),
     settingsAccess(SHARING_RULES_SETTINGS, 'create'),
     describeRoute({
       tags,
@@ -114,7 +153,7 @@ export function createSharingRulesHandler(
     }),
     apiValidator('json', SubjectRuleBody),
     async (context) => {
-      const rule = checked(context.req.valid('json'));
+      const rule = await checked(context.req.valid('json'));
       await assertRuleKeyAvailable((key) => api.get(key), rule.key);
       return context.json(
         {
@@ -126,6 +165,26 @@ export function createSharingRulesHandler(
   );
   routes.patch(
     `${SHARING_RULES_PATH}/:key`,
+    describeAudit({
+      operationName: auditOperationName('updateRule'),
+      action: 'update',
+      resource: `settings:${SHARING_RULES_SETTINGS}`,
+      target: (context) => ({
+        collection: auditCollection,
+        key: context.req.param('key'),
+      }),
+      resolveTargets: ({ response }, context) => {
+        const previous = context.req.param('key');
+        const key = auditRecordKey(response, 'data', 'key') ?? previous;
+        return {
+          source:
+            previous && previous !== key
+              ? { collection: auditCollection, key: previous }
+              : undefined,
+          targets: [{ collection: auditCollection, key }],
+        };
+      },
+    }),
     settingsAccess(SHARING_RULES_SETTINGS, 'update'),
     describeRoute({
       tags,
@@ -154,7 +213,7 @@ export function createSharingRulesHandler(
     apiValidator('json', SubjectRulePatchBody),
     async (context) => {
       const { key } = context.req.valid('param');
-      const rule = checked({
+      const rule = await checked({
         ...(await existing(key)),
         ...context.req.valid('json'),
       });
@@ -167,6 +226,15 @@ export function createSharingRulesHandler(
   );
   routes.delete(
     `${SHARING_RULES_PATH}/:key`,
+    describeAudit({
+      operationName: auditOperationName('deleteRule'),
+      action: 'delete',
+      resource: `settings:${SHARING_RULES_SETTINGS}`,
+      target: (context) => ({
+        collection: auditCollection,
+        key: context.req.param('key'),
+      }),
+    }),
     settingsAccess(SHARING_RULES_SETTINGS, 'delete'),
     describeRoute({
       tags,

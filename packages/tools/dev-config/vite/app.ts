@@ -116,7 +116,20 @@ export const createAppViteConfig: (
         configEnvironment.command === 'serve'
           ? resolveDevelopmentBase()
           : BUILD_BASE,
-      plugins: [react(), tailwindcss()],
+      plugins: [
+        react(),
+        tailwindcss(),
+        {
+          name: 'nocobase:client-plugin-styles',
+          apply: 'serve',
+          configResolved(config) {
+            // Tailwind discovers linked plugin sources at startup. Refresh them when the registry changes.
+            config.configFileDependencies.push(
+              path.resolve(config.root, 'client/plugins.ts'),
+            );
+          },
+        },
+      ],
       // Preserve import.meta.url-based WASM asset paths in the OOXML viewers.
       optimizeDeps: { exclude: ['@silurus/ooxml'] },
       build: {

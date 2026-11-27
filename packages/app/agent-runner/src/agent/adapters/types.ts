@@ -140,7 +140,8 @@ export interface AdapterResult {
   /** Cumulative for this run, one entry per model. */
   usage: Usage[];
   exit: 'completed' | 'aborted' | 'error';
-  error?: { reason: FailureReason; message: string };
+  /** `message` is what the tool said, reported as the run's failure; `log` is more, for the runner's log only. */
+  error?: { reason: FailureReason; message: string; log?: string };
   /** The agent's final message, when the tool reports one. */
   summary?: string;
 }

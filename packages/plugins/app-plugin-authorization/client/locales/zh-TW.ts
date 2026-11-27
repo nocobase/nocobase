@@ -1,8 +1,15 @@
+import auditLabels from '../../locales/zh-TW.js';
 import type { LocaleResource } from '@nocobase/i18n';
 
 import type enUS from './en-US.js';
+import components from './components-en-US.js';
+import settings from './settings-en-US.js';
 
 const zhTW: LocaleResource<typeof enUS> = {
+  audit: auditLabels.audit,
+  // The Roles and permissions pages are not translated into this language yet and show in English.
+  ...components,
+  settings,
   permissionSets: {
     builtIn: {
       root: '系統管理員',
@@ -21,7 +28,6 @@ const zhTW: LocaleResource<typeof enUS> = {
     actions: {
       assign: '管理作業',
       configure: '配置',
-      inspect: '檢查許可權',
       read: '讀取',
       create: '建立',
       update: '更新',
@@ -36,8 +42,8 @@ const zhTW: LocaleResource<typeof enUS> = {
       allDescription: '允許訪問每個頁面，包括後來新增的頁面。',
     },
     settings: {
-      inspector: '許可權檢查員',
       'permission-sets': '許可權集',
+      'authentication-settings': '登入與認證',
     },
     subjectTypes: {
       authenticated: '所有登入使用者',

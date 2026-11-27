@@ -112,7 +112,8 @@ function adapter(
 export const CATALOG_IDS = [
   'codex',
   'claude',
-  'gemini',
+  'antigravity',
+  'dsh',
   'copilot',
   'cursor',
   'opencode',
@@ -127,7 +128,7 @@ export const CATALOG_IDS = [
   'cline',
   'amp',
   'vibe',
-  'dsh',
+  'gemini',
 ] as const;
 export type CatalogAgentId = (typeof CATALOG_IDS)[number];
 export const AGENTS: readonly (AgentSpec & { readonly id: CatalogAgentId })[] =
@@ -155,11 +156,21 @@ export const AGENTS: readonly (AgentSpec & { readonly id: CatalogAgentId })[] =
       signIn: 'claude',
     },
     {
-      id: 'gemini',
-      name: 'Gemini CLI',
-      launchers: [program('gemini', ['--acp'])],
-      modes: ['yolo'],
-      signIn: 'gemini',
+      id: 'antigravity',
+      name: 'Antigravity CLI',
+      launchers: [
+        program('agy', ['acp'], [localBin, '~/AppData/Local/agy/bin']),
+      ],
+      allowAll: true,
+      signIn: 'agy acp --login',
+    },
+    {
+      id: 'dsh',
+      name: 'DeepSeek Harness',
+      launchers: [program('dsh', ['--profile', 'acp'])],
+      allowAll: true,
+      signIn: 'export DEEPSEEK_API_KEY=...',
+      permissionEnv: { DSH_PERMISSION_MODE: 'danger-full-access' },
     },
     {
       id: 'copilot',
@@ -302,11 +313,10 @@ export const AGENTS: readonly (AgentSpec & { readonly id: CatalogAgentId })[] =
       signIn: 'vibe',
     },
     {
-      id: 'dsh',
-      name: 'DeepSeek Harness',
-      launchers: [program('dsh', ['--profile', 'acp'])],
-      allowAll: true,
-      signIn: 'export DEEPSEEK_API_KEY=...',
-      permissionEnv: { DSH_PERMISSION_MODE: 'danger-full-access' },
+      id: 'gemini',
+      name: 'Gemini CLI',
+      launchers: [program('gemini', ['--acp'])],
+      modes: ['yolo'],
+      signIn: 'gemini',
     },
   ];

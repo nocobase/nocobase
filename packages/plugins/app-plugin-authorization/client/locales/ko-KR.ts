@@ -1,8 +1,15 @@
+import auditLabels from '../../locales/ko-KR.js';
 import type { LocaleResource } from '@nocobase/i18n';
 
 import type enUS from './en-US.js';
+import components from './components-en-US.js';
+import settings from './settings-en-US.js';
 
 const koKR: LocaleResource<typeof enUS> = {
+  audit: auditLabels.audit,
+  // The Roles and permissions pages are not translated into this language yet and show in English.
+  ...components,
+  settings,
   permissionSets: {
     builtIn: {
       root: '시스템 관리자',
@@ -21,7 +28,6 @@ const koKR: LocaleResource<typeof enUS> = {
     actions: {
       assign: '할당 관리',
       configure: '설정',
-      inspect: '권한 검사',
       read: '읽기',
       create: '생성',
       update: '수정',
@@ -37,8 +43,8 @@ const koKR: LocaleResource<typeof enUS> = {
         '나중에 추가되는 페이지를 포함해 모든 페이지에 접근을 허용합니다.',
     },
     settings: {
-      inspector: '권한 검사기',
       'permission-sets': '권한 세트',
+      'authentication-settings': '로그인 및 인증',
     },
     subjectTypes: {
       authenticated: '로그인한 모든 사용자',

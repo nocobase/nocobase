@@ -38,7 +38,7 @@ The business record's page may show a diagram, state/actions/history, or a compa
 ## Rules that are never broken
 
 1. **The state lives only in the record's own field.** Query, filter and count on it like any other column; keep no copy elsewhere.
-2. **Only the runtime changes the state.** Create with `runtime.create()`, change with `runtime.fire()`. Forms, imports, generic data endpoints, seeds of live data and SQL never write the state field, `statusChangedAt` or `lifecycleVersion`; doing so bypasses guards, the log, effects and the version check and leaves no trace. A data fix is a transition only the system may fire.
+2. **Only the runtime changes the state.** Create with `runtime.create()` and run business transitions with `runtime.fire()`. For administrator suspension, resumption, reset, or restart, use the opt-in [lifecycle management commands](lifecycle-management.md). Forms, imports, generic data endpoints, seeds of live data and SQL never write the state field, `statusChangedAt` or `lifecycleVersion`; doing so bypasses guards, the log, effects and the version check and leaves no trace. A data fix outside the management policy is a transition only the system may fire.
 3. **Anything that leaves the database is an effect.** Never send mail or call an API from a guard, `route`, `set`, `onTransition` or a state hook.
 4. **Fields that must change atomically with the state go in `accept` or `set`,** never in an effect, which runs after commit.
 5. **Pass the effect's `idempotencyKey` to the external system.** An effect runs at least once; the key is what makes it take effect once. The key covers one run: a call that must happen once per business fact is keyed by that fact.
@@ -52,7 +52,7 @@ The business record's page may show a diagram, state/actions/history, or a compa
 ```text
 server/lifecycles/<name>.ts          types, effects and defineLifecycle()
 server/providers/lifecycles.ts       the runtime, the store, the jobs dispatcher
-database/main/migrations/            the record table and the two log tables
+database/main/migrations/            the record table, log tables and creation requests
 server/routes/<name>.ts              the record routes the page calls
 client/lib/lifecycle.ts              createLifecycleHook(), configured once
 client/pages/                        pages that call the hook
@@ -63,7 +63,7 @@ Add `@nocobase/lifecycle` to `dependencies` (`pnpm add @nocobase/lifecycle`): th
 
 ## 1. Types, effects and the definition
 
-Model the required business steps and explicit exceptions, not every possible pair of states. Keep each transition's `from` and `to` as narrow as its actual behavior permits; do not add generic jump, reset, reopen or reverse paths unless the business requires them. For new definitions, prefer separate source-specific transitions when different sources have different destinations, sharing guards and effects where appropriate. A broad `from`/`to` declaration with a `route()` that chooses only some pairs makes the static diagram overstate connectivity: the renderer expands the Cartesian product and cannot inspect the routing function. Do not rename existing transitions just for appearance; their names identify history, bindings and callers. See [readable process graphs](lifecycle-ui.md#keep-process-graphs-readable) for display-only simplification that preserves runtime behavior.
+Model the required business steps and explicit exceptions, not every possible pair of states. Declare `states` in forward business progression order (initial states first, intermediate approval/work stages in flow order, final or exception outcomes last): `LifecycleDiagram`'s default `process` presentation uses state declaration order to identify backward and self-transitions (such as withdrawals, returns and retries) and keep those return wires off the main canvas. Keep each transition's `from` and `to` as narrow as its actual behavior permits; do not add generic jump, reset, reopen or reverse paths unless the business requires them. For new definitions, prefer separate source-specific transitions when different sources have different destinations, sharing guards and effects where appropriate. A broad forward `from`/`to` declaration with a `route()` that chooses only some pairs makes the static diagram overstate connectivity: the renderer expands the Cartesian product and cannot inspect the routing function. Do not rename existing transitions just for appearance; their names identify history, bindings and callers. See [readable process graphs](lifecycle-ui.md#keep-process-graphs-readable) for display-only simplification that preserves runtime behavior.
 
 ```ts
 // server/lifecycles/leave.ts
@@ -179,22 +179,22 @@ export const leaveLifecycle: Lifecycle<LeaveTypes> =
 
 The definition is checked when the module loads: an unreachable state, a non-final state without a way out, or a final state with one throws `INVALID_DEFINITION`. Pick the building block by what the requirement says:
 
-| The requirement says                                              | Write                                                                                                                       |
-| ----------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
-| Only some people may do it, and the page should say why not       | `guard` returning `true`, or `{ code, message, kind? }`; `kind: 'precondition'` when nobody may until the record changes    |
-| The action needs input such as a reason                           | `validate` returning `[{ field, message }]`, and `accept: ['field']` to write it onto the record                            |
-| Other fields change with the state                                | `set(context)`; it runs after `accept` and wins on the same field                                                           |
-| One button, several destinations (by amount, by type)             | `to: ['a', 'b']` and `route(context)` returning one                                                                         |
-| Record a change without changing the state (reassign, escalate)   | A self-transition, `from` equal to `to`; the version moves and a trigger's wait restarts                                    |
-| Available from almost any state                                   | `from: '*'` or `from: { except: [...] }`                                                                                    |
-| Something happens after N hours idle                              | A trigger with `when` and `after(parameters)`, firing a transition marked `manual: false`                                   |
-| Call an outside system, then move on                              | An effect with `retry`, `timeoutMs`, `onSuccess` / `onFailure`; throw `EffectFailure(code, message, { details })` to branch |
-| Always do X when entering a state, whichever transition got there | `onEnter: { state: [effect] }`                                                                                              |
-| Write rows of other tables with the change                        | `onTransition(context)`, in the same transaction, writing through `context.transactionHandle`                               |
-| Rows that belong to a stay, such as the tasks a stage opens       | `onEnterState` / `onLeaveState` on the lifecycle or on the state itself                                                     |
-| Only server code, a webhook or a vote may conclude it             | `manual: false` on the transition                                                                                           |
-| Several records move together                                     | `runtime.transaction(async (tx) => { … })`                                                                                  |
-| Who may create a record and what it must hold                     | `create: { validate, guard }` on the definition, not in a route, so imports and scripts meet the same rule                  |
+| The requirement says                                              | Write                                                                                                                                   |
+| ----------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
+| Only some people may do it, and the page should say why not       | `guard` returning `true`, or `{ code, message, kind? }`; `kind: 'precondition'` when nobody may until the record changes                |
+| The action needs input such as a reason                           | `validate` returning `[{ field, message }]`, and `accept: ['field']` to write it onto the record                                        |
+| Other fields change with the state                                | `set(context)`; it runs after `accept` and wins on the same field                                                                       |
+| One button, several destinations (by amount, by type)             | `to: ['a', 'b']` and `route(context)` returning one; keep `from` narrow so forward pairs do not expand needlessly on the diagram        |
+| Record a change without changing the state (reassign, escalate)   | A self-transition, `from` equal to `to`; the version moves and a trigger's wait restarts                                                |
+| Available from almost any state                                   | `from: '*'` or `from: { except: [...] }`; declare `states` in forward order so return paths stay in hover notes instead of canvas loops |
+| Something happens after N hours idle                              | A trigger with `when` and `after(parameters)`, firing a transition marked `manual: false`                                               |
+| Call an outside system, then move on                              | An effect with `retry`, `timeoutMs`, `onSuccess` / `onFailure`; throw `EffectFailure(code, message, { details })` to branch             |
+| Always do X when entering a state, whichever transition got there | `onEnter: { state: [effect] }`                                                                                                          |
+| Write rows of other tables with the change                        | `onTransition(context)`, in the same transaction, writing through `context.transactionHandle`                                           |
+| Rows that belong to a stay, such as the tasks a stage opens       | `onEnterState` / `onLeaveState` on the lifecycle or on the state itself                                                                 |
+| Only server code, a webhook or a vote may conclude it             | `manual: false` on the transition                                                                                                       |
+| Several records move together                                     | `runtime.transaction(async (tx) => { … })`                                                                                              |
+| Who may create a record and what it must hold                     | `create: { validate, guard }` on the definition, not in a route, so imports and scripts meet the same rule                              |
 
 `guard`, `route` and `set` must be pure decisions over the record, input, actor, parameters and transaction-bound services. A guard is also asked with `{}` as input by `view()` and `available()`, so it must answer for empty input.
 
@@ -212,10 +212,27 @@ The record table needs, besides its business fields:
 
 The two log tables, created once for every lifecycle in the application:
 
-- `lifecycleTransitions`: `id`, `lifecycle`, `recordId` (string), `transition`, `from` (nullable), `to`, `actorId`, `input` (json), `at` (`datetimeTz`), `version` (integer), `requestId` (nullable), `requestKey` (not null); unique indexes on `(lifecycle, recordId, version)` and `(lifecycle, recordId, requestKey)`, and an index on `(lifecycle, recordId, id)`.
-- `lifecycleEffectRuns`: `id`, `transitionId`, `lifecycle`, `recordId` (string), `effect`, `stayBound` (boolean not null), `status`, `attempts` (default 0), `maxAttempts` (default 1), `result` (json), `error` (text), `createdAt`, `updatedAt`, `claimedAt`, `runAfter`, `continuation` (json, nullable), `continuationDueAt` and `continuationAbandonedAt` (`datetimeTz`, nullable); indexes on `(status, id)`, `(lifecycle, recordId, id)`, `continuationDueAt` and `continuationAbandonedAt`.
+- `lifecycleTransitions`: `id` (`bigInt`, primary key, `autoIncrement`: the store lets the database number entries and reads history in that order, so a string key fails the first time a record is created, on SQLite with `NOT NULL constraint failed: lifecycle_transitions.id`), `lifecycle`, `recordId` (string), `transition`, `from` (nullable), `to`, `actorId`, `input` (json), `at` (`datetimeTz`), `version` (integer), `requestId` (nullable), `requestKey` (not null); unique indexes on `(lifecycle, recordId, version)` and `(lifecycle, recordId, requestKey)`, and an index on `(lifecycle, recordId, id)`.
+- `lifecycleEffectRuns`: `id` (`bigInt`, primary key, `autoIncrement`), `transitionId` (`bigInt`, not null, the id of the transition that queued it), `lifecycle`, `recordId` (string), `effect`, `stayBound` (boolean not null), `status`, `attempts` (default 0), `maxAttempts` (default 1), `result` (json), `error` (text), `createdAt`, `updatedAt`, `claimedAt`, `runAfter`, `continuation` (json, nullable), `continuationDueAt` and `continuationAbandonedAt` (`datetimeTz`, nullable); indexes on `(status, id)`, `(lifecycle, recordId, id)`, `continuationDueAt` and `continuationAbandonedAt`.
 
-Different table names are passed to `createRepositoryLifecycleStore(db, { collections: { transitions, effectRuns } })`. Copy the column list from the installed package's README or the lifecycle example's migration (`packages/examples/app-plugin-lifecycle-example/database/migrations/` in the NocoBase repository) rather than guessing, and test it with `describeMigration()` as [testing](testing.md) describes.
+Different log table names are passed to `createRepositoryLifecycleStore(db, { collections: { transitions, effectRuns } })`.
+
+When any caller uses `runtime.create(name, values, { actor, requestId })`, including an importer or a sample seed, add the creation-request table before calling it. The Runtime uses `lifecycleCreationRequests` by default. A custom name is set with the Runtime's `creationRequestsCollection` option. Add this to the self-contained migration's `up`, and drop the same table in its `down`:
+
+```ts
+await builder.createCollection('lifecycleCreationRequests', (table) => {
+  table.string('id', { length: 64 }).primary().notNull();
+  table.string('status').notNull();
+  table.integer('revision').notNull();
+  table.string('actorId').notNull();
+  table.text('fingerprint').notNull();
+  table.string('recordId').nullable();
+  table.string('entryId').nullable();
+  table.datetimeTz('at').notNull();
+});
+```
+
+The primary key backs the unique claim for creation retries. Check this table and the two log tables using `describeMigration()` as [testing](testing.md) describes. Retry the same creation with the same request ID and normalized inputs, and verify that only one record and one creation entry exist. Creation without a Runtime request ID, such as creation already deduplicated by the application's operation receipt, uses the two log tables. Transition request IDs are stored on `lifecycleTransitions`.
 
 ## 3. The provider
 
@@ -258,8 +275,22 @@ export default class LifecycleProvider extends ServiceProvider<Application> {
   }
 
   public override async start(): Promise<void> {
-    // Registers the effect job, opens the executors, schedules the sweep
-    // (reclaim, triggers, onSweep) and recovers runs an earlier process left.
+    const { container } = this.app;
+    if (
+      !container.has(databaseManagerToken) ||
+      !container.has(jobExecutorServiceToken)
+    )
+      return;
+    const collections = container.resolve(databaseManagerToken).collections();
+    if (!(await collections.get('lifecycleEffectRuns'))) {
+      container
+        .resolve(loggingToken)
+        .getLogger('lifecycle')
+        .warn(
+          'Lifecycle recovery is idle because its log collections are not installed.',
+        );
+      return;
+    }
     await this.effectJobs().start(this.lifecycleRuntime());
   }
 
@@ -308,7 +339,7 @@ export default class LifecycleProvider extends ServiceProvider<Application> {
 }
 ```
 
-Add the provider to `server/providers/index.ts`. Business services that create or move records take the runtime from `lifecycleRuntimeToken` rather than writing the table. Without a dispatcher, effects run in process before `fire()` returns; that is acceptable in a unit test, not in an application. A deployment with more than one instance sets `jobs.default` to `redis`, as [services and jobs](services-and-jobs.md) explains, so workers coordinate effect and sweep claims; recovery can replay work, so effects must be idempotent. Install and register the commercial `@nocobase/app-plugin-jobs-redis` Server plugin on every instance before selecting Redis; define the named `jobs` configuration with `adapter: redis`. Queue Redis is a separate capability and is unchanged.
+Add the provider to `server/providers/index.ts`. Keep runtime and dispatcher resolution lazy. The template's [minimal server composition](testing.md#minimal-template-composition) can start application providers without the installed workflow collections or jobs service. The check in `start()` keeps recovery and sweep registration idle in that composition and uses the logical collection name from the store configuration. Let schema inspection and dispatcher errors propagate. Verify the real application through a migrated standalone fixture, including worker startup and execution history. Business services that create or move records take the runtime from `lifecycleRuntimeToken` and use it to maintain state. Without a dispatcher, effects run in process before `fire()` returns; that is acceptable in a unit test, not in an application. A deployment with more than one instance sets `jobs.default` to `redis`, as [services and jobs](services-and-jobs.md) explains, so workers coordinate effect and sweep claims; recovery can replay work, so effects must be idempotent. Install and register the commercial `@nocobase/app-plugin-jobs-redis` Server plugin on every instance before selecting Redis; define the named `jobs` configuration with `adapter: redis`. Queue Redis is a separate capability and is unchanged.
 
 To react to changes elsewhere — refresh a page through realtime, keep a to-do list — subscribe with `runtime.on('completed' | 'entered' | 'announce', filter, listener)`. Delivery is best effort: work that must happen is an effect.
 
@@ -324,6 +355,8 @@ The library ships no routes. Write them in `server/routes/` like every other `/a
 | `POST <lifecycle>/{id}/effectRuns/{runId}/retry` with `{ force?, reason? }`          | the record view                           |
 | `POST <lifecycle>/{id}/effectRuns/{runId}/continue`                                  | the record view                           |
 | `POST <lifecycle>/{id}/effectRuns/{runId}/cancel`                                    | the record view                           |
+
+When a list or detail obtains a record through `repository.withPolicy(policy)`, include the definition's `definitionField` (here `lifecycleDefinition`) in that action's server-side read fields and any explicit Repository projection. Also include `id`, the configured state field, `statusChangedAt`, and `lifecycleVersion` when the lifecycle view uses them. For example, the Leave View policy reads `['id', 'applicantId', 'approverId', 'days', 'status', 'statusChangedAt', 'lifecycleVersion', 'lifecycleDefinition']`. `runtime.recordLifecycle(key, row)` reads the stored definition from that row. Select the intended response fields separately if the client does not need the definition field.
 
 Lists and creation are ordinary routes of the application; creation calls `runtime.create(name, values, { actor })` with the definition this entry starts. `<lifecycle>` in these paths is the process's key: the page never names a version. Each record route first asks `runtime.boundLifecycle(key, id)` which definition the record is bound to and calls the runtime with that name, so one page serves the records of every version; a list or a route that has read the record already uses `runtime.recordLifecycle(key, record)`. The description route takes an optional `?definition=<name>` and describes the latest version without one. A record no version started is refused with `DEFINITION_MISMATCH`, which `lifecycleErrorFields()` maps to `400 FAILED_PRECONDITION`; never fall back to the latest version. The fire route passes `manual: true`, so a transition marked `manual: false` is refused with `NOT_MANUAL`:
 
@@ -468,11 +501,11 @@ For workflow management lists, definition and execution details, diagram sizing 
 
 When a page needs a lifecycle diagram, first reuse the template's preinstalled `#components/lifecycle-diagram`; otherwise install the UI Library's `@nocobase/lifecycle-diagram` component (React Flow + ELK) instead of building a canvas or turning Mermaid source into an interactive view. Read `pnpm exec shadcn view @nocobase/lifecycle-diagram-demo`, then install with `yes n | pnpm exec shadcn add @nocobase/lifecycle-diagram` and format the created files. It includes `@nocobase/flow-diagram`, which is also available alone for a generic directed graph. Follow [the UI Library guidance](frontend/references/styling.md#3-use-shadcn) and its [offline catalog](frontend/references/ui-library.md) for discovery and installation.
 
-Import `LifecycleDiagram` from `#components/lifecycle-diagram`. Pass the hook's `description.description`, an `ariaLabel`, `currentState: view.record.status` (use the lifecycle's own state field), and `availableTransitions: view.available.filter((item) => item.allowed).map((item) => item.name)`. Translate labels by stable state/transition names with `stateLabel` and `transitionLabel`; add the shared `flowDiagram` keys to your locale resources. Use `onStateClick` and `onTransitionClick` to open details, including effects, triggers and continuations from the description. Definitions remain in source and clicking the diagram never fires a transition; action buttons still follow `view.available`. Pass `history={view.history.transitions}` for visited paths; the component matches the exact transition, source and destination, including retries. `visitedStates` supplements node highlights only; never infer a traversed edge from the current state or visited endpoints. Pass a translated `endLabel` to display a separate decorative end marker after each explicit final state, without treating every state lacking outgoing transitions as final. Keep `toMermaid()` for documentation and export.
+Import `LifecycleDiagram` from `#components/lifecycle-diagram`. It defaults to `presentation="process"` with `direction="DOWN" autoHeight`: boundary pills and approval/work cards draw the forward business flow while backward and self-transitions (such as withdrawals, returns, reject-to-draft and retries) are kept off the canvas layout and explained beside the hovered or focused endpoint while outlining linked states. Pass the hook's `description.description`, an `ariaLabel`, `stateKind` for application-owned approval/work/negative/exception visual roles (`stateKind` changes styling only, never topology), `currentState: view.record.status` (use the lifecycle's own state field), and `availableTransitions: view.available.filter((item) => item.allowed).map((item) => item.name)`. When many stages share early-termination final states (such as `rejected`, `voided`, or `cancelled`), pass them explicitly in `exitStates` (state names or a predicate; non-final states are ignored): their fan-in wires leave the main canvas and appear inside each source stage's hover/focus transition notes (keeping `onStateClick` and any `configuration`/`stateActions` controls interactive on those note entries), and in execution views a record terminated in a folded exit renders its outcome badge directly on the stage where `history` stopped (falling back to keeping that active exit state visible on the canvas as current when `history` does not identify a canvas source). Do not pass normal success outcomes or single-stage decision branches to `exitStates`. Translate labels by stable state/transition names with `stateLabel` and `transitionLabel`; add the shared `flowDiagram` keys to your locale resources. Use `onStateClick` and `onTransitionClick` to open details, including effects, triggers and continuations from the description. Definitions remain in source and clicking the diagram never fires a transition; action buttons still follow `view.available`. Pass `history={view.history.transitions}` for visited paths; the component matches the exact transition, source and destination, including retries. `visitedStates` supplements node highlights only; never infer a traversed edge from the current state or visited endpoints. Pass a translated `endLabel` to display a separate decorative end marker after each explicit final state, without treating every state lacking outgoing transitions as final. Keep `toMermaid()` for documentation and export.
 
-Before passing a dense description directly, apply [readable process graph guidance](lifecycle-ui.md#keep-process-graphs-readable). `availableTransitions` highlights edges; it does not filter them, and neither guards nor `route()` prune the graph. Use a separate presentation description when omitting documented technical transitions; keep the authoritative description for execution and inspection.
+Before passing a dense description directly, apply [readable process graph guidance](lifecycle-ui.md#keep-process-graphs-readable). `availableTransitions` highlights edges; it does not filter them, and neither guards nor `route()` prune the graph. Keep `states` declared in forward business order so process presentation classifies return routes accurately. Use a separate presentation description when omitting documented technical transitions; keep the authoritative description for execution and inspection.
 
-`LifecycleDiagram` defaults to `direction="DOWN" autoHeight`. For direct `FlowDiagram` composition on a process page, set those props explicitly. Choose automatic height for a content-sized diagram, or a deliberately bounded canvas for the side-by-side management layouts in [Lifecycle UI](lifecycle-ui.md#diagram-sizing-and-visual-language). Fit the full routed graph, including outer edges and labels. A wide graph fitted into a short fixed-height panel makes its labels unreadable; verify the actual lifecycle in the target page.
+`LifecycleDiagram` defaults to `presentation="process" direction="DOWN" autoHeight`. For direct `FlowDiagram` composition on a process page, set `direction="DOWN" compact controls` (and `autoHeight` when appropriate) explicitly. Choose automatic height for a content-sized diagram, or a deliberately bounded canvas for the side-by-side management layouts in [Lifecycle UI](lifecycle-ui.md#diagram-sizing-and-visual-language). Fit the full routed graph, including outer edges and labels. A wide graph fitted into a short fixed-height panel makes its labels unreadable; verify the actual lifecycle in the target page.
 
 The label callbacks receive description objects, not name strings. Read `state.name` in `stateLabel` and `transition.name` in `transitionLabel` when building translation keys:
 
@@ -485,4 +518,4 @@ Adapt the translation key prefix to the feature.
 
 Preserve the component’s application theme tokens: `--primary` for current, visited and available highlights, subdued neutral strokes for other edges, and card/foreground/border tokens for the canvas and labels. Current nodes use an accent border and ring, visited nodes a subtler accent border, and both retain the upstream textual status and icon so execution state does not rely on color alone. Labels stay on the routes; automatic transitions remain solid and may show `⚙` through `transitionLabel`. Do not introduce a separate palette or hard-coded accent color. Check light/dark themes and a changed application primary color when customizing the rendering.
 
-For narrow layouts, use `initialMinZoom={0.8}` to preserve readable node content, with pan and a full-graph Fit control. Do not add a minimap to standard process pages by default; `showMiniMap` remains opt-in for consumers that need it. `configuration` on LifecycleDiagram automatically exposes declared, authorized bindings through the real editor; `stateActions` (or `nodeActions` on FlowDiagram) adds custom controls; `nodeDescription` adds real policy summaries. Supply enough fixed node height for the content. Definition views show the latest configured policy, while record views identify their creation snapshot. Never invent reviewer names, policy values or execution highlights. Standard business process pages omit system-only technical edit paths without adding a technical display toggle; retain every business approval, rejection, withdrawal and resubmission path. Technical diagnostic views may expose the complete source description separately when explicitly needed.
+For narrow layouts, use `initialMinZoom={0.8}` when you want larger initial cards with panning and a full-graph Fit control. Do not add a minimap to standard process pages by default; `showMiniMap` remains opt-in outside fullscreen for consumers that need it. `configuration` on LifecycleDiagram automatically exposes declared, authorized bindings through the real editor; `stateActions` (or `nodeActions` on FlowDiagram) adds custom controls; `nodeDescription` adds real policy summaries. Supply enough fixed node height for custom content. Definition views show the latest configured policy, while record views identify their creation snapshot. Never invent reviewer names, policy values or execution highlights. Standard business process pages omit system-only technical edit paths without adding a technical display toggle; keep every business approval, rejection, withdrawal and resubmission transition in the definition and execution history, and let the default `process` presentation keep backward/return/self routes out of the canvas wires as endpoint hover/focus notes. Reserve `presentation="classic"` for technical diagnostic views or explicit requests that must draw every return wire on the canvas.

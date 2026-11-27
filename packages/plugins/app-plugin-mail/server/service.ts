@@ -15,6 +15,7 @@ import { MailPreferencesService } from './services/preferences.js';
 import { MailProvidersService } from './services/providers.js';
 import { MailSubmissionsService } from './services/submissions.js';
 import { MailSyncService } from './services/sync.js';
+import { toManagedSyncRunView } from './views.js';
 import {
   type MailAccountView,
   type MailAttachmentContent,
@@ -22,6 +23,7 @@ import {
   type MailCompleteAuthorizationInput,
   type MailConnectAccountInput,
   type MailFolder,
+  type MailFolderChoices,
   type MailLabel,
   type MailListConversationMessagesInput,
   type MailListMessagesInput,
@@ -76,7 +78,7 @@ export class DefaultMailService implements MailService {
       this.sync,
       defaultAutomaticSyncIntervalMinutes,
     );
-    this.accounts = new MailAccountsService(dependencies);
+    this.accounts = new MailAccountsService(dependencies, this.sync);
     this.preferences = new MailPreferencesService(dependencies);
     this.messages = new MailMessagesService(dependencies);
     this.drafts = new MailDraftsService(dependencies, sendMail);
@@ -118,7 +120,7 @@ export class DefaultMailService implements MailService {
   public async updateAccount(
     context: MailOperationContext,
     input: import('../shared/mail.js').MailUpdateAccountInput,
-  ): Promise<MailAccountView> {
+  ): Promise<import('../shared/mail.js').MailUpdatedAccountView> {
     return this.accounts.updateAccount(context, input);
   }
 
@@ -129,28 +131,117 @@ export class DefaultMailService implements MailService {
     return this.accounts.removeAccount(context, accountId);
   }
 
+  public previewSyncFolders(
+    context: MailOperationContext,
+    accountId: string,
+    syncFolderIds: readonly string[] | null,
+  ): Promise<import('../shared/mail.js').MailSyncFolderPreview> {
+    return this.accounts.previewSyncFolders(context, accountId, syncFolderIds);
+  }
+
   public async listManagedAccounts(
     context: MailOperationContext,
   ): Promise<readonly MailManagedAccountView[]> {
     return this.management.listManagedAccounts(context);
   }
 
+  public listAdminAccounts(
+    context: MailOperationContext,
+    filter?: import('../shared/mail.js').MailAdminAccountFilter,
+  ): Promise<readonly import('../shared/mail.js').MailAdminAccountView[]> {
+    return this.management.listAdminAccounts(context, filter);
+  }
+
+  public listTeamAccounts(
+    context: MailOperationContext,
+  ): Promise<readonly import('../shared/mail.js').MailTeamAccountView[]> {
+    return this.management.listTeamAccounts(context);
+  }
+
+  public countAccountsByProvider(
+    _context: MailOperationContext,
+  ): Promise<
+    readonly import('./contracts/persistence.js').MailProviderAccountCount[]
+  > {
+    return this.management.countAccountsByProvider();
+  }
+
   public listManagedSyncRunsPage(
     context: MailOperationContext,
-    offset: number,
+    pageToken: string | undefined,
     limit: number,
-  ): Promise<import('../shared/mail.js').MailOffsetPage<MailSyncRunView>> {
-    return this.management.listManagedSyncRunsPage(context, offset, limit);
+    filter?: import('../shared/mail.js').MailManagedLogFilter,
+    canManage?: boolean,
+  ): Promise<import('../shared/mail.js').MailPage<MailSyncRunView>> {
+    return this.management.listManagedSyncRunsPage(
+      context,
+      pageToken,
+      limit,
+      filter,
+      canManage,
+    );
   }
 
   public listManagedSubmissionsPage(
     context: MailOperationContext,
-    offset: number,
+    pageToken: string | undefined,
     limit: number,
+    filter?: import('../shared/mail.js').MailManagedLogFilter,
+    canManage?: boolean,
   ): Promise<
-    import('../shared/mail.js').MailOffsetPage<MailSubmissionLogView>
+    import('../shared/mail.js').MailPage<
+      import('../shared/mail.js').MailManagedSubmissionView
+    >
   > {
-    return this.management.listManagedSubmissionsPage(context, offset, limit);
+    return this.management.listManagedSubmissionsPage(
+      context,
+      pageToken,
+      limit,
+      filter,
+      canManage,
+    );
+  }
+
+  public async retryManagedSyncRun(
+    context: MailOperationContext,
+    syncRunId: string,
+  ): Promise<MailSyncRunView> {
+    return toManagedSyncRunView(
+      await this.sync.retryManagedSyncRun(context, syncRunId),
+      true,
+    );
+  }
+
+  public async cancelManagedSyncRun(
+    context: MailOperationContext,
+    syncRunId: string,
+  ): Promise<MailSyncRunView> {
+    return toManagedSyncRunView(
+      await this.sync.cancelManagedSyncRun(context, syncRunId),
+      true,
+    );
+  }
+
+  public retryManagedSubmission(
+    context: MailOperationContext,
+    submissionId: string,
+  ): Promise<import('../shared/mail.js').MailManagedSubmissionView> {
+    return this.submissions.transitionManagedSubmission(
+      context,
+      submissionId,
+      'retry',
+    );
+  }
+
+  public cancelManagedSubmission(
+    context: MailOperationContext,
+    submissionId: string,
+  ): Promise<import('../shared/mail.js').MailManagedSubmissionView> {
+    return this.submissions.transitionManagedSubmission(
+      context,
+      submissionId,
+      'cancel',
+    );
   }
 
   public listManagedFolders(
@@ -163,8 +254,9 @@ export class DefaultMailService implements MailService {
   public listManagedMessages(
     _context: MailOperationContext,
     input: MailListMessagesInput,
+    userId?: string,
   ): Promise<MailPage<MailMessageSummary>> {
-    return this.management.listManagedMessages(_context, input);
+    return this.management.listManagedMessages(_context, input, userId);
   }
 
   public getManagedMessage(
@@ -199,8 +291,16 @@ export class DefaultMailService implements MailService {
   public async listFolders(
     context: MailOperationContext,
     accountId: string,
+    options?: { readonly includeUnsynced?: boolean },
   ): Promise<readonly MailFolder[]> {
-    return this.messages.listFolders(context, accountId);
+    return this.messages.listFolders(context, accountId, options);
+  }
+
+  public listFolderChoices(
+    context: MailOperationContext,
+    accountId: string,
+  ): Promise<MailFolderChoices> {
+    return this.messages.listFolderChoices(context, accountId);
   }
 
   public listLabels(
@@ -397,6 +497,14 @@ export class DefaultMailService implements MailService {
     messageId: string,
   ): Promise<MailMessage> {
     return this.messages.retryMessageContent(context, accountId, messageId);
+  }
+
+  public getOriginalMessage(
+    context: MailOperationContext,
+    accountId: string,
+    messageId: string,
+  ): Promise<MailAttachmentContent> {
+    return this.messages.getOriginalMessage(context, accountId, messageId);
   }
 
   public getMessage(

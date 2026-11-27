@@ -374,3 +374,23 @@ describeMigration('202610160005_lifecycle_example_unified_parameters', {
     await expectCollection('lifecycleExampleParameterVersions').toExist();
   },
 });
+
+describeMigration('202611190001_lifecycle_example_ticket_management', {
+  sources: migrations,
+  reversible: false,
+  up: async ({ expectCollection }) => {
+    await expectCollection('lifecycleExampleTickets').toHaveField(
+      'lifecycleManagement',
+    );
+    await expectCollection('lifecycleExampleTickets').toHaveField(
+      'lifecycleManagementRevision',
+    );
+    await expectCollection('lifecycleExampleTransitions').toHaveField(
+      'management',
+    );
+    await expectCollection('lifecycleExampleTransitions').toHaveIndex(
+      ['lifecycle', 'recordId', 'version', 'journalRevision'],
+      { unique: true },
+    );
+  },
+});

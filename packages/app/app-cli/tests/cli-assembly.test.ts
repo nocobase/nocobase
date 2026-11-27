@@ -74,6 +74,7 @@ describe('built-in commands by location', () => {
       'package:remove',
       'plugin:inspect',
       'plugin:register',
+      'plugin:remove',
       'plugin:unregister',
       'plugin:update',
       'skills:sync',

@@ -3,6 +3,16 @@ import type { LocaleResource } from '@nocobase/i18n';
 import type enUS from './en-US.js';
 
 const ptBR: LocaleResource<typeof enUS> = {
+  audit: {
+    operations: {
+      createPermissionSet: 'Criar um conjunto de permissões',
+      assignPermissionSet: 'Atribuir um conjunto de permissões',
+      unassignPermissionSet:
+        'Remover a atribuição de um conjunto de permissões',
+      updatePermissionSet: 'Editar um conjunto de permissões',
+      deletePermissionSet: 'Excluir um conjunto de permissões',
+    },
+  },
   sections: {
     pages: 'Permissões de página',
     page: 'Páginas',
@@ -15,7 +25,6 @@ const ptBR: LocaleResource<typeof enUS> = {
     actions: {
       assign: 'Gerenciar atribuições',
       configure: 'Configurar',
-      inspect: 'Inspecionar permissões',
       read: 'Ler',
       create: 'Criar',
       update: 'Atualizar',
@@ -31,8 +40,8 @@ const ptBR: LocaleResource<typeof enUS> = {
         'Permitir acesso a todas as páginas, incluindo páginas adicionadas posteriormente.',
     },
     settings: {
-      inspector: 'Inspetor de permissão',
       'permission-sets': 'Conjuntos de permissões',
+      'authentication-settings': 'Login e autenticação',
     },
     subjectTypes: {
       authenticated: 'Todos os usuários conectados',

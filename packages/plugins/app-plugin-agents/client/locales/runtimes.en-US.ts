@@ -113,7 +113,7 @@ const runtimesEnUS = {
       ended: 'Ended',
       active: 'Work continues',
       unknown: 'Cannot confirm whether work ended',
-      oldRunner: 'This runner has not provided diagnostic reasons',
+      oldRunner: 'This runtime has not provided diagnostic reasons',
       noCleanup: 'Local cleanup result has not been received',
       discardsUntracked: 'Cleanup will discard untracked files',
       decision: {
@@ -121,7 +121,7 @@ const runtimesEnUS = {
         active: 'Work continues',
         runNotFound: 'Cannot confirm: run not found',
         ownershipUnknown:
-          'Cannot confirm: runner ownership could not be verified',
+          'Cannot confirm: runtime ownership could not be verified',
         ambiguousSubject: 'Cannot confirm: ambiguous subject key',
         bindingUnavailable:
           'Cannot confirm: application has no workspace binding',
@@ -146,7 +146,7 @@ const runtimesEnUS = {
     loadFailed: 'Could not load the runtimes',
     emptyTitle: 'No runtimes connected yet',
     emptyDescription:
-      'Once a runtime is connected, runner agents take on work there with its coding tools.',
+      'Once a runtime is connected, runtime agents take on work there with its coding tools.',
     noneConnected: 'No runtime is connected.',
     revokedList_one: '{{count}} revoked runtime',
     revokedList_other: '{{count}} revoked runtimes',
@@ -196,16 +196,16 @@ const runtimesEnUS = {
         'The variables it provides to runs that take them from the runtime, by name; the values stay on the machine. Set one there with `nocobase-runner env set NAME`, or pass it with `--pass-env NAME`.',
       none: 'None: a run that takes a variable from the runtime fails here before it starts.',
       unknown:
-        'Not reported: its runner is older than this feature. Update the runner to see them.',
+        'Not reported: its runtime is older than this feature. Update the runtime to see them.',
     },
     jobs: {
       allow: 'Allow build jobs',
       hint: 'Builds and other steps this application configures, run without a model. This runtime reports: {{kinds}}.',
       unsupported:
-        'This runtime’s runner does not take jobs. Update the runner to turn this on.',
+        'This runtime’s runtime does not take jobs. Update the runtime to turn this on.',
     },
     pathHint:
-      'The runner finds coding tools using its own PATH. In a terminal where which codex / which claude works, run nocobase-runner service install again and restart the service (or run nocobase-runner start again) so it gets the correct PATH.',
+      'The runtime finds coding tools using its own PATH. In a terminal where which codex / which claude works, run nocobase-runner service install again and restart the service (or run nocobase-runner start again) so it gets the correct PATH.',
     noTools: 'No coding tool found',
     actionsFor: 'Actions for {{name}}',
     columns: {
@@ -213,7 +213,7 @@ const runtimesEnUS = {
       status: 'Status',
       tools: 'Tools',
       sharing: 'Sharing',
-      version: 'Runner',
+      version: 'Runtime',
       lastSeen: 'Last seen',
       slots: 'Max concurrent runs',
     },
@@ -222,7 +222,7 @@ const runtimesEnUS = {
       tools: 'Tools',
       toolsDescription:
         'Only selected tools are detected and offered work. Switches and limits are saved with “Save”.',
-      version: 'Runner {{version}}',
+      version: 'Runtime {{version}}',
       runs: 'Recent runs',
       runsEmpty: 'No runs yet.',
       runsTotal: '{{count}} runs',
@@ -235,8 +235,8 @@ const runtimesEnUS = {
       owner: 'Owner {{name}}',
     },
     status: {
-      updatePending: 'Runner waiting for update',
-      pruning: 'Runner cleaning shared store',
+      updatePending: 'Runtime waiting for update',
+      pruning: 'Runtime cleaning shared store',
       online: 'Online',
       offline: 'Offline',
       revoked: 'Revoked',
@@ -245,15 +245,15 @@ const runtimesEnUS = {
     upgradeRequired: {
       title: 'This runtime needs an upgrade',
       older:
-        'Its runner {{version}} speaks agent protocol {{protocol}}; this application needs protocol {{required}}. It stays connected but runs nothing until it is updated.',
+        'Its runtime {{version}} speaks agent protocol {{protocol}}; this application needs protocol {{required}}. It stays connected but runs nothing until it is updated.',
       newer:
-        'Its runner {{version}} speaks agent protocol {{protocol}}, newer than this application (protocol {{required}}). It stays connected but runs nothing until it runs a runner this application serves.',
+        'Its runtime {{version}} speaks agent protocol {{protocol}}, newer than this application (protocol {{required}}). It stays connected but runs nothing until it runs a runtime this application serves.',
       latest:
-        'This application serves runner {{latest}}. Run this on its host to update it:',
+        'This application serves runtime {{latest}}. Run this on its host to update it:',
       noLatest:
-        'Install a runner that speaks protocol {{required}}, or run this on its host to update it:',
+        'Install a runtime that speaks protocol {{required}}, or run this on its host to update it:',
       reinstall:
-        'Its runner does not say how it was installed. Install it again on its host with the command from Add runtime.',
+        'Its runtime does not say how it was installed. Install it again on its host with the command from Add runtime.',
     },
     tool: {
       checking: 'Waiting for detection',
@@ -270,7 +270,7 @@ const runtimesEnUS = {
     },
     trust: {
       isolationHint:
-        'For both personal and shared runtimes, run the runner in a VM or isolated environment: agents have full access, and the runner is not a sandbox.',
+        'For both personal and shared runtimes, run the runtime in a VM or isolated environment: agents have full access, and the runtime is not a sandbox.',
       label: 'Usage scope',
       team: 'Shared',
       teamHint:
@@ -297,19 +297,19 @@ const runtimesEnUS = {
       saved: 'Saved {{name}}',
     },
     upgrade: {
-      show: 'Version {{version}}: a newer runner is available',
+      show: 'Version {{version}}: a newer runtime is available',
       available: 'Update available',
       badge: 'Upgradable',
       latest: 'Latest',
       installed: 'Version {{version}}',
-      title: 'A newer runner for {{name}}',
+      title: 'A newer runtime for {{name}}',
       description: 'Installed {{version}}, this application serves {{latest}}.',
       hint: 'It updates itself once no agent is running. To update it now, run this on its host.',
     },
     revoke: {
       title: 'Revoke the credential of {{name}}?',
       description:
-        'Its runner stops at its next request and its runs go back to the queue. To connect it again, add the runtime again.',
+        'Its runtime stops at its next request and its runs go back to the queue. To connect it again, add the runtime again.',
       confirm: 'Revoke',
       done: 'Revoked the credential of {{name}}',
     },
@@ -324,10 +324,10 @@ const runtimesEnUS = {
   connect: {
     title: 'Add runtime',
     description:
-      'Choose the coding tools and usage scope, then set up the runner on the target machine.',
+      'Choose the coding tools and usage scope, then set up the runtime on the target machine.',
     createCredential: 'Generate install command',
     advanced: 'Advanced: limits per coding tool',
-    run: "Run this on that host. It downloads the runner (nocobase-runner) and this application's CLI from this application, registers the runner and starts it at login:",
+    run: "Run this on that host. It downloads the runtime (nocobase-runner) and this application's CLI from this application, registers the runtime and starts it at login:",
     nodeRequired:
       'The host needs Node.js 24 or newer (check with node --version). The command stops and says how to install it when it is missing.',
     installed: 'Already have nocobase-runner installed? Register it instead:',
@@ -347,7 +347,7 @@ const runtimesEnUS = {
     promptWindows:
       'FIRST, determine whether you are running inside WSL Ubuntu. If you are NOT in WSL Ubuntu, STOP: do not run any installation or registration commands. Tell the user to run wsl --install in PowerShell, restart Windows, then open the agent inside WSL Ubuntu and run this prompt again. Continue with the steps below ONLY inside WSL Ubuntu. Install both Node.js and the coding tools inside WSL. If WSL cannot access the internet, enable mirrored networking.\n\n',
     promptBody:
-      'Set up this machine as a NocoBase runner. Use a VM or isolated environment: agents have full access and the runner is not a sandbox.\n\nCheck Node.js 24 or newer and that these coding tools are installed and signed in: {{tools}}. Use their official installation methods, not snap packages.\n\nRun this one-time registration command to install the runner and application CLI, register it, and install its background service:\n{{command}}\n\nResolve common setup problems: ensure the service PATH contains the coding tools (check which codex / which claude in the installation terminal, then run nocobase-runner service install again and restart the service); configure any required proxy for downloads and for the service; resolve npm global install permissions using a user-owned prefix or a Node version manager, without sudo npm install.\n\nFinish with nocobase-runner status and confirm the connection and coding tools. Report any remaining login or network steps for me to complete. Treat the registration credential as a secret and do not include it in your report.',
+      'Set up this machine as a NocoBase runtime. Use a VM or isolated environment: agents have full access and the runtime is not a sandbox.\n\nCheck Node.js 24 or newer and that these coding tools are installed and signed in: {{tools}}. Use their official installation methods, not snap packages.\n\nRun this one-time registration command to install the runtime and application CLI, register it, and install its background service:\n{{command}}\n\nResolve common setup problems: ensure the service PATH contains the coding tools (check which codex / which claude in the installation terminal, then run nocobase-runner service install again and restart the service); configure any required proxy for downloads and for the service; resolve npm global install permissions using a user-owned prefix or a Node version manager, without sudo npm install.\n\nFinish with nocobase-runner status and confirm the connection and coding tools. Report any remaining login or network steps for me to complete. Treat the registration credential as a secret and do not include it in your report.',
     tokenOnce:
       'The command carries a one-time credential for a "{{trust}}" runtime. It works once, until {{time}}.',
     after:

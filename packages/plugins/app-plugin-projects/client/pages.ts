@@ -38,7 +38,7 @@ function bind<T extends AppClientRouteDefinition>(definition: T): T {
 }
 
 /**
- * The pages under `/issues` (new issue, a plan), for the application's own `/issues` page to host as its children.
+ * The pages under `/issues` (new issue), for the application's own `/issues` page to host as its children.
  * The application composes `/issues`, `/my-issues` and an issue's page itself (`client/issues.ts`,
  * `client/issue-page.ts`).
  */

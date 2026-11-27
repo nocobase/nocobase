@@ -9,6 +9,7 @@ import {
   type DatabaseManager,
 } from '@nocobase/db';
 import sqlite from '../src/index.js';
+import { describeCollectionCache } from '@nocobase/db-testkit';
 
 const databases: DatabaseManager[] = [];
 const directories: string[] = [];
@@ -16,12 +17,14 @@ const directories: string[] = [];
 function database(
   filename: string = ':memory:',
   poolSize: number = 1,
+  transactionCollectionCache: boolean = true,
 ): DatabaseManager {
   const manager = createDatabaseManager({
     drivers: { sqlite },
     connections: {
       main: {
         dialect: 'sqlite',
+        transactionCollectionCache,
         filename,
         pool: { min: 1, max: poolSize, acquireTimeoutMillis: 500 },
       },
@@ -236,13 +239,15 @@ describe('transaction metadata cache', () => {
     });
   });
 
-  it('still inspects physical schema changes when the naming metadata is unchanged', async () => {
+  it('inspects notified physical schema changes when the naming metadata is unchanged', async () => {
     const manager = database();
     await createOrders(manager);
     const root = manager.connection();
     await root.collections.get('orders');
     const client = await root.client<Knex>();
-    await client.schema.table('orders', (table) => table.string('note'));
+    await root.notifySchemaChange(async () =>
+      client.schema.table('orders', (table) => table.string('note')),
+    );
     await root.transaction(async (transaction) => {
       expect(
         (await transaction.collections.get('orders'))?.fields,
@@ -418,5 +423,59 @@ describe('transaction metadata cache', () => {
     expect((await root.collectionMetadata.get('orders'))?.document.title).toBe(
       'Before',
     );
+  });
+});
+
+describeCollectionCache(async () => {
+  const directory = await mkdtemp(path.join(os.tmpdir(), 'collection-cache-'));
+  directories.push(directory);
+  const filename = path.join(directory, 'cache.sqlite');
+  return {
+    first: database(filename),
+    second: database(filename),
+    uncached: database(filename, 1, false),
+    async cleanup() {
+      // The file and managers are owned by the file-level afterEach.
+    },
+  };
+}, 1);
+
+it('uses its WAL snapshot and cannot clear or fill a newer shared version', async () => {
+  const directory = await mkdtemp(
+    path.join(os.tmpdir(), 'collection-cache-wal-'),
+  );
+  directories.push(directory);
+  const filename = path.join(directory, 'cache.sqlite');
+  const reader = database(filename, 2).connection();
+  const writer = database(filename).connection();
+  const client = await reader.client<Knex>();
+  await client.raw('pragma journal_mode = WAL');
+  await writer.builder.createCollection('tasks', (table) =>
+    table.increments('id'),
+  );
+  await writer.builder.createCollection('members', (table) =>
+    table.increments('id'),
+  );
+  const fields = async (connection = reader, name: string = 'members') =>
+    (await connection.collections.get(name))?.fields?.map(
+      (field) => field.name,
+    );
+  await reader.transaction(async (old) => {
+    expect(await fields(old, 'tasks')).toEqual(['id']);
+    await writer.builder.addField('members', { name: 'added', type: 'string' });
+    // Observe the new version while leaving members absent from its cache.
+    await reader.transaction(async (current) => {
+      expect(await fields(current, 'tasks')).toEqual(['id']);
+    });
+    expect(await fields(old)).toEqual(['id']);
+  });
+  const statements: string[] = [];
+  client.on('query', (query: { sql: string }) => statements.push(query.sql));
+  await reader.transaction(async (current) => {
+    expect(await fields(current, 'tasks')).toEqual(['id']);
+    expect(
+      statements.some((sql) => /pragma_table|sqlite_schema/i.test(sql)),
+    ).toBe(false);
+    expect(await fields(current)).toEqual(['id', 'added']);
   });
 });

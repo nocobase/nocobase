@@ -1,8 +1,11 @@
+import auditLabels from '../../locales/ko-KR.js';
 import type { LocaleResource } from '@nocobase/i18n';
 
-import type enUS from './en-US.js';
+import { withPluralForms } from '../plural-forms.js';
+import enUS from './en-US.js';
 
 const koKR: LocaleResource<typeof enUS> = {
+  ...auditLabels,
   errors: {
     generic: '문제가 발생했습니다. 다시 시도하세요.',
     network: '서버에 연결할 수 없습니다. 연결 상태를 확인하고 다시 시도하세요.',
@@ -34,9 +37,16 @@ const koKR: LocaleResource<typeof enUS> = {
       '신뢰할 수 없는 출처입니다. config.yml의 app.publicOrigin을 {{origin}}(으)로 설정하고 애플리케이션을 다시 시작한 후 다시 시도하세요.',
     INVALID_ORIGIN:
       '신뢰할 수 없는 출처입니다. config.yml의 app.publicOrigin을 확인하고 애플리케이션을 다시 시작한 후 다시 시도하세요.',
+    FAILED_TO_UNLINK_LAST_ACCOUNT: enUS.errors.FAILED_TO_UNLINK_LAST_ACCOUNT,
     INVALID_CSRF_ORIGIN:
       '다른 사이트에서 온 요청이라 거부되었습니다. 페이지를 새로 고친 후 다시 시도하세요.',
   },
+  // The settings pages are not translated into this language yet; English is shown.
+  settings: withPluralForms(enUS.settings, 'ko-KR'),
+  guide: enUS.guide,
+  prompt: enUS.prompt,
+  sso: enUS.sso,
+  account: withPluralForms(enUS.account, 'ko-KR'),
 };
 
 export default koKR;

@@ -1,5 +1,104 @@
 # @nocobase/app-plugin-demo-mode
 
+## 0.2.0-beta.15
+
+### Patch Changes
+
+- 8e7f898: Complete the Agent and inbox translations and allow Demo Mode to start when hosted model services are disabled.
+- Updated dependencies [300f760]
+- Updated dependencies [29c62bd]
+- Updated dependencies [28a7606]
+- Updated dependencies [8e7f898]
+- Updated dependencies [f3ae984]
+- Updated dependencies [8ff2df3]
+- Updated dependencies [28a7606]
+  - @nocobase/app-client@4.0.0-beta.13
+  - @nocobase/app-plugin-agents@2.0.0-beta.20
+  - @nocobase/app-plugin-authentication@2.0.0-beta.25
+  - @nocobase/app-server@5.0.0-beta.10
+  - @nocobase/app-cli@1.0.0-beta.39
+  - @nocobase/jobs@1.0.0-beta.8
+  - @nocobase/app-plugin-authorization@1.0.0-beta.39
+  - @nocobase/app-plugin-users@2.0.0-beta.22
+
+## 0.2.0-beta.14
+
+### Patch Changes
+
+- a6b9b74: Declare the plugin's title and one-line description in English and Chinese under `nocobase` in `package.json`, which the App Foundation plugins page lists it by.
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [44395d2]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [1048669]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [1048669]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [1048669]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [acc1f0d]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [1048669]
+- Updated dependencies [1048669]
+- Updated dependencies [1048669]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a9b9146]
+- Updated dependencies [1048669]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+  - @nocobase/app-plugin-agents@2.0.0-beta.19
+  - @nocobase/app-client@4.0.0-beta.12
+  - @nocobase/app-plugin-authorization@1.0.0-beta.39
+  - @nocobase/app-plugin-users@2.0.0-beta.22
+  - @nocobase/app-plugin-authentication@2.0.0-beta.24
+  - @nocobase/jobs@1.0.0-beta.7
+  - @nocobase/app-server@5.0.0-beta.9
+  - @nocobase/app-cli@1.0.0-beta.38
+  - @nocobase/db@1.0.0-beta.30
+  - @nocobase/i18n@2.0.0-beta.2
+  - @nocobase/service-provider@0.0.2-beta.2
+
+## 0.2.0-beta.13
+
+### Patch Changes
+
+- 761fb01: Preserve API request IDs when reporting failed account, push and demo operations through the application toaster.
+- Updated dependencies [761fb01]
+- Updated dependencies [4967900]
+- Updated dependencies [761fb01]
+  - @nocobase/app-plugin-users@2.0.0-beta.21
+  - @nocobase/app-plugin-agents@2.0.0-beta.16
+  - @nocobase/app-client@4.0.0-beta.11
+  - @nocobase/app-cli@1.0.0-beta.36
+  - @nocobase/app-plugin-authentication@2.0.0-beta.23
+
 ## 0.2.0-beta.12
 
 ### Patch Changes

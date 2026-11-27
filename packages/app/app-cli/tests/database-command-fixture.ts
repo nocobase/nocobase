@@ -67,12 +67,16 @@ export function databaseCommandFixture({
   };
   writeFileSync(
     path.join(root, 'package.json'),
-    JSON.stringify({ name: 'test-app', version: '1.0.0' }),
+    JSON.stringify({
+      name: 'test-app',
+      version: '1.0.0',
+      dependencies: { '@nocobase/db-sqlite': '*' },
+    }),
   );
   const runtime: {
     -readonly [K in 'loadRuntime' | 'createApp']: AppCommandContext[K];
   } = {
-    loadRuntime: () =>
+    loadRuntime: (options) =>
       resolveStandaloneAppRuntime(
         {
           createAppConfig: () => {
@@ -87,7 +91,7 @@ export function databaseCommandFixture({
           serviceProviders: [],
           routes: [],
         },
-        { rootDir: root },
+        { rootDir: root, ...options },
       ),
     createApp: (loaded) => {
       const app = createAppFromRuntime(loaded);
@@ -210,6 +214,7 @@ export default defineSeed({ name: '001_defaults', async run() {} });`,
     lockRow,
     dropTable,
     tables,
+    withDatabase,
     bind,
     paths,
   };

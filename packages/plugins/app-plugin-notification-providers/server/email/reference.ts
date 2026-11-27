@@ -5,11 +5,20 @@ import {
 export type { EmailChannelReferenceConfig } from './reference-config.js';
 import { resolveMailSenderFactory } from '@nocobase/app-server/mailers';
 import type { ChannelContext } from '@nocobase/app-plugin-notification';
+import type { ChannelConfigSummaryItem } from '@nocobase/app-plugin-notification';
+import { PROVIDERS_CONTRIBUTOR } from '../summary.js';
 import { MailSenderChannel, RESEND_CAPABILITIES } from './sender-channel.js';
 
 /** A notification channel that sends through a named application mailer, or `mailers.default`. */
 export class EmailChannel extends MailSenderChannel {
   static readonly type = 'email';
+  static readonly contributor: string = PROVIDERS_CONTRIBUTOR;
+  /** The mailer it sends through; the mailer's own settings live under `mailers`. */
+  static summarize(
+    config: EmailChannelReferenceConfig,
+  ): readonly ChannelConfigSummaryItem[] {
+    return [{ label: 'mailer', value: config.mailer ?? 'mailers.default' }];
+  }
   static validateConfig(config: EmailChannelReferenceConfig): void {
     validateEmailChannelReference(config);
   }
@@ -23,6 +32,7 @@ export class EmailChannel extends MailSenderChannel {
         `notification.channels.${context.channelName}.mailer`,
       ),
       factory.provider(name) === 'resend' ? RESEND_CAPABILITIES : undefined,
+      context.container,
     );
   }
 }

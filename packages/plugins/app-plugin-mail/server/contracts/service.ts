@@ -9,11 +9,18 @@ import type {
   MailConnectAccountInput,
   MailDeleteMessageInput,
   MailFolder,
+  MailFolderChoices,
+  MailSyncFolderPreview,
   MailIdentity,
   MailLabel,
   MailListConversationMessagesInput,
   MailListMessagesInput,
+  MailAdminAccountFilter,
+  MailAdminAccountView,
   MailManagedAccountView,
+  MailManagedLogFilter,
+  MailManagedSubmissionView,
+  MailTeamAccountView,
   MailManagementMessageActionInput,
   MailManagementMessageActionResult,
   MailMessage,
@@ -36,6 +43,7 @@ import type {
   MailSyncRunView,
   MailTemplate,
   MailUpdateAccountInput,
+  MailUpdatedAccountView,
   MailUpdateIdentityInput,
   MailUpdateLabelInput,
   MailUpdateSignatureInput,
@@ -69,7 +77,7 @@ export interface MailService {
   updateAccount(
     context: MailOperationContext,
     input: MailUpdateAccountInput,
-  ): Promise<MailAccountView>;
+  ): Promise<MailUpdatedAccountView>;
   /**
    * Mark an account for removal; a background task deletes it. Answers the account in its `removing` state, or
    * `undefined` when the removal already finished.
@@ -78,28 +86,76 @@ export interface MailService {
     context: MailOperationContext,
     accountId: string,
   ): Promise<MailAccountView | undefined>;
+  /** Count the local messages a folder selection would delete before it is saved with `updateAccount`. */
+  previewSyncFolders(
+    context: MailOperationContext,
+    accountId: string,
+    syncFolderIds: readonly string[] | null,
+  ): Promise<MailSyncFolderPreview>;
   listManagedAccounts(
     context: MailOperationContext,
   ): Promise<readonly MailManagedAccountView[]>;
-  /** Every user's sync runs, newest first, one page at a time. */
+  /** Every member's accounts for the Mail settings page: owner, Provider, status and last synchronization. */
+  listAdminAccounts(
+    context: MailOperationContext,
+    filter?: MailAdminAccountFilter,
+  ): Promise<readonly MailAdminAccountView[]>;
+  /** Every member's accounts for Team mail's filters: owner and address. */
+  listTeamAccounts(
+    context: MailOperationContext,
+  ): Promise<readonly MailTeamAccountView[]>;
+  /** How many accounts each configured Provider has in each status. */
+  countAccountsByProvider(
+    context: MailOperationContext,
+  ): Promise<readonly import('./persistence.js').MailProviderAccountCount[]>;
+  /**
+   * Every user's sync runs, newest first, continuing after `pageToken`. `canManage` marks every run manageable for a
+   * caller who may retry and cancel them on the Mail settings page.
+   */
   listManagedSyncRunsPage(
     context: MailOperationContext,
-    offset: number,
+    pageToken: string | undefined,
     limit: number,
-  ): Promise<MailOffsetPage<MailSyncRunView>>;
-  /** Every user's submissions, newest first, one page at a time. */
+    filter?: MailManagedLogFilter,
+    canManage?: boolean,
+  ): Promise<MailPage<MailSyncRunView>>;
+  /** Every user's submissions, newest first, one page at a time, without their content. */
   listManagedSubmissionsPage(
     context: MailOperationContext,
-    offset: number,
+    pageToken: string | undefined,
     limit: number,
-  ): Promise<MailOffsetPage<MailSubmissionLogView>>;
+    filter?: MailManagedLogFilter,
+    canManage?: boolean,
+  ): Promise<MailPage<MailManagedSubmissionView>>;
+  /** Retry any member's failed or cancelled sync run; the caller must hold `settings:mail.admin/manage`. */
+  retryManagedSyncRun(
+    context: MailOperationContext,
+    syncRunId: string,
+  ): Promise<MailSyncRunView>;
+  /** Cancel any member's active sync run; the caller must hold `settings:mail.admin/manage`. */
+  cancelManagedSyncRun(
+    context: MailOperationContext,
+    syncRunId: string,
+  ): Promise<MailSyncRunView>;
+  /** Retry any member's failed submission; the caller must hold `settings:mail.admin/manage`. */
+  retryManagedSubmission(
+    context: MailOperationContext,
+    submissionId: string,
+  ): Promise<MailManagedSubmissionView>;
+  /** Cancel any member's pending or failed submission; the caller must hold `settings:mail.admin/manage`. */
+  cancelManagedSubmission(
+    context: MailOperationContext,
+    submissionId: string,
+  ): Promise<MailManagedSubmissionView>;
   listManagedFolders(
     context: MailOperationContext,
     accountId: string,
   ): Promise<readonly MailFolder[]>;
+  /** Every member's messages; `userId` narrows them to one member's accounts. */
   listManagedMessages(
     context: MailOperationContext,
     input: MailListMessagesInput,
+    userId?: string,
   ): Promise<MailPage<MailMessageSummary>>;
   getManagedMessage(
     context: MailOperationContext,
@@ -116,10 +172,20 @@ export interface MailService {
     context: MailOperationContext,
     input: MailManagementMessageActionInput,
   ): Promise<MailManagementMessageActionResult>;
+  /**
+   * The account's synchronized folders. `includeUnsynced` adds the unselected folders, each with `synced`, for a folder
+   * selection.
+   */
   listFolders(
     context: MailOperationContext,
     accountId: string,
+    options?: { readonly includeUnsynced?: boolean },
   ): Promise<readonly MailFolder[]>;
+  /** Every folder of the account, each with `synced`, and whether they form a complete listing. */
+  listFolderChoices(
+    context: MailOperationContext,
+    accountId: string,
+  ): Promise<MailFolderChoices>;
   listLabels(context: MailOperationContext): Promise<readonly MailLabel[]>;
   listIdentities(
     context: MailOperationContext,
@@ -217,6 +283,11 @@ export interface MailService {
     accountId: string,
     messageId: string,
   ): Promise<MailMessage>;
+  getOriginalMessage(
+    context: MailOperationContext,
+    accountId: string,
+    messageId: string,
+  ): Promise<MailAttachmentContent>;
   getMessage(
     context: MailOperationContext,
     accountId: string,

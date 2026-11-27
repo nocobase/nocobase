@@ -2,6 +2,133 @@
 
 本文件记录 NocoBase 3 的所有重要变更，每次发布一节：`nocobase-v3-beta/<日期>.<序号>` 是预览版，`nocobase-v3/<日期>.<序号>` 是正式版。每次发布的包版本见对应的 GitHub Release，各个包自己的变更见包内的 CHANGELOG.md。
 
+## [nocobase-v3-beta/2026-11-25.1](https://github.com/nocobase/nocobase/releases/tag/nocobase-v3-beta%2F2026-11-25.1)
+
+### 🚀 优化
+
+- **[创建应用]** 创建应用时，可以通过原有的多应用、子应用和多门户别名启用对应的企业版能力。 ([#11702](https://github.com/nocobase/nocobase/pull/11702))
+- **[界面]** 生命周期流程图默认采用精简流程视图，并支持将多节点共享的提前终止终态收口至节点悬停浮卡与执行终止结果徽标。 ([#11707](https://github.com/nocobase/nocobase/pull/11707))
+
+### 🐛 修复
+
+- **[应用基础]** 部署后的应用现在会在系统设置的「未启用」列表中显示开发依赖插件。 ([#11704](https://github.com/nocobase/nocobase/pull/11704))
+
+## [nocobase-v3-beta/2026-11-24.2](https://github.com/nocobase/nocobase/releases/tag/nocobase-v3-beta%2F2026-11-24.2)
+
+### 🎉 新特性
+
+- **[应用托管]** 托管的 App Host 可以用应用自带的备份命令备份和还原其上的应用（进程内与 Docker 均支持），应用镜像（amd64 与 arm64）也内置了所需的 PostgreSQL、MySQL 和 MariaDB 客户端工具。 ([#11668](https://github.com/nocobase/nocobase/pull/11668))
+
+### 🚀 优化
+
+- **[API 密钥]** 应用可关闭成员密钥和规则管理接口，同时保留个人和系统密钥管理。 ([#11696](https://github.com/nocobase/nocobase/pull/11696))
+
+### 🐛 修复
+
+- **[邮件]** 保存邮件模板时若名称与自己已有模板重复，现在会提示名称已被使用，而不是返回服务器错误。 ([#11682](https://github.com/nocobase/nocobase/pull/11682))
+- **[权限]** 为已拥有某权限集的用户重复分配该权限集时，现在会提示冲突，而不是返回服务器错误。 ([#11683](https://github.com/nocobase/nocobase/pull/11683))
+- **[服务端]** Host 以 in-process 方式加载的应用现在按应用自身包名记录迁移，与 standalone、Docker 和 CLI 一致，跨入口的版本校验和备份还原可以正常工作。 ([#11692](https://github.com/nocobase/nocobase/pull/11692))
+- **[Agent 运行器]** 修复子模块内遗留正常 linked worktree 元数据导致任务检出被误拦截的问题，校验活跃子模块 `core.worktree` 并精简 Git 报错，同时为运行临时目录增加属主一致时的权限自愈与详细报错。 ([#11701](https://github.com/nocobase/nocobase/pull/11701))
+
+## [nocobase-v3-beta/2026-11-24.1](https://github.com/nocobase/nocobase/releases/tag/nocobase-v3-beta%2F2026-11-24.1)
+
+### 🎉 新特性
+
+- **[备份]** 通过内置备份命令创建、查看、校验和还原应用数据库与上传文件备份。 ([#11642](https://github.com/nocobase/nocobase/pull/11642))
+- **[客户端]**
+  - 应用可以按 ID 移除插件页面，并自动隐藏指向这些页面的工具栏入口。 ([#11670](https://github.com/nocobase/nocobase/pull/11670))
+  - 应用可以按需关闭内置的设置、聊天、收件箱和邮件页面。 ([#11679](https://github.com/nocobase/nocobase/pull/11679))
+- **[认证]** 服务端认证扩展可以使用当前事务，使业务数据变更与认证操作一并提交或回滚。 ([#11681](https://github.com/nocobase/nocobase/pull/11681))
+- **[文件]** 应用可以关闭文件存储管理接口，同时保留附件服务。 ([#11685](https://github.com/nocobase/nocobase/pull/11685))
+- **[Agent]** 应用可以关闭托管模型服务，同时保留 Runner 模型和用量报表。 ([#11686](https://github.com/nocobase/nocobase/pull/11686))
+- **[API 密钥]** 应用可以关闭系统 API 密钥管理接口，已有密钥仍可使用。 ([#11687](https://github.com/nocobase/nocobase/pull/11687))
+
+### 🚀 优化
+
+- **[集群与分布式]** Default 和 Examples 模板已移除内置的分布式插件，已有应用可迁移到 Pro 集群就绪检查插件。 ([#11678](https://github.com/nocobase/nocobase/pull/11678))
+
+### 🐛 修复
+
+- **[Agent]** 关闭模型服务后也能使用演示数据，Agent 和收件箱控件已补齐各支持语言的翻译。 ([#11690](https://github.com/nocobase/nocobase/pull/11690))
+
+## [nocobase-v3-beta/2026-11-23.1](https://github.com/nocobase/nocobase/releases/tag/nocobase-v3-beta%2F2026-11-23.1)
+
+### 🎉 新特性
+
+- **[界面]** UI Library 权限编辑器改为「菜单」「业务对象」「系统设置」三个标签：菜单只控制侧边栏可见，每个业务对象的操作和数据范围只设一处、其他操作跟随或收窄查看范围，系统设置页单独设置、没有数据范围。 ([#11603](https://github.com/nocobase/nocobase/pull/11603))
+- **[邮件]**
+  - 可为每个邮箱账号选择要同步的文件夹；取消的文件夹在确认后删除其本地邮件，服务器上的邮件不受影响。 ([#11605](https://github.com/nocobase/nocobase/pull/11605))
+  - 将单封邮件下载为包含附件的原始 .eml 文件。 ([#11623](https://github.com/nocobase/nocobase/pull/11623))
+- **[插件生命周期]** 生命周期定义可以在恢复实例的同一事务中更新相关记录。 ([#11659](https://github.com/nocobase/nocobase/pull/11659))
+- **[应用模板]** 从默认模板新建应用后，管理员在添加第一个流程前即可从系统设置打开流程管理。 ([#11660](https://github.com/nocobase/nocobase/pull/11660))
+- **[客户端]** 成员可在个人设置中管理账号安全和个人 API 密钥，管理员可在系统设置中管理用户、角色、文件存储和计划任务。 ([#11663](https://github.com/nocobase/nocobase/pull/11663))
+- **[Agent]** 运行环境现在可以使用 Antigravity CLI 作为 Agent 工具，工具列表中它排在 Pi 之后。 ([#11664](https://github.com/nocobase/nocobase/pull/11664))
+
+### 🚀 优化
+
+- **[Agent]**
+  - 同一模型来自不同服务商时，新添加的 Agent 名称在后面用半角括号带上服务商，如「OpenCode · Qwen3.8 Flash (example-provider)」。 ([#11632](https://github.com/nocobase/nocobase/pull/11632))
+  - Skill 页面不再提示「在线 Agent 只能读取、不会执行脚本」，文件树改为只在 scripts 文件夹显示一个图标，不再给每个文件挂「脚本」标签。 ([#11635](https://github.com/nocobase/nocobase/pull/11635))
+- **[Skills]** 应用开发 Skill 现在可指导 Agent 为流程实例添加暂停、恢复、重置和重新启动操作，并接入记录级权限与审计历史。 ([#11641](https://github.com/nocobase/nocobase/pull/11641))
+- **[Agent 运行器]** Codex、OpenCode 和 Pi 推荐 GPT-6.2 Sol 和 Astra，并提供标准档默认用量价格。 ([#11645](https://github.com/nocobase/nocobase/pull/11645))
+- **[插件生命周期]** 扩展可以查询流程实例自指定记录以来是否已离开该次状态停留。 ([#11661](https://github.com/nocobase/nocobase/pull/11661))
+- **[应用模板]** 流程定义和执行记录的空状态间距现已统一，流程定义页会提示如何在项目仓库中通过 Agent 管理流程。 ([#11667](https://github.com/nocobase/nocobase/pull/11667))
+
+## [nocobase-v3-beta/2026-11-20.1](https://github.com/nocobase/nocobase/releases/tag/nocobase-v3-beta%2F2026-11-20.1)
+
+### 🎉 新特性
+
+- **[Agent]** 在线 Agent 对话可在模型旁为任意在线模型选择思考等级（默认、关闭，或极低到超高），模型不支持该等级时会在对话中提示。 ([#11555](https://github.com/nocobase/nocobase/pull/11555))
+- **[Agent 运行器]** 执行机可使用部署密钥和已核对的主机指纹，通过 SSH 检出、推送并构建仓库。 ([#11614](https://github.com/nocobase/nocobase/pull/11614))
+- **[插件生命周期]** 管理员可以挂起、恢复、重置或重启流程实例，并在工单示例中查看处置历史。 ([#11628](https://github.com/nocobase/nocobase/pull/11628))
+
+### 🚀 优化
+
+- **[Agent]** OpenCode、Pi 的模型显示服务商前缀；运行失败时显示编码工具的原始报错。 ([#11622](https://github.com/nocobase/nocobase/pull/11622))
+
+### 🐛 修复
+
+- **[命令行]** 修复网关进行同源跳转时 CLI 和执行机安装失败的问题 ([#11616](https://github.com/nocobase/nocobase/pull/11616))
+- **[Agent 运行器]** 只读步骤可通过执行机管理的 SSH 连接拉取，推送会被执行机拒绝。 ([#11627](https://github.com/nocobase/nocobase/pull/11627))
+
+## [nocobase-v3-beta/2026-11-19.1](https://github.com/nocobase/nocobase/releases/tag/nocobase-v3-beta%2F2026-11-19.1)
+
+### 🎉 新特性
+
+- **[命令行]** 支持预装插件及其 Skills，按需启用并打包，也可分别取消注册或彻底卸载。 ([#11612](https://github.com/nocobase/nocobase/pull/11612))
+
+### 🚀 优化
+
+- **[命令行]** `logs export` 不再提供 `--issue` 筛选，导出按所选日期包含所选执行机的全部日志。 ([#11594](https://github.com/nocobase/nocobase/pull/11594))
+- **[数据库]** 已执行迁移缺少源码时默认告警，并在回滚最新批次前一次列出所有缺失或不可逆的目标迁移。 ([#11595](https://github.com/nocobase/nocobase/pull/11595))
+- **[知识库]**
+  - 知识库文档中的链接改为在新标签页打开（页内标题锚点除外），宽表格改为横向滚动而不再挤压列宽。 ([#11598](https://github.com/nocobase/nocobase/pull/11598))
+  - 知识库文件条目的替换、下载和历史集中到右上角，MD 预览与正文样式一致，提取的文字按行号显示原文并高亮引用行，预览支持全屏查看。 ([#11601](https://github.com/nocobase/nocobase/pull/11601))
+- **[项目]** 项目使用手动表单创建任务和子任务，并移除操作计划、需求整理工具及其命令。 ([#11604](https://github.com/nocobase/nocobase/pull/11604))
+- **[应用模板]** 从同一版本的 Default 或 Examples 模板创建的应用会安装相同版本的直接 NocoBase 依赖。 ([#11613](https://github.com/nocobase/nocobase/pull/11613))
+
+### 🐛 修复
+
+- **[Agent 运行器]** 私有包源拒绝授权时使用本次运行的凭据重试，并支持应用创建和模板下载。 ([#11584](https://github.com/nocobase/nocobase/pull/11584))
+- **[数据库]** 空的日期时间值在所有数据库上都读为空，不再在 Oracle 兼容模式的 KingbaseES 上被读成非法值 "Z" 而报错。 ([#11597](https://github.com/nocobase/nocobase/pull/11597))
+- **[命令行]** 部署归档不再携带开发环境运行配置，打包失败时保留上一份归档。 ([#11600](https://github.com/nocobase/nocobase/pull/11600))
+- **[服务端]** 嵌入式部署的应用页面和 API 文档正确显示应用名称与版本。 ([#11608](https://github.com/nocobase/nocobase/pull/11608))
+- **[Agent]** Codex 上报当前额度后，运行环境会移除已停用的额度窗口 ([#11609](https://github.com/nocobase/nocobase/pull/11609))
+
+## [nocobase-v3-beta/2026-11-17.2](https://github.com/nocobase/nocobase/releases/tag/nocobase-v3-beta%2F2026-11-17.2)
+
+### 🎉 新特性
+
+- **[Agent]**
+  - 导出脱敏运行环境日志并合并本地时间线，支持实时收集进度及服务端配置的日期范围。 ([#11563](https://github.com/nocobase/nocobase/pull/11563))
+  - 支持为空闲的 Runner 对话选择执行机，发送下一条消息时生效并保留历史。 ([#11577](https://github.com/nocobase/nocobase/pull/11577))
+
+### 🚀 优化
+
+- **[界面]** 使用与分类标签样式一致的菜单查看工作流版本，并可复用 UI Library 中的版本选择组件。 ([#11569](https://github.com/nocobase/nocobase/pull/11569))
+- **[应用托管]** 支持配置预览发布包的校验与解压超时时间。 ([#11578](https://github.com/nocobase/nocobase/pull/11578))
+- **[Skills]** 升级 Skill 默认升级到 `latest` 版本，用 beta 创建的应用在正式版发布后也能继续升级。 ([#11589](https://github.com/nocobase/nocobase/pull/11589))
+
 ## [nocobase-v3-beta/2026-11-17.1](https://github.com/nocobase/nocobase/releases/tag/nocobase-v3-beta%2F2026-11-17.1)
 
 ### 🚀 优化

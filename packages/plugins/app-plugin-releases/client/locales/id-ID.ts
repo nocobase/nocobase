@@ -107,6 +107,14 @@ const idID: LocaleResource<typeof enUS> = {
         environments: 'Menyebarkan lingkungan',
       },
     },
+    humanOnly: {
+      deployProtected:
+        'Deploy ke lingkungan terlindungi perlu disetujui seseorang; kunci hanya dapat memintanya.',
+      delete:
+        'Menghapus aplikasi menghapus datanya; hanya orang yang boleh melakukannya.',
+      configure:
+        'Mengonfigurasi aplikasi mengubah pengaturan dan rahasianya; hanya orang yang boleh melakukannya.',
+    },
     keyScopes: {
       apps: {
         title: 'Aplikasi dan penerapan',
@@ -833,9 +841,9 @@ const idID: LocaleResource<typeof enUS> = {
       apps: 'Aplikasi',
       appsDescription: 'Aplikasi disebarkan ke lingkungan ini.',
       appsEmpty: 'Belum ada aplikasi yang diterapkan di sini.',
-      sampleData: 'Memuat data sampel pada penerapan pertama',
+      sampleData: 'Muat data sampel saat penerapan',
       sampleDataHint:
-        'Penerapan pertama aplikasi di sini menginstal data sampelnya (APP_SAMPLE_DATA=true). Gunakan untuk pratinjau, bukan untuk produksi.',
+        'Setiap penerapan memuat data sampel yang belum dijalankan (APP_SAMPLE_DATA=true). Gunakan opsi ini di lingkungan pratinjau dan biarkan nonaktif di produksi.',
       add: 'Tambahkan lingkungan',
       edit: 'Edit',
       delete: 'Hapus',

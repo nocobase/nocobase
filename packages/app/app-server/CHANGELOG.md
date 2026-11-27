@@ -1,5 +1,81 @@
 # @nocobase/app-server
 
+## 5.0.0-beta.11
+
+### Patch Changes
+
+- fcc0c18: Record application migrations under the application's package name when the Host loads a release in-process. The package name now comes from the same manifest lookup the SPA uses (`package.json`, then `dist/package.json`), so in-process, standalone, Docker and CLI runs of the same release share one migration identity instead of the in-process run falling back to `app`.
+
+## 5.0.0-beta.10
+
+### Minor Changes
+
+- 28a7606: Add built-in backup commands, disk-specific path exclusions, and application compatibility checks for restore.
+
+### Patch Changes
+
+- Updated dependencies [28a7606]
+- Updated dependencies [28a7606]
+- Updated dependencies [28a7606]
+  - @nocobase/drive@0.1.0-beta.9
+  - @nocobase/backup@0.1.0-beta.0
+  - @nocobase/jobs@1.0.0-beta.8
+  - @nocobase/queue@1.0.0-beta.13
+
+## 5.0.0-beta.9
+
+### Minor Changes
+
+- a6b9b74: Add the read-only Cluster and distributed settings page and `GET /api/distributed/status`, which show the backend each shared service selected on the answering instance, whether it is shared between instances, and what must change before running several instances, with server and client extension points. Caching, concurrency, Jobs, Queue and Realtime gain a read-only `describe()` and let an adapter declare `sharing: 'local' | 'shared'` when it registers. The file plugin reports the file collections stored on a local disk. Both application templates register the plugin.
+- a6b9b74: `classifyPluginRegistration` from `@nocobase/app-server/plugins` decides a plugin's registration state from its facts, so `pnpm nocobase plugin inspect` and the App Foundation plugins page agree. `listCliPluginRegistrations` parses a `cli/plugins.ts` with the application's TypeScript compiler and lists the packages passed to `defineCliPlugins([...])`, ignoring unused imports and anything in comments, strings, template literals or regular expressions; `plugin inspect` reads the CLI registration through it. `pnpm build` writes that list to `dist/cli/plugins.json`, which `readCliPluginRegistrations` reads in a deployment, where neither `cli/plugins.ts` nor TypeScript exists. `plugin inspect` now reports `PARTIALLY_REGISTERED` for a plugin with both client and server entries that only one of `client/plugins.ts` and `server/plugins.ts` registers, and reports a plugin that ships only Agent Skills as `registered` (with `registration.skillsOnly: true`) when the application declares it in `dependencies`, where it used to report `unregistered`. `plugin register` accepts several names and registers them in order, such as `plugin register agents knowledge`; with more than one, `--json` returns `{ plugins: [...] }`. Every name is checked before anything is written, and when one fails part way the error's `details` lists the plugins already registered, the one that failed and those not attempted. A vendored workspace plugin's runtime `package.json` in `dist/` keeps the application plugins it requires as `peerDependencies`, in any scope that follows the plugin naming rule.
+- a6b9b74: Add the Schedules System settings page at `/settings/automation/schedules`, registered by the Scheduler client plugin, with three tabs: Tasks (state, rule, next and last run, totals, pause and resume, each Schedule's detail and runs), Runs (the history of every Schedule, filtered by Schedule, result and time range) and Configuration (the jobs configuration Schedules run on, read-only, and the Schedules still active in the database that the running code no longer defines). Replace the page with `routeComponentOverrides` under `@nocobase/app-plugin-scheduler:schedules`.
+
+  Fix the Scheduler permissions: the API now checks the `scheduler.schedules` settings item the role editor offers instead of a page grant that did not exist, so a role granted Schedules · Read can use it. Its reading routes check `read`, and enabling and disabling check the new `manage` action (403 `SCHEDULE_MANAGE_REQUIRED` without it).
+
+  List items gain `sourceType`, `from`, `to`, `limit` and `lastRun` (the latest run's status, reason and finish time); the list's `meta.jobs` describes the jobs configuration and where each value comes from, without passwords, and lists `removedFromCode`; the detail gains `upcomingRuns`; and `GET /api/scheduler/occurrences` returns the history of every Schedule, filtered by `scheduleId`, `status`, `from` and `to`, cursor-paged by each run's planned time. A migration fills in the planned time of runs recorded before it was kept and adds two indexes to the occurrence table.
+
+  `AppConfigAccessor` gains the optional `layers()`, `environmentVariableMappings()` and `loadedEnvironmentVariables()` methods, so a plugin can tell whether a value comes from `config.yml`, the application's own environment variables or a default. The capability guide's scheduler steps name the new page and permissions.
+
+### Patch Changes
+
+- Updated dependencies [a6b9b74]
+- Updated dependencies [1048669]
+  - @nocobase/caching@1.0.0-beta.5
+  - @nocobase/jobs@1.0.0-beta.7
+  - @nocobase/queue@1.0.0-beta.12
+  - @nocobase/db@1.0.0-beta.30
+  - @nocobase/db-mssql@0.1.0-beta.6
+  - @nocobase/db-mysql@0.1.0-beta.5
+  - @nocobase/db-oracle@0.1.0-beta.5
+  - @nocobase/db-postgres@0.1.0-beta.5
+  - @nocobase/db-sqlite@0.1.0-beta.6
+  - @nocobase/i18n@2.0.0-beta.2
+  - @nocobase/service-provider@0.0.2-beta.2
+
+## 5.0.0-beta.8
+
+### Minor Changes
+
+- a727ebe: Preinstall plugins with their Skills, unregister them while retaining the development dependency, and use plugin remove for a complete uninstall. Create apps from Professional and Enterprise template packages by alias. Default preinstalls Web Push and its Skill for opt-in registration. Default preinstalls SQLite, PostgreSQL, MySQL, SQL Server and Oracle as development dependencies. Source configuration promotes the selected driver. Configuration checks, migrations and builds report missing production driver declarations and how to fix them. The application upgrade Skill covers Community to Professional or Enterprise and Professional to Enterprise while preserving existing plugin registrations and database choices.
+
+### Patch Changes
+
+- e830c36: Read embedded applications' names and versions from dist/package.json for browser configuration and OpenAPI documents when the root manifest is absent.
+- b83a645: Default missing applied migration sources to warnings instead of errors, with an `onMissingSource: 'error'` option for strict validation. Downgrades within participating packages still fail. Preserve missing migration history and report warnings in database commands and startup logs. Rollback validates only its target batch and lists every missing or irreversible migration before executing any down operation, with recovery guidance.
+
+  Compare migration filename timestamps for downgrade detection independently of parameter target hashes. Validate applications with applied history even when all migration directories have disappeared, while continuing to skip empty applications.
+
+  An explicitly configured migration directory that no longer exists is now checked against the migration history when tasks run, rather than rejected while planning: an application with history follows the missing-source policy, while a mistyped path on an application that never migrated still fails before any storage is touched.
+
+- Updated dependencies [b737800]
+- Updated dependencies [b83a645]
+  - @nocobase/db@1.0.0-beta.29
+  - @nocobase/db-mssql@0.1.0-beta.6
+  - @nocobase/db-mysql@0.1.0-beta.5
+  - @nocobase/db-oracle@0.1.0-beta.5
+  - @nocobase/db-postgres@0.1.0-beta.5
+  - @nocobase/db-sqlite@0.1.0-beta.6
+
 ## 5.0.0-beta.7
 
 ### Patch Changes

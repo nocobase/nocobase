@@ -269,7 +269,6 @@ export interface LogsExportOptions {
   appLog?: boolean;
   requestLog?: boolean;
   runners?: string[];
-  issues?: string[];
   level?: string;
   out: string;
 }
@@ -331,7 +330,6 @@ export function logsExportInput(
     appLog: selectedServerLogs ? Boolean(options.appLog) : true,
     requestLog: selectedServerLogs ? Boolean(options.requestLog) : true,
     ...(options.runners === undefined ? {} : { runners: options.runners }),
-    ...(options.issues === undefined ? {} : { issues: options.issues }),
     ...(options.level ? { level: options.level } : {}),
   };
 }
@@ -498,11 +496,6 @@ export function logsCommands(): Readonly<Record<string, Command.Class>> {
         multiple: true,
         description: 'Include this runner name; repeat to select more.',
       }),
-      issue: Flags.string({
-        multiple: true,
-        description:
-          'Include only these issues’ run logs; repeat to select more.',
-      }),
       level: Flags.string({
         options: Object.keys(LEVELS),
         description: 'Minimum log level.',
@@ -521,7 +514,6 @@ export function logsCommands(): Readonly<Record<string, Command.Class>> {
         appLog: flags['app-log'],
         requestLog: flags['request-log'],
         runners: flags.runner,
-        issues: flags.issue,
         level: flags.level,
         out: flags.out,
       };

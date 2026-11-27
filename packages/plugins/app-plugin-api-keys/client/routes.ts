@@ -1,0 +1,123 @@
+import {
+  definePersonalSettingsRoutes,
+  defineSystemSettingsRoutes,
+  PERSONAL_SETTINGS_CATEGORIES,
+  SYSTEM_SETTINGS_CATEGORIES,
+  type AppClientRouteContribution,
+} from '@nocobase/app-client/plugins';
+import { KeyRound } from 'lucide-react';
+
+const NAMES = {
+  personal: 'apiKeysPersonal',
+  personalCreate: 'apiKeysPersonalCreate',
+  personalDetail: 'apiKeysPersonalDetail',
+  system: 'apiKeysSystem',
+  systemCreate: 'apiKeysSystemCreate',
+  systemDetail: 'apiKeysSystemDetail',
+  members: 'apiKeysMembers',
+  rules: 'apiKeysRules',
+} as const;
+
+/** The ids of the pages, which an application's `routeComponentOverrides` names as `routeId` to replace a page. */
+export const API_KEY_ROUTES: {
+  readonly [
+    K in keyof typeof NAMES
+  ]: `@nocobase/app-plugin-api-keys:${(typeof NAMES)[K]}`;
+} = {
+  personal: '@nocobase/app-plugin-api-keys:apiKeysPersonal',
+  personalCreate: '@nocobase/app-plugin-api-keys:apiKeysPersonalCreate',
+  personalDetail: '@nocobase/app-plugin-api-keys:apiKeysPersonalDetail',
+  system: '@nocobase/app-plugin-api-keys:apiKeysSystem',
+  systemCreate: '@nocobase/app-plugin-api-keys:apiKeysSystemCreate',
+  systemDetail: '@nocobase/app-plugin-api-keys:apiKeysSystemDetail',
+  members: '@nocobase/app-plugin-api-keys:apiKeysMembers',
+  rules: '@nocobase/app-plugin-api-keys:apiKeysRules',
+};
+
+/**
+ * Personal settings › API keys: everyone signed in lists, opens and revokes their own keys. Who may create one is the
+ * server's to say (`mayCreate`), since an application decides whether it takes a role permission; the create page asks
+ * it. The create and detail pages cover the list.
+ */
+export const personalRoutes: AppClientRouteContribution =
+  definePersonalSettingsRoutes([
+    {
+      parent: PERSONAL_SETTINGS_CATEGORIES.integrations,
+      name: NAMES.personal,
+      path: '/api-keys',
+      navigation: { title: 'navigation.personal', icon: KeyRound },
+      breadcrumb: { title: 'navigation.personal' },
+      componentLoader: () => import('./pages/personal-keys.js'),
+      children: [
+        {
+          name: NAMES.personalCreate,
+          path: 'create',
+          breadcrumb: { title: 'create.breadcrumb' },
+          presentation: { kind: 'child-page' },
+          componentLoader: () => import('./pages/personal-key-create.js'),
+        },
+        {
+          name: NAMES.personalDetail,
+          path: ':keyId',
+          breadcrumb: { title: 'detail.breadcrumb' },
+          presentation: { kind: 'child-page' },
+          componentLoader: () => import('./pages/personal-key-detail.js'),
+        },
+      ],
+    },
+  ]);
+
+const API_KEYS = { type: 'settings', id: 'apiKeys' } as const;
+
+export const systemRoutes: AppClientRouteContribution =
+  defineSystemSettingsRoutes([
+    {
+      parent: SYSTEM_SETTINGS_CATEGORIES.account,
+      name: NAMES.system,
+      path: '/api-keys',
+      auth: 'required',
+      authz: { resource: API_KEYS, action: 'read' },
+      navigation: {
+        title: 'navigation.system',
+        order: 200,
+        description: 'system.description',
+        relatedSettings: ['personalApiKeys'],
+        icon: KeyRound,
+      },
+      breadcrumb: { title: 'navigation.system' },
+      componentLoader: () => import('./pages/system-keys.js'),
+      children: [
+        {
+          name: NAMES.systemCreate,
+          path: 'create',
+          authz: { resource: API_KEYS, action: 'manage' },
+          breadcrumb: { title: 'system.create.breadcrumb' },
+          presentation: { kind: 'child-page' },
+          componentLoader: () => import('./pages/system-key-create.js'),
+        },
+        {
+          name: NAMES.systemDetail,
+          path: ':identityId',
+          breadcrumb: { title: 'system.detail.breadcrumb' },
+          presentation: { kind: 'child-page' },
+          componentLoader: () => import('./pages/system-key-detail.js'),
+        },
+        {
+          name: NAMES.members,
+          path: 'members',
+          authz: { resource: API_KEYS, action: 'read' },
+          breadcrumb: { title: 'system.memberReview' },
+          presentation: { kind: 'child-page' },
+          componentLoader: () => import('./pages/member-keys.js'),
+        },
+        {
+          name: NAMES.rules,
+          path: 'rules',
+          authz: { resource: API_KEYS, action: 'read' },
+          breadcrumb: { title: 'system.keyRules' },
+          presentation: { kind: 'child-page' },
+          componentLoader: () => import('./pages/key-rules.js'),
+        },
+      ],
+    },
+  ]);

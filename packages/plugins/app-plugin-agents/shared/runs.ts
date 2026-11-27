@@ -127,6 +127,7 @@ export interface ModelSelectionWait {
     readonly compatibleCount: number;
     readonly blockers?: readonly ModelWaitReason[];
     readonly runners: readonly {
+      readonly runnerId?: string;
       readonly name: string;
       readonly reason?: ModelWaitReason;
       readonly lastSeenAt?: string | null;
@@ -242,10 +243,9 @@ export interface RunRepo {
   readonly pushed: boolean;
   readonly headSha: string | null;
   /**
-   * Why the runner could not push it at the end of the run (`RepoReport.failure`: `authFailed`,
-   * `credentialUnavailable`, `credentialDenied`, `leaseLost`, `rejected` or `error`), with a redacted message; null
-   * when it pushed or did not try. Optional so existing application schemas and older reports remain compatible;
-   * this server always includes it.
+   * Why the repository was not pushed (`RepoReport.failure`), with a redacted message. Null when it pushed or did
+   * not try. Optional so existing application schemas and older reports remain compatible; this server always
+   * includes it.
    */
   readonly failure?: {
     readonly reason: string;
@@ -399,6 +399,38 @@ export interface RunActivity {
 }
 
 export const RUN_ACTIVITY_TEXT_MAX = 200;
+
+/** How much of a failed run's message is shown: one line of it, the rest is in the runner's log. */
+export const FAILURE_DETAIL_TEXT_MAX = 300;
+
+/** Terminal escapes and other control characters a tool's message may carry; line breaks stay to find the first line. */
+/* eslint-disable no-control-regex -- matching control characters is the point. */
+const CONTROL_TEXT =
+  /\u001b\[[0-9;?]*[ -/]*[@-~]|[\u0000-\u0008\u000b-\u001f\u007f]/gu;
+/* eslint-enable no-control-regex */
+
+/**
+ * A failed run's message as people read it: what the tool itself said (OpenCode's "Reconnect OpenCode Console to
+ * continue."), already redacted by the server, as one line (its first) without control characters, cut to
+ * `FAILURE_DETAIL_TEXT_MAX` characters. Null when there is nothing to show.
+ */
+export function failureDetailText(
+  detail: string | null | undefined,
+): string | null {
+  // Lines split at CR, LF or CRLF before control characters go, so a lone CR still ends a line.
+  const text =
+    (detail ?? '')
+      .split(/\r\n|\r|\n/u)
+      .map((line) =>
+        line.replace(CONTROL_TEXT, '').replace(/\s+/gu, ' ').trim(),
+      )
+      .find((line) => line !== '') ?? '';
+  if (text === '') return null;
+  // The ellipsis counts: what is shown is at most `FAILURE_DETAIL_TEXT_MAX` characters.
+  return text.length > FAILURE_DETAIL_TEXT_MAX
+    ? `${text.slice(0, FAILURE_DETAIL_TEXT_MAX - 1).trimEnd()}…`
+    : text;
+}
 
 /** An open run with what a board of work shows about it. */
 export interface WorkloadRun extends Run {

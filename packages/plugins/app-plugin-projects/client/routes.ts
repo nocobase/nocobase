@@ -34,19 +34,12 @@ export const newIssueDefinition: AppClientRoutePageDefinition = {
 
 /**
  * The issue pages under `/issues` that the application's issues page hosts (`client/pages.ts`, `issueChildRoutes`):
- * the "New issue" dialog and a plan's page. The application owns `/issues`, `/my-issues` and an issue's page
+ * the "New issue" dialog. The application owns `/issues`, `/my-issues` and an issue's page
  * (`/issues/:issueId`) and composes them from `client/issues.ts` and `client/issue-page.ts`; its `/issues` page places
  * an `<Outlet />` for these.
  */
 export const issueChildDefinitions: readonly AppClientRoutePageDefinition[] = [
   newIssueDefinition,
-  {
-    // A plan's own page (the timeline's "via ‹Agent›'s plan" links here).
-    name: 'pm-plan',
-    path: 'plans/:planId',
-    presentation: { kind: 'child-page' },
-    componentLoader: () => import('./pages/plans/detail.js'),
-  },
 ];
 
 /** The dialogs over an issue's page that stay this plugin's: "New sub-issue" (`new-subtask`). */

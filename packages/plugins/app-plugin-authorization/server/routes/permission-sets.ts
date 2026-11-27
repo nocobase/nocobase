@@ -1,3 +1,5 @@
+import { auditOperationName } from '../audit-operation-name.js';
+import { auditRecordKey, describeAudit } from '@nocobase/audit';
 import { z } from 'zod';
 import { submitSettingsMutation } from '../extension/submission.js';
 import {
@@ -48,7 +50,10 @@ import {
   createSubjectRoutes,
 } from '../extension/options.js';
 import type { AuthorizationExtensionHost } from '../host.js';
-import { authorizationOptions } from '../options.js';
+import {
+  authorizationOptions,
+  grantableAuthorizationOptions,
+} from '../options.js';
 import {
   AssignmentParams,
   AssignPermissionSetBody,
@@ -76,6 +81,9 @@ export const PERMISSION_SETS_SETTINGS = 'authorization.permission-sets';
 type Api = PermissionSetsApi;
 
 /** Every `/permissionSets` route, gated by `settings:authorization.permission-sets`. */
+const setsCollection = 'authorizationPermissionSets';
+const assignmentsCollection = 'authorizationPermissionSetAssignments';
+
 export function createPermissionSetHandler(
   host: AuthorizationExtensionHost,
   api: Api,
@@ -105,6 +113,30 @@ export function createPermissionSetHandler(
       },
     }),
     async (context) => context.json({ data: await authorizationOptions(host) }),
+  );
+  // What the caller may give a credential of their own, such as an API key: every signed-in person reads it.
+  routes.get(
+    '/permissionSets/grantableOptions',
+    describeRoute({
+      tags,
+      summary: 'List what I may give a credential',
+      operationId: 'authorizationListGrantableOptions',
+      description:
+        'The workspace catalogue limited to what the caller holds today: only resources with an action the caller holds, with only those actions and the collections they read, and no subject types. An editor of what the caller’s API key may do builds its tables from it. Any signed-in person may read it.',
+      responses: {
+        200: dataResponse(AuthorizationOptionsSchema),
+        ...apiErrorResponses,
+      },
+    }),
+    async (context) => {
+      const [options, snapshot] = await Promise.all([
+        authorizationOptions(host),
+        context.env.authorization.snapshot(),
+      ]);
+      return context.json({
+        data: grantableAuthorizationOptions(options, snapshot),
+      });
+    },
   );
   routes.route(
     '/',
@@ -163,6 +195,26 @@ export function createPermissionSetHandler(
   );
   routes.post(
     '/permissionSets',
+    describeAudit({
+      operationName: auditOperationName('createPermissionSet'),
+      action: 'create',
+      resource: `settings:${PERMISSION_SETS_SETTINGS}`,
+      target: (context) => ({
+        collection: setsCollection,
+        key: context.req.param('key'),
+      }),
+      resolveTargets: ({ response }, context) => {
+        const previous = context.req.param('key');
+        const key = auditRecordKey(response, 'data', 'key') ?? previous;
+        return {
+          source:
+            previous && previous !== key
+              ? { collection: setsCollection, key: previous }
+              : undefined,
+          targets: [{ collection: setsCollection, key }],
+        };
+      },
+    }),
     settingsAccess(PERMISSION_SETS_SETTINGS, 'create'),
     describeRoute({
       tags,
@@ -246,6 +298,29 @@ export function createPermissionSetHandler(
   );
   routes.post(
     '/permissionSets/:key/assignments',
+    describeAudit({
+      operationName: auditOperationName('assignPermissionSet'),
+      action: 'assign',
+      resource: `settings:${PERMISSION_SETS_SETTINGS}`,
+      target: (context) => ({
+        source: { collection: setsCollection, key: context.req.param('key') },
+        targets: [
+          {
+            collection: assignmentsCollection,
+            key: context.req.param('assignmentId'),
+          },
+        ],
+      }),
+      resolveTargets: ({ response }, context) => ({
+        source: { collection: setsCollection, key: context.req.param('key') },
+        targets: [
+          {
+            collection: assignmentsCollection,
+            key: auditRecordKey(response, 'data', 'id'),
+          },
+        ],
+      }),
+    }),
     settingsAccess(PERMISSION_SETS_SETTINGS, 'assign'),
     describeRoute({
       tags,
@@ -288,6 +363,20 @@ export function createPermissionSetHandler(
   );
   routes.delete(
     '/permissionSets/:key/assignments/:assignmentId',
+    describeAudit({
+      operationName: auditOperationName('unassignPermissionSet'),
+      action: 'assign',
+      resource: `settings:${PERMISSION_SETS_SETTINGS}`,
+      target: (context) => ({
+        source: { collection: setsCollection, key: context.req.param('key') },
+        targets: [
+          {
+            collection: assignmentsCollection,
+            key: context.req.param('assignmentId'),
+          },
+        ],
+      }),
+    }),
     settingsAccess(PERMISSION_SETS_SETTINGS, 'assign'),
     describeRoute({
       tags,
@@ -352,6 +441,26 @@ export function createPermissionSetHandler(
   );
   routes.patch(
     '/permissionSets/:key',
+    describeAudit({
+      operationName: auditOperationName('updatePermissionSet'),
+      action: 'update',
+      resource: `settings:${PERMISSION_SETS_SETTINGS}`,
+      target: (context) => ({
+        collection: setsCollection,
+        key: context.req.param('key'),
+      }),
+      resolveTargets: ({ response }, context) => {
+        const previous = context.req.param('key');
+        const key = auditRecordKey(response, 'data', 'key') ?? previous;
+        return {
+          source:
+            previous && previous !== key
+              ? { collection: setsCollection, key: previous }
+              : undefined,
+          targets: [{ collection: setsCollection, key }],
+        };
+      },
+    }),
     settingsAccess(PERMISSION_SETS_SETTINGS, 'update'),
     describeRoute({
       tags,
@@ -407,7 +516,13 @@ export function createPermissionSetHandler(
           // later schema change invalidated; startup reports those.
           if (changes.grants !== undefined)
             await validateWriteGrants(host, input.grants);
-          api.assertWritable(key, 'update');
+          const titleOnly =
+            changes.title !== undefined &&
+            changes.key === undefined &&
+            changes.grants === undefined;
+          const titleAllowed =
+            titleOnly && api.protection(key)?.allow.includes('updateTitle');
+          api.assertWritable(key, titleAllowed ? 'updateTitle' : 'update');
           if (input.key !== key)
             for (const candidate of [key, input.key]) {
               const protection = api.protection(candidate);
@@ -435,6 +550,15 @@ export function createPermissionSetHandler(
   );
   routes.delete(
     '/permissionSets/:key',
+    describeAudit({
+      operationName: auditOperationName('deletePermissionSet'),
+      action: 'delete',
+      resource: `settings:${PERMISSION_SETS_SETTINGS}`,
+      target: (context) => ({
+        collection: setsCollection,
+        key: context.req.param('key'),
+      }),
+    }),
     settingsAccess(PERMISSION_SETS_SETTINGS, 'delete'),
     describeRoute({
       tags,

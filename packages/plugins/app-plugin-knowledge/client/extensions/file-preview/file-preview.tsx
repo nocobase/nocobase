@@ -18,9 +18,12 @@ export type { FileRecord } from './types.js';
 export function FilePreview({
   file,
   onDownload,
+  fill = false,
 }: {
   readonly file: FileRecord;
   readonly onDownload?: () => void;
+  /** Fill its container, as a full-screen view does. */
+  readonly fill?: boolean;
 }): ReactElement {
   const sourceUrl = resolveSafeFileUrl(file.contentUrl ?? '');
   const [text, setText] = useState<string>();
@@ -92,6 +95,7 @@ export function FilePreview({
       text={text}
       error={error}
       onDownload={onDownload}
+      fill={fill}
     />
   );
 }

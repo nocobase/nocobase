@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 /**
- * The Usage page's prices sheet: the enabled services' (service, model) pairs and the coding tools, edited in place,
- * opened by "Set prices" for who reads `agents.prices`.
+ * The Usage page's Prices tab: the enabled services' (service, model) pairs and the coding tools, edited in place,
+ * shown to who reads `agents.prices`.
  */
 import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
@@ -130,20 +130,17 @@ const renderPrices = () =>
   renderRoute(<UsagePage />, '/usage', '/usage?prices=1');
 
 describe('Agent management › Usage › Prices', () => {
-  it('opens the prices sheet from the header', async () => {
+  it('shows the prices in a tab of the usage page', async () => {
     renderRoute(<UsagePage />, '/usage', '/usage');
-    expect(screen.queryByRole('dialog')).toBeNull();
+    expect(screen.queryByTestId('usage-prices')).toBeNull();
     await userEvent.click(
-      screen.getByRole('button', { name: 'usage.setPrices' }),
+      await screen.findByRole('tab', { name: 'usage.tabs.prices' }),
     );
-    const sheet = await screen.findByRole('dialog');
-    expect(within(sheet).getByText('prices.section.title')).toBeInTheDocument();
-    // Medium width, overriding the sheet's narrow default for its side.
-    expect(sheet).toHaveClass('data-[side=right]:sm:max-w-2xl');
-    expect(sheet).not.toHaveClass('data-[side=right]:sm:max-w-sm');
+    const panel = await screen.findByTestId('usage-prices');
     expect(
-      await within(sheet).findByRole('list', { name: 'prices.section.runner' }),
+      await within(panel).findByRole('list', { name: 'prices.section.runner' }),
     ).toBeInTheDocument();
+    expect(screen.queryByRole('dialog')).toBeNull();
   });
 
   beforeEach(() => {
@@ -278,10 +275,8 @@ describe('Agent management › Usage › Prices', () => {
   it('offers no prices for who does not read them', async () => {
     serve(['agents.services/read']);
     renderPrices();
-    expect(
-      screen.queryByRole('button', { name: 'usage.setPrices' }),
-    ).toBeNull();
-    expect(screen.queryByRole('dialog')).toBeNull();
+    expect(screen.queryByRole('tab', { name: 'usage.tabs.prices' })).toBeNull();
+    expect(screen.queryByTestId('usage-prices')).toBeNull();
     await waitFor(() =>
       expect(api.calls.some((call) => call.path === 'agents/prices')).toBe(
         false,

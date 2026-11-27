@@ -89,6 +89,7 @@ export class DatabaseProvider extends ServiceProvider<DatabaseProviderApplicatio
       paths: this.app.paths,
       contributions: this.app.databaseTaskContributions,
       autoRun: true,
+      deferMissingMigrationSources: true,
     });
     // Task targets are prepared by the executor; other connections must still
     // be usable by runtime services when automatic tasks are disabled.
@@ -107,15 +108,15 @@ export class DatabaseProvider extends ServiceProvider<DatabaseProviderApplicatio
       container: this.app.container,
       paths: this.app.paths,
     });
-    this.reportChecksumWarnings(result);
+    this.reportTaskWarnings(result);
     this.prepareSampleData(config, plan, result, database);
     await this.refreshCollections(config, result, database);
   }
 
   /**
    * Tells the sample data service where samples are recorded — the default connection's seed history — and whether
-   * this start installed that connection with `app.sampleData` set. Without a seeds run on the default connection,
-   * nothing is prepared and no sample is built or recorded.
+   * `app.sampleData` is enabled. This only prepares registrations when automatic seeding is allowed on
+   * the default connection. Registrations can run even when there are no seed files.
    */
   private prepareSampleData(
     config: AppDatabaseConfig,
@@ -136,7 +137,7 @@ export class DatabaseProvider extends ServiceProvider<DatabaseProviderApplicatio
       (entry) =>
         entry.kind === 'seeds' &&
         entry.connection === connection &&
-        entry.status === 'completed',
+        (entry.status === 'completed' || entry.reason === 'missing-directory'),
     );
     if (!task || !seeded) return;
     const seeder = createAppSeeder({
@@ -152,9 +153,7 @@ export class DatabaseProvider extends ServiceProvider<DatabaseProviderApplicatio
         history: () => seeder.history(),
         record: (entry) => seeder.record(entry),
       },
-      enabled:
-        seeded.freshInstall === true &&
-        this.app.config.get<unknown>('app.sampleData') === true,
+      enabled: this.app.config.get<unknown>('app.sampleData') === true,
     });
   }
 
@@ -193,13 +192,25 @@ export class DatabaseProvider extends ServiceProvider<DatabaseProviderApplicatio
    * Automatic startup tasks have no console to report to, so drift tolerated by
    * the `warn` policy is only visible if it reaches the application log.
    */
-  private reportChecksumWarnings(result: AppDatabaseTasksResult): void {
+  private reportTaskWarnings(result: AppDatabaseTasksResult): void {
     const { container } = this.app;
     if (!container.has(loggingToken)) return;
     let logger: Logger | undefined;
     for (const entry of result.results) {
       for (const warning of entry.warnings ?? []) {
         logger ??= container.resolve(loggingToken).getLogger('database');
+        if ('kind' in warning) {
+          logger.warn(
+            {
+              connection: entry.connection,
+              kind: entry.kind,
+              package: warning.packageName,
+              name: warning.name,
+            },
+            `Executed migration "${warning.name}" is missing from migration sources. Package: "${warning.packageName}". History is retained.`,
+          );
+          continue;
+        }
         logger.warn(
           {
             connection: entry.connection,

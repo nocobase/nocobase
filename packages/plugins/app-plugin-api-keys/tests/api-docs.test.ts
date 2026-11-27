@@ -5,6 +5,7 @@ import path from 'node:path';
 
 import authentication, {
   authenticationToken,
+  signInMethodsToken,
 } from '@nocobase/app-plugin-authentication/server';
 import { Application } from '@nocobase/app-server/application';
 import { CachingProvider } from '@nocobase/app-server/caching';
@@ -108,6 +109,8 @@ describe('API documentation access with an API key', () => {
         },
       },
       snowflake: { workerId: 0 },
+      // The test signs in and makes a key that acts as the person in full.
+      apiKeys: { allowSameAsMe: true },
     };
     const config: AppConfigAccessor = {
       get: <TValue>(key: string): TValue => values[key] as TValue,
@@ -151,6 +154,18 @@ describe('API documentation access with an API key', () => {
     await app?.shutdown();
     await databases?.drop();
     rmSync(directory, { recursive: true, force: true });
+  });
+
+  it('lists API keys among the sign-in methods on the authentication settings page', () => {
+    const method = app.container
+      .resolve(signInMethodsToken)
+      .list()
+      .find((candidate) => candidate.id === 'api-key');
+    expect(method).toMatchObject({ config: 'apiKey()', signInEntry: false });
+    expect(method?.describe()).toEqual({
+      status: 'enabled',
+      configPath: 'auth.plugins',
+    });
   });
 
   it('refuses an anonymous request', async () => {

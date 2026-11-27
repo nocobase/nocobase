@@ -1,8 +1,15 @@
+import auditLabels from '../../locales/vi-VN.js';
 import type { LocaleResource } from '@nocobase/i18n';
 
 import type enUS from './en-US.js';
+import components from './components-en-US.js';
+import settings from './settings-en-US.js';
 
 const viVN: LocaleResource<typeof enUS> = {
+  audit: auditLabels.audit,
+  // The Roles and permissions pages are not translated into this language yet and show in English.
+  ...components,
+  settings,
   permissionSets: {
     builtIn: {
       root: 'Quản trị viên hệ thống',
@@ -21,7 +28,6 @@ const viVN: LocaleResource<typeof enUS> = {
     actions: {
       assign: 'Quản lý bài tập',
       configure: 'Cấu hình',
-      inspect: 'Kiểm tra quyền',
       read: 'Đọc',
       create: 'Tạo',
       update: 'Cập nhật',
@@ -37,8 +43,8 @@ const viVN: LocaleResource<typeof enUS> = {
         'Cho phép truy cập vào mọi trang, kể cả những trang được thêm sau.',
     },
     settings: {
-      inspector: 'Thanh tra giấy phép',
       'permission-sets': 'Bộ quyền',
+      'authentication-settings': 'Đăng nhập và xác thực',
     },
     subjectTypes: {
       authenticated: 'Tất cả người dùng đã đăng nhập',

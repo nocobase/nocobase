@@ -17,9 +17,7 @@ import { z } from 'zod';
 
 import {
   MODEL_KINDS,
-  MODEL_PROVIDER_NAMES,
   guessModelKind,
-  providerOf,
   type CreateModelServiceRequest,
   type DefaultChatModel,
   type DefaultModels,
@@ -56,6 +54,7 @@ import {
   type ModelSource,
 } from './gateway.js';
 import { listModels, type ModelConnection } from './providers.js';
+import { isModelProvider, modelProviderOf } from './provider-registry.js';
 
 const SERVICES = 'agModelServices';
 const PRICES = 'agModelPrices';
@@ -101,9 +100,15 @@ const ModelsSchema = z
   )
   .max(500);
 
-const ProviderSchema = z.enum(
-  MODEL_PROVIDER_NAMES as [ModelProviderName, ...ModelProviderName[]],
-);
+/** A provider someone provides now: built in, or registered by another plugin (`provider-registry.ts`). */
+const ProviderSchema = z
+  .string()
+  .min(1)
+  .max(64)
+  .refine(isModelProvider, 'No model provider of this type is registered.')
+  .describe(
+    'The provider type: a built-in one or one another plugin registered (`GET /api/agents/modelProviders`).',
+  );
 
 export const CreateServiceSchema: z.ZodType<CreateModelServiceRequest> =
   z.strictObject({
@@ -303,7 +308,7 @@ function cleanModels(
   provider: ModelProviderName,
   models: readonly ModelInput[],
 ): ModelOption[] {
-  const kinds = providerOf(provider)?.kinds ?? ['chat'];
+  const kinds = modelProviderOf(provider)?.kinds ?? ['chat'];
   for (const model of models) {
     if (model.dimensions && (model.kind ?? 'chat') !== 'embedding')
       throw invalid(
@@ -311,7 +316,7 @@ function cleanModels(
       );
     if (!kinds.includes(model.kind ?? 'chat'))
       throw invalid(
-        `${providerOf(provider)?.title ?? provider} serves no ${model.kind ?? 'chat'} models.`,
+        `${modelProviderOf(provider)?.title ?? provider} serves no ${model.kind ?? 'chat'} models.`,
       );
   }
   return modelsOf(models.map((model) => ({ ...model })));
@@ -342,8 +347,9 @@ function normalizeBaseUrl(value: string | null | undefined): string | null {
   return url.replace(/\/+$/u, '');
 }
 
+/** The stored provider type, kept as it is even when nobody provides it any more (calling it then fails clearly). */
 const providerName = (record: ServiceRecord): ModelProviderName =>
-  ProviderSchema.parse(record.provider);
+  String(record.provider);
 
 /** Derived output only; never written back into agModelServices.models. */
 function outputModels(record: ServiceRecord): ModelOption[] {
@@ -430,10 +436,29 @@ function defaultsOf(
 }
 
 export function createModelServices(deps: {
+  readonly enabled?: boolean;
   readonly tx: TxRunner;
   readonly clock: Clock;
   readonly box: Sealer;
 }): ModelServices {
+  if (deps.enabled === false) {
+    const unavailable = () =>
+      Promise.reject(new ModelError('config', 'Model services are disabled.'));
+    return {
+      list: () => Promise.resolve([]),
+      catalog: () => Promise.resolve({ services: [] }),
+      defaults: () => Promise.resolve({ chat: null, effectiveChat: null }),
+      capabilities: () => Promise.resolve({ webSearch: false }),
+      create: unavailable,
+      update: unavailable,
+      remove: unavailable,
+      check: unavailable,
+      models: unavailable,
+      setDefaultChat: unavailable,
+      connectionFor: unavailable,
+      endpointFor: unavailable,
+    };
+  }
   const repo = (conn: DatabaseConnection) =>
     conn.repository<ServiceRecord>(SERVICES);
 
@@ -499,7 +524,7 @@ export function createModelServices(deps: {
     input: CreateModelServiceRequest,
   ): Promise<void> {
     const baseUrl = normalizeBaseUrl(input.baseUrl);
-    if (!baseUrl && !providerOf(input.provider)?.defaultBaseUrl)
+    if (!baseUrl && !modelProviderOf(input.provider)?.defaultBaseUrl)
       throw invalid('This provider needs a base URL.');
     const services = await all(conn);
     const now = deps.clock.now().toISOString();
@@ -594,7 +619,10 @@ export function createModelServices(deps: {
           input.baseUrl === undefined
             ? undefined
             : normalizeBaseUrl(input.baseUrl);
-        if (baseUrl === null && !providerOf(current.provider)?.defaultBaseUrl)
+        if (
+          baseUrl === null &&
+          !modelProviderOf(current.provider)?.defaultBaseUrl
+        )
           throw invalid('This provider needs a base URL.');
         await repo(conn).updateMany({
           filter: { name },
@@ -629,7 +657,7 @@ export function createModelServices(deps: {
     async models(request) {
       const connection = await tried(request);
       try {
-        const kinds = providerOf(connection.provider)?.kinds ?? ['chat'];
+        const kinds = modelProviderOf(connection.provider)?.kinds ?? ['chat'];
         return {
           ok: true,
           items: (
@@ -650,10 +678,15 @@ export function createModelServices(deps: {
     async check(request) {
       const connection = await tried(request);
       const kind = request.kind ?? 'chat';
-      if (!(providerOf(connection.provider)?.kinds ?? []).includes(kind))
+      if (!modelProviderOf(connection.provider))
         return {
           ok: false,
-          message: `${providerOf(connection.provider)?.title ?? connection.provider} serves no ${kind} models.`,
+          message: `The model provider "${connection.provider}" is not available: the plugin that provided it is not registered.`,
+        };
+      if (!(modelProviderOf(connection.provider)?.kinds ?? []).includes(kind))
+        return {
+          ok: false,
+          message: `${modelProviderOf(connection.provider)?.title ?? connection.provider} serves no ${kind} models.`,
         };
       const model = request.model.trim();
       const as = (other: ModelKind): Promise<CheckResult> => {
@@ -675,7 +708,7 @@ export function createModelServices(deps: {
       // failure is the connection's or the account's rather than the model's.
       if (checked.ok || !WRONG_KIND_CODES.has(checked.code ?? 'unknown'))
         return answered(checked);
-      const others = (providerOf(connection.provider)?.kinds ?? []).filter(
+      const others = (modelProviderOf(connection.provider)?.kinds ?? []).filter(
         (other) => other !== kind,
       );
       const answers = await Promise.all(others.map((other) => as(other)));
@@ -757,7 +790,7 @@ export function createModelServices(deps: {
       options?.allowUnlistedModel === true &&
       kind === 'embedding' &&
       !configured &&
-      providerOf(record.provider)?.kinds.includes('embedding') === true &&
+      modelProviderOf(record.provider)?.kinds.includes('embedding') === true &&
       ModelRefSchema.safeParse(ref).success;
     if (!offered && !unlistedEmbedding)
       throw new ModelError(
@@ -774,7 +807,7 @@ export function createModelServices(deps: {
         { cause: error },
       );
     }
-    if (!connection.apiKey && providerOf(connection.provider)?.keyRequired)
+    if (!connection.apiKey && modelProviderOf(connection.provider)?.keyRequired)
       throw new ModelError(
         'auth',
         `The model service ${ref.modelService} has no API key.`,

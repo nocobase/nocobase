@@ -107,6 +107,14 @@ const frFR: LocaleResource<typeof enUS> = {
         environments: 'Déployer des environnements',
       },
     },
+    humanOnly: {
+      deployProtected:
+        'Le déploiement dans un environnement protégé doit être approuvé par une personne ; une clé peut seulement le demander.',
+      delete:
+        'Supprimer une app efface ses données ; seule une personne peut le faire.',
+      configure:
+        'Configurer une app modifie ses paramètres et ses secrets ; seule une personne peut le faire.',
+    },
     keyScopes: {
       apps: {
         title: 'Applications et déploiements',
@@ -861,9 +869,9 @@ const frFR: LocaleResource<typeof enUS> = {
       apps: 'Applications',
       appsDescription: 'Applications déployées dans cet environnement.',
       appsEmpty: "Aucune application n'est encore déployée ici.",
-      sampleData: 'Charger des exemples de données lors du premier déploiement',
+      sampleData: 'Charger les données d’exemple lors du déploiement',
       sampleDataHint:
-        "Le premier déploiement d'une application installe ici ses exemples de données (APP_SAMPLE_DATA=true). Utilisez-le pour les aperçus, pas pour la production.",
+        'Chaque déploiement charge les données d’exemple encore en attente (APP_SAMPLE_DATA=true). Activez cette option en prévisualisation et laissez-la désactivée en production.',
       add: 'Ajouter un environnement',
       edit: 'Modifier',
       delete: 'Supprimer',

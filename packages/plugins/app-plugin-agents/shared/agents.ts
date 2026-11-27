@@ -36,11 +36,6 @@ export type AgentStatus = (typeof AGENT_STATUSES)[number];
 /** How long a tool and model may go unreported by every runner before its agent shows as having no runner. */
 export const AGENT_UNREPORTED_AFTER_MS: number = 14 * 24 * 60 * 60_000;
 
-/** When in a conversation an agent asks before changing data: every change, or only larger ones. */
-export const CONFIRM_CHANGES = ['always', 'larger'] as const;
-
-export type ConfirmChanges = (typeof CONFIRM_CHANGES)[number];
-
 /**
  * An entry of an agent's list: a coding tool, its model (null: the tool's default) and its reasoning effort, one of the
  * tool's (`TOOL_EFFORTS`; null or absent: the tool's default).
@@ -50,6 +45,29 @@ export interface RunnerModelEntry {
   readonly model: string | null;
   readonly effort?: string | null;
 }
+
+/**
+ * Every reasoning effort some coding tool takes, from least to most, for a person's own preference
+ * (`ChatPreferences.effort`).
+ */
+export const PREFERRED_EFFORTS: readonly [string, ...string[]] = (() => {
+  const known = new Set(Object.values(TOOL_EFFORTS).flat());
+  const ordered = [
+    'off',
+    'minimal',
+    'low',
+    'medium',
+    'high',
+    'xhigh',
+    'max',
+    'ultra',
+  ];
+  const all = [
+    ...ordered.filter((effort) => known.has(effort)),
+    ...[...known].filter((effort) => !ordered.includes(effort)),
+  ];
+  return all as unknown as readonly [string, ...string[]];
+})();
 
 /** The most entries an agent's list holds. */
 export const MAX_MODEL_ENTRIES = 20;
@@ -98,12 +116,16 @@ export interface Agent {
   readonly instructions: string | null;
   /** Business action keys the agent may perform, within what the person who woke it may do. */
   readonly actions: readonly string[];
-  /** In conversations: whether it asks before every change or only before larger ones. */
-  readonly confirmChanges: ConfirmChanges;
   readonly maxConcurrentRuns: number;
   readonly maxAttempts: number;
   /** Overrides of the default tool policy (`DEFAULT_TOOL_POLICY`). */
   readonly toolPolicy: Partial<ToolPolicy> | null;
+  /**
+   * Who may chat with it (`mayChat`): null for every signed-in person, else the keys of the permission sets (roles)
+   * whose members may. Only an unrestricted identity (root) always may. Work given to it otherwise (assignments,
+   * delegation) ignores it.
+   */
+  readonly chatRoles: readonly string[] | null;
   /** When a runner last reported its tool and model; null for the application's own. */
   readonly lastReportedAt: string | null;
   /**
@@ -199,6 +221,8 @@ export interface AgentPatch {
   readonly description?: string | null;
   readonly effort?: string | null;
   readonly enabled?: boolean;
+  /** Who may chat with it: null (or an empty list) for everyone, else permission set keys. */
+  readonly chatRoles?: readonly string[] | null;
   readonly expectedRevision: number;
 }
 
@@ -337,6 +361,7 @@ export const AGENT_HISTORY_FIELDS = [
   'modelEntries',
   'instructions',
   'actions',
+  'chatRoles',
 ] as const;
 
 export type AgentHistoryField = (typeof AGENT_HISTORY_FIELDS)[number];
@@ -415,3 +440,41 @@ export const DEFAULT_TOOL_POLICY: ToolPolicy = {
   ],
   idleTimeoutMs: 30 * 60_000,
 };
+
+/** Who is asking to chat: every agent for an unrestricted identity such as root (`all`), else the keys of their permission sets. */
+export type ChatAudience = 'all' | ReadonlySet<string>;
+
+/** The audience of a person holding `sets`: every agent when one of them is unrestricted (root), else their keys. */
+export function chatAudienceOf(
+  sets: readonly { readonly key: string }[],
+  unrestricted: (key: string) => boolean,
+): ChatAudience {
+  if (sets.some((set) => unrestricted(set.key))) return 'all';
+  return new Set(sets.map((set) => set.key));
+}
+
+/** Whether `audience` may chat with `agent`: an agent open to everyone, or one of the roles it names. */
+export function mayChat(
+  agent: Pick<Agent, 'chatRoles'>,
+  audience: ChatAudience,
+): boolean {
+  if (!agent.chatRoles?.length || audience === 'all') return true;
+  return agent.chatRoles.some((role) => audience.has(role));
+}
+
+/** The stored form of a list of roles: trimmed, unique and sorted, or null for everyone. */
+export function normalizeChatRoles(
+  roles: readonly string[] | null | undefined,
+): readonly string[] | null {
+  const unique = [
+    ...new Set((roles ?? []).map((role) => role.trim()).filter(Boolean)),
+  ].sort();
+  return unique.length ? unique : null;
+}
+
+/** A role an agent's chat may be limited to (`GET /api/agents/chatRoles`): a permission set's key and title. */
+export interface ChatRole {
+  readonly key: string;
+  /** Its title as written, or an i18n reference; null when it has none (show the key). */
+  readonly title: string | I18nText | null;
+}

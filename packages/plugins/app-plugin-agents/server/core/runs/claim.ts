@@ -130,6 +130,7 @@ import {
 import {
   type ClaimContext,
   type SubjectAssembly,
+  type SubjectCompatibility,
   type SubjectDir,
 } from './ports.js';
 import { MAX_CLAIM_FAILURES, toolPolicyFor, type AgentCli } from './policy.js';
@@ -206,6 +207,12 @@ export interface ClaimService {
     scan?: ClaimScan,
     signal?: AbortSignal,
   ): Promise<RunPayload[]>;
+  /** Read-only sample of prospective work on one subject, sharing compatibility and runner occupancy. */
+  diagnoseRoster(
+    conn: DatabaseConnection,
+    run: Run,
+    agentIds: readonly string[],
+  ): Promise<ReadonlyMap<string, ModelSelectionWait | null>>;
   /** The skills a run gets, worked out the way its claim works them out. The caller checks who holds the run. */
   runSkills(runner: Runner, runId: string): Promise<RunSkill[]>;
 }
@@ -256,6 +263,8 @@ class AssemblyError extends Error {
 }
 
 /** The run does not fit this runner after all (its payload needs another runner or unavailable capabilities). */
+class ClaimAborted extends Error {}
+
 class NotForThisRunner extends Error {
   public constructor() {
     super('The run does not fit this runner.');
@@ -647,6 +656,23 @@ async function settleClaimInputs(
   if (delivered.length !== given.length) throw new NotForThisRunner();
 }
 
+const claimCollections = [
+  'agAgents',
+  'agRuns',
+  'agJobs',
+  'agRunInputs',
+  'agSkillAttachments',
+  'agSkills',
+  'agSkillVersions',
+  'agSecrets',
+  'agRunnerVariables',
+  'agWorkspaceResets',
+  'agSessions',
+  'agRunTokens',
+  'agRunEvents',
+  'agRunBriefs',
+] as const;
+
 export function createClaimService(deps: ClaimDeps): ClaimService {
   const { tx, clock } = deps;
 
@@ -659,7 +685,7 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
         variables: RunVariables;
       }>
     >();
-    return (agent: Agent, assembly: SubjectAssembly) => {
+    return (agent: Agent, assembly: SubjectCompatibility) => {
       const skills = skillTargets(agent, assembly);
       const variables = variableTargets(agent, assembly);
       const key = JSON.stringify([skills, variables]);
@@ -681,8 +707,14 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
     run: Run,
     agent: Agent,
     runner: Runner,
-    assembly: SubjectAssembly,
-    resources = claimResources(conn, run.id),
+    assembly: SubjectCompatibility,
+    resources: (
+      agent: Agent,
+      assembly: SubjectCompatibility,
+    ) => Promise<{
+      skills: readonly unknown[];
+      variables: Pick<RunVariables, 'names' | 'teamOnly' | 'passthrough'>;
+    }> = claimResources(conn, run.id),
   ): Promise<'ready' | 'incompatible' | 'restricted'> {
     if (
       !isProtocolSupported(runner.protocolVersion) ||
@@ -704,7 +736,7 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
     run: Run,
     agent: Agent,
     runner: Runner,
-    assembly: SubjectAssembly,
+    assembly: SubjectCompatibility,
     skillCount: number,
     variables: Pick<RunVariables, 'names' | 'teamOnly'>,
   ): 'ready' | 'incompatible' | 'restricted' {
@@ -747,19 +779,32 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
     return 'ready';
   }
 
+  type SlotSamples = Map<string, Awaited<ReturnType<ClaimDeps['slotsHeld']>>>;
+
   async function selectionFacts(
     conn: DatabaseConnection,
     run: Run,
     agent: Agent,
     requirePolicy = true,
     trust?: 'team' | 'personal',
-    resources = claimResources(conn, run.id),
+    resources: NonNullable<
+      Parameters<typeof assemblyCompatibility>[5]
+    > = claimResources(conn, run.id),
+    roster?: {
+      registered: readonly Runner[];
+      compatibility: SubjectCompatibility;
+      slots: SlotSamples;
+    },
   ): Promise<ModelSelectionWait | null> {
-    const policy = await deps.selectionPolicies?.forRun(conn, run);
+    const policy = roster
+      ? undefined
+      : await deps.selectionPolicies?.forRun(conn, run);
     if ((requirePolicy && !policy) || !deps.runners) return null;
     const now = clock.now();
     const start = queueStart(run);
-    const registered = (await deps.runners.all(conn)).filter(
+    const registered = (
+      roster?.registered ?? (await deps.runners.all(conn))
+    ).filter(
       (runner) =>
         !trust ||
         (trust === 'team' ? runner.trust === 'team' : runner.trust !== 'team'),
@@ -767,7 +812,9 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
     const binding = deps.subjects.get(run.subject.kind);
     if (!binding)
       throw new Error(`No context provider for ${run.subject.kind}.`);
-    const inputs = (await pendingInputs(conn, run.id)).map(toInput);
+    const inputs = roster
+      ? []
+      : (await pendingInputs(conn, run.id)).map(toInput);
     const active = await countActive(conn, 'agentId', agent.id);
     const sameWork =
       (
@@ -782,6 +829,10 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
           ACTIVE,
         )
       ).length > 0;
+    const assemblies = new Map<string, SubjectCompatibility | null>();
+    const slots =
+      roster?.slots ??
+      new Map<string, Awaited<ReturnType<ClaimDeps['slotsHeld']>>>();
     const entries: ModelSelectionWait['entries'][number][] = [];
     for (const entry of agent.modelEntries) {
       const single = { ...agent, modelEntries: [entry] };
@@ -818,6 +869,7 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
       const compatible: Runner[] = [];
       const loads: ModelSelectionWait['entries'][number]['runners'][number][] =
         quota.map((runner) => ({
+          ...(roster ? { runnerId: runner.runnerId } : {}),
           name: runner.runnerName,
           ownerUserId: installed.find((item) => item.id === runner.runnerId)!
             .ownerUserId,
@@ -833,6 +885,7 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
         ) {
           incompatible = true;
           loads.push({
+            ...(roster ? { runnerId: runner.id } : {}),
             name: runner.name,
             ownerUserId: runner.ownerUserId,
             reason: 'incompatible',
@@ -840,19 +893,28 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
           });
           continue;
         }
-        const assembly = await binding.context
-          .assemble(conn, {
-            run: run,
-            agent,
-            runner,
-            inputs,
-            cli: deps.cli.name,
-            appName: deps.app.name,
-          })
-          .catch(() => null);
+        const assemblyKey = binding.context.runnerIndependent ? '' : runner.id;
+        if (!roster && !assemblies.has(assemblyKey))
+          assemblies.set(
+            assemblyKey,
+            await binding.context
+              .assemble(conn, {
+                run,
+                agent,
+                runner,
+                inputs,
+                cli: deps.cli.name,
+                appName: deps.app.name,
+              })
+              .catch(() => null),
+          );
+        const assembly = roster
+          ? roster.compatibility
+          : assemblies.get(assemblyKey);
         if (!assembly) {
           unknown = true;
           loads.push({
+            ...(roster ? { runnerId: runner.id } : {}),
             name: runner.name,
             ownerUserId: runner.ownerUserId,
             reason: 'unknown',
@@ -871,6 +933,7 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
         if (reason !== 'ready') {
           incompatible ||= reason === 'incompatible';
           loads.push({
+            ...(roster ? { runnerId: runner.id } : {}),
             name: runner.name,
             ownerUserId: runner.ownerUserId,
             reason,
@@ -887,7 +950,11 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
         if (requiredVariables.some((name) => !runner.variables?.includes(name)))
           continue;
         compatible.push(runner);
-        const held = await deps.slotsHeld(conn, runner.id);
+        let held = slots.get(runner.id);
+        if (!held) {
+          held = await deps.slotsHeld(conn, runner.id);
+          slots.set(runner.id, held);
+        }
         const byTool = held.byTool ?? {};
         const used = held.jobs + held.runs;
         const hasRoom =
@@ -899,6 +966,7 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
         ready ||= hasRoom && runner.globalFree !== undefined;
         if (hasRoom && runner.globalFree === undefined) unknown = true;
         loads.push({
+          ...(roster ? { runnerId: runner.id } : {}),
           name: runner.name,
           ownerUserId: runner.ownerUserId,
           reason: hasRoom
@@ -1024,7 +1092,7 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
     }
     return {
       async load(
-        checks: readonly { agent: Agent; assembly: SubjectAssembly }[],
+        checks: readonly { agent: Agent; assembly: SubjectCompatibility }[],
       ) {
         const vars = missing(
           [
@@ -1048,7 +1116,7 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
         if (attached.length)
           skills.push(...(await deps.skills.admissionMetadata(conn, attached)));
       },
-      get(agent: Agent, assembly: SubjectAssembly) {
+      get(agent: Agent, assembly: SubjectCompatibility) {
         const merged = new Map<string, (typeof variables)[number]>();
         for (const target of variableTargets(agent, assembly))
           for (const row of variables)
@@ -1084,6 +1152,7 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
     run: Run,
     agent: Agent,
     inputs: readonly RunInput[],
+    preparedSubject: unknown,
     metadata: ReturnType<typeof admissionResources>,
     inventory: () => Promise<readonly Runner[]>,
   ): Promise<boolean> {
@@ -1100,6 +1169,7 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
       runner: Runner;
       assembly: SubjectAssembly;
     }[] = [];
+    let sharedAssembly: SubjectAssembly | undefined;
     for (const runner of registered) {
       if (
         (reserved && runner.id !== reserved) ||
@@ -1111,18 +1181,25 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
         (runner.trust !== 'team' && runner.ownerUserId !== run.actorUserId)
       )
         continue;
-      const assembly = await binding.context
-        .assemble(conn, {
-          run,
-          agent,
-          runner,
-          inputs,
-          cli: deps.cli.name,
-          appName: deps.app.name,
-        })
-        .catch(() => null);
+      const assembly =
+        sharedAssembly ??
+        (await binding.context
+          .assemble(
+            conn,
+            {
+              run,
+              agent,
+              runner,
+              inputs,
+              cli: deps.cli.name,
+              appName: deps.app.name,
+            },
+            preparedSubject,
+          )
+          .catch(() => null));
       // The diagnostic path treats an unreadable context as unknown and waits for the preferred model.
       if (!assembly) return true;
+      if (binding.context.runnerIndependent) sharedAssembly = assembly;
       checks.push({ agent: single, runner, assembly });
     }
     await metadata.load(checks);
@@ -1158,8 +1235,15 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
     agent: Agent,
     entry: RunnerModelEntry,
     inputs: readonly RunInput[],
-    metadata = admissionResources(conn),
-    inventory: () => Promise<readonly Runner[]> = () => deps.runners!.all(conn),
+    {
+      preparedSubject,
+      metadata = admissionResources(conn),
+      inventory = () => deps.runners!.all(conn),
+    }: {
+      preparedSubject?: unknown;
+      metadata?: ReturnType<typeof admissionResources>;
+      inventory?: () => Promise<readonly Runner[]>;
+    } = {},
   ): Promise<RunExecutionSnapshot['selection'] | false> {
     if (agent.modelEntries.indexOf(entry) <= 0 || !deps.runners)
       return undefined;
@@ -1174,6 +1258,7 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
       run,
       agent,
       inputs,
+      preparedSubject,
       metadata,
       inventory,
     );
@@ -1323,15 +1408,21 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
       },
       prepared,
     );
+    if (git?.ssh?.length) {
+      if (!runner.features.includes('gitSsh')) throw new NotForThisRunner();
+      if (!requires.includes('gitSsh')) requires.push('gitSsh');
+    }
     deps.secrets?.remember(runSecretsKey(run.id), [
       ...env.map((variable) => variable.value),
       token.value,
       ...(git?.credentials ?? []).map((credential) => credential.password),
+      ...(git?.ssh ?? []).map((credential) => credential.privateKey),
     ]);
     const last = await eventsRepo(conn).findOne({
       filter: { runId: run.id },
       sort: (sort) => sort.field('seq').desc(),
     });
+    const reusableSections = new Map<string, string | null>();
     const render = async (): Promise<RenderedBrief> =>
       briefOf(
         agent,
@@ -1341,6 +1432,7 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
           effectiveClaim,
           assembly,
           prepared,
+          reusableSections,
         ),
         skills,
         deps.cli.name,
@@ -1366,7 +1458,7 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
     // A kept session that cannot be resumed: the new one is told what came before, as a first one is. The history
     // is outside the fingerprint, so it does not change.
     let recoveryContext: string | undefined;
-    if (session && !strict) {
+    if (session && !strict && !binding.context.recoveryIndependent) {
       const fresh = await binding.context.assemble(
         conn,
         { ...claim, freshSession: true },
@@ -1889,11 +1981,13 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
         return { kind: 'skipped' };
       }
     // Before the transaction: on SQLite it holds the only connection, so the providers read what else they need now.
+    const runView = toRun(candidate);
+    const mounts = runner.features.includes('mounts') ? deps.mounts : undefined;
     const prepared = new Map(
       await prepareExtensions(
-        toRun(candidate),
+        runView,
         deps.sections,
-        deps.mounts,
+        mounts,
         (error) => deps.onClaimFailure?.(candidate.id, error),
         deps.repoAccess,
         {
@@ -1907,19 +2001,52 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
     const subjectContext = deps.subjects.get(candidate.subjectKind)?.context;
     if (subjectContext?.prepare) {
       try {
-        prepared.set('subject', await subjectContext.prepare(toRun(candidate)));
+        prepared.set('subject', await subjectContext.prepare(runView));
       } catch (error) {
         deps.onClaimFailure?.(candidate.id, error);
       }
+    }
+    if (pass.signal?.aborted) {
+      await discardRepoAccess(candidate, prepared);
+      return { kind: 'aborted' };
     }
     let taken: RunPayload | null;
     let runnerFull = false;
     try {
       taken = await tx.run(async (unit): Promise<RunPayload | null> => {
         const { conn } = unit;
+        if (conn.dialect === 'postgres') {
+          // Warm the registry on this transaction's connection. Its first business
+          // statement still locks the agent, and every admission read happens after it.
+          const checkingPreferredModel = Boolean(
+            paced !== agent.modelEntries[0] &&
+            deps.runners &&
+            deps.selectionPolicies,
+          );
+          const collections = new Set<string>([
+            ...claimCollections,
+            ...(checkingPreferredModel ? ['agRunners'] : []),
+            ...(subjectContext?.claimCollections?.(
+              runView,
+              checkingPreferredModel,
+            ) ?? []),
+            ...(mounts?.list() ?? []).flatMap(
+              (provider) =>
+                provider.claimCollections?.(
+                  prepared.get(`mount:${provider.name}`),
+                ) ?? [],
+            ),
+          ]);
+          for (const collection of collections) {
+            if (pass.signal?.aborted) throw new ClaimAborted();
+            await conn.collections.get(collection);
+          }
+          if (pass.signal?.aborted) throw new ClaimAborted();
+        }
         const now = clock.now();
         const nowText = now.toISOString();
         await lockAgentForClaim(conn, agent.id, nowText);
+        if (pass.signal?.aborted) throw new ClaimAborted();
         const queuedRun = await findRunRecord(conn, candidate.id);
         if (!queuedRun || queuedRun.status !== 'queued') return null;
         if (!(await pinnedTo(conn, queuedRun, runner))) return null;
@@ -2019,6 +2146,7 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
             agent,
             entry,
             pending.map(toInput),
+            { preparedSubject: prepared.get('subject') },
           );
           if (admission === false) throw new NotForThisRunner();
           selectionSnapshot = admission;
@@ -2094,6 +2222,7 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
           await deps.subjects
             .get(run.subjectKind)
             ?.sink?.onQuotaResumed?.(unit, toRun(run));
+        if (pass.signal?.aborted) throw new ClaimAborted();
         unit.emit({
           type: 'run.changed',
           ...(current.runnerPinId ? { quotaWait: false } : {}),
@@ -2112,6 +2241,8 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
       });
     } catch (error) {
       await discardRepoAccess(candidate, prepared);
+      if (error instanceof ClaimAborted || pass.signal?.aborted)
+        return { kind: 'aborted' };
       if (error instanceof TeamRunnersOnly) {
         await noteTeamOnly(candidate, error.variables);
         return { kind: 'skipped' };
@@ -2570,15 +2701,10 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
     if (agent.modelEntries.indexOf(entry) > 0) {
       const inputs = (await pendingInputs(conn, run.id)).map(toInput);
       if (
-        (await modelAdmission(
-          conn,
-          toRun(run),
-          agent,
-          entry,
-          inputs,
+        (await modelAdmission(conn, toRun(run), agent, entry, inputs, {
           metadata,
           inventory,
-        )) === false
+        })) === false
       )
         return false;
     }
@@ -2729,6 +2855,55 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
       }
     },
     diagnose: (conn, run, agent) => selectionFacts(conn, run, agent, false),
+    async diagnoseRoster(conn, run, agentIds) {
+      const result = new Map<string, ModelSelectionWait | null>();
+      const provider = deps.subjects.get(run.subject.kind)?.context;
+      if (
+        !deps.runners ||
+        !provider?.rosterCompatibility ||
+        agentIds.length === 0
+      )
+        return result;
+      const compatibility = await provider.rosterCompatibility(conn, run);
+      const agents = await findAgents(conn, agentIds);
+      const registered = await deps.runners.all(conn);
+      const metadata = admissionResources(conn);
+      await metadata.load(
+        [...agents.values()].map((agent) => ({
+          agent,
+          assembly: compatibility,
+        })),
+      );
+      const shared = {
+        registered,
+        compatibility,
+        slots: new Map<string, Awaited<ReturnType<ClaimDeps['slotsHeld']>>>(),
+      };
+      for (const agent of agents.values()) {
+        result.set(
+          agent.id,
+          await selectionFacts(
+            conn,
+            {
+              ...run,
+              id: `@roster:${agent.id}:${run.id}`,
+              requires: [],
+              agentId: agent.id,
+              status: 'queued',
+              runnerId: null,
+              executions: [],
+              availableAt: null,
+            },
+            agent,
+            false,
+            undefined,
+            async (candidate, assembly) => metadata.get(candidate, assembly),
+            shared,
+          ),
+        );
+      }
+      return result;
+    },
     async selectionWait(runId) {
       const conn = tx.read();
       const run = await findRunRecord(conn, runId);

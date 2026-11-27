@@ -245,6 +245,62 @@ describe('authz.ui groups and placement', () => {
   });
 });
 
+describe('page declarations of a composite', () => {
+  it('lists the pages it is used on and the pages that turn each action on', async () => {
+    const authz = createAppAuthorization({});
+    authz.database.collections.add({ name: 'quotes', title: 'Quotes' });
+    authz.compositeResources.define(
+      defineCompositeResource('sales.declared', (resource) =>
+        resource
+          .title('Declared quotes')
+          .usedOn('sales.quotes', 'dashboard')
+          .action('view', (action) =>
+            action.defaultFor('sales.quotes').grant({
+              build: () => ({
+                grants: [
+                  {
+                    resource: { type: 'database.collection', id: 'quotes' },
+                    actions: [{ action: 'read' }],
+                  },
+                ],
+              }),
+            }),
+          )
+          .action('approve', (action) =>
+            action.risk('high').grant({
+              build: () => ({
+                grants: [
+                  {
+                    resource: { type: 'database.collection', id: 'quotes' },
+                    actions: [{ action: 'update' }],
+                  },
+                ],
+              }),
+            }),
+          ),
+      ),
+    );
+    authz.compositeResources.define(quotes);
+    const resources = (await authorizationOptions(authz)).sections
+      .flatMap((section) => section.subsections)
+      .flatMap((subsection) => subsection.resources)
+      .filter((resource) => resource.type === 'composite');
+    expect(resources).toMatchObject([
+      {
+        id: 'sales.declared',
+        usedOn: ['sales.quotes', 'dashboard'],
+        actions: [
+          { name: 'view', defaultFor: ['sales.quotes'] },
+          { name: 'approve', risk: 'high' },
+        ],
+      },
+      { id: 'sales.quotes' },
+    ]);
+    expect(resources[0]?.actions[1]).not.toHaveProperty('defaultFor');
+    expect(resources[1]).not.toHaveProperty('usedOn');
+  });
+});
+
 describe('the page subsection', () => {
   it('is registered by pagesPlugin and marked for the client to fill, titled in this plugin', async () => {
     const authz = createAppAuthorization({});
@@ -414,8 +470,10 @@ describe('options', () => {
         key: 'options.settingsModules.authorization',
       }),
     });
+    // The inspector is not a grantable settings item; its routes admit only an unrestricted identity. Reading the
+    // Authentication settings is declared here for the authentication plugin, which cannot depend on this one.
     expect(administration[0]?.resources.map((resource) => resource.id)).toEqual(
-      ['authorization.permission-sets', 'authorization.inspector'],
+      ['authorization.permission-sets', 'authentication.settings'],
     );
     expect(administration[1]?.resources).toEqual([
       {

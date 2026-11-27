@@ -435,7 +435,7 @@ it('adds no SQL, writes, transactions or locks to heartbeat or an excluded claim
   const agent = await h.createAgent();
   await h.enqueue(agent);
   const client = await h.database.connection().client<Knex>();
-  const measure = async (name: string, action: () => Promise<unknown>) => {
+  const measure = async (action: () => Promise<unknown>) => {
     const sql: string[] = [];
     const listen = (query: { sql: string }) => sql.push(query.sql);
     client.on('query', listen);
@@ -445,8 +445,8 @@ it('adds no SQL, writes, transactions or locks to heartbeat or an excluded claim
       client.off('query', listen);
     }
     const result = {
-      name,
-      reads: sql.filter((q) => /^select/i.test(q)).length,
+      sql,
+      reads: sql.filter((q) => /^\s*select\b/i.test(q)).length,
       writes: sql.filter((q) => /^(insert|update|delete)/i.test(q)).length,
       transactions: sql.filter((q) => /^begin/i.test(q)).length,
       locks: sql.filter((q) => /for update|for share/i.test(q)).length,
@@ -461,12 +461,15 @@ it('adds no SQL, writes, transactions or locks to heartbeat or an excluded claim
     active: [],
     load: { slots: runner.slots, free: runner.slots },
   };
+  const incompatibleRunner = { ...runner, enabledTools: [] };
+  // Warm the same paths on both sides so the trace measures quota handling.
   await h.services.runners.heartbeat(runner, heartbeat);
-  const beforeHeartbeat = await measure('heartbeat-before', () =>
+  await h.services.claims.claim(incompatibleRunner, 1);
+  const beforeHeartbeat = await measure(() =>
     h.services.runners.heartbeat(runner, heartbeat),
   );
-  const beforeClaim = await measure('claim-incompatible-tool', () =>
-    h.services.claims.claim({ ...runner, enabledTools: [] }, 1),
+  const beforeClaim = await measure(() =>
+    h.services.claims.claim(incompatibleRunner, 1),
   );
   await h.services.tx.run((unit) =>
     h.services.runners.reportQuota(unit, runner.id, 'claude', null, {
@@ -482,21 +485,18 @@ it('adds no SQL, writes, transactions or locks to heartbeat or an excluded claim
     }),
   );
   const marked = await h.services.runners.get(runner.id);
-  const afterHeartbeat = await measure('heartbeat-with-quota', () =>
+  await h.services.runners.heartbeat(marked, heartbeat);
+  await h.services.claims.claim(marked, 1);
+  const afterHeartbeat = await measure(() =>
     h.services.runners.heartbeat(marked, heartbeat),
   );
-  const afterClaim = await measure('claim-quota-filtered', () =>
-    h.services.claims.claim(marked, 1),
-  );
-  const { name: _beforeH, ...costBeforeH } = beforeHeartbeat;
-  const { name: _afterH, ...costAfterH } = afterHeartbeat;
-  const { name: _beforeC, ...costBeforeC } = beforeClaim;
-  const { name: _afterC, ...costAfterC } = afterClaim;
-  expect(costAfterH).toEqual(costBeforeH);
-  expect(costAfterC.reads).toBeLessThanOrEqual(costBeforeC.reads);
-  expect(costAfterC.writes).toBe(0);
-  expect(costAfterC.transactions).toBe(0);
-  expect(costAfterC.locks).toBe(0);
+  const afterClaim = await measure(() => h.services.claims.claim(marked, 1));
+  expect(afterHeartbeat).toEqual(beforeHeartbeat);
+  expect(afterClaim.sql.length).toBeLessThanOrEqual(beforeClaim.sql.length);
+  expect(afterClaim.reads).toBeLessThanOrEqual(beforeClaim.reads);
+  expect(afterClaim.writes).toBe(0);
+  expect(afterClaim.transactions).toBe(0);
+  expect(afterClaim.locks).toBe(0);
 });
 it('saves small usage changes and broadcasts uncapped usage only on mark changes', async () => {
   h = await createHarness();
@@ -1021,4 +1021,63 @@ it('lists current tool quota with each visible runtime, as its own read shows it
   const [later] = await listed('alice');
   expect(later?.unavailableModels).toEqual([]);
   expect(later?.quotaUsage.map((u) => u.window)).toEqual(['seven_day']);
+});
+
+it('retires missing Codex windows after a complete snapshot, including earlier samples in the same batch', async () => {
+  h = await createHarness();
+  const runner = await h.registerRunner({
+    tools: [{ kind: 'codex', authenticated: true }],
+  });
+  const agent = await h.createAgent({
+    modelEntries: [{ tool: 'codex', model: null }],
+  });
+  const runId = await h.enqueue(agent);
+  expect((await claim(h, runner))[0].run.id).toBe(runId);
+  const monthly = {
+    scope: 'tool' as const,
+    target: '',
+    window: '43200m',
+    usedPercent: 52,
+    exhausted: false,
+    resetsAt: null,
+  };
+  const weekly = { ...monthly, window: '10080m', usedPercent: 0 };
+  for (const tool of ['codex', 'claude'] as const) {
+    await h.services.tx.run((unit) =>
+      h.services.runners.reportQuota(unit, runner.runnerId, tool, null, {
+        windows: [monthly],
+      }),
+    );
+  }
+  const events = [
+    { windows: [monthly, weekly] },
+    { replacesUsage: true, windows: [weekly] },
+  ].map((quota, i) => ({
+    seq: i + 1,
+    at: h.clock.now().toISOString(),
+    type: 'status',
+    content: 'quota',
+    meta: { quota },
+  }));
+  const post = () =>
+    h.request('POST', `/agents/runners/runs/${runId}/events`, {
+      runnerKey: runner.key,
+      body: { events },
+    });
+  expect((await post()).status).toBe(200);
+  const after = await h.services.runners.get(runner.runnerId);
+  expect(
+    after.quotaUsage?.map(({ tool, window, usedPercent }) => [
+      tool,
+      window,
+      usedPercent,
+    ]),
+  ).toEqual([
+    ['claude', '43200m', 52],
+    ['codex', '10080m', 0],
+  ]);
+  expect((await post()).status).toBe(200);
+  expect((await h.services.runners.get(runner.runnerId)).quotaRevision).toBe(
+    after.quotaRevision,
+  );
 });

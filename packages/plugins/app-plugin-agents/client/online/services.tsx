@@ -21,7 +21,11 @@ import {
 } from 'lucide-react';
 import { useState, type ReactElement } from 'react';
 
-import { MODEL_PROVIDERS, type ModelServiceView } from '../../shared/models.js';
+import type {
+  ModelProviderOption,
+  ModelServiceView,
+} from '../../shared/models.js';
+import { useModelProviders } from './use-model-providers.js';
 import { agentsKeys } from '../api/keys.js';
 import {
   AgEmpty,
@@ -89,6 +93,7 @@ export function ModelServicesPage(): ReactElement {
     queryKey: agentsKeys.services,
     queryFn: () => api.services(),
   });
+  const providers = useModelProviders();
   // The dialog's service (null adds one), kept while it closes so its content does not change as it fades out.
   const [editor, setEditor] = useState<{
     readonly open: boolean;
@@ -142,10 +147,11 @@ export function ModelServicesPage(): ReactElement {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {sortServices(services.data).map((service) => (
+            {sortServices(services.data, providers).map((service) => (
               <ServiceRow
                 key={service.name}
                 service={service}
+                providers={providers}
                 canManage={canManage}
                 onEdit={() => openEditor(service.name)}
               />
@@ -184,10 +190,12 @@ export function ModelServicesPage(): ReactElement {
 /** One service: its name, host, provider and status, and its actions; clicking it opens its editor. */
 function ServiceRow({
   service,
+  providers,
   canManage,
   onEdit,
 }: {
   readonly service: ModelServiceView;
+  readonly providers: readonly ModelProviderOption[];
   readonly canManage: boolean;
   readonly onEdit: () => void;
 }): ReactElement {
@@ -196,8 +204,8 @@ function ServiceRow({
   const notify = useNotify();
   const queryClient = useQueryClient();
   const [deleting, setDeleting] = useState(false);
-  const status = serviceStatus(service);
-  const host = hostOf(service);
+  const status = serviceStatus(service, providers);
+  const host = hostOf(service, providers);
   // A service's models are the catalog's, and its default chat model's and the agents' state follow from them.
   const refresh = () =>
     queryClient.invalidateQueries({ queryKey: agentsKeys.all });
@@ -251,7 +259,7 @@ function ServiceRow({
         </div>
       </TableCell>
       <TableCell>
-        <div>{providerTitle(service)}</div>
+        <div>{providerTitle(service, providers)}</div>
         <div className='text-xs text-muted-foreground'>
           {kindCounts(service.models)
             .map(({ kind, count }) =>
@@ -337,6 +345,9 @@ function ServiceRow({
   );
 }
 
-const providerTitle = (service: ModelServiceView): string =>
-  MODEL_PROVIDERS.find((provider) => provider.name === service.provider)
-    ?.title ?? service.provider;
+const providerTitle = (
+  service: ModelServiceView,
+  providers: readonly ModelProviderOption[],
+): string =>
+  providers.find((provider) => provider.name === service.provider)?.title ??
+  service.provider;

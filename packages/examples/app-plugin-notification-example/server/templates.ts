@@ -1,10 +1,7 @@
 import { ServiceProvider } from '@nocobase/service-provider';
 import type { AppPluginApplication } from '@nocobase/app-server/plugins';
 import {
-  describeNotificationTemplateChannel,
-  notificationI18nText,
   notificationTemplateRegistryToken,
-  type NotificationConfigInput,
   type NotificationI18nText,
 } from '@nocobase/app-plugin-notification/server';
 
@@ -98,34 +95,22 @@ export class TaskTemplateProvider extends ServiceProvider<AppPluginApplication> 
               description: text('variables.status', 'Task status'),
             },
           ],
-          channels: () => [
-            describeNotificationTemplateChannel(
-              this.app.config.get<NotificationConfigInput>('notification'),
-              'inbox',
-              {
-                label: text('channel', 'Task inbox'),
-                typeLabel: notificationI18nText(
-                  'templates.channelTypes.inApp',
-                  'In-app message',
-                ),
-              },
-            ),
-          ],
-          render: (_locale, example) =>
+          // Sent with `notify()`: always in the inbox, on a person's devices unless they turn push off, never by email unless they turn it on.
+          channels: { 'in-app': 'required', 'web-push': 'on', email: 'off' },
+          content: ({ data }) =>
             renderTaskNotification(
-              example === 'definition'
-                ? {
-                    title: '{{title}}',
-                    description: '{{description}}',
-                    status: '{{status}}',
-                  }
-                : {
-                    title: 'Review the sample proposal',
-                    description: 'Synthetic task for preview only.',
-                    status: 'open',
-                  },
+              {
+                title: String(data.title),
+                description: String(data.description),
+                status: String(data.status),
+              },
               event,
             ),
+          sample: {
+            title: 'Review the sample proposal',
+            description: 'Synthetic task for preview only.',
+            status: 'open',
+          },
         }),
       );
     }

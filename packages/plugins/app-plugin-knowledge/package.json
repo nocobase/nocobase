@@ -2,11 +2,21 @@
   "name": "@nocobase/app-plugin-knowledge",
   "displayName": "Knowledge base",
   "description": "Spaces of versioned Markdown documents with search, proposals and review, and snapshot export.",
-  "version": "0.1.0-beta.21",
+  "version": "0.1.0-beta.24",
   "type": "module",
   "prettier": "@nocobase/dev-config/prettier",
   "engines": {
     "node": ">=24.0.0"
+  },
+  "nocobase": {
+    "title": {
+      "en-US": "Knowledge base",
+      "zh-CN": "知识库"
+    },
+    "description": {
+      "en-US": "Document spaces, search and review",
+      "zh-CN": "文档空间、搜索和审阅"
+    }
   },
   "sideEffects": false,
   "exports": {

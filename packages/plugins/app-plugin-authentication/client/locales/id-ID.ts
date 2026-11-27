@@ -1,8 +1,11 @@
+import auditLabels from '../../locales/id-ID.js';
 import type { LocaleResource } from '@nocobase/i18n';
 
-import type enUS from './en-US.js';
+import { withPluralForms } from '../plural-forms.js';
+import enUS from './en-US.js';
 
 const idID: LocaleResource<typeof enUS> = {
+  ...auditLabels,
   errors: {
     generic: 'Ada yang tidak beres. Silakan coba lagi.',
     network:
@@ -35,9 +38,16 @@ const idID: LocaleResource<typeof enUS> = {
       'Asal ini tidak dipercaya. Atur app.publicOrigin di config.yml ke {{origin}}, mulai ulang aplikasi, dan coba lagi.',
     INVALID_ORIGIN:
       'Asal ini tidak dipercaya. Centang app.publicOrigin di config.yml, mulai ulang aplikasi, dan coba lagi.',
+    FAILED_TO_UNLINK_LAST_ACCOUNT: enUS.errors.FAILED_TO_UNLINK_LAST_ACCOUNT,
     INVALID_CSRF_ORIGIN:
       'Permintaan ini datang dari situs lain dan ditolak. Muat ulang halaman dan coba lagi.',
   },
+  // The settings pages are not translated into this language yet; English is shown.
+  settings: withPluralForms(enUS.settings, 'id-ID'),
+  guide: enUS.guide,
+  prompt: enUS.prompt,
+  sso: enUS.sso,
+  account: withPluralForms(enUS.account, 'id-ID'),
 };
 
 export default idID;

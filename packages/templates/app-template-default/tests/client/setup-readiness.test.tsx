@@ -1,6 +1,10 @@
 import { answerApi, renderWithApp } from '@nocobase/app-testing/client';
 import { apiClientToken, type ClientApplication } from '@nocobase/app-client';
 import {
+  defineClientPlugin,
+  defineSystemSettingsRoutes,
+} from '@nocobase/app-client/plugins';
+import {
   AuthorizationClient,
   authorizationClientToken,
 } from '@nocobase/app-plugin-authorization/client';
@@ -30,6 +34,18 @@ const services = (app: ClientApplication) =>
     authorizationClientToken,
     new AuthorizationClient(app.container.resolve(apiClientToken)),
   );
+// Only the member list the action links to, without the users plugin's services.
+const usersPage = defineClientPlugin({
+  packageName: '@nocobase/app-plugin-users',
+  routes: defineSystemSettingsRoutes([
+    {
+      name: 'settingsUsers',
+      path: '/users',
+      authz: 'skip',
+      componentLoader: async () => ({ default: () => null }),
+    },
+  ]),
+});
 const role = {
   scope: 'app',
   role: 'finance',
@@ -190,6 +206,7 @@ it('checks real API-client results, links to scoped management and rechecks on r
     </Routes>,
     {
       route: '/process?name=travel#review',
+      plugins: [usersPage()],
       namespace,
       namespaces,
       services,
@@ -256,6 +273,23 @@ it.each([false, true])(
   },
 );
 
+it('offers no role assignment when the member list is not registered', async () => {
+  await renderWithApp(<RequiredRoleSetup roles={roles} />, {
+    namespace,
+    namespaces,
+    services,
+    fetch: answerApi(({ path }) =>
+      path === 'authorization/permissions'
+        ? { data: { unrestricted: true, permissions: [] } }
+        : path === 'users/options'
+          ? { data: registered }
+          : { data: [], meta: { total: 0 } },
+    ),
+  });
+  expect(await screen.findByText(role.description)).toBeVisible();
+  expect(screen.queryByRole('link')).not.toBeInTheDocument();
+});
+
 it('allows read-only inspection without offering role assignment', async () => {
   await renderWithApp(<RequiredRoleSetup roles={roles} />, {
     namespace,
@@ -304,6 +338,7 @@ it('uses short action copy for long role labels and rechecks the mounted feature
     );
   }
   await renderWithApp(<Feature />, {
+    plugins: [usersPage()],
     namespace,
     namespaces,
     services,

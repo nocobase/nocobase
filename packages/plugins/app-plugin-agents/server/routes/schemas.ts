@@ -51,9 +51,9 @@ import {
   AGENT_SOURCES,
   AGENT_STATUSES,
   AGENT_UNUSABLE_REASONS,
-  CONFIRM_CHANGES,
   MODEL_AVAILABILITY_STATUSES,
   type Agent,
+  type ChatRole,
   type AgentActionOption,
   type AgentChange,
   type AgentName,
@@ -94,11 +94,10 @@ import type { I18nText } from '../../shared/i18n.js';
 import {
   MODEL_KINDS,
   type DefaultModels,
-  MODEL_PROVIDER_NAMES,
   type ModelCheck,
   type ModelKind,
-  type ModelProviderName,
   type ModelService,
+  type ModelProviderOption,
   type ModelServiceView,
   type ProviderModels,
 } from '../../shared/models.js';
@@ -686,10 +685,13 @@ const agentObject = z.object({
   }),
   instructions: z.string().nullable(),
   actions: z.array(z.string()),
-  confirmChanges: z.enum(CONFIRM_CHANGES),
   maxConcurrentRuns: z.number().int(),
   maxAttempts: z.number().int(),
   toolPolicy: toolPolicyOverrides.nullable(),
+  chatRoles: z.array(z.string()).nullable().meta({
+    description:
+      'Who may chat with it: null for every signed-in person, else the keys of the permission sets (roles) whose members may.',
+  }),
   lastReportedAt: dateTime.nullable().meta({
     description: 'When a runner last reported its tool and model.',
   }),
@@ -700,6 +702,16 @@ const agentObject = z.object({
   createdAt: dateTime,
   updatedAt: dateTime,
 });
+
+export const ChatRoleSchema: z.ZodType<ChatRole> = z
+  .object({
+    key: z.string().meta({ description: 'The permission set key.' }),
+    title: z
+      .union([z.string(), I18nTextSchema])
+      .nullable()
+      .meta({ description: 'Its title, or an i18n reference; null for none.' }),
+  })
+  .meta({ ref: 'AgentsChatRole' });
 
 export const AgentSchema: z.ZodType<Agent> = agentObject.meta({
   ref: 'AgentsAgent',
@@ -1066,6 +1078,10 @@ const skillObject = z.object({
     description:
       "The front matter's `compatibility`: what the skill needs of its environment.",
   }),
+  metadata: z.record(z.string(), z.string()).meta({
+    description:
+      "The front matter's `metadata`, string keys and values an application may read to classify the skill; empty when it has none.",
+  }),
   version: z.number().int().meta({
     description:
       "The current version and the skill's revision: a save names the version it was made against.",
@@ -1083,6 +1099,10 @@ const skillObject = z.object({
     .array(z.string())
     .meta({ description: 'The paths of those scripts.' }),
   createdById: z.string().nullable(),
+  updatedById: z.string().nullable().meta({
+    description:
+      'Who wrote the current version: null when the application did (a seed or a plugin).',
+  }),
   createdAt: dateTime,
   updatedAt: dateTime,
 });
@@ -1119,7 +1139,13 @@ const skillDetailObject = skillObject.extend({
 export const SkillDetailSchema: z.ZodType<SkillDetail> = skillDetailObject;
 
 export const SkillViewSchema: z.ZodType<SkillView> = skillDetailObject
-  .extend({ canEdit: z.boolean() })
+  .extend({
+    canEdit: z.boolean(),
+    canDelete: z.boolean().meta({
+      description:
+        "Whether the caller may delete it: a manager of skills, unless the application's skill policy protects it.",
+    }),
+  })
   .meta({ ref: 'AgentsSkillView' });
 
 const skillVersionObject = z.object({
@@ -1563,13 +1589,33 @@ export const DefaultModelsSchema: z.ZodType<DefaultModels> = z
   })
   .meta({ ref: 'AgentsDefaultModels' });
 
+export const ModelProviderSchema: z.ZodType<ModelProviderOption> = z
+  .object({
+    name: z.string().meta({
+      description: 'Its type, stored on each service that uses it.',
+    }),
+    title: z.string(),
+    defaultBaseUrl: z.string().nullable().meta({
+      description:
+        'The base URL it calls when a service sets none; null when a service must set one.',
+    }),
+    keyRequired: z
+      .boolean()
+      .meta({ description: 'Whether it answers nothing without an API key.' }),
+    kinds: z
+      .array(z.enum(['chat', 'embedding', 'rerank']))
+      .meta({ description: 'The kinds of model it serves.' }),
+  })
+  .meta({ ref: 'AgentsModelProvider' });
+
 export const ModelServiceViewSchema: z.ZodType<ModelServiceView> = z
   .object({
     name: z.string(),
     title: z.string(),
-    provider: z.enum(
-      MODEL_PROVIDER_NAMES as [ModelProviderName, ...ModelProviderName[]],
-    ),
+    provider: z.string().meta({
+      description:
+        'The provider type: a built-in one or one another plugin registered (`GET /api/agents/modelProviders`).',
+    }),
     baseUrl: z.string().nullable(),
     apiKeySet: z.boolean().meta({
       description: 'Whether a key is stored; the key itself is never answered.',
@@ -1689,6 +1735,24 @@ const conversationAgent = z.object({
   nameText: I18nTextSchema.nullable(),
   avatar: z.string().nullable(),
   archived: z.boolean(),
+  model: z
+    .string()
+    .optional()
+    .describe(
+      'Its whole model id, shown beside its name: with the provider for OpenCode and Pi ("example-provider/qwen3.8-flash"), and for a model the catalog does not know.',
+    ),
+  shortName: z
+    .string()
+    .optional()
+    .describe(
+      'Its name without its tool, for a narrow place; OpenCode and Pi only.',
+    ),
+  modelTitle: z
+    .string()
+    .optional()
+    .describe(
+      'Its tool and whole model id, shown on hover in a narrow place; OpenCode and Pi only.',
+    ),
 });
 
 const availability = z.object({
@@ -1834,7 +1898,6 @@ const notice = z.discriminatedUnion('code', [
     usage: z
       .object({ inputTokens: z.number(), outputTokens: z.number() })
       .nullable(),
-    plans: z.number().int(),
   }),
 ]);
 
@@ -1954,6 +2017,24 @@ export const ChatAgentSchema: z.ZodType<ChatAgent> = z.object({
   personalOnly: z.boolean().meta({
     description: 'Only personal runners have it.',
   }),
+  model: z
+    .string()
+    .optional()
+    .describe(
+      'Its whole model id, shown beside its name: with the provider for OpenCode and Pi ("example-provider/qwen3.8-flash"), and for a model the catalog does not know.',
+    ),
+  shortName: z
+    .string()
+    .optional()
+    .describe(
+      'Its name without its tool, for a narrow place; OpenCode and Pi only.',
+    ),
+  modelTitle: z
+    .string()
+    .optional()
+    .describe(
+      'Its tool and whole model id, shown on hover in a narrow place; OpenCode and Pi only.',
+    ),
 });
 
 export const ChatDefaultAgentSchema: z.ZodType<ChatPreferences> = z.object({
@@ -1961,6 +2042,10 @@ export const ChatDefaultAgentSchema: z.ZodType<ChatPreferences> = z.object({
   runnerPreference: z.enum(RUNNER_PREFERENCES).meta({
     description:
       'Which kind of runner runs queued from now on go to first: auto (whichever fits and asks first), personal (their own runners) or team (shared runners). The other kind takes a run about a second later when the preferred kind cannot.',
+  }),
+  effort: z.string().nullable().meta({
+    description:
+      'The reasoning effort conversations they start take when they choose none, where the agent’s tool offers it; null: each agent’s default.',
   }),
 });
 
@@ -2285,8 +2370,33 @@ export const RunnerRecentRunSchema: z.ZodType<RunnerRecentRun> = z
       .nullable()
       .optional()
       .describe('Terminal failure classification, including toolQuota.'),
+    failureDetail: z
+      .string()
+      .nullable()
+      .optional()
+      .describe(
+        'What the tool said when the run failed: one redacted line of at most 300 characters; only for failed runs whose task or conversation the viewer can see.',
+      ),
     id: z.string(),
     title: z.string(),
+    model: z
+      .string()
+      .optional()
+      .describe(
+        'Its whole model id, shown beside its name: with the provider for OpenCode and Pi ("example-provider/qwen3.8-flash"), and for a model the catalog does not know.',
+      ),
+    shortName: z
+      .string()
+      .optional()
+      .describe(
+        'Its name without its tool, for a narrow place; OpenCode and Pi only.',
+      ),
+    modelTitle: z
+      .string()
+      .optional()
+      .describe(
+        'Its tool and whole model id, shown on hover in a narrow place; OpenCode and Pi only.',
+      ),
     status: RunStatusSchema,
     startedAt: dateTime.nullable(),
     finishedAt: dateTime.nullable(),

@@ -117,6 +117,8 @@ export interface KillLeftoversOptions {
   strict?: boolean;
   /** Process groups to stop besides the ones found below `root` now, such as groups seen there earlier. */
   groups?: Iterable<number>;
+  /** A worker-owned child in the worker's own process group, left alive for final Git reporting. */
+  keepPid?: number;
   /** SIGTERM to SIGKILL; with none, SIGKILL only. */
   graceMs?: number;
   /**
@@ -145,7 +147,9 @@ export async function killLeftovers(
       'The worker was not found in the process scan; keeping the workspace.',
     );
   const pids = below
-    ? descendantsOf(root, processes).map((entry) => entry.pid)
+    ? descendantsOf(root, processes)
+        .map((entry) => entry.pid)
+        .filter((pid) => pid !== options.keepPid)
     : [];
   const groups = new Set(below ? groupsBelow(root, processes) : []);
   for (const group of options.groups ?? [])
@@ -177,7 +181,9 @@ export async function killLeftovers(
           alive(entry.pid) &&
           (pids.includes(entry.pid) || liveGroups.includes(entry.pgid)),
       ) ||
-      descendantsOf(root, remaining).some((entry) => alive(entry.pid))
+      descendantsOf(root, remaining).some(
+        (entry) => entry.pid !== options.keepPid && alive(entry.pid),
+      )
     )
       throw new Error('Run processes are still alive; keeping the workspace.');
   }

@@ -51,6 +51,8 @@ export async function graphRequest<T>(
   pathOrUrl: string,
   init: RequestInit,
   fetcher: MailFetch = fetchWithTimeout,
+  read: (response: Response) => Promise<T> = readJson<T>,
+  accept = 'application/json',
 ): Promise<MailProviderResult<T>> {
   try {
     const resolvedUrl = resolveGraphUrl(config, pathOrUrl);
@@ -60,12 +62,12 @@ export async function graphRequest<T>(
       headers: {
         ...init.headers,
         authorization: `Bearer ${token}`,
-        accept: 'application/json',
+        accept,
         Prefer: 'IdType="ImmutableId", outlook.body-content-type="html"',
       },
     });
     return response.ok
-      ? { ok: true, value: await readJson<T>(response) }
+      ? { ok: true, value: await read(response) }
       : { ok: false, error: await responseError(response) };
   } catch (error) {
     return {

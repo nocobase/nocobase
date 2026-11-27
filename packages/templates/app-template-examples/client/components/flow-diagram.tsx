@@ -412,7 +412,7 @@ export interface FlowDiagramProps extends FlowDiagramGraph {
   readonly showMiniMap?: boolean;
   readonly renderNode?: (
     node: FlowDiagramNode,
-    state: { active: boolean; linked: boolean },
+    state: { active: boolean; linked: boolean; noteSide: 'left' | 'right' },
   ) => ReactNode;
   readonly onNodeClick?: (node: FlowDiagramNode) => void;
   readonly onEdgeClick?: (edge: FlowDiagramEdge) => void;
@@ -606,6 +606,12 @@ export function FlowDiagram({
               ? renderNode(item, {
                   active: item.id === active,
                   linked: linked.has(item.id),
+                  noteSide:
+                    layout &&
+                    layout.width - (placed.x + placed.width) < 300 &&
+                    placed.x > layout.width - (placed.x + placed.width)
+                      ? 'left'
+                      : 'right',
                 })
               : item.label,
             actions: nodeActions?.(item),
@@ -723,7 +729,15 @@ export function FlowDiagram({
           target.closest<HTMLElement>('.react-flow__node')?.dataset.id,
         );
       }}
-      onBlur={() => setFocused(undefined)}
+      onBlur={(event) => {
+        const nextTarget = event.relatedTarget;
+        const nextNode =
+          nextTarget instanceof Element &&
+          event.currentTarget.contains(nextTarget)
+            ? nextTarget.closest<HTMLElement>('.react-flow__node')?.dataset.id
+            : undefined;
+        setFocused(nextNode);
+      }}
       onKeyDown={(event) => {
         if (event.key !== 'Enter' && event.key !== ' ') return;
         const target = event.target as HTMLElement | SVGElement;
@@ -1045,12 +1059,19 @@ const stepDotTones: Record<FlowDiagramStepKind, string> = {
   exception: 'bg-(--status-warning)',
 };
 
+export interface FlowDiagramStepOutcome {
+  readonly label: ReactNode;
+  readonly kind?: FlowDiagramStepKind;
+}
+
 export interface FlowDiagramStepProps {
   readonly kind: FlowDiagramStepKind;
   readonly label: ReactNode;
   readonly description?: ReactNode;
   readonly icon?: ReactNode;
   readonly progress?: 'plan' | 'current' | 'visited' | 'unreached';
+  /** Terminal outcome recorded directly on the step where execution stopped. */
+  readonly outcome?: FlowDiagramStepOutcome;
   /** Joined to the active state by a route left off the canvas. */
   readonly linked?: boolean;
   readonly actions?: ReactNode;
@@ -1065,6 +1086,7 @@ export function FlowDiagramStep({
   description,
   icon,
   progress = 'plan',
+  outcome,
   linked = false,
   actions,
   children,
@@ -1072,21 +1094,34 @@ export function FlowDiagramStep({
   const { t } = useTranslation();
   const card = kind === 'approval' || kind === 'work';
   const Icon = stepIcons[kind];
+  const outcomeKind = outcome?.kind ?? 'negative';
+  const OutcomeIcon = stepIcons[outcomeKind];
   return (
     <div
       data-execution-state={progress}
+      data-exit-outcome={outcome ? outcomeKind : undefined}
       className={cn(
         'relative flex h-full border bg-card text-card-foreground transition-[border-color,box-shadow,opacity]',
         card
           ? 'items-center gap-3 rounded-lg px-3 shadow-xs'
-          : 'flex-col items-center justify-center rounded-full px-4',
+          : 'items-center justify-center rounded-full px-4',
         kind === 'success' &&
           'border-(--status-success)/30 bg-(--status-success-background) text-(--status-success)',
         kind === 'negative' &&
           'border-dashed border-destructive/40 bg-destructive/5 text-destructive',
         kind === 'exception' &&
           'border-dashed border-(--status-warning)/35 bg-(--status-warning-background) text-(--status-warning)',
-        progress === 'current' && 'border-primary ring-2 ring-primary/40',
+        progress === 'current' &&
+          !outcome &&
+          'border-primary ring-2 ring-primary/40',
+        outcome &&
+          (outcomeKind === 'negative'
+            ? 'border-destructive ring-2 ring-destructive/30'
+            : outcomeKind === 'exception'
+              ? 'border-(--status-warning) ring-2 ring-(--status-warning)/30'
+              : outcomeKind === 'success'
+                ? 'border-(--status-success) ring-2 ring-(--status-success)/30'
+                : 'border-primary ring-2 ring-primary/40'),
         progress === 'unreached' && 'border-dashed opacity-55',
         linked &&
           'opacity-100 outline-2 outline-offset-2 outline-primary/60 outline-dashed',
@@ -1094,7 +1129,7 @@ export function FlowDiagramStep({
     >
       <span
         className={cn(
-          'flex max-w-full items-center gap-1.5',
+          'flex max-w-full items-center gap-2',
           card && 'w-full gap-3',
         )}
       >
@@ -1121,24 +1156,43 @@ export function FlowDiagramStep({
             </span>
           )}
         </span>
-        {card && actions}
+        {actions}
       </span>
-      {!card && actions}
-      {progress === 'current' && (
-        <span className='absolute -top-2.5 right-2 rounded-full bg-primary px-2 py-0.5 text-xs font-medium text-primary-foreground'>
-          {t('flowDiagram.current', { defaultValue: 'Current' })}
-        </span>
-      )}
-      {progress === 'visited' && card && (
+      {outcome ? (
         <span
-          className='absolute -top-2 right-2 flex size-4 items-center justify-center rounded-full bg-(--status-success) text-primary-foreground'
-          title={t('flowDiagram.visited', { defaultValue: 'Visited' })}
+          className={cn(
+            'absolute -top-2.5 right-2 inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium text-primary-foreground shadow-xs',
+            outcomeKind === 'negative' && 'bg-destructive',
+            outcomeKind === 'exception' && 'bg-(--status-warning)',
+            outcomeKind === 'success' && 'bg-(--status-success)',
+            outcomeKind !== 'negative' &&
+              outcomeKind !== 'exception' &&
+              outcomeKind !== 'success' &&
+              'bg-primary',
+          )}
         >
-          <CheckIcon aria-hidden className='size-3' />
-          <span className='sr-only'>
-            {t('flowDiagram.visited', { defaultValue: 'Visited' })}
-          </span>
+          <OutcomeIcon aria-hidden className='size-3' />
+          {outcome.label}
         </span>
+      ) : (
+        <>
+          {progress === 'current' && (
+            <span className='absolute -top-2.5 right-2 rounded-full bg-primary px-2 py-0.5 text-xs font-medium text-primary-foreground'>
+              {t('flowDiagram.current', { defaultValue: 'Current' })}
+            </span>
+          )}
+          {progress === 'visited' && card && (
+            <span
+              className='absolute -top-2 right-2 flex size-4 items-center justify-center rounded-full bg-(--status-success) text-primary-foreground'
+              title={t('flowDiagram.visited', { defaultValue: 'Visited' })}
+            >
+              <CheckIcon aria-hidden className='size-3' />
+              <span className='sr-only'>
+                {t('flowDiagram.visited', { defaultValue: 'Visited' })}
+              </span>
+            </span>
+          )}
+        </>
       )}
       {children}
     </div>
@@ -1157,15 +1211,69 @@ export interface FlowDiagramTransitionNote {
   readonly direction?: 'out' | 'in';
   /** Translated labels of the states at the other end of the route. */
   readonly peers?: readonly string[];
+  /** Optional click handler for inspecting a folded off-canvas outcome from the note. */
+  readonly onClick?: () => void;
+  /** Optional inline controls for a folded off-canvas outcome (such as configuration). */
+  readonly actions?: ReactNode;
 }
 
 /** Routes left off the canvas, listed in one card beside the active node. */
 export function FlowDiagramTransitionNotes({
   notes,
+  side = 'right',
 }: {
   readonly notes: readonly FlowDiagramTransitionNote[];
+  readonly side?: 'left' | 'right';
 }): ReactElement | null {
   const { t } = useTranslation();
+  const rootRef = useRef<HTMLDivElement>(null);
+  const panelRef = useRef<HTMLDivElement>(null);
+  useLayoutEffect(() => {
+    const root = rootRef.current;
+    const panel = panelRef.current;
+    const node = root?.parentElement;
+    const canvas = root?.closest('.react-flow');
+    if (!root || !panel || !node || !canvas) return;
+    const canvasRect = canvas.getBoundingClientRect();
+    const nodeRect = node.getBoundingClientRect();
+    const panelRect = panel.getBoundingClientRect();
+    if (!canvasRect.width || !panelRect.width) {
+      root.dataset.placement = side;
+      root.dataset.align = 'center';
+      return;
+    }
+    const scale = node.offsetWidth > 0 ? nodeRect.width / node.offsetWidth : 1;
+    const gap = 8 * scale;
+    const neededX = panelRect.width + gap;
+    const neededY = panelRect.height + gap;
+    const spaceRight = canvasRect.right - nodeRect.right;
+    const spaceLeft = nodeRect.left - canvasRect.left;
+    const spaceBelow = canvasRect.bottom - nodeRect.bottom;
+    const spaceAbove = nodeRect.top - canvasRect.top;
+    let nextSide: 'left' | 'right' | 'top' | 'bottom' = side;
+    const fitsPreferred =
+      side === 'left' ? spaceLeft >= neededX : spaceRight >= neededX;
+    if (!fitsPreferred) {
+      const oppositeSide = side === 'left' ? 'right' : 'left';
+      const oppositeSpace = oppositeSide === 'left' ? spaceLeft : spaceRight;
+      if (oppositeSpace >= neededX) {
+        nextSide = oppositeSide;
+      } else if (spaceBelow >= neededY || spaceAbove >= neededY) {
+        nextSide = spaceBelow >= spaceAbove ? 'bottom' : 'top';
+      } else {
+        nextSide = spaceLeft > spaceRight ? 'left' : 'right';
+      }
+    }
+    let nextAlign: 'start' | 'center' | 'end' = 'center';
+    if (nextSide === 'top' || nextSide === 'bottom') {
+      const center = nodeRect.left + nodeRect.width / 2;
+      if (center - panelRect.width / 2 < canvasRect.left) nextAlign = 'start';
+      else if (center + panelRect.width / 2 > canvasRect.right)
+        nextAlign = 'end';
+    }
+    root.dataset.placement = nextSide;
+    root.dataset.align = nextAlign;
+  }, [side, notes]);
   if (!notes.length) return null;
   const sections = [
     {
@@ -1181,13 +1289,27 @@ export function FlowDiagramTransitionNotes({
   ] as const;
   return (
     <div
+      ref={rootRef}
       role='group'
+      data-placement={side}
+      data-align='center'
       aria-label={t('flowDiagram.otherRoutes', {
         defaultValue: 'Other routes',
       })}
-      className='nodrag nopan absolute top-1/2 left-full z-10 -translate-y-1/2 pl-2 text-left'
+      className={cn(
+        'nodrag nopan absolute z-10 text-left',
+        'data-[placement=left]:top-1/2 data-[placement=left]:right-full data-[placement=left]:-translate-y-1/2 data-[placement=left]:pr-2',
+        'data-[placement=right]:top-1/2 data-[placement=right]:left-full data-[placement=right]:-translate-y-1/2 data-[placement=right]:pl-2',
+        'data-[placement=bottom]:top-full data-[placement=bottom]:pt-2',
+        'data-[placement=top]:bottom-full data-[placement=top]:pb-2',
+        'data-[placement=top]:data-[align=center]:left-1/2 data-[placement=top]:data-[align=center]:-translate-x-1/2 data-[placement=top]:data-[align=start]:left-0 data-[placement=top]:data-[align=end]:right-0',
+        'data-[placement=bottom]:data-[align=center]:left-1/2 data-[placement=bottom]:data-[align=center]:-translate-x-1/2 data-[placement=bottom]:data-[align=start]:left-0 data-[placement=bottom]:data-[align=end]:right-0',
+      )}
     >
-      <div className='flex w-max max-w-72 flex-col gap-2 rounded-lg border bg-popover p-2.5 text-xs text-popover-foreground shadow-md'>
+      <div
+        ref={panelRef}
+        className='flex w-max max-w-72 flex-col gap-2 rounded-lg border bg-popover p-2.5 text-xs text-popover-foreground shadow-md'
+      >
         {sections.map(({ direction, title, icon: Icon }) => {
           const items = notes.filter(
             (note) => (note.direction ?? 'out') === direction,
@@ -1197,13 +1319,9 @@ export function FlowDiagramTransitionNotes({
             <div key={direction} className='flex flex-col gap-1'>
               <p className='font-medium text-muted-foreground'>{title}</p>
               <ul className='flex flex-col gap-1'>
-                {items.map((note) => (
-                  <li key={note.id}>
-                    <span
-                      role='note'
-                      aria-label={note.detail}
-                      className='flex min-w-0 items-center gap-1.5'
-                    >
+                {items.map((note) => {
+                  const rowContent = (
+                    <>
                       <span
                         aria-hidden
                         className={cn(
@@ -1223,9 +1341,43 @@ export function FlowDiagramTransitionNotes({
                           </span>
                         </>
                       ) : null}
-                    </span>
-                  </li>
-                ))}
+                    </>
+                  );
+                  return (
+                    <li
+                      key={note.id}
+                      className='flex min-w-0 items-center justify-between gap-1.5'
+                    >
+                      {note.onClick ? (
+                        <span
+                          role='note'
+                          aria-label={note.detail}
+                          className='min-w-0 flex-1'
+                        >
+                          <button
+                            type='button'
+                            className='-mx-1 flex w-full min-w-0 items-center gap-1.5 rounded px-1 py-0.5 text-left transition-colors hover:bg-muted/80 focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none'
+                            onClick={(event) => {
+                              event.stopPropagation();
+                              note.onClick?.();
+                            }}
+                          >
+                            {rowContent}
+                          </button>
+                        </span>
+                      ) : (
+                        <span
+                          role='note'
+                          aria-label={note.detail}
+                          className='flex min-w-0 flex-1 items-center gap-1.5'
+                        >
+                          {rowContent}
+                        </span>
+                      )}
+                      {note.actions}
+                    </li>
+                  );
+                })}
               </ul>
             </div>
           );

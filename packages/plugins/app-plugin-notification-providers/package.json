@@ -2,17 +2,28 @@
   "name": "@nocobase/app-plugin-notification-providers",
   "displayName": "Notification Providers App Plugin",
   "description": "Provides built-in notification Channels and Providers.",
-  "version": "1.0.0-beta.20",
+  "version": "1.0.0-beta.21",
   "type": "module",
   "prettier": "@nocobase/dev-config/prettier",
   "engines": {
     "node": ">=24.0.0"
   },
+  "nocobase": {
+    "title": {
+      "en-US": "Notification channels",
+      "zh-CN": "通知渠道"
+    },
+    "description": {
+      "en-US": "Email, IM and other delivery channels",
+      "zh-CN": "邮件、IM 等发送渠道"
+    }
+  },
   "sideEffects": false,
   "files": [
     "dist",
     "CHANGELOG.md",
-    "README.md"
+    "README.md",
+    "skills"
   ],
   "main": "./dist/server/index.js",
   "types": "./dist/server/index.d.ts",
@@ -37,6 +48,10 @@
     "./config": {
       "types": "./server/email/config.ts",
       "import": "./server/email/config.ts"
+    },
+    "./sms": {
+      "types": "./server/sms/index.ts",
+      "import": "./server/sms/index.ts"
     }
   },
   "publishConfig": {
@@ -62,6 +77,10 @@
       "./config": {
         "types": "./dist/server/email/config.d.ts",
         "import": "./dist/server/email/config.js"
+      },
+      "./sms": {
+        "types": "./dist/server/sms/index.d.ts",
+        "import": "./dist/server/sms/index.js"
       }
     }
   },
@@ -82,19 +101,24 @@
     "@nocobase/mailer": "workspace:^"
   },
   "peerDependencies": {
+    "@nocobase/app-plugin-authentication": "workspace:^",
     "@nocobase/app-plugin-notification": "workspace:^",
     "@nocobase/app-server": "workspace:^",
     "@nocobase/i18n": "workspace:^",
     "@nocobase/service-provider": "workspace:^"
   },
   "devDependencies": {
+    "@nocobase/app-testing": "workspace:*",
+    "@nocobase/db": "workspace:*",
     "@nocobase/dev-config": "workspace:*",
+    "@nocobase/jobs": "workspace:*",
+    "@nocobase/logging": "workspace:*",
     "@types/node": "catalog:",
     "eslint": "catalog:",
-    "prettier": "catalog:",
-    "typescript": "catalog:",
-    "vitest": "catalog:",
     "nodemailer": "^10.1.4",
-    "resend": "^6.22.1"
+    "prettier": "catalog:",
+    "resend": "^6.22.1",
+    "typescript": "catalog:",
+    "vitest": "catalog:"
   }
 }

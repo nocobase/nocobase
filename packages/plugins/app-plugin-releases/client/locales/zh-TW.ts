@@ -95,6 +95,11 @@ const zhTW: LocaleResource<typeof enUS> = {
         environments: '部署環境',
       },
     },
+    humanOnly: {
+      deployProtected: '部署到受保護環境需要有人審批，金鑰只能發起部署請求。',
+      delete: '刪除應用會刪除其資料，只能由人操作。',
+      configure: '設定應用會修改其設定和金鑰，只能由人操作。',
+    },
     keyScopes: {
       apps: {
         title: '應用程式和部署',
@@ -764,9 +769,9 @@ const zhTW: LocaleResource<typeof enUS> = {
       apps: '應用程式',
       appsDescription: '部署到此環境的應用程式。',
       appsEmpty: '此處尚未部署任何應用程式。',
-      sampleData: '在首次部署時載入範例資料',
+      sampleData: '部署時載入範例資料',
       sampleDataHint:
-        '應用程式在此處的首次部署會安裝其範例資料 (APP_SAMPLE_DATA=true)。將其用於預覽，而不是用於生產。',
+        '每次部署時載入尚未執行的範例資料（APP_SAMPLE_DATA=true）。請在預覽環境使用，在正式環境保持關閉。',
       add: '新增環境',
       edit: '編輯',
       delete: '刪除',

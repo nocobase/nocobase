@@ -1,8 +1,17 @@
-import type { RecordDetail } from './api.js';
+import type { RecordDetail, TransitionEntry } from './api.js';
 
-/** Every state the record has been in, from its transition log. */
-export function visitedStates(detail: RecordDetail): string[] {
-  return detail.history.transitions.flatMap((entry) =>
+/** The transitions drawn for the current run, independent of retained audit history. */
+export function currentRoundTransitions(
+  detail: Pick<RecordDetail, 'history' | 'roundStartedVersion'>,
+): readonly TransitionEntry[] {
+  const { history, roundStartedVersion = 0 } = detail;
+  return history.transitions.filter(
+    (entry) => entry.version >= roundStartedVersion,
+  );
+}
+
+export function visitedStates(history: readonly TransitionEntry[]): string[] {
+  return history.flatMap((entry) =>
     entry.from ? [entry.from, entry.to] : [entry.to],
   );
 }

@@ -24,6 +24,7 @@ Library packages that emit `.d.ts` files (`declaration: true`) enable both `isol
 | `packages/app/app-host-docker/tsconfig.json`               | Docker host backend        |
 | `packages/app/app-server/tsconfig.json`                    | Application server library |
 | `packages/libs/caching/tsconfig.json`                      | Caching library            |
+| `packages/libs/audit/tsconfig.json`                        | Audit library              |
 | `packages/libs/drive/tsconfig.json`                        | File storage library       |
 | `packages/libs/snowflake/tsconfig.json`                    | Snowflake ID library       |
 | `packages/libs/logging/tsconfig.json`                      | Logging library            |

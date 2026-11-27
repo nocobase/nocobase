@@ -27,7 +27,7 @@ Migrations describe schema evolution and seeds describe installation or sample d
 
 `defineSeed()`, `loadSeeds()` and `validateSeeds()` describe and load installation data. `SeedContext` exposes repository/query access, configuration and service resolution through a restricted connection; it has no schema builder.
 
-`run()` handles pending seeds. Sample seeds run when sample loading is enabled, otherwise they are recorded as skipped. `runSamples()` executes previously skipped sample seeds; it leaves never-run seeds to `run()`. `record()` writes a history entry without executing a seed. See [Seed signatures](./signatures/seed.md) and [seed examples](../zh-CN/seed/define-seed.md).
+`run()` handles pending seeds. With sample loading enabled, it runs samples without a successful run, including legacy skipped entries. Disabled samples leave seed history untouched. `runSamples()` runs all outstanding sample seeds on demand. `record()` writes a history entry without executing a seed. See [Seed signatures](./signatures/seed.md) and [seed examples](../zh-CN/seed/define-seed.md).
 
 ## History, checksums and task locks
 
@@ -36,6 +36,14 @@ Both runners expose `history()`, `repair()`, `lock()` and `unlock()`. `repair()`
 Checksum mismatch policies, takeover notifications and lock timeouts belong to the runner options. Use the [Migration](./signatures/migration.md) and [Seed](./signatures/seed.md) signatures for exact inputs and result types.
 
 `onChecksumMismatch` defaults to `warn`, which reports drift while allowing execution to continue. Use `error` when drift must stop the runner; migration immutability is not enforced by the default warning policy alone.
+
+## Missing migration sources and rollback
+
+`onMissingSource` defaults to `warn`: `latest()` and `upTo()` report missing applied sources in `warnings` and continue without deleting or rerunning their history. Set it to `error` for strict validation of packages still present in the configured sources. History belonging to uninstalled packages is ignored during forward migration. If a missing record sorts after the same package's newest available source, the database is newer than the code and always fails, even with `warn`. A package with no remaining sources has no newest migration to compare; its missing history follows the configured policy.
+
+Migration results use `MigrationWarning`, a union of `ChecksumMismatch` and `MissingMigrationSource`. Missing sources carry `kind: 'missing-source'`, `packageName` and `name`; checksum warnings keep their existing fields. Database commands and automatic startup logs report each warning.
+
+`rollback()` selects the latest global batch, validates every target migration before executing any `down()`, and reports all missing or irreversible targets together. A missing target always blocks rollback, including an uninstalled plugin and regardless of `onMissingSource`. Restore compatible plugin or package versions and roll back before uninstalling, or make the structural change in a new forward migration. Rollback never skips the target batch or removes history without executing its `down()`. Missing sources and checksum drift in older batches are warnings; strict checksum validation applies only to the target batch. A dry run performs the same preflight and changes no schema or history.
 
 ## Transaction and event behavior
 

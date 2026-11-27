@@ -33,7 +33,7 @@ export interface PermissionGrant {
 }
 
 export type PermissionSetWriteOperation =
-  'create' | 'update' | 'delete' | 'assign' | 'revoke';
+  'create' | 'update' | 'updateTitle' | 'delete' | 'assign' | 'revoke';
 
 export interface PermissionSetProtection {
   owner: string;
@@ -79,6 +79,9 @@ interface OptionsActionResponse {
   name: string;
   title: LocalizedText;
   description?: LocalizedText;
+  risk?: 'sensitive' | 'high';
+  /** Composites only: page ids whose access the role editor turns this action on with. */
+  defaultFor?: readonly string[];
 }
 
 /** What every `options` route answers. */
@@ -98,6 +101,8 @@ export interface AuthorizationOptionsResponse {
         title: LocalizedText;
         description?: LocalizedText;
         group?: string;
+        /** Composites only: page ids the actions are used on. */
+        usedOn?: readonly string[];
         actions: readonly OptionsActionResponse[];
         dataScopes?: Readonly<
           Record<
@@ -132,7 +137,12 @@ export interface AuthorizationOptionsResponse {
     description?: LocalizedText;
     collections: readonly string[];
   }[];
-  readonly collections: readonly { name: string; fields: readonly string[] }[];
+  /** The registered collections; `title` is the one given to `authz.database.collections.add`. */
+  readonly collections: readonly {
+    name: string;
+    title?: LocalizedText;
+    fields: readonly string[];
+  }[];
 }
 
 export interface SelectOption {
@@ -262,6 +272,32 @@ export interface ConfiguredAccess {
   identity?: { subjects: readonly AuthorizationSubject[] };
   /** Each effective set with the assignments that bring it; none for a default set. */
   sets?: readonly ConfiguredPermissionSet[];
+  /** For a credential subject, such as an API key: what it adds on top of its holder's roles. */
+  credential?: ConfiguredCredential;
+}
+
+/** What a credential, such as an API key, adds on top of the roles of the identity it acts as. */
+export interface ConfiguredCredential {
+  keyId: string;
+  /** The subject it acts as, whose roles and data rules apply. */
+  holder: AuthorizationSubject;
+  /** A disabled or expired credential allows nothing. */
+  state: 'active' | 'disabled' | 'expired';
+  expiresAt: string | null;
+  /** It acts as no person: rules adding records counted from "me" add none for it. */
+  personless: boolean;
+  /** What it covers, with the record scopes it keeps; null when it narrows no action. */
+  permissions:
+    | readonly {
+        resource: { type: string; id: string };
+        actions: readonly {
+          action: string;
+          policy?: Readonly<Record<string, unknown>>;
+        }[];
+      }[]
+    | null;
+  /** The records a business is limited to. */
+  objects: Readonly<Record<string, readonly string[]>>;
 }
 
 export interface ConfiguredPermissionSet {
@@ -391,7 +427,7 @@ export class AuthorizationClient {
 
   updatePermissionSet(
     key: string,
-    input: PermissionSetInput,
+    input: Partial<PermissionSetInput>,
     idempotencyKey?: string,
   ): Promise<PermissionSet> {
     return this.send(
@@ -511,6 +547,22 @@ export class AuthorizationClient {
     return this.send('authorization/inspector/batchDecide', 'POST', {
       subject,
       checks,
+    });
+  }
+
+  /** Of `ids`, the records of a composite action's data scope `subject` reaches as decided now. */
+  inspectRecords(
+    subject: AuthorizationSubject,
+    input: {
+      readonly resource: { readonly type: string; readonly id: string };
+      readonly action: string;
+      readonly scope: string;
+      readonly ids: readonly string[];
+    },
+  ): Promise<{ readonly reached: readonly string[] }> {
+    return this.send('authorization/inspector/records', 'POST', {
+      subject,
+      ...input,
     });
   }
 

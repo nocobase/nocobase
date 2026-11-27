@@ -3,6 +3,11 @@ import type { LocaleResource } from '@nocobase/i18n';
 import type enUS from './en-US.js';
 
 const zhTW: LocaleResource<typeof enUS> = {
+  'push.deviceCount': '已登記 {{total}} 台 · 已啟用 {{active}} 台',
+  'push.active': '已啟用',
+  'push.paused': '已暫停',
+  'push.pause': '暫停',
+  'push.resume': '恢復',
   'push.title': '推播通知',
   'push.description': '在每臺裝置上接收提醒，即使應用程式關閉時也是如此。',
   'push.subscribe': '訂閱該裝置',
@@ -27,6 +32,9 @@ const zhTW: LocaleResource<typeof enUS> = {
   'push.failed': '無法更新推播通知。請再試一次。',
   'push.loadingFailed': '無法載入裝置。請再試一次。',
   'push.retry': '重試',
+  'channelType.title': '瀏覽器推播',
+  'channelType.testHint':
+    '傳一則測試通知到你開啟推播的瀏覽器。請先在個人設定 › 通知中開啟。',
 };
 
 export default zhTW;

@@ -2,7 +2,7 @@ import type { Attachment } from './attachments.js';
 import type { CommentThread } from './comments.js';
 import type { Color, Page, Priority, UserRef } from './common.js';
 import type { Label } from './labels.js';
-import type { ActivityVia } from './plans.js';
+import type { ActivityVia } from './activity.js';
 import type { IssueSubscriber } from './subscriptions.js';
 import type { Blocker, IssueDependency, SubtaskSummary } from './subtasks.js';
 

@@ -123,6 +123,8 @@ import { ToolCapabilitiesCache } from './tool-capabilities.ts';
 export { detectTools } from './tool-capabilities.ts';
 import { reportedModels } from './model-list.ts';
 
+import { supportsGitSsh } from './git-ssh.ts';
+
 /** The version this runner reports and compares updates with: the host package's (`host.ts`). */
 export function runnerVersion(): string {
   return runnerHost().version;
@@ -176,6 +178,7 @@ export function runnerFeatures(
   adapters: Map<AgentTool, AgentAdapter>,
 ): RunnerFeature[] {
   const features = new Set<RunnerFeature>(BASE_FEATURES);
+  if (supportsGitSsh()) features.add('gitSsh');
   for (const adapter of adapters.values())
     for (const feature of adapter.features()) features.add(feature);
   return [...features];

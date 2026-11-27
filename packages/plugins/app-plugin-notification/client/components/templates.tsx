@@ -33,6 +33,11 @@ import {
 
 const namespace = '@nocobase/app-plugin-notification';
 
+/** A kind as the directory lists it, with its sends in the last seven days. */
+type KindListItem = NotificationTemplateView & {
+  readonly sentLast7Days?: number;
+};
+
 type ResolveText = (text: NotificationTemplateText) => string;
 
 /** Resolves registrant text in the interface language; a translation key falls back to its default text. */
@@ -56,6 +61,12 @@ function useTemplateText(): {
   return { text, t: translate, language: i18n.language };
 }
 
+const channelTypeLabel = (type: string): NotificationTemplateText => ({
+  ns: namespace,
+  key: `channelTypes.${type}`,
+  defaultValue: type,
+});
+
 const textKey = (value: NotificationTemplateText): string =>
   typeof value === 'string' ? value : `${value.ns}:${value.key}`;
 
@@ -69,8 +80,11 @@ const channelText = (
   channel: NotificationTemplateChannel,
 ): string => (channel.label ? text(channel.label) : channel.name);
 
-/** Read-only administration block. The host owns routing, page framing and permission grants. */
-export function NotificationTemplates({
+/**
+ * The notification kinds plugins registered, read-only: grouped by category, with their channel policies, and the
+ * details and a preview in a drawer. The host owns routing, page framing and permission grants.
+ */
+export function NotificationKinds({
   selectedId,
   onSelect,
 }: {
@@ -80,7 +94,7 @@ export function NotificationTemplates({
 }): ReactElement {
   const api = useApiClient();
   const { t, text } = useTemplateText();
-  const [items, setItems] = useState<readonly NotificationTemplateView[]>();
+  const [items, setItems] = useState<readonly KindListItem[]>();
   const [error, setError] = useState<'forbidden' | 'failed' | null>(null);
   const [revision, setRevision] = useState(0);
   const [search, setSearch] = useState('');
@@ -89,8 +103,8 @@ export function NotificationTemplates({
   useEffect(() => {
     let current = true;
     void api
-      .request<{ data: NotificationTemplateView[] }>({
-        path: 'notifications/templates',
+      .request<{ data: KindListItem[] }>({
+        path: 'notifications/kinds',
       })
       .then(({ data }) => {
         if (current) setItems(data);
@@ -98,8 +112,7 @@ export function NotificationTemplates({
       .catch((cause: unknown) => {
         if (current)
           setError(
-            cause instanceof ApiClientError &&
-              cause.reason === 'NOTIFICATION_TEMPLATES_FORBIDDEN'
+            cause instanceof ApiClientError && cause.status === 403
               ? 'forbidden'
               : 'failed',
           );
@@ -118,6 +131,16 @@ export function NotificationTemplates({
     const entries = new Map<string, NotificationTemplateChannel>();
     for (const entry of items?.flatMap((item) => item.channels) ?? [])
       if (!entries.has(entry.type)) entries.set(entry.type, entry);
+    // A kind sent with `notify()` names channel types even where no channel of the type is configured.
+    for (const policy of items?.flatMap((item) => item.policies ?? []) ?? [])
+      if (!entries.has(policy.type))
+        entries.set(policy.type, {
+          name: policy.type,
+          type: policy.type,
+          typeLabel: channelTypeLabel(policy.type),
+          configured: false,
+          enabled: null,
+        });
     return [...entries];
   }, [items]);
   const query = search.trim().toLowerCase();
@@ -125,7 +148,8 @@ export function NotificationTemplates({
     (item) =>
       (category === 'all' || textKey(item.category) === category) &&
       (channel === 'all' ||
-        item.channels.some((entry) => entry.type === channel)) &&
+        item.channels.some((entry) => entry.type === channel) ||
+        Boolean(item.policies?.some((policy) => policy.type === channel))) &&
       [
         text(item.name),
         text(item.category),
@@ -234,49 +258,85 @@ export function NotificationTemplates({
             </Select>
           </div>
           {groups.length ? (
-            <div className='space-y-6'>
-              {groups.map((group, index) => (
-                <section
-                  key={group.key}
-                  aria-labelledby={`notification-template-group-${index}`}
-                  className='space-y-3'
-                >
-                  <h2
-                    id={`notification-template-group-${index}`}
-                    className='text-sm font-medium text-muted-foreground'
-                  >
-                    {group.label}
-                  </h2>
-                  <ul className='grid gap-3 md:grid-cols-2 xl:grid-cols-3'>
-                    {group.items.map((item) => (
-                      <li key={item.id} className='min-w-0'>
-                        <button
-                          type='button'
-                          aria-current={
-                            selectedId === item.id ? 'true' : undefined
-                          }
-                          onClick={() => onSelect(item.id)}
-                          className='flex h-full w-full flex-col gap-2 rounded-lg border bg-card p-4 text-left transition-colors outline-none hover:bg-accent/50 focus-visible:ring-3 focus-visible:ring-ring/50 aria-[current=true]:border-primary aria-[current=true]:ring-1 aria-[current=true]:ring-primary'
-                        >
-                          <span className='font-medium break-words'>
-                            {text(item.name)}
-                          </span>
-                          <span className='line-clamp-2 text-sm text-muted-foreground break-words'>
-                            {text(item.trigger)}
-                          </span>
-                          <span className='mt-auto flex flex-wrap gap-1.5 pt-1'>
-                            {item.channels.map((entry) => (
-                              <Badge variant='outline' key={entry.name}>
-                                {channelTypeText(text, entry)}
-                              </Badge>
-                            ))}
-                          </span>
-                        </button>
-                      </li>
+            <div className='overflow-x-auto rounded-lg border'>
+              <table className='w-full text-left text-sm'>
+                <thead className='border-b bg-muted/40 text-xs text-muted-foreground'>
+                  <tr>
+                    <th className='p-3'>{t('preferences.notification')}</th>
+                    {channels.map(([type, entry]) => (
+                      <th key={type} className='p-3'>
+                        {t(`channelTypes.${type}`, {
+                          defaultValue: channelTypeText(text, entry),
+                        })}
+                      </th>
                     ))}
-                  </ul>
-                </section>
-              ))}
+                    <th className='p-3'>{t('deliveries.ranges.7d')}</th>
+                  </tr>
+                </thead>
+                {groups.map((group, index) => (
+                  <tbody
+                    key={group.key}
+                    aria-labelledby={`notification-template-group-${index}`}
+                  >
+                    <tr className='bg-muted/50'>
+                      <th
+                        id={`notification-template-group-${index}`}
+                        scope='rowgroup'
+                        colSpan={channels.length + 2}
+                        className='px-3 py-1.5 text-xs'
+                      >
+                        {group.label}
+                      </th>
+                    </tr>
+                    {group.items.map((item) => (
+                      <tr key={item.id} className='border-b last:border-0'>
+                        <th scope='row' className='min-w-44 p-3 font-normal'>
+                          <Button
+                            variant='link'
+                            className='h-auto p-0 text-left font-medium'
+                            onClick={() => onSelect(item.id)}
+                          >
+                            {text(item.name)}
+                          </Button>
+                          <p className='text-xs text-muted-foreground'>
+                            {text(item.trigger)}
+                          </p>
+                        </th>
+                        {channels.map(([type]) => {
+                          const policy = item.policies?.find(
+                            (entry) => entry.type === type,
+                          );
+                          const direct =
+                            !item.policies &&
+                            item.channels.some((entry) => entry.type === type);
+                          return (
+                            <td key={type} className='p-3'>
+                              {policy ? (
+                                <Badge
+                                  variant={
+                                    policy.policy === 'required'
+                                      ? 'secondary'
+                                      : 'outline'
+                                  }
+                                >
+                                  {t(`kinds.policies.${policy.policy}`)}
+                                </Badge>
+                              ) : direct ? (
+                                t('kinds.sentDirectly')
+                              ) : (
+                                '—'
+                              )}
+                            </td>
+                          );
+                        })}
+                        <td className='p-3 tabular-nums'>
+                          {item.sentLast7Days ?? '—'}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                ))}
+              </table>
             </div>
           ) : (
             <p
@@ -337,7 +397,7 @@ function TemplateDetail({
     let current = true;
     void api
       .request<{ data: NotificationTemplateView }>({
-        path: `notifications/templates/${encodeURIComponent(id)}`,
+        path: `notifications/kinds/${encodeURIComponent(id)}`,
       })
       .then(({ data }) => {
         if (current) setDetail(data);
@@ -360,7 +420,7 @@ function TemplateDetail({
     let current = true;
     void api
       .request<{ data: NotificationTemplatePreview }>({
-        path: `notifications/templates/${encodeURIComponent(id)}/preview`,
+        path: `notifications/kinds/${encodeURIComponent(id)}/preview`,
         method: 'POST',
         json: { locale },
       })
@@ -440,6 +500,33 @@ function TemplateDetail({
                 </div>
               ))}
             </dl>
+            {detail.policies ? (
+              <section className='space-y-2'>
+                <h3 className='text-sm font-medium'>
+                  {t('kinds.policyTitle')}
+                </h3>
+                <ul className='space-y-1.5 text-sm'>
+                  {detail.policies.map((policy) => (
+                    <li
+                      key={policy.type}
+                      className='flex flex-wrap items-center justify-between gap-2'
+                    >
+                      <span>
+                        {t(`channelTypes.${policy.type}`, {
+                          defaultValue: policy.type,
+                        })}
+                      </span>
+                      <span className='text-muted-foreground'>
+                        {t(`kinds.policies.${policy.policy}`)}
+                        {policy.adjustable
+                          ? ` · ${t('kinds.personCanChange')}`
+                          : ''}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              </section>
+            ) : null}
             <section className='space-y-2'>
               <h3 className='text-sm font-medium'>{t('templates.status')}</h3>
               <ul className='space-y-2'>
@@ -644,3 +731,7 @@ function PreviewContent({
     </div>
   );
 }
+
+/** @deprecated The directory lists notification kinds now; use `NotificationKinds`. */
+export const NotificationTemplates: typeof NotificationKinds =
+  NotificationKinds;

@@ -10,6 +10,7 @@ import { snapshotDatabaseTaskConfig } from './task-config.js';
 import type { DatabaseTaskConfig } from '@nocobase/db';
 import { resolveDatabaseConfig } from './resolve-config.js';
 import {
+  assertMissingExplicitSourcesRecorded,
   planAppDatabaseTasks,
   type AppDatabaseTaskPlanOptions,
   type AppDatabaseTask,
@@ -18,6 +19,7 @@ import {
 import {
   resolveDatabaseDriver,
   type ChecksumMismatch,
+  type MigrationWarning,
   type DatabaseDriverRegistration,
   type DatabaseManager,
   type MigrationHistoryRecord,
@@ -41,8 +43,8 @@ import type {
 /**
  * `repair` realigns recorded checksums; it executes no migration or seed.
  * `rollback` runs the latest migration batch's `down`, and applies to
- * migrations alone: seeds have no inverse. `sample` runs the sample seeds a
- * run recorded as skipped, and applies to seeds alone.
+ * migrations alone: seeds have no inverse. `sample` runs outstanding sample
+ * seeds and applies to seeds alone.
  */
 export type AppDatabaseTaskOperation =
   'run' | 'repair' | 'rollback' | 'unlock' | 'sample';
@@ -56,12 +58,11 @@ export interface AppDatabaseTaskResult {
   batch?: number;
   executed?: string[];
   skipped?: string[];
-  /** Sample seeds a run recorded as skipped without running them. */
+  /** Pending sample seeds skipped because sample data is disabled. */
   skippedSamples?: string[];
   /**
    * Seeds only: whether this run installed the connection — it held no
-   * migration or seed history before the run, or a fresh run rebuilt it. Sample
-   * data loads only then, and only with `app.sampleData` set.
+   * migration or seed history before the run, or a fresh run rebuilt it.
    */
   freshInstall?: boolean;
   fresh?: boolean;
@@ -75,7 +76,7 @@ export interface AppDatabaseTaskResult {
   released?: boolean;
   lockReason?: 'not-held' | 'active';
   /** Checksum drift tolerated by the `warn` policy during a run. */
-  warnings?: ChecksumMismatch[];
+  warnings?: MigrationWarning[];
   /** Records a repair rewrote, or that a dry run would rewrite. */
   repaired?: ChecksumMismatch[];
   /** Migrations or seeds a run would execute, as a dry run reports them. */
@@ -132,7 +133,7 @@ export interface AppDatabasePlanExecutionOptions {
     readonly name: string;
     readonly packageName: string;
   }) => boolean;
-  /** Coordinators may enable sample seeds on a module's first installation. */
+  /** Coordinators may override whether sample seeds run. */
   readonly sample?: { readonly enabled: boolean };
   readonly runtimeConfig?: DatabaseTaskConfig;
   readonly container?: ServiceResolver;
@@ -231,6 +232,13 @@ async function executeDatabasePlan(
   const targets = collectTaskTargets(config, plan, fresh, drivers);
   const taskContainer = createTaskServiceResolver(container);
   const taskConfig = snapshotDatabaseTaskConfig(runtimeConfig);
+  await assertExplicitMigrationSources(database, config, plan, {
+    paths,
+    drivers,
+    fresh,
+    runtimeConfig: taskConfig,
+    container: taskContainer,
+  });
   const resetConnections: string[] = [];
   const hooks =
     !dryRun &&
@@ -305,6 +313,7 @@ async function executeDatabasePlan(
     }
   }
   const sampleData = taskConfig.get<unknown>('app.sampleData') === true;
+  const seedSample = { enabled: sample?.enabled ?? sampleData };
   for (const [index, task] of plan.entries()) {
     const identity = { connection: task.connection, kind: task.kind };
     if (task.skipReason) {
@@ -334,6 +343,7 @@ async function executeDatabasePlan(
         connection: task.connection,
         config: task.config,
         sources: task.config.sources,
+        sample: seedSample,
         taskFilter,
         onStaleLock: (takeover: StaleTaskLockTakeover): void =>
           reportStaleLock(container, task, takeover),
@@ -358,14 +368,7 @@ async function executeDatabasePlan(
                       : await createAppSeeder(options).pending({ fresh })
                     : task.kind === 'migrations'
                       ? await runMigrations(options, fresh)
-                      : await createAppSeeder({
-                          ...options,
-                          sample: {
-                            enabled:
-                              sample?.enabled ??
-                              (freshInstall === true && sampleData),
-                          },
-                        }).run();
+                      : await createAppSeeder(options).run();
       result.results.push({
         ...identity,
         ...completed,
@@ -395,6 +398,56 @@ async function executeDatabasePlan(
     }
   }
   return result;
+}
+
+/**
+ * A missing explicit migration directory is a typo when the connection has no
+ * migration history, and fails before storage is prepared. With history the
+ * migrator's missing-source policy decides, so the application stays
+ * upgradable and a rollback still reports the whole target batch. A fresh run
+ * discards history, so it always counts as having none.
+ */
+async function assertExplicitMigrationSources(
+  database: DatabaseManager,
+  config: AppDatabaseConfig,
+  plan: readonly AppDatabaseTask[],
+  options: {
+    paths?: AppPaths;
+    drivers?: Record<string, DatabaseDriverRegistration>;
+    fresh: boolean;
+    runtimeConfig: DatabaseTaskConfig;
+    container: ServiceResolver;
+  },
+): Promise<void> {
+  for (const task of plan) {
+    const missing = task.missingExplicitSources;
+    if (task.skipReason || task.kind !== 'migrations' || !missing?.length) {
+      continue;
+    }
+    // History is per package: a plugin's own records say nothing about whether
+    // the application's explicit directory ever held migrations.
+    const recorded = new Set<string>();
+    if (
+      !options.fresh &&
+      (await appDatabaseStorageExists(
+        config,
+        options.paths,
+        task.connection,
+        options.drivers,
+      ))
+    ) {
+      const history = await createAppMigrator({
+        runtimeConfig: options.runtimeConfig,
+        container: options.container,
+        database,
+        connection: task.connection,
+        config: task.config,
+        sources: task.config.sources,
+      }).history();
+      for (const record of history) recorded.add(record.packageName);
+    }
+    assertMissingExplicitSourcesRecorded(task, recorded);
+  }
 }
 
 /** Only target data is collected here; execution stays in the phase functions. */
@@ -534,13 +587,13 @@ async function detectFreshInstalls(
 }
 
 /**
- * What a dry run reports for a database that does not exist yet: every task
- * pending, nothing to roll back, nothing to repair.
+ * What a dry run reports for a database that does not exist yet: all
+ * eligible tasks pending, nothing to roll back, nothing to repair.
  */
 async function emptyDatabasePreview(
   operation: Exclude<AppDatabaseTaskOperation, 'unlock'>,
   task: AppDatabaseTask,
-  options: Parameters<typeof createAppMigrator>[0],
+  options: Parameters<typeof createAppSeeder>[0],
   fresh: boolean,
 ): Promise<Omit<AppDatabaseTaskResult, 'connection' | 'kind'>> {
   if (operation === 'rollback') {
@@ -665,7 +718,11 @@ export async function runAppDatabaseTasks(
     ...config,
     drivers: { ...config.drivers, ...drivers },
   });
-  const plan = planAppDatabaseTasks(config, kinds, options);
+  const plan = planAppDatabaseTasks(config, kinds, {
+    ...options,
+    // A fresh run discards history, so a missing explicit directory fails now.
+    deferMissingMigrationSources: !options.fresh,
+  });
   if (!plan.length) return { ok: true, status: 'not-configured', results: [] };
   if (options.fresh) {
     collectTaskTargets(config, plan, true, drivers);
@@ -740,6 +797,7 @@ export async function runAppMigrations(
       batch: first.batch,
       executed: first.executed,
       skipped: first.skipped,
+      warnings: first.warnings,
     }
   );
 }

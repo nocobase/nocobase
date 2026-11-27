@@ -3,6 +3,15 @@ import type { LocaleResource } from '@nocobase/i18n';
 import type enUS from './en-US.js';
 
 const ruRU: LocaleResource<typeof enUS> = {
+  audit: {
+    operations: {
+      createPermissionSet: 'Создать набор разрешений',
+      assignPermissionSet: 'Назначить набор разрешений',
+      unassignPermissionSet: 'Отменить назначение набора разрешений',
+      updatePermissionSet: 'Изменить набор разрешений',
+      deletePermissionSet: 'Удалить набор разрешений',
+    },
+  },
   sections: {
     pages: 'Доступ к страницам',
     page: 'Страницы',
@@ -15,7 +24,6 @@ const ruRU: LocaleResource<typeof enUS> = {
     actions: {
       assign: 'Управлять назначениями',
       configure: 'Настроить',
-      inspect: 'Проверять права',
       read: 'Чтение',
       create: 'Создание',
       update: 'Изменение',
@@ -31,8 +39,8 @@ const ruRU: LocaleResource<typeof enUS> = {
         'Разрешить доступ ко всем страницам, включая добавленные позже.',
     },
     settings: {
-      inspector: 'Проверка прав',
       'permission-sets': 'Наборы прав',
+      'authentication-settings': 'Вход и аутентификация',
     },
     subjectTypes: {
       authenticated: 'Все вошедшие пользователи',

@@ -18,7 +18,7 @@ import { useWorkflowData, useWorkflowLabels, workflowDate } from './hooks.js';
 
 export default function ExecutionsPage(): ReactElement {
   const detail = useMatch({
-    path: '/workflows/executions/:workflowId/:recordId',
+    path: '/settings/workflows/executions/:workflowId/:recordId',
     end: false,
   });
   const { t, i18n } = useTranslation();
@@ -78,7 +78,7 @@ export default function ExecutionsPage(): ReactElement {
             <>
               <RecordLink
                 to={{
-                  pathname: `/workflows/executions/${execution.workflowId}/${execution.recordId}`,
+                  pathname: `/settings/workflows/executions/${execution.workflowId}/${execution.recordId}`,
                   search: location.search,
                 }}
               >
@@ -90,7 +90,7 @@ export default function ExecutionsPage(): ReactElement {
             <>
               <RecordLink
                 to={{
-                  pathname: `/workflows/definitions/${execution.workflowId}`,
+                  pathname: `/settings/workflows/definitions/${execution.workflowId}`,
                   // Open the definition at the version this record runs.
                   search: versioned
                     ? new URLSearchParams({

@@ -104,3 +104,60 @@ describe('application-local realtime brokers', () => {
     });
   });
 });
+
+describe('realtime broker description', () => {
+  it('reports in-memory delivery as local before and after selection', () => {
+    const registry = createRealtimeBrokerRegistry();
+    expect(registry.describe?.({})).toEqual({
+      default: null,
+      adapter: 'inMemory',
+      sharing: 'local',
+      registered: true,
+    });
+    const options = realtimeServiceOptions({}, 'app', registry);
+    expect(registry.describe?.()).toEqual({
+      default: null,
+      adapter: 'inMemory',
+      sharing: 'local',
+      registered: true,
+    });
+    void options.broker?.shutdown();
+  });
+
+  it('reports the sharing a broker declares and unknown when it declares none', () => {
+    const shared = createRealtimeBrokerRegistry();
+    shared.register('redis', () => createInMemoryBroker(), {
+      sharing: 'shared',
+    });
+    const config = {
+      broker: { adapter: 'redis', url: 'redis://:hunter2@realtime.internal' },
+    };
+    const description = shared.describe?.(config);
+    expect(description).toEqual({
+      default: 'redis',
+      adapter: 'redis',
+      sharing: 'shared',
+      registered: true,
+    });
+    expect(JSON.stringify(description)).not.toContain('hunter2');
+
+    const undeclared = createRealtimeBrokerRegistry();
+    undeclared.register('custom', () => createInMemoryBroker());
+    expect(
+      undeclared.describe?.({ broker: { adapter: 'custom' } }),
+    ).toMatchObject({ sharing: 'unknown', registered: true });
+    expect(
+      undeclared.describe?.({ broker: { adapter: 'absent' } }),
+    ).toMatchObject({ default: 'absent', registered: false });
+  });
+
+  it('rejects an undeclared sharing value', () => {
+    expect(() =>
+      createRealtimeBrokerRegistry().register(
+        'odd',
+        () => createInMemoryBroker(),
+        { sharing: 'everywhere' as 'shared' },
+      ),
+    ).toThrow(/unknown sharing/u);
+  });
+});

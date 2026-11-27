@@ -1,4 +1,5 @@
 export { validateJobsConfig } from './validate-config.js';
+export { jobsPersistencePaths } from './config.js';
 export {
   Job,
   JobHandlerNotRegisteredError,
@@ -65,4 +66,12 @@ export {
   type ScheduleSetupOptions,
   type Subscriber,
 } from './schedule/types.js';
-export type { JobExecutorService, JobsLogger, Unsubscribe } from './types.js';
+export type {
+  JobExecutorService,
+  JobsBackendDescription,
+  JobsBackendSharing,
+  JobsDescription,
+  JobsLogger,
+  JobsSelection,
+  Unsubscribe,
+} from './types.js';

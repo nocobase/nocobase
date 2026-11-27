@@ -40,17 +40,20 @@ afterEach(async () => {
   vi.clearAllMocks();
   await rm(root, { recursive: true, force: true });
 });
-async function template(): Promise<void> {
+async function template(
+  name = '@test/template',
+  hasSqliteDriver = true,
+): Promise<void> {
   const directory = await mkdtemp(path.join(root, 'template-'));
   await writeFile(
     path.join(directory, 'package.json'),
     JSON.stringify({
-      name: '@test/template',
+      name,
       version: '1.0.0',
       dependencies: {
         '@nocobase/db-postgres': '^1.0.0',
         '@nocobase/db-oracle': '^1.0.0',
-        '@nocobase/db-sqlite': '^1.0.0',
+        ...(hasSqliteDriver ? { '@nocobase/db-sqlite': '^1.0.0' } : {}),
       },
     }),
   );
@@ -60,7 +63,8 @@ async function template(): Promise<void> {
   );
   vi.mocked(downloadTemplate).mockResolvedValue({
     directory,
-    name: '@test/template',
+    hasSqliteDriver,
+    name,
     version: '1.0.0',
   });
 }
@@ -95,6 +99,27 @@ describe('JSON creation flow', () => {
     },
   );
 
+  it.each(['default', 'pro', 'enterprise'])(
+    'names SQLite explicitly for the %s edition',
+    async (edition) => {
+      await template('@nocobase/app-template-' + edition);
+      expect(await run(['crm', '--json', '--template', edition])).toBe(0);
+      expect(JSON.parse(stdout).result.nextCommands[0]).toBe(
+        'pnpm nocobase config init --dialect sqlite',
+      );
+    },
+  );
+
+  it('leaves the dialect choice to templates without a SQLite runtime dependency', async () => {
+    await template('@custom/template', false);
+    expect(await run(['crm', '--json', '--template', '@custom/template'])).toBe(
+      0,
+    );
+    expect(JSON.parse(stdout).result.nextCommands[0]).toBe(
+      'pnpm nocobase config init',
+    );
+  });
+
   it('installs by default and hands the configuration step to config init', async () => {
     await template();
     expect(await run(['crm', '--json'])).toBe(0);
@@ -108,7 +133,7 @@ describe('JSON creation flow', () => {
         dependenciesInstalled: true,
         configured: false,
         nextCommands: [
-          'pnpm nocobase config init',
+          'pnpm nocobase config init --dialect sqlite',
           'pnpm nocobase config check',
           'pnpm dev',
         ],
@@ -148,7 +173,8 @@ describe('JSON creation flow', () => {
       expect(await run(argv)).toBe(0);
       expect(downloadTemplate).toHaveBeenCalledWith({
         nocobaseRegistry: registry,
-        source: '@nocobase/app-template-multi-portal@beta',
+        source: '@nocobase/app-template-enterprise@beta',
+        preset: 'multi-portal',
       });
       expect(
         vi.mocked(installDependencies).mock.calls[0][0],
@@ -236,7 +262,7 @@ describe('JSON creation flow', () => {
         dependenciesInstalled: false,
         nextCommands: [
           'pnpm install',
-          'pnpm nocobase config init',
+          'pnpm nocobase config init --dialect sqlite',
           'pnpm nocobase config check',
           'pnpm dev',
         ],

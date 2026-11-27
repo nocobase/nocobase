@@ -1,8 +1,11 @@
 import type { Application } from '@nocobase/app-server';
+import { enterRunningApplication } from '@nocobase/app-server/backup/runtime-guard';
+import { BackupError } from '@nocobase/backup/errors';
 import {
   databaseManagerToken,
   isTaskLockBusyError,
   type ChecksumMismatch,
+  type MigrationWarning,
   type DatabaseManager,
   type MigrationHistoryRecord,
   type TaskLockBusyError,
@@ -110,7 +113,7 @@ export interface DatabaseCommandResult {
 export interface DatabaseSampleDataResult {
   /** Registration names that ran. */
   readonly executed: readonly string[];
-  /** Registrations that threw, with the error message; each stays recorded as skipped. */
+  /** Registrations that threw, with the error message. They can run again. */
   readonly failed: readonly { readonly name: string; readonly error: string }[];
 }
 
@@ -157,7 +160,7 @@ export async function runDatabaseApplyCommand(
     // is safe while another run is going.
     const preview = await executeWithApplication(
       command,
-      { ...flags, collections: false },
+      { ...flags, dryRun: true, collections: false },
       context,
       (app) =>
         runAppDatabaseTasks(app.config.get<AppDatabaseConfig>('database')!, {
@@ -212,10 +215,8 @@ export async function runDatabaseApplyCommand(
       command.log(`Skipped: ${entry.skipped.join(', ') || 'none'}`);
     if (entry.fresh) command.log('Fresh: true');
     for (const warning of entry.warnings ?? [])
-      command.log(
-        `WARNING: checksum changed since it was executed: ${describe(warning)}`,
-      );
-    if (entry.warnings?.length) {
+      command.log(describeWarning(warning));
+    if (entry.warnings?.some((warning) => !('kind' in warning))) {
       // Which command depends on what the edit did, and repair is only ever
       // right for the first case: it records that the source and the schema
       // agree. Used on a change the database never received, it makes an
@@ -357,9 +358,8 @@ export async function runDatabaseRedoCommand(
 }
 
 /**
- * Loads the sample data an installation skipped: every sample seed recorded as skipped on the selected connections,
- * then — with the application started, so they can reach every plugin's services — the sample data services registered
- * on `sampleDataToken` that are recorded as skipped or not at all. For development only: a deployment refuses it.
+ * Runs outstanding sample seeds on the selected connections, then starts the
+ * application to run outstanding `sampleDataToken` registrations. Development only.
  */
 export async function runDatabaseSampleCommand(
   command: DatabaseCommandOutput,
@@ -613,14 +613,16 @@ function planOptions(
  */
 async function executeWithApplication(
   command: DatabaseCommandOutput,
-  flags: DatabaseSelectionFlags,
+  flags: DatabaseSelectionFlags & { dryRun?: boolean },
   context: Pick<AppCommandContext, 'loadRuntime' | 'createApp'>,
   run: (app: Application) => Promise<AppDatabaseTasksResult>,
 ): Promise<DatabaseRun> {
+  let release: (() => void) | undefined;
   try {
     return await withAppInstance(
       context,
       async (app): Promise<DatabaseRun> => {
+        if (!flags.dryRun) release = await enterRunningApplication(app.paths);
         app.registerProviders();
         const result = await run(app);
         if (!flags.collections) return result;
@@ -648,6 +650,8 @@ async function executeWithApplication(
         : { ...error.result, failure: error };
     }
     throw toDatabaseCommandError(error, flags.connection);
+  } finally {
+    release?.();
   }
 }
 
@@ -661,6 +665,12 @@ export function toDatabaseCommandError(
   connection: string | undefined,
 ): Error {
   if (isCommandError(error)) return error;
+  if (error instanceof BackupError)
+    return new CommandError(error.message, {
+      code: error.code,
+      details: error.details,
+      cause: error,
+    });
   // A failure whose cleanup also failed: `describeCommandError` reports the cause's code.
   if (error instanceof AggregateError && isCommandError(error.cause))
     return error;
@@ -806,6 +816,12 @@ function repairedRecords(result: AppDatabaseTasksResult): {
   );
 }
 
+function describeWarning(warning: MigrationWarning): string {
+  if ('kind' in warning)
+    return `WARNING: executed migration is missing from migration sources: ${warning.name} (${warning.packageName}). History is retained.`;
+  return `WARNING: checksum changed since it was executed: ${describe(warning)}`;
+}
+
 function describe(record: ChecksumMismatch): string {
   return `${record.name} (${record.packageName}): ${record.recordedChecksum.slice(0, 12)} -> ${record.sourceChecksum.slice(0, 12)}`;
 }
@@ -848,9 +864,7 @@ function reportDatabaseEntries(
     if (entry.skipped)
       command.log(`Skipped: ${entry.skipped.join(', ') || 'none'}`);
     for (const warning of entry.warnings ?? [])
-      command.log(
-        `WARNING: checksum changed since it was executed: ${describe(warning)}`,
-      );
+      command.log(describeWarning(warning));
   }
 }
 

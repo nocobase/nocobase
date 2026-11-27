@@ -12,7 +12,7 @@ export const DEFAULT_SEED_TABLE = '__nocobase_seeds';
 
 /**
  * Seeds keep their own ledger, and it is not batched: they never roll back.
- * It records a status, because sample data may be recorded without running.
+ * The status distinguishes successful runs from legacy skipped samples.
  */
 function seedLedger(tableName: string): TaskLedger {
   return { tableName, batched: false, status: true };

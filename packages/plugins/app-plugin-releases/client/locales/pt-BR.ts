@@ -107,6 +107,13 @@ const ptBR: LocaleResource<typeof enUS> = {
         environments: 'Implantar ambientes',
       },
     },
+    humanOnly: {
+      deployProtected:
+        'Implantar em um ambiente protegido exige a aprovação de uma pessoa; uma chave só pode solicitar.',
+      delete: 'Excluir um app apaga seus dados; só uma pessoa pode fazer isso.',
+      configure:
+        'Configurar um app altera suas configurações e segredos; só uma pessoa pode fazer isso.',
+    },
     keyScopes: {
       apps: {
         title: 'Aplicativos e implantações',
@@ -853,9 +860,9 @@ const ptBR: LocaleResource<typeof enUS> = {
       apps: 'Aplicativos',
       appsDescription: 'Os aplicativos implantados neste ambiente.',
       appsEmpty: 'Nenhum aplicativo foi implantado aqui ainda.',
-      sampleData: 'Carregar dados de amostra na primeira implantação',
+      sampleData: 'Carregar dados de amostra na implantação',
       sampleDataHint:
-        'A primeira implantação de um aplicativo aqui instala seus dados de amostra (APP_SAMPLE_DATA=true). Use-o para visualizações, não para produção.',
+        'Cada implantação carrega os dados de amostra pendentes (APP_SAMPLE_DATA=true). Ative esta opção em ambientes de prévia e mantenha-a desativada em produção.',
       add: 'Adicionar ambiente',
       edit: 'Editar',
       delete: 'Excluir',

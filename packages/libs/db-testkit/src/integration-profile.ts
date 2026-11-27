@@ -5,6 +5,8 @@
  * a value here without sharing a driver or a SQL implementation.
  */
 export interface DatabaseIntegrationProfile {
+  /** A transaction can resolve naming without sharing the root snapshot. */
+  readonly coldTransactionNaming?: boolean;
   readonly numeric: {
     readonly nativeResults: boolean;
     /** Whether create mutations can return inserted rows without a reload. */

@@ -1,8 +1,11 @@
+import auditLabels from '../../locales/ja-JP.js';
 import type { LocaleResource } from '@nocobase/i18n';
 
-import type enUS from './en-US.js';
+import { withPluralForms } from '../plural-forms.js';
+import enUS from './en-US.js';
 
 const jaJP: LocaleResource<typeof enUS> = {
+  ...auditLabels,
   errors: {
     generic: '問題が発生しました。もう一度試してください。',
     network:
@@ -38,9 +41,16 @@ const jaJP: LocaleResource<typeof enUS> = {
       'この発信元は信頼できません。 config.yml の app.publicOrigin を {{origin}} に設定し、アプリケーションを再起動して、再試行してください。',
     INVALID_ORIGIN:
       'この発信元は信頼できません。 config.yml の app.publicOrigin を確認し、アプリケーションを再起動して、再試行してください。',
+    FAILED_TO_UNLINK_LAST_ACCOUNT: enUS.errors.FAILED_TO_UNLINK_LAST_ACCOUNT,
     INVALID_CSRF_ORIGIN:
       'このリクエストは別のサイトから来たもので拒否されました。ページをリロードして、もう一度お試しください。',
   },
+  // The settings pages are not translated into this language yet; English is shown.
+  settings: withPluralForms(enUS.settings, 'ja-JP'),
+  guide: enUS.guide,
+  prompt: enUS.prompt,
+  sso: enUS.sso,
+  account: withPluralForms(enUS.account, 'ja-JP'),
 };
 
 export default jaJP;

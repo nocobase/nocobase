@@ -3,6 +3,34 @@ import type { LocaleResource } from '@nocobase/i18n';
 import type enUS from './en-US.js';
 
 const jaJP: LocaleResource<typeof enUS> = {
+  ticketManagement: {
+    title: 'ライフサイクル管理',
+    action: '管理操作',
+    current: '現在の状態',
+    target: '移行先の状態',
+    reason: '理由',
+    submit: '適用',
+    suspended: '一時停止中',
+    paused:
+      'ワークフローは一時停止中です。管理者が再開するまでチケットは操作できません。',
+    history: '管理履歴',
+    audit: '管理者 {{actor}} · {{time}} · 第 {{from}} 回 → 第 {{to}} 回',
+    restartNotice:
+      '新しい実行を開始し、待機中の処理を無効化します。送信中の通知は完了することがあります。',
+    conflict:
+      'チケットが変更されました。ダイアログを閉じて最新の状態を確認してください。',
+    commands: {
+      suspend: '一時停止',
+      resume: '現在の状態から再開',
+      reset: '新規にリセット',
+      restartAt: '指定した状態から再開',
+    },
+    work: {
+      queued: '待機中の処理を取り消します',
+      running: '実行中の処理は完了することがあります',
+      continuation: '保留中の後続処理を破棄します',
+    },
+  },
   navigation: {
     parameters: '実行時パラメータ',
     group: 'ワークフロー',

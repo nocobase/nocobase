@@ -1,8 +1,11 @@
+import auditLabels from '../../locales/pt-BR.js';
 import type { LocaleResource } from '@nocobase/i18n';
 
-import type enUS from './en-US.js';
+import { withPluralForms } from '../plural-forms.js';
+import enUS from './en-US.js';
 
 const ptBR: LocaleResource<typeof enUS> = {
+  ...auditLabels,
   errors: {
     generic: 'Algo correu mal. Por favor, tente novamente.',
     network:
@@ -36,9 +39,16 @@ const ptBR: LocaleResource<typeof enUS> = {
       'Esta origem não é confiável. Defina app.publicOrigin em config.yml como {{origin}}, reinicie o aplicativo e tente novamente.',
     INVALID_ORIGIN:
       'Esta origem não é confiável. Verifique app.publicOrigin em config.yml, reinicie o aplicativo e tente novamente.',
+    FAILED_TO_UNLINK_LAST_ACCOUNT: enUS.errors.FAILED_TO_UNLINK_LAST_ACCOUNT,
     INVALID_CSRF_ORIGIN:
       'Este pedido veio de outro site e foi recusado. Atualize a página e tente novamente.',
   },
+  // The settings pages are not translated into this language yet; English is shown.
+  settings: withPluralForms(enUS.settings, 'pt-BR'),
+  guide: enUS.guide,
+  prompt: enUS.prompt,
+  sso: enUS.sso,
+  account: withPluralForms(enUS.account, 'pt-BR'),
 };
 
 export default ptBR;

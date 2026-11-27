@@ -14,8 +14,8 @@ export interface TaskLedger {
   /** Migrations record which batch a run belongs to; seeds have no batch. */
   readonly batched: boolean;
   /**
-   * Seeds record whether a run executed or was skipped, which only sample
-   * data can be. A row without it predates the column and executed.
+   * Seed history uses status to distinguish successful runs from legacy
+   * skipped samples. A row without it predates the column and executed.
    */
   readonly status?: boolean;
 }

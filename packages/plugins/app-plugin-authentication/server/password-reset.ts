@@ -12,6 +12,24 @@ import {
 } from 'better-auth';
 import { createAuthMiddleware, getIP } from 'better-auth/api';
 
+export function resolveClientAddress(
+  headers: Headers | undefined,
+  peer: string | undefined,
+  options: BetterAuthOptions,
+): string | null {
+  if (!peer) return null;
+  const ipOptions = options.advanced?.ipAddress;
+  const anchored = new Headers();
+  for (const name of ipOptions?.ipAddressHeaders ?? ['x-forwarded-for']) {
+    // Anchor proxy parsing to the actual peer. An untrusted peer wins over every forwarded value.
+    const forwarded = ipOptions?.trustedProxies?.length
+      ? headers?.get(name)
+      : undefined;
+    anchored.set(name, forwarded ? `${forwarded},${peer}` : peer);
+  }
+  return getIP(anchored, options);
+}
+
 type ResetSender = NonNullable<
   NonNullable<BetterAuthOptions['emailAndPassword']>['sendResetPassword']
 >;
@@ -39,9 +57,30 @@ export interface PasswordResetServices {
   readonly executions?: MailExecutions;
 }
 
+/**
+ * Why email password reset is or is not available, from the same values `PasswordResetPolicy.available` is computed
+ * from, so a settings page and the sign-in page cannot disagree.
+ */
+export interface PasswordResetDiagnosis {
+  readonly available: boolean;
+  /** Password sign-in is on (`auth.emailAndPassword.enabled` is not `false`). */
+  readonly passwordSignIn: boolean;
+  /** `auth.passwordReset.enabled` is `true`. */
+  readonly enabled: boolean;
+  /** `auth.passwordReset.enabled` is explicitly `false`. */
+  readonly disabled: boolean;
+  /** `auth.emailAndPassword.sendResetPassword` is the application's own callback, which takes precedence. */
+  readonly customSender: boolean;
+  /** A mail sender was selected for reset emails. */
+  readonly sender: boolean;
+  /** The application has a fixed public origin to build reset links from. */
+  readonly publicOrigin: boolean;
+}
+
 export class PasswordResetPolicy {
   public readonly available: boolean;
   public readonly automatic: boolean;
+  public readonly diagnosis: PasswordResetDiagnosis;
   private readonly sender: ResetSender | undefined;
   private readonly executions: MailExecutions;
   private readonly customSender: boolean;
@@ -76,6 +115,15 @@ export class PasswordResetPolicy {
       options.emailAndPassword?.enabled !== false &&
       config.enabled !== false &&
       (Boolean(custom) || this.automatic);
+    this.diagnosis = {
+      available: this.available,
+      passwordSignIn: options.emailAndPassword?.enabled !== false,
+      enabled: config.enabled === true,
+      disabled: config.enabled === false,
+      customSender: custom !== undefined,
+      sender: selected !== undefined,
+      publicOrigin: configuredResetOrigin(options.baseURL),
+    };
     if (this.available) {
       if (custom && config.mailer !== undefined)
         services.warning?.(
@@ -358,17 +406,7 @@ export class PasswordResetPolicy {
 
   private clientAddress(request: Request | undefined): string | null {
     const peer = this.requestAddress.getStore();
-    if (!peer) return null;
-    const ipOptions = this.options.advanced?.ipAddress;
-    const headers = new Headers();
-    for (const name of ipOptions?.ipAddressHeaders ?? ['x-forwarded-for']) {
-      // Anchor proxy parsing to the actual peer. An untrusted peer wins over every forwarded value.
-      const forwarded = ipOptions?.trustedProxies?.length
-        ? request?.headers.get(name)
-        : undefined;
-      headers.set(name, forwarded ? `${forwarded},${peer}` : peer);
-    }
-    return getIP(headers, this.options);
+    return resolveClientAddress(request?.headers, peer, this.options);
   }
 
   public async guardWrite(

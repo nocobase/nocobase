@@ -8,7 +8,12 @@ import {
   type Authorization,
 } from '@nocobase/app-plugin-authorization';
 import { loggingToken } from '@nocobase/app-server/logging';
+import { Application } from '@nocobase/app-server/application';
+import { auditServiceToken, type AuditEvent } from '@nocobase/audit';
+import { AuditProvider } from '@nocobase/audit/runtime';
+import { AppConfig, createAppPaths } from '@nocobase/app-server/config';
 import {
+  defineApiRoutes,
   deriveCliCommands,
   findApiDocumentSchemaProblems,
   findUndeclaredApiRoutes,
@@ -29,6 +34,64 @@ import {
 } from '../server/tokens.js';
 
 describe('@nocobase/app-plugin-users API routes', () => {
+  it('masks the full invitation link in audit events while returning it to the inviter', async () => {
+    const service = userService();
+    const result = {
+      email: 'invitee@example.test',
+      outcome: 'invited' as const,
+      invitationId: 'invitation-1',
+      emailSent: false,
+      inviteUrl: 'https://example.test/invite/a-test-invitation-token',
+    };
+    vi.mocked(service.invite).mockResolvedValue([result]);
+    const config = new AppConfig();
+    await config.loadAll();
+    config.mergeDefaults({
+      audit: { enabled: true, transports: { capture: { driver: 'memory' } } },
+    });
+    const app = new Application({
+      config,
+      paths: createAppPaths({ rootDir: import.meta.dirname }),
+    });
+    app.addServiceProvider(AuditProvider);
+    const events: AuditEvent[] = [];
+    app.container.resolve(auditServiceToken).registerDriver({
+      name: 'memory',
+      createTransport: () => ({
+        write: (event) => {
+          events.push(event);
+        },
+      }),
+    });
+    app.addRoutes(
+      defineApiRoutes(() =>
+        apiRoutes.createRouter(createApplication('allowed', service)),
+      ),
+    );
+    try {
+      const response = await app.fetch(
+        new Request('http://localhost/api/users/invitations', {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({ emails: [result.email] }),
+        }),
+      );
+      expect(response.status).toBe(201);
+      expect(await response.json()).toEqual({ data: [result] });
+      expect(events[0]).toMatchObject({
+        action: 'usersInviteUsers',
+        operationName: 'Invite people by email',
+        operationNameI18n: {
+          ns: '@nocobase/app-plugin-users',
+          key: 'audit.operations.inviteUsers',
+        },
+        response: { data: [{ ...result, inviteUrl: '******' }] },
+      });
+    } finally {
+      await app.shutdown();
+    }
+  });
+
   it.each(['anonymous', 'forbidden', 'allowed'] as const)(
     'guards latest user reads for %s callers',
     async (mode) => {

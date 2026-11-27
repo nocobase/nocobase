@@ -32,23 +32,45 @@ import {
   defineInboxRenderer,
   type InboxRegistry,
 } from '../../registry/inbox/inbox/registry';
+import { InboxRail } from '../../registry/inbox/inbox/inbox-rail';
 import { InboxRegistryProvider } from '../../registry/inbox/inbox/registry-scope';
 import { item, notice } from './fixtures';
 import { Frame } from './frame';
 
+// The category labels come from the notification plugin's kinds; these parts run without a server.
+vi.mock('@nocobase/app-client', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@nocobase/app-client')>()),
+  useApiClient: () => ({
+    request: () => Promise.resolve({ data: { channelTypes: [], kinds: [] } }),
+  }),
+}));
+vi.mock(
+  '@nocobase/app-plugin-notification-in-app/client/inbox',
+  async (importOriginal) => ({
+    ...(await importOriginal<
+      typeof import('@nocobase/app-plugin-notification-in-app/client/inbox')
+    >()),
+    useInboxReadiness: () => true,
+    useInboxUnreadByCategory: () => ({ data: [] }),
+  }),
+);
+
 /** A collection of records kept in another API, listed after the decisions. */
-const plans: InboxCollectionCategory = {
+const records: InboxCollectionCategory = {
   type: 'collection',
-  id: 'plans',
-  label: () => 'Plans',
-  param: 'plan',
+  id: 'records',
+  label: () => 'Records',
+  param: 'record',
   params: ['status'],
   after: 'decision',
   // eslint-disable-next-line @eslint-react/no-unnecessary-use-prefix -- the category's hook, which needs no other hook here
   useCollection: () => ({ count: 0, loaded: true, group: null, list: null }),
   Detail: () => null,
 };
-const withPlans: readonly InboxCategory[] = [...defaultInboxCategories, plans];
+const withRecords: readonly InboxCategory[] = [
+  ...defaultInboxCategories,
+  records,
+];
 
 describe('the inbox model', () => {
   it('lists waiting decisions first, settled ones after, and everything else as notifications', () => {
@@ -72,7 +94,12 @@ describe('the inbox model', () => {
     expect(groups.decision?.map((entry) => entry.item.id)).toEqual(['b', 'a']);
     // An item the source knows nothing about is information.
     expect(groups.info?.map((entry) => entry.item.id)).toEqual(['c', 'd']);
-    expect(unreadByCategory(groups)).toEqual({ decision: 2, info: 1 });
+    // Older items are Earlier; nothing here arrived today.
+    expect(unreadByCategory(groups)).toEqual({
+      decision: 2,
+      today: 0,
+      info: 1,
+    });
     expect(isSettled(entries[0]!)).toBe(true);
   });
 
@@ -94,40 +121,63 @@ describe('the inbox model', () => {
 
   it('reads the view and the kind from the URL, offering in To do only what waits', () => {
     const read = (search: string) =>
-      readInboxFilter(new URLSearchParams(search), withPlans);
-    expect(read('')).toEqual({ view: 'all', kind: 'all' });
-    expect(read('view=todo&kind=plans')).toEqual({
+      readInboxFilter(new URLSearchParams(search), withRecords);
+    expect(read('')).toEqual({ view: 'all', kind: 'all', category: null });
+    expect(read('view=todo&kind=records')).toEqual({
       view: 'todo',
-      kind: 'plans',
+      kind: 'records',
+      category: null,
     });
-    expect(read('kind=info')).toEqual({ view: 'all', kind: 'info' });
-    expect(read('view=todo&kind=info')).toEqual({ view: 'todo', kind: 'all' });
-    expect(read('view=bogus&kind=bogus')).toEqual({ view: 'all', kind: 'all' });
-    expect(kindsOf('todo', withPlans)).toEqual(['all', 'decision', 'plans']);
-    expect(kindsOf('all', withPlans)).toEqual([
+    expect(read('kind=info')).toEqual({
+      view: 'all',
+      kind: 'info',
+      category: null,
+    });
+    expect(read('view=todo&kind=info')).toEqual({
+      view: 'todo',
+      kind: 'all',
+      category: null,
+    });
+    expect(read('view=bogus&kind=bogus')).toEqual({
+      view: 'all',
+      kind: 'all',
+      category: null,
+    });
+    expect(read('view=unread&category=projects')).toEqual({
+      view: 'unread',
+      kind: 'all',
+      category: 'projects',
+    });
+    expect(kindsOf('todo', withRecords)).toEqual([
       'all',
       'decision',
+      'records',
+    ]);
+    expect(kindsOf('all', withRecords)).toEqual([
+      'all',
+      'decision',
+      'today',
       'info',
-      'plans',
+      'records',
     ]);
   });
 
   it("writes a filter over the URL, dropping the collections' parameters and selection", () => {
     const params = new URLSearchParams(
-      'kind=plans&status=voided&plan=p1&item=i1',
+      'kind=records&status=closed&record=r1&item=i1',
     );
     expect(
       inboxFilterParams(
         params,
         { view: 'todo', kind: 'decision' },
-        withPlans,
+        withRecords,
       ).toString(),
     ).toBe('kind=decision&item=i1&view=todo');
     expect(
       inboxFilterParams(
         params,
         { view: 'all', kind: 'all' },
-        withPlans,
+        withRecords,
       ).toString(),
     ).toBe('item=i1');
   });
@@ -142,17 +192,17 @@ describe('the inbox model', () => {
           notice('c', { kind: 'info' }),
         ],
       ),
-      withPlans,
+      withRecords,
     );
     const ids = (view: 'all' | 'todo', kind: string) =>
-      shownEntries({ view, kind }, groups, withPlans).map(
+      shownEntries({ view, kind }, groups, withRecords).map(
         (entry) => entry.item.id,
       );
     expect(ids('all', 'all')).toEqual(['b', 'a', 'c']);
     expect(ids('all', 'decision')).toEqual(['b', 'a']);
     expect(ids('all', 'info')).toEqual(['c']);
     expect(ids('todo', 'all')).toEqual(['b']);
-    expect(ids('all', 'plans')).toEqual([]);
+    expect(ids('all', 'records')).toEqual([]);
   });
 
   it('lists what waits in full before the pages, each once', () => {
@@ -192,9 +242,7 @@ function renderList(
   const categories = registry?.categories ?? defaultInboxCategories;
   const list = (
     <InboxList
-      filter={{ view: 'all', kind: 'all' }}
-      unread={entries.filter((entry) => !entry.item.readAt).length}
-      pending={0}
+      filter={{ view: 'all', kind: 'all', category: null }}
       groups={groupEntries(entries, categories)}
       loaded
       query={query}
@@ -226,36 +274,56 @@ describe('the inbox list', () => {
     [notice('a'), notice('b', { kind: 'info' })],
   );
 
-  it('shows decisions, then notifications, with what waits on To do and the unread count on All', () => {
-    renderList(entries, { pending: 4, waiting: { decision: 4 } });
+  it('shows decisions, then notifications, with what waits beside the Pending heading', () => {
+    renderList(entries, { waiting: { decision: 4 } });
     const [decisions, notices] = screen.getAllByRole('list');
     expect(within(decisions!).getByText('Title a')).toBeInTheDocument();
     expect(within(notices!).getByText('Title b')).toBeInTheDocument();
-    expect(screen.getByLabelText('4 waiting')).toHaveTextContent('4');
-    expect(screen.getByLabelText('2 unread')).toHaveTextContent('2');
-    expect(
-      screen.getByRole('heading', { name: /Needs my decision/u }),
-    ).toHaveTextContent('4');
-    expect(screen.getByRole('combobox', { name: 'Type' })).toHaveTextContent(
-      'All types',
+    expect(screen.getByRole('heading', { name: /Pending/u })).toHaveTextContent(
+      '4',
     );
+    // Without collection categories there is nothing to filter by type.
+    expect(screen.queryByRole('combobox')).not.toBeInTheDocument();
   });
 
-  it('switches views keeping a kind the view offers', () => {
+  it('filters by view and by category from the rail, with the counts beside them', () => {
     const onFilter = vi.fn();
-    renderList(entries, { filter: { view: 'all', kind: 'info' }, onFilter });
-    expect(screen.queryByText('Title a')).not.toBeInTheDocument();
-    expect(screen.getByText('Title b')).toBeInTheDocument();
-    fireEvent.click(screen.getByRole('tab', { name: /To do/u }));
-    // To do has no notifications, so the kind goes back to every kind.
-    expect(onFilter).toHaveBeenLastCalledWith({ view: 'todo', kind: 'all' });
+    render(
+      <Frame>
+        <InboxRail
+          filter={{ view: 'all', kind: 'all', category: null }}
+          unread={2}
+          pending={4}
+          categories={[{ key: 'projects', label: 'Projects', unread: 1 }]}
+          onFilter={onFilter}
+        />
+      </Frame>,
+    );
+    expect(screen.getByRole('button', { name: /All/u })).toHaveAttribute(
+      'aria-current',
+      'true',
+    );
+    expect(screen.getByLabelText('4 waiting')).toHaveTextContent('4');
+    expect(screen.getByLabelText('2 unread')).toHaveTextContent('2');
+    fireEvent.click(screen.getByRole('button', { name: /Unread/u }));
+    expect(onFilter).toHaveBeenLastCalledWith({
+      view: 'unread',
+      kind: 'all',
+      category: null,
+    });
+    fireEvent.click(screen.getByRole('button', { name: /Projects/u }));
+    expect(onFilter).toHaveBeenLastCalledWith({
+      view: 'all',
+      kind: 'all',
+      category: 'projects',
+    });
   });
 
   it("places a collection's group after the category it follows, and its list in place of the items", () => {
     const registry: InboxRegistry = {
       renderers: [],
       feeds: [],
-      categories: withPlans,
+      categories: withRecords,
     };
     const settled = entriesOf(
       [item('a'), item('s'), item('b')],
@@ -269,7 +337,7 @@ describe('the inbox list', () => {
       settled,
       {
         filter: { view: 'todo', kind: 'all' },
-        collections: { plans: { group: <p>open plans</p>, count: 1 } },
+        collections: { records: { group: <p>open records</p>, count: 1 } },
       },
       registry,
     );
@@ -279,7 +347,7 @@ describe('the inbox list', () => {
     expect(
       screen
         .getByText('Title a')
-        .compareDocumentPosition(screen.getByText('open plans')) &
+        .compareDocumentPosition(screen.getByText('open records')) &
         Node.DOCUMENT_POSITION_FOLLOWING,
     ).toBeTruthy();
   });
@@ -288,15 +356,15 @@ describe('the inbox list', () => {
     renderList(
       entries,
       {
-        filter: { view: 'all', kind: 'plans' },
-        collections: { plans: { list: <p>plans list</p> } },
+        filter: { view: 'all', kind: 'records' },
+        collections: { records: { list: <p>records list</p> } },
       },
-      { renderers: [], feeds: [], categories: withPlans },
+      { renderers: [], feeds: [], categories: withRecords },
     );
-    expect(screen.getByText('plans list')).toBeInTheDocument();
+    expect(screen.getByText('records list')).toBeInTheDocument();
     expect(screen.queryByText('Title a')).toBeNull();
     expect(screen.getByRole('combobox', { name: 'Type' })).toHaveTextContent(
-      'Plans',
+      'Records',
     );
   });
 
@@ -412,7 +480,8 @@ describe('the inbox detail', () => {
     renderDetail(entry!, undefined, onOpen);
     const title = screen.getByRole('heading', { name: 'Title a' });
     expect(screen.getByText('Something needs you')).toBeInTheDocument();
-    expect(screen.getByText('Needs my decision')).toBeInTheDocument();
+    // Without a renderer it reads as a notification of its category, or a plain one.
+    expect(screen.getByText('Notification')).toBeInTheDocument();
     expect(
       screen
         .getAllByRole('button')

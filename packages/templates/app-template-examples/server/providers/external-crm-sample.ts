@@ -17,21 +17,23 @@ export async function ensureExternalCrmSampleDatabase(
   const knex = await connection.client<Knex>();
   if (await knex.schema.hasTable('crm_customers')) return false;
 
-  await knex.schema.createTable('crm_customers', (table) => {
-    table.increments('id');
-    table.string('email', 255).notNullable().unique();
-    table.string('display_name', 128).notNullable();
-    table.datetime('created_at').notNullable();
-  });
-  await knex.schema.createTable('crm_orders', (table) => {
-    table.increments('id');
-    table.integer('customer_id').notNullable();
-    table.string('order_no', 64).notNullable().unique();
-    table.decimal('total_amount', 12, 2).notNullable().defaultTo(0);
-    table.string('status', 32).notNullable().defaultTo('draft');
-    table.datetime('placed_at').notNullable();
-    table.foreign('customer_id').references('id').inTable('crm_customers');
-    table.index(['customer_id', 'status']);
+  await connection.notifySchemaChange(async () => {
+    await knex.schema.createTable('crm_customers', (table) => {
+      table.increments('id');
+      table.string('email', 255).notNullable().unique();
+      table.string('display_name', 128).notNullable();
+      table.datetime('created_at').notNullable();
+    });
+    await knex.schema.createTable('crm_orders', (table) => {
+      table.increments('id');
+      table.integer('customer_id').notNullable();
+      table.string('order_no', 64).notNullable().unique();
+      table.decimal('total_amount', 12, 2).notNullable().defaultTo(0);
+      table.string('status', 32).notNullable().defaultTo('draft');
+      table.datetime('placed_at').notNullable();
+      table.foreign('customer_id').references('id').inTable('crm_customers');
+      table.index(['customer_id', 'status']);
+    });
   });
 
   const customers = [

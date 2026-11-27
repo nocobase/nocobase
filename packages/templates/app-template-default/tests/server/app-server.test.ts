@@ -721,10 +721,17 @@ describe('app server', () => {
     );
     expect(created.status).toBe(200);
     const key = (await created.json()) as { id: string; key: string };
-    const authenticated = await requestApp(app, `${baseUrl}/api/users`, {
+    const authenticated = await requestApp(
+      app,
+      `${baseUrl}/api/authorization/permissions`,
+      { headers: { 'x-api-key': key.key } },
+    );
+    expect(authenticated.status).toBe(200);
+    // Managing accounts is a person's only: the session lists users, no key does.
+    const keyUsers = await requestApp(app, `${baseUrl}/api/users`, {
       headers: { 'x-api-key': key.key },
     });
-    expect(authenticated.status).toBe(200);
+    expect(keyUsers.status).toBe(403);
     const revoked = await requestApp(
       app,
       `${baseUrl}/api/auth/api-key/delete`,
@@ -735,9 +742,11 @@ describe('app server', () => {
       },
     );
     expect(revoked.status).toBe(200);
-    const rejected = await requestApp(app, `${baseUrl}/api/users`, {
-      headers: { 'x-api-key': key.key },
-    });
+    const rejected = await requestApp(
+      app,
+      `${baseUrl}/api/authorization/permissions`,
+      { headers: { 'x-api-key': key.key } },
+    );
     expect(rejected.status).toBe(401);
   });
 
@@ -1242,7 +1251,14 @@ function createTestApp(options: CreateTestAppOptions = {}): TestApp {
     },
   };
   const config = createTestConfig(configValues);
-  const paths = createAppPaths({ rootDir: '/test/app-template-default' });
+  const storageDir = mkdtempSync(
+    path.join(tmpdir(), 'app-template-default-storage-'),
+  );
+  tempDirs.push(storageDir);
+  const paths = createAppPaths({
+    rootDir: '/test/app-template-default',
+    storageDir,
+  });
   const database =
     options.database === false
       ? undefined

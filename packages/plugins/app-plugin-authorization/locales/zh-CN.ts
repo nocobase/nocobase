@@ -1,6 +1,15 @@
 import type { AuthorizationServerResource } from './en-US.js';
 
 const zhCN: AuthorizationServerResource = {
+  audit: {
+    operations: {
+      createPermissionSet: '创建权限集',
+      assignPermissionSet: '分配权限集',
+      unassignPermissionSet: '取消分配权限集',
+      updatePermissionSet: '修改权限集',
+      deletePermissionSet: '删除权限集',
+    },
+  },
   // Workspace sections this plugin registers through `authz.ui`.
   sections: {
     pages: '页面访问',
@@ -14,7 +23,6 @@ const zhCN: AuthorizationServerResource = {
     actions: {
       assign: '管理授权',
       configure: '配置',
-      inspect: '检查权限',
 
       read: '查看',
       create: '新建',
@@ -28,8 +36,8 @@ const zhCN: AuthorizationServerResource = {
       allDescription: '允许访问所有页面，包括之后新增的页面。',
     },
     settings: {
-      inspector: '权限检查器',
       'permission-sets': '权限集',
+      'authentication-settings': '身份认证',
     },
     subjectTypes: {
       authenticated: '所有已登录用户',

@@ -51,12 +51,15 @@ export interface BriefSectionProvider {
   /** Lower first; sections without one follow, in the order they were registered. */
   readonly order?: number;
   readonly prepare?: ExtensionPrepare;
+  /** Reuse this section on session recovery when the subject assembly changes. */
+  readonly reuseOnRecovery?: boolean;
   /** Markdown appended to the context layer, or null for nothing on this run. */
   section(
     conn: DatabaseConnection,
     claim: ClaimContext,
     assembly: SubjectAssembly,
     prepared: unknown,
+    extensions: Prepared,
   ): Promise<string | null>;
 }
 
@@ -98,15 +101,23 @@ export async function withSections(
   claim: ClaimContext,
   assembly: SubjectAssembly,
   prepared: Prepared,
+  reusable?: Map<string, string | null>,
 ): Promise<SubjectAssembly> {
   const added: string[] = [];
   for (const provider of sections?.list() ?? []) {
-    const text = await provider.section(
-      conn,
-      claim,
-      assembly,
-      prepared.get(`section:${provider.key}`),
-    );
+    const key = provider.key;
+    const text =
+      provider.reuseOnRecovery && reusable?.has(key)
+        ? reusable.get(key)
+        : await provider.section(
+            conn,
+            claim,
+            assembly,
+            prepared.get(`section:${key}`),
+            prepared,
+          );
+    if (provider.reuseOnRecovery && text !== undefined)
+      reusable?.set(key, text);
     if (text?.trim()) added.push(text.trim());
   }
   if (added.length === 0) return assembly;
@@ -148,6 +159,8 @@ export interface RunMountProvider {
   /** `MOUNT_NAME_PATTERN`; unique among the providers. */
   readonly name: string;
   readonly prepare?: ExtensionPrepare;
+  /** Collection definitions for delivering this prepared mount. A pure hint, used before the PostgreSQL claim lock. */
+  claimCollections?(prepared: unknown): readonly string[];
   /**
    * In the claim's transaction, through its connection: database reads, and writes of the provider's own records.
    * Null mounts nothing.
@@ -386,6 +399,7 @@ export async function repoAccessFor(
     string,
     NonNullable<RunGit['credentials']>[number]
   >();
+  const ssh = new Map<string, NonNullable<RunGit['ssh']>[number]>();
   const repoUrls = new Set(context.repos.map((repo) => repo.url));
   const onDemand = new Set<string>();
   const tools = new Map<string, NonNullable<RunGit['tools']>[number]>();
@@ -402,6 +416,9 @@ export async function repoAccessFor(
     for (const credential of given.credentials ?? [])
       if (!credentials.has(credential.url))
         credentials.set(credential.url, credential);
+    for (const credential of given.ssh ?? [])
+      if (repoUrls.has(credential.url) && !ssh.has(credential.url))
+        ssh.set(credential.url, credential);
     if (context.onDemand)
       for (const url of given.onDemand ?? [])
         if (repoUrls.has(url)) onDemand.add(url);
@@ -417,7 +434,8 @@ export async function repoAccessFor(
     !author &&
     trailers.length === 0 &&
     credentials.size === 0 &&
-    onDemand.size === 0
+    onDemand.size === 0 &&
+    ssh.size === 0
   )
     return null;
   return {
@@ -425,6 +443,7 @@ export async function repoAccessFor(
     ...(trailers.length > 0 ? { trailers } : {}),
     ...(credentials.size > 0 ? { credentials: [...credentials.values()] } : {}),
     ...(onDemand.size > 0 ? { onDemand: [...onDemand] } : {}),
+    ...(ssh.size > 0 ? { ssh: [...ssh.values()] } : {}),
     ...(tools.size > 0 ? { tools: [...tools.values()] } : {}),
   };
 }

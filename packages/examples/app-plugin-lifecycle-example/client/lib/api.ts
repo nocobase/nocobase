@@ -1,3 +1,4 @@
+import type { TicketManagementView } from '../components/ticket-management.js';
 import type { ApiClient } from '@nocobase/app-client';
 
 import type { DurableFlow } from '../../shared/flows.js';
@@ -25,7 +26,8 @@ export type LifecycleName = 'tickets' | 'expenses' | DurableFlow;
 export const CREATE_TRANSITION = '$create';
 
 /** One record as a page shows it: the library's view and its lifecycle's description. */
-export type RecordDetail = RecordView & LifecycleDescriptionView;
+export type RecordDetail = RecordView &
+  LifecycleDescriptionView & { readonly management?: TicketManagementView };
 
 export interface RecordList {
   readonly records: readonly Plain[];

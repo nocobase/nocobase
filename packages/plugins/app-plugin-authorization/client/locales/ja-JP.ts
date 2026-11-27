@@ -1,8 +1,15 @@
+import auditLabels from '../../locales/ja-JP.js';
 import type { LocaleResource } from '@nocobase/i18n';
 
 import type enUS from './en-US.js';
+import components from './components-en-US.js';
+import settings from './settings-en-US.js';
 
 const jaJP: LocaleResource<typeof enUS> = {
+  audit: auditLabels.audit,
+  // The Roles and permissions pages are not translated into this language yet and show in English.
+  ...components,
+  settings,
   permissionSets: {
     builtIn: {
       root: 'システム管理者',
@@ -21,7 +28,6 @@ const jaJP: LocaleResource<typeof enUS> = {
     actions: {
       assign: '割り当ての管理',
       configure: '設定する',
-      inspect: '権限を検査する',
       read: '読み取り',
       create: '作成',
       update: '更新',
@@ -37,8 +43,8 @@ const jaJP: LocaleResource<typeof enUS> = {
         '後で追加されたページも含め、すべてのページへのアクセスを許可します。',
     },
     settings: {
-      inspector: '許可検査官',
       'permission-sets': '権限セット',
+      'authentication-settings': 'サインインと認証',
     },
     subjectTypes: {
       authenticated: 'サインインしているすべてのユーザー',

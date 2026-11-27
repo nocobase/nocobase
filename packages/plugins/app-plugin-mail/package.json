@@ -2,7 +2,7 @@
   "name": "@nocobase/app-plugin-mail",
   "displayName": "Mail App Plugin",
   "description": "Provides mail sending and resumable mailbox synchronization architecture.",
-  "version": "1.0.0-beta.26",
+  "version": "1.0.0-beta.29",
   "type": "module",
   "prettier": "@nocobase/dev-config/prettier",
   "engines": {
@@ -41,6 +41,14 @@
     "CHANGELOG.md"
   ],
   "nocobase": {
+    "title": {
+      "en-US": "Mail",
+      "zh-CN": "邮件"
+    },
+    "description": {
+      "en-US": "Team mail and personal mailboxes",
+      "zh-CN": "团队邮件和个人邮箱"
+    },
     "appConfig": {
       "namespace": "mail",
       "configFile": "server/config/mail.ts",
@@ -52,7 +60,8 @@
         "MAIL_SYNC_BATCH_SIZE",
         "MAIL_PUSH_WEBHOOK_URL",
         "MAIL_PUSH_WEBHOOK_SECRET",
-        "MAIL_JOBS"
+        "MAIL_JOBS",
+        "MAIL_LOG_RETENTION_DAYS"
       ]
     }
   },
@@ -100,6 +109,7 @@
     "@nocobase/app-plugin-authentication": "workspace:^",
     "@nocobase/app-plugin-authorization": "workspace:^",
     "@nocobase/app-server": "workspace:^",
+    "@nocobase/authorization": "workspace:^",
     "@nocobase/db": "workspace:^",
     "@nocobase/i18n": "workspace:^",
     "@nocobase/jobs": "workspace:^",

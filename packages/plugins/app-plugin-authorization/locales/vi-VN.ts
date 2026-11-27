@@ -3,6 +3,15 @@ import type { LocaleResource } from '@nocobase/i18n';
 import type enUS from './en-US.js';
 
 const viVN: LocaleResource<typeof enUS> = {
+  audit: {
+    operations: {
+      createPermissionSet: 'Tạo bộ quyền',
+      assignPermissionSet: 'Gán bộ quyền',
+      unassignPermissionSet: 'Hủy gán bộ quyền',
+      updatePermissionSet: 'Chỉnh sửa bộ quyền',
+      deletePermissionSet: 'Xóa bộ quyền',
+    },
+  },
   sections: {
     pages: 'Quyền của trang',
     page: 'Trang',
@@ -15,7 +24,6 @@ const viVN: LocaleResource<typeof enUS> = {
     actions: {
       assign: 'Quản lý bài tập',
       configure: 'Cấu hình',
-      inspect: 'Kiểm tra quyền',
       read: 'Đọc',
       create: 'Tạo',
       update: 'Cập nhật',
@@ -31,8 +39,8 @@ const viVN: LocaleResource<typeof enUS> = {
         'Cho phép truy cập vào mọi trang, kể cả những trang được thêm sau.',
     },
     settings: {
-      inspector: 'Thanh tra giấy phép',
       'permission-sets': 'Bộ quyền',
+      'authentication-settings': 'Đăng nhập và xác thực',
     },
     subjectTypes: {
       authenticated: 'Tất cả người dùng đã đăng nhập',

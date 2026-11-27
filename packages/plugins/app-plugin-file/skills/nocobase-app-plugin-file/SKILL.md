@@ -5,9 +5,11 @@ description: Add file collections, uploads with server-configured storage direct
 
 # Add files to an App
 
-Use `@nocobase/app-plugin-file/server` and `@nocobase/app-plugin-file/client`. The plugin provides Repository managers, service tokens, and route helpers. The UI Library provides `@nocobase/file-component-ui`. The App or business plugin owns collections, migrations, Drive configuration, resource routes, permissions, and pages.
+Use `@nocobase/app-plugin-file/server` and `@nocobase/app-plugin-file/client`. The plugin provides Repository managers, service tokens, and route helpers. The UI Library provides `@nocobase/file-component-ui`. The App or business plugin owns collections, migrations, Drive configuration, resource routes, permissions, and pages; the plugin's own page is the file storage settings page, where every feature declared with `registerUsage()` is listed.
 
 Inspect the App's existing registrations, migrations, disks, and resources first. Register the Server default export and the Client default factory before consumers, using the App's plugin lifecycle commands. The core does not create collections or routes.
+
+To omit the storage overview and disk check endpoints, register `createFileServerPlugin({ storageManagementRoutes: false })` from `@nocobase/app-plugin-file/server`. File repositories and application-owned attachment routes remain available. The default export enables both management endpoints.
 
 ## Find and reuse the preview UI first
 
@@ -319,3 +321,40 @@ There is no built-in route authentication, row ACL, Range/206, ETag, conditional
 Issue, comment and Agent conversation attachments check `drive.disks.<name>.maxFileSizeMb` (positive integer MiB, default 20) using the shared `assertFileUploadSize` helper before writing bytes. Oversized attachments return 413 `FILE_TOO_LARGE` in domain `file`, with `maxFileSizeMb` metadata. Other File Repository callers retain their own size policies, and public routes retain the 5 MiB single / 20 MiB batch request-body defaults.
 
 The runtime embeds sanitized `drive.uploadLimits` in the page's public configuration, exposing only disk names and numeric limits. The Client provider reads it synchronously, with no startup request. `useFileUploadLimit(disk?)` reads that snapshot, or returns the default 20 MiB when there is no application context or published snapshot. Restart and reload after changing limits; raise reverse proxy request-body limits to allow the multipart envelope.
+
+## File storage settings and file usages
+
+The plugin adds **System settings › System › File storage** at `/settings/file-storage`. It shows the disks the application's `drive` configuration declares (type, a location summary, visibility, max file size, whether it is the default, whether its configuration is complete, and where each setting comes from), the features that store files with how many files each holds, and a check that writes, reads, links and deletes a temporary file under the disk's `nocobase-check/` directory. The page is read-only apart from the check: storage is configured in `drive` and takes effect after redeploying, existing files are never moved, and there is no global file browser. The tab and the open disk live in the query string (`?tab=usages`, `?disk=local`), so an application replaces the whole page with one `routeComponentOverrides` entry for the `fileStorage` route.
+
+Two grants govern it, both granted to roles in the permission workspace: the page `file-storage` (`access`) opens the page and reads the storage, and the settings item `file-storage` (`check`) runs a check. Without the authentication and authorization plugins the routes are not registered.
+
+| Route                               | Grant                                            | Answer                                                                          |
+| ----------------------------------- | ------------------------------------------------ | ------------------------------------------------------------------------------- |
+| `GET /api/file/storage`             | `page:file-storage/access`                       | `{ defaultDisk, canCheck, disks, usages }`                                      |
+| `POST /api/file/disks/{disk}/check` | the page grant and `settings:file-storage/check` | `{ disk, ok, checkedAt, steps: [{ step, status, detail, reason, errorName }] }` |
+
+Responses are built field by field: they never contain credentials, secrets, endpoint user information or an absolute path on the server; a local directory is shown relative to the application directory, and one outside it is only flagged. A failed step reports a fixed `reason` (`CONFIG_INCOMPLETE`, `WRITE_FAILED`, `READ_FAILED`, `CONTENT_MISMATCH`, `URL_FAILED`, `DELETE_FAILED`, `DISK_UNAVAILABLE`) and the error's own name or code, never its message; the raw error goes to the server log. A disk whose configuration is incomplete, such as the template's `s3` disk without a bucket, is not contacted. The latest check of each disk is kept in memory on the instance that ran it and is forgotten on restart; with several instances only the instance that answered is checked.
+
+A plugin or application declares each feature that stores files from a service provider's `boot()`:
+
+```ts
+import { serverFileRepositoryManagerToken } from '@nocobase/app-plugin-file/server';
+
+if (this.app.container.has(serverFileRepositoryManagerToken))
+  this.app.container.resolve(serverFileRepositoryManagerToken).registerUsage({
+    id: 'invoices.files', // unique across the application
+    title: {
+      key: 'fileUsage',
+      ns: '@acme/app-plugin-invoices',
+      defaultValue: 'Invoice files',
+    },
+    plugin: '@acme/app-plugin-invoices',
+    collection: 'invoiceFiles',
+    disk: { default: true }, // or { name: 'archive' }, or { config: 'invoices.disk' }
+    download: 'authenticated', // or 'public'
+  });
+```
+
+`disk` is the disk new files go to: a fixed name, the default disk (`drive.default`), or the disk a configuration key names, falling back to the default disk when the key is empty. It is resolved on every read, so changing `drive.default` and restarting moves the features that follow it. `download` is `authenticated` when files are served only through the plugin's own routes that check permission, and `public` when anyone holding the URL can download them. Every exposure of `defineFileRepositoryApiRoutes()` registers itself, named after the exposure, with its fixed disk and `download: 'public'`. Registering an id again for the same Collection replaces it; an id already registered for another Collection throws. The page counts each feature's records and sums their `size` with one aggregate query per feature, in parallel; a feature whose count fails shows no figures without affecting the others.
+
+`manager.describeUsages()` returns every registered feature with its resolved disk, for checks such as a cluster readiness check looking for features that keep files on a local disk; when it returns none, new files go to `drive.default`.

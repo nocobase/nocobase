@@ -16,6 +16,9 @@ export const USER_PREFERENCE_KEY_PATTERN: RegExp = /^[a-z][a-z0-9._-]{0,99}$/u;
 /** The longest a value may be once written as JSON. */
 export const MAX_USER_PREFERENCE_BYTES = 4096;
 
+/** People per query when reading one key for many, below every dialect's bound-parameter limit. */
+const BATCH_SIZE = 500;
+
 /** At most this many preferences per person. */
 export const MAX_USER_PREFERENCES = 200;
 
@@ -51,6 +54,11 @@ export interface UserPreferencesService {
     key: string,
     connection?: DatabaseConnection,
   ): Promise<UserPreferenceValue | undefined>;
+  /** The value of `key` for each listed person who has one, read in batches. */
+  getForUsers(
+    userIds: readonly string[],
+    key: string,
+  ): Promise<ReadonlyMap<string, UserPreferenceValue>>;
   /** Stores one value, replacing what the key held; inside a caller-owned transaction when a connection is supplied. */
   set(
     userId: string,
@@ -192,6 +200,29 @@ export function createUserPreferencesService(
         .where('key', '=', checkPreferenceKey(key))
         .executeTakeFirst<PreferenceRow>();
       return row ? decode(row.value) : undefined;
+    },
+
+    async getForUsers(userIds, key) {
+      const checked = checkPreferenceKey(key);
+      const found = new Map<string, UserPreferenceValue>();
+      const unique = [...new Set(userIds)];
+      for (let index = 0; index < unique.length; index += BATCH_SIZE) {
+        const rows = await database
+          .connection()
+          .query.selectFrom(TABLE)
+          .select(['userId', 'value'])
+          .where('key', '=', checked)
+          .where('userId', 'in', unique.slice(index, index + BATCH_SIZE))
+          .execute();
+        for (const row of rows as unknown as {
+          readonly userId: string;
+          readonly value: string;
+        }[]) {
+          const value = decode(row.value);
+          if (value !== undefined) found.set(row.userId, value);
+        }
+      }
+      return found;
     },
 
     async set(userId, key, value, connection) {

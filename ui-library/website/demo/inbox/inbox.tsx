@@ -5,11 +5,7 @@ import { useState, type ReactElement } from 'react';
 
 import { DecisionActionsBar } from '#extensions/nocobase-inbox/decision-actions-bar';
 import { InboxPage } from '#extensions/nocobase-inbox/inbox-page';
-import type {
-  InboxCollectionCategory,
-  InboxEntry,
-  InboxNotice,
-} from '#extensions/nocobase-inbox/model';
+import type { InboxEntry, InboxNotice } from '#extensions/nocobase-inbox/model';
 import {
   defaultInboxCategories,
   defineInboxRenderer,
@@ -18,8 +14,7 @@ import {
 } from '#extensions/nocobase-inbox/registry';
 import type { InboxSource } from '#extensions/nocobase-inbox/source';
 
-import { demoItems, demoNotices, demoPlans } from './inbox-data.js';
-import { DemoPlanDetail, DemoPlanGroup } from './inbox-plans.js';
+import { demoItems, demoNotices } from './inbox-data.js';
 
 // What the sample source knows, changed in memory as deployments are decided.
 let notices: InboxNotice[] = [...demoNotices];
@@ -118,30 +113,10 @@ const deploysRenderer = defineInboxRenderer<null>({
   ),
 });
 
-/** Sample plans, a kind whose records live in another API: its detail uses the header every inbox item shares. */
-const demoPlansCategory: InboxCollectionCategory = {
-  type: 'collection',
-  id: 'plans',
-  label: () => 'Plans',
-  param: 'plan',
-  after: 'decision',
-  // eslint-disable-next-line @eslint-react/no-unnecessary-use-prefix -- the category's hook; sample data needs no other hook
-  useCollection: ({ filter, selectedId, onSelect }) => ({
-    count: demoPlans.length,
-    loaded: true,
-    group: <DemoPlanGroup selectedId={selectedId} onSelect={onSelect} />,
-    list:
-      filter.kind === 'plans' ? (
-        <DemoPlanGroup selectedId={selectedId} onSelect={onSelect} />
-      ) : null,
-  }),
-  Detail: DemoPlanDetail,
-};
-
 const demoRegistry: InboxRegistry = {
   renderers: [deploysRenderer],
   feeds: [],
-  categories: [...defaultInboxCategories, demoPlansCategory],
+  categories: defaultInboxCategories,
 };
 
 /**

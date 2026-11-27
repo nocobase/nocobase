@@ -16,9 +16,9 @@ Ask the application agent to upgrade NocoBase using the application-local [templ
 
 Complete the target’s requirements in that same upgrade: reconcile dependencies, copied template and Registry sources, application-owned table/card consumers and translations while preserving business customizations, grants, records and executed migrations. For list feedback, follow the target Skill’s `references/list-feedback-upgrade.md`. Do not finish with only a version bump, dependency update or Skill sync. Missing targets, unresolved business conflicts or failed acceptance stop completion; confirm `defaultTemplateVersion` only after the checks pass. See the target Skill’s `references/versioned-upgrade-verification.md` for package integrity records and verification after publication.
 
-## App foundation
+## Plugins page
 
-Open **App foundation** in the sidebar, or `/foundation` relative to this application's mount path, to inspect its Core capabilities, usage evidence and statistics. Examples registers the Foundation Client, Server and CLI plugins as a deployment dependency, alongside its demonstrations. Its permission-filtered sidebar places Foundation in the existing system management group. The CLI build hook preserves page-to-capability evidence in `dist/server/foundation-modules.json`, so deployments without page source files retain recognized associations such as Articles using data modeling. Rebuild after changing page or API dependencies; refreshing an older deployment cannot recreate missing build evidence. The page and its `/api/foundation/overview` endpoint require unrestricted administrator access, such as the root Permission Set; ordinary users cannot see the menu entry or read the evidence. A mounted application at `/my-examples/` exposes the page at `/my-examples/foundation`.
+Open `/settings/plugins` relative to this application's mount path to see which plugins the application uses, their versions and states, and the commands that enable, update or disable each one. Examples registers `@nocobase/app-plugin-foundation` on Client and Server. The page and its `GET /api/foundation/plugins` endpoint require the «Plugins · View» settings item (`foundation.plugins` / `read`); root has it, and other roles see neither the menu entry nor the data without it. The earlier `/settings/foundation` and `/settings/capabilities` addresses open this page.
 
 ## Create an examples application
 
@@ -43,9 +43,9 @@ Every `/api` route the application writes declares itself for the API document t
 
 Business lists reuse the template's standard `DataTable` and companions from `#components/data-table`. The template declares the compatible TanStack Table v8 dependency and provides controlled server pagination/sorting; application agents should not generate an independent table engine. See the [table guide](.agents/skills/nocobase-app-development/references/frontend/references/table.md).
 
-## OnlineAgent example
+## Agent example
 
-Open **Agents → Models** to configure a service and enable a chat model, then open the header chat button, press Cmd/Ctrl+J or use the homepage Online Agent card. [OnlineAgent usage and verification](online-agent.md) explains model configuration, permissions, saved history and the distinction between the local HTTP fixture and a real model service.
+The Agent panel, its ✦ header button, the conversation page and the System settings › AI pages come from `@nocobase/app-plugin-agents`, registered in `client/plugins.ts`. Open **System settings › AI › Model services** to configure a service and enable a chat model, then open the ✦ header button, press Cmd/Ctrl+J or use the homepage Agent card. The **AI examples** navigation group holds the demonstrations that ask the Agent from a page. [OnlineAgent usage and verification](online-agent.md) explains model configuration, permissions, saved history and the distinction between the local HTTP fixture and a real model service.
 
 ## Customers and contacts example
 
@@ -70,7 +70,7 @@ Keep framework files aligned with Default: the `package.json` scripts that call 
 Configure the application, then start the development server:
 
 ```bash
-pnpm nocobase config init
+pnpm nocobase config init --dialect sqlite
 pnpm nocobase config check
 pnpm dev
 ```
@@ -359,18 +359,20 @@ example, `POST /main/api/crmOrders/findMany` with:
 
 Plugins add features to your application. Let these commands edit `package.json`, `client/plugins.ts`, and `server/plugins.ts` for you rather than editing those files by hand.
 
-| Command                                  | What it does                                                |
-| ---------------------------------------- | ----------------------------------------------------------- |
-| `pnpm nocobase plugin register <name>`   | Install a plugin and wire it into the client and server     |
-| `pnpm nocobase plugin unregister <name>` | Remove a plugin and its wiring                              |
-| `pnpm nocobase plugin update [name]`     | Upgrade one or all registered plugins and re-sync skills    |
-| `pnpm nocobase plugin inspect <name>`    | Report a plugin's registration state; read-only             |
-| `pnpm nocobase package remove <name>`    | Remove a direct NocoBase package and its synchronized Skill |
-| `pnpm nocobase skills sync`              | Sync direct NocoBase package Skills into `.agents/skills/`  |
+Preinstalled plugins belong in devDependencies and provide Skills. Run `pnpm nocobase plugin register <name>` to enable one. Run `plugin unregister <name>` to retain it for development or `plugin remove <name>` to uninstall it together with its synchronized Skills.
+
+| Command                                | What it does                                                |
+| -------------------------------------- | ----------------------------------------------------------- |
+| `pnpm nocobase plugin register <name>` | Install a plugin and wire it into the client and server     |
+| `pnpm nocobase plugin remove <name>`   | Remove a plugin and its wiring                              |
+| `pnpm nocobase plugin update [name]`   | Upgrade one or all registered plugins and re-sync skills    |
+| `pnpm nocobase plugin inspect <name>`  | Report a plugin's registration state; read-only             |
+| `pnpm nocobase package remove <name>`  | Remove a direct NocoBase package and its synchronized Skill |
+| `pnpm nocobase skills sync`            | Sync direct NocoBase package Skills into `.agents/skills/`  |
 
 `pnpm install` automatically runs `pnpm nocobase skills sync` through the application's `postinstall` hook. Run `pnpm nocobase skills sync` manually when install scripts were disabled or Skills need refreshing.
 
-Use a full package name, as with `plugin register` and `plugin unregister`; short names such as `authentication` also work. The optional name is a positional argument, not `--plugin`.
+Use a full package name, as with `plugin register` and `plugin remove`; short names such as `authentication` also work. The optional name is a positional argument, not `--plugin`.
 
 ```bash
 pnpm nocobase plugin update @nocobase/app-plugin-authentication  # Update one registered plugin
@@ -379,7 +381,7 @@ pnpm nocobase plugin update                                     # Update all reg
 pnpm nocobase plugin update @nocobase/app-plugin-authentication --dry-run  # Preview only
 ```
 
-Without a name, the command collects registered plugins from `client/plugins.ts`, `server/plugins.ts`, and `cli/plugins.ts`. It uses the application's package manager; with pnpm, `update` follows the declared version ranges without `--latest`. An unregistered name is rejected, and an application with no registered plugins is left unchanged. After a successful package update, all registered plugins' agent skills are re-synchronized, even when only one package was selected.
+With no arguments, the command updates every plugin registered in `client/plugins.ts`, `server/plugins.ts` or `cli/plugins.ts`. To update a preinstalled plugin in `devDependencies`, pass its name explicitly. The command uses the application's package manager. With pnpm, it follows the declared version ranges. After a successful update, the application synchronizes its agent Skills.
 
 Ordering in `client/plugins.ts` and `server/plugins.ts` is contribution order, and a plugin is enabled by appearing in the array. Reorder entries or pass a plugin its options by hand; leave adding and removing entries to the commands.
 
@@ -393,7 +395,7 @@ pnpm nocobase package remove @nocobase/example --dry-run
 pnpm nocobase package remove @nocobase/example --json
 ```
 
-For an ordinary package, the command uses the application's package manager to remove the dependency and update both `package.json` and the lockfile, then removes only the Skill directories recorded as owned by that package. For an `@nocobase/app-plugin-*` package, it reuses the `plugin unregister` steps so Client, Server, and CLI registrations are removed together with the dependency and its Skills. `pnpm nocobase plugin unregister <name>` remains available when the task is specifically expressed as unregistering a plugin.
+For an ordinary package, the command uses the application's package manager to remove the dependency and update both `package.json` and the lockfile, then removes only the Skill directories recorded as owned by that package. For an `@nocobase/app-plugin-*` package, it reuses the `plugin remove` steps so Client, Server, and CLI registrations are removed together with the dependency and its Skills. Use `pnpm nocobase plugin unregister <name>` to keep the package and its Skills available for development.
 
 After an interrupted or manual removal, make sure the manifest no longer declares the package and run a full `pnpm nocobase skills sync` to reconcile stale package-owned output. Passing a package already absent from the manifest to `package remove` can clean its recorded historical Skill ownership without uninstalling any other package.
 
@@ -583,7 +585,7 @@ Two settings decide where the application is reachable:
 - `APP_BASE_PATH` is the public path the application is mounted at, `/main` by default. The browser API base URL is derived from it as `<APP_BASE_PATH>/api`.
 - `APP_PUBLIC_ORIGIN` is the external origin used to build callback and redirect URLs. Set it in production. It must not repeat the base path — the runtime joins the two.
 
-An environment variable a section declares takes precedence over the file, and the file over the code defaults. `pnpm nocobase config env` lists the variables and whether each is set; `pnpm nocobase config variables` describes each one — what it sets, whether it is a secret, whether a deployment must supply it — and `pnpm build` writes that description to `dist/variables.json`. `DB_*` set the main database connection, `INITIAL_ADMIN_USERNAME`, `INITIAL_ADMIN_EMAIL` and `INITIAL_ADMIN_PASSWORD` the first administrator, and `APP_SAMPLE_DATA=true` loads the sample data when the database is first installed. `${NAME}` in `config.yml` is not expanded.
+An environment variable a section declares takes precedence over the file, and the file over the code defaults. `pnpm nocobase config env` lists the variables and whether each is set; `pnpm nocobase config variables` describes each one — what it sets, whether it is a secret, whether a deployment must supply it — and `pnpm build` writes that description to `dist/variables.json`. `DB_*` set the main database connection, `INITIAL_ADMIN_USERNAME`, `INITIAL_ADMIN_EMAIL` and `INITIAL_ADMIN_PASSWORD` the first administrator, and `APP_SAMPLE_DATA=true` loads sample data that has yet to run, including samples previously skipped. `${NAME}` in `config.yml` is not expanded.
 
 ## Testing
 
@@ -688,9 +690,9 @@ Set `NOCOBASE_STRICT_STARTUP=true` when running `pnpm dev` or `pnpm start` in au
 
 ## Offline Mail example
 
-The Examples application registers Mail and Mail Example on both the client and server. Open **Mail example** (`/mail-example`) after signing in to connect an offline demo mailbox, synchronize sample messages, and simulate delivery. The `demo`, `demo-microsoft`, and `demo-imap-smtp` providers are configured in `server/config/mail.ts` and require no external credentials.
+The Examples application registers Mail and Mail Example (demo providers and seed data only) on both the client and server. The pages come from the Mail plugin: connect an offline demo mailbox in **Personal settings › Messages › Mail accounts** (`/me/mail`), then open **Mail** (`/mail`) to synchronize sample messages, send, and simulate delivery. **System settings › Messages › Mail** (`/settings/mail`) shows the providers and run logs. The `demo`, `demo-microsoft`, and `demo-imap-smtp` providers are configured in `server/config/mail.ts` and require no external credentials.
 
-Mail Example is loaded only by this template. To use real Mail providers in an application created from Default, install and register `@nocobase/app-plugin-mail` and its configuration factory, then configure the desired providers using the plugin's Skill.
+Mail Example is loaded only by this template. Default already registers the Mail plugin and its configuration factory, so an application created from Default only needs to configure real providers (Gmail, Microsoft 365, or IMAP/SMTP) in `server/config/mail.ts` or `config.yml`; see the plugin's Skill.
 
 ## Workflow management
 
@@ -703,8 +705,6 @@ Office distribution workflows share department role membership under `office.org
 The **Execution records** tab lists lifecycle-managed business records across all workflows, with workflow filtering and pagination. Open a record to see its current node, previously visited nodes and the exact traversed edges in different colors. The transition history supports step-by-step replay, including loops and repeated visits, while **Latest progress** restores the full recorded path. History, effect runs and recorded execution parameters are shown beside the diagram on wide screens and stacked on narrow screens. The detail URLs can be opened directly and retain the parent list's filters when closed.
 
 Workflow management requires `read` on the `workflow-management` settings item; category changes require `update`. Root has access. The application seed grants both actions to an existing `system-administrator` permission set without assigning users or overwriting an existing workflow grant. Apply the new plugin migration and application seeds through the normal database upgrade workflow before using the catalog. Initial categories are example business data, not lifecycle engine metadata. Existing business example pages remain accessible under their own policies.
-
-Foundation identifies the Articles database dependency on the proven normal-success API path. The matrix details preserve database availability, authentication, body-size and input-validation conditions with their framework sources; rejected requests are not described as database activity. The Client, Server and CLI registrations remain required, and a production rebuild carries this evidence into the source-free deployment.
 
 ## Internal workspace packages
 
@@ -719,3 +719,7 @@ The [procurement guide](docs/procurement.md) covers scoped references, atomic pa
 Password registration signs in new accounts by default (`auth.emailAndPassword.autoSignIn: true` in `server/config/auth.ts` and `config.example.yml`). An existing email returns an explicit error, exposing whether that email is registered. For enumeration protection, explicitly set `autoSignIn: false` and configure email verification with a sender or `onExistingUserSignUp` to notify the email owner. Existing explicit overrides remain effective; no configuration migration is performed. The authentication plugin warns at startup about registration with auto sign-in disabled and neither verification nor an existing-user notification.
 
 The registration page treats `usePasswordRegistration().isSuccess` as request acceptance only. A refreshed session navigates signed-in users into the application. Visitors who remain signed out see neutral sign-in and recovery guidance, without an account-creation or email-delivery promise. Applications customizing this page must keep that distinction.
+
+## Existing installations of the distributed plugin
+
+If the application still declares `@nocobase/app-plugin-distributed`, remove it with `pnpm nocobase plugin remove @nocobase/app-plugin-distributed` to clean up its registration, dependency and synchronized Skill. The plugin owns no tables; shared backend configuration belongs to the application. To keep the readiness page, first confirm access to the Pro replacement, then register `@nocobase/app-plugin-cluster-readiness` in the same update and change any custom imports or route overrides to use the new package name. The settings URL, status API and existing page grant carry over.

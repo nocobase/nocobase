@@ -3,6 +3,7 @@ import type { LocaleResource } from '@nocobase/i18n';
 import type enUS from './en-US.js';
 
 const esES: LocaleResource<typeof enUS> = {
+  fileUsage: 'Archivos de la base de conocimiento',
   indexing: {
     failedDocumentCount: 'Documentos fallidos: {{count}}',
     enabled: 'Activar indexación',
@@ -225,7 +226,6 @@ const esES: LocaleResource<typeof enUS> = {
       count_other: 'Documentos {{count}}',
       archivedCount_one: 'Documento archivado {{count}}',
       archivedCount_other: '{{count}} documentos archivados',
-      selectTarget: 'Abrir {{title}}',
       target: 'Crear en {{title}}',
       chooseTarget:
         'Elija un proyecto o conocimiento del sistema para crear en',
@@ -337,6 +337,19 @@ const esES: LocaleResource<typeof enUS> = {
       uploaded_other:
         'Archivos {{count}} cargados; se está extrayendo su texto.',
       download: 'Descargar',
+      fullscreen: 'Pantalla completa',
+      close: 'Cerrar',
+      olderVersion: 'Versión {{version}} (versión anterior)',
+      textHint_one:
+        'La búsqueda y las respuestas de la IA usan exactamente este texto · {{count}} línea',
+      textHint_other:
+        'La búsqueda y las respuestas de la IA usan exactamente este texto · {{count}} líneas',
+      textHint_many:
+        'La búsqueda y las respuestas de la IA usan exactamente este texto · {{count}} líneas',
+      copy: 'Copiar',
+      copied: 'Copiado.',
+      copyFailed:
+        'Aquí no se puede copiar automáticamente; seleccione el texto y cópielo usted mismo.',
       version: 'Versión {{version}}',
       statusHint: {
         parsing:
@@ -422,6 +435,7 @@ const esES: LocaleResource<typeof enUS> = {
       contents: 'Contenido',
       edit: 'Editar',
       rename: 'Cambiar nombre',
+      properties: 'Propiedades y resumen',
       history: 'Historia',
       verify: 'Marca verificada',
       verifiedToast: 'Marcado verificado.',

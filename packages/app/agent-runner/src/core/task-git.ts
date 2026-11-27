@@ -46,8 +46,7 @@ export async function cacheGit(
       `core.hooksPath=${path.join(cache, 'hooks')}`,
       '-c',
       'core.fsmonitor=false',
-      '-c',
-      'core.sshCommand=ssh',
+      ...(env.GIT_SSH_COMMAND ? [] : ['-c', 'core.sshCommand=ssh']),
       '-c',
       'credential.helper=',
       ...(helper
@@ -57,7 +56,7 @@ export async function cacheGit(
     ],
     cache,
     { ...env, NOCOBASE_RUNNER_CACHE_HELPER: helper },
-    options,
+    { ...options, displayArgs: options.displayArgs ?? args },
   );
 }
 
@@ -70,6 +69,48 @@ async function regularFile(file: string): Promise<boolean> {
   if (!info.isFile())
     throw new CheckoutError(`${file}: expected a regular Git metadata file`);
   return true;
+}
+
+async function checkCoreWorktree(
+  config: string,
+  context: TaskGitContext,
+  root: string = context.dir,
+): Promise<void> {
+  if (!(await regularFile(config))) return;
+  const worktree = await git(
+    ['config', '--file', config, '--no-includes', '--get', 'core.worktree'],
+    context.cache,
+  ).catch(() => '');
+  if (
+    worktree !== '' &&
+    !isInside(root, path.resolve(path.dirname(config), worktree))
+  )
+    throw new CheckoutError(`${config}: redirected Git worktree (${worktree})`);
+}
+
+/**
+ * Linked worktrees created inside a submodule (`git worktree add`) record `commondir` under
+ * `modules/<submodule>/worktrees/<name>/commondir` pointing back to `modules/<submodule>`.
+ * Allow it only when it is a regular file resolving strictly to that enclosing submodule directory
+ * inside `modules`, so host Git can never be redirected to another repository.
+ */
+async function isOwnSubmoduleWorktreeCommonDir(
+  file: string,
+  modules: string,
+): Promise<boolean> {
+  const worktreeAdmin = path.dirname(file);
+  const worktreesDir = path.dirname(worktreeAdmin);
+  if (path.basename(worktreesDir) !== 'worktrees') return false;
+  const ownerGitDir = path.dirname(worktreesDir);
+  if (ownerGitDir === modules || !isInside(modules, ownerGitDir)) return false;
+  const info = await lstat(file).catch(() => undefined);
+  if (!info?.isFile()) return false;
+  const common = (await readFile(file, 'utf8')).trim();
+  if (common === '') return false;
+  const resolved = path.resolve(worktreeAdmin, common);
+  if (resolved !== ownerGitDir) return false;
+  const realOwner = await realpath(ownerGitDir).catch(() => undefined);
+  return realOwner === ownerGitDir;
 }
 
 /** Locate metadata without consulting agent-controlled Git configuration. */
@@ -120,18 +161,8 @@ async function checkMetadata(
       : [path.join(context.cache, 'config')]),
     path.join(dir, 'config'),
     path.join(dir, 'config.worktree'),
-  ]) {
-    if (!(await regularFile(config))) continue;
-    const worktree = await git(
-      ['config', '--file', config, '--no-includes', '--get', 'core.worktree'],
-      context.cache,
-    ).catch(() => '');
-    if (
-      worktree !== '' &&
-      !isInside(context.dir, path.resolve(path.dirname(config), worktree))
-    )
-      throw new CheckoutError(`${config}: redirected Git worktree`);
-  }
+  ])
+    await checkCoreWorktree(config, context);
   const modules = path.join(dir, 'modules');
   const walk = async (current: string): Promise<void> => {
     const info = await lstat(current).catch((error: NodeJS.ErrnoException) => {
@@ -143,15 +174,22 @@ async function checkMetadata(
       throw new CheckoutError(`${current}: redirected submodule metadata`);
     for (const entry of await readdir(current, { withFileTypes: true })) {
       const file = path.join(current, entry.name);
-      if (entry.name === 'commondir')
-        throw new CheckoutError(`${file}: redirected submodule configuration`);
-      else if (
+      if (entry.name === 'commondir') {
+        if (
+          entry.isSymbolicLink() ||
+          !(await isOwnSubmoduleWorktreeCommonDir(file, modules))
+        )
+          throw new CheckoutError(
+            `${file}: redirected submodule configuration`,
+          );
+      } else if (entry.isSymbolicLink()) {
+        throw new CheckoutError(`${file}: redirected submodule metadata`);
+      } else if (
         !['objects', 'refs', 'logs', 'hooks'].includes(entry.name) &&
         entry.isDirectory()
-      )
+      ) {
         await walk(file);
-      else if (entry.isSymbolicLink())
-        throw new CheckoutError(`${file}: redirected submodule metadata`);
+      }
     }
   };
   await walk(modules);
@@ -184,6 +222,21 @@ async function checkMetadata(
         throw new CheckoutError(
           `${pointer}: redirected submodule Git directory`,
         );
+      if (
+        (await lstat(path.join(target, 'commondir')).catch(() => undefined)) !==
+          undefined ||
+        (await lstat(path.join(target, 'gitdir')).catch(() => undefined)) !==
+          undefined
+      )
+        throw new CheckoutError(
+          `${pointer}: redirected submodule Git directory`,
+        );
+      await checkCoreWorktree(path.join(target, 'config'), context, child);
+      await checkCoreWorktree(
+        path.join(target, 'config.worktree'),
+        context,
+        child,
+      );
       await checkWorktree(child);
     }
   };
@@ -202,7 +255,7 @@ export async function taskGit(
   // The cache is runner-owned. Retain its host helper only when this invocation has no run credential.
   // --get-urlmatch returns only the last matching helper if the host config contains several.
   const trustedHelpers =
-    options.auth === undefined
+    options.auth === undefined && env.GIT_SSH_COMMAND === undefined
       ? await git(
           [
             'config',
@@ -221,7 +274,7 @@ export async function taskGit(
   const settings = [
     `core.hooksPath=${path.join(context.cache, 'hooks')}`,
     'core.fsmonitor=false',
-    'core.sshCommand=ssh',
+    ...(env.GIT_SSH_COMMAND ? [] : ['core.sshCommand=ssh']),
     'credential.helper=',
     // Submodule children have their own origin; do not replace it with the superproject's URL.
     ...(args[0] === 'submodule' ? [] : [`remote.origin.url=${context.url}`]),
@@ -258,7 +311,7 @@ export async function taskGit(
       ...gitAuthEnv(options.auth, context.url),
       ...helperEnv,
     },
-    options,
+    { ...options, displayArgs: options.displayArgs ?? args },
   );
 }
 

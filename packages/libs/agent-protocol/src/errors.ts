@@ -52,6 +52,7 @@ export type ErrorCode =
   | 'SCOPED_KEY_FORBIDDEN'
   | 'RUN_NOT_OWNED'
   | 'COMMAND_FORBIDDEN'
+  | 'SKILL_PROTECTED'
   | 'NOT_FOUND'
   | 'AGENT_NOT_FOUND'
   | 'RUN_NOT_FOUND'
@@ -92,7 +93,6 @@ export type ErrorCode =
   | 'RUNNER_NOT_REVOKED'
   | 'SKILL_VERSION_CURRENT'
   | 'CONVERSATION_CONFLICT'
-  | 'PLAN_REQUIRED'
   | 'FEATURE_REQUIRED'
   | 'PROTOCOL_UNSUPPORTED'
   | 'UPLOAD_TOO_LARGE'
@@ -120,6 +120,8 @@ export const ERROR_API_STATUS: Readonly<Record<ErrorCode, ApiStatus>> = {
   SCOPED_KEY_FORBIDDEN: 'PERMISSION_DENIED',
   RUN_NOT_OWNED: 'PERMISSION_DENIED',
   COMMAND_FORBIDDEN: 'PERMISSION_DENIED',
+  /** The application's skill policy keeps the skill from being edited, deleted or attached there. */
+  SKILL_PROTECTED: 'PERMISSION_DENIED',
   NOT_FOUND: 'NOT_FOUND',
   AGENT_NOT_FOUND: 'NOT_FOUND',
   RUN_NOT_FOUND: 'NOT_FOUND',
@@ -170,11 +172,6 @@ export const ERROR_API_STATUS: Readonly<Record<ErrorCode, ApiStatus>> = {
   SKILL_VERSION_CURRENT: 'FAILED_PRECONDITION',
   /** The conversation's state forbids this; `metadata.reason` says which (`ConversationConflict`). */
   CONVERSATION_CONFLICT: 'FAILED_PRECONDITION',
-  /**
-   * The change needs a person's confirmation: propose it as an operation plan instead of writing it directly.
-   * `metadata.reasons` says why (an agent in a conversation, beyond its direct-write quota).
-   */
-  PLAN_REQUIRED: 'FAILED_PRECONDITION',
   /** The runner lacks a feature the run needs. */
   FEATURE_REQUIRED: 'FAILED_PRECONDITION',
   /** The runner speaks a protocol version the application no longer serves. */
@@ -273,14 +270,11 @@ export const EXIT_CODES = {
   notFound: 4,
   validation: 5,
   conflict: 6,
-  /** `PLAN_REQUIRED`: propose the change as an operation plan instead. */
-  planRequired: 7,
 } as const;
 
 export type ExitCode = (typeof EXIT_CODES)[keyof typeof EXIT_CODES];
 
 const EXIT_BY_REASON: Readonly<Record<string, ExitCode>> = {
-  PLAN_REQUIRED: EXIT_CODES.planRequired,
   FEATURE_REQUIRED: EXIT_CODES.validation,
   PROTOCOL_UNSUPPORTED: EXIT_CODES.auth,
 };

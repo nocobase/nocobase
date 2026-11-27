@@ -14,7 +14,7 @@ import type {
  */
 import type { DatabaseConnection } from '@nocobase/db';
 
-import type { Agent } from '../../../shared/agents.js';
+import type { Agent, ChatAudience } from '../../../shared/agents.js';
 import type { I18nText } from '../../../shared/i18n.js';
 import type {
   ChatAgent,
@@ -392,5 +392,12 @@ export interface ConversationService {
   attachFromRun(runId: string, fileId: string): Promise<void>;
 
   /** The enabled agents the person may chat with, with whether each can answer now. */
-  chatAgents(userId: string): Promise<ChatAgent[]>;
+  /**
+   * The agents `userId` may chat with; `audience` is read only when an agent limits who may chat with it
+   * (`Agent.chatRoles`), and those it leaves out are not listed.
+   */
+  chatAgents(
+    userId: string,
+    audience?: () => Promise<ChatAudience>,
+  ): Promise<ChatAgent[]>;
 }

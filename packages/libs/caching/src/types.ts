@@ -89,8 +89,16 @@ export interface CacheProviderDriverContext {
   name: string;
 }
 
+/**
+ * Whether a backend's state is visible to every instance of the application (`shared`) or only to the process that
+ * holds it (`local`). A driver or adapter that does not declare it is reported as `unknown`.
+ */
+export type BackendSharing = 'local' | 'shared' | 'unknown';
+
 export interface CacheProviderDriver {
   readonly name: string;
+  /** Declared by the driver: `local` keeps entries in this process, `shared` in a store every instance reaches. */
+  readonly sharing?: 'local' | 'shared';
   createProvider(
     config: CacheProviderConfig,
     context: CacheProviderDriverContext,
@@ -123,4 +131,31 @@ export interface MemoryCacheProviderOptions {
   checkInterval?: number;
   /** Clone cached values on read and write. */
   useClone?: boolean;
+}
+
+/** One configured provider, without any of its options. */
+export interface CachingBackendDescription {
+  readonly name: string;
+  readonly adapter: string;
+  readonly sharing: BackendSharing;
+  readonly registered: boolean;
+}
+
+/** A consumer that names a provider other than the default. */
+export interface CachingSelection {
+  readonly consumer: string;
+  readonly backend: string;
+}
+
+/**
+ * What the caching service runs on, read from its configuration and registered drivers. It carries names only, never
+ * a provider's options, which may hold connection addresses and credentials.
+ */
+export interface CachingDescription {
+  readonly default: string;
+  readonly adapter: string;
+  readonly sharing: BackendSharing;
+  readonly registered: boolean;
+  readonly backends: readonly CachingBackendDescription[];
+  readonly selections: readonly CachingSelection[];
 }

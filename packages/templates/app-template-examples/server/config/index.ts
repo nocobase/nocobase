@@ -1,3 +1,4 @@
+import { defineAuditConfig, type AuditConfig } from '@nocobase/audit';
 import mailers from './mailers.js';
 import agents from './agents.js';
 import mail from './mail.js';
@@ -8,6 +9,7 @@ import {
 import auth from './auth.js';
 import authorization from './authorization.js';
 import notification from './notification.js';
+import push from './push.js';
 import secrets from './secrets.js';
 import session from './session.js';
 import server from './server.js';
@@ -17,6 +19,7 @@ import logging from './logging.js';
 import drive from './drive.js';
 import concurrency from './concurrency.js';
 import queue from './queue.js';
+import messageBroker from './message-broker.js';
 import queueExample from './queue-example.js';
 import jobs from './jobs.js';
 import scheduler from './scheduler.js';
@@ -29,7 +32,8 @@ import database from './database.js';
 import snowflake from './snowflake.js';
 import users from './users.js';
 import knowledge from './knowledge.js';
-import foundation from './foundation.js';
+
+const audit = defineAuditConfig();
 
 const defaultConfigs: AppConfigFactory<{
   agents: ReturnType<typeof agents>;
@@ -37,6 +41,7 @@ const defaultConfigs: AppConfigFactory<{
   auth: ReturnType<typeof auth>;
   authorization: ReturnType<typeof authorization>;
   notification: ReturnType<typeof notification>;
+  push: ReturnType<typeof push>;
   secrets: ReturnType<typeof secrets>;
   session: ReturnType<typeof session>;
   server: ReturnType<typeof server>;
@@ -46,6 +51,7 @@ const defaultConfigs: AppConfigFactory<{
   drive: ReturnType<typeof drive>;
   concurrency: ReturnType<typeof concurrency>;
   queue: ReturnType<typeof queue>;
+  messageBroker: ReturnType<typeof messageBroker>;
   queueExample: ReturnType<typeof queueExample>;
   jobs: ReturnType<typeof jobs>;
   scheduler: ReturnType<typeof scheduler>;
@@ -54,11 +60,11 @@ const defaultConfigs: AppConfigFactory<{
   i18n: ReturnType<typeof i18n>;
   app: ReturnType<typeof app>;
   api: ReturnType<typeof api>;
+  audit: AuditConfig;
   database: ReturnType<typeof database>;
   snowflake: ReturnType<typeof snowflake>;
   users: ReturnType<typeof users>;
   knowledge: ReturnType<typeof knowledge>;
-  foundation: ReturnType<typeof foundation>;
   mail: ReturnType<typeof mail>;
 }> = defaultAppConfigs({
   mailers,
@@ -66,6 +72,7 @@ const defaultConfigs: AppConfigFactory<{
   auth,
   authorization,
   notification,
+  push,
   secrets,
   session,
   server,
@@ -75,6 +82,7 @@ const defaultConfigs: AppConfigFactory<{
   drive,
   concurrency,
   queue,
+  messageBroker,
   queueExample,
   jobs,
   scheduler,
@@ -83,11 +91,11 @@ const defaultConfigs: AppConfigFactory<{
   i18n,
   app,
   api,
+  audit,
   database,
   snowflake,
   users,
   knowledge,
-  foundation,
   mail,
 });
 

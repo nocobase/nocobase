@@ -1,3 +1,4 @@
+import type { Path } from 'react-router';
 import {
   createContext,
   useContext,
@@ -13,6 +14,8 @@ import {
  */
 export interface NavigationAttempt {
   readonly action: 'push' | 'replace' | 'pop';
+  /** Destination relative to the application's router basename. */
+  readonly destination?: Partial<Path>;
 }
 
 export type NavigationGuard = (
@@ -38,4 +41,20 @@ export function useNavigationGuard(guard: NavigationGuard): void {
       guards.delete(decide);
     };
   }, [guards]);
+}
+
+export function runNavigationGuards(
+  guards: ReadonlySet<NavigationGuard>,
+  attempt: NavigationAttempt,
+): boolean | Promise<boolean> {
+  const remaining = [...guards];
+  const next = (): boolean | Promise<boolean> => {
+    const guard = remaining.shift();
+    if (!guard) return true;
+    const decision = guard(attempt);
+    return typeof decision === 'boolean'
+      ? decision && next()
+      : decision.then((allowed) => allowed && next());
+  };
+  return next();
 }

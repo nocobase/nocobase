@@ -1,12 +1,7 @@
 export { default } from './plugin.js';
 export {
-  foundationServiceToken,
-  type FoundationOverviewOptions,
-  type FoundationService,
-} from './tokens.js';
-export {
-  DefaultFoundationService,
-  type FoundationServiceOptions,
-} from './services/foundation.js';
-export { systemCollectionOwner } from './catalog.js';
-export type * from '../shared/foundation.js';
+  FoundationPluginCatalog,
+  type FoundationPluginCatalogOptions,
+} from './plugins.js';
+export { PLUGINS_ACCESS } from '../shared/access.js';
+export type * from '../shared/plugins.js';

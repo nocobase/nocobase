@@ -1,148 +1,17 @@
 import {
+  authorizationPages,
+  registeredPluginRoutes,
+} from '../helpers/plugin-routes.js';
+import {
   resolveAppClientContributions,
   type AppClientRegisteredRoute,
   type AppClientRouteComponentLoader,
 } from '@nocobase/app-client/plugins';
 import { describe, expect, it } from 'vitest';
 
-import systemSettingsRoutes from '../../client/pages/settings/routes.js';
-import applicationRoutes, {
-  createApplicationRoutes,
-} from '../../client/routes.ts';
-import { includeNotificationTemplateRoutes } from '../../client/pages/settings/notification-routes.js';
-import { defineAppRoutes } from '@nocobase/app-client/plugins';
+import applicationRoutes from '../../client/routes.ts';
 
 describe('app client routes', () => {
-  it('joins the settings system category across contributions without moving the log URL', () => {
-    const shell = defineAppRoutes([
-      {
-        name: 'settings',
-        path: '/settings',
-        navigation: { title: 'Settings' },
-        children: [
-          {
-            name: 'settingsSystem',
-            navigation: { title: 'System' },
-            children: [],
-          },
-        ],
-      },
-    ]);
-    const logs = defineAppRoutes([
-      {
-        name: 'notificationManagement',
-        parent: 'settingsSystem',
-        navigation: { title: 'Notifications' },
-        children: [
-          {
-            name: 'notificationLogs',
-            path: '/notifications/logs',
-            auth: 'required',
-            authz: {
-              resource: { type: 'page', id: 'notification.logs' },
-              action: 'access',
-            },
-            componentLoader: () =>
-              import('../../client/pages/settings/notification-templates.js'),
-          },
-        ],
-      },
-    ]);
-    const routes = includeNotificationTemplateRoutes([shell, logs], true);
-    const built = resolveAppClientContributions([
-      {
-        packageName: '@nocobase/app-template-default',
-        source: 'application',
-        routes,
-      },
-    ]);
-    expect(pagePaths(built.routes)).toEqual([
-      '/settings/notifications/logs',
-      '/settings/notifications/templates',
-      '/settings/notifications/templates/:templateId',
-    ]);
-    expect(built.routes[0].children[0].children).toHaveLength(1);
-    const created = includeNotificationTemplateRoutes([shell], true);
-    expect(
-      created
-        .flatMap((part) => part.routes)
-        .find((route) => route.name === 'notificationManagement')?.parent,
-    ).toBe('settingsSystem');
-  });
-
-  it('exposes configured invitation templates through the real application route factory', async () => {
-    const built = resolveAppClientContributions([
-      {
-        packageName: '@nocobase/app-template-default',
-        source: 'application',
-        routes: createApplicationRoutes({
-          notificationTemplates: { invitationConfigured: true },
-        }),
-      },
-    ]);
-    expect(pagePaths(built.routes)).toContain(
-      '/settings/notifications/templates',
-    );
-    expect(pageAuthorizations(built.routes)).toContainEqual({
-      name: 'notificationTemplates',
-      authorizedAs: 'notification.templates',
-    });
-    for (const loader of componentLoadersIn(built.routes))
-      await expect(loader()).resolves.toMatchObject({
-        default: expect.any(Function),
-      });
-  });
-
-  it('reuses the notification module and preserves its logs and existing grants', () => {
-    const existing = defineAppRoutes([
-      {
-        name: 'settings',
-        path: '/settings',
-        navigation: { title: 'Settings' },
-        children: [
-          {
-            name: 'notificationManagement',
-            navigation: { title: 'Notifications' },
-            children: [
-              {
-                name: 'notificationLogs',
-                path: '/notification-logs',
-                auth: 'required',
-                authz: {
-                  resource: { type: 'page', id: 'existing.notification.logs' },
-                  action: 'access',
-                },
-                componentLoader: () =>
-                  import('../../client/pages/settings/notification-templates.js'),
-              },
-            ],
-          },
-        ],
-      },
-    ]);
-    const once = includeNotificationTemplateRoutes([existing], false);
-    expect(includeNotificationTemplateRoutes(once, true)).toBe(once);
-    const built = resolveAppClientContributions([
-      {
-        packageName: '@nocobase/app-template-default',
-        source: 'application',
-        routes: once,
-      },
-    ]);
-    expect(pagePaths(built.routes)).toEqual([
-      '/settings/notification-logs',
-      '/settings/notifications/templates',
-      '/settings/notifications/templates/:templateId',
-    ]);
-    expect(pageAuthorizations(built.routes)).toEqual([
-      { name: 'notificationLogs', authorizedAs: 'existing.notification.logs' },
-      { name: 'notificationTemplates', authorizedAs: 'notification.templates' },
-      // A template's own address keeps the list page's grant.
-      { name: 'notificationTemplate', authorizedAs: 'notification.templates' },
-    ]);
-    expect(built.routes[0].children).toHaveLength(1);
-  });
-
   it('keeps the landing page and the authentication pages', () => {
     // The authentication plugin and this application have to agree on these paths: it sends an unknown visitor to
     // /login, sends a signed-in user who opens a guest page back to /, and mails a reset link to /reset-password,
@@ -160,6 +29,16 @@ describe('app client routes', () => {
         '/device',
       ]),
     );
+  });
+
+  it('keeps workflow and process pages in System settings in a fresh application', () => {
+    const processPages = pagePaths(resolveRoutes().routes).filter((path) =>
+      /\/(?:workflows|processes)(?:\/|$)/.test(path),
+    );
+    expect(processPages).toEqual([
+      '/settings/workflows/definitions',
+      '/settings/workflows/executions',
+    ]);
   });
 
   it('loads every page component', async () => {
@@ -185,32 +64,9 @@ describe('app client routes', () => {
     // access is a new grant somebody has to be given.
     const resolved = resolveRoutes();
 
-    // The landing page and the inbox opted out of page authorization, so they are reachable by every signed-in user.
+    // The landing page opted out of page authorization, so they are reachable by every signed-in user.
     expect(pageAuthorizations(resolved.routes)).toEqual([
       { name: 'home', authorizedAs: null },
-      { name: 'inbox', authorizedAs: null },
-      { name: 'settingsHome', authorizedAs: null },
-      { name: 'databaseExplorer', authorizedAs: 'database-explorer' },
-    ]);
-  });
-
-  it('includes database browsing and supports business settings registration', async () => {
-    // The built-in database browser joins the settings home without enabling business administration.
-    expect(
-      pagePaths(resolveRoutes().routes).filter((path) =>
-        path.startsWith('/settings'),
-      ),
-    ).toEqual(['/settings', '/settings/database-explorer']);
-    const built = resolveAppClientContributions([
-      {
-        packageName: '@nocobase/app-template-default',
-        routes: [...applicationRoutes, systemSettingsRoutes],
-        source: 'application',
-      },
-    ]);
-    expect(pageAuthorizations(built.routes)).toEqual([
-      { name: 'home', authorizedAs: null },
-      { name: 'inbox', authorizedAs: null },
       { name: 'settingsHome', authorizedAs: null },
       { name: 'settingsUsers', authorizedAs: 'user:*' },
       { name: 'settingsUserCreate', authorizedAs: 'user:*' },
@@ -236,19 +92,61 @@ describe('app client routes', () => {
         name,
         authorizedAs: 'settings:authorization.default-access',
       })),
+      // Each kind of data rule opens at its own address, guarded by its own read permission.
+      {
+        name: 'settingsSharingRules',
+        authorizedAs: 'settings:authorization.sharing-rules',
+      },
+      {
+        name: 'settingsRestrictionRules',
+        authorizedAs: 'settings:authorization.restriction-rules',
+      },
+      // Reading anyone's permissions is for an unrestricted role only.
+      { name: 'settingsPermissionCheck', authorizedAs: 'unrestricted' },
+      { name: 'workflowDefinitions', authorizedAs: 'unrestricted' },
+      { name: 'workflowExecutions', authorizedAs: 'unrestricted' },
       { name: 'databaseExplorer', authorizedAs: 'database-explorer' },
+      // Personal settings belong to whoever is signed in, so they stay out of page authorization.
+      { name: 'personalSettingsHome', authorizedAs: null },
+      { name: 'personalAppearance', authorizedAs: null },
     ]);
-    for (const loader of componentLoadersIn(built.routes))
+  });
+
+  it('registers Users, Roles and permissions and database browsing in System settings', async () => {
+    expect(
+      pagePaths(resolveRoutes().routes).filter((path) =>
+        path.startsWith('/settings'),
+      ),
+    ).toEqual([
+      '/settings',
+      '/settings/users',
+      '/settings/users/create',
+      '/settings/users/:userId',
+      '/settings/users/:userId/edit',
+      '/settings/roles',
+      '/settings/roles/create',
+      '/settings/roles/:key/edit',
+      '/settings/default-access',
+      '/settings/default-access/create',
+      '/settings/default-access/:key/edit',
+      '/settings/sharing-rules',
+      '/settings/restriction-rules',
+      '/settings/permission-check',
+      '/settings/workflows/definitions',
+      '/settings/workflows/executions',
+      '/settings/database-explorer',
+    ]);
+    for (const loader of componentLoadersIn(resolveRoutes().routes))
       await expect(loader()).resolves.toMatchObject({
         default: expect.any(Function),
       });
   });
 
-  it('keeps the inbox out of the application navigation', () => {
-    // The inbox is reached from the header's inbox button, so it deliberately declares no menu entry.
+  it('leaves the inbox page to the in-app notification plugin', () => {
+    // `@nocobase/app-plugin-notification-in-app/client` registers the route `inbox` and the header button.
     expect(
       applicationRoutes[0].routes.find((route) => route.name === 'inbox'),
-    ).not.toHaveProperty('navigation');
+    ).toBeUndefined();
   });
 });
 
@@ -260,6 +158,8 @@ function resolveRoutes() {
       routes: applicationRoutes,
       source: 'application',
     },
+    registeredPluginRoutes('@nocobase/app-plugin-users'),
+    authorizationPages(),
   ]);
 }
 

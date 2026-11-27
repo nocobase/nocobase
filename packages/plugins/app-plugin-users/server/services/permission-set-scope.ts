@@ -19,7 +19,7 @@ export function createApplicationUserRoleScope(
     permissionSets.protection(key)?.unrestricted === true;
   return {
     key: 'app',
-    label: 'Permission sets',
+    label: 'Roles',
     labelI18nKey: 'page.roles',
     labelI18nNs: USERS_I18N_NAMESPACE,
     selection: 'multiple',

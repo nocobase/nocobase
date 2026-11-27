@@ -107,6 +107,14 @@ const deDE: LocaleResource<typeof enUS> = {
         environments: 'Umgebungen bereitstellen',
       },
     },
+    humanOnly: {
+      deployProtected:
+        'Für die Bereitstellung in einer geschützten Umgebung muss eine Person zustimmen; ein Schlüssel kann sie nur anfordern.',
+      delete:
+        'Das Löschen einer App entfernt ihre Daten; nur eine Person darf das tun.',
+      configure:
+        'Das Konfigurieren einer App ändert ihre Einstellungen und Geheimnisse; nur eine Person darf das tun.',
+    },
     keyScopes: {
       apps: {
         title: 'Apps und Bereitstellungen',
@@ -856,9 +864,9 @@ const deDE: LocaleResource<typeof enUS> = {
       apps: 'Apps',
       appsDescription: 'Die in dieser Umgebung bereitgestellten Apps.',
       appsEmpty: 'Hier sind noch keine Apps bereitgestellt.',
-      sampleData: 'Laden Sie Beispieldaten bei der ersten Bereitstellung',
+      sampleData: 'Beispieldaten bei der Bereitstellung laden',
       sampleDataHint:
-        'Die erste Bereitstellung einer App hier installiert ihre Beispieldaten (APP_SAMPLE_DATA=true). Verwenden Sie es für Vorschauen, nicht für die Produktion.',
+        'Bei jeder Bereitstellung werden noch ausstehende Beispieldaten geladen (APP_SAMPLE_DATA=true). Aktivieren Sie dies für Vorschauumgebungen und lassen Sie es in der Produktion ausgeschaltet.',
       add: 'Umgebung hinzufügen',
       edit: 'Bearbeiten',
       delete: 'Löschen',

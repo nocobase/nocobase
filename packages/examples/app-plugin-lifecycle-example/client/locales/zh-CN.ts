@@ -1,6 +1,32 @@
 import type { LifecycleExampleResource } from './en-US.js';
 
 const zhCN: LifecycleExampleResource = {
+  ticketManagement: {
+    title: '管理员处置',
+    action: '选择处置方式',
+    current: '当前状态',
+    target: '目标状态',
+    reason: '处置原因',
+    submit: '确认处置',
+    suspended: '已挂起',
+    paused: '流程已挂起。管理员恢复或重启前，工单业务操作暂停。',
+    history: '管理历史',
+    audit: '管理员 {{actor}} · {{time}} · 第 {{from}} 轮 → 第 {{to}} 轮',
+    restartNotice:
+      '此操作将开启新一轮，排队中的工作和待续步骤将失效，已发出的通知仍可能送达。',
+    conflict: '工单已变化。请关闭此窗口，核对最新状态后再提交。',
+    commands: {
+      suspend: '挂起',
+      resume: '原地恢复',
+      reset: '重置到新建',
+      restartAt: '从指定状态重新开始',
+    },
+    work: {
+      queued: '排队中的工作将取消',
+      running: '在途工作可能完成',
+      continuation: '待续步骤将失效',
+    },
+  },
   navigation: {
     parameters: '运行时参数',
     group: '工作流',

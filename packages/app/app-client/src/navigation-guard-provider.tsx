@@ -9,6 +9,8 @@ import {
   type ReactNode,
 } from 'react';
 import {
+  parsePath,
+  type To,
   UNSAFE_LocationContext,
   UNSAFE_NavigationContext,
   type Navigator,
@@ -16,6 +18,7 @@ import {
 
 import {
   NavigationGuardContext,
+  runNavigationGuards,
   type NavigationAttempt,
   type NavigationGuard,
 } from './navigation-guard.js';
@@ -71,16 +74,7 @@ export function NavigationGuardProvider({
   const allows = useCallback(
     (attempt: NavigationAttempt): boolean | Promise<boolean> => {
       if (restoringRef.current) return false;
-      const remaining = [...guards];
-      const next = (): boolean | Promise<boolean> => {
-        const guard = remaining.shift();
-        if (!guard) return true;
-        const decision = guard(attempt);
-        return typeof decision === 'boolean'
-          ? decision && next()
-          : decision.then((allowed) => allowed && next());
-      };
-      return next();
+      return runNavigationGuards(guards, attempt);
     },
     [guards],
   );
@@ -107,23 +101,40 @@ export function NavigationGuardProvider({
     },
     [allows],
   );
+  const target = useCallback(
+    (to: To) => {
+      const path = typeof to === 'string' ? parsePath(to) : to;
+      const base = navigation.basename.replace(/\/$/, '');
+      const pathname = path.pathname;
+      if (base && (pathname === base || pathname?.startsWith(base + '/')))
+        return { ...path, pathname: pathname.slice(base.length) || '/' };
+      return path;
+    },
+    [navigation.basename],
+  );
   const guardedNavigator = useMemo<Navigator>(
     () => ({
       ...navigator,
       push: (...args) => {
-        requestNavigation({ action: 'push' }, () => {
-          approvedRef.current = { index: historyIndex(navigator), delta: 1 };
-          navigator.push(...args);
-        });
+        requestNavigation(
+          { action: 'push', destination: target(args[0]) },
+          () => {
+            approvedRef.current = { index: historyIndex(navigator), delta: 1 };
+            navigator.push(...args);
+          },
+        );
       },
       replace: (...args) => {
-        requestNavigation({ action: 'replace' }, () => {
-          approvedRef.current = { index: historyIndex(navigator), delta: 0 };
-          navigator.replace(...args);
-        });
+        requestNavigation(
+          { action: 'replace', destination: target(args[0]) },
+          () => {
+            approvedRef.current = { index: historyIndex(navigator), delta: 0 };
+            navigator.replace(...args);
+          },
+        );
       },
     }),
-    [requestNavigation, navigator],
+    [requestNavigation, navigator, target],
   );
   const scopedNavigation = useMemo(
     () => ({ ...navigation, navigator: guardedNavigator }),
@@ -166,7 +177,7 @@ export function NavigationGuardProvider({
       const allowed =
         wasApproved ||
         (await Promise.resolve()
-          .then(() => allows({ action: 'pop' }))
+          .then(() => allows({ action: 'pop', destination: incoming.location }))
           .catch(() => false));
       if (!active) return;
       if (allowed) {

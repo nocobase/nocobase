@@ -1,11 +1,13 @@
 import type { InboxItem } from '@nocobase/app-plugin-notification-in-app/client/inbox';
 import { createTestI18nRuntime } from '@nocobase/i18n/testing';
 
-import enUS from '../../registry/inbox/inbox/locales/en-US';
+// The block keeps the plugin's translations, so the tests read them from the plugin, a declared dependency.
+import enUS from '../../../packages/plugins/app-plugin-notification-in-app/client/locales/en-US.js';
 import type { InboxNotice } from '../../registry/inbox/inbox/model';
 
 export const runtime = await createTestI18nRuntime({
-  application: { namespace: '@nocobase/test-app', resources: enUS },
+  application: { namespace: '@nocobase/test-app', resources: {} },
+  namespaces: { '@nocobase/app-plugin-notification-in-app': enUS },
 });
 
 export function item(

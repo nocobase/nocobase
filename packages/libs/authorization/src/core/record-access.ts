@@ -16,6 +16,11 @@ export interface RecordAccessDefinition<P = unknown, R = unknown> {
   /** Collection names it applies to; `*` applies to every collection. */
   readonly collections: readonly string[];
   readonly paramsSchema?: unknown;
+  /**
+   * The records are counted from the principal as a person, such as the ones they own: an identity that is no person
+   * gets none from a rule that adds records this way.
+   */
+  readonly personal?: boolean;
   resolve(this: void, context: RecordAccessContext<P>): R | Promise<R>;
 }
 
@@ -49,6 +54,14 @@ export class RecordAccessBuilder<K extends string, P = unknown> {
   description(description: AuthorizationTitle): RecordAccessBuilder<K, P> {
     return new RecordAccessBuilder(
       { ...this.metadata, description },
+      this.resolveFn,
+    );
+  }
+
+  /** Declares the records counted from the principal as a person; see `RecordAccessDefinition.personal`. */
+  personal(): RecordAccessBuilder<K, P> {
+    return new RecordAccessBuilder(
+      { ...this.metadata, personal: true },
       this.resolveFn,
     );
   }

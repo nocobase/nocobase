@@ -107,6 +107,13 @@ const jaJP: LocaleResource<typeof enUS> = {
         environments: '環境の展開',
       },
     },
+    humanOnly: {
+      deployProtected:
+        '保護された環境へのデプロイには人による承認が必要です。キーはリクエストのみ可能です。',
+      delete: 'アプリを削除するとデータも削除されます。人のみが実行できます。',
+      configure:
+        'アプリの設定を変更すると設定とシークレットが変わります。人のみが実行できます。',
+    },
     keyScopes: {
       apps: {
         title: 'アプリと展開',

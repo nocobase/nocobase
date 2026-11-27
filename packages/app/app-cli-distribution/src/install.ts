@@ -221,6 +221,43 @@ trap 'rm -rf "$tmp"' EXIT INT TERM
 @registered@
 field() { sed -n "s/^$1=//p" "$tmp/resolve" | head -n 1; }
 
+# Compare the HTTP origins curl uses, including non-default ports.
+http_origin() {
+  authority="\${1#*://}"
+  authority="\${authority%%[/?#]*}"
+  case "$authority" in ''|*@*) return 1 ;; esac
+  case "$1" in
+    https://*) authority="https://\${authority%:443}" ;;
+    http://*) authority="http://\${authority%:80}" ;;
+    *) return 1 ;;
+  esac
+  printf '%s' "$authority" | LC_ALL=C sed 'y/ABCDEFGHIJKLMNOPQRSTUVWXYZ/abcdefghijklmnopqrstuvwxyz/'
+}
+
+# curl resolves Location (including relative URLs). Check each hop before sending the product credential again.
+get_product() {
+  request_url="$1"
+  output="$2"
+  shift 2
+  redirects=0
+  while :; do
+    response="$(curl --no-location --globoff --proto '=http,https' "$@" -o "$output" -w '%{http_code} %{redirect_url}' -H "$header: $token" -- "$request_url")" ||
+      fail "Could not reach $server."
+    status="\${response%% *}"
+    case "$status" in
+      301|302|303|307|308)
+        request_url="\${response#* }"
+        next_origin="$(http_origin "$request_url")" && [ "$next_origin" = "$server_origin" ] ||
+          fail "HTTP $status: the installer requires a redirect to the same server. Check the gateway for $server."
+        redirects=$((redirects + 1))
+        [ "$redirects" -le 5 ] || fail "Too many redirects from $server."
+        ;;
+      *) printf '%s' "$status"; return ;;
+    esac
+  done
+}
+server_origin="$(http_origin "$server")" || fail "Use an HTTP(S) server URL without credentials."
+
 # A universal package carries no Node: sets node_bin to the node on PATH when it is Node.js 24 or newer, and fails
 # saying how to install one otherwise. require_node <command>.
 require_node() {
@@ -255,10 +292,7 @@ ${npmLauncherScript()}LAUNCHER
   dir="$2"
   mode="$3"
   installed=new
-  status="$(curl -sS -o "$tmp/resolve" -w '%{http_code}' \\
-    -H "$header: $token" \\
-    "$server/api/agents/dist/products/$product/targets/$target?format=env&accept=npm")" ||
-    fail "Could not reach $server."
+  status="$(get_product "$server/api/agents/dist/products/$product/targets/$target?format=env&accept=npm" "$tmp/resolve" -sS)" || exit 1
 @resolveFailure@
   kind="$(field kind)"
   version="$(field version)"
@@ -309,8 +343,11 @@ ${npmLauncherScript()}LAUNCHER
     run mv "$dest.partial" "$dest"
   else
     say "Downloading $product $version for $target from $server ..."
-    run curl -fSL --progress-bar -H "$header: $token" -o "$tmp/$product.tar.gz" "$server$url"
-    if [ "$dry_run" = 0 ]; then
+    if [ "$dry_run" = 1 ]; then
+      say "+ download $server$url"
+    else
+      status="$(get_product "$server$url" "$tmp/$product.tar.gz" --progress-bar --show-error)" || exit 1
+      [ "$status" = 200 ] || fail "Download of $product from $server answered $status."
       actual="$(sha256 "$tmp/$product.tar.gz")"
       [ "$actual" = "$checksum" ] || fail "The download does not match its SHA-256 (expected $checksum, got $actual)."
       say "Checksum verified."

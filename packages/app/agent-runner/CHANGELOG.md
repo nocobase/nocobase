@@ -1,5 +1,71 @@
 # @nocobase/agent-runner
 
+## 0.1.0-beta.34
+
+### Patch Changes
+
+- 8138565: Allow benign linked-worktree metadata inside submodules, validate active submodule `core.worktree` settings, report concise Git errors without internal `-c` flags, and self-heal drifted permissions on owned run temporary directories with detailed diagnostics.
+
+## 0.1.0-beta.33
+
+### Patch Changes
+
+- 44395d2: Support Antigravity CLI on runtimes and list it between Pi and DeepSeek Harness, with Gemini CLI last.
+- acc1f0d: Suggest GPT-6.2 Sol and GPT-6.2 Astra for OpenAI tools and report them in the built-in runner model lists for Codex and OpenCode.
+- Updated dependencies [44395d2]
+- Updated dependencies [acc1f0d]
+  - @nocobase/acp-bridge@1.0.0-beta.8
+  - @nocobase/agent-protocol@0.1.0-beta.23
+  - @nocobase/app-cli-client@0.1.0-beta.26
+
+## 0.1.0-beta.32
+
+### Minor Changes
+
+- 188e419: Support SSH repository checkouts, pushes and build jobs on capable runners with deployment keys and verified host fingerprints.
+
+  Keep existing work and use the new origin when a task switches between HTTPS and SSH. Include classified SSH checkout and push failures in the run result.
+
+### Patch Changes
+
+- 4df584e: Allow fetch over managed Git SSH in read-only runs and reject pushes through the runner's SSH command.
+- 39f8245: Name agents of a model the catalog does not know readably for every tool (`example-provider/qwen3.8-flash` → "OpenCode · Qwen3.8 Flash"), and save a new agent whose name another agent holds with its provider after the name ("OpenCode · Qwen3.8 Flash（opencode）") instead of `#2`; existing agents keep their names. Show every agent's whole model id in the agent list, the edit dialog and conversation details, and its name without the tool, with the whole id on hover, in chips, pickers and the runtime's runs. Show what the coding tool said when a run failed as one line of at most 300 characters, under the runtime's recent runs to people who may read the run's task or conversation; add `failureDetail` to that list and `model`, `shortName` and `modelTitle` to conversation agents. A failed run's message has keys, credentials, labelled and quoted values and long random strings removed when it is stored and again when it is read. OpenCode reports only its own error message as the failure; the stderr tail goes to the runner's log.
+- Updated dependencies [188e419]
+  - @nocobase/agent-protocol@0.1.0-beta.22
+  - @nocobase/app-cli-client@0.1.0-beta.25
+
+## 0.1.0-beta.31
+
+### Patch Changes
+
+- 848e4db: Remove retired Codex quota windows from runtime usage and quota thresholds when a fresh account snapshot arrives.
+- 18636df: Retry private registry authorization failures once with the run's token and cover application creation and template downloads. Deploy the application before upgrading runners to protocol 17.
+- Updated dependencies [848e4db]
+- Updated dependencies [b6d6ca0]
+- Updated dependencies [18636df]
+- Updated dependencies [a1cfe45]
+  - @nocobase/agent-protocol@0.1.0-beta.21
+  - @nocobase/app-cli-client@0.1.0-beta.24
+
+## 0.1.0-beta.30
+
+### Minor Changes
+
+- 761fb01: Collect bounded, sanitized runner diagnostics through heartbeat requests, retain UTC-dated runner journals with configurable cleanup, merge downloaded archives into local timelines, and propagate request IDs to application error toasts.
+
+  Apply one credential-key rule in structured and text logs, hiding numeric credentials while preserving token-count field names.
+
+  Stream runner diagnostics one temporary file at a time with abort cleanup, per-runner export queues, progress and file-consumption callbacks. Intersect up to 500 selected runs with the requested dates, remove selected-run priority and file-count preferences, and provide `logs export` plus local `logs timeline` commands.
+
+### Patch Changes
+
+- 761fb01: Collect main runtime logs before run logs on the same date when exporting diagnostics.
+- Updated dependencies [761fb01]
+- Updated dependencies [761fb01]
+  - @nocobase/app-cli-client@0.1.0-beta.23
+  - @nocobase/logging@0.1.0-beta.8
+  - @nocobase/agent-protocol@0.1.0-beta.20
+
 ## 0.1.0-beta.29
 
 ### Patch Changes

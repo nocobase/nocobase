@@ -557,6 +557,9 @@ importers:
       pnpm:
         specifier: 11.11.0
         version: 11.11.0
+      yaml:
+        specifier: 'catalog:'
+        version: 2.9.0
       zod:
         specifier: 'catalog:'
         version: 4.6.7
@@ -594,6 +597,9 @@ importers:
       '@nocobase/app-server':
         specifier: workspace:^
         version: link:../app-server
+      '@nocobase/backup':
+        specifier: workspace:^
+        version: link:../../libs/backup
       '@nocobase/cli-envelope':
         specifier: workspace:^
         version: link:../../libs/cli-envelope
@@ -918,6 +924,9 @@ importers:
       '@nocobase/app-websocket':
         specifier: workspace:^
         version: link:../app-websocket
+      '@nocobase/backup':
+        specifier: workspace:^
+        version: link:../../libs/backup
       '@nocobase/caching':
         specifier: workspace:^
         version: link:../../libs/caching
@@ -942,6 +951,9 @@ importers:
       '@nocobase/mailer':
         specifier: workspace:^
         version: link:../../libs/mailer
+      '@nocobase/message-broker':
+        specifier: workspace:^
+        version: link:../../libs/message-broker
       '@nocobase/queue':
         specifier: workspace:^
         version: link:../../libs/queue
@@ -1060,6 +1072,9 @@ importers:
       '@nocobase/app-testing':
         specifier: workspace:*
         version: link:../../../../../../tools/app-testing
+      '@nocobase/audit':
+        specifier: workspace:*
+        version: link:../../../../../../libs/audit
       '@nocobase/authorization':
         specifier: workspace:*
         version: link:../../../../../../libs/authorization
@@ -1510,6 +1525,9 @@ importers:
       '@nocobase/app-plugin-authentication':
         specifier: workspace:^
         version: link:../../plugins/app-plugin-authentication
+      '@nocobase/app-plugin-authorization':
+        specifier: workspace:^
+        version: link:../../plugins/app-plugin-authorization
       '@nocobase/app-server':
         specifier: workspace:^
         version: link:../../app/app-server
@@ -1629,6 +1647,52 @@ importers:
       eslint:
         specifier: 'catalog:'
         version: 10.8.1(jiti@2.7.0)
+      prettier:
+        specifier: 'catalog:'
+        version: 3.9.6
+      typescript:
+        specifier: 'catalog:'
+        version: 6.0.3
+      vitest:
+        specifier: 'catalog:'
+        version: 4.1.10(@opentelemetry/api@1.9.0)(@types/node@24.13.3)(@vitest/coverage-v8@4.1.10)(jsdom@30.0.1(@noble/hashes@2.3.0))(vite@6.4.4(@types/node@24.13.3)(jiti@2.7.0)(lightningcss@1.33.0)(sass-embedded@1.103.1)(sass@1.103.1)(tsx@4.23.12)(yaml@2.9.0))
+
+  packages/examples/app-plugin-message-broker-example:
+    dependencies:
+      '@nocobase/app-plugin-message-broker':
+        specifier: workspace:^
+        version: link:../../plugins/app-plugin-message-broker
+      '@nocobase/app-server':
+        specifier: workspace:^
+        version: link:../../app/app-server
+      '@nocobase/db':
+        specifier: workspace:^
+        version: link:../../libs/db
+      '@nocobase/message-broker':
+        specifier: workspace:^
+        version: link:../../libs/message-broker
+      '@nocobase/service-provider':
+        specifier: workspace:^
+        version: link:../../libs/service-provider
+      zod:
+        specifier: 'catalog:'
+        version: 4.6.7
+    devDependencies:
+      '@nocobase/app-testing':
+        specifier: workspace:*
+        version: link:../../tools/app-testing
+      '@nocobase/dev-config':
+        specifier: workspace:*
+        version: link:../../tools/dev-config
+      '@types/node':
+        specifier: 'catalog:'
+        version: 24.13.3
+      eslint:
+        specifier: 'catalog:'
+        version: 10.8.1(jiti@2.7.0)
+      hono:
+        specifier: 'catalog:'
+        version: 4.13.2
       prettier:
         specifier: 'catalog:'
         version: 3.9.6
@@ -2395,6 +2459,49 @@ importers:
         specifier: 'catalog:'
         version: 4.1.10(@opentelemetry/api@1.9.0)(@types/node@24.13.3)(@vitest/coverage-v8@4.1.10)(jsdom@30.0.1(@noble/hashes@2.3.0))(vite@6.4.4(@types/node@24.13.3)(jiti@2.7.0)(lightningcss@1.33.0)(sass-embedded@1.103.1)(sass@1.103.1)(tsx@4.23.12)(yaml@2.9.0))
 
+  packages/libs/audit:
+    dependencies:
+      '@nocobase/app-server':
+        specifier: workspace:^
+        version: link:../../app/app-server
+      '@nocobase/i18n':
+        specifier: workspace:^
+        version: link:../i18n
+      '@nocobase/secrets':
+        specifier: workspace:^
+        version: link:../secrets
+      '@nocobase/service-provider':
+        specifier: workspace:^
+        version: link:../service-provider
+      hono:
+        specifier: 'catalog:'
+        version: 4.13.2
+    devDependencies:
+      '@nocobase/db':
+        specifier: workspace:^
+        version: link:../db
+      '@nocobase/db-testing':
+        specifier: workspace:^
+        version: link:../db-testing
+      '@nocobase/dev-config':
+        specifier: workspace:*
+        version: link:../../tools/dev-config
+      '@types/node':
+        specifier: 'catalog:'
+        version: 24.13.3
+      eslint:
+        specifier: 'catalog:'
+        version: 10.8.1(jiti@2.7.0)
+      prettier:
+        specifier: 'catalog:'
+        version: 3.9.6
+      typescript:
+        specifier: 'catalog:'
+        version: 6.0.3
+      vitest:
+        specifier: 'catalog:'
+        version: 4.1.10(@opentelemetry/api@1.9.0)(@types/node@24.13.3)(@vitest/coverage-v8@4.1.10)(jsdom@30.0.1(@noble/hashes@2.3.0))(vite@6.4.4(@types/node@24.13.3)(jiti@2.7.0)(lightningcss@1.33.0)(sass-embedded@1.103.1)(sass@1.103.1)(tsx@4.23.12)(yaml@2.9.0))
+
   packages/libs/authorization:
     dependencies:
       '@nocobase/db':
@@ -2410,6 +2517,49 @@ importers:
       '@types/node':
         specifier: 'catalog:'
         version: 24.13.3
+      eslint:
+        specifier: 'catalog:'
+        version: 10.8.1(jiti@2.7.0)
+      prettier:
+        specifier: 'catalog:'
+        version: 3.9.6
+      typescript:
+        specifier: 'catalog:'
+        version: 6.0.3
+      vitest:
+        specifier: 'catalog:'
+        version: 4.1.10(@opentelemetry/api@1.9.0)(@types/node@24.13.3)(@vitest/coverage-v8@4.1.10)(jsdom@30.0.1(@noble/hashes@2.3.0))(vite@6.4.4(@types/node@24.13.3)(jiti@2.7.0)(lightningcss@1.33.0)(sass-embedded@1.103.1)(sass@1.103.1)(tsx@4.23.12)(yaml@2.9.0))
+
+  packages/libs/backup:
+    dependencies:
+      better-sqlite3:
+        specifier: 'catalog:'
+        version: 13.0.3
+      mysql2:
+        specifier: ^3.23.3
+        version: 3.23.3(@types/node@24.13.3)
+      pg:
+        specifier: ^8.23.0
+        version: 8.23.0
+      tar:
+        specifier: 'catalog:'
+        version: 7.5.22
+      zod:
+        specifier: 'catalog:'
+        version: 4.6.7
+    devDependencies:
+      '@nocobase/dev-config':
+        specifier: workspace:*
+        version: link:../../tools/dev-config
+      '@types/better-sqlite3':
+        specifier: ^7.6.13
+        version: 7.6.13
+      '@types/node':
+        specifier: 'catalog:'
+        version: 24.13.3
+      '@types/pg':
+        specifier: ^8.20.0
+        version: 8.23.1
       eslint:
         specifier: 'catalog:'
         version: 10.8.1(jiti@2.7.0)
@@ -2853,6 +3003,9 @@ importers:
       ali-oss:
         specifier: ^6.23.0
         version: 6.23.0(supports-color@8.1.1)
+      better-sqlite3:
+        specifier: 'catalog:'
+        version: 13.0.3
       flydrive:
         specifier: ^2.1.0
         version: 2.1.0(@aws-sdk/client-s3@3.1111.0)(@aws-sdk/s3-request-presigner@3.1111.0)
@@ -2863,6 +3016,9 @@ importers:
       '@types/ali-oss':
         specifier: ^6.23.3
         version: 6.23.3
+      '@types/better-sqlite3':
+        specifier: ^7.6.13
+        version: 7.6.13
       '@types/node':
         specifier: 'catalog:'
         version: 24.13.3
@@ -3106,6 +3262,27 @@ importers:
       react-markdown:
         specifier: 'catalog:'
         version: 10.1.0(@types/react@19.2.18)(react@19.2.8)
+      typescript:
+        specifier: 'catalog:'
+        version: 6.0.3
+      vitest:
+        specifier: 'catalog:'
+        version: 4.1.10(@opentelemetry/api@1.9.0)(@types/node@24.13.3)(@vitest/coverage-v8@4.1.10)(jsdom@30.0.1(@noble/hashes@2.3.0))(vite@6.4.4(@types/node@24.13.3)(jiti@2.7.0)(lightningcss@1.33.0)(sass-embedded@1.103.1)(sass@1.103.1)(tsx@4.23.12)(yaml@2.9.0))
+
+  packages/libs/message-broker:
+    devDependencies:
+      '@nocobase/dev-config':
+        specifier: workspace:*
+        version: link:../../tools/dev-config
+      '@types/node':
+        specifier: 'catalog:'
+        version: 24.13.3
+      eslint:
+        specifier: 'catalog:'
+        version: 10.8.1(jiti@2.7.0)
+      prettier:
+        specifier: 'catalog:'
+        version: 3.9.6
       typescript:
         specifier: 'catalog:'
         version: 6.0.3
@@ -3507,6 +3684,9 @@ importers:
       react-day-picker:
         specifier: 'catalog:'
         version: 10.0.1(@types/react@19.2.18)(react@19.2.8)
+      react-dom:
+        specifier: 'catalog:'
+        version: 19.2.8(react@19.2.8)
       react-markdown:
         specifier: 'catalog:'
         version: 10.1.0(@types/react@19.2.18)(react@19.2.8)
@@ -3568,6 +3748,9 @@ importers:
       '@types/react':
         specifier: 'catalog:'
         version: 19.2.18
+      '@types/react-dom':
+        specifier: 'catalog:'
+        version: 19.2.4(@types/react@19.2.18)
       esbuild:
         specifier: 'catalog:'
         version: 0.28.2
@@ -3589,9 +3772,6 @@ importers:
       prettier:
         specifier: 'catalog:'
         version: 3.9.6
-      react-dom:
-        specifier: 'catalog:'
-        version: 19.2.8(react@19.2.8)
       typescript:
         specifier: 'catalog:'
         version: 6.0.3
@@ -3601,6 +3781,9 @@ importers:
 
   packages/plugins/app-plugin-api-keys:
     dependencies:
+      '@base-ui/react':
+        specifier: 'catalog:'
+        version: 1.7.0(@date-fns/tz@1.5.0)(@types/react@19.2.18)(date-fns@4.4.0)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
       '@better-auth/api-key':
         specifier: 'catalog:'
         version: 1.7.21(@better-auth/core@1.7.21(@better-auth/utils@0.5.1)(@better-fetch/fetch@1.3.3)(@opentelemetry/api@1.9.0)(better-call@1.4.5(zod@4.6.7))(jose@6.2.9)(kysely@0.29.5)(nanostores@1.5.1))(@better-auth/utils@0.5.1)(better-auth@1.7.21(@opentelemetry/api@1.9.0)(mysql2@3.23.3(@types/node@24.13.3))(pg@8.23.0)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(vitest@4.1.10))(better-call@1.4.5(zod@4.6.7))
@@ -3619,15 +3802,27 @@ importers:
       '@nocobase/app-plugin-authorization':
         specifier: workspace:^
         version: link:../app-plugin-authorization
+      '@nocobase/app-plugin-notification':
+        specifier: workspace:^
+        version: link:../app-plugin-notification
+      '@nocobase/app-plugin-scheduler':
+        specifier: workspace:^
+        version: link:../app-plugin-scheduler
       '@nocobase/app-server':
         specifier: workspace:^
         version: link:../../app/app-server
+      '@nocobase/audit':
+        specifier: workspace:^
+        version: link:../../libs/audit
       '@nocobase/authorization':
         specifier: workspace:^
         version: link:../../libs/authorization
       '@nocobase/db':
         specifier: workspace:^
         version: link:../../libs/db
+      '@nocobase/i18n':
+        specifier: workspace:^
+        version: link:../../libs/i18n
       '@nocobase/service-provider':
         specifier: workspace:^
         version: link:../../libs/service-provider
@@ -3637,9 +3832,24 @@ importers:
       better-call:
         specifier: 1.4.5
         version: 1.4.5(zod@4.6.7)
+      class-variance-authority:
+        specifier: 'catalog:'
+        version: 0.7.1
+      cn:
+        specifier: 'catalog:'
+        version: 0.4.0
       hono:
         specifier: 'catalog:'
         version: 4.13.2
+      lucide-react:
+        specifier: 'catalog:'
+        version: 0.487.0(react@19.2.8)
+      react:
+        specifier: ^19.0.0
+        version: 19.2.8
+      react-router:
+        specifier: 'catalog:'
+        version: 7.18.3(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
       zod:
         specifier: 'catalog:'
         version: 4.6.7
@@ -3650,15 +3860,48 @@ importers:
       '@nocobase/dev-config':
         specifier: workspace:*
         version: link:../../tools/dev-config
+      '@testing-library/jest-dom':
+        specifier: 'catalog:'
+        version: 7.0.1(@testing-library/dom@10.4.1)(vitest@4.1.10)
+      '@testing-library/react':
+        specifier: 'catalog:'
+        version: 16.3.2(@testing-library/dom@10.4.1)(@types/react-dom@19.2.4(@types/react@19.2.18))(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
+      '@testing-library/user-event':
+        specifier: 'catalog:'
+        version: 14.6.4(@testing-library/dom@10.4.1)
       '@types/node':
         specifier: 'catalog:'
         version: 24.13.3
+      '@types/react':
+        specifier: 'catalog:'
+        version: 19.2.18
+      '@types/react-dom':
+        specifier: 'catalog:'
+        version: 19.2.4(@types/react@19.2.18)
+      '@vitejs/plugin-react':
+        specifier: 'catalog:'
+        version: 4.7.0(vite@6.4.4(@types/node@24.13.3)(jiti@2.7.0)(lightningcss@1.33.0)(sass-embedded@1.103.1)(sass@1.103.1)(tsx@4.23.12)(yaml@2.9.0))
       eslint:
         specifier: 'catalog:'
         version: 10.8.1(jiti@2.7.0)
+      jsdom:
+        specifier: 'catalog:'
+        version: 30.0.1(@noble/hashes@2.3.0)
       prettier:
         specifier: 'catalog:'
         version: 3.9.6
+      react-dom:
+        specifier: 'catalog:'
+        version: 19.2.8(react@19.2.8)
+      shadcn:
+        specifier: 'catalog:'
+        version: 4.18.0(@cfworker/json-schema@4.1.1)(typescript@6.0.3)
+      tailwindcss:
+        specifier: 'catalog:'
+        version: 4.3.3
+      tw-animate-css:
+        specifier: 'catalog:'
+        version: 1.4.0
       typescript:
         specifier: 'catalog:'
         version: 6.0.3
@@ -3668,6 +3911,12 @@ importers:
 
   packages/plugins/app-plugin-authentication:
     dependencies:
+      '@base-ui/react':
+        specifier: 'catalog:'
+        version: 1.7.0(@date-fns/tz@1.5.0)(@types/react@19.2.18)(date-fns@4.4.0)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
+      '@nocobase/audit':
+        specifier: workspace:^
+        version: link:../../libs/audit
       '@nocobase/caching':
         specifier: workspace:^
         version: link:../../libs/caching
@@ -3686,19 +3935,25 @@ importers:
       better-auth:
         specifier: 'catalog:'
         version: 1.7.21(@opentelemetry/api@1.9.0)(mysql2@3.23.3(@types/node@24.13.3))(pg@8.23.0)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(vitest@4.1.10)
+      class-variance-authority:
+        specifier: 'catalog:'
+        version: 0.7.1
+      cn:
+        specifier: 'catalog:'
+        version: 0.4.0
       hono:
         specifier: 'catalog:'
         version: 4.13.2
       knex:
         specifier: 'catalog:'
         version: 3.3.0(mysql2@3.23.3(@types/node@24.13.3))(pg-query-stream@4.17.0(pg@8.23.0))(pg@8.23.0)
+      lucide-react:
+        specifier: 'catalog:'
+        version: 0.487.0(react@19.2.8)
       zod:
         specifier: 'catalog:'
         version: 4.6.7
     devDependencies:
-      '@base-ui/react':
-        specifier: ^1.6.0
-        version: 1.7.0(@date-fns/tz@1.5.0)(@types/react@19.2.18)(date-fns@4.4.0)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
       '@nocobase/app-client':
         specifier: workspace:*
         version: link:../../app/app-client
@@ -3732,9 +3987,6 @@ importers:
       '@types/react-dom':
         specifier: 'catalog:'
         version: 19.2.4(@types/react@19.2.18)
-      class-variance-authority:
-        specifier: ^0.7.1
-        version: 0.7.1
       eslint:
         specifier: 'catalog:'
         version: 10.8.1(jiti@2.7.0)
@@ -3771,6 +4023,9 @@ importers:
 
   packages/plugins/app-plugin-authorization:
     dependencies:
+      '@base-ui/react':
+        specifier: 'catalog:'
+        version: 1.7.0(@date-fns/tz@1.5.0)(@types/react@19.2.18)(date-fns@4.4.0)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
       '@nocobase/app-client':
         specifier: workspace:^
         version: link:../../app/app-client
@@ -3780,6 +4035,9 @@ importers:
       '@nocobase/app-server':
         specifier: workspace:^
         version: link:../../app/app-server
+      '@nocobase/audit':
+        specifier: workspace:^
+        version: link:../../libs/audit
       '@nocobase/authorization':
         specifier: workspace:^
         version: link:../../libs/authorization
@@ -3792,12 +4050,27 @@ importers:
       '@nocobase/service-provider':
         specifier: workspace:^
         version: link:../../libs/service-provider
+      '@tanstack/react-table':
+        specifier: 'catalog:'
+        version: 8.21.3(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
+      class-variance-authority:
+        specifier: 'catalog:'
+        version: 0.7.1
+      cn:
+        specifier: 'catalog:'
+        version: 0.4.0
       hono:
         specifier: 'catalog:'
         version: 4.13.2
+      lucide-react:
+        specifier: 'catalog:'
+        version: 0.487.0(react@19.2.8)
       react:
         specifier: ^19.0.0
         version: 19.2.8
+      react-router:
+        specifier: 'catalog:'
+        version: 7.18.3(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
       zod:
         specifier: 'catalog:'
         version: 4.6.7
@@ -3817,6 +4090,9 @@ importers:
       '@testing-library/react':
         specifier: 'catalog:'
         version: 16.3.2(@testing-library/dom@10.4.1)(@types/react-dom@19.2.4(@types/react@19.2.18))(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
+      '@testing-library/user-event':
+        specifier: 'catalog:'
+        version: 14.6.4(@testing-library/dom@10.4.1)
       '@types/node':
         specifier: 'catalog:'
         version: 24.13.3
@@ -3826,6 +4102,9 @@ importers:
       '@types/react-dom':
         specifier: 'catalog:'
         version: 19.2.4(@types/react@19.2.18)
+      '@vitejs/plugin-react':
+        specifier: 'catalog:'
+        version: 4.7.0(vite@6.4.4(@types/node@24.13.3)(jiti@2.7.0)(lightningcss@1.33.0)(sass-embedded@1.103.1)(sass@1.103.1)(tsx@4.23.12)(yaml@2.9.0))
       better-sqlite3:
         specifier: 'catalog:'
         version: 13.0.3
@@ -3844,6 +4123,15 @@ importers:
       react-dom:
         specifier: 'catalog:'
         version: 19.2.8(react@19.2.8)
+      shadcn:
+        specifier: 'catalog:'
+        version: 4.18.0(@cfworker/json-schema@4.1.1)(typescript@6.0.3)
+      tailwindcss:
+        specifier: 'catalog:'
+        version: 4.3.3
+      tw-animate-css:
+        specifier: 'catalog:'
+        version: 1.4.0
       typescript:
         specifier: 'catalog:'
         version: 6.0.3
@@ -3865,6 +4153,9 @@ importers:
       '@nocobase/app-server':
         specifier: workspace:^
         version: link:../../app/app-server
+      '@nocobase/audit':
+        specifier: workspace:^
+        version: link:../../libs/audit
       '@nocobase/authorization':
         specifier: workspace:^
         version: link:../../libs/authorization
@@ -3929,6 +4220,9 @@ importers:
       '@nocobase/app-server':
         specifier: workspace:^
         version: link:../../app/app-server
+      '@nocobase/audit':
+        specifier: workspace:^
+        version: link:../../libs/audit
       '@nocobase/authorization':
         specifier: workspace:^
         version: link:../../libs/authorization
@@ -3993,6 +4287,9 @@ importers:
       '@nocobase/app-server':
         specifier: workspace:^
         version: link:../../app/app-server
+      '@nocobase/audit':
+        specifier: workspace:^
+        version: link:../../libs/audit
       '@nocobase/authorization':
         specifier: workspace:^
         version: link:../../libs/authorization
@@ -4244,17 +4541,14 @@ importers:
         specifier: 'catalog:'
         version: 2.9.0
 
-  packages/plugins/app-plugin-distributed:
-    devDependencies:
-      '@nocobase/dev-config':
-        specifier: workspace:*
-        version: link:../../tools/dev-config
-      prettier:
-        specifier: 'catalog:'
-        version: 3.9.6
-
   packages/plugins/app-plugin-file:
     dependencies:
+      '@nocobase/app-plugin-authentication':
+        specifier: workspace:^
+        version: link:../app-plugin-authentication
+      '@nocobase/app-plugin-authorization':
+        specifier: workspace:^
+        version: link:../app-plugin-authorization
       '@nocobase/drive':
         specifier: workspace:^
         version: link:../../libs/drive
@@ -4264,9 +4558,18 @@ importers:
       hono:
         specifier: 'catalog:'
         version: 4.13.2
+      lucide-react:
+        specifier: 'catalog:'
+        version: 0.487.0(react@19.2.8)
       react:
         specifier: 'catalog:'
         version: 19.2.8
+      react-router:
+        specifier: 'catalog:'
+        version: 7.18.3(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
+      zod:
+        specifier: 'catalog:'
+        version: 4.6.7
     devDependencies:
       '@nocobase/api-client':
         specifier: workspace:*
@@ -4316,9 +4619,6 @@ importers:
       jsdom:
         specifier: 'catalog:'
         version: 30.0.1(@noble/hashes@2.3.0)
-      lucide-react:
-        specifier: 'catalog:'
-        version: 0.487.0(react@19.2.8)
       prettier:
         specifier: 'catalog:'
         version: 3.9.6
@@ -4343,9 +4643,6 @@ importers:
       '@base-ui/react':
         specifier: 'catalog:'
         version: 1.7.0(@date-fns/tz@1.5.0)(@types/react@19.2.18)(date-fns@4.4.0)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
-      '@nocobase/app-cli':
-        specifier: workspace:^
-        version: link:../../app/app-cli
       '@nocobase/app-client':
         specifier: workspace:^
         version: link:../../app/app-client
@@ -4364,9 +4661,6 @@ importers:
       '@nocobase/i18n':
         specifier: workspace:^
         version: link:../../libs/i18n
-      '@nocobase/jobs':
-        specifier: workspace:^
-        version: link:../../libs/jobs
       '@nocobase/service-provider':
         specifier: workspace:^
         version: link:../../libs/service-provider
@@ -4391,37 +4685,10 @@ importers:
       react-router:
         specifier: 'catalog:'
         version: 7.18.3(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
-      typescript:
-        specifier: 'catalog:'
-        version: 6.0.3
       zod:
         specifier: 'catalog:'
         version: 4.6.7
     devDependencies:
-      '@nocobase/app-plugin-api-keys':
-        specifier: workspace:*
-        version: link:../app-plugin-api-keys
-      '@nocobase/app-plugin-database-explorer':
-        specifier: workspace:*
-        version: link:../app-plugin-database-explorer
-      '@nocobase/app-plugin-file':
-        specifier: workspace:*
-        version: link:../app-plugin-file
-      '@nocobase/app-plugin-i18n':
-        specifier: workspace:*
-        version: link:../app-plugin-i18n
-      '@nocobase/app-plugin-mail':
-        specifier: workspace:*
-        version: link:../app-plugin-mail
-      '@nocobase/app-plugin-notification':
-        specifier: workspace:*
-        version: link:../app-plugin-notification
-      '@nocobase/app-plugin-notification-in-app':
-        specifier: workspace:*
-        version: link:../app-plugin-notification-in-app
-      '@nocobase/app-plugin-scheduler':
-        specifier: workspace:*
-        version: link:../app-plugin-scheduler
       '@nocobase/app-testing':
         specifier: workspace:*
         version: link:../../tools/app-testing
@@ -4685,6 +4952,9 @@ importers:
       '@nocobase/app-server':
         specifier: workspace:^
         version: link:../../app/app-server
+      '@nocobase/authorization':
+        specifier: workspace:^
+        version: link:../../libs/authorization
       '@nocobase/db':
         specifier: workspace:^
         version: link:../../libs/db
@@ -4798,6 +5068,46 @@ importers:
         specifier: 'catalog:'
         version: 4.1.10(@opentelemetry/api@1.9.0)(@types/node@24.13.3)(@vitest/coverage-v8@4.1.10)(jsdom@30.0.1(@noble/hashes@2.3.0))(vite@6.4.4(@types/node@24.13.3)(jiti@2.7.0)(lightningcss@1.33.0)(sass-embedded@1.103.1)(sass@1.103.1)(tsx@4.23.12)(yaml@2.9.0))
 
+  packages/plugins/app-plugin-message-broker:
+    dependencies:
+      '@nocobase/app-plugin-concurrency':
+        specifier: workspace:^
+        version: link:../app-plugin-concurrency
+      '@nocobase/app-server':
+        specifier: workspace:^
+        version: link:../../app/app-server
+      '@nocobase/db':
+        specifier: workspace:^
+        version: link:../../libs/db
+      '@nocobase/message-broker':
+        specifier: workspace:^
+        version: link:../../libs/message-broker
+      '@nocobase/service-provider':
+        specifier: workspace:^
+        version: link:../../libs/service-provider
+    devDependencies:
+      '@nocobase/app-testing':
+        specifier: workspace:*
+        version: link:../../tools/app-testing
+      '@nocobase/dev-config':
+        specifier: workspace:*
+        version: link:../../tools/dev-config
+      '@types/node':
+        specifier: 'catalog:'
+        version: 24.13.3
+      eslint:
+        specifier: 'catalog:'
+        version: 10.8.1(jiti@2.7.0)
+      prettier:
+        specifier: 'catalog:'
+        version: 3.9.6
+      typescript:
+        specifier: 'catalog:'
+        version: 6.0.3
+      vitest:
+        specifier: 'catalog:'
+        version: 4.1.10(@opentelemetry/api@1.9.0)(@types/node@24.13.3)(@vitest/coverage-v8@4.1.10)(jsdom@30.0.1(@noble/hashes@2.3.0))(vite@6.4.4(@types/node@24.13.3)(jiti@2.7.0)(lightningcss@1.33.0)(sass-embedded@1.103.1)(sass@1.103.1)(tsx@4.23.12)(yaml@2.9.0))
+
   packages/plugins/app-plugin-notification:
     dependencies:
       '@base-ui/react':
@@ -4882,6 +5192,9 @@ importers:
       prettier:
         specifier: 'catalog:'
         version: 3.9.6
+      react-router:
+        specifier: 'catalog:'
+        version: 7.18.3(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
       shadcn:
         specifier: 'catalog:'
         version: 4.18.0(@cfworker/json-schema@4.1.1)(typescript@6.0.3)
@@ -5006,6 +5319,9 @@ importers:
 
   packages/plugins/app-plugin-notification-providers:
     dependencies:
+      '@nocobase/app-plugin-authentication':
+        specifier: workspace:^
+        version: link:../app-plugin-authentication
       '@nocobase/app-plugin-notification':
         specifier: workspace:^
         version: link:../app-plugin-notification
@@ -5022,9 +5338,21 @@ importers:
         specifier: workspace:^
         version: link:../../libs/service-provider
     devDependencies:
+      '@nocobase/app-testing':
+        specifier: workspace:*
+        version: link:../../tools/app-testing
+      '@nocobase/db':
+        specifier: workspace:*
+        version: link:../../libs/db
       '@nocobase/dev-config':
         specifier: workspace:*
         version: link:../../tools/dev-config
+      '@nocobase/jobs':
+        specifier: workspace:*
+        version: link:../../libs/jobs
+      '@nocobase/logging':
+        specifier: workspace:*
+        version: link:../../libs/logging
       '@types/node':
         specifier: 'catalog:'
         version: 24.13.3
@@ -5266,9 +5594,6 @@ importers:
       lucide-react:
         specifier: 'catalog:'
         version: 0.487.0(react@19.2.8)
-      officeparser:
-        specifier: ^6.0.4
-        version: 6.1.1(encoding@0.1.13)(supports-color@8.1.1)
       react:
         specifier: ^19.0.0
         version: 19.2.8
@@ -5497,6 +5822,9 @@ importers:
         specifier: 'catalog:'
         version: 4.6.7
     devDependencies:
+      '@base-ui/react':
+        specifier: 'catalog:'
+        version: 1.7.0(@date-fns/tz@1.5.0)(@types/react@19.2.18)(date-fns@4.4.0)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
       '@nocobase/app-client':
         specifier: workspace:*
         version: link:../../app/app-client
@@ -5530,15 +5858,33 @@ importers:
       '@types/react':
         specifier: 'catalog:'
         version: 19.2.18
+      class-variance-authority:
+        specifier: 'catalog:'
+        version: 0.7.1
+      cn:
+        specifier: 'catalog:'
+        version: 0.4.0
       eslint:
         specifier: 'catalog:'
         version: 10.8.1(jiti@2.7.0)
       jsdom:
         specifier: 'catalog:'
         version: 30.0.1(@noble/hashes@2.3.0)
+      lucide-react:
+        specifier: 'catalog:'
+        version: 0.487.0(react@19.2.8)
       prettier:
         specifier: 'catalog:'
         version: 3.9.6
+      react:
+        specifier: 'catalog:'
+        version: 19.2.8
+      react-dom:
+        specifier: 'catalog:'
+        version: 19.2.8(react@19.2.8)
+      react-router:
+        specifier: 'catalog:'
+        version: 7.18.3(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
       typescript:
         specifier: 'catalog:'
         version: 6.0.3
@@ -5575,6 +5921,9 @@ importers:
       '@nocobase/app-server':
         specifier: workspace:^
         version: link:../../app/app-server
+      '@nocobase/audit':
+        specifier: workspace:^
+        version: link:../../libs/audit
       '@nocobase/authorization':
         specifier: workspace:^
         version: link:../../libs/authorization
@@ -5590,6 +5939,9 @@ importers:
       '@nocobase/service-provider':
         specifier: workspace:^
         version: link:../../libs/service-provider
+      '@tanstack/react-table':
+        specifier: 'catalog:'
+        version: 8.21.3(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
       class-variance-authority:
         specifier: 'catalog:'
         version: 0.7.1
@@ -5605,6 +5957,9 @@ importers:
       react:
         specifier: ^19.0.0
         version: 19.2.8
+      react-dom:
+        specifier: ^19.0.0
+        version: 19.2.8(react@19.2.8)
       react-router:
         specifier: 'catalog:'
         version: 7.18.3(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
@@ -5624,12 +5979,18 @@ importers:
       '@testing-library/react':
         specifier: 'catalog:'
         version: 16.3.2(@testing-library/dom@10.4.1)(@types/react-dom@19.2.4(@types/react@19.2.18))(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
+      '@testing-library/user-event':
+        specifier: 'catalog:'
+        version: 14.6.4(@testing-library/dom@10.4.1)
       '@types/node':
         specifier: 'catalog:'
         version: 24.13.3
       '@types/react':
         specifier: 'catalog:'
         version: 19.2.18
+      '@types/react-dom':
+        specifier: 'catalog:'
+        version: 19.2.4(@types/react@19.2.18)
       eslint:
         specifier: 'catalog:'
         version: 10.8.1(jiti@2.7.0)
@@ -5639,9 +6000,6 @@ importers:
       prettier:
         specifier: 'catalog:'
         version: 3.9.6
-      react-dom:
-        specifier: 'catalog:'
-        version: 19.2.8(react@19.2.8)
       shadcn:
         specifier: 'catalog:'
         version: 4.18.0(@cfworker/json-schema@4.1.1)(typescript@6.0.3)
@@ -5658,112 +6016,200 @@ importers:
         specifier: 'catalog:'
         version: 4.1.10(@opentelemetry/api@1.9.0)(@types/node@24.13.3)(@vitest/coverage-v8@4.1.10)(jsdom@30.0.1(@noble/hashes@2.3.0))(vite@6.4.4(@types/node@24.13.3)(jiti@2.7.0)(lightningcss@1.33.0)(sass-embedded@1.103.1)(sass@1.103.1)(tsx@4.23.12)(yaml@2.9.0))
 
-  packages/templates/app-template-default:
+  packages/plugins/app-plugin-verification:
     dependencies:
-      '@nocobase/app-cli':
+      '@nocobase/app-client':
         specifier: workspace:^
-        version: link:../../app/app-cli
-      '@nocobase/app-plugin-agents':
-        specifier: workspace:^
-        version: link:../../plugins/app-plugin-agents
-      '@nocobase/app-plugin-api-keys':
-        specifier: workspace:^
-        version: link:../../plugins/app-plugin-api-keys
+        version: link:../../app/app-client
       '@nocobase/app-plugin-authentication':
         specifier: workspace:^
-        version: link:../../plugins/app-plugin-authentication
-      '@nocobase/app-plugin-authorization':
-        specifier: workspace:^
-        version: link:../../plugins/app-plugin-authorization
-      '@nocobase/app-plugin-authz-default-access':
-        specifier: workspace:^
-        version: link:../../plugins/app-plugin-authz-default-access
-      '@nocobase/app-plugin-authz-restriction-rules':
-        specifier: workspace:^
-        version: link:../../plugins/app-plugin-authz-restriction-rules
-      '@nocobase/app-plugin-authz-sharing-rules':
-        specifier: workspace:^
-        version: link:../../plugins/app-plugin-authz-sharing-rules
-      '@nocobase/app-plugin-concurrency':
-        specifier: workspace:^
-        version: link:../../plugins/app-plugin-concurrency
-      '@nocobase/app-plugin-database-explorer':
-        specifier: workspace:^
-        version: link:../../plugins/app-plugin-database-explorer
-      '@nocobase/app-plugin-file':
-        specifier: workspace:^
-        version: link:../../plugins/app-plugin-file
-      '@nocobase/app-plugin-foundation':
-        specifier: workspace:^
-        version: link:../../plugins/app-plugin-foundation
-      '@nocobase/app-plugin-i18n':
-        specifier: workspace:^
-        version: link:../../plugins/app-plugin-i18n
-      '@nocobase/app-plugin-knowledge':
-        specifier: workspace:^
-        version: link:../../plugins/app-plugin-knowledge
-      '@nocobase/app-plugin-mail':
-        specifier: workspace:^
-        version: link:../../plugins/app-plugin-mail
+        version: link:../app-plugin-authentication
       '@nocobase/app-plugin-notification':
         specifier: workspace:^
-        version: link:../../plugins/app-plugin-notification
-      '@nocobase/app-plugin-notification-in-app':
-        specifier: workspace:^
-        version: link:../../plugins/app-plugin-notification-in-app
+        version: link:../app-plugin-notification
       '@nocobase/app-plugin-notification-providers':
         specifier: workspace:^
-        version: link:../../plugins/app-plugin-notification-providers
-      '@nocobase/app-plugin-scheduler':
-        specifier: workspace:^
-        version: link:../../plugins/app-plugin-scheduler
-      '@nocobase/app-plugin-users':
-        specifier: workspace:^
-        version: link:../../plugins/app-plugin-users
+        version: link:../app-plugin-notification-providers
       '@nocobase/app-server':
         specifier: workspace:^
         version: link:../../app/app-server
-      '@nocobase/authorization':
-        specifier: workspace:^
-        version: link:../../libs/authorization
-      '@nocobase/caching':
-        specifier: workspace:^
-        version: link:../../libs/caching
-      '@nocobase/concurrency':
-        specifier: workspace:^
-        version: link:../../libs/concurrency
-      '@nocobase/config':
-        specifier: workspace:^
-        version: link:../../libs/config
       '@nocobase/db':
         specifier: workspace:^
         version: link:../../libs/db
-      '@nocobase/db-sqlite':
-        specifier: workspace:^
-        version: link:../../libs/db-sqlite
-      '@nocobase/i18n':
-        specifier: workspace:^
-        version: link:../../libs/i18n
-      '@nocobase/jobs':
-        specifier: workspace:^
-        version: link:../../libs/jobs
-      '@nocobase/lifecycle':
-        specifier: workspace:^
-        version: link:../../libs/lifecycle
-      '@nocobase/queue':
-        specifier: workspace:^
-        version: link:../../libs/queue
-      '@nocobase/realtime':
-        specifier: workspace:^
-        version: link:../../libs/realtime
-      '@nocobase/repository-input':
-        specifier: workspace:^
-        version: link:../../libs/repository-input
       '@nocobase/service-provider':
         specifier: workspace:^
         version: link:../../libs/service-provider
+      '@tanstack/react-query':
+        specifier: 'catalog:'
+        version: 5.101.4(react@19.2.8)
+      hono:
+        specifier: 'catalog:'
+        version: 4.13.2
+      react:
+        specifier: ^19.0.0
+        version: 19.2.8
+      zod:
+        specifier: 'catalog:'
+        version: 4.6.7
+    devDependencies:
+      '@nocobase/app-plugin-authorization':
+        specifier: workspace:*
+        version: link:../app-plugin-authorization
+      '@nocobase/app-testing':
+        specifier: workspace:*
+        version: link:../../tools/app-testing
+      '@nocobase/dev-config':
+        specifier: workspace:*
+        version: link:../../tools/dev-config
+      '@testing-library/jest-dom':
+        specifier: 'catalog:'
+        version: 7.0.1(@testing-library/dom@10.4.1)(vitest@4.1.10)
+      '@testing-library/react':
+        specifier: 'catalog:'
+        version: 16.3.2(@testing-library/dom@10.4.1)(@types/react-dom@19.2.4(@types/react@19.2.18))(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
+      '@types/node':
+        specifier: 'catalog:'
+        version: 24.13.3
+      '@types/react':
+        specifier: 'catalog:'
+        version: 19.2.18
+      '@types/react-dom':
+        specifier: 'catalog:'
+        version: 19.2.4(@types/react@19.2.18)
+      eslint:
+        specifier: 'catalog:'
+        version: 10.8.1(jiti@2.7.0)
+      jsdom:
+        specifier: 'catalog:'
+        version: 30.0.1(@noble/hashes@2.3.0)
+      prettier:
+        specifier: 'catalog:'
+        version: 3.9.6
+      react-dom:
+        specifier: 'catalog:'
+        version: 19.2.8(react@19.2.8)
+      react-router:
+        specifier: 'catalog:'
+        version: 7.18.3(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
+      typescript:
+        specifier: 'catalog:'
+        version: 6.0.3
+      vitest:
+        specifier: 'catalog:'
+        version: 4.1.10(@opentelemetry/api@1.9.0)(@types/node@24.13.3)(@vitest/coverage-v8@4.1.10)(jsdom@30.0.1(@noble/hashes@2.3.0))(vite@6.4.4(@types/node@24.13.3)(jiti@2.7.0)(lightningcss@1.33.0)(sass-embedded@1.103.1)(sass@1.103.1)(tsx@4.23.12)(yaml@2.9.0))
+
+  packages/templates/app-template-default:
+    dependencies:
+      '@nocobase/app-cli':
+        specifier: workspace:*
+        version: link:../../app/app-cli
+      '@nocobase/app-plugin-agents':
+        specifier: workspace:*
+        version: link:../../plugins/app-plugin-agents
+      '@nocobase/app-plugin-api-keys':
+        specifier: workspace:*
+        version: link:../../plugins/app-plugin-api-keys
+      '@nocobase/app-plugin-authentication':
+        specifier: workspace:*
+        version: link:../../plugins/app-plugin-authentication
+      '@nocobase/app-plugin-authorization':
+        specifier: workspace:*
+        version: link:../../plugins/app-plugin-authorization
+      '@nocobase/app-plugin-authz-default-access':
+        specifier: workspace:*
+        version: link:../../plugins/app-plugin-authz-default-access
+      '@nocobase/app-plugin-authz-restriction-rules':
+        specifier: workspace:*
+        version: link:../../plugins/app-plugin-authz-restriction-rules
+      '@nocobase/app-plugin-authz-sharing-rules':
+        specifier: workspace:*
+        version: link:../../plugins/app-plugin-authz-sharing-rules
+      '@nocobase/app-plugin-concurrency':
+        specifier: workspace:*
+        version: link:../../plugins/app-plugin-concurrency
+      '@nocobase/app-plugin-database-explorer':
+        specifier: workspace:*
+        version: link:../../plugins/app-plugin-database-explorer
+      '@nocobase/app-plugin-file':
+        specifier: workspace:*
+        version: link:../../plugins/app-plugin-file
+      '@nocobase/app-plugin-foundation':
+        specifier: workspace:*
+        version: link:../../plugins/app-plugin-foundation
+      '@nocobase/app-plugin-i18n':
+        specifier: workspace:*
+        version: link:../../plugins/app-plugin-i18n
+      '@nocobase/app-plugin-knowledge':
+        specifier: workspace:*
+        version: link:../../plugins/app-plugin-knowledge
+      '@nocobase/app-plugin-mail':
+        specifier: workspace:*
+        version: link:../../plugins/app-plugin-mail
+      '@nocobase/app-plugin-message-broker':
+        specifier: workspace:*
+        version: link:../../plugins/app-plugin-message-broker
+      '@nocobase/app-plugin-notification':
+        specifier: workspace:*
+        version: link:../../plugins/app-plugin-notification
+      '@nocobase/app-plugin-notification-in-app':
+        specifier: workspace:*
+        version: link:../../plugins/app-plugin-notification-in-app
+      '@nocobase/app-plugin-notification-providers':
+        specifier: workspace:*
+        version: link:../../plugins/app-plugin-notification-providers
+      '@nocobase/app-plugin-scheduler':
+        specifier: workspace:*
+        version: link:../../plugins/app-plugin-scheduler
+      '@nocobase/app-plugin-users':
+        specifier: workspace:*
+        version: link:../../plugins/app-plugin-users
+      '@nocobase/app-server':
+        specifier: workspace:*
+        version: link:../../app/app-server
+      '@nocobase/audit':
+        specifier: workspace:*
+        version: link:../../libs/audit
+      '@nocobase/authorization':
+        specifier: workspace:*
+        version: link:../../libs/authorization
+      '@nocobase/caching':
+        specifier: workspace:*
+        version: link:../../libs/caching
+      '@nocobase/concurrency':
+        specifier: workspace:*
+        version: link:../../libs/concurrency
+      '@nocobase/config':
+        specifier: workspace:*
+        version: link:../../libs/config
+      '@nocobase/db':
+        specifier: workspace:*
+        version: link:../../libs/db
+      '@nocobase/i18n':
+        specifier: workspace:*
+        version: link:../../libs/i18n
+      '@nocobase/jobs':
+        specifier: workspace:*
+        version: link:../../libs/jobs
+      '@nocobase/lifecycle':
+        specifier: workspace:*
+        version: link:../../libs/lifecycle
+      '@nocobase/message-broker':
+        specifier: workspace:*
+        version: link:../../libs/message-broker
+      '@nocobase/queue':
+        specifier: workspace:*
+        version: link:../../libs/queue
+      '@nocobase/realtime':
+        specifier: workspace:*
+        version: link:../../libs/realtime
+      '@nocobase/repository-input':
+        specifier: workspace:*
+        version: link:../../libs/repository-input
+      '@nocobase/service-provider':
+        specifier: workspace:*
+        version: link:../../libs/service-provider
       '@nocobase/snowflake':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../libs/snowflake
       '@oclif/core':
         specifier: 'catalog:'
@@ -5793,9 +6239,18 @@ importers:
       '@noble/hashes':
         specifier: 2.3.0
         version: 2.3.0
+      '@nocobase/agent-runner':
+        specifier: workspace:*
+        version: link:../../app/agent-runner
+      '@nocobase/app-cli-client':
+        specifier: workspace:*
+        version: link:../../app/app-cli-client
       '@nocobase/app-client':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../app/app-client
+      '@nocobase/app-plugin-notification-web-push':
+        specifier: workspace:*
+        version: link:../../plugins/app-plugin-notification-web-push
       '@nocobase/app-plugin-template-print':
         specifier: workspace:*
         version: link:../../plugins/app-plugin-template-print
@@ -5806,19 +6261,37 @@ importers:
         specifier: workspace:*
         version: link:../../tools/app-testing
       '@nocobase/app-websocket':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../app/app-websocket
+      '@nocobase/db-mssql':
+        specifier: workspace:*
+        version: link:../../libs/db-mssql
+      '@nocobase/db-mysql':
+        specifier: workspace:*
+        version: link:../../libs/db-mysql
+      '@nocobase/db-oracle':
+        specifier: workspace:*
+        version: link:../../libs/db-oracle
+      '@nocobase/db-postgres':
+        specifier: workspace:*
+        version: link:../../libs/db-postgres
+      '@nocobase/db-sqlite':
+        specifier: workspace:*
+        version: link:../../libs/db-sqlite
       '@nocobase/dev-config':
         specifier: workspace:*
         version: link:../../tools/dev-config
       '@nocobase/drive':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../libs/drive
       '@nocobase/logging':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../libs/logging
+      '@nocobase/markdown-mermaid':
+        specifier: workspace:*
+        version: link:../../libs/markdown-mermaid
       '@nocobase/session':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../libs/session
       '@playwright/test':
         specifier: 'catalog:'
@@ -5995,157 +6468,172 @@ importers:
   packages/templates/app-template-examples:
     dependencies:
       '@nocobase/app-cli':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../app/app-cli
       '@nocobase/app-plugin-agents':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../plugins/app-plugin-agents
       '@nocobase/app-plugin-api-keys':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../plugins/app-plugin-api-keys
       '@nocobase/app-plugin-authentication':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../plugins/app-plugin-authentication
       '@nocobase/app-plugin-authorization':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../plugins/app-plugin-authorization
       '@nocobase/app-plugin-authorization-example':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../examples/app-plugin-authorization-example
       '@nocobase/app-plugin-authz-default-access':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../plugins/app-plugin-authz-default-access
       '@nocobase/app-plugin-authz-restriction-rules':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../plugins/app-plugin-authz-restriction-rules
       '@nocobase/app-plugin-authz-sharing-rules':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../plugins/app-plugin-authz-sharing-rules
       '@nocobase/app-plugin-cli-example':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../examples/app-plugin-cli-example
       '@nocobase/app-plugin-concurrency':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../plugins/app-plugin-concurrency
       '@nocobase/app-plugin-database-example':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../examples/app-plugin-database-example
       '@nocobase/app-plugin-database-explorer':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../plugins/app-plugin-database-explorer
       '@nocobase/app-plugin-file':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../plugins/app-plugin-file
       '@nocobase/app-plugin-file-example':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../examples/app-plugin-file-example
       '@nocobase/app-plugin-foundation':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../plugins/app-plugin-foundation
       '@nocobase/app-plugin-i18n':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../plugins/app-plugin-i18n
       '@nocobase/app-plugin-jobs-example':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../examples/app-plugin-jobs-example
       '@nocobase/app-plugin-knowledge':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../plugins/app-plugin-knowledge
       '@nocobase/app-plugin-lifecycle-example':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../examples/app-plugin-lifecycle-example
       '@nocobase/app-plugin-mail':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../plugins/app-plugin-mail
       '@nocobase/app-plugin-mail-example':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../examples/app-plugin-mail-example
+      '@nocobase/app-plugin-message-broker':
+        specifier: workspace:*
+        version: link:../../plugins/app-plugin-message-broker
+      '@nocobase/app-plugin-message-broker-example':
+        specifier: workspace:*
+        version: link:../../examples/app-plugin-message-broker-example
       '@nocobase/app-plugin-notification':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../plugins/app-plugin-notification
       '@nocobase/app-plugin-notification-example':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../examples/app-plugin-notification-example
       '@nocobase/app-plugin-notification-in-app':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../plugins/app-plugin-notification-in-app
       '@nocobase/app-plugin-notification-providers':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../plugins/app-plugin-notification-providers
+      '@nocobase/app-plugin-notification-web-push':
+        specifier: workspace:*
+        version: link:../../plugins/app-plugin-notification-web-push
       '@nocobase/app-plugin-office-flows-example':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../examples/app-plugin-office-flows-example
       '@nocobase/app-plugin-queue-example':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../examples/app-plugin-queue-example
       '@nocobase/app-plugin-realtime-example':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../examples/app-plugin-realtime-example
       '@nocobase/app-plugin-repository-example':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../examples/app-plugin-repository-example
       '@nocobase/app-plugin-routes-example':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../examples/app-plugin-routes-example
       '@nocobase/app-plugin-scheduler':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../plugins/app-plugin-scheduler
       '@nocobase/app-plugin-service-provider-example':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../examples/app-plugin-service-provider-example
       '@nocobase/app-plugin-skills-example':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../examples/app-plugin-skills-example
       '@nocobase/app-plugin-template-print-example':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../examples/app-plugin-template-print-example
       '@nocobase/app-plugin-users':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../plugins/app-plugin-users
       '@nocobase/app-server':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../app/app-server
+      '@nocobase/audit':
+        specifier: workspace:*
+        version: link:../../libs/audit
       '@nocobase/authorization':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../libs/authorization
       '@nocobase/caching':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../libs/caching
       '@nocobase/concurrency':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../libs/concurrency
       '@nocobase/config':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../libs/config
       '@nocobase/db':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../libs/db
       '@nocobase/db-sqlite':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../libs/db-sqlite
       '@nocobase/i18n':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../libs/i18n
       '@nocobase/jobs':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../libs/jobs
       '@nocobase/lifecycle':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../libs/lifecycle
+      '@nocobase/message-broker':
+        specifier: workspace:*
+        version: link:../../libs/message-broker
       '@nocobase/queue':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../libs/queue
       '@nocobase/realtime':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../libs/realtime
       '@nocobase/repository-input':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../libs/repository-input
       '@nocobase/service-provider':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../libs/service-provider
       '@nocobase/snowflake':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../libs/snowflake
       '@oclif/core':
         specifier: 'catalog:'
@@ -6176,13 +6664,13 @@ importers:
         specifier: 2.3.0
         version: 2.3.0
       '@nocobase/agent-runner':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../app/agent-runner
       '@nocobase/app-cli-client':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../app/app-cli-client
       '@nocobase/app-client':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../app/app-client
       '@nocobase/app-plugin-template-print':
         specifier: workspace:*
@@ -6194,22 +6682,22 @@ importers:
         specifier: workspace:*
         version: link:../../tools/app-testing
       '@nocobase/app-websocket':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../app/app-websocket
       '@nocobase/dev-config':
         specifier: workspace:*
         version: link:../../tools/dev-config
       '@nocobase/drive':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../libs/drive
       '@nocobase/logging':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../libs/logging
       '@nocobase/markdown-mermaid':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../libs/markdown-mermaid
       '@nocobase/session':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../libs/session
       '@playwright/test':
         specifier: 'catalog:'
@@ -6805,6 +7293,9 @@ importers:
       '@nocobase/app-plugin-authentication':
         specifier: workspace:^
         version: link:../packages/plugins/app-plugin-authentication
+      '@nocobase/app-plugin-authorization':
+        specifier: workspace:^
+        version: link:../packages/plugins/app-plugin-authorization
       '@nocobase/app-plugin-file':
         specifier: workspace:^
         version: link:../packages/plugins/app-plugin-file
@@ -6856,6 +7347,9 @@ importers:
       jsdom:
         specifier: 'catalog:'
         version: 30.0.1(@noble/hashes@2.3.0)
+      prettier:
+        specifier: 'catalog:'
+        version: 3.9.6
       shadcn:
         specifier: ^4.18.0
         version: 4.18.0(@cfworker/json-schema@4.1.1)(typescript@6.0.3)
@@ -8668,8 +9162,8 @@ packages:
   '@jridgewell/remapping@2.3.5':
     resolution: {integrity: sha512-LI9u/+laYG4Ds1TDKSJW2YPrIlcVYOwi2fUC6xB43lueCjgxV4lffOCZCtYFiH6TNOX+tQKXx97T4IKHbhyHEQ==}
 
-  '@jridgewell/resolve-uri@3.1.2':
-    resolution: {integrity: sha512-bRISgCIjP20/tbWSPWMEi54QVPRZExkuD9lJL+UIxUKtwVJA8wW1Trb1jMs1RFXo1CBTNZ/5hpC9QvmKWdopKw==}
+  '@jridgewell/resolve-uri@3.1.3':
+    resolution: {integrity: sha512-lhTtjtoEArWBjismtfS761S9Hlyn+nIZqOZVYoZ1Xn82PMNMVnk+jj/NhC4fAXGTs7ydONcJiR5vyQBTMDu27g==}
     engines: {node: '>=6.0.0'}
 
   '@jridgewell/sourcemap-codec@1.5.5':
@@ -13818,6 +14312,10 @@ packages:
     resolution: {integrity: sha512-wQ0b/W4Fr01qtpHlqSqspcj3EhBvimsdh0KlHhH8HRZnMsEa0ea2fTULOXOS9ccQr3om+GcGRk4e+isrZWV8qQ==}
     engines: {node: '>=16.20.0'}
 
+  pkce-challenge@5.0.2:
+    resolution: {integrity: sha512-vCc54+qyIfKC5e2UN28AZKElwqjLINgiIV3RKI8pDu93TjaAJoB3QrgMzEBouy8yOKsXVXdAinO1QArJf9x5WA==}
+    engines: {node: '>=16.20.0'}
+
   pkg-up@3.1.0:
     resolution: {integrity: sha512-nDywThFk1i4BQK4twPQ6TA4RT8bDY96yeuCVBWL3ePARCiEKDRSrNGbFIgUJpLp+XeIR65v8ra7WuJOFUBtkMA==}
     engines: {node: '>=8'}
@@ -14403,8 +14901,8 @@ packages:
   roughjs@4.6.6:
     resolution: {integrity: sha512-ZUz/69+SYpFN/g/lUlo2FXcIjRkSu3nDarreVdGGndHEBJ6cXPdKguS8JGxwj5HA5xIbVKSmLgr5b3AWxtRfvQ==}
 
-  router@2.2.0:
-    resolution: {integrity: sha512-nLTrUKm2UyiL7rlhapu/Zl45FwNgkZGaCpZbIHajDYgwlJCOzLSk+cIPAnsEqV955GjILJnKbdQC1nVPz+gAYQ==}
+  router@2.3.0:
+    resolution: {integrity: sha512-bpowRfGjEPe8t9R6fJIzhwmyCGAXwKvxBUsgJm+bJukwdcWmUXbMo7p22w7aYmQBPQTUMNqMV39YX0kMou3z8w==}
     engines: {node: '>= 18'}
 
   run-applescript@7.1.0:
@@ -16063,7 +16561,7 @@ snapshots:
       '@alicloud/endpoint-util': 0.0.1
       '@alicloud/openapi-client': 0.4.15
       '@alicloud/openapi-util': 0.3.3
-      '@alicloud/tea-typescript': 1.8.0
+      '@alicloud/tea-typescript': 1.8.0(supports-color@8.1.1)
       '@alicloud/tea-util': 1.4.11(supports-color@8.1.1)
     transitivePeerDependencies:
       - bufferutil
@@ -16072,8 +16570,8 @@ snapshots:
 
   '@alicloud/credentials@2.4.7':
     dependencies:
-      '@alicloud/tea-typescript': 1.8.0
-      httpx: 2.3.3
+      '@alicloud/tea-typescript': 1.8.0(supports-color@8.1.1)
+      httpx: 2.3.3(supports-color@8.1.1)
       ini: 1.3.8
       kitx: 2.2.0
     transitivePeerDependencies:
@@ -16081,7 +16579,7 @@ snapshots:
 
   '@alicloud/endpoint-util@0.0.1':
     dependencies:
-      '@alicloud/tea-typescript': 1.8.0
+      '@alicloud/tea-typescript': 1.8.0(supports-color@8.1.1)
       kitx: 2.2.0
     transitivePeerDependencies:
       - supports-color
@@ -16089,7 +16587,7 @@ snapshots:
   '@alicloud/gateway-spi@0.0.8':
     dependencies:
       '@alicloud/credentials': 2.4.7
-      '@alicloud/tea-typescript': 1.8.0
+      '@alicloud/tea-typescript': 1.8.0(supports-color@8.1.1)
     transitivePeerDependencies:
       - supports-color
 
@@ -16098,7 +16596,7 @@ snapshots:
       '@alicloud/credentials': 2.4.7
       '@alicloud/gateway-spi': 0.0.8
       '@alicloud/openapi-util': 0.3.3
-      '@alicloud/tea-typescript': 1.8.0
+      '@alicloud/tea-typescript': 1.8.0(supports-color@8.1.1)
       '@alicloud/tea-util': 1.4.9
       '@alicloud/tea-xml': 0.0.3
     transitivePeerDependencies:
@@ -16108,7 +16606,7 @@ snapshots:
 
   '@alicloud/openapi-util@0.3.3':
     dependencies:
-      '@alicloud/tea-typescript': 1.8.0
+      '@alicloud/tea-typescript': 1.8.0(supports-color@8.1.1)
       '@alicloud/tea-util': 1.4.11(supports-color@8.1.1)
       kitx: 2.2.0
       sm3: 1.0.3
@@ -16117,16 +16615,16 @@ snapshots:
       - supports-color
       - utf-8-validate
 
-  '@alicloud/tea-typescript@1.8.0':
+  '@alicloud/tea-typescript@1.8.0(supports-color@8.1.1)':
     dependencies:
       '@types/node': 12.20.55
-      httpx: 2.3.3
+      httpx: 2.3.3(supports-color@8.1.1)
     transitivePeerDependencies:
       - supports-color
 
   '@alicloud/tea-util@1.4.11(supports-color@8.1.1)':
     dependencies:
-      '@alicloud/tea-typescript': 1.8.0
+      '@alicloud/tea-typescript': 1.8.0(supports-color@8.1.1)
       '@darabonba/typescript': 1.0.5(supports-color@8.1.1)
       kitx: 2.2.0
     transitivePeerDependencies:
@@ -16136,14 +16634,14 @@ snapshots:
 
   '@alicloud/tea-util@1.4.9':
     dependencies:
-      '@alicloud/tea-typescript': 1.8.0
+      '@alicloud/tea-typescript': 1.8.0(supports-color@8.1.1)
       kitx: 2.2.0
     transitivePeerDependencies:
       - supports-color
 
   '@alicloud/tea-xml@0.0.3':
     dependencies:
-      '@alicloud/tea-typescript': 1.8.0
+      '@alicloud/tea-typescript': 1.8.0(supports-color@8.1.1)
       '@types/xml2js': 0.4.14
       xml2js: 0.6.2
     transitivePeerDependencies:
@@ -17259,10 +17757,10 @@ snapshots:
 
   '@darabonba/typescript@1.0.5(supports-color@8.1.1)':
     dependencies:
-      '@alicloud/tea-typescript': 1.8.0
+      '@alicloud/tea-typescript': 1.8.0(supports-color@8.1.1)
       http-proxy-agent: 5.0.0(supports-color@8.1.1)
       https-proxy-agent: 5.0.1(supports-color@8.1.1)
-      httpx: 2.3.3
+      httpx: 2.3.3(supports-color@8.1.1)
       lodash: 4.18.1
       moment: 2.30.1
       moment-timezone: 0.5.48
@@ -17874,7 +18372,7 @@ snapshots:
       '@jridgewell/gen-mapping': 0.3.13
       '@jridgewell/trace-mapping': 0.3.31
 
-  '@jridgewell/resolve-uri@3.1.2': {}
+  '@jridgewell/resolve-uri@3.1.3': {}
 
   '@jridgewell/sourcemap-codec@1.5.5': {}
 
@@ -17882,7 +18380,7 @@ snapshots:
 
   '@jridgewell/trace-mapping@0.3.31':
     dependencies:
-      '@jridgewell/resolve-uri': 3.1.2
+      '@jridgewell/resolve-uri': 3.1.3
       '@jridgewell/sourcemap-codec': 1.6.0
 
   '@js-joda/core@6.1.0': {}
@@ -17967,7 +18465,7 @@ snapshots:
       hono: 4.13.2
       jose: 6.2.9
       json-schema-typed: 8.0.2
-      pkce-challenge: 5.0.1
+      pkce-challenge: 5.0.2
       raw-body: 3.0.2
       zod: 3.25.76
       zod-to-json-schema: 3.25.2(zod@3.25.76)
@@ -17991,7 +18489,7 @@ snapshots:
       hono: 4.13.2
       jose: 6.2.9
       json-schema-typed: 8.0.2
-      pkce-challenge: 5.0.1
+      pkce-challenge: 5.0.2
       raw-body: 3.0.2
       zod: 4.6.7
       zod-to-json-schema: 3.25.2(zod@4.6.7)
@@ -21255,7 +21753,7 @@ snapshots:
       proxy-addr: 2.0.8
       qs: 6.17.1
       range-parser: 1.3.0
-      router: 2.2.0
+      router: 2.3.0
       send: 1.2.1
       serve-static: 2.2.1
       statuses: 2.0.2
@@ -21803,7 +22301,7 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  httpx@2.3.3:
+  httpx@2.3.3(supports-color@8.1.1):
     dependencies:
       '@types/node': 20.19.43
       debug: 4.4.3(supports-color@8.1.1)
@@ -23592,6 +24090,8 @@ snapshots:
 
   pkce-challenge@5.0.1: {}
 
+  pkce-challenge@5.0.2: {}
+
   pkg-up@3.1.0:
     dependencies:
       find-up: 3.0.0
@@ -24314,7 +24814,7 @@ snapshots:
       points-on-curve: 0.2.0
       points-on-path: 0.2.1
 
-  router@2.2.0:
+  router@2.3.0:
     dependencies:
       debug: 4.4.3(supports-color@8.1.1)
       depd: 2.0.0

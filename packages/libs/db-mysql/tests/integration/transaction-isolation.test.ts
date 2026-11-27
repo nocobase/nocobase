@@ -187,6 +187,9 @@ describe('MySQL transaction isolation', () => {
         await transaction.collectionMetadata.updateCollection('accounts', {
           title: 'Own write',
         });
+        expect((await transaction.collections.get('orders'))?.title).toBe(
+          'Before',
+        );
         expect(
           (await transaction.collections.list()).items.find(
             (item) => item.name === 'orders',
@@ -194,6 +197,11 @@ describe('MySQL transaction isolation', () => {
         ).toBe('Before');
       });
       expect((await store.get('orders'))?.document.title).toBe('After');
+      await database.transaction(async (transaction) => {
+        expect((await transaction.collections.get('orders'))?.title).toBe(
+          'After',
+        );
+      });
       expect(
         (await database.collections().list()).items.find(
           (item) => item.name === 'orders',

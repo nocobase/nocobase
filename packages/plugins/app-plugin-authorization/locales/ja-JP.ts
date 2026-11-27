@@ -3,6 +3,15 @@ import type { LocaleResource } from '@nocobase/i18n';
 import type enUS from './en-US.js';
 
 const jaJP: LocaleResource<typeof enUS> = {
+  audit: {
+    operations: {
+      createPermissionSet: '権限セットを作成',
+      assignPermissionSet: '権限セットを割り当て',
+      unassignPermissionSet: '権限セットの割り当てを解除',
+      updatePermissionSet: '権限セットを編集',
+      deletePermissionSet: '権限セットを削除',
+    },
+  },
   sections: {
     pages: 'ページ権限',
     page: 'ページ',
@@ -15,7 +24,6 @@ const jaJP: LocaleResource<typeof enUS> = {
     actions: {
       assign: '割り当ての管理',
       configure: '設定する',
-      inspect: '権限を検査する',
       read: '読み取り',
       create: '作成',
       update: '更新',
@@ -31,8 +39,8 @@ const jaJP: LocaleResource<typeof enUS> = {
         '後で追加されたページも含め、すべてのページへのアクセスを許可します。',
     },
     settings: {
-      inspector: '許可検査官',
       'permission-sets': '権限セット',
+      'authentication-settings': 'サインインと認証',
     },
     subjectTypes: {
       authenticated: 'サインインしているすべてのユーザー',

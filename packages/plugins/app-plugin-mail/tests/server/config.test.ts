@@ -23,6 +23,7 @@ describe('mail environment variables', () => {
     expect(declared).toEqual([
       'MAIL_AUTOMATIC_SYNC_INTERVAL_MS',
       'MAIL_JOBS',
+      'MAIL_LOG_RETENTION_DAYS',
       'MAIL_OAUTH_CALLBACK_URL',
       'MAIL_OAUTH_RETURN_URL',
       'MAIL_PUSH_WEBHOOK_SECRET',
@@ -64,6 +65,15 @@ describe('mail namespace configuration', () => {
         },
       },
     });
+  });
+
+  it('keeps finished logs 90 days unless configured, and rejects a negative or fractional period', () => {
+    expect(resolveMailConfig({}).logRetentionDays).toBe(90);
+    expect(resolveMailConfig({ logRetentionDays: 0 }).logRetentionDays).toBe(0);
+    for (const logRetentionDays of [-1, 1.5, '30'])
+      expect(() => resolveMailConfig({ logRetentionDays })).toThrow(
+        'Mail configuration at "mail.logRetentionDays" must be a non-negative integer.',
+      );
   });
 
   it('reports malformed namespace and provider configuration paths', () => {
@@ -155,7 +165,7 @@ describe('mail OAuth callback configuration', () => {
         '/main',
         'success',
       ),
-    ).toBe('/main?mailAuthorization=success');
+    ).toBe('/main/me/mail?mailAuthorization=success');
   });
 
   it('resolves a configured return path and preserves its query parameters', () => {

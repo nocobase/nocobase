@@ -3,6 +3,7 @@ import type { LocaleResource } from '@nocobase/i18n';
 import type enUS from './en-US.js';
 
 const deDE: LocaleResource<typeof enUS> = {
+  fileUsage: 'Dateien der Wissensdatenbank',
   indexing: {
     failedDocumentCount: 'Fehlgeschlagene Dokumente: {{count}}',
     enabled: 'Indexierung aktivieren',
@@ -222,7 +223,6 @@ const deDE: LocaleResource<typeof enUS> = {
       count_other: '{{count}}-Dokumente',
       archivedCount_one: '{{count}} archiviertes Dokument',
       archivedCount_other: '{{count}} archivierte Dokumente',
-      selectTarget: 'Öffnen Sie {{title}}',
       target: 'Erstellen in {{title}}',
       chooseTarget:
         'Wählen Sie ein Projekt oder Systemwissen aus, in dem erstellt werden soll',
@@ -333,6 +333,17 @@ const deDE: LocaleResource<typeof enUS> = {
       uploaded_other:
         'Hochgeladene {{count}}-Dateien; Ihr Text wird extrahiert.',
       download: 'Herunterladen',
+      fullscreen: 'Vollbild',
+      close: 'Schließen',
+      olderVersion: 'Version {{version}} (ältere Version)',
+      textHint_one:
+        'KI-Suche und -Antworten verwenden genau diesen Text · {{count}} Zeile',
+      textHint_other:
+        'KI-Suche und -Antworten verwenden genau diesen Text · {{count}} Zeilen',
+      copy: 'Kopieren',
+      copied: 'Kopiert.',
+      copyFailed:
+        'Kopieren ist hier nicht möglich; markieren Sie den Text und kopieren Sie ihn selbst.',
       version: 'Version {{version}}',
       statusHint: {
         parsing:
@@ -418,6 +429,7 @@ const deDE: LocaleResource<typeof enUS> = {
       contents: 'Inhalt',
       edit: 'Bearbeiten',
       rename: 'Umbenennen',
+      properties: 'Eigenschaften und Zusammenfassung',
       history: 'Geschichte',
       verify: 'Markus bestätigt',
       verifiedToast: 'Als verifiziert markiert.',

@@ -25,6 +25,10 @@ import { ManagedScopes } from './scopes.ts';
 import { readHostRuntime } from './runtime.ts';
 import type {
   ApplyDeploymentSetResult,
+  HostBackup,
+  HostBackupOptions,
+  HostRestoreOptions,
+  HostRestoreResult,
   HostDeploymentSpec,
   HostDeploymentSet,
   HostDescription,
@@ -105,6 +109,28 @@ export interface HostManagementService {
   checkScope(scope: HostScope): Promise<HostScopeCheck>;
   /** An App's runtime log. */
   readAppLogs(appId: string, query: JournalQuery): Promise<JournalPage>;
+  /**
+   * Backs an App's databases and files up with its own `backup` commands, while it runs or (`offline`) while it is
+   * stopped, and answers the verified archive's record. Runs at most once per operation ID, which names the backup;
+   * `getOperation` answers its outcome (`result`) after either side restarted. Offered where the App's backend says
+   * `capabilities.backup`; a release without the commands fails with `BACKUP_COMMAND_UNAVAILABLE`.
+   */
+  createBackup?(appId: string, options: HostBackupOptions): Promise<HostBackup>;
+  /**
+   * Restores one of an App's backups: stops the App, restores its data with the given deployment's release (the one
+   * the backup was taken with, also when that release is no longer offered) and deploys it. Runs at most once per
+   * operation ID. A failure leaves the App stopped, with the command's code and report in the error.
+   */
+  restoreBackup?(
+    appId: string,
+    options: HostRestoreOptions,
+  ): Promise<HostRestoreResult>;
+  /** Removes one of an App's backups. */
+  deleteBackup?(
+    appId: string,
+    backupId: string,
+    options?: { scope?: HostScope },
+  ): Promise<{ deleted: boolean }>;
 }
 
 export interface HostManagerOptions {
@@ -360,6 +386,31 @@ export class HostManager implements HostManagementService {
     return this.state.scopes.logs(appId, query ?? {});
   }
 
+  createBackup(appId: string, options: HostBackupOptions): Promise<HostBackup> {
+    if (this.state.mode !== 'managed')
+      throw new Error('Backups require managed host mode');
+    return this.state.scopes.createBackup(appId, options);
+  }
+
+  restoreBackup(
+    appId: string,
+    options: HostRestoreOptions,
+  ): Promise<HostRestoreResult> {
+    if (this.state.mode !== 'managed')
+      throw new Error('Backups require managed host mode');
+    return this.state.scopes.restoreBackup(appId, options);
+  }
+
+  deleteBackup(
+    appId: string,
+    backupId: string,
+    options: { scope?: HostScope } = {},
+  ): Promise<{ deleted: boolean }> {
+    if (this.state.mode !== 'managed')
+      throw new Error('Backups require managed host mode');
+    return this.state.scopes.deleteBackup(appId, backupId, options.scope);
+  }
+
   async prepareRotation(options: {
     pauseOnly?: boolean;
     ignoreConnections?: boolean;
@@ -384,7 +435,8 @@ export class HostManager implements HostManagementService {
     }
     if (
       this.admissions.size ||
-      (this.state.mode === 'managed' && this.state.reconciler.isBusy())
+      (this.state.mode === 'managed' &&
+        (this.state.reconciler.isBusy() || this.state.scopes.isBusy()))
     )
       return false;
     if (

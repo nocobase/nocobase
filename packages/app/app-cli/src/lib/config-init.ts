@@ -12,6 +12,8 @@ import {
   type ConnectionCheckResult,
   type OfficialDialect,
 } from '@nocobase/app-server/database';
+import { detectPackageManager } from './package-manager.ts';
+import { execa } from 'execa';
 import { parseDocument } from 'yaml';
 
 import type { CommandSuggestion } from '../command/errors.ts';
@@ -35,6 +37,7 @@ export type ConfigInitErrorReason =
   | 'unknown-dialect'
   | 'no-drivers'
   | 'driver-missing'
+  | 'driver-promotion-failed'
   | 'already-configured'
   | 'dialect-required'
   | 'directory-missing'
@@ -218,14 +221,7 @@ export function driverPackage(dialect: OfficialDialect): string {
   return `@nocobase/db-${dialect}`;
 }
 
-/**
- * Validates everything, then writes once.
- *
- * The order matters more than it looks. A run that wrote the file and then reported a missing driver would leave the
- * user unable to retry: the second run refuses because the application is already configured, and the only way out is
- * to delete a file they were never told about. Every check therefore happens before anything is written, so a failed
- * run leaves the directory exactly as it found it and `config init` can simply be run again.
- */
+/** Complete validation, prompts and driver promotion before writing configuration so a failed init can be retried. */
 export async function runConfigInit(
   options: ConfigInitOptions,
 ): Promise<ConfigInitResult> {
@@ -311,6 +307,7 @@ export async function runConfigInit(
     }
   }
 
+  if (mode === 'source') await promotePreinstalledDriver(rootDir, dialect);
   await writeFile(configFile, buildConfigFile({ example: configured }), {
     encoding: 'utf8',
     flag: options.force === true ? 'w' : 'wx',
@@ -405,6 +402,69 @@ async function alreadyConfigured(
     requiredSettings: [],
     nextCommands: nextCommands(mode, path.resolve(options.rootDir)),
   };
+}
+
+/** Move the original specifier verbatim. An add command may rewrite an exact version into a caret range. */
+async function promotePreinstalledDriver(
+  rootDir: string,
+  dialect: OfficialDialect,
+): Promise<void> {
+  const name = driverPackage(dialect);
+  const file = path.join(rootDir, 'package.json');
+  if (!existsSync(file)) return;
+  const original = await readFile(file, 'utf8');
+  const manifest = JSON.parse(original) as {
+    packageManager?: string;
+    dependencies?: Record<string, string>;
+    devDependencies?: Record<string, string>;
+  };
+  if (manifest.dependencies?.[name]) return;
+  const development = manifest.devDependencies;
+  if (!development || !Object.hasOwn(development, name)) return;
+  const manager = await detectPackageManager(rootDir, manifest.packageManager);
+  // The driver is already installed. Refresh the application's lockfile without running installation hooks.
+  const args = {
+    pnpm: [
+      'install',
+      '--lockfile-only',
+      '--no-frozen-lockfile',
+      '--ignore-scripts',
+    ],
+    npm: ['install', '--package-lock-only', '--ignore-scripts'],
+    yarn: ['install'],
+  }[manager];
+  (manifest.dependencies ??= {})[name] = development[name];
+  delete development[name];
+  const updated = JSON.stringify(manifest, null, 2) + '\n';
+  await writeFile(file, updated);
+  try {
+    await execa(manager, args, {
+      cwd: rootDir,
+      ...(manager === 'yarn'
+        ? {
+            env: {
+              YARN_ENABLE_IMMUTABLE_INSTALLS: 'false',
+              YARN_ENABLE_SCRIPTS: 'false',
+              YARN_IGNORE_SCRIPTS: 'true',
+            },
+          }
+        : {}),
+    });
+  } catch {
+    // Keep a concurrent edit. When the manifest is still ours, leave the move retryable.
+    if ((await readFile(file, 'utf8')) === updated)
+      await writeFile(file, original);
+    throw new ConfigInitError(
+      'driver-promotion-failed',
+      `Could not update dependencies for ${name}. Move its existing entry to dependencies in package.json, run ${manager} install, then retry config init --dialect ${dialect}.`,
+      {
+        suggestion: {
+          message: 'After moving the driver in the application sources:',
+          run: { command: manager, args: ['install'] },
+        },
+      },
+    );
+  }
 }
 
 function mainConnection(yaml: string): Record<string, unknown> {
@@ -614,7 +674,7 @@ export function installCommand(rootDir: string, packageName: string): string {
     : `pnpm add ${JSON.stringify(specifier)}`;
 }
 
-function installSpecifier(rootDir: string, packageName: string): string {
+export function installSpecifier(rootDir: string, packageName: string): string {
   const range = readPeerRange(rootDir, packageName);
   return range === undefined ? packageName : `${packageName}@${range}`;
 }
@@ -693,7 +753,7 @@ async function readConfigExample(
 }
 
 /** Walks up for an installed package, which is what Node's own resolution does and what pnpm's layouts require. */
-function findInstalledPackage(
+export function findInstalledPackage(
   fromDir: string,
   packageName: string,
 ): string | undefined {

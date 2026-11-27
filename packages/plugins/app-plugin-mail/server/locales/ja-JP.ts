@@ -2,8 +2,16 @@ import type { LocaleResource } from '@nocobase/i18n';
 
 import type enUS from './en-US.js';
 
+import pagesJaJP from '../../shared/locales/pages.ja-JP.js';
+
 const jaJP: LocaleResource<typeof enUS> = {
+  access: pagesJaJP.access,
   errors: {
+    originalNotFound:
+      '元のメッセージはメールプロバイダーで利用できなくなりました。',
+    originalTooLarge:
+      '元のメッセージはダウンロード上限の 40 MiB を超えています。',
+    operationUnsupported: 'このメール操作は利用できません。',
     connectionAuthenticationFailed:
       '{{protocol}} 認証に失敗しました。ログイン名とパスワードまたはアプリパスワードを確認してください。',
     connectionHostNotFound:

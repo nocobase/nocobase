@@ -1,6 +1,6 @@
 # Pending feedback
 
-Use the installed `#components/loading` for a page or panel and `#components/pending-button` for native submit actions. Both share `usePendingFeedback` from `@nocobase/app-client`; do not rebuild display timers, branded spinners or button sizing in business pages. These components own feedback presentation, accessibility, styling and display timing; business code still supplies the real request, submission or task state, active route state, stable query identity, permission-safe data and recovery actions. Presentation never starts, locks, completes or cancels the underlying work. See the UI Library `loading` and `pending-button` examples for interactive controls and the templates' `client/pages/settings/user-form.tsx` for a real shared submission.
+Use the installed `#components/loading` for a page or panel and `#components/pending-button` for native submit actions. Both share `usePendingFeedback` from `@nocobase/app-client`; do not rebuild display timers, branded spinners or button sizing in business pages. These components own feedback presentation, accessibility, styling and display timing; business code still supplies the real request, submission or task state, active route state, stable query identity, permission-safe data and recovery actions. Presentation never starts, locks, completes or cancels the underlying work. See the UI Library `loading` and `pending-button` examples for interactive controls and `client/pages/users/user-form.tsx` in `@nocobase/app-plugin-users` for a real shared submission.
 
 ## Integration
 

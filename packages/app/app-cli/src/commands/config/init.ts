@@ -32,7 +32,7 @@ export default class AppConfigInit extends AppCommand {
   static override summary =
     'Write the configuration file this application starts from.';
   static override description =
-    "Generates config.yml from the application's config.example.yml, keeping its comments, generating the first secrets key (secrets.keys, version 1), and pointing database.connections.main at the selected dialect. It never installs anything: the database driver decides which dialects this application can run on, so install it first with pnpm add and run this afterwards. Connection settings are generated with placeholder values for the selected dialect; edit them for the target database before starting. Everything is checked before anything is written, so a run that reports a problem leaves the directory untouched and can simply be repeated.";
+    "Generates config.yml from the application's config.example.yml, keeping its comments, generating the first secrets key (secrets.keys, version 1), and pointing database.connections.main at the selected dialect. In an application source tree, it promotes the selected preinstalled driver to dependencies with its existing range and updates the lockfile. A deployment can select a driver included in its build. Connection settings are generated with placeholder values for the selected dialect; edit them for the target database before starting. Connection prompts and driver promotion finish before the configuration file is written.";
 
   static override examples: Command.Example[] = [
     '<%= config.bin %> <%= command.id %>',

@@ -1,5 +1,13 @@
 # @nocobase/app-plugin-cli-example
 
+## 0.1.0-beta.8
+
+### Patch Changes
+
+- 8be5180: Show English and Simplified Chinese names and descriptions for example plugins in the plugin list.
+- Updated dependencies [89c4785]
+  - @nocobase/app-cli@1.0.0-beta.40
+
 ## 0.1.0-beta.7
 
 ### Patch Changes

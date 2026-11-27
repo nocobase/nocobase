@@ -168,3 +168,18 @@ export {
   type ReviewerSelector,
   type ReviewerResolverOptions,
 } from './reviewers.js';
+
+export type {
+  ManagementAccessContext,
+  ManagementAuthorization,
+  ManagementCommand,
+  ManagementDetails,
+  ManagementEvent,
+  ManagementOptions,
+  ManagementPolicy,
+  ManagementReentryContext,
+  ManagementResumeContext,
+  ManagementResult,
+} from './management.js';
+
+export { findStayExit } from './store.js';

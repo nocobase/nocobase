@@ -1,5 +1,177 @@
 # @nocobase/app-plugin-agents
 
+## 2.0.0-beta.20
+
+### Minor Changes
+
+- f3ae984: Allow applications to disable hosted model services independently of Runner execution.
+- 8ff2df3: Applications can disable system settings, personal settings, chat, inbox and mail workspace routes independently. All five are enabled by default, so existing applications keep their pages when upgrading. Plugins can turn off their own pages with `{ disabled: true }` on `defineAppRoutes()` and the settings route helpers; disabled routes behave like `excludedRouteIds`, so overrides and header actions that target them no longer fail.
+
+### Patch Changes
+
+- 300f760: Allow applications to exclude contributed routes by ID and hide toolbar shortcuts linked to excluded or inaccessible pages.
+- 8e7f898: Complete the Agent and inbox translations and allow Demo Mode to start when hosted model services are disabled.
+- Updated dependencies [300f760]
+- Updated dependencies [29c62bd]
+- Updated dependencies [28a7606]
+- Updated dependencies [8ff2df3]
+- Updated dependencies [5fcb0c8]
+- Updated dependencies [6a3bb3e]
+  - @nocobase/app-client@4.0.0-beta.13
+  - @nocobase/app-plugin-authentication@2.0.0-beta.25
+  - @nocobase/app-server@5.0.0-beta.10
+  - @nocobase/app-cli@1.0.0-beta.39
+  - @nocobase/app-plugin-file@1.0.0-beta.34
+  - @nocobase/app-plugin-authorization@1.0.0-beta.39
+
+## 2.0.0-beta.19
+
+### Minor Changes
+
+- a6b9b74: Add the `settingsRoutes` client option: `agents({ settingsRoutes: true })` registers Agents, Runtimes, Skills, Models and Usage as System settings pages in the built-in AI category, under `/settings`, each behind its existing page grant. The route definitions are also exported ready-made as `agentsSettingsRoutes` from `client/routes`. Pages mounted there link to one another inside `/settings`: creating, cancelling or deleting a skill returns to the library where it is mounted, and an agent in Usage opens the agents page. Without the option the plugin still registers no routes.
+- a6b9b74: The Agents plugin now brings its own UI: registering `agents()` adds the ✦ button in the header (header action `agent`, its badge the conversations waiting for the viewer), the Agent panel beside the content (loaded the first time it opens; full screen on phones), the conversation page `/chat/:conversationId` (route `agentChat`), System settings › AI (Agent, Model services, Runtimes, Skills, Usage) and Personal settings › Preferences › Agent. The UI Library's `agent-chat` block moved into the plugin and is generated from it. Customize with options (`agents({ headerAction, panel: { width, defaultOpen }, chatPath })`), extension points (`useAgentContext`, `AskAgentButton`, `agents.toolRenderers.add`, `agents.slots.composerActions|messageActions|emptyState.add`, `agents.preferenceSections.add`), `agents.components.replace(name, Component)`, `routeComponentOverrides` and `headerActionOverrides`; the `settingsRoutes` option is gone because the settings pages are always registered.
+
+  The settings pages and their API check settings items instead of page grants: Agent `agents.agents`, Model services `agents.services`, Runtimes `agents.runners`, the new Skills `agents.skills` and Usage `agents.prices`. The usage report is open to anyone signed in (every run for a reader of usage, otherwise their own runs); the Usage page shows the prices in a Prices tab (`?tab=prices`). Migration `202611210001_ag_settings_grants` gives existing roles the matching Skills and Usage grants, so they keep what they could do; rolling it back removes only the grants it added. Each agent can limit who may chat with it to roles (`chatRoles`, migration `202611210002_ag_agent_chat_roles`; existing agents stay open to everyone): others, managers of agents included, do not see it in the panel and the chat API answers 403 to creating, sending, queueing and switching; only root chats with every agent, and the team default Agent must stay open to everyone. The Agent page opens an agent's details with its settings, business actions, default skills and runs, read-only for who does not manage agents. A person sets their own reasoning effort in Personal settings › Preferences › Agent (`ChatPreferences.effort`, migration `202611210003_ag_chat_preference_effort`), which new conversations take where the agent offers it. Other plugins register model service providers with `agents.models.providers.register`, listed by `GET /api/agents/modelProviders`.
+
+  `@nocobase/app-client` adds layout extensions: a plugin's `layoutExtensions` contribute a provider around the signed-in layout and an aside the layout renders beside its content (`AppLayoutProviders`, `AppAsideOutlet`). Both templates render them and register the Agents plugin only, with no Agent page code; Examples drops its copied `nocobase-agent-chat` block, its Agent pages under business navigation and the hard-coded header chat button. Applications that copied the block before should delete it (and the code mounting it), or keep it with `agents({ headerAction: false, panel: false })`.
+
+- a6b9b74: API key permissions now take the shape of a permission set's grants. `POST /api/apiKeys` accepts `permissions` (the same resources, actions and composite record scopes a role holds, plus the records a business is limited to), checks that the maker holds each action (`KEY_SCOPE_EXCEEDS_YOURS`) and that a key may hold it (`KEY_ACTION_HUMAN_ONLY`), and every key answers `permissions`; `GET /api/apiKeys/grantable` lists what the caller may give and the templates resolved to it. Keys are stored in a new format `2` of the `permissions` column. Actions can be declared human-only (`humanOnly: <reason>`, with an optional `risk`) where they are registered with the authorization plugin: any API key, including one without permissions and a service account's, is then denied them with `KEY_HUMAN_ONLY`, while a signed-in person keeps them. Plugins register key templates and record sources with `authz.credentials`, and a key's composite record scopes restrict records like a restriction rule (`KeyScope.policy`). Releases marks configuring, deleting and protected deploys human-only and registers the "CI deploy" and "CI upload" templates and the Apps record source; projects registers its projects record source; agents marks managing model services human-only.
+
+  Deprecated, still working for one more minor release and then removed: scope groups and presets (`KeyScopeGroupDeclaration`, `KeyScopePresetDeclaration`, `apiKeyScopesToken`'s `groups.add`, `presets.add`, `mapAccess`), the `scope` field of `/api/apiKeys`, `GET /api/apiKeys/scopeOptions` and `/scopeObjects/:group`, `ScopedApiKeys.scopeOptions`, `scopeObjects` and `setScope`, `encodeKeyScope` and `decodeKeyScope`, and the `KEY_SCOPE_GROUPS` and `KEY_SCOPE_PRESETS` of releases, projects and agents. They keep their behaviour and convert to format `2`. Keys stored in format `1` keep working and are converted in the background on the first request after the upgrade, exactly as they are enforced then, so no key widens and none has to be regenerated. To migrate, register templates and record sources with `authz.credentials`, mark the actions no key may hold `humanOnly`, and send `permissions` instead of `scope`; the API keys README describes the formats.
+
+### Patch Changes
+
+- a6b9b74: Use the Agent robot icon in the header and label the button with its current open or close action.
+- a6b9b74: Link to agent settings when no agents are available to chat and the user can access those settings.
+- 44395d2: Support Antigravity CLI on runtimes and list it between Pi and DeepSeek Harness, with Gemini CLI last.
+- a6b9b74: Add a File storage page under System settings › System. It lists the configured disks with their location, visibility, size limit, completeness and setting sources, lists the features that store files with their disk, download method, file count and total size, and checks that a disk can be written, read, linked and deleted. Plugins declare the features that store files with `registerUsage()`, file repositories exposed with `defineFileRepositoryApiRoutes()` are listed automatically as public links, and the projects, knowledge, agents and agent sessions plugins list their file tables. Responses never include credentials or absolute server paths.
+- acc1f0d: Add default GPT-6.2 Astra and Sol prices for Codex, OpenCode, and Pi while preserving existing prices.
+- a6b9b74: Show mail icons in the settings menus, group Mail accounts under Integrations, and list Agent after Preferences in personal settings.
+- a6b9b74: Declare the plugin's title and one-line description in English and Chinese under `nocobase` in `package.json`, which the App Foundation plugins page lists it by.
+- a9b9146: Remove the notes saying online agents only read skill scripts from the skill list, skill detail, default skills section and the new file or folder dialog. The skill file tree marks the `scripts` folder with a single icon instead of a "Script" badge on every file.
+- a6b9b74: Open My conversations to see online and runtime agent conversations in one history and choose a model or a runtime agent directly from the same picker before sending the first message in a new conversation. Open a sidebar conversation on the page with its draft, selected agent, attachments and page context.
+- Updated dependencies [a6b9b74]
+- Updated dependencies [44395d2]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [1048669]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [1048669]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [1048669]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [acc1f0d]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [1048669]
+- Updated dependencies [1048669]
+- Updated dependencies [1048669]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [1048669]
+  - @nocobase/app-client@4.0.0-beta.12
+  - @nocobase/acp-bridge@1.0.0-beta.8
+  - @nocobase/agent-protocol@0.1.0-beta.23
+  - @nocobase/authorization@1.0.0-beta.17
+  - @nocobase/app-plugin-authorization@1.0.0-beta.39
+  - @nocobase/app-plugin-authentication@2.0.0-beta.24
+  - @nocobase/app-server@5.0.0-beta.9
+  - @nocobase/app-plugin-file@1.0.0-beta.33
+  - @nocobase/app-cli@1.0.0-beta.38
+  - @nocobase/db@1.0.0-beta.30
+  - @nocobase/app-cli-client@0.1.0-beta.26
+  - @nocobase/i18n@2.0.0-beta.2
+  - @nocobase/markdown-mermaid@0.1.0-beta.2
+  - @nocobase/service-provider@0.0.2-beta.2
+
+## 2.0.0-beta.18
+
+### Minor Changes
+
+- 2c66475: Let native online agent conversations choose a thinking level (the AI SDK's seven reasoning levels: provider default, none, minimal, low, medium, high or extra high) for any online chat model, passed to the provider through the AI SDK, with a notice in the conversation when the model reports it does not support the level, and a thinking level menu beside the model choice in the Examples chat and the UI Library agent-chat block.
+- 39f8245: Name agents of a model the catalog does not know readably for every tool (`example-provider/qwen3.8-flash` → "OpenCode · Qwen3.8 Flash"), and save a new agent whose name another agent holds with its provider after the name ("OpenCode · Qwen3.8 Flash（opencode）") instead of `#2`; existing agents keep their names. Show every agent's whole model id in the agent list, the edit dialog and conversation details, and its name without the tool, with the whole id on hover, in chips, pickers and the runtime's runs. Show what the coding tool said when a run failed as one line of at most 300 characters, under the runtime's recent runs to people who may read the run's task or conversation; add `failureDetail` to that list and `model`, `shortName` and `modelTitle` to conversation agents. A failed run's message has keys, credentials, labelled and quoted values and long random strings removed when it is stored and again when it is read. OpenCode reports only its own error message as the failure; the stderr tail goes to the runner's log.
+- 188e419: Support SSH repository checkouts, pushes and build jobs on capable runners with deployment keys and verified host fingerprints.
+
+  Keep existing work and use the new origin when a task switches between HTTPS and SSH. Include classified SSH checkout and push failures in the run result.
+
+### Patch Changes
+
+- Updated dependencies [88bb385]
+- Updated dependencies [188e419]
+  - @nocobase/app-cli-distribution@0.1.0-beta.2
+  - @nocobase/agent-protocol@0.1.0-beta.22
+  - @nocobase/app-cli-client@0.1.0-beta.25
+
+## 2.0.0-beta.17
+
+### Minor Changes
+
+- a1cfe45: Retire operation plans, intake uploads and text extraction, and their commands. Issue and sub-issue creation use their manual forms. Issue history still identifies changes made through a retired plan, and old run inputs remain readable.
+
+### Patch Changes
+
+- 848e4db: Remove retired Codex quota windows from runtime usage and quota thresholds when a fresh account snapshot arrives.
+- 18636df: Retry private registry authorization failures once with the run's token and cover application creation and template downloads. Deploy the application before upgrading runners to protocol 17.
+- Updated dependencies [848e4db]
+- Updated dependencies [e830c36]
+- Updated dependencies [b6d6ca0]
+- Updated dependencies [b737800]
+- Updated dependencies [858fcc4]
+- Updated dependencies [a727ebe]
+- Updated dependencies [18636df]
+- Updated dependencies [a1cfe45]
+- Updated dependencies [b83a645]
+  - @nocobase/agent-protocol@0.1.0-beta.21
+  - @nocobase/app-server@5.0.0-beta.8
+  - @nocobase/app-cli-client@0.1.0-beta.24
+  - @nocobase/db@1.0.0-beta.29
+  - @nocobase/app-cli@1.0.0-beta.37
+  - @nocobase/app-plugin-authentication@2.0.0-beta.23
+  - @nocobase/app-plugin-file@1.0.0-beta.32
+
+## 2.0.0-beta.16
+
+### Minor Changes
+
+- 4967900: Let conversation owners select an eligible runtime with their next message while idle. Message admission atomically commits the runtime and fresh tool session, preserving saved history and leaving the binding unchanged when admission fails.
+- 761fb01: Collect bounded, sanitized runner diagnostics through heartbeat requests, retain UTC-dated runner journals with configurable cleanup, merge downloaded archives into local timelines, and propagate request IDs to application error toasts.
+
+  Apply one credential-key rule in structured and text logs, hiding numeric credentials while preserving token-count field names.
+
+  Stream runner diagnostics one temporary file at a time with abort cleanup, per-runner export queues, progress and file-consumption callbacks. Intersect up to 500 selected runs with the requested dates, remove selected-run priority and file-count preferences, and provide `logs export` plus local `logs timeline` commands.
+
+### Patch Changes
+
+- Updated dependencies [761fb01]
+- Updated dependencies [761fb01]
+  - @nocobase/app-cli-client@0.1.0-beta.23
+  - @nocobase/logging@0.1.0-beta.8
+  - @nocobase/agent-protocol@0.1.0-beta.20
+  - @nocobase/app-client@4.0.0-beta.11
+  - @nocobase/app-cli@1.0.0-beta.36
+  - @nocobase/app-plugin-authentication@2.0.0-beta.23
+  - @nocobase/app-plugin-file@1.0.0-beta.32
+
 ## 2.0.0-beta.15
 
 ### Patch Changes

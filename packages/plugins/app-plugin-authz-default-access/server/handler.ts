@@ -1,3 +1,5 @@
+import { auditOperationName } from './audit-operation-name.js';
+import { auditRecordKey, describeAudit } from '@nocobase/audit';
 import { z } from 'zod';
 import {
   ApiError,
@@ -42,6 +44,8 @@ export const DEFAULT_ACCESS_SETTINGS: string = `authorization.${DEFAULT_ACCESS_R
 /** The route prefix under `/api/authorization`. */
 export const DEFAULT_ACCESS_PATH = '/defaultAccess';
 
+const auditCollection = 'authorizationDefaultAccessRules';
+
 type DefaultAccessAdministrationApi = DefaultAccessApi;
 
 /** Every `/defaultAccess` route, gated by `settings:authorization.default-access`. */
@@ -67,8 +71,11 @@ export function createDefaultAccessHandler(
     validateDataScopeRule(authz, rule);
     return rule;
   };
-  const existing = async (key: string): Promise<DefaultAccessRule> => {
-    const rule = await api.get(key);
+  const requireExisting = async (
+    rules: DefaultAccessAdministrationApi,
+    key: string,
+  ): Promise<DefaultAccessRule> => {
+    const rule = await rules.get(key);
     if (rule) return rule;
     throw new ApiError({
       status: 'NOT_FOUND',
@@ -108,6 +115,26 @@ export function createDefaultAccessHandler(
   );
   routes.post(
     DEFAULT_ACCESS_PATH,
+    describeAudit({
+      operationName: auditOperationName('createRule'),
+      action: 'create',
+      resource: `settings:${DEFAULT_ACCESS_SETTINGS}`,
+      target: (context) => ({
+        collection: auditCollection,
+        key: context.req.param('key'),
+      }),
+      resolveTargets: ({ response }, context) => {
+        const previous = context.req.param('key');
+        const key = auditRecordKey(response, 'data', 'key') ?? previous;
+        return {
+          source:
+            previous && previous !== key
+              ? { collection: auditCollection, key: previous }
+              : undefined,
+          targets: [{ collection: auditCollection, key }],
+        };
+      },
+    }),
     settingsAccess(DEFAULT_ACCESS_SETTINGS, 'create'),
     describeRoute({
       tags,
@@ -161,6 +188,26 @@ export function createDefaultAccessHandler(
   );
   routes.patch(
     `${DEFAULT_ACCESS_PATH}/:key`,
+    describeAudit({
+      operationName: auditOperationName('updateRule'),
+      action: 'update',
+      resource: `settings:${DEFAULT_ACCESS_SETTINGS}`,
+      target: (context) => ({
+        collection: auditCollection,
+        key: context.req.param('key'),
+      }),
+      resolveTargets: ({ response }, context) => {
+        const previous = context.req.param('key');
+        const key = auditRecordKey(response, 'data', 'key') ?? previous;
+        return {
+          source:
+            previous && previous !== key
+              ? { collection: auditCollection, key: previous }
+              : undefined,
+          targets: [{ collection: auditCollection, key }],
+        };
+      },
+    }),
     settingsAccess(DEFAULT_ACCESS_SETTINGS, 'update'),
     describeRoute({
       tags,
@@ -205,8 +252,7 @@ export function createDefaultAccessHandler(
         changes,
         async (transaction) => {
           const bound = transaction ? api.withTransaction(transaction) : api;
-          const previous = await bound.get(key);
-          if (!previous) await existing(key);
+          const previous = await requireExisting(bound, key);
           const rule = checked({ ...previous, ...changes });
           await assertRuleKeyAvailable(
             (next) => bound.get(next),
@@ -227,6 +273,15 @@ export function createDefaultAccessHandler(
   );
   routes.delete(
     `${DEFAULT_ACCESS_PATH}/:key`,
+    describeAudit({
+      operationName: auditOperationName('deleteRule'),
+      action: 'delete',
+      resource: `settings:${DEFAULT_ACCESS_SETTINGS}`,
+      target: (context) => ({
+        collection: auditCollection,
+        key: context.req.param('key'),
+      }),
+    }),
     settingsAccess(DEFAULT_ACCESS_SETTINGS, 'delete'),
     describeRoute({
       tags,
@@ -253,7 +308,7 @@ export function createDefaultAccessHandler(
         { key },
         async (transaction) => {
           const bound = transaction ? api.withTransaction(transaction) : api;
-          if (!(await bound.get(key))) await existing(key);
+          await requireExisting(bound, key);
           await bound.delete(key);
           return null;
         },

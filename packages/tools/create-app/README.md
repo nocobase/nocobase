@@ -47,7 +47,7 @@ pnpm create @nocobase/app
 | `-h, --help`          | Show help                                                                                |
 | `--version`           | Show the version                                                                         |
 
-`--template` supports `default` (the default application), `examples` (the example application), `multi-portal` (one application with multiple business entry points), `multi-app` (Main only, with optional independent children), and `sub-app` (an independent child application for a multi-app platform), each pointing at the corresponding `@nocobase/app-template-*` package. The multi-portal, multi-app and sub-app templates are commercial Pro packages, not bundled with this open-source creation tool. They require authorized registry access.
+The open-source `default` and `examples` aliases select their respective template packages. The commercial `multi-app`, `sub-app` and `multi-portal` aliases enable capabilities in Enterprise. Use a registry account with access to Enterprise and its plugins. When the selected Enterprise channel predates a capability, create-app uses its original scenario package on the same channel.
 
 ```bash
 pnpm create @nocobase/app crm --template=default   # the default, can be omitted
@@ -74,7 +74,7 @@ For the commercial multi-portal template, first log in to the private registry w
 ```bash
 pnpm login --registry=https://pkg-v3.nocobase.com/ --scope=@nocobase
 npm whoami --registry=https://pkg-v3.nocobase.com/
-npm view @nocobase/app-template-multi-portal version --registry=https://pkg-v3.nocobase.com/
+npm view @nocobase/app-template-enterprise version --registry=https://pkg-v3.nocobase.com/
 NOCOBASE_REGISTRY=https://pkg-v3.nocobase.com/ pnpm create @nocobase/app crm --template=multi-portal
 ```
 
@@ -82,12 +82,12 @@ The alias follows `--template-tag` like Default and Examples. Registry selection
 
 ### Multi-app applications
 
-The `multi-app` alias resolves the commercial `@nocobase/app-template-multi-app` package in `nocobase/nocobase3-pro`. It creates Main only. Select the authorized registry explicitly and verify that the selected template version is available:
+The `multi-app` alias enables Main hosting and application access in Enterprise. It creates one Main application. Select the authorized registry explicitly and verify that the selected template version is available:
 
 ```bash
 NOCOBASE_REGISTRY=https://pkg-v3.nocobase.com/ pnpm create @nocobase/app platform --template multi-app
 cd platform
-pnpm nocobase config init
+pnpm nocobase config init --dialect sqlite
 pnpm nocobase config check
 ```
 
@@ -95,13 +95,13 @@ After creation, use the installed `nocobase-app-plugin-multi-app` Skill for mult
 
 ### Child applications
 
-The `sub-app` alias resolves the commercial `@nocobase/app-template-sub-app` package in `nocobase/nocobase3-pro`: an independent child application that a multi-app Main deploys and admits through platform SSO. It preinstalls the `deploy` CLI extension as a development dependency. Use the same registry login as above and verify the package before creating the project:
+The `sub-app` alias creates an independent Enterprise application with platform SSO that Main can deploy. It preinstalls the `deploy` CLI extension as a development dependency. Use the same registry login as above and verify the package before creating the project:
 
 ```bash
-npm view @nocobase/app-template-sub-app version --registry=https://pkg-v3.nocobase.com/
+npm view @nocobase/app-template-enterprise version --registry=https://pkg-v3.nocobase.com/
 NOCOBASE_REGISTRY=https://pkg-v3.nocobase.com/ pnpm create @nocobase/app child-app --template sub-app
 cd child-app
-pnpm nocobase config init
+pnpm nocobase config init --dialect sqlite
 pnpm nocobase deploy init
 ```
 
@@ -126,26 +126,24 @@ Creation stops at a project that can be configured, not at one that can run. The
 
 ```bash
 cd crm
-pnpm nocobase config init
+pnpm nocobase config init --dialect sqlite
 pnpm nocobase config check
 pnpm dev
 ```
 
 `config init` writes `config.yml` from the template's `config.example.yml`, keeping its comments, and generates the first key of `secrets.keys`. It is part of the application rather than of this command, so it is also how an application is configured on a server. Run again on a configured application it leaves the file alone and reports it unchanged.
 
-The templates depend on `@nocobase/db-sqlite`, which is the dialect their own `server/config/database.ts` defaults to, so a new application is ready to configure without installing anything. Another database means installing its driver first, because which dialects an application can run on is decided by what it depends on, and then filling in the connection:
+Default preinstalls SQLite, PostgreSQL, MySQL, SQL Server and Oracle in `devDependencies`. During first configuration the application CLI moves the selected driver to `dependencies` and updates the lockfile. To select PostgreSQL:
 
 ```bash
 cd crm
-pnpm add @nocobase/db-postgres
-pnpm remove @nocobase/db-sqlite   # optional, if nothing else uses SQLite
 pnpm nocobase config init --dialect postgres
 pnpm nocobase config set database.connections.main.host=db.internal database.connections.main.username=crm
 pnpm nocobase config set --from-env database.connections.main.password=CRM_DB_PASSWORD
 pnpm nocobase config check
 ```
 
-`config init` installs nothing. A dialect whose driver is absent is reported with the `pnpm add` that supplies it, pinned to the range the installed runtime accepts, and nothing is written — so the command can simply be run again once the driver is there. It writes placeholder connection settings for anything but SQLite and lists them as `requiredSettings`; on a terminal it asks for them instead, reading the password without echo, and tries the connection before writing. Other connections are left exactly as the template declared them, including the Examples template's additional SQLite databases.
+A dialect whose driver is absent is reported with the `pnpm add` that supplies it, pinned to the range the installed runtime accepts, and nothing is written — so the command can simply be run again once the driver is there. It writes placeholder connection settings for anything but SQLite and lists them as `requiredSettings`; on a terminal it asks for them instead, reading the password without echo, and tries the connection before writing. Other connections are left exactly as the template declared them, including the Examples template's additional SQLite databases.
 
 `config set` keeps the file's comments, refuses a section the application does not know, and with `--from-env` reads a value from an environment variable so a secret never reaches the shell history. `config check` loads the configuration the way a start would and connects to every database but SQLite; it reports a driver that is missing, a secret that is missing or still the placeholder, a section nothing reads, and a `${NAME}` that would be used as literal text.
 
@@ -166,7 +164,7 @@ JSON mode never prompts. It writes one final JSON document to stdout and progres
 | `DRIVER_VERIFICATION_FAILED` | `verify`        | The database driver's native addon did not load, even after a rebuild.                 |
 | `NODE_UNSUPPORTED`           |                 | Node.js is older than 24; nothing ran.                                                 |
 
-`result.nextCommands` is the whole remaining procedure in order, so an agent can run it as written rather than reconstructing it from prose. It lists `pnpm nocobase config init`, `pnpm nocobase config check` and `pnpm dev`, preceded by `pnpm install` after `--no-install`. `config init --json` returns the rest the same way: `result.nextCommands`, and `result.requiredSettings` for a database whose connection still has to be filled in.
+`result.nextCommands` is the whole remaining procedure in order, so an agent can run it as written rather than reconstructing it from prose. For templates declaring SQLite in either dependency section it lists `pnpm nocobase config init --dialect sqlite`, `pnpm nocobase config check` and `pnpm dev`, preceded by `pnpm install` after `--no-install`. `config init --json` returns the rest the same way: `result.nextCommands`, and `result.requiredSettings` for a database whose connection still has to be filled in.
 
 Success exits with 0, invalid input with 2, and operational failures with 1. An install failure preserves generated files, and its suggestion is the `pnpm --dir=<directory> install` that retries it in the existing directory from wherever it is run. `configured` is always `false`: creation writes no configuration, and nothing here verifies a database connection. The CLI never starts the application itself.
 

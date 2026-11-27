@@ -8,6 +8,10 @@ import { loadTestConfig, runCommand } from './helpers.ts';
  * `src/commands/` shows up here before it ships.
  */
 const EXPECTED_IDS = [
+  'backup:create',
+  'backup:inspect',
+  'backup:restore',
+  'backup:verify',
   'build',
   'cli:build',
   'cli:link',
@@ -34,6 +38,7 @@ const EXPECTED_IDS = [
   'package:remove',
   'plugin:inspect',
   'plugin:register',
+  'plugin:remove',
   'plugin:unregister',
   'plugin:update',
   'secrets:rotate',
@@ -47,6 +52,7 @@ const PACKAGE_COMMAND_IDS = [
   'package:remove',
   'plugin:inspect',
   'plugin:register',
+  'plugin:remove',
   'plugin:unregister',
   'plugin:update',
   'skills:sync',
@@ -130,6 +136,7 @@ describe('documented argument contract', () => {
     'package:remove',
     'plugin:inspect',
     'plugin:register',
+    'plugin:remove',
     'plugin:unregister',
     'skills:sync',
   ])('%s can target a workspace application', (id) => {
@@ -143,6 +150,7 @@ describe('documented argument contract', () => {
       'package:remove',
       'plugin:inspect',
       'plugin:register',
+      'plugin:remove',
       'plugin:unregister',
     ]) {
       const command = config.findCommand(id, { must: true });

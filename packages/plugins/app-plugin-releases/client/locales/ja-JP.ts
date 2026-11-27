@@ -106,6 +106,13 @@ const jaJP: LocaleResource<typeof enUS> = {
         environments: '環境の展開',
       },
     },
+    humanOnly: {
+      deployProtected:
+        '保護された環境へのデプロイには人による承認が必要です。キーはリクエストのみ可能です。',
+      delete: 'アプリを削除するとデータも削除されます。人のみが実行できます。',
+      configure:
+        'アプリの設定を変更すると設定とシークレットが変わります。人のみが実行できます。',
+    },
     keyScopes: {
       apps: {
         title: 'アプリと展開',
@@ -826,9 +833,9 @@ const jaJP: LocaleResource<typeof enUS> = {
       apps: 'アプリ',
       appsDescription: 'この環境にデプロイされたアプリ。',
       appsEmpty: 'ここにはまだアプリが展開されていません。',
-      sampleData: '最初のデプロイメントでサンプルデータをロードする',
+      sampleData: 'デプロイ時にサンプルデータを読み込む',
       sampleDataHint:
-        'ここでのアプリの最初のデプロイメントでは、サンプル データ (APP_SAMPLE_DATA=true) がインストールされます。本番環境ではなく、プレビューに使用してください。',
+        'デプロイのたびに、未実行のサンプルデータを読み込みます（APP_SAMPLE_DATA=true）。プレビュー環境で使用し、本番環境では無効にしてください。',
       add: '環境の追加',
       edit: '編集',
       delete: '削除',

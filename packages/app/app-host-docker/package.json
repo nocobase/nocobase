@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/app-host-docker",
-  "version": "0.1.0-beta.5",
+  "version": "0.1.0-beta.6",
   "description": "Docker activation backend for the NocoBase App Host: each App runs in its own container, which the Host starts on demand and proxies to.",
   "type": "module",
   "prettier": "@nocobase/dev-config/prettier",
@@ -48,6 +48,7 @@
     "prepack": "pnpm build",
     "test": "vitest run",
     "test:docker": "APP_HOST_DOCKER_IT=1 vitest run tests/integration.test.ts",
+    "test:docker:backup": "vitest run tests/backup.integration.test.ts",
     "pack:check": "pnpm pack --out \"$PACK_DIR/nocobase-app-host-docker.tgz\" && pnpm exec publint . && pnpm exec attw \"$PACK_DIR/nocobase-app-host-docker.tgz\" --profile esm-only"
   },
   "devDependencies": {

@@ -33,9 +33,16 @@ import {
 import { Hono, type MiddlewareHandler } from 'hono';
 import { every } from 'hono/combine';
 
-import { agentsAccessToken, agentsToken } from '../tokens.js';
+import { type ChatAudience, chatAudienceOf } from '../../shared/agents.js';
+import {
+  agentsAccessToken,
+  agentsToken,
+  skillPolicyToken,
+  usagePolicyToken,
+} from '../tokens.js';
 import { createAdminRoutes, type AdminEnv } from './admin.js';
 import { createChatRoutes } from './chat.js';
+import { createChatRoleRoutes } from './chat-roles.js';
 import { createModelRoutes } from '../online/routes.js';
 import { createRosterRoutes } from './roster.js';
 import { createRunRequestRoutes } from './run-requests.js';
@@ -66,6 +73,7 @@ export const apiRoutes: AppApiRouteContribution<AppPluginApplication> =
       if (!auth) throw new ProtocolError('UNAUTHORIZED', 'Sign in first.');
       const authz = context.get('authz');
       const run = runIdentityOf(auth)?.run?.run;
+      let audience: Promise<ChatAudience> | undefined;
       context.set('caller', {
         userId: auth.user.id,
         onlineContext: {
@@ -85,8 +93,24 @@ export const apiRoutes: AppApiRouteContribution<AppPluginApplication> =
           : null,
         can: (item, action) =>
           authz.can({ resource: { type: 'settings', id: item }, action }),
-        opens: (page) =>
-          authz.can({ resource: { type: 'page', id: page }, action: 'access' }),
+        // Read once per request, and only when an agent limits who may chat with it: a holder of an unrestricted set
+        // (root) chats with every agent, everyone else, managers of agents included, with those open to all or to one
+        // of their permission sets.
+        chatAudience: () =>
+          (audience ??= (async (): Promise<ChatAudience> => {
+            const sets = await authorization.permissionSets.getEffective({
+              principal: authz.identity.principal,
+              ...(authz.identity.subjects
+                ? { subjects: authz.identity.subjects }
+                : {}),
+            });
+            return chatAudienceOf(
+              sets,
+              (key) =>
+                authorization.permissionSets.protection(key)?.unrestricted ===
+                true,
+            );
+          })()),
         // Business levels come from the application's roles; without them, every level is none.
         scope: (key) =>
           container.has(agentsAccessToken)
@@ -199,10 +223,33 @@ export const apiRoutes: AppApiRouteContribution<AppPluginApplication> =
       '/agents',
       createModelRoutes(services, person, personOrScopedKey),
     );
+    router.route(
+      '/agents',
+      createChatRoleRoutes(
+        async () =>
+          (await authorization.permissionSets.list()).map((set) => ({
+            key: set.key,
+            title: set.title ?? null,
+          })),
+        person,
+      ),
+    );
     // Last: it holds `/agents/:agentId`.
     router.route(
       '/agents',
-      createAdminRoutes(services, person, personOrScopedKey),
+      createAdminRoutes(
+        services,
+        person,
+        personOrScopedKey,
+        () =>
+          container.has(skillPolicyToken)
+            ? container.resolve(skillPolicyToken)
+            : undefined,
+        () =>
+          container.has(usagePolicyToken)
+            ? container.resolve(usagePolicyToken)
+            : undefined,
+      ),
     );
     return router;
   });

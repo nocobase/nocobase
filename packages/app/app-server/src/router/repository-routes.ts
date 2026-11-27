@@ -1,3 +1,4 @@
+import { setApiExecutionResult } from './execution-result.js';
 import {
   databaseManagerToken,
   getRepositoryMutationIdentity,
@@ -349,6 +350,10 @@ export function defineRepositoryApiRoutes<P = unknown>(
           : repository.withPolicy(entry.policy);
       const buildPolicy = entry.policy;
       for (const { action, maxLimit } of entry.actions) {
+        const write =
+          action === 'createOne' ||
+          action === 'updateOne' ||
+          action === 'deleteOne';
         router.post(
           `/${entry.name}/${action}`,
           // Documented from the Collection when the API document is generated, not declared by hand.
@@ -420,9 +425,6 @@ export function defineRepositoryApiRoutes<P = unknown>(
             if (action === 'findMany' && acceptsRepositoryStream(context)) {
               return streamFindMany(context, scoped, input);
             }
-            const write = ['createOne', 'updateOne', 'deleteOne'].includes(
-              action,
-            );
             const key = context.req.header('Idempotency-Key');
             let data: unknown;
             if (write && protection && (protection.required || key)) {
@@ -540,6 +542,7 @@ export function defineRepositoryApiRoutes<P = unknown>(
               });
               context.header('Idempotency-Replayed', String(result.replayed));
               data = result.data.data;
+              setApiExecutionResult(context, result.data.locator);
             } else {
               if (write && key && !protection)
                 fail(
@@ -548,6 +551,11 @@ export function defineRepositoryApiRoutes<P = unknown>(
                   'This server has not enabled operation receipts.',
                 );
               data = await execute(scoped, action, input);
+              if (write && data && typeof data === 'object')
+                setApiExecutionResult(
+                  context,
+                  getRepositoryMutationIdentity(data),
+                );
             }
             if (action === 'aggregate' || action === 'groupBy') {
               return context.body(

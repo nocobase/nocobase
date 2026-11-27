@@ -1,4 +1,5 @@
 export { validateQueueConfig } from './validate-config.js';
+export { queuePersistencePaths } from './config.js';
 export { withChannel } from './consumer.js';
 export type {
   QueueImplementation,
@@ -20,11 +21,14 @@ export type {
   PublishReceipt,
   QueueAdapter,
   QueueAdapterConnections,
+  QueueBackendDescription,
+  QueueBackendSharing,
   QueueBackoffOptions,
   QueueConfig,
   QueueConfigEntry,
   QueueConnectionOptions,
   QueueConsumer,
+  QueueDescription,
   QueueDrainOptions,
   QueueLocalRuntimeOptions,
   QueueLogger,
@@ -32,6 +36,7 @@ export type {
   QueueProducer,
   QueueRetentionPolicy,
   QueueRuntimeOptions,
+  QueueSelection,
   QueueService,
   QueueServiceDefaults,
   RateLimitOptions,

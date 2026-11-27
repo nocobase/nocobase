@@ -3,6 +3,11 @@ import type { LocaleResource } from '@nocobase/i18n';
 import type enUS from './en-US.js';
 
 const frFR: LocaleResource<typeof enUS> = {
+  'push.deviceCount': 'Enregistrés : {{total}} · Activés : {{active}}',
+  'push.active': 'Enabled',
+  'push.paused': 'Paused',
+  'push.pause': 'Pause',
+  'push.resume': 'Resume',
   'push.title': 'Notifications poussées',
   'push.description':
     "Recevez des rappels sur chaque appareil, même lorsque l'application est fermée.",
@@ -35,6 +40,9 @@ const frFR: LocaleResource<typeof enUS> = {
   'push.loadingFailed':
     'Impossible de charger les appareils. Veuillez réessayer.',
   'push.retry': 'Réessayer',
+  'channelType.title': 'Push navigateur',
+  'channelType.testHint':
+    'Envoie une notification de test aux navigateurs pour lesquels vous avez activé le push. Activez-le d’abord dans Paramètres personnels › Notifications.',
 };
 
 export default frFR;

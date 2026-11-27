@@ -3,6 +3,15 @@ import type { LocaleResource } from '@nocobase/i18n';
 import type enUS from './en-US.js';
 
 const idID: LocaleResource<typeof enUS> = {
+  audit: {
+    operations: {
+      createPermissionSet: 'Buat set izin',
+      assignPermissionSet: 'Tetapkan set izin',
+      unassignPermissionSet: 'Batalkan penetapan set izin',
+      updatePermissionSet: 'Edit set izin',
+      deletePermissionSet: 'Hapus set izin',
+    },
+  },
   sections: {
     pages: 'Izin halaman',
     page: 'Halaman',
@@ -15,7 +24,6 @@ const idID: LocaleResource<typeof enUS> = {
     actions: {
       assign: 'Kelola tugas',
       configure: 'Konfigurasi',
-      inspect: 'Periksa izin',
       read: 'Baca',
       create: 'Buat',
       update: 'Perbarui',
@@ -31,8 +39,8 @@ const idID: LocaleResource<typeof enUS> = {
         'Izinkan akses ke setiap halaman, termasuk halaman yang ditambahkan nanti.',
     },
     settings: {
-      inspector: 'Inspektur izin',
       'permission-sets': 'Kumpulan izin',
+      'authentication-settings': 'Masuk dan autentikasi',
     },
     subjectTypes: {
       authenticated: 'Semua pengguna yang masuk',

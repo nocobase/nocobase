@@ -4,19 +4,24 @@ import {
 } from '@nocobase/app-client/plugins';
 
 import locales from './locales/index.js';
-import reactProviders from './react-providers.js';
+import { authorizationReactProviders } from './react-providers.js';
+import { authorizationSettingsRoutes } from './routes.js';
 import serviceProviders from './service-provider.js';
+import type { AuthorizationSettingsOptions } from './settings/extensions.js';
 
-export interface AuthorizationClientOptions {
-  readonly placeholder?: never;
+export interface AuthorizationClientOptions extends AuthorizationSettingsOptions {
+  /** `false` leaves the Roles and permissions pages unregistered. Defaults to `true`. */
+  readonly routes?: boolean;
 }
 
 const authorization: AppClientPluginFactory<AuthorizationClientOptions> =
-  defineClientPlugin({
+  defineClientPlugin<AuthorizationClientOptions>({
     packageName: '@nocobase/app-plugin-authorization',
     locales,
-    serviceProviders,
-    reactProviders,
+    serviceProviders: (options) => serviceProviders(options),
+    reactProviders: (options) => authorizationReactProviders(options),
+    routes: (options) =>
+      options.routes === false ? [] : [authorizationSettingsRoutes()],
   });
 
 export default authorization;

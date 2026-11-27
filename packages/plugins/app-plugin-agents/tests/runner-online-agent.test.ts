@@ -22,8 +22,10 @@ const context = (id = 'alice'): OnlineAgentContext => ({
     identity: { principal: { type: 'user', id } },
   } as AuthorizationContext,
 });
-async function fixture(options: { outputFeature?: boolean } = {}) {
-  h = await createHarness();
+async function fixture(
+  options: { outputFeature?: boolean; modelServices?: boolean } = {},
+) {
+  h = await createHarness({ modelServices: options.modelServices });
   const runner = await h.registerRunner(
     options.outputFeature
       ? {
@@ -58,7 +60,7 @@ async function fixture(options: { outputFeature?: boolean } = {}) {
 }
 
 it('streams two canonical blocks before completion, deduplicates retransmission and keeps real notice positions', async () => {
-  const f = await fixture();
+  const f = await fixture({ modelServices: false });
   expect(f.agent.backend).toBe('runner');
   await f.agent.send([{ role: 'user', content: 'Two blocks' }]);
   const stream = await f.agent.receive();
@@ -674,13 +676,16 @@ it('preserves directory defaults, personal eligibility and offline reasons, and 
   });
   expect(catalog.status).toBe(200);
   expect(catalog.body).toEqual({ data: alice, meta: { total: alice.length } });
-  expect(directory).toHaveBeenCalledExactlyOnceWith('alice');
+  expect(directory).toHaveBeenCalledExactlyOnceWith(
+    'alice',
+    expect.any(Function),
+  );
   const bobCatalog = await h.request('GET', '/agents/chatAgents', {
     user: 'bob',
   });
   expect(bobCatalog.status).toBe(200);
   expect(bobCatalog.body).toEqual({ data: bob, meta: { total: bob.length } });
-  expect(directory).toHaveBeenLastCalledWith('bob');
+  expect(directory).toHaveBeenLastCalledWith('bob', expect.any(Function));
 });
 
 it('maps server context, prompt and variables into Runner input while keeping context out of public messages', async () => {

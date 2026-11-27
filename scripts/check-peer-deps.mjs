@@ -35,6 +35,10 @@ export const IDENTITY_SENSITIVE_PACKAGES = new Map([
     'exports the service tokens every server plugin resolves against',
   ],
   [
+    '@nocobase/audit',
+    'exports auditServiceToken and route declarations the application reads by identity',
+  ],
+  [
     '@nocobase/app-client',
     'exports React contexts plus identity-keyed API and realtime client tokens',
   ],
@@ -50,6 +54,10 @@ export const IDENTITY_SENSITIVE_PACKAGES = new Map([
   [
     '@nocobase/queue',
     'types the host-owned QueueService that plugins resolve from queueServiceToken',
+  ],
+  [
+    '@nocobase/message-broker',
+    'types the host-owned MessageBrokerService that plugins resolve from messageBrokerServiceToken and shares its error classes',
   ],
   [
     '@nocobase/jobs',

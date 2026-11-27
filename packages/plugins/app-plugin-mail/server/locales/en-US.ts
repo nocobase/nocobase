@@ -1,7 +1,13 @@
 import type { LocaleResource } from '@nocobase/i18n';
 
-const enUS = {
+import pagesEnUS from '../../shared/locales/pages.en-US.js';
+
+const ownEnUS = {
   errors: {
+    originalNotFound:
+      'The original message is no longer available at the mail provider.',
+    originalTooLarge: 'The original message exceeds the 40 MiB download limit.',
+    operationUnsupported: 'This mail operation is unavailable.',
     connectionAuthenticationFailed:
       '{{protocol}} authentication failed. Check the login name and password or app password.',
     connectionHostNotFound:
@@ -50,6 +56,11 @@ const enUS = {
     messageNotFound: 'Mail message was not found.',
     authorizationStateRequired: 'Mail authorization state is required.',
   },
+};
+
+const enUS: typeof ownEnUS & { readonly access: typeof pagesEnUS.access } = {
+  ...ownEnUS,
+  access: pagesEnUS.access,
 };
 
 export type MailServerResource = LocaleResource<typeof enUS>;
