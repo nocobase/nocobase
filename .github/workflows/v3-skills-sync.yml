@@ -1,0 +1,19 @@
+# Manual entry only: the implementation and push trigger live on v3-develop.
+name: V3 Skills Sync
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: write
+jobs:
+  dispatch:
+    if: github.repository == 'nocobase/nocobase' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Dispatch on v3-develop
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh api --method POST "repos/$GITHUB_REPOSITORY/actions/workflows/v3-skills-sync.yml/dispatches" -f ref=v3-develop
+          echo 'Dispatched v3-skills-sync.yml on v3-develop. Check that run and the target skills-v3 synchronization run for their results.' >> "$GITHUB_STEP_SUMMARY"
