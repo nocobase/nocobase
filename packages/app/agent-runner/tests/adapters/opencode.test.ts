@@ -524,31 +524,63 @@ describe('session setup', () => {
     expect(fake.closed).toBe(true);
   });
 
-  it('keeps the operator config directory when adding the run skills', () => {
-    const env = opencodeEnv(
-      session({
-        env: {
-          OPENCODE_CONFIG_DIR: '/operator/opencode',
-          OPENCODE_CONFIG: '/operator/config.jsonc',
-          OPENCODE_CONFIG_CONTENT:
-            '{"skills":["/operator/skills",],"shell":"/bin/sh"}',
-        },
-        skills: {
-          root: '/run/plugin',
-          dir: '/run/plugin/skills',
-          slugs: ['example'],
-        },
-      }),
-    );
-    expect(env).toMatchObject({
-      OPENCODE_CONFIG_DIR: '/operator/opencode',
-      OPENCODE_CONFIG: '/operator/config.jsonc',
-      OPENCODE_CONFIG_CONTENT: JSON.stringify({
+  it.each([
+    {
+      format: 'JSONC array',
+      inline: '{"skills":["/operator/skills",],"shell":"/bin/sh"}',
+      expected: {
         skills: ['/operator/skills', '/run/plugin/skills'],
         shell: '/bin/sh',
-      }),
-    });
-  });
+      },
+    },
+    {
+      format: 'legacy object',
+      inline:
+        '{"skills":{"paths":["/operator/skills"],"urls":["https://example.test/catalog/"]},"shell":"/bin/sh"}',
+      expected: {
+        skills: [
+          '/operator/skills',
+          'https://example.test/catalog/',
+          '/run/plugin/skills',
+        ],
+        shell: '/bin/sh',
+      },
+    },
+    {
+      format: 'malformed JSONC',
+      inline: '{"skills": [',
+      expected: { skills: ['/run/plugin/skills'] },
+    },
+  ])(
+    'keeps the operator config directory and adds the run skills with a $format',
+    async ({ inline, expected }) => {
+      const fake = new FakeOpencode({
+        script: [...begin(), succeeded],
+      });
+      const env = {
+        OPENCODE_CONFIG_DIR: '/operator/opencode',
+        OPENCODE_CONFIG: '/operator/config.jsonc',
+        OPENCODE_CONFIG_CONTENT: inline,
+      };
+      const handle = adapterFor(fake).start(
+        session({
+          env,
+          skills: {
+            root: '/run/plugin',
+            dir: '/run/plugin/skills',
+            slugs: ['example'],
+          },
+        }),
+      );
+      await collect(handle.events);
+      expect((await handle.result).exit).toBe('completed');
+      expect(fake.launches[0].env).toEqual({
+        ...env,
+        OPENCODE_CONFIG_CONTENT: JSON.stringify(expected),
+      });
+      expect(env.OPENCODE_CONFIG_CONTENT).toBe(inline);
+    },
+  );
 
   it.each([false, true])(
     'retries model and session setup on the same server (resume: %s)',

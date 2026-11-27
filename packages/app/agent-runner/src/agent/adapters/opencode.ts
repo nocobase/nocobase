@@ -98,17 +98,23 @@ export function opencodeEnv(session: AdapterSession): Record<string, string> {
   if (session.skills && !env.OPENCODE_CONFIG_DIR)
     env.OPENCODE_CONFIG_DIR = session.skills.root;
   else if (session.skills) {
-    // OpenCode accepts additional skill directories in its per-process inline config.
-    const inline = parseOpencodeConfig(env.OPENCODE_CONFIG_CONTENT ?? '{}');
-    if (inline) {
-      const configuredSkills: unknown[] = Array.isArray(inline.skills)
-        ? inline.skills
-        : [];
-      env.OPENCODE_CONFIG_CONTENT = JSON.stringify({
-        ...inline,
-        skills: [...configuredSkills, session.skills.dir],
-      });
+    // OpenCode skips malformed inline config. In that case, add only the run
+    // skills and leave the operator's config files and directory in effect.
+    const inline = parseOpencodeConfig(env.OPENCODE_CONFIG_CONTENT ?? '') ?? {};
+    const skills = inline.skills;
+    // OpenCode 2.x normalizes the legacy paths and URLs into a single array.
+    let configuredSkills: unknown[] = [];
+    if (Array.isArray(skills)) {
+      configuredSkills = skills;
+    } else if (isRecord(skills)) {
+      const paths: unknown[] = Array.isArray(skills.paths) ? skills.paths : [];
+      const urls: unknown[] = Array.isArray(skills.urls) ? skills.urls : [];
+      configuredSkills = [...paths, ...urls];
     }
+    env.OPENCODE_CONFIG_CONTENT = JSON.stringify({
+      ...inline,
+      skills: [...configuredSkills, session.skills.dir],
+    });
   }
   return withGlobalConfig(env);
 }

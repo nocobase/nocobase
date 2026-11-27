@@ -42,12 +42,12 @@ export interface ServerHandle {
 export type LaunchFn = (options: LaunchOptions) => Promise<ServerHandle>;
 
 export class ServerStartError extends Error {
-  constructor(
-    readonly reason: string,
-    stderr?: string,
-  ) {
+  readonly reason: string;
+
+  constructor(reason: string, stderr?: string) {
     super(stderr ? `${reason}: ${stderr}` : reason);
     this.name = 'ServerStartError';
+    this.reason = reason;
   }
 }
 
