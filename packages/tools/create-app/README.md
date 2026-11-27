@@ -24,8 +24,6 @@ To check the current state:
 npm view @nocobase/create-app dist-tags --registry=https://registry.npmjs.org
 ```
 
-`--template-tag` likewise defaults to `latest`.
-
 ## Interactive use
 
 With no arguments, the command asks for the directory and nothing else:
@@ -36,16 +34,16 @@ pnpm create @nocobase/app
 
 ## Flags
 
-| Flag                  | Description                                                                              |
-| --------------------- | ---------------------------------------------------------------------------------------- |
-| `[directory]`         | Application directory, relative to the current one. Prompted for when omitted            |
-| `--json`              | Non-interactive mode; requires a directory and prints one final JSON result              |
-| `--no-install`        | Skip installing dependencies after scaffolding                                           |
-| `--template`          | Template, `default` by default. Also accepts a published package or a local package path |
-| `--template-tag`      | Channel a named template is fetched from: `latest` (default) or `beta`                   |
-| `--nocobase-registry` | Override the registry for `@nocobase/*`; takes precedence over `NOCOBASE_REGISTRY`       |
-| `-h, --help`          | Show help                                                                                |
-| `--version`           | Show the version                                                                         |
+| Flag                  | Description                                                                                                               |
+| --------------------- | ------------------------------------------------------------------------------------------------------------------------- |
+| `[directory]`         | Application directory, relative to the current one. Prompted for when omitted                                             |
+| `--json`              | Non-interactive mode; requires a directory and prints one final JSON result                                               |
+| `--no-install`        | Skip installing dependencies after scaffolding                                                                            |
+| `--template`          | Template, `default` by default. Also accepts a published package or a local package path                                  |
+| `--template-tag`      | Channel a named template is fetched from: `latest` (default) or `beta`; ignored when `--template` names a version or path |
+| `--nocobase-registry` | Override the registry for `@nocobase/*`; takes precedence over `NOCOBASE_REGISTRY`                                        |
+| `-h, --help`          | Show help                                                                                                                 |
+| `--version`           | Show the version                                                                                                          |
 
 The open-source `default` and `examples` aliases select their respective template packages. The commercial `multi-app`, `sub-app` and `multi-portal` aliases enable capabilities in Enterprise. Use a registry account with access to Enterprise and its plugins. When the selected Enterprise channel predates a capability, create-app uses its original scenario package on the same channel.
 
@@ -54,18 +52,10 @@ pnpm create @nocobase/app crm --template=default   # the default, can be omitted
 pnpm create @nocobase/app examples --template=examples
 ```
 
-`--template-tag` decides which channel a named template is fetched from, `latest` by default:
+Any other value is used as given, so a specific version or a local directory works as usual:
 
 ```bash
-pnpm create @nocobase/app crm --template-tag=beta
-```
-
-Use `beta` only when you specifically want a prerelease; see [About dist-tags](#about-dist-tags).
-
-Any other value is used as given, so a specific version or a local directory works as usual. `--template-tag` is ignored in that case: you have already said which version you want, and appending a channel would override the more specific request.
-
-```bash
-pnpm create @nocobase/app crm --template=@nocobase/app-template-default@1.0.0-beta.24
+pnpm create @nocobase/app crm --template=@nocobase/app-template-default@1.0.0
 pnpm create @nocobase/app crm --template=./packages/templates/app-template-default
 ```
 
@@ -78,7 +68,7 @@ npm view @nocobase/app-template-enterprise version --registry=https://pkg-v3.noc
 NOCOBASE_REGISTRY=https://pkg-v3.nocobase.com/ pnpm create @nocobase/app crm --template=multi-portal
 ```
 
-The alias follows `--template-tag` like Default and Examples. Registry selection follows your configured `@nocobase` scope, or an explicit `NOCOBASE_REGISTRY` / `--nocobase-registry` override; the alias does not change global npm configuration. The generated project records the selected registry for `@nocobase` packages without copying credentials. A successful login does not prove access to the template or that the selected channel has been released: verify the package with `npm view` before creating the project. If the installed create-app predates this alias, use `--template=@nocobase/app-template-multi-portal` with the same registry instead. Do not substitute Default when the commercial package is unavailable.
+Registry selection follows your configured `@nocobase` scope, or an explicit `NOCOBASE_REGISTRY` / `--nocobase-registry` override; the alias does not change global npm configuration. The generated project records the selected registry for `@nocobase` packages without copying credentials. A successful login does not prove access to the template or that the selected channel has been released: verify the package with `npm view` before creating the project. If the installed create-app predates this alias, use `--template=@nocobase/app-template-multi-portal` with the same registry instead. Do not substitute Default when the commercial package is unavailable.
 
 ### Multi-app applications
 
