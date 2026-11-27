@@ -7,6 +7,13 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+export type LayoutStorageScopeStorageType = 'localStorage' | 'sessionStorage' | 'memory';
+
+export interface LayoutStorageScopeOptions {
+  storageType: LayoutStorageScopeStorageType;
+  prefix: string;
+}
+
 export interface LayoutRegisterOptions {
   routeName: string;
   routePath: string;
@@ -15,8 +22,10 @@ export interface LayoutRegisterOptions {
   rootPageModelClass?: string;
   childPageModelClass?: string;
   authCheck?: boolean;
+  storageScope?: LayoutStorageScopeOptions;
 }
 
-export interface LayoutDefinition extends Required<LayoutRegisterOptions> {
+export interface LayoutDefinition extends Omit<Required<LayoutRegisterOptions>, 'storageScope'> {
   rootRouteName: string;
+  storageScope?: LayoutStorageScopeOptions;
 }

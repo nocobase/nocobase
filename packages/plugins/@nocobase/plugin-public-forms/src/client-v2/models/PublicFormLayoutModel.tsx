@@ -34,14 +34,14 @@ function usePublicFormTokenHeader() {
   useEffect(() => {
     const interceptor = app.apiClient.axios.interceptors.request.use((config) => {
       config.headers = config.headers || ({} as typeof config.headers);
-      config.headers['X-Form-Token'] = localStorage.getItem(PUBLIC_FORM_TOKEN_KEY) || '';
+      config.headers['X-Form-Token'] = app.apiClient.storage.getItem(PUBLIC_FORM_TOKEN_KEY) || '';
       return config;
     });
 
     return () => {
       app.apiClient.axios.interceptors.request.eject(interceptor);
     };
-  }, [app.apiClient.axios.interceptors.request]);
+  }, [app.apiClient.axios.interceptors.request, app.apiClient.storage]);
 }
 
 function usePublicFormFlowModel(meta: any) {
@@ -100,7 +100,7 @@ const PublicFormLayoutComponent = observer((props: { model: PublicFormLayoutMode
       onSuccess(nextData: any) {
         setPasswordErrorMessage('');
         if (nextData?.token) {
-          localStorage.setItem(PUBLIC_FORM_TOKEN_KEY, nextData.token);
+          app.apiClient.storage.setItem(PUBLIC_FORM_TOKEN_KEY, nextData.token);
         }
       },
       onError(nextError: any) {
