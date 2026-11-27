@@ -416,7 +416,7 @@ it('honors explicit declarations before guards and uses inference only for suppo
   const disabled = await appWithAudit({ enabled: false, autoDetect: true });
   const noDestinations = await appWithAudit({ transports: {} });
   const readPolicy = vi.fn(() =>
-    Promise.resolve({ recordExports: false, captureBody: false, redact: [] }),
+    Promise.resolve({ captureBody: false, redact: [] }),
   );
   for (const { app } of [disabled, noDestinations])
     app.container
@@ -458,9 +458,10 @@ it('honors explicit declarations before guards and uses inference only for suppo
   child.get('/read', describeRoute({ operationId: 'read' }), (context) =>
     context.body(null, 204),
   );
-  child.get(
+  child.post(
     '/export',
-    describeAudit({ action: 'export', category: 'export' }),
+    describeAudit(false),
+    describeRoute({ operationId: 'export' }),
     (context) => context.body(null, 204),
   );
   router.route('/mounted', child);
@@ -479,7 +480,7 @@ it('honors explicit declarations before guards and uses inference only for suppo
         ])
           await app.fetch(request(`mounted/${suffix}`, {}));
         await app.fetch(new Request('http://localhost/api/mounted/read'));
-        await app.fetch(new Request('http://localhost/api/mounted/export'));
+        await app.fetch(request('mounted/export', {}));
         await app.fetch(request('mounted/missing', {}));
       }),
     );
@@ -503,12 +504,8 @@ it('honors explicit declarations before guards and uses inference only for suppo
         outcome: 'success',
       },
       { action: 'documented', operationName: 'documented', outcome: 'success' },
-      { action: 'export', operationName: 'export', outcome: 'success' },
     ]);
-    expect(second.events.map(({ action }) => action)).toEqual([
-      'explicit',
-      'export',
-    ]);
+    expect(second.events.map(({ action }) => action)).toEqual(['explicit']);
     expect(disabled.events).toEqual([]);
     expect(noDestinations.events).toEqual([]);
   } finally {

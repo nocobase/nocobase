@@ -36,8 +36,6 @@ export interface AuditExecutionResult {
 export interface AuditRouteOptions {
   readonly action?: string;
   readonly resource?: string;
-  /** Marks a route that generates a data export. */
-  readonly category?: 'export';
   readonly operationName?:
     string | (AuditTranslation & { readonly defaultValue?: string });
   /** Runs before guards. Only use route information available before processing. */
@@ -313,11 +311,6 @@ export function auditMiddleware(options: {
     const declaration = route.options;
     const pendingPolicy = service.readCapturePolicy();
     const policy = pendingPolicy && (await pendingPolicy);
-    if (
-      declaration.category === 'export' &&
-      (policy === false || policy?.recordExports === false)
-    )
-      return next();
 
     let before: AuditTargets | undefined;
     if (policy !== false && declaration.target) {

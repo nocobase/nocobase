@@ -1,5 +1,7 @@
 import path from 'node:path';
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import { Application } from '@nocobase/app-server/application';
+import { AppConfig, createAppPaths } from '@nocobase/app-server/config';
 import {
   createTestDatabase,
   describeMigration,
@@ -10,10 +12,14 @@ import {
 } from '@nocobase/app-plugin-authentication';
 import type { AppPluginApplication } from '@nocobase/app-server/plugins';
 import {
+  defineApiRoutes,
+  describeRoute,
   findUndeclaredApiRoutes,
   generateApiDocument,
   findApiDocumentSchemaProblems,
 } from '@nocobase/app-server/router';
+import { auditServiceToken, type AuditTransportEvent } from '@nocobase/audit';
+import { AuditProvider } from '@nocobase/audit/runtime';
 import type { Job, JobExecutionContext, JobExecutor } from '@nocobase/jobs';
 import { ServiceContainer } from '@nocobase/service-provider';
 import { Hono, type Context, type Next } from 'hono';
@@ -131,7 +137,7 @@ async function fixture() {
     signal,
     reportProgress: vi.fn(async () => {}),
   });
-  return { db, jobs, addJob, topic, service, router, context };
+  return { db, jobs, addJob, topic, service, router, context, container };
 }
 it('documents and protects every export operation independently', async () => {
   const { router } = await fixture();
@@ -224,6 +230,73 @@ it('exports only participant tasks as a durable formula-safe CSV, with private d
   );
   expect(await afterReload.file('bob', queued.id)).toEqual(file);
   await service.create('bob');
+});
+
+it('excludes task CSV creation and downloads from automatic audit capture', async () => {
+  const { container, jobs, context } = await fixture();
+  const config = new AppConfig();
+  await config.loadAll();
+  config.mergeDefaults({
+    audit: { autoDetect: true, transports: { capture: { driver: 'memory' } } },
+  });
+  const app = new Application({
+    config,
+    paths: createAppPaths({ rootDir: '/test/task-export' }),
+  });
+  disposers.unshift(() => app.shutdown());
+  app.addServiceProvider(AuditProvider);
+  const events: AuditTransportEvent[] = [];
+  app.container.resolve(auditServiceToken).registerDriver({
+    name: 'memory',
+    createTransport: () => ({
+      write(event) {
+        events.push(event);
+      },
+    }),
+  });
+  app.addRoutes(
+    defineApiRoutes(async () => {
+      const router = new Hono();
+      router.route(
+        '/',
+        await exportRoutes.createRouter({ container } as AppPluginApplication),
+      );
+      router.post(
+        '/auditControl',
+        describeRoute({ operationId: 'auditControlWrite' }),
+        (c) => c.json({ ok: true }),
+      );
+      return router;
+    }),
+  );
+  const request = (
+    route: string,
+    user?: string,
+    body?: Record<string, unknown>,
+  ) =>
+    app.fetch(
+      new Request(`http://localhost/api/${route}`, {
+        method: body === undefined ? 'GET' : 'POST',
+        headers: {
+          'content-type': 'application/json',
+          ...(user && { 'x-test-user': user }),
+        },
+        body: body === undefined ? undefined : JSON.stringify(body),
+      }),
+    );
+  const route = 'realtimeExample/exports';
+  expect((await request(route, undefined, {})).status).toBe(401);
+  expect((await request(route, 'bob', { invalid: true })).status).toBe(400);
+  const queued = await request(route, 'bob', {});
+  expect(queued.status).toBe(202);
+  const {
+    data: { id },
+  } = (await queued.json()) as { data: { id: string } };
+  await jobs[0]!.execute(context());
+  expect((await request(`${route}/${id}/file`, 'alice')).status).toBe(404);
+  expect((await request(`${route}/${id}/file`, 'bob')).status).toBe(200);
+  expect((await request('auditControl', 'bob', {})).status).toBe(200);
+  expect(events.map(({ action }) => action)).toEqual(['auditControlWrite']);
 });
 it('recovers interrupted work and handles fast execution without losing the owner', async () => {
   const { db, jobs, service, topic, addJob, context } = await fixture();

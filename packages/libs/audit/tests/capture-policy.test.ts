@@ -4,7 +4,7 @@ import path from 'node:path';
 
 import { Application } from '@nocobase/app-server/application';
 import { AppConfig, createAppPaths } from '@nocobase/app-server/config';
-import { defineApiRoutes } from '@nocobase/app-server/router';
+import { defineApiRoutes, describeRoute } from '@nocobase/app-server/router';
 import { Hono } from 'hono';
 import { expect, it, vi } from 'vitest';
 
@@ -31,6 +31,7 @@ async function fixture(provider: AuditCapturePolicyProvider) {
   await config.loadAll();
   config.mergeDefaults({
     audit: {
+      autoDetect: true,
       transports: {
         file: { driver: 'file', options: { path: 'audit.jsonl' } },
         memory: { driver: 'memory' },
@@ -94,7 +95,8 @@ async function fixture(provider: AuditCapturePolicyProvider) {
       router.post('/unmatched', (c) => c.json({ ok: true }));
       router.post(
         '/export/:outcome',
-        describeAudit({ action: 'widget.export', category: 'export' }),
+        describeAudit(false),
+        describeRoute({ operationId: 'widgetExport' }),
         (c) => {
           const outcome = c.req.param('outcome');
           return c.json(
@@ -148,7 +150,6 @@ it('uses one policy snapshot per eligible request and dispatches the same saniti
     { path: 'extended.mobile' },
   ];
   let policy: AuditCapturePolicy = {
-    recordExports: true,
     captureBody: true,
     redact: rules,
   };
@@ -162,7 +163,7 @@ it('uses one policy snapshot per eligible request and dispatches the same saniti
     const first = app.send('create/started');
     await app.entered.promise;
     rules.length = 0;
-    policy = { recordExports: false, captureBody: false, redact: [] };
+    policy = { captureBody: false, redact: [] };
     try {
       expect((await app.send('create/later')).status).toBe(201);
       expect((await app.send('export/success')).status).toBe(200);
@@ -175,10 +176,7 @@ it('uses one policy snapshot per eligible request and dispatches the same saniti
         data: { id: 'widget-1' },
       });
     }
-    policy = { ...policy, recordExports: true };
-    expect((await app.send('export/success')).status).toBe(200);
-
-    expect(provider).toHaveBeenCalledTimes(6);
+    expect(provider).toHaveBeenCalledTimes(2);
     expect(app.events).toMatchObject([
       {
         action: 'widget.create',
@@ -209,7 +207,6 @@ it('uses one policy snapshot per eligible request and dispatches the same saniti
           password: '******',
         },
       },
-      { action: 'widget.export', status: 200 },
     ]);
     expect(await app.readFileEvents()).toEqual(
       JSON.parse(JSON.stringify(app.events)),
@@ -221,14 +218,16 @@ it('uses one policy snapshot per eligible request and dispatches the same saniti
 
 it('keeps only the ordinary operation outcome when policy reads fail', async () => {
   const report = vi.spyOn(console, 'error').mockImplementation(() => undefined);
-  const app = await fixture(() =>
+  const provider = vi.fn(() =>
     Promise.reject(new Error('private provider error')),
   );
+  const app = await fixture(provider);
   try {
     expect((await app.send('create/ordinary')).status).toBe(201);
     expect((await app.send('export/success')).status).toBe(200);
     expect((await app.send('export/denied')).status).toBe(403);
     expect((await app.send('export/failure')).status).toBe(500);
+    expect(provider).toHaveBeenCalledOnce();
     expect(app.target).not.toHaveBeenCalled();
     expect(app.resolveTargets).not.toHaveBeenCalled();
     expect(app.events).toEqual([

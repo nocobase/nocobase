@@ -54,7 +54,7 @@ export const exportRoutes: AppApiRouteContribution<AppPluginApplication> =
     );
     router.post(
       '/realtimeExample/exports',
-      describeAudit({ category: 'export' }),
+      describeAudit(false),
       describeRoute({
         tags,
         summary: 'Export my tasks',
@@ -69,6 +69,7 @@ export const exportRoutes: AppApiRouteContribution<AppPluginApplication> =
     );
     router.get(
       '/realtimeExample/exports/:exportId/file',
+      describeAudit(false),
       describeRoute({
         tags,
         summary: 'Read my exported CSV file',

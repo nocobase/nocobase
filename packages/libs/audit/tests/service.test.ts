@@ -142,7 +142,7 @@ it('bounds policy reads and retains timed-out slots until the provider settles',
       ['The audit capture policy read timed out.'],
     ]);
 
-    const policy = { recordExports: true, captureBody: false, redact: [] };
+    const policy = { captureBody: false, redact: [] };
     blocked.resolve(policy);
     await vi.advanceTimersByTimeAsync(0);
     await expect(coordinator.readCapturePolicy()).resolves.toEqual(policy);

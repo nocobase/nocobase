@@ -1288,7 +1288,7 @@ export function createAdminRoutes(
   );
   router.get(
     '/skills/:skillId/archive',
-    describeAudit({ category: 'export' }),
+    describeAudit(false),
     scoped,
     can('agents.skills', 'read'),
     describeRoute({

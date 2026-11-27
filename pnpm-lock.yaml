@@ -1531,6 +1531,9 @@ importers:
       '@nocobase/app-server':
         specifier: workspace:^
         version: link:../../app/app-server
+      '@nocobase/audit':
+        specifier: workspace:^
+        version: link:../../libs/audit
       '@nocobase/db':
         specifier: workspace:^
         version: link:../../libs/db
@@ -2283,6 +2286,9 @@ importers:
       '@base-ui/react':
         specifier: 'catalog:'
         version: 1.7.0(@date-fns/tz@1.5.0)(@types/react@19.2.18)(date-fns@4.4.0)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
+      '@nocobase/audit':
+        specifier: workspace:^
+        version: link:../../libs/audit
       carbone:
         specifier: 3.8.2
         version: 3.8.2(supports-color@8.1.1)

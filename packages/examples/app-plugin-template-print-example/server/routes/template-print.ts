@@ -15,6 +15,7 @@ import {
   describeRoute,
   listResponse,
 } from '@nocobase/app-server/router';
+import { describeAudit } from '@nocobase/audit';
 import { Hono, type MiddlewareHandler } from 'hono';
 import path from 'node:path';
 
@@ -114,6 +115,7 @@ export function createTemplatePrintRoutes(
   // A download, so a GET answering the document's bytes rather than `{ data }`.
   router.get(
     '/invoices/:invoiceId/print',
+    describeAudit(false),
     requireQuoteAccess(),
     describeRoute({
       tags,

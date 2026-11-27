@@ -40,7 +40,6 @@ export interface AuditTransportDriver {
 export type AuditActorResolver = (context: Context) => AuditActor | undefined;
 
 export interface AuditCapturePolicy {
-  readonly recordExports: boolean;
   readonly captureBody: boolean;
   readonly redact: readonly AuditRedactRule[];
 }
@@ -132,15 +131,11 @@ export class AuditCoordinator implements AuditService {
     pending.add(controller);
     const read = Promise.resolve()
       .then(() => provider(controller.signal))
-      .then(({ recordExports, captureBody, redact }) => {
+      .then(({ captureBody, redact }) => {
         controller.signal.throwIfAborted();
-        if (
-          typeof recordExports !== 'boolean' ||
-          typeof captureBody !== 'boolean'
-        )
-          throw new TypeError('Invalid audit capture policy flags.');
+        if (typeof captureBody !== 'boolean')
+          throw new TypeError('Invalid audit capture policy snapshot setting.');
         return {
-          recordExports,
           captureBody,
           redact: copyAuditRedactRules(redact),
         };
