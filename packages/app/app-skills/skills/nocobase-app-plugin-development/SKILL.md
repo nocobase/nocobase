@@ -11,6 +11,8 @@ This Skill ships with the App's installed `@nocobase/app-skills`; update it thro
 
 For work explicitly in the NocoBase source repository, the repository links this same maintained Skill locally. Read `.agents/rules/plugin-development.md` from that repository root for source-only creation, registration and validation commands. An App does not need those repository files. Source paths in references are optional lookup locations; use installed exports, declarations and synchronized Skills to verify APIs for the App's version. Do not apply the legacy `Plugin` class, `src/client-v2/` or `nb scaffold plugin` protocol. If the creation tool or App CLI lacks App-workspace support, report the incompatible packages instead of hand-building a scaffold or downloading the source repository.
 
+For product plugins under the source repository’s `packages/plugins/`, follow the [product plugin manifest rules](references/plugin-foundation.md#product-plugin-manifests-in-the-source-repository) and run `pnpm plugins:check` from the repository root before submitting.
+
 ## Choose the relevant references
 
 These English references adapt the plugin development guide into task-specific instructions. Read the rows relevant to the task; do not load the entire reference set by default.

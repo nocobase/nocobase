@@ -29,6 +29,19 @@ Choose a lowercase kebab-case short name or a full scoped package name such as `
 
 An App owns its page composition, business models, call sites, and permission configuration. A plugin owns its services, components, internal data, and lifecycle. Communicate through public exports, API endpoints, typed options, UI Library items, and Plugin Skills; do not bypass private modules or internal tables.
 
+## Product plugin manifests in the source repository
+
+For each product package directly under `packages/plugins/`, provide nonblank `en-US` and `zh-CN` strings in both `nocobase.title` and `nocobase.description`. Set `nocobase.pluginPolicy` in the same package manifest and align the Default template with that policy in the same change.
+
+| Policy | Default template dependency | Default registration |
+| --- | --- | --- |
+| `preinstall-and-enable` | `dependencies` only | Register each exported client, server and CLI plugin entry. |
+| `preinstall-only` | `devDependencies` only | Leave all entries unregistered. |
+| `do-not-preinstall` | Neither dependency group | Leave all entries unregistered. |
+| `deprecated` | Neither dependency group | Leave all entries unregistered. Use this policy for a retired plugin. |
+
+Run `pnpm plugins:check` from the source repository root. It checks these manifests against the Default template’s direct dependencies and registration arrays. The check covers product plugins only; application-local plugins and packages under `packages/examples/` have their own composition.
+
 ## Select capabilities explicitly
 
 | Capability                 | Generated foundation                                  |
