@@ -23,6 +23,7 @@ import {
   getAdminLayoutMenuMovePositionOptions,
   normalizeAdminLayoutMenuLegacyVariables,
   observeAdminMenuRoutes,
+  findFirstV2LandingRoute,
   openAdminLayoutMenuLink,
   resolveAdminLayoutMenuLink,
   resolveAdminLayoutMenuDragMoveOptionsFromEvent,
@@ -1478,6 +1479,59 @@ describe('AdminLayoutModel menu items', () => {
     expect(topGroup()).toMatchObject({ redirect: '/admin/1', _runtimePath: null });
     firstPage.setHidden(false);
     expect(topGroup().redirect).toBe('/admin/first');
+  });
+
+  it('should resolve the home page from settled menu rules in accessible route order', async () => {
+    let finishRule!: () => void;
+    const rule = new Promise<void>((resolve) => {
+      finishRule = resolve;
+    });
+    const findOne = vi.fn(async ({ uid }) => ({
+      uid,
+      stepParams: { menuSettings: { linkageRules: { value: [{ enable: true }] } } },
+    }));
+    engine.setModelRepository({ findOne, save: vi.fn(), destroy: vi.fn(), move: vi.fn(), duplicate: vi.fn() });
+    const layout = engine.createModel<AdminLayoutModel>({ uid: ADMIN_LAYOUT_MODEL_UID, use: AdminLayoutModel });
+    const { group, page, flowPage } = NocoBaseDesktopRouteType;
+    const routes = [
+      { id: 1, type: page, schemaUid: 'classic' },
+      {
+        id: 2,
+        type: group,
+        children: [
+          {
+            id: 3,
+            type: group,
+            children: [
+              { id: 4, type: flowPage, schemaUid: 'first', options: { hasPersistedMenuInstanceFlow: true } },
+              { id: 5, type: flowPage, schemaUid: 'second' },
+            ],
+          },
+        ],
+      },
+      { id: 6, type: flowPage, schemaUid: 'sibling' },
+    ];
+    const resolveHome = () => layout.resolveDefaultPage(routes, findFirstV2LandingRoute);
+    const landed = vi.fn();
+    const navigation = resolveHome().then(landed);
+    const nested = layout.subModels.menuItems[1].subModels.menuItems[0];
+    const first = nested.subModels.menuItems[0];
+    const rerender = vi.spyOn(first, 'rerender').mockImplementation(async () => {
+      await rule;
+      first.setHidden(true);
+    });
+    await waitFor(() => expect(rerender).toHaveBeenCalled());
+    expect(landed).not.toHaveBeenCalled();
+    finishRule();
+    await navigation;
+    expect(landed).toHaveBeenCalledWith(expect.objectContaining({ schemaUid: 'second' }));
+    first.setHidden(false);
+    expect((await resolveHome())?.schemaUid).toBe('first');
+    nested.setHidden(true);
+    expect((await resolveHome())?.schemaUid).toBe('sibling');
+    layout.subModels.menuItems[2].setHidden(true);
+    expect(await resolveHome()).toBeUndefined();
+    expect(findOne).toHaveBeenCalledTimes(1);
   });
 
   it('should wait for the first nested page visibility before publishing a group link on refresh', async () => {

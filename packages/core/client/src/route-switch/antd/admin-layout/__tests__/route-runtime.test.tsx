@@ -10,7 +10,7 @@
 import { act, render, screen, userEvent, waitFor } from '@nocobase/test/client';
 import { RouteRepository } from '@nocobase/client-v2';
 import React from 'react';
-import { MemoryRouter, useLocation } from 'react-router-dom';
+import { Link, MemoryRouter, useLocation } from 'react-router-dom';
 import { describe, expect, it, vi } from 'vitest';
 import { CustomRouterContextProvider } from '../../../../application/CustomRouterContextProvider';
 import { NavigateToDefaultPage } from '../AdminShellProvider';
@@ -25,7 +25,7 @@ vi.mock('@nocobase/flow-engine', async (importOriginal) => {
   };
 });
 
-import { useFlowEngineContext } from '@nocobase/flow-engine';
+import { FlowEngine, useFlowEngineContext } from '@nocobase/flow-engine';
 
 const mockedUseFlowEngineContext = vi.mocked(useFlowEngineContext);
 
@@ -126,6 +126,38 @@ describe('RoutesRequestProvider', () => {
     );
 
     consoleErrorSpy.mockRestore();
+  });
+
+  it('should cancel the home redirect when the user navigates during menu hydration', async () => {
+    const engine = new FlowEngine();
+    const routeRepository = new RouteRepository({});
+    vi.spyOn(routeRepository, 'refreshAccessible').mockResolvedValue([]);
+    engine.context.defineProperty('routeRepository', { value: routeRepository });
+    mockedUseFlowEngineContext.mockReturnValue(engine.context);
+    let finish!: (route: { schemaUid: string }) => void;
+    const model = {
+      resolveDefaultPage: vi.fn(
+        () =>
+          new Promise<{ schemaUid: string }>((resolve) => {
+            finish = resolve;
+          }),
+      ),
+    };
+    const CurrentPath = () => <div data-testid="pathname">{useLocation().pathname}</div>;
+    render(
+      <MemoryRouter initialEntries={['/admin']}>
+        <RoutesRequestProvider>
+          <NavigateToDefaultPage model={model}>
+            <Link to="/admin/sibling">Sibling</Link>
+            <CurrentPath />
+          </NavigateToDefaultPage>
+        </RoutesRequestProvider>
+      </MemoryRouter>,
+    );
+    await waitFor(() => expect(model.resolveDefaultPage).toHaveBeenCalled());
+    await userEvent.click(screen.getByRole('link', { name: 'Sibling' }));
+    await act(async () => finish({ schemaUid: 'first' }));
+    expect(screen.getByTestId('pathname').textContent).toBe('/admin/sibling');
   });
 
   it('should land on the next user first page instead of a page cached for the previous user', async () => {

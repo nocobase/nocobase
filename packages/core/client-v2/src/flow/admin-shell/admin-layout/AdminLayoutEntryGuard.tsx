@@ -158,7 +158,11 @@ export const AdminLayoutEntryGuard: FC<{ children: React.ReactNode; model?: Admi
         return;
       }
 
-      const firstAccessibleRoute = findFirstV2LandingRoute(routeRepository?.listAccessible?.() || []);
+      const routes = routeRepository?.listAccessible?.() || [];
+      const firstAccessibleRoute = model?.resolveDefaultPage
+        ? await model.resolveDefaultPage(routes, findFirstV2LandingRoute)
+        : findFirstV2LandingRoute(routes);
+      if (!active) return;
       if (!firstAccessibleRoute) {
         if (active) {
           setReady(true);
@@ -203,6 +207,7 @@ export const AdminLayoutEntryGuard: FC<{ children: React.ReactNode; model?: Admi
     location.hash,
     location.pathname,
     location.search,
+    model,
     navigate,
     pageUid,
     routeRepository,

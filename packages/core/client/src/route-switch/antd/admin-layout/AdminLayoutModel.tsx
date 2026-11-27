@@ -60,7 +60,7 @@ export class AdminLayoutModelV1 extends AdminLayoutModel {
 
   render() {
     return (
-      <AdminShellProvider>
+      <AdminShellProvider model={this}>
         <AdminLayoutComponent {...this.props} />
       </AdminShellProvider>
     );

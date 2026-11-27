@@ -15,7 +15,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { NocoBaseDesktopRouteType } from '../../../flow-compat';
 import { RouteRepository } from '../../../RouteRepository';
 import { AdminLayoutEntryGuard } from './AdminLayoutEntryGuard';
-import type { AdminLayoutModel } from './AdminLayoutModel';
+import { AdminLayoutModel } from './AdminLayoutModel';
 
 describe('AdminLayoutEntryGuard', () => {
   it('should ensure accessible routes for the active layout before resolving the landing route', async () => {
@@ -308,6 +308,53 @@ describe('AdminLayoutEntryGuard', () => {
     expect(activateLayout).toHaveBeenCalledTimes(2);
     expect(activateLayout).toHaveBeenLastCalledWith(expect.objectContaining({ uid: 'admin-layout-next' }));
   });
+
+  it.each([false, true])(
+    'should use the settled home destination only while still at the root (leave=%s)',
+    async (leave) => {
+      const engine = new FlowEngine();
+      const repository = new RouteRepository({});
+      const hidden = { type: NocoBaseDesktopRouteType.flowPage, schemaUid: 'hidden' };
+      const visible = { type: NocoBaseDesktopRouteType.flowPage, schemaUid: 'visible' };
+      repository.setRoutes([hidden, visible]);
+      engine.context.defineProperty('routeRepository', { value: repository });
+      engine.context.defineProperty('app', {
+        value: {
+          getPublicPath: () => '/v/',
+          router: { getBasename: () => '/v' },
+        },
+      });
+      const model = engine.createModel<AdminLayoutModel>({ uid: 'admin-layout-model', use: AdminLayoutModel });
+      let finish!: (page: typeof visible) => void;
+      const pending = new Promise<typeof visible>((resolve) => {
+        finish = resolve;
+      });
+      const resolvePage = vi.spyOn(model, 'resolveDefaultPage').mockReturnValue(pending);
+      const router = createMemoryRouter(
+        [
+          {
+            id: 'admin',
+            path: '/admin',
+            element: (
+              <FlowEngineProvider engine={engine}>
+                <AdminLayoutEntryGuard model={model}>
+                  <Outlet />
+                </AdminLayoutEntryGuard>
+              </FlowEngineProvider>
+            ),
+            children: [{ id: 'admin.__page', path: ':name', element: <div>Page</div> }],
+          },
+        ],
+        { initialEntries: ['/admin'] },
+      );
+      render(<RouterProvider router={router} />);
+      await waitFor(() => expect(resolvePage).toHaveBeenCalled());
+      expect(router.state.location.pathname).toBe('/admin');
+      if (leave) await act(() => router.navigate('/admin/sibling'));
+      await act(async () => finish(visible));
+      expect(router.state.location.pathname).toBe(leave ? '/admin/sibling' : '/admin/visible');
+    },
+  );
 
   it('should redirect group id paths to the first v2 landing route', async () => {
     const modernWindow = window as Window & { __nocobase_modern_client_prefix__?: string };

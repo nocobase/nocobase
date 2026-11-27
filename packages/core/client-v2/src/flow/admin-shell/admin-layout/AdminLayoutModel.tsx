@@ -36,6 +36,35 @@ export type AdminLayoutStructure = BaseLayoutStructure & {
   };
 };
 
+type FindFirstPage = (routes: NocoBaseDesktopRoute[]) => NocoBaseDesktopRoute | undefined;
+
+async function findVisibleMenuPage(
+  items: AdminLayoutMenuItemModel[],
+  findFirstPage: FindFirstPage,
+): Promise<NocoBaseDesktopRoute | undefined> {
+  for (const item of items) {
+    const route = item.getRoute();
+    // Keep the runtime's existing rules for static visibility and supported page types.
+    if (!findFirstPage([route])) continue;
+
+    if (item.pendingMenuState) {
+      try {
+        await item.pendingMenuState;
+      } catch {
+        // A failed menu rule cannot establish a default destination for this branch.
+        continue;
+      }
+    }
+    if (item.hidden) continue;
+    if (route.type === 'group') {
+      const page = await findVisibleMenuPage(item.subModels.menuItems || [], findFirstPage);
+      if (page) return page;
+    } else if (route.schemaUid) {
+      return route;
+    }
+  }
+}
+
 type GetAdminLayoutModelOptions<TModel extends FlowModel = AdminLayoutModel> = GetLayoutModelOptions<TModel>;
 
 /**
@@ -77,6 +106,11 @@ export class AdminLayoutModel extends BaseLayoutModel<AdminLayoutStructure> {
    */
   syncMenuRoutes(routes: NocoBaseDesktopRoute[]) {
     reconcileAdminLayoutMenuItems(this, Array.isArray(routes) ? routes : []);
+  }
+
+  resolveDefaultPage(routes: NocoBaseDesktopRoute[], findFirstPage: FindFirstPage) {
+    this.syncMenuRoutes(routes);
+    return findVisibleMenuPage(this.subModels.menuItems || [], findFirstPage);
   }
 
   /**
