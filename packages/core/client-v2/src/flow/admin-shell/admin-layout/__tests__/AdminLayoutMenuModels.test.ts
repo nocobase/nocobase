@@ -1485,7 +1485,7 @@ describe('AdminLayoutModel menu items', () => {
       uid,
       stepParams: { menuSettings: { linkageRules: { value: [{ enable: true }] } } },
     }));
-    engine.setModelRepository({ findOne } as Parameters<FlowEngine['setModelRepository']>[0]);
+    engine.setModelRepository({ findOne, save: vi.fn(), destroy: vi.fn(), move: vi.fn(), duplicate: vi.fn() });
     const layout = engine.createModel<AdminLayoutModel>({ uid: ADMIN_LAYOUT_MODEL_UID, use: AdminLayoutModel });
     const { group, flowPage } = NocoBaseDesktopRouteType;
     layout.syncMenuRoutes([
