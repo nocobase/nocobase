@@ -88,6 +88,10 @@ export class AdminLayoutMenuItemModel extends FlowModel<AdminLayoutMenuItemStruc
   private persistedStateHydrated = false;
   private persistedStateHydrating?: Promise<void>;
 
+  get pendingMenuState() {
+    return this.persistedStateHydrating;
+  }
+
   onInit(options: any) {
     super.onInit(options);
     this.syncFromRoute(
@@ -95,7 +99,9 @@ export class AdminLayoutMenuItemModel extends FlowModel<AdminLayoutMenuItemStruc
       this.props.parentRoute as NocoBaseDesktopRoute | undefined,
     );
     if (this.shouldHydratePersistedState()) {
-      void this.hydratePersistedState();
+      void this.hydratePersistedState().catch((error) => {
+        console.error('[NocoBase] Failed to hydrate menu item', this.uid, error);
+      });
     }
   }
 
@@ -286,7 +292,7 @@ export class AdminLayoutMenuItemModel extends FlowModel<AdminLayoutMenuItemStruc
       }
 
       if (shouldRerenderAfterHydrate) {
-        void this.rerender();
+        await this.rerender();
       }
     })().finally(() => {
       this.persistedStateHydrated = true;

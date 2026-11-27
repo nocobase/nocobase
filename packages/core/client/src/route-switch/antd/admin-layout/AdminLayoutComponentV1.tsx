@@ -22,6 +22,7 @@ import { useTranslation } from 'react-i18next';
 import { Outlet, useLocation } from 'react-router-dom';
 import {
   ADMIN_LAYOUT_MODEL_UID,
+  observeAdminMenuRoutes,
   useApplications,
   useAppListRender,
   useGlobalTheme,
@@ -600,15 +601,12 @@ export const AdminLayoutComponent = observer((props: any) => {
 
   useLayoutEffect(() => {
     adminLayoutModel?.syncMenuRoutes(allAccessRoutes);
-    const nextRoute = adminLayoutModel?.toProLayoutRoute({
+    return observeAdminMenuRoutes(
+      () =>
+        adminLayoutModel?.toProLayoutRoute({ designable, isMobile: isMobileSider, t }) || { path: '/', children: [] },
+      setRoute,
       designable,
-      isMobile: isMobileSider,
-      t,
-    }) || {
-      path: '/',
-      children: [],
-    };
-    setRoute(nextRoute);
+    );
   }, [adminLayoutModel, allAccessRoutes, designable, isMobileSider, menuRouteRefreshVersion, t]);
 
   useEffect(() => {

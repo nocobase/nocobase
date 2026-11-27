@@ -10,7 +10,7 @@
 import React from 'react';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { ADMIN_LAYOUT_MODEL_UID } from '@nocobase/client-v2';
+import { ADMIN_LAYOUT_MODEL_UID, observeAdminMenuRoutes } from '@nocobase/client-v2';
 import { FlowEngine, FlowEngineProvider } from '@nocobase/flow-engine';
 import { MemoryRouter } from 'react-router-dom';
 import { AdminLayoutMenuItemModel } from '../AdminLayoutMenuModels';
@@ -945,6 +945,58 @@ describe('AdminLayoutMenuItemModel legacy behavior', () => {
     expect(topGroup()).toMatchObject({ redirect: '/admin/1' });
     firstPage.setHidden(false);
     expect(topGroup().redirect).toBe('/admin/first');
+  });
+
+  it('should wait for the first nested page visibility before publishing a group link on refresh', async () => {
+    const findOne = vi.fn(async ({ uid }) => ({
+      uid,
+      stepParams: { menuSettings: { linkageRules: { value: [{ enable: true }] } } },
+    }));
+    engine.setModelRepository({ findOne } as Parameters<FlowEngine['setModelRepository']>[0]);
+    const layout = engine.createModel<AdminLayoutModelV1>({ uid: ADMIN_LAYOUT_MODEL_UID, use: AdminLayoutModelV1 });
+    const { group, flowPage } = NocoBaseDesktopRouteType;
+    layout.syncMenuRoutes([
+      { id: 1, type: flowPage, schemaUid: 'sibling' },
+      {
+        id: 2,
+        type: group,
+        children: [
+          {
+            id: 3,
+            type: group,
+            children: [
+              { id: 4, type: flowPage, schemaUid: 'hidden', options: { hasPersistedMenuInstanceFlow: true } },
+              { id: 5, type: flowPage, schemaUid: 'visible' },
+            ],
+          },
+        ],
+      },
+    ]);
+    const first = layout.subModels.menuItems[1].subModels.menuItems[0].subModels.menuItems[0];
+    let finishRule!: () => void;
+    const rule = new Promise<void>((resolve) => {
+      finishRule = resolve;
+    });
+    const rerender = vi.spyOn(first, 'rerender').mockImplementation(async () => {
+      await rule;
+      first.setHidden(true);
+    });
+    const publish = vi.fn();
+    const stop = observeAdminMenuRoutes(
+      () => layout.toProLayoutRoute({ designable: false, isMobile: false, t: (title) => title }),
+      publish,
+      false,
+    );
+    await waitFor(() => expect(rerender).toHaveBeenCalled());
+    expect(publish).toHaveBeenCalledTimes(1);
+    expect(publish.mock.calls[0][0].children.map((item) => item.redirect)).toEqual(['/admin/sibling']);
+    finishRule();
+    await waitFor(() => expect(publish).toHaveBeenCalledTimes(2));
+    expect(publish.mock.calls[1][0].children[1]).toMatchObject({
+      redirect: '/admin/visible',
+      routes: [{ redirect: '/admin/visible', routes: [{ path: '/admin/visible' }] }],
+    });
+    stop();
   });
 
   it('should render hidden menu item with opacity and keep original title in config mode in client v1', () => {
