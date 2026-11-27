@@ -15,8 +15,8 @@
       "zh-CN": "身份验证"
     },
     "description": {
-      "en-US": "Verify phone numbers and use one-time codes for additional identity checks.",
-      "zh-CN": "验证手机号码，并使用一次性验证码进行额外的身份核验。"
+      "en-US": "Use SMS codes to verify phone ownership and confirm sensitive operations.",
+      "zh-CN": "通过短信验证码验证手机号归属，并对敏感操作进行二次验证。"
     }
   },
   "sideEffects": false,
