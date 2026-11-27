@@ -12,6 +12,7 @@ import { FlowEngine, MultiRecordResource } from '@nocobase/flow-engine';
 import { dataScope } from '../dataScope';
 import { normalizeDataScopeFilter } from '../dataScopeFilter';
 import { setTargetDataScope } from '../setTargetDataScope';
+import { customVariable } from '../customVariable';
 
 function createSetTargetDataScopeContext(resource: any, options: { selected?: boolean; resolvedValue?: any } = {}) {
   const targetModel = { resource };
@@ -199,6 +200,33 @@ describe('normalizeDataScopeFilter', () => {
 
     expect(resource.removeFilterGroup).toHaveBeenCalledWith('field-1');
     expect(resource.addFilterGroup).not.toHaveBeenCalled();
+  });
+
+  it('dataScope handler uses the value returned by an event-flow JS variable', async () => {
+    const engine = new FlowEngine();
+    const ctx: any = engine.context;
+    const resource = {
+      addFilterGroup: vi.fn(),
+      removeFilterGroup: vi.fn(),
+    };
+    const model = { uid: 'field-1', resource, context: ctx };
+    ctx.defineProperty('model', { value: model });
+    vi.spyOn(ctx, 'runjs').mockResolvedValue({ success: true, value: 42 });
+
+    await (customVariable as any).handler(ctx, {
+      variables: [{ key: 'eventFlowValue', title: 'Event flow value', type: 'runjs', runjs: { code: 'return 42' } }],
+    });
+
+    await (dataScope as any).handler(ctx, {
+      filter: {
+        logic: '$and',
+        items: [{ path: 'departmentId', operator: '$eq', value: '{{ ctx.eventFlowValue }}' }],
+      },
+    });
+
+    expect(resource.addFilterGroup).toHaveBeenCalledWith('field-1', {
+      $and: [{ departmentId: { $eq: 42 } }],
+    });
   });
 
   it('dataScope handler preserves current role as server-side variable', async () => {
