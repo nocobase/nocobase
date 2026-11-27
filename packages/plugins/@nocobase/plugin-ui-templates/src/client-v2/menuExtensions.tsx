@@ -48,6 +48,7 @@ let unregisterMenuExtensions: (() => void) | undefined;
 
 const GRID_REF_FLOW_KEY = 'referenceSettings';
 const GRID_REF_STEP_KEY = 'useTemplate';
+const POPUP_SUB_TABLE_INTERNAL_OPEN_VIEW_MODELS = new Set(['PopupSubTableFieldModel', 'PopupSubTableEditActionModel']);
 
 type ReferenceFormGridTargetSettings = {
   templateUid: string;
@@ -968,6 +969,11 @@ function isReferenceTarget(model: FlowModel): boolean {
   return false;
 }
 
+function isPopupSubTableInternalOpenViewModel(model: FlowModel): boolean {
+  const useKey = normalizeStr((model as any)?.use) || normalizeStr((model as any)?.constructor?.name);
+  return POPUP_SUB_TABLE_INTERNAL_OPEN_VIEW_MODELS.has(useKey);
+}
+
 export function registerMenuExtensions() {
   if (unregisterMenuExtensions) {
     return unregisterMenuExtensions;
@@ -1071,6 +1077,9 @@ export function registerMenuExtensions() {
         const hasTemplate = !!templateUid;
         const disablePopupTemplateMenu = !!(openViewParams as any)?.disablePopupTemplateMenu;
         const pluginT = getPluginT(model);
+        if (isPopupSubTableInternalOpenViewModel(model)) {
+          return [];
+        }
         if (hasTemplate) {
           return [
             {
