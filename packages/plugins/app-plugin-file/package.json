@@ -41,7 +41,6 @@
     "dist",
     "docs",
     "README.md",
-    "CHANGELOG.md",
     "skills"
   ],
   "publishConfig": {

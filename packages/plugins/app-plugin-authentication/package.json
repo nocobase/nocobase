@@ -82,7 +82,6 @@
   "files": [
     "dist",
     "README.zh-CN.md",
-    "CHANGELOG.md",
     "skills"
   ],
   "scripts": {

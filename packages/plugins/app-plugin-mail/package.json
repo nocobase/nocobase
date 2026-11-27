@@ -37,8 +37,7 @@
   "files": [
     "dist",
     "skills",
-    "README.md",
-    "CHANGELOG.md"
+    "README.md"
   ],
   "nocobase": {
     "pluginPolicy": "preinstall-and-enable",
