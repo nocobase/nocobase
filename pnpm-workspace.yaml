@@ -1,5 +1,4 @@
 packages:
-  - local/default
   - packages/*/*
   - packages/templates/*/packages/*
   - ui-library

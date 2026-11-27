@@ -1,11 +1,22 @@
 import assert from 'node:assert/strict';
-import { mkdtemp, mkdir, readFile, rm, writeFile } from 'node:fs/promises';
+import {
+  mkdtemp,
+  mkdir,
+  readFile,
+  realpath,
+  rm,
+  writeFile,
+} from 'node:fs/promises';
 import path from 'node:path';
 import { tmpdir } from 'node:os';
 import { execFileSync } from 'node:child_process';
 import { parse } from 'yaml';
 import { test } from 'node:test';
-import { stageTemplate, syncTemplate } from '../../scripts/dev-local.mjs';
+import {
+  stageTemplate,
+  stageWorkspace,
+  syncTemplate,
+} from '../../scripts/dev-local.mjs';
 
 const root = path.resolve(import.meta.dirname, '../..');
 
@@ -110,9 +121,10 @@ test('stage the current checkout, including new source files and excluding local
     await assert.rejects(readFile(path.join(stage, file)), { code: 'ENOENT' });
 });
 
-test('the generated Default manifest uses the template workspace packages and locked resolutions', async (t) => {
-  const stage = await mkdtemp(path.join(tmpdir(), 'local-default-lock-'));
-  t.after(() => rm(stage, { recursive: true, force: true }));
+test('local Default links template dependencies and isolates pnpm installs, additions and removals', async (t) => {
+  const tmp = await mkdtemp(path.join(tmpdir(), 'local-default-lock-'));
+  const stage = path.join(tmp, 'local/default');
+  t.after(() => rm(tmp, { recursive: true, force: true }));
   const source = 'packages/templates/app-template-default';
   await stageTemplate(path.join(root, source), stage);
   const manifest = JSON.parse(
@@ -126,107 +138,74 @@ test('the generated Default manifest uses the template workspace packages and lo
     await readFile(path.join(stage, 'client/styles.css'), 'utf8'),
     /@import 'tailwindcss' source\('\.'\);/u,
   );
-  const { importers } = parse(
-    await readFile(path.join(root, 'pnpm-lock.yaml'), 'utf8'),
+  await stageWorkspace(stage, stage, path.join(root, source));
+  const workspaceFile = 'pnpm-workspace.yaml';
+  const outer = await readFile(path.join(root, workspaceFile), 'utf8');
+  assert.ok(
+    !parse(outer).packages.some((glob) =>
+      path.matchesGlob('local/default', glob),
+    ),
   );
-  const local = 'local/default';
-  const original = {
-    ...importers[source].dependencies,
-    ...importers[source].devDependencies,
-  };
-  for (const section of ['dependencies', 'devDependencies']) {
-    const entries = importers[local][section];
-    assert.deepEqual(
-      Object.fromEntries(
-        Object.entries(entries).map(([name, entry]) => [name, entry.specifier]),
-      ),
-      manifest[section],
-    );
-    for (const [name, entry] of Object.entries(entries)) {
-      if (entry.version.startsWith('link:')) {
-        assert.equal(
-          path.resolve(root, local, entry.version.slice(5)),
-          path.resolve(root, source, original[name].version.slice(5)),
-          name,
-        );
-      } else assert.equal(entry.version, original[name].version, name);
-    }
-  }
-});
-
-test('a non-frozen lockfile update preserves the absent app and follows template dependency changes', async (t) => {
-  const tmp = await mkdtemp(path.join(tmpdir(), 'default-lock-update-'));
-  t.after(() => rm(tmp, { recursive: true, force: true }));
-  const tpl = 'packages/templates/app-template-default';
-  const driver = 'packages/libs/sqlite';
-  const local = 'local/default';
-  await mkdir(path.join(tmp, tpl), { recursive: true });
-  await mkdir(path.join(tmp, driver), { recursive: true });
-  await writeFile(
-    path.join(tmp, '.pnpmfile.cjs'),
-    await readFile(path.join(root, '.pnpmfile.cjs')),
+  assert.ok(
+    !Object.hasOwn(
+      parse(await readFile(path.join(root, 'pnpm-lock.yaml'), 'utf8'))
+        .importers,
+      'local/default',
+    ),
   );
   const { packageManager } = JSON.parse(
     await readFile(path.join(root, 'package.json'), 'utf8'),
   );
   await writeFile(
     path.join(tmp, 'package.json'),
-    JSON.stringify({ name: 'test-root', private: true, packageManager }),
+    JSON.stringify({ name: 'fixture-root', private: true, packageManager }),
   );
-  await writeFile(
-    path.join(tmp, 'pnpm-workspace.yaml'),
-    'packages: ["packages/*/*", "local/default"]\n',
+  await writeFile(path.join(tmp, workspaceFile), 'packages: ["packages/*"]\n');
+  const pnpm = (cwd, ...args) =>
+    execFileSync('pnpm', args, { cwd, stdio: 'pipe' });
+  pnpm(tmp, 'install', '--offline', '--lockfile-only', '--no-frozen-lockfile');
+  const outerLock = await readFile(path.join(tmp, 'pnpm-lock.yaml'), 'utf8');
+  pnpm(
+    stage,
+    'install',
+    '--offline',
+    '--ignore-scripts',
+    '--no-frozen-lockfile',
   );
-  const name = '@nocobase/db-sqlite';
-  await writeFile(
-    path.join(tmp, driver, 'package.json'),
-    JSON.stringify({ name, version: '1.0.0' }),
-  );
-  const tplManifest = {
-    name: 'default',
-    devDependencies: { [name]: 'workspace:*' },
-  };
-  await writeFile(
-    path.join(tmp, tpl, 'package.json'),
-    JSON.stringify(tplManifest),
-  );
-  const install = () =>
-    execFileSync(
-      'pnpm',
-      ['install', '--offline', '--lockfile-only', '--no-frozen-lockfile'],
-      { cwd: tmp, stdio: 'pipe' },
+  const localLock = () => readFile(path.join(stage, 'pnpm-lock.yaml'), 'utf8');
+  assert.deepEqual(Object.keys(parse(await localLock()).importers), ['.']);
+  for (const [name, owner] of [
+    ['react', path.join(root, source)],
+    ['@nocobase/db-sqlite', path.join(root, source)],
+  ]) {
+    assert.equal(
+      await realpath(path.join(stage, 'node_modules', name)),
+      await realpath(path.join(owner, 'node_modules', name)),
     );
-  const importer = async () =>
-    parse(await readFile(path.join(tmp, 'pnpm-lock.yaml'), 'utf8')).importers[
-      local
-    ];
-  install();
-  assert.deepEqual((await importer()).dependencies[name], {
-    specifier: 'workspace:*',
-    version: 'link:../../packages/libs/sqlite',
-  });
-  await mkdir(path.join(tmp, local), { recursive: true });
+  }
+  const extra = path.join(tmp, 'experimental');
+  await mkdir(extra);
   await writeFile(
-    path.join(tmp, local, 'package.json'),
-    JSON.stringify({
-      name: 'default-local',
-      private: true,
-      devDependencies: { [name]: 'workspace:^' },
-    }),
+    path.join(extra, 'package.json'),
+    JSON.stringify({ name: 'local-experiment', version: '1.0.0' }),
   );
-  install();
+  pnpm(
+    stage,
+    'add',
+    '--offline',
+    '--ignore-scripts',
+    'local-experiment@link:../../experimental',
+  );
+  assert.ok(
+    parse(await localLock()).importers['.'].dependencies['local-experiment'],
+  );
+  pnpm(stage, 'remove', 'local-experiment');
+  assert.ok(
+    !parse(await localLock()).importers['.'].dependencies['local-experiment'],
+  );
+  pnpm(tmp, 'install', '--offline', '--frozen-lockfile');
   assert.equal(
-    (await importer()).devDependencies[name].specifier,
-    'workspace:^',
+    await readFile(path.join(tmp, 'pnpm-lock.yaml'), 'utf8'),
+    outerLock,
   );
-  await rm(path.join(tmp, local), { recursive: true });
-  await writeFile(
-    path.join(tmp, tpl, 'package.json'),
-    JSON.stringify({
-      ...tplManifest,
-      devDependencies: { [name]: 'workspace:~' },
-    }),
-  );
-  install();
-  assert.equal((await importer()).dependencies[name].specifier, 'workspace:~');
 });

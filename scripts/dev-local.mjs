@@ -13,6 +13,7 @@ import {
   writeFile,
 } from 'node:fs/promises';
 import { DatabaseSync } from 'node:sqlite';
+import { parse, stringify } from 'yaml';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import process from 'node:process';
@@ -162,8 +163,7 @@ export async function stageTemplate(source, staged) {
   manifest.name = templateName + '-local';
   manifest.private = true;
   delete manifest.publishConfig;
-  delete manifest.packageManager;
-  // config init uses SQLite as a runtime dependency. Record it before the first frozen install.
+  // config init uses SQLite as a runtime dependency. Record it before the first install.
   const driver = '@nocobase/db-sqlite';
   manifest.dependencies[driver] ??= manifest.devDependencies[driver];
   delete manifest.devDependencies[driver];
@@ -186,10 +186,60 @@ export async function stageTemplate(source, staged) {
   );
 }
 
+// Only the app is a member of this workspace. Reuse the template's installed dependencies, including
+// singleton peers such as React, while letting pnpm resolve additions to the local manifest independently.
+export async function stageWorkspace(staged, app, source) {
+  const settings = parse(
+    await readFile(path.join(root, 'pnpm-workspace.yaml'), 'utf8'),
+  );
+  settings.packages = ['.'];
+  const manifest = JSON.parse(
+    await readFile(path.join(staged, 'package.json'), 'utf8'),
+  );
+  for (const [name, spec] of Object.entries({
+    ...manifest.devDependencies,
+    ...manifest.dependencies,
+  })) {
+    const target = path
+      .relative(app, path.join(source, 'node_modules', name))
+      .split(path.sep)
+      .join('/');
+    settings.overrides[`${manifest.name}>${name}@${spec}`] = 'link:' + target;
+  }
+  await writeFile(
+    path.join(staged, 'pnpm-workspace.yaml'),
+    stringify(settings),
+  );
+}
+
+async function installLocal(app) {
+  const workspace = path.join(app, 'pnpm-workspace.yaml');
+  if (!(await stat(workspace)))
+    throw new Error(
+      `Run pnpm local:refresh ${path.basename(app)} to migrate this app to its own workspace.`,
+    );
+  const marker = path.join(app, 'node_modules/.local-install-hash');
+  const lock = path.join(app, 'pnpm-lock.yaml');
+  const fingerprint =
+    (await hash(path.join(app, 'package.json'))) + (await hash(workspace));
+  if (
+    (await stat(lock)) &&
+    (await stat(marker)) &&
+    (await readFile(marker, 'utf8')) === fingerprint
+  )
+    return;
+  execFileSync('pnpm', ['install', '--no-frozen-lockfile'], {
+    cwd: app,
+    stdio: 'inherit',
+  });
+  await writeFile(marker, fingerprint);
+}
+
 async function prepare(action) {
   const staged = await mkdtemp(path.join(tmpdir(), 'nocobase-default-'));
   try {
     await stageTemplate(template, staged);
+    await stageWorkspace(staged, localApp, template);
     const result = await syncTemplate(staged, localApp, action === 'refresh');
     if (result.stale)
       console.warn(
@@ -198,20 +248,7 @@ async function prepare(action) {
   } finally {
     await rm(staged, { recursive: true, force: true });
   }
-  // Plugin registration can move an already installed dependency between sections of the local manifest.
-  // Install again when the applied template changes its manifest, or when node_modules is recreated.
-  const baseline = JSON.parse(
-    await readFile(path.join(localApp, stateFile), 'utf8'),
-  )['package.json'];
-  const marker = path.join(localApp, 'node_modules/.local-install-hash');
-  if (!(await stat(marker)) || (await readFile(marker, 'utf8')) !== baseline) {
-    execFileSync(
-      'pnpm',
-      ['--filter', './local/default', 'install', '--frozen-lockfile'],
-      { cwd: root, stdio: 'inherit' },
-    );
-    await writeFile(marker, baseline);
-  }
+  await installLocal(localApp);
   if (action === 'start' && !(await stat(path.join(localApp, 'config.yml'))))
     execFileSync(
       'pnpm',
