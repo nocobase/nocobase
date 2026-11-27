@@ -1,5 +1,11 @@
 # @nocobase/create-plugin
 
+## 0.1.0-beta.28
+
+### Patch Changes
+
+- cf23bfe: Stop publishing CHANGELOG.md in the package; the changelog stays in the repository.
+
 ## 0.1.0-beta.27
 
 ### Patch Changes

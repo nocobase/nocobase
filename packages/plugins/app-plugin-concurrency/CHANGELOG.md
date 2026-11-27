@@ -1,5 +1,11 @@
 # @nocobase/app-plugin-concurrency
 
+## 0.1.0-beta.5
+
+### Patch Changes
+
+- 1952789: Declare whether each product plugin is enabled by default, preinstalled only, available separately, or deprecated.
+
 ## 0.1.0-beta.4
 
 ### Minor Changes

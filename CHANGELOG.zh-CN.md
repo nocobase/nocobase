@@ -2,6 +2,23 @@
 
 本文件记录 NocoBase 3 的所有重要变更，每次发布一节：`nocobase-v3-beta/<日期>.<序号>` 是预览版，`nocobase-v3/<日期>.<序号>` 是正式版。每次发布的包版本见对应的 GitHub Release，各个包自己的变更见包内的 CHANGELOG.md。
 
+## [nocobase-v3-beta/2026-11-27.2](https://github.com/nocobase/nocobase/releases/tag/nocobase-v3-beta%2F2026-11-27.2)
+
+### 🎉 新特性
+
+- **[服务端]** 审计文件按 UTC 日期和大小轮转，归档自最后一次写入起至少保留配置的时长。 ([#11742](https://github.com/nocobase/nocobase/pull/11742))
+- **[应用托管]** 托管 App Host 可在删除应用及其业务数据时保留备份，直到备份到期。 ([#11743](https://github.com/nocobase/nocobase/pull/11743))
+- **[审计]** 在应用 YAML 中配置审计快照和脱敏规则，请求与响应正文默认关闭。 ([#11745](https://github.com/nocobase/nocobase/pull/11745))
+
+### 🚀 优化
+
+- **[应用模板]** 默认应用现已预装知识库和验证插件，可按需启用。 ([#11747](https://github.com/nocobase/nocobase/pull/11747))
+- **[通用]** 发布的包不再包含 CHANGELOG.md，体积更小。 ([#11754](https://github.com/nocobase/nocobase/pull/11754))
+
+### 🐛 修复
+
+- **[Agent]** OpenCode 可在内网运行环境中完成冷启动，运行环境详情会显示模型检测失败的原因。 ([#11751](https://github.com/nocobase/nocobase/pull/11751))
+
 ## [nocobase-v3-beta/2026-11-27.1](https://github.com/nocobase/nocobase/releases/tag/nocobase-v3-beta%2F2026-11-27.1)
 
 ### 🎉 新特性

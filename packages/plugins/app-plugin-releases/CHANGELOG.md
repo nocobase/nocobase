@@ -1,5 +1,20 @@
 # @nocobase/app-plugin-releases
 
+## 0.1.0-beta.29
+
+### Patch Changes
+
+- 1952789: Declare whether each product plugin is enabled by default, preinstalled only, available separately, or deprecated.
+- cf23bfe: Stop publishing CHANGELOG.md in the package; the changelog stays in the repository.
+- Updated dependencies [888bca5]
+- Updated dependencies [c6b8a62]
+- Updated dependencies [1952789]
+- Updated dependencies [cf23bfe]
+  - @nocobase/app-plugin-authentication@2.0.0-beta.27
+  - @nocobase/app-host@0.1.0-beta.28
+  - @nocobase/app-host-docker@0.1.0-beta.7
+  - @nocobase/app-plugin-authorization@1.0.0-beta.42
+
 ## 0.1.0-beta.28
 
 ### Patch Changes

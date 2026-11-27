@@ -2,6 +2,23 @@
 
 All notable changes to NocoBase 3 are documented in this file, one section per release: `nocobase-v3-beta/<date>.<n>` for a beta and `nocobase-v3/<date>.<n>` for a stable release. The versions each release published are on its GitHub Release, and every package's own changes are in its CHANGELOG.md.
 
+## [nocobase-v3-beta/2026-11-27.2](https://github.com/nocobase/nocobase/releases/tag/nocobase-v3-beta%2F2026-11-27.2)
+
+### 🎉 New Features
+
+- **[Server]** Rotate audit files by UTC date and size, and keep archives for at least the configured retention period after the last write. ([#11742](https://github.com/nocobase/nocobase/pull/11742))
+- **[App host]** Managed App Hosts can remove an App and its business data while keeping its backups until they expire. ([#11743](https://github.com/nocobase/nocobase/pull/11743))
+- **[Audit]** Configure audit snapshots and redaction in the application YAML, with request and response bodies off by default. ([#11745](https://github.com/nocobase/nocobase/pull/11745))
+
+### 🚀 Improvements
+
+- **[App templates]** Default applications now preinstall Knowledge and Verification for optional activation. ([#11747](https://github.com/nocobase/nocobase/pull/11747))
+- **[General]** Published packages no longer include CHANGELOG.md, which makes them smaller. ([#11754](https://github.com/nocobase/nocobase/pull/11754))
+
+### 🐛 Bug Fixes
+
+- **[Agents]** OpenCode can finish starting on offline runtimes, and runtime details show why model detection failed. ([#11751](https://github.com/nocobase/nocobase/pull/11751))
+
 ## [nocobase-v3-beta/2026-11-27.1](https://github.com/nocobase/nocobase/releases/tag/nocobase-v3-beta%2F2026-11-27.1)
 
 ### 🎉 New Features

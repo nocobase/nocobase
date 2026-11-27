@@ -12,7 +12,7 @@
       "zh-CN": "查看等待客户回复的工单和等待审批的报销单如何流转。"
     }
   },
-  "version": "0.1.0-beta.21",
+  "version": "0.1.0-beta.22",
   "type": "module",
   "prettier": "@nocobase/dev-config/prettier",
   "engines": {

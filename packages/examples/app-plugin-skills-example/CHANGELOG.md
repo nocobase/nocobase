@@ -1,5 +1,15 @@
 # @nocobase/app-plugin-skills-example
 
+## 1.0.0-beta.13
+
+### Patch Changes
+
+- cf23bfe: Stop publishing CHANGELOG.md in the package; the changelog stays in the repository.
+- Updated dependencies [888bca5]
+- Updated dependencies [1952789]
+- Updated dependencies [cf23bfe]
+  - @nocobase/app-plugin-authentication@2.0.0-beta.27
+
 ## 1.0.0-beta.12
 
 ### Patch Changes

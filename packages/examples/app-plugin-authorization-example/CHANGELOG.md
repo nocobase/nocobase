@@ -1,5 +1,19 @@
 # @nocobase/app-plugin-authorization-example
 
+## 1.0.0-beta.29
+
+### Patch Changes
+
+- cf23bfe: Stop publishing CHANGELOG.md in the package; the changelog stays in the repository.
+- Updated dependencies [888bca5]
+- Updated dependencies [1952789]
+- Updated dependencies [cf23bfe]
+  - @nocobase/app-plugin-authentication@2.0.0-beta.27
+  - @nocobase/app-plugin-authorization@1.0.0-beta.42
+  - @nocobase/app-plugin-authz-default-access@1.0.0-beta.24
+  - @nocobase/app-plugin-authz-restriction-rules@1.0.0-beta.22
+  - @nocobase/app-plugin-authz-sharing-rules@1.0.0-beta.23
+
 ## 1.0.0-beta.28
 
 ### Patch Changes

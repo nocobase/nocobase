@@ -1,5 +1,11 @@
 # @nocobase/app-host
 
+## 0.1.0-beta.28
+
+### Minor Changes
+
+- c6b8a62: Add a managed Host request that purges an application's business data while keeping its backup records and archives.
+
 ## 0.1.0-beta.27
 
 ### Minor Changes

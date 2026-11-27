@@ -1,5 +1,12 @@
 # @nocobase/audit
 
+## 0.1.0-beta.1
+
+### Minor Changes
+
+- 888bca5: Configure audit body capture and additional redaction in application YAML. Body capture defaults to off, and target resolution can use any available context without reading disabled bodies. Application and route redaction use `{ fields, paths }`.
+- c1f20c6: Rotate audit JSON Lines files by UTC date and configurable size with `rotating-file-stream`, and retain archives for at least the configured duration after the last write. Existing file paths become prefixes for dated, numbered segments. The previous unsegmented files stay in place.
+
 ## 0.1.0-beta.0
 
 ### Minor Changes

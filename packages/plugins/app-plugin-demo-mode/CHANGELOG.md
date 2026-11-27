@@ -1,5 +1,21 @@
 # @nocobase/app-plugin-demo-mode
 
+## 0.2.0-beta.16
+
+### Patch Changes
+
+- 1952789: Declare whether each product plugin is enabled by default, preinstalled only, available separately, or deprecated.
+- cf23bfe: Stop publishing CHANGELOG.md in the package; the changelog stays in the repository.
+- Updated dependencies [888bca5]
+- Updated dependencies [1952789]
+- Updated dependencies [24d0cad]
+- Updated dependencies [cf23bfe]
+  - @nocobase/app-plugin-authentication@2.0.0-beta.27
+  - @nocobase/app-plugin-users@2.0.0-beta.24
+  - @nocobase/app-plugin-agents@2.0.0-beta.22
+  - @nocobase/app-plugin-authorization@1.0.0-beta.42
+  - @nocobase/app-cli@1.0.0-beta.41
+
 ## 0.2.0-beta.15
 
 ### Patch Changes

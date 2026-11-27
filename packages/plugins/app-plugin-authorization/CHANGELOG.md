@@ -1,5 +1,17 @@
 # @nocobase/app-plugin-authorization
 
+## 1.0.0-beta.42
+
+### Patch Changes
+
+- 1952789: Declare whether each product plugin is enabled by default, preinstalled only, available separately, or deprecated.
+- Updated dependencies [888bca5]
+- Updated dependencies [1952789]
+- Updated dependencies [c1f20c6]
+- Updated dependencies [cf23bfe]
+  - @nocobase/audit@0.1.0-beta.1
+  - @nocobase/app-plugin-authentication@2.0.0-beta.27
+
 ## 1.0.0-beta.41
 
 ### Patch Changes

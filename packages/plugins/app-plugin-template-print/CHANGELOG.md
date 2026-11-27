@@ -1,5 +1,11 @@
 # @nocobase/app-plugin-template-print
 
+## 0.0.2-beta.4
+
+### Patch Changes
+
+- 1952789: Declare whether each product plugin is enabled by default, preinstalled only, available separately, or deprecated.
+
 ## 0.0.2-beta.3
 
 ### Patch Changes

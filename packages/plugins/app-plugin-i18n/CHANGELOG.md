@@ -1,5 +1,11 @@
 # @nocobase/app-plugin-i18n
 
+## 1.0.0-beta.25
+
+### Patch Changes
+
+- 1952789: Declare whether each product plugin is enabled by default, preinstalled only, available separately, or deprecated.
+
 ## 1.0.0-beta.24
 
 ### Patch Changes
