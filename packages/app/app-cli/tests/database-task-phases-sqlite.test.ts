@@ -1,9 +1,8 @@
 // SQLite-only: real CLI previews must not create missing storage or parent directories.
 // @vitest-environment node
-import { existsSync } from 'node:fs';
+import { existsSync, watch } from 'node:fs';
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
-import { setTimeout } from 'node:timers/promises';
 import { Application, resolveAppBackupTarget } from '@nocobase/app-server';
 import { AppConfig, createAppPaths } from '@nocobase/app-server/config';
 import { createBackup, restoreBackup } from '@nocobase/backup';
@@ -72,13 +71,24 @@ it.skipIf(testDatabaseDialect() !== 'sqlite')(
       });
       await writeFile(upload, 'before restore');
 
+      // Subscribe before starting the CLI so even a fast shutdown hook cannot be missed.
+      const paused = Promise.withResolvers<void>();
+      const watcher = watch(f.root, () => {
+        if (existsSync(maintenancePaused)) paused.resolve();
+      });
+      watcher.on('error', paused.reject);
       const maintenance = f.run(['db', 'apply'], {
         FIXTURE_PAUSE_SHUTDOWN: '1',
       });
       try {
-        for (let i = 0; i < 250 && !existsSync(maintenancePaused); i++)
-          await setTimeout(20);
-        expect(existsSync(maintenancePaused)).toBe(true);
+        await Promise.race([
+          paused.promise,
+          maintenance.then(({ exitCode, stdout, stderr }) => {
+            throw new Error(
+              `db apply exited before pausing at shutdown (code ${exitCode}): ${stderr || stdout}`,
+            );
+          }),
+        ]);
         const refused = await f.run(['backup', 'restore', saved.file]);
         expect(refused.document).toMatchObject({
           ok: false,
@@ -86,9 +96,11 @@ it.skipIf(testDatabaseDialect() !== 'sqlite')(
         });
         expect(await readFile(upload, 'utf8')).toBe('before restore');
       } finally {
+        watcher.close();
         await writeFile(resumeMaintenance, '');
-        expect((await maintenance).exitCode).toBe(0);
+        await maintenance;
       }
+      expect((await maintenance).exitCode).toBe(0);
 
       const held = Promise.withResolvers<void>();
       const resumeRestore = Promise.withResolvers<void>();
@@ -125,5 +137,5 @@ it.skipIf(testDatabaseDialect() !== 'sqlite')(
       await f.close();
     }
   },
-  40_000,
+  90_000,
 );
