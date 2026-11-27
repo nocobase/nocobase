@@ -737,7 +737,12 @@ exports.initEnv = function initEnv() {
 
   if (!process.env.TZ) {
     const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
-    process.env.TZ = getTimezonesByOffset(process.env.DB_TIMEZONE || timeZone);
+    // A fractional offset has no unique IANA zone. Preserve the host's real zone for the MariaDB connector.
+    if (process.env.DB_DIALECT === 'mariadb' && /^[+-]\d{1,2}:(?!00)\d{2}$/.test(process.env.DB_TIMEZONE)) {
+      process.env.TZ = timeZone;
+    } else {
+      process.env.TZ = getTimezonesByOffset(process.env.DB_TIMEZONE || timeZone);
+    }
   }
 
   if (!process.env.DB_TIMEZONE) {
