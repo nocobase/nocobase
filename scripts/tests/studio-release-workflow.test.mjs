@@ -462,3 +462,193 @@ test('a commit without the installer skips only when the caller allows it', asyn
     1,
   );
 });
+
+// The step's `run` block alone: the indented lines after `run: |`, so the last step of a job ends at the next job.
+const runScript = (name) => {
+  const lines = step(name).split('        run: |\n')[1].split('\n');
+  const end = lines.findIndex(
+    (line) => line.trim() && !line.startsWith(' '.repeat(10)),
+  );
+  return (end < 0 ? lines : lines.slice(0, end))
+    .map((line) => line.replace(/^ {10}/, ''))
+    .join('\n');
+};
+
+test('prepare checks the runner version before any image is built', () => {
+  const prepare = workflow.slice(
+    workflow.indexOf('\n  prepare:'),
+    workflow.indexOf('\n  image:'),
+  );
+  const order = [
+    'Check image publication rules',
+    'Resolve the source',
+    'Read and validate the version',
+    'Read the framework pointers',
+    'Revoke the source token',
+    'Fetch the framework history',
+    'Check the runner version',
+    'Check the registry and name the tags',
+    'Summary',
+  ].map((name) => prepare.indexOf(`      - name: ${name}\n`));
+  assert.ok(
+    order.every((index) => index > 0),
+    String(order),
+  );
+  assert.deepEqual(
+    [...order].sort((a, b) => a - b),
+    order,
+  );
+  assert.match(
+    step('Check image publication rules'),
+    /scripts\/tests\/studio-release-runner-check\.test\.mjs/,
+  );
+  assert.match(
+    step('Read the framework pointers'),
+    /GH_TOKEN: \$\{\{ steps\.app-token\.outputs\.token \}\}/,
+  );
+  const fetch = step('Fetch the framework history');
+  assert.match(
+    fetch,
+    /fetch --quiet --no-tags https:\/\/github\.com\/nocobase\/nocobase\.git \$TARGET \$PREVIOUS/,
+  );
+  assert.doesNotMatch(fetch, /--depth|--filter|--shallow/);
+  // The check fails the job (no if, no continue-on-error); only source_ref, passed through, turns it into a warning.
+  const check = step('Check the runner version');
+  assert.doesNotMatch(check, /continue-on-error|\n {8}if:/);
+  assert.match(check, /SOURCE_REF: \$\{\{ inputs\.source_ref \}\}/);
+  assert.doesNotMatch(check, /DRY_RUN/);
+  assert.match(
+    check,
+    /TARGET_OSS_SHA: \$\{\{ steps\.framework\.outputs\.target \}\}/,
+  );
+  assert.match(
+    check,
+    /PREVIOUS_OSS_SHA: \$\{\{ steps\.framework\.outputs\.previous_commit \}\}/,
+  );
+  assert.match(
+    check,
+    /run: node scripts\/studio-release-runner-check\.mjs check/,
+  );
+  assert.match(workflow, /\n {2}image:\n[\s\S]*?needs: prepare/);
+});
+
+test('the framework pointers come from the release commit and the previous release tag', async () => {
+  const { chmodSync, mkdtempSync, mkdirSync, writeFileSync } =
+    await import('node:fs');
+  const { tmpdir } = await import('node:os');
+  const { join } = await import('node:path');
+  const run = (pointers) => {
+    const temp = mkdtempSync(join(tmpdir(), 'studio-framework-'));
+    const bin = join(temp, 'bin');
+    mkdirSync(bin);
+    // Answers the contents API with the pointer recorded for its ref and lists three tags.
+    writeFileSync(
+      join(bin, 'gh'),
+      `#!/usr/bin/env bash
+case "$*" in
+  *"matching-refs/tags/v "*) printf 'refs/tags/v1.0.0-beta.91\\nrefs/tags/v1.0.0-beta.92\\nrefs/tags/v1.0.0-beta.93\\n' ;;
+  *contents/vendor/nocobase3*)
+    all="$*"
+    ref="\${all##*ref=}"
+    ref="\${ref%% *}"
+    while IFS='=' read -r key value; do
+      if [ "$key" = "$ref" ]; then echo "$value"; exit 0; fi
+    done <<< "$POINTERS"
+    exit 1 ;;
+  *) exit 2 ;;
+esac
+`,
+    );
+    chmodSync(join(bin, 'gh'), 0o755);
+    const output = join(temp, 'output');
+    writeFileSync(output, '');
+    const result = spawnSync(
+      'bash',
+      ['-eo', 'pipefail', '-c', runScript('Read the framework pointers')],
+      {
+        encoding: 'utf8',
+        cwd: new URL('../..', import.meta.url),
+        env: {
+          ...process.env,
+          PATH: `${bin}:${process.env.PATH}`,
+          GITHUB_OUTPUT: output,
+          COMMIT: 'c'.repeat(40),
+          VERSION: '1.0.0-beta.93',
+          POINTERS: pointers,
+        },
+      },
+    );
+    return { ...result, output: readFileSync(output, 'utf8') };
+  };
+  const both = run(
+    `${'c'.repeat(40)}=${'1'.repeat(40)}\nrefs/tags/v1.0.0-beta.92=${'2'.repeat(40)}`,
+  );
+  assert.equal(both.status, 0, `${both.stderr}${both.stdout}`);
+  assert.equal(
+    both.output,
+    `target=${'1'.repeat(40)}\nprevious_tag=v1.0.0-beta.92\nprevious_commit=${'2'.repeat(40)}\n`,
+  );
+  const unreadable = run(`${'c'.repeat(40)}=${'1'.repeat(40)}`);
+  assert.equal(
+    unreadable.status,
+    0,
+    `${unreadable.stderr}${unreadable.stdout}`,
+  );
+  assert.match(
+    unreadable.stdout,
+    /::warning::Could not read vendor\/nocobase3 of Studio v1\.0\.0-beta\.92/,
+  );
+  assert.equal(
+    unreadable.output,
+    `target=${'1'.repeat(40)}\nprevious_tag=\nprevious_commit=\n`,
+  );
+  const none = run('');
+  assert.equal(none.status, 1);
+  assert.match(none.stdout, /has no vendor\/nocobase3 submodule/);
+});
+
+test('the summary names the framework commit and the runner it ships', async () => {
+  const { mkdtempSync, writeFileSync } = await import('node:fs');
+  const { tmpdir } = await import('node:os');
+  const { join } = await import('node:path');
+  const block = step('Summary');
+  assert.match(
+    block,
+    /RUNNER_VERSION: \$\{\{ steps\.runner\.outputs\.runner_version \}\}/,
+  );
+  assert.match(
+    block,
+    /RUNNER_RESULT: \$\{\{ steps\.runner\.outputs\.runner_result \}\}/,
+  );
+  assert.match(
+    block,
+    /FRAMEWORK: \$\{\{ steps\.framework\.outputs\.target \}\}/,
+  );
+  const summary = join(
+    mkdtempSync(join(tmpdir(), 'studio-summary-')),
+    'summary',
+  );
+  writeFileSync(summary, '');
+  const result = spawnSync('bash', ['-e', '-c', runScript('Summary')], {
+    encoding: 'utf8',
+    env: {
+      ...process.env,
+      GITHUB_STEP_SUMMARY: summary,
+      DRY_RUN: 'true',
+      VERSION: '1.0.0-beta.93',
+      FRAMEWORK: 'f'.repeat(40),
+      RUNNER_VERSION: '0.1.0-beta.35',
+      RUNNER_RESULT: 'unchanged since its framework release',
+    },
+  });
+  assert.equal(result.status, 0, result.stderr);
+  const text = readFileSync(summary, 'utf8');
+  assert.match(
+    text,
+    new RegExp(`\\| Framework \\| \`nocobase/nocobase@${'f'.repeat(40)}\` \\|`),
+  );
+  assert.match(
+    text,
+    /\| Runner \| `nocobase-runner@0\.1\.0-beta\.35`: unchanged since its framework release \|/,
+  );
+});
