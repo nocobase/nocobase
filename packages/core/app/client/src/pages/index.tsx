@@ -12,6 +12,7 @@ import { NocoBaseClientPresetPlugin } from '@nocobase/preset-nocobase/client';
 import devDynamicImport from '../.plugins/index';
 
 export const app = new Application({
+  initializeAuthFromUrl: true,
   apiClient: {
     // @ts-ignore
     shareToken: window['__nocobase_api_client_share_token__'] || process.env.API_CLIENT_SHARE_TOKEN === 'true',

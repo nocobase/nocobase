@@ -103,6 +103,7 @@ export interface BaseApplicationOptions<TPluginType> {
   scopes?: Record<string, any>;
   router?: RouterOptions;
   designable?: boolean;
+  initializeAuthFromUrl?: boolean;
   loadRemotePlugins?: boolean;
   devDynamicImport?: DevDynamicImport;
   disableAcl?: boolean;
@@ -161,6 +162,7 @@ export abstract class BaseApplication<
 
   model: ApplicationModel;
 
+  private appliedAuthCallback?: { token: string; authenticator: string | null };
   private wsAuthorized = false;
   apps: {
     Component?: AnyComponent | null;
@@ -235,6 +237,29 @@ export abstract class BaseApplication<
     });
     this.initListeners();
     this.afterManagersInitialized();
+    if (options.initializeAuthFromUrl && typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      if (params.get('authenticator')) {
+        this.applyAuthCallback(params);
+      }
+    }
+  }
+
+  // The router cleans the URL after mount. Do not replay a startup token that a
+  // request has since renewed or rejected while plugins were loading.
+  applyAuthCallback(params: URLSearchParams) {
+    const token = params.get('token');
+    if (!token) {
+      this.appliedAuthCallback = undefined;
+      return false;
+    }
+    const authenticator = params.get('authenticator');
+    if (this.appliedAuthCallback?.token !== token || this.appliedAuthCallback.authenticator !== authenticator) {
+      this.appliedAuthCallback = { token, authenticator };
+      this.apiClient.auth.setAuthenticator(authenticator);
+      this.apiClient.auth.setToken(token);
+    }
+    return true;
   }
 
   /**
