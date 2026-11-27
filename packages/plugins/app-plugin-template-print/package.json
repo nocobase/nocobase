@@ -4,6 +4,7 @@
   "description": "Agent Skill for implementing template printing in NocoBase 3 applications.",
   "version": "0.0.2-beta.3",
   "nocobase": {
+    "pluginPolicy": "preinstall-only",
     "title": {
       "en-US": "Template printing",
       "zh-CN": "模板打印"

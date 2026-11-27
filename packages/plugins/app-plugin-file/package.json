@@ -16,6 +16,7 @@
     "node": ">=24.0.0"
   },
   "nocobase": {
+    "pluginPolicy": "preinstall-and-enable",
     "title": {
       "en-US": "File storage",
       "zh-CN": "文件存储"

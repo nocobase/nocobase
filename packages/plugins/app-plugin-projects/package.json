@@ -9,6 +9,7 @@
     "node": ">=24.0.0"
   },
   "nocobase": {
+    "pluginPolicy": "do-not-preinstall",
     "title": {
       "en-US": "Projects",
       "zh-CN": "项目"

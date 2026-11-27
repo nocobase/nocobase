@@ -41,6 +41,7 @@
     "CHANGELOG.md"
   ],
   "nocobase": {
+    "pluginPolicy": "preinstall-and-enable",
     "title": {
       "en-US": "Mail",
       "zh-CN": "邮件"

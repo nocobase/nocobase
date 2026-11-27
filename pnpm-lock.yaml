@@ -6142,9 +6142,6 @@ importers:
       '@nocobase/app-plugin-i18n':
         specifier: workspace:*
         version: link:../../plugins/app-plugin-i18n
-      '@nocobase/app-plugin-knowledge':
-        specifier: workspace:*
-        version: link:../../plugins/app-plugin-knowledge
       '@nocobase/app-plugin-mail':
         specifier: workspace:*
         version: link:../../plugins/app-plugin-mail
@@ -6251,12 +6248,18 @@ importers:
       '@nocobase/app-client':
         specifier: workspace:*
         version: link:../../app/app-client
+      '@nocobase/app-plugin-knowledge':
+        specifier: workspace:*
+        version: link:../../plugins/app-plugin-knowledge
       '@nocobase/app-plugin-notification-web-push':
         specifier: workspace:*
         version: link:../../plugins/app-plugin-notification-web-push
       '@nocobase/app-plugin-template-print':
         specifier: workspace:*
         version: link:../../plugins/app-plugin-template-print
+      '@nocobase/app-plugin-verification':
+        specifier: workspace:*
+        version: link:../../plugins/app-plugin-verification
       '@nocobase/app-skills':
         specifier: workspace:*
         version: link:../../app/app-skills

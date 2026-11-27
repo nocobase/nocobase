@@ -43,6 +43,11 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Validate product plugin policies
+        run: |
+          pnpm plugins:check
+          node --test tests/scripts/check-plugin-policies.test.mjs
+
       - name: Validate changeset files
         shell: bash
         run: node scripts/validate-changesets.mjs
