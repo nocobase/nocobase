@@ -15,8 +15,8 @@
       "zh-CN": "身份验证"
     },
     "description": {
-      "en-US": "Use SMS codes to verify phone ownership and confirm sensitive operations.",
-      "zh-CN": "通过短信验证码验证手机号归属，并对敏感操作进行二次验证。"
+      "en-US": "Verify phone ownership and require additional verification for sensitive operations.",
+      "zh-CN": "验证手机号归属，并对敏感操作进行二次验证。"
     }
   },
   "sideEffects": false,
