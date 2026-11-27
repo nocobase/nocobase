@@ -61,7 +61,7 @@ After access succeeds, create from the parent directory:
 (cd <parent-directory> && PNPM_CONFIG_MINIMUM_RELEASE_AGE=0 NOCOBASE_REGISTRY=https://pkg-v3.nocobase.com/ npm_config_registry=https://registry.npmjs.org pnpm create @nocobase/app <name> --template=multi-portal --json)
 ```
 
-`multi-portal` resolves to `@nocobase/app-template-multi-portal`. With a create-app version that predates the alias, use `--template=@nocobase/app-template-multi-portal` instead, which resolves its `latest` release; append an explicit version to the specifier when one is needed. Reuse the user's chosen registry/version rather than replacing it with these defaults. Registry selection is explicit even after login because create-app otherwise defaults to public npm. The generated `.npmrc` contains the registry URL, not credentials.
+`multi-portal` resolves to `@nocobase/app-template-multi-portal` and honors `--template-tag`. With a create-app version that predates the alias, use `--template=@nocobase/app-template-multi-portal` instead, which resolves its `latest` release; a full package specifier ignores `--template-tag`, so append an explicit version to the specifier when one is needed. Reuse the user's chosen registry/version rather than replacing it with these defaults. Registry selection is explicit even after login because create-app otherwise defaults to public npm. The generated `.npmrc` contains the registry URL, not credentials.
 
 Create-app `0.1.0-beta.36` includes the private-registry installation fix: `NOCOBASE_REGISTRY` selects the template and the generated `@nocobase` scope, while third-party dependencies use the package manager's default registry. Keep that default public (or use the user's chosen public mirror); do not set it to a NocoBase-only private registry. The command installs dependencies automatically. Confirm `ok: true` and `result.dependenciesInstalled: true`, read the generated `AGENTS.md`, then continue with Configure and Start. Postinstall synchronizes Skills; run `pnpm nocobase skills sync` only if synchronization failed or its files are missing.
 
@@ -75,7 +75,7 @@ Reuse the same authentication configuration for recovery. With `--no-install`, `
 
 ### Commercial multi-app template
 
-`multi-app` resolves to `@nocobase/app-template-multi-app` from the Pro registry. It creates **Main only**, with application management capabilities. It does not generate `apps/sub` or require an `apps/` directory; independent child applications are added on demand.
+`multi-app` resolves to `@nocobase/app-template-multi-app` from the Pro registry and honors `--template-tag`. It creates **Main only**, with application management capabilities. It does not generate `apps/sub` or require an `apps/` directory; independent child applications are added on demand.
 
 Reuse the commercial registry login and scoped authentication procedure above, but verify the multi-app package itself before creating files:
 
@@ -89,7 +89,7 @@ Check the selected generator's `--help` for `multi-app` in the supported templat
 (cd <parent-directory> && PNPM_CONFIG_MINIMUM_RELEASE_AGE=0 NOCOBASE_REGISTRY=https://pkg-v3.nocobase.com/ npm_config_registry=https://registry.npmjs.org pnpm create @nocobase/app <name> --template multi-app --json)
 ```
 
-A generator without this alias, including create-app `0.1.0-beta.36`, can use `--template=@nocobase/app-template-multi-app` instead, which resolves its `latest` release; append an explicit version to the specifier when one is needed. This still requires a published, accessible template. If the package or requested version is unavailable, report the blocker rather than substituting Default. For an explicitly requested unreleased preview, use the actual packed template artifact provided for that preview. Reuse the user's selected registry and version.
+A generator without this alias, including create-app `0.1.0-beta.36`, can use `--template=@nocobase/app-template-multi-app` instead, which resolves its `latest` release; a full package specifier ignores `--template-tag`, so append an explicit version to the specifier when one is needed. This still requires a published, accessible template. If the package or requested version is unavailable, report the blocker rather than substituting Default. For an explicitly requested unreleased preview, use the actual packed template artifact provided for that preview. Reuse the user's selected registry and version.
 
 Confirm `ok: true` and `result.dependenciesInstalled: true`, read the generated `AGENTS.md`, then follow Configure and Start below. Once Main is running, offer the child-creation guide below before the final handover. Configure an available Releases App Host before creating managed instances; starting Main alone does not enable child deployment.
 
@@ -127,7 +127,7 @@ Verify child startup and, when selected, the actual SSO flow before reporting th
 - `NOCOBASE_REGISTRY` is set only when the shell is pointed at another registry, such as an unreleased snapshot; `create-app` reads it too.
 - `PNPM_CONFIG_MINIMUM_RELEASE_AGE=0` lets pnpm install versions published minutes ago.
 - `--json` never prompts. It prints one JSON document on stdout and progress on stderr, so parse stdout only. It is the envelope every `pnpm nocobase … --json` command prints: `ok` says whether creation worked, `result` holds what it produced, and a failure's `error.code`, `error.message` and `error.details` say where it stopped. create-app 0.1.0-beta.23 and earlier print a flat result instead, with `status` `success` or `error` and `stage`, `message`, `directory` and `nextCommands` at the top level; read the same fields there.
-- The default template is the one to develop an application from and needs no `--template` flag. Add `--template=examples` when the user wants to explore NocoBase through its example features first.
+- The default template is the one to develop an application from and needs no `--template` or `--template-tag` flag. Add `--template=examples` when the user wants to explore NocoBase through its example features first.
 
 Read the result before doing anything else:
 
