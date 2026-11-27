@@ -679,7 +679,7 @@ describe('environment variables and sample data', () => {
     const sent = serve([environment()]);
     await openSettings();
     const sampleData = await screen.findByRole('checkbox', {
-      name: /Load sample data on first deployment/,
+      name: /Load sample data on deployment/,
     });
     expect(sampleData).not.toBeChecked();
     fireEvent.click(sampleData);

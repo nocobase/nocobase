@@ -4,10 +4,16 @@
 
 ## Configuration
 
-Add the `audit` section to the application's `config.yaml`:
+Add the `audit` section to the application's `config.yml`:
 
 ```yaml
 audit:
+  captureBody: false
+  redact:
+    fields:
+      - identityNumber
+    paths:
+      - profile.mobile
   transports:
     localFile:
       driver: file
@@ -19,6 +25,12 @@ audit:
 
 An application without destinations collects no audit events. With at least one destination, `audit.enabled` defaults to `true` and the app records explicitly declared operations. `audit.enabled: false` disables collection and delivery. `audit.autoDetect` defaults to `false`. Enable it to also record documented POST, PATCH, PUT, and DELETE operations that have an operation ID and are visible in the API document. An explicit `describeAudit(false)` excludes a route. A dynamic declaration that returns `undefined` leaves the route eligible for automatic detection. The audit provider reads generated Repository endpoint metadata before guards, records mutations, and excludes queries.
 
+The app validates capture settings at startup. Restart it after changing them. Body capture requires an explicit `true` on the application or the route. An explicit `false` at either level always takes precedence. Leave both settings unset to collect events without request or response bodies. With body capture off, audit does not clone, read, or parse the bodies.
+
+Use `redact: { fields: ['identityNumber'], paths: ['profile.mobile'] }` in app configuration or a route declaration. Fields match the exact name at any depth. Paths match from the root of each snapshot or structured target key. A named segment crosses array elements, as in `members.mobile`. An index such as `members.0.mobile` matches one position. Built-in credential masking and all additional rules apply before dispatch.
+
+Audit uses `auth.advanced.ipAddress.trustedProxies` and `auth.advanced.ipAddress.ipAddressHeaders`. For a trusted socket peer, it tries the configured headers in order, defaulting to `X-Forwarded-For`, and walks each chain from right to left to its first untrusted address. Invalid proxy entries are skipped with a startup warning. An untrusted peer, an empty allowlist, or a chain with no usable client address results in the socket peer address.
+
 ### Rolling file output
 
 The `path` sets a filename prefix. Use a `.jsonl` basename with letters, digits, underscores or hyphens before the extension. Relative paths must stay under application storage after resolving directory symlinks. Absolute paths are supported. The driver creates directories with mode `0700` and files with mode `0600` on POSIX, subject to the process umask. Keep the output directory under the writer's control.
@@ -29,15 +41,29 @@ The file driver shares the rolling journal in `@nocobase/logging`. It preserves 
 
 The file driver synchronously appends a complete line and closes the handle before returning. It rejects incomplete existing files and attempts to restore the original length if a partial append fails. There is no application write buffer or disk sync. The coordinator limits each destination to 64 pending writes and uses a one-second timeout for delivery and shutdown. Cancellation can stop a write before its synchronous filesystem calls begin. A filesystem call already in progress must return before the timeout can run. Shutdown waits for queued retention work within its deadline.
 
-Audit uses `auth.advanced.ipAddress.trustedProxies` and `auth.advanced.ipAddress.ipAddressHeaders`. For a trusted socket peer, it tries the configured headers in order, defaulting to `X-Forwarded-For`, and walks each chain from right to left to its first untrusted address. Invalid proxy entries are skipped with a startup warning. An untrusted peer, an empty allowlist, or a chain with no usable client address results in the socket peer address.
-
 ## Routes and transports
 
 Audit events store the operation's declared name or its English default, with API summary and action as fallbacks. The name is independent of the request language. JSON Lines contains the event as recorded, including any `operationNameI18n` namespace and key.
 
 The official templates contribute the lazy loader from `@nocobase/audit/locales` as a locales-only entry in their client plugin list. Custom applications can add the same entry with `defineClientPlugin({ packageName: '@nocobase/audit', locales: auditLocales })()` before client initialization. Installed business plugins provide their labels through their own locale contributions. Resolve `operationNameI18n` in the viewer's language, falling back to the stored `operationName`, then `action` for older events. The audit provider also registers the Repository labels on the server for localized exports.
 
-Import `describeAudit` from `@nocobase/audit` and declare it alongside the route. Set an action, resource, and optional operation name for display. Use `target` for identifiers available before guards and `resolveTargets` for identifiers derived from a successful handler result. Use `captureBody: false` to omit both snapshots and `redact` to mask additional fields with `{ field: 'name' }` or paths with `{ path: 'parent.name' }`. The built-in credential masking and snapshot limits always apply.
+Import `describeAudit` from `@nocobase/audit` and declare it alongside the route. Set an action, resource, and optional operation name for display. Use `target(context)` for identifiers available before guards and `resolveTargets(result, context)` for identifiers derived from a successful handler result. With body capture off, the resolver still receives the context and any in-process `value` the handler provides. Its `request` and `response` are then `undefined`. Even with capture on, content type or read and size bounds can make a JSON body unavailable. Use `auditRecordKey` to read optional values and return `undefined` when the target is unknown. Resolver errors leave the event with the pre-handler target, if available.
+
+```ts
+import { auditRecordKey, describeAudit } from '@nocobase/audit';
+
+const auditCustomerCreation = describeAudit({
+  action: 'customer.create',
+  captureBody: true,
+  redact: { fields: ['identityNumber'], paths: ['profile.mobile'] },
+  resolveTargets: ({ response }) => {
+    const id = auditRecordKey(response, 'data', 'id');
+    return id === undefined ? undefined : { collection: 'customers', key: id };
+  },
+});
+```
+
+With the YAML example above, the application's `captureBody: false` keeps this route's bodies unavailable, and the resolver returns no target.
 
 In a service provider's `register` or `boot`, resolve `auditServiceToken` and register the transport with `registerDriver({ name, createTransport })`. Configure each named destination under `audit.transports` with its driver and driver-specific options. The synchronous factory receives the options and `{ name, paths }`, with the application storage directory available as `paths.storageDir`. The transport implements `write(event, { signal })` and can implement `close()` to release resources. The application validates active destination names, drivers, and factory options at startup. The commercial audit plugin supplies the `database` driver, which can be configured alongside `file`.
 

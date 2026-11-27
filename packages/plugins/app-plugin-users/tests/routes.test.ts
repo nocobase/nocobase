@@ -47,7 +47,10 @@ describe('@nocobase/app-plugin-users API routes', () => {
     const config = new AppConfig();
     await config.loadAll();
     config.mergeDefaults({
-      audit: { enabled: true, transports: { capture: { driver: 'memory' } } },
+      audit: {
+        captureBody: true,
+        transports: { capture: { driver: 'memory' } },
+      },
     });
     const app = new Application({
       config,

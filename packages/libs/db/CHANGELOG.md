@@ -1,5 +1,18 @@
 # @nocobase/db
 
+## 1.0.0-beta.31
+
+### Patch Changes
+
+- cc0bf33: Run outstanding sample data when enabled on existing databases. Write seed history only after a successful run and omit disabled sample seeds from dry-run plans. Apply the preview environment's sample data setting on every deployment and document the guidance for adding sample seeds to business changes.
+- 52d0b0d: Configure audit capture for application operations and send events to multiple named destinations, including JSON Lines files. Configuring a destination enables explicitly declared audit operations by default. Audit uses the application authentication settings for its trusted proxies and forwarded IP headers.
+
+  The official templates assemble auditing with `AuditProvider` and ship the file driver. Custom application composition roots can add the provider and the audit configuration factory when they use audit routes or transports. Applications using only `@nocobase/app-server` can start without the audit package.
+
+  Built-in audit operations store English default names and translation keys. The official templates load Repository labels in the viewer's language, and JSON Lines keeps the original event names. Separate labels identify assigning and removing permission sets and enabling and disabling users and keys.
+
+- 9acf418: Reuse committed Collection definitions in PostgreSQL and SQLite transactions and invalidate them across replicas when the schema changes.
+
 ## 1.0.0-beta.30
 
 ### Patch Changes

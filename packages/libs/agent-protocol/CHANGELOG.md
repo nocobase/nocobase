@@ -1,5 +1,11 @@
 # @nocobase/agent-protocol
 
+## 0.1.0-beta.24
+
+### Minor Changes
+
+- 2b77e0d: Skills expose their `SKILL.md` front matter `metadata` and who wrote their current version (`updatedById`, null for the application), and an application may bind `skillPolicyToken` to keep skills from being edited, deleted or attached to a scope's defaults through the admin API (403 `SKILL_PROTECTED`). A skill's view reports `canDelete`, checking a scope's new attachments reads only those skills, and the skill page's settings extension receives the skill and may hide the team default mount.
+
 ## 0.1.0-beta.23
 
 ### Patch Changes

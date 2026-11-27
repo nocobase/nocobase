@@ -50,10 +50,9 @@ export interface SeedDefinition {
   readonly name: string;
   readonly transaction?: SeedTransactionMode;
   /**
-   * Sample data rather than data the application needs. It runs only when the
-   * Seeder is told to load sample data, which an application does on a fresh
-   * install with `app.sampleData` set; otherwise it is recorded as skipped and
-   * never runs on its own, though `Seeder.runSamples()` may run it later.
+   * Optional sample data. When enabled, the Seeder runs sample seeds with
+   * no successful run. Disabled samples leave history untouched.
+   * `Seeder.runSamples()` runs outstanding samples on demand.
    */
   readonly sample?: boolean;
   run(context: SeedContext): Promise<void>;
@@ -85,7 +84,7 @@ export interface LoadSeedsOptions {
   readonly sources?: readonly SeedSource[];
 }
 
-/** Whether pending sample seeds run, or are recorded as skipped. */
+/** Whether pending sample seeds run. */
 export interface SeedSampleOptions {
   readonly enabled: boolean;
 }
@@ -97,7 +96,7 @@ export interface CreateSeederOptions extends LoadSeedsOptions {
     readonly name: string;
     readonly packageName: string;
   }) => boolean;
-  /** Sample seeds are recorded as skipped unless this enables them. */
+  /** Enables sample seeds during a normal run. */
   readonly sample?: SeedSampleOptions;
   readonly config?: DatabaseTaskConfig;
   readonly container?: ServiceResolver;
@@ -128,7 +127,7 @@ export type DatabaseSeederOptions = Omit<CreateSeederOptions, 'database'>;
 export interface SeedRunResult {
   readonly executed: string[];
   readonly skipped: string[];
-  /** Sample seeds recorded as skipped by this run, without running. */
+  /** Pending sample seeds skipped because sample data is disabled. */
   readonly skippedSamples: string[];
   /** Checksum drift the `warn` policy allowed the run to continue past. */
   readonly warnings: ChecksumMismatch[];
@@ -147,7 +146,7 @@ export interface SeedRepairResult {
   readonly dryRun: boolean;
 }
 
-/** How a recorded seed ended: it ran, or sample data was recorded without running. */
+/** A successful seed run or a legacy record for sample data that never ran. */
 export type SeedHistoryStatus = 'executed' | 'skipped';
 
 export interface SeedHistoryRecord {
@@ -160,7 +159,7 @@ export interface SeedHistoryRecord {
   readonly status: SeedHistoryStatus;
 }
 
-/** Summary returned after running sample seeds that were skipped. */
+/** Summary returned after running outstanding sample seeds. */
 export interface SeedSampleRunResult {
   readonly executed: string[];
 }

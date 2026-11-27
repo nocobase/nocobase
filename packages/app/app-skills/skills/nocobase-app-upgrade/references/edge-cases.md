@@ -13,16 +13,17 @@ diff <(node -p "JSON.stringify(require('$WORK/base/package.json'), null, 2)") \
      <(node -p "JSON.stringify(require('$WORK/target/package.json'), null, 2)")
 ```
 
-| Key                                                              | Rule                                                                                                                                 |
-| ---------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
-| `name`, `displayName`, `version`                                 | The application's. Never the template's.                                                                                             |
-| `nocobase.templatePackage`, `nocobase.templateKind`              | Keep both on normal upgrades. On an agreed edition change, update `templatePackage` at acceptance; keep `templateKind`.              |
-| `nocobase.defaultTemplateVersion`                                | The target — set last, after the merge.                                                                                              |
-| `description`, `publishConfig`, `repository`                     | Absent by design; do not reintroduce.                                                                                                |
-| `dependencies`, `devDependencies`                                | Add, update, and remove what the template did. Never replace the object: the database driver and the user's own additions live here. |
-| `scripts`                                                        | Take the template's changes; keep the user's additions. Ask before overwriting a template script they redefined.                     |
-| `files`, `engines`, `packageManager`, `browserslist`, `prettier` | The template's.                                                                                                                      |
-| `pnpm`, `overrides`, `resolutions`                               | The user's, unless the template changed the same entry.                                                                              |
+| Key                                                                     | Rule                                                                                                                                 |
+| ----------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
+| `name`, `displayName`, `version`                                        | The application's. Never the template's.                                                                                             |
+| `nocobase.templatePackage`, `nocobase.templateKind`                     | Keep both on normal upgrades. On an agreed edition change, update `templatePackage` at acceptance; keep `templateKind`.              |
+| `nocobase.edition`, `upstreamTemplateVersion`, `upstreamTemplateCommit` | On an edition change, copy these `nocobase` fields from TARGET at acceptance.                                                        |
+| `nocobase.defaultTemplateVersion`                                       | The target — set last, after the merge.                                                                                              |
+| `description`, `publishConfig`, `repository`                            | Absent by design; do not reintroduce.                                                                                                |
+| `dependencies`, `devDependencies`                                       | Add, update, and remove what the template did. Never replace the object: the database driver and the user's own additions live here. |
+| `scripts`                                                               | Take the template's changes; keep the user's additions. Ask before overwriting a template script they redefined.                     |
+| `files`, `engines`, `packageManager`, `browserslist`, `prettier`        | The template's.                                                                                                                      |
+| `pnpm`, `overrides`, `resolutions`                                      | The user's, unless the template changed the same entry.                                                                              |
 
 Dependency keys get reordered between releases, so most of the raw diff is noise — compare key by key. A dependency the template dropped may be one the user now imports directly; search application code, configuration, tests, and build scripts before deleting it, same as a removed export. For plugins, complete the [code and configuration review](#review-a-removed-plugins-usage). Obtain confirmation before removing any apparently unused `@nocobase/*` capability, and keep each retained package in the appropriate dependency section together with any required registrations.
 
@@ -33,6 +34,10 @@ After an interrupted or manual removal, confirm that the final manifest no longe
 Ranges in a published template are already resolved (`pnpm pack` expands `workspace:` and `catalog:`). Take them as published.
 
 Preserve the application identity and migration owners throughout. For an explicit Community → Professional/Enterprise or Professional → Enterprise transition, follow [switching editions](edition-transition.md). Other template-family changes require a separate migration plan.
+
+For a retired Multi-app, Sub-app or Multi-portal template, follow [the scenario template migration](scenario-template-migration.md), including the original release check for Main projects that share a historical version marker.
+
+For a Community → Enterprise upgrade, merge the target's capability packaging and script entries as described in [Enterprise capability tooling](edition-transition.md#carry-enterprise-capability-tooling).
 
 ### Preinstalled plugins and database drivers
 

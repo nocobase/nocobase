@@ -1,5 +1,18 @@
 # @nocobase/app-cli
 
+## 1.0.0-beta.41
+
+### Patch Changes
+
+- cc0bf33: Run outstanding sample data when enabled on existing databases. Write seed history only after a successful run and omit disabled sample seeds from dry-run plans. Apply the preview environment's sample data setting on every deployment and document the guidance for adding sample seeds to business changes.
+- Updated dependencies [cc0bf33]
+- Updated dependencies [4561d5f]
+- Updated dependencies [52d0b0d]
+- Updated dependencies [9acf418]
+  - @nocobase/app-server@5.0.0-beta.12
+  - @nocobase/db@1.0.0-beta.31
+  - @nocobase/secrets@0.1.0-beta.2
+
 ## 1.0.0-beta.40
 
 ### Patch Changes

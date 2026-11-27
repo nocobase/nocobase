@@ -1,5 +1,27 @@
 # @nocobase/app-plugin-notification
 
+## 2.0.0-beta.11
+
+### Patch Changes
+
+- 87e3dac: Add an `sms` notification channel type with built-in Alibaba Cloud and Tencent Cloud services, private credential mappings, readable SMS error codes, test send and notification-rule support, and list the new channel type in the notification settings.
+- 91a8ff2: Route SMS, SMS provider setup, verification codes, verified phone binding, step-up confirmation and their browser hooks to the right Skills from the application development Skill, and cross-link the notification, notification providers and verification Skills with the rule that one-time credentials never go through ordinary notification sends.
+- Updated dependencies [cc0bf33]
+- Updated dependencies [4561d5f]
+- Updated dependencies [52d0b0d]
+- Updated dependencies [c12d990]
+- Updated dependencies [1b92cdb]
+- Updated dependencies [1b92cdb]
+- Updated dependencies [1b92cdb]
+- Updated dependencies [78bdca8]
+- Updated dependencies [87e3dac]
+- Updated dependencies [9acf418]
+  - @nocobase/app-server@5.0.0-beta.12
+  - @nocobase/db@1.0.0-beta.31
+  - @nocobase/app-plugin-authentication@2.0.0-beta.26
+  - @nocobase/app-plugin-authorization@1.0.0-beta.41
+  - @nocobase/app-client@4.0.0-beta.14
+
 ## 2.0.0-beta.10
 
 ### Minor Changes

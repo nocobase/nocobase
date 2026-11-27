@@ -60,6 +60,7 @@ export function createMigrationConnection(
     dialect: connection.dialect,
     capabilities: connection.capabilities,
     client: connection.client.bind(connection),
+    notifySchemaChange: connection.notifySchemaChange.bind(connection),
     // Every wrapper made from one Database Connection shares its in-process lock claims.
     [TASK_LOCK_SCOPE]: connection,
   } as MigrationConnection;

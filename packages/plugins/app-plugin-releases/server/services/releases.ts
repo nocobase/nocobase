@@ -4132,7 +4132,7 @@ interface GenerationPlan {
   readonly persistent: Map<string, ReleaseVariable>;
   /** Generated for the first start only. */
   readonly oneShot: Map<string, ReleaseVariable>;
-  /** Derived each time: the public origin, sample data on a first deployment. */
+  /** Derived each time: the public origin and the environment’s sample data setting. */
   readonly computed: Record<string, string>;
   /** The first administrator's password variable, with the name and email it signs in with. */
   initialAdmin: {
@@ -4199,7 +4199,7 @@ function planGenerated(
       continue;
     }
     if (variable.path === SAMPLE_DATA_PATH) {
-      if (context.first && context.environment.sampleDataOnFirstDeploy)
+      if (context.environment.sampleDataOnFirstDeploy)
         plan.computed[name] = 'true';
       continue;
     }

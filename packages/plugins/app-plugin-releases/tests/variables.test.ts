@@ -1,8 +1,8 @@
 // @vitest-environment node
 /**
  * Deployment variables: the manifest a build declares, values per environment and per App, how a deployment resolves
- * them (and refuses one missing a required variable), what it generates, the first administrator, sample data on a
- * first deployment, and what counts as changed.
+ * them (and refuses one missing a required variable), what it generates, the first administrator, sample data on
+ * each deployment, and what counts as changed.
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { parse as parseYaml } from 'yaml';
@@ -51,7 +51,6 @@ const MANIFEST: ReleaseVariablesManifest = {
     variable('APP_SAMPLE_DATA', {
       path: 'app.sampleData',
       type: 'boolean',
-      firstStartOnly: true,
     }),
     variable('INITIAL_ADMIN_USERNAME', {
       path: 'users.initialAdmin.username',
@@ -505,7 +504,7 @@ describe('variables', () => {
     ).rejects.toMatchObject({ reason: 'INITIAL_ADMIN_UNAVAILABLE' });
   });
 
-  it('loads sample data on a first deployment where the environment asks for it', async () => {
+  it('enables sample data on every deployment where the environment asks for it', async () => {
     const admin = await harness.as('admin', 'admin');
     await harness.services.environments.update(admin, 'staging', {
       sampleDataOnFirstDeploy: true,
@@ -526,7 +525,39 @@ describe('variables', () => {
     await deploy(release.id);
     expect(lastEnv().APP_SAMPLE_DATA).toBe('true');
     await deploy(release.id);
-    expect(lastEnv()).not.toHaveProperty('APP_SAMPLE_DATA');
+    expect(lastEnv().APP_SAMPLE_DATA).toBe('true');
+
+    await harness.services.environments.setVariable(
+      admin,
+      'staging',
+      'APP_SAMPLE_DATA',
+      { value: 'false' },
+    );
+    expect(
+      (await harness.services.releases.getApp(admin, 'shop')).variables
+        ?.changed,
+    ).toBe(true);
+    await deploy(release.id);
+    expect(lastEnv().APP_SAMPLE_DATA).toBe('false');
+    expect(
+      (await harness.services.releases.getApp(admin, 'shop')).variables
+        ?.changed,
+    ).toBe(false);
+
+    await harness.services.environments.setVariable(
+      admin,
+      'staging',
+      'APP_SAMPLE_DATA',
+      { value: 'true' },
+    );
+    await harness.services.releases.setAppVariable(
+      admin,
+      'shop',
+      'APP_SAMPLE_DATA',
+      { value: 'false' },
+    );
+    await deploy(release.id);
+    expect(lastEnv().APP_SAMPLE_DATA).toBe('false');
   });
 
   it('gives a preview App none of its target’s values, only its own', async () => {

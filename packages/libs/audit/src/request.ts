@@ -6,8 +6,9 @@ import { findTargetHandler } from 'hono/utils/handler';
 import { parseAuditAddress } from './ip.js';
 import {
   auditSnapshot,
+  copyAuditRedactRules,
   readAuditBody,
-  type AuditRedactRule,
+  type AuditRedactRules,
 } from './redact.js';
 import type { AuditActor, AuditTarget, AuditTranslation } from './index.js';
 import type { AuditCoordinator } from './service.js';
@@ -20,8 +21,9 @@ export interface AuditTargets {
 
 export interface AuditExecutionResult {
   readonly status: number;
-  /** Bounded JSON copies used only by the resolver and the snapshot policy. */
+  /** A bounded JSON copy when capture is enabled and the request body is available. */
   readonly request: unknown;
+  /** A bounded JSON copy when capture is enabled and the response body is available. */
   readonly response: unknown;
   /** An in-process result from a framework route, if provided. */
   readonly value: unknown;
@@ -36,15 +38,13 @@ export interface AuditRouteOptions {
   readonly target?: (
     context: Context,
   ) => AuditTarget | AuditTargets | undefined;
-  /** Runs after the handler succeeds. Only return identifiers safe for the log. */
+  /** Runs after success. Body copies and the in-process result may be unavailable. Return only safe identifiers. */
   readonly resolveTargets?: (
     result: AuditExecutionResult,
     context: Context,
   ) => AuditTarget | AuditTargets | undefined;
-  /** Select the data the target resolver needs when body snapshots are disabled. Defaults to the response. */
-  readonly resultFrom?: 'request' | 'response' | 'context';
-  readonly redact?: readonly AuditRedactRule[];
-  /** Set to false to omit both snapshots. A target resolver can still read bounded JSON. */
+  readonly redact?: AuditRedactRules;
+  /** Body capture requires an explicit true and no explicit false across the app and route. */
   readonly captureBody?: boolean;
   /** Classify credential validation errors as failures and omit identity and snapshots on failure. */
   readonly authenticationAttempt?: boolean;
@@ -101,7 +101,10 @@ export function describeAudit(
 ): MiddlewareHandler {
   const resolve =
     typeof declaration === 'function'
-      ? declaration
+      ? (context: Context) => {
+          const resolved = declaration(context);
+          return resolved === undefined ? undefined : copyDeclaration(resolved);
+        }
       : staticResolver(declaration);
   const middleware: MiddlewareHandler = async (_context, next) => next();
   Object.defineProperty(middleware, auditDeclaration, { value: resolve });
@@ -118,24 +121,7 @@ function copyDeclaration(declaration: Declaration): Declaration {
   const { redact, operationName } = declaration;
   return Object.freeze({
     ...declaration,
-    redact:
-      redact &&
-      Object.freeze(
-        redact.map((rule) => {
-          if (
-            !rule ||
-            Object.keys(rule).length !== 1 ||
-            !(
-              (typeof rule.field === 'string' && rule.field.trim()) ||
-              (typeof rule.path === 'string' && rule.path.trim())
-            )
-          )
-            throw new TypeError(
-              'An audit redaction rule requires exactly one field or path.',
-            );
-          return Object.freeze({ ...rule });
-        }),
-      ),
+    redact: redact === undefined ? undefined : copyAuditRedactRules(redact),
     operationName:
       typeof operationName === 'object'
         ? Object.freeze({ ...operationName })
@@ -167,10 +153,7 @@ function routeAudit(
       context.req.routeIndex = index;
       const resolved = resolve(context);
       if (resolved === false) return false;
-      if (resolved) {
-        const copied = copyDeclaration(resolved);
-        if (copied) declaration = { ...copied, ...declaration };
-      }
+      if (resolved) declaration = { ...resolved, ...declaration };
     } catch {
       report();
       return false;
@@ -299,11 +282,14 @@ export function auditMiddleware(options: {
   readonly host: AuditRequestHost;
   readonly service: AuditCoordinator;
   readonly autoDetect: boolean;
+  readonly captureBody?: boolean;
+  readonly redact?: AuditRedactRules;
   readonly proxies: BlockList;
   readonly ipAddressHeaders: readonly string[];
-  readonly report: () => void;
+  readonly report: (message?: string) => void;
 }): MiddlewareHandler {
-  const { host, autoDetect, report } = options;
+  const { host, autoDetect, captureBody, report } = options;
+  const globalRedact = options.redact && copyAuditRedactRules(options.redact);
   return async (context, next) => {
     const started = performance.now();
     let route: RouteAudit | false | undefined;
@@ -329,20 +315,18 @@ export function auditMiddleware(options: {
 
     const occurredAt = new Date().toISOString();
     const declaration = route.options;
-    const capture = declaration.captureBody !== false;
-    const resultFrom = declaration.resolveTargets
-      ? (declaration.resultFrom ?? 'response')
-      : undefined;
-    const body =
-      capture || resultFrom === 'request'
-        ? readAuditBody(context.req.raw)
-        : undefined;
-    if (declaration.resolveTargets) host.enableExecutionResult(context);
+    const capture =
+      captureBody !== false &&
+      declaration.captureBody !== false &&
+      (captureBody === true || declaration.captureBody === true);
+    const body = capture ? readAuditBody(context.req.raw) : undefined;
+    const { resolveTargets } = declaration;
+    if (resolveTargets) host.enableExecutionResult(context);
     let actual: Context = context;
     if (route.context !== context)
       host.observeForwardedContext(context, (child) => {
         actual = child;
-        if (declaration.resolveTargets) host.enableExecutionResult(child);
+        if (resolveTargets) host.enableExecutionResult(child);
       });
     let thrown = false;
     try {
@@ -362,13 +346,13 @@ export function auditMiddleware(options: {
             !success && declaration.authenticationAttempt;
           const request = failedAuthentication ? undefined : await body;
           const response =
-            success && (capture || resultFrom === 'response')
-              ? await readAuditBody(context.res)
-              : undefined;
-          const captured =
-            success && declaration.resolveTargets
-              ? targetsOf(
-                  declaration.resolveTargets(
+            capture && success ? await readAuditBody(context.res) : undefined;
+          let targets = before;
+          if (success && resolveTargets) {
+            try {
+              targets =
+                targetsOf(
+                  resolveTargets(
                     {
                       status,
                       request,
@@ -377,11 +361,25 @@ export function auditMiddleware(options: {
                     },
                     actual,
                   ),
-                )
-              : undefined;
-          const targets = captured ?? before;
-          const snapshot = (value: unknown) =>
-            auditSnapshot(value, declaration.redact);
+                ) ?? before;
+            } catch {
+              report('Could not resolve audit targets.');
+            }
+          }
+          const redact =
+            declaration.redact && globalRedact
+              ? {
+                  fields: [
+                    ...(globalRedact.fields ?? []),
+                    ...(declaration.redact.fields ?? []),
+                  ],
+                  paths: [
+                    ...(globalRedact.paths ?? []),
+                    ...(declaration.redact.paths ?? []),
+                  ],
+                }
+              : (declaration.redact ?? globalRedact);
+          const snapshot = (value: unknown) => auditSnapshot(value, redact);
           const safeTarget = ({
             collection,
             key,

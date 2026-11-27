@@ -1,5 +1,20 @@
 # @nocobase/app-client
 
+## 4.0.0-beta.14
+
+### Minor Changes
+
+- c12d990: Allow signed-in App Routes to render without the application header and sidebar while keeping sign-in and page permissions.
+
+### Patch Changes
+
+- 1b92cdb: Group Notifications and Mailbox connections under Communications in system settings and list Authentication before API keys.
+- 1b92cdb: Use ampersands in English settings navigation labels, including “Roles & permissions” and “Workflows & automation”.
+  Use “角色与权限” for the Simplified Chinese roles and permissions label.
+- 1b92cdb: Move the System settings shortcut from the sidebar footer to the header beside the account menu. Header actions can target a host application page with `app:<routeName>` and use `beforeAccount` placement to remain visible on mobile, and disabling system settings routes also removes the shortcut.
+- Updated dependencies [dd0f4bd]
+  - @nocobase/api-client@1.0.0-beta.7
+
 ## 4.0.0-beta.13
 
 ### Minor Changes

@@ -1,5 +1,11 @@
 # @nocobase/create-plugin
 
+## 0.1.0-beta.27
+
+### Patch Changes
+
+- cc0bf33: Run outstanding sample data when enabled on existing databases. Write seed history only after a successful run and omit disabled sample seeds from dry-run plans. Apply the preview environment's sample data setting on every deployment and document the guidance for adding sample seeds to business changes.
+
 ## 0.1.0-beta.26
 
 ### Minor Changes

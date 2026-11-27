@@ -561,6 +561,28 @@ describe('the Docker backend', () => {
     expect(docker.volumes.has('t-site-storage')).toBe(true);
   });
 
+  it('purges business data by scope after a Host restart with no App definition', async () => {
+    const first = await startHost();
+    await first.host.management.applyDeployment(
+      specFor('site', v1, { scope: scope() }),
+    );
+    await docker.ensureVolume('t-site-backups', {});
+    await first.host.close('restart');
+    hosts.splice(hosts.indexOf(first.host), 1);
+    const { host } = await startHost({ dir: first.dir });
+    expect(docker.volumes.has('t-site-storage')).toBe(true);
+    expect(
+      (
+        await host.management.removeDeploymentKeepingBackups!('site', {
+          scope: scope(),
+        })
+      ).deployments,
+    ).toEqual([]);
+    expect(appContainers('site')).toHaveLength(0);
+    expect(docker.volumes.has('t-site-storage')).toBe(false);
+    expect(docker.volumes.has('t-site-backups')).toBe(true);
+  });
+
   it('reads the container log as journal pages', async () => {
     const { host } = await startHost();
     await host.management.applyDeployment(

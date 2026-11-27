@@ -400,7 +400,7 @@ export class Application<
 
   /**
    * Builds the sample data services registered, once every provider is ready, so that a sample may go through any
-   * plugin's services. A sample that fails is logged and recorded as skipped rather than failing the start.
+   * plugin's services. A failed sample is logged and remains eligible for a later run.
    */
   private async buildSampleData(): Promise<void> {
     if (!this.container.has(sampleDataToken)) return;

@@ -346,7 +346,7 @@ container.resolve(sampleDataToken).register({
 });
 ```
 
-Enable it on a fresh development database with `APP_SAMPLE_DATA=true pnpm dev`. After `pnpm nocobase db reset --force` the application is not started, so the hook has not run: follow it with `pnpm nocobase db sample`, which builds every registration still missing. Normal seeds prepare real permission sets and their grants. Use User management for ongoing real assignments. See [sample seeds](migrations.md#sample-data-and-demo-systems) and the installed `nocobase-app-plugin-users` Skill.
+Start with `APP_SAMPLE_DATA=true pnpm dev` to build outstanding registrations on new or existing development databases. After `pnpm nocobase db reset --force`, start the app with sample data enabled or run `pnpm nocobase db sample` to build the service registrations. Normal seeds prepare real permission sets and their grants. Use User management for ongoing real assignments. See [sample seeds](migrations.md#sample-data-and-demo-systems) and the installed `nocobase-app-plugin-users` Skill.
 
 A global default is supported only when the user explicitly requests it and the application delivers an authorized administration control to inspect its recipient population, change the default role and revoke that assignment. User access details must distinguish direct roles from inherited roles and link to the source. If those controls are unavailable, explain the limitation and use explicit user assignments instead. Never invent a configuration flag, seed-only setting or undocumented SQL instruction as the administrator's normal adjustment interface.
 

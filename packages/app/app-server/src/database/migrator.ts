@@ -60,7 +60,7 @@ export interface AppPendingTasksOptions {
 export interface AppPendingTasksResult {
   status: 'completed' | 'skipped';
   reason?: 'missing-directory';
-  /** Tasks with no history record, in the order a run would execute them. */
+  /** Pending tasks, in the order a run would execute them. */
   pending?: string[];
   /** Tasks already recorded, which a run would skip. */
   skipped?: string[];

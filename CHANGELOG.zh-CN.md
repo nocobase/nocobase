@@ -2,6 +2,36 @@
 
 本文件记录 NocoBase 3 的所有重要变更，每次发布一节：`nocobase-v3-beta/<日期>.<序号>` 是预览版，`nocobase-v3/<日期>.<序号>` 是正式版。每次发布的包版本见对应的 GitHub Release，各个包自己的变更见包内的 CHANGELOG.md。
 
+## [nocobase-v3-beta/2026-11-27.1](https://github.com/nocobase/nocobase/releases/tag/nocobase-v3-beta%2F2026-11-27.1)
+
+### 🎉 新特性
+
+- **[Agent]** 技能接口返回 `SKILL.md` 元数据，应用可以禁止编辑、删除或挂载指定的技能。 ([#11675](https://github.com/nocobase/nocobase/pull/11675))
+- **[服务端]** 记录重要的 API 操作，并将审计事件发送到可配置的目标，包括日志文件。 ([#11694](https://github.com/nocobase/nocobase/pull/11694))
+- **[消息代理]** 插件可以通过可配置的消息中间件在应用内外发布和消费消息；在数据库事务中发布的消息只在提交后发出，消费方可在与其数据库写入相同的事务中跳过重复消息。 ([#11695](https://github.com/nocobase/nocobase/pull/11695))
+- **[客户端]** 登录后的页面可以隐藏应用头部和侧边栏，同时保留访问权限检查。 ([#11720](https://github.com/nocobase/nocobase/pull/11720))
+- **[通知]** 支持通过阿里云或腾讯云发送短信，并使用一次性验证码验证手机号及敏感操作。 ([#11722](https://github.com/nocobase/nocobase/pull/11722))
+- **[验证码]** 可通过类型安全的请求和 React Hooks 接入验证码、手机号绑定和二次验证。 ([#11738](https://github.com/nocobase/nocobase/pull/11738))
+- **[Skills]** 引导社区版应用升级到专业版或企业版，并引导旧场景模板应用迁移到企业版。 ([#11739](https://github.com/nocobase/nocobase/pull/11739))
+
+### 🚀 优化
+
+- **[客户端]** 系统设置入口常驻头像左侧，系统设置和站内信图标支持悬停提示，认证设置页更名为「身份认证」。 ([#11715](https://github.com/nocobase/nocobase/pull/11715))
+- **[Agent]** 运行历史较多时，查看 Agent 可用状态更快。 ([#11717](https://github.com/nocobase/nocobase/pull/11717))
+- **[邮件]** 邮件相关页面的标题字号与其他设置页保持一致。 ([#11721](https://github.com/nocobase/nocobase/pull/11721))
+- **[数据库]** 减少 PostgreSQL 和 SQLite 重复事务中的表结构查询。 ([#11741](https://github.com/nocobase/nocobase/pull/11741))
+
+### 🐛 修复
+
+- **[Agent]**
+  - 在用量页按 Agent 查看在线对话的 token 和费用，包括停止或失败前已返回的用量。 ([#11719](https://github.com/nocobase/nocobase/pull/11719))
+  - 执行机领活更快释放 Agent 行锁，派发提交前断连时任务仍留在队列中。 ([#11735](https://github.com/nocobase/nocobase/pull/11735))
+- **[权限]** 修改或删除已不存在的默认访问规则时，系统会明确提示规则不存在。 ([#11724](https://github.com/nocobase/nocobase/pull/11724))
+- **[Agent 运行器]**
+  - Runner 现在能识别在 dsh Web 界面中保存的 DeepSeek API key，不再误报 dsh 需要登录。 ([#11726](https://github.com/nocobase/nocobase/pull/11726))
+  - 修复执行机在 OpenCode 2.4 刚启动时检测不到模型的问题。 ([#11728](https://github.com/nocobase/nocobase/pull/11728))
+- **[数据库]** 在任意一次部署中启用示例数据时，加载新增和此前跳过的示例数据。 ([#11744](https://github.com/nocobase/nocobase/pull/11744))
+
 ## [nocobase-v3-beta/2026-11-25.1](https://github.com/nocobase/nocobase/releases/tag/nocobase-v3-beta%2F2026-11-25.1)
 
 ### 🚀 优化

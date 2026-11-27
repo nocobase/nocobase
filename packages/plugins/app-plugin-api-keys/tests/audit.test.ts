@@ -424,7 +424,7 @@ it('attributes native audit events without retaining credentials or duplicating 
     },
     actor,
     outcome: 'success',
-    targets: [{ collection: 'apikey', key: key.id }],
+    targets: [{ collection: 'apikey', key: undefined }],
     response: undefined,
   });
   const competingCredentials = await request(
@@ -590,7 +590,7 @@ it('attributes native audit events without retaining credentials or duplicating 
     action: 'apiKeysCreateSystemKey',
     operationName: 'Create a system API key',
     actor,
-    targets: [{ collection: 'apikey', key: systemData.key.id }],
+    targets: [{ collection: 'apikey', key: undefined }],
   });
   for (const [operation, operationId, operationName] of [
     ['disable', 'disableSystemKey', 'Disable a system API key'],
@@ -646,7 +646,7 @@ it('attributes native audit events without retaining credentials or duplicating 
       key: 'audit.operations.createApiKey',
     },
     actor,
-    targets: [{ collection: 'apikey', key: nativeKey.id }],
+    targets: [{ collection: 'apikey', key: undefined }],
   });
   const nativeDelete = await request(
     'POST',
@@ -663,7 +663,7 @@ it('attributes native audit events without retaining credentials or duplicating 
       key: 'audit.operations.revokeApiKey',
     },
     actor,
-    targets: [{ collection: 'apikey', key: nativeKey.id }],
+    targets: [{ collection: 'apikey', key: undefined }],
   });
   const signOut = await request('POST', '/api/auth/sign-out', {}, { cookie });
   if (signOut.status !== 200) throw new Error(await signOut.text());

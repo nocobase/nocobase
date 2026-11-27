@@ -808,9 +808,9 @@ const koKR: LocaleResource<typeof enUS> = {
       apps: '앱',
       appsDescription: '이 환경에 배포된 앱입니다.',
       appsEmpty: '아직 배포된 앱이 없습니다.',
-      sampleData: '첫 배포 시 샘플 데이터 불러오기',
+      sampleData: '배포 시 샘플 데이터 불러오기',
       sampleDataHint:
-        '이 환경에서 앱을 처음 배포하면 샘플 데이터를 설치합니다(APP_SAMPLE_DATA=true). 운영 환경이 아닌 미리 보기에 사용하세요.',
+        '배포할 때마다 아직 실행되지 않은 샘플 데이터를 불러옵니다(APP_SAMPLE_DATA=true). 미리 보기 환경에서 사용하고 운영 환경에서는 끄세요.',
       add: '환경 추가',
       edit: '편집',
       delete: '삭제',

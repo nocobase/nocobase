@@ -156,6 +156,7 @@
     "ja": "メッセージブローカー"
   },
   "logging": { "en": "Logging", "zh": "日志", "ja": "ログ" },
+  "audit": { "en": "Audit", "zh": "审计", "ja": "監査" },
   "lifecycle": {
     "en": "Plugin lifecycle",
     "zh": "插件生命周期",

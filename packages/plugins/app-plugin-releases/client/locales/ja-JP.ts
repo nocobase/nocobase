@@ -833,9 +833,9 @@ const jaJP: LocaleResource<typeof enUS> = {
       apps: 'アプリ',
       appsDescription: 'この環境にデプロイされたアプリ。',
       appsEmpty: 'ここにはまだアプリが展開されていません。',
-      sampleData: '最初のデプロイメントでサンプルデータをロードする',
+      sampleData: 'デプロイ時にサンプルデータを読み込む',
       sampleDataHint:
-        'ここでのアプリの最初のデプロイメントでは、サンプル データ (APP_SAMPLE_DATA=true) がインストールされます。本番環境ではなく、プレビューに使用してください。',
+        'デプロイのたびに、未実行のサンプルデータを読み込みます（APP_SAMPLE_DATA=true）。プレビュー環境で使用し、本番環境では無効にしてください。',
       add: '環境の追加',
       edit: '編集',
       delete: '削除',

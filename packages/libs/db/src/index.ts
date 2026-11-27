@@ -28,7 +28,10 @@ export type {
   CollectionMetadataStoreConfig,
   DirectoryCollectionMetadataStoreConfig,
 } from './database/config.js';
-export type { DatabaseConnection } from './database/connection.js';
+export type {
+  DatabaseConnection,
+  DatabaseTransactionOptions,
+} from './database/connection.js';
 export type { RestrictedDatabase } from './database/restricted-database.js';
 export type { DatabasePolicyMap } from './database/policy-map.js';
 export type { TransactionCallbackPhase } from './database/internal/transaction-callbacks.js';
