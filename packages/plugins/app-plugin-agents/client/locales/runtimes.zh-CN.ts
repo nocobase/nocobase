@@ -157,6 +157,12 @@ const runtimesZhCN: RuntimesLocale = {
         '{{tools}} 的上限高于最大并发数（{{slots}}），实际最多同时运行 {{slots}} 个。',
       noneChecked: '先在上面勾选编码工具，再为它设置上限。',
     },
+    modelDetection: {
+      failed: '模型检测失败',
+      timedOut: '模型检测超时',
+      commandFailed: '模型列表命令执行失败',
+      invalidResponse: '模型列表响应无效',
+    },
     toolTable: {
       tool: '工具',
       enabled: '启用',

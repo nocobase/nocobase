@@ -123,6 +123,44 @@ describe('runtimes page', () => {
     );
   };
 
+  it('shows a model discovery failure with its detail and supports old runner reports', async () => {
+    runners[0] = runner('r1', {
+      tools: [
+        {
+          kind: 'opencode',
+          authenticated: true,
+          modelsDetectionStatus: 'failed',
+          modelsDetectionError: 'Model detection timed out',
+          modelsDetectionDetail:
+            'HTTP 503: Location plugins did not finish activating',
+        },
+        {
+          kind: 'pi',
+          authenticated: true,
+          modelsDetectionStatus: 'failed',
+          modelsDetectionError: 'Model listing command failed',
+        },
+        { kind: 'claude', authenticated: true },
+      ],
+    });
+    renderPage(<RuntimesPage />);
+    const sheet = await openSheet();
+    expect(
+      within(sheet).getByText('runtimes.modelDetection.timedOut'),
+    ).toBeVisible();
+    expect(
+      within(sheet).getByText(
+        'HTTP 503: Location plugins did not finish activating',
+      ),
+    ).toBeVisible();
+    expect(
+      within(sheet).getByText('runtimes.modelDetection.commandFailed'),
+    ).toBeVisible();
+    expect(
+      within(sheet).queryByText('runtimes.modelDetection.failed'),
+    ).not.toBeInTheDocument();
+  });
+
   it('shows loading and a retryable failure while fetching a runner instead of an empty diagnostic', async () => {
     let rejectDetail!: (error: Error) => void;
     api.routes['agents/runners/r1'] = () =>

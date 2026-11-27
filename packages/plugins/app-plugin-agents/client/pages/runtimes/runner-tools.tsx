@@ -1,7 +1,12 @@
 import { Fragment, useState, type ReactElement } from 'react';
 import { useTranslation } from '@nocobase/i18n/client';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { AGENT_TOOLS, type AgentTool } from '@nocobase/agent-protocol';
+import {
+  AGENT_TOOLS,
+  type AgentTool,
+  type ModelsDetectionError,
+  type ToolInfo,
+} from '@nocobase/agent-protocol';
 import {
   toolState,
   type RunnerSummary,
@@ -27,6 +32,47 @@ import { ToolStateTag } from './runner-cells.js';
 import { ToolLimitInput } from './tool-slots-fields.js';
 import { quotaTargets } from './quota-targets.js';
 import { QuotaCell, QuotaClearDialog } from './quota.js';
+
+const modelDetectionErrorKeys: Record<ModelsDetectionError, string> = {
+  'Model detection failed': 'failed',
+  'Model detection timed out': 'timedOut',
+  'Model listing command failed': 'commandFailed',
+  'Invalid model listing response': 'invalidResponse',
+};
+
+function ModelDetectionFailure({
+  info,
+  phone,
+}: {
+  readonly info?: ToolInfo;
+  readonly phone?: boolean;
+}) {
+  const { t } = useTranslation();
+  if (info?.modelsDetectionStatus !== 'failed') return null;
+  const key =
+    modelDetectionErrorKeys[
+      info.modelsDetectionError ?? 'Model detection failed'
+    ];
+  const detail = (
+    <div className='text-xs whitespace-normal [overflow-wrap:anywhere]'>
+      <p className='font-medium text-destructive'>
+        {t(`runtimes.modelDetection.${key}`)}
+      </p>
+      {info.modelsDetectionDetail && (
+        <p className='mt-1 text-muted-foreground'>
+          {info.modelsDetectionDetail}
+        </p>
+      )}
+    </div>
+  );
+  return phone ? (
+    <div className='border-t p-3'>{detail}</div>
+  ) : (
+    <TableRow>
+      <TableCell colSpan={6}>{detail}</TableCell>
+    </TableRow>
+  );
+}
 
 /** One form state, rendered as full-width rows on desktop and one card per tool on phones. */
 export function ToolTable({
@@ -128,6 +174,8 @@ export function ToolTable({
       state={toolState({ enabledTools, tools: runner.tools }, tool)}
     />
   );
+  const reportedTool = (tool: AgentTool) =>
+    runner.tools.find((item) => item.kind === tool);
   if (!tools.length)
     return (
       <p className='text-sm text-muted-foreground'>{t('runtimes.noTools')}</p>
@@ -148,6 +196,7 @@ export function ToolTable({
               {state(tool)}
               <span className='ml-auto flex items-center'>{toggle(tool)}</span>
             </div>
+            <ModelDetectionFailure info={reportedTool(tool)} phone />
             <div className='border-t p-3'>{quota(tool)}</div>
             {quotaTargets(runner, tool).map((target) => (
               <div key={target} className='border-t bg-muted/30 p-3'>
@@ -248,6 +297,7 @@ export function ToolTable({
                   </div>
                 </TableCell>
               </TableRow>
+              <ModelDetectionFailure info={reportedTool(tool)} />
               {quotaTargets(runner, tool).map((target) => (
                 <TableRow key={target} className='bg-muted/30'>
                   <TableCell

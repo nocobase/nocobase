@@ -441,6 +441,7 @@ describe('runners', () => {
                 authenticated: true,
                 modelsDetectionStatus: 'failed',
                 modelsDetectionError: 'Model listing command failed',
+                modelsDetectionDetail: 'pi --list-models exited with code 1',
               },
             ],
           },
@@ -450,6 +451,17 @@ describe('runners', () => {
     expect(
       (await h.services.runners.get(first.runnerId)).tools[0]?.models,
     ).toBeUndefined();
+    const failed = await h.request('GET', `/agents/runners/${first.runnerId}`, {
+      user: 'owner',
+    });
+    expect(failed.body.data.tools).toMatchObject([
+      {
+        kind: 'pi',
+        modelsDetectionStatus: 'failed',
+        modelsDetectionError: 'Model listing command failed',
+        modelsDetectionDetail: 'pi --list-models exited with code 1',
+      },
+    ]);
     expect(
       (
         await h.request('POST', '/agents/runners/heartbeat', {
@@ -485,6 +497,7 @@ describe('runners', () => {
       modelsDetectedAt: 'invalid-date',
       modelsDetectionStatus: 'future-status',
       modelsDetectionError: 'future-error',
+      modelsDetectionDetail: 'password=synthetic-secret',
     };
     const registered = await h.request('POST', '/agents/runners/register', {
       body: { ...registration(token.token), tools: [reported] },

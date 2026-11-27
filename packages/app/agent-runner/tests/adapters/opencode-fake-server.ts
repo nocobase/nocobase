@@ -40,6 +40,9 @@ export interface FakeOptions {
   instructionStatus?: number;
   models?: unknown[];
   plugins?: () => unknown[];
+  failure?: (
+    request: RecordedRequest,
+  ) => { status: number; body: unknown } | undefined;
   /** Sessions GET /api/session/:id knows (resume). */
   knownSessions?: string[];
 }
@@ -190,7 +193,8 @@ export class FakeOpencode {
     const url = new URL(req.url ?? '/', 'http://x');
     const method = req.method ?? 'GET';
     const p = url.pathname;
-    this.requests.push({ method, path: p, body });
+    const request = { method, path: p, body };
+    this.requests.push(request);
     const json = (status: number, payload?: unknown) => {
       if (payload === undefined) res.writeHead(status).end();
       else
@@ -198,6 +202,9 @@ export class FakeOpencode {
           .writeHead(status, { 'content-type': 'application/json' })
           .end(JSON.stringify(payload));
     };
+
+    const failure = this.options.failure?.(request);
+    if (failure) return json(failure.status, failure.body);
 
     if (method === 'GET' && p === '/api/event') {
       res.writeHead(200, { 'content-type': 'text/event-stream' });

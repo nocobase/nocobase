@@ -42,8 +42,11 @@ export interface ServerHandle {
 export type LaunchFn = (options: LaunchOptions) => Promise<ServerHandle>;
 
 export class ServerStartError extends Error {
-  constructor(message: string) {
-    super(message);
+  constructor(
+    readonly reason: string,
+    stderr?: string,
+  ) {
+    super(stderr ? `${reason}: ${stderr}` : reason);
     this.name = 'ServerStartError';
   }
 }
@@ -138,6 +141,7 @@ export const launchServer: LaunchFn = async (options) => {
     process.removeListener('exit', onProcessExit);
   };
 
+  // Only publish runner-authored startup reasons; stderr may contain provider or server credentials.
   const baseUrl = await new Promise<string>((resolve, reject) => {
     let stdout = '';
     const timer = setTimeout(
@@ -162,11 +166,18 @@ export const launchServer: LaunchFn = async (options) => {
       if (!match) return;
       clearTimeout(timer);
       options.signal?.removeEventListener('abort', rejectAbort);
+      options.signal?.removeEventListener('abort', onAbort);
+      if (!URL.canParse(match[1])) {
+        reject(
+          new ServerStartError('opencode serve reported an invalid address'),
+        );
+        return;
+      }
       const url = new URL(match[1]);
       if (url.hostname !== '127.0.0.1') {
         reject(
           new ServerStartError(
-            `opencode serve listens on ${url.hostname}, not 127.0.0.1`,
+            'opencode serve reported a non-loopback address',
           ),
         );
         return;
@@ -179,7 +190,8 @@ export const launchServer: LaunchFn = async (options) => {
       const tail = stderrLines.slice(-5).join('\n');
       reject(
         new ServerStartError(
-          `opencode serve exited before listening (${signal ? `killed by signal ${signal}` : `exited with code ${code}`})${tail ? `: ${tail}` : ''}`,
+          `opencode serve exited before listening (${signal ? `killed by signal ${signal}` : `exited with code ${code}`})`,
+          tail,
         ),
       );
     });
