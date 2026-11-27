@@ -120,14 +120,15 @@ export function ToolStateTag({
   readonly state: ToolState;
 }): ReactElement {
   const { t } = useTranslation();
+  const label = t(`runtimes.tool.${state}`);
   return (
     <AgTag
       tone={TOOL_STATE_TONE[state]}
       dot
-      className='max-w-full whitespace-normal'
-      title={state === 'off' ? t('runtimes.tool.offHint') : undefined}
+      className='max-w-full min-w-0 shrink'
+      title={state === 'off' ? t('runtimes.tool.offHint') : label}
     >
-      {t(`runtimes.tool.${state}`)}
+      <span className='truncate'>{label}</span>
     </AgTag>
   );
 }

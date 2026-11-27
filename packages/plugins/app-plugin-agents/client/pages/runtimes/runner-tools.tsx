@@ -18,6 +18,12 @@ import { agentsKeys } from '../../api/keys.js';
 import { useAgentsApi } from '../../hooks/use-agents-api.js';
 import { useNotify } from '../../hooks/use-notify.js';
 import { useMediaQuery } from '../../hooks/use-media-query.js';
+import { TriangleAlertIcon } from 'lucide-react';
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '../../components/ui/popover.js';
 import { Switch } from '../../components/ui/switch.js';
 import {
   Table,
@@ -40,37 +46,45 @@ const modelDetectionErrorKeys: Record<ModelsDetectionError, string> = {
   'Invalid model listing response': 'invalidResponse',
 };
 
-function ModelDetectionFailure({
+/**
+ * An amber warning after a tool's state when it is usable but could not list its models; hovering or clicking it opens
+ * the reported reason. An older runner reports no detail, so only the title shows.
+ */
+function ModelDetectionWarning({
   info,
-  phone,
 }: {
   readonly info?: ToolInfo;
-  readonly phone?: boolean;
-}) {
+}): ReactElement | null {
   const { t } = useTranslation();
   if (info?.modelsDetectionStatus !== 'failed') return null;
-  const key =
-    modelDetectionErrorKeys[
-      info.modelsDetectionError ?? 'Model detection failed'
-    ];
-  const detail = (
-    <div className='text-xs whitespace-normal [overflow-wrap:anywhere]'>
-      <p className='font-medium text-destructive'>
-        {t(`runtimes.modelDetection.${key}`)}
-      </p>
-      {info.modelsDetectionDetail && (
-        <p className='mt-1 text-muted-foreground'>
-          {info.modelsDetectionDetail}
-        </p>
-      )}
-    </div>
+  const title = t(
+    `runtimes.modelDetection.${
+      modelDetectionErrorKeys[
+        info.modelsDetectionError ?? 'Model detection failed'
+      ]
+    }`,
   );
-  return phone ? (
-    <div className='border-t p-3'>{detail}</div>
-  ) : (
-    <TableRow>
-      <TableCell colSpan={6}>{detail}</TableCell>
-    </TableRow>
+  return (
+    <Popover>
+      <PopoverTrigger
+        openOnHover
+        aria-label={title}
+        className='inline-flex size-5 shrink-0 items-center justify-center rounded-sm text-amber-700 outline-none focus-visible:ring-2 focus-visible:ring-ring dark:text-amber-400'
+      >
+        <TriangleAlertIcon aria-hidden='true' className='size-3.5' />
+      </PopoverTrigger>
+      <PopoverContent
+        align='start'
+        className='gap-1 text-xs [overflow-wrap:anywhere]'
+      >
+        <p className='font-medium text-amber-700 dark:text-amber-400'>
+          {title}
+        </p>
+        {info.modelsDetectionDetail ? (
+          <p className='text-muted-foreground'>{info.modelsDetectionDetail}</p>
+        ) : null}
+      </PopoverContent>
+    </Popover>
   );
 }
 
@@ -170,12 +184,15 @@ export function ToolTable({
     />
   );
   const state = (tool: AgentTool) => (
-    <ToolStateTag
-      state={toolState({ enabledTools, tools: runner.tools }, tool)}
-    />
+    <span className='flex min-w-0 items-center gap-1'>
+      <ToolStateTag
+        state={toolState({ enabledTools, tools: runner.tools }, tool)}
+      />
+      <ModelDetectionWarning
+        info={runner.tools.find((item) => item.kind === tool)}
+      />
+    </span>
   );
-  const reportedTool = (tool: AgentTool) =>
-    runner.tools.find((item) => item.kind === tool);
   if (!tools.length)
     return (
       <p className='text-sm text-muted-foreground'>{t('runtimes.noTools')}</p>
@@ -196,7 +213,6 @@ export function ToolTable({
               {state(tool)}
               <span className='ml-auto flex items-center'>{toggle(tool)}</span>
             </div>
-            <ModelDetectionFailure info={reportedTool(tool)} phone />
             <div className='border-t p-3'>{quota(tool)}</div>
             {quotaTargets(runner, tool).map((target) => (
               <div key={target} className='border-t bg-muted/30 p-3'>
@@ -234,7 +250,7 @@ export function ToolTable({
         <colgroup>
           <col className='w-36' />
           <col className='w-14' />
-          <col className='w-28' />
+          <col className='w-36' />
           <col />
           <col className='w-28' />
           <col className='w-20' />
@@ -282,9 +298,7 @@ export function ToolTable({
                 <TableCell>
                   <div className='flex items-center'>{toggle(tool)}</div>
                 </TableCell>
-                <TableCell>
-                  <div className='flex items-center'>{state(tool)}</div>
-                </TableCell>
+                <TableCell>{state(tool)}</TableCell>
                 <TableCell>
                   <div className='flex items-center'>{quota(tool)}</div>
                 </TableCell>
@@ -297,7 +311,6 @@ export function ToolTable({
                   </div>
                 </TableCell>
               </TableRow>
-              <ModelDetectionFailure info={reportedTool(tool)} />
               {quotaTargets(runner, tool).map((target) => (
                 <TableRow key={target} className='bg-muted/30'>
                   <TableCell

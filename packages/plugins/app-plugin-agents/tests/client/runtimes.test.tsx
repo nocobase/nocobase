@@ -123,7 +123,7 @@ describe('runtimes page', () => {
     );
   };
 
-  it('shows a model discovery failure with its detail and supports old runner reports', async () => {
+  it('shows a model discovery failure behind a warning beside the tool state and supports old runner reports', async () => {
     runners[0] = runner('r1', {
       tools: [
         {
@@ -145,20 +145,38 @@ describe('runtimes page', () => {
     });
     renderPage(<RuntimesPage />);
     const sheet = await openSheet();
+    const opencode = within(sheet).getByTestId('runner-tool-opencode');
     expect(
-      within(sheet).getByText('runtimes.modelDetection.timedOut'),
-    ).toBeVisible();
-    expect(
-      within(sheet).getByText(
+      within(sheet).queryByText(
         'HTTP 503: Location plugins did not finish activating',
       ),
-    ).toBeVisible();
-    expect(
-      within(sheet).getByText('runtimes.modelDetection.commandFailed'),
-    ).toBeVisible();
-    expect(
-      within(sheet).queryByText('runtimes.modelDetection.failed'),
     ).not.toBeInTheDocument();
+    expect(
+      within(within(sheet).getByTestId('runner-tool-claude')).queryByRole(
+        'button',
+        { name: /runtimes\.modelDetection\./ },
+      ),
+    ).not.toBeInTheDocument();
+
+    fireEvent.click(
+      within(opencode).getByRole('button', {
+        name: 'runtimes.modelDetection.timedOut',
+      }),
+    );
+    const detail = await screen.findByText(
+      'HTTP 503: Location plugins did not finish activating',
+    );
+    expect(detail).toBeVisible();
+
+    fireEvent.click(
+      within(within(sheet).getByTestId('runner-tool-pi')).getByRole('button', {
+        name: 'runtimes.modelDetection.commandFailed',
+      }),
+    );
+    const popup = (
+      await screen.findAllByText('runtimes.modelDetection.commandFailed')
+    ).find((node) => node.tagName === 'P');
+    expect(popup?.parentElement?.children).toHaveLength(1);
   });
 
   it('shows loading and a retryable failure while fetching a runner instead of an empty diagnostic', async () => {
