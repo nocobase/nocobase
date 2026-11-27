@@ -73,6 +73,22 @@ export class OnlineAgentConfigurator {
     (OnlineAgentScope | OnlineAgentScopeProvider)[]
   >();
   private tools = new Map<string, OnlineAgentRegisteredTool>();
+  private recentTurns: number | undefined;
+
+  /**
+   * How many earlier turns of a conversation the model reads besides the current one; every turn when unset. A turn
+   * is a person's message with the answer, tool calls and results that follow it, kept or dropped whole. The stored
+   * conversation and what the person sees are unchanged.
+   */
+  setHistoryTurns(turns: number | undefined): void {
+    if (turns !== undefined && (!Number.isInteger(turns) || turns < 0))
+      throw invalid('History turns must be a non-negative integer.');
+    this.recentTurns = turns;
+  }
+
+  get historyTurns(): number | undefined {
+    return this.recentTurns;
+  }
 
   constructor() {
     registerSandboxTools(this);

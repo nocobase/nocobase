@@ -1,4 +1,6 @@
 export {
+  addMessageUsage,
+  conversationUsage,
   appUIToolApprovalInputSchema,
   type AppUIToolApprovalInput,
   appUIDataSchemas,
@@ -11,6 +13,7 @@ export {
   type AppUIJson,
   type AppUIMessage,
   type AppUIMessageMetadata,
+  type AppUIMessageUsage,
   type AppUITools,
 } from './ui-message.js';
 export {

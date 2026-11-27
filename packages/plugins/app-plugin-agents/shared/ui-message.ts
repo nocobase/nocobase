@@ -91,6 +91,38 @@ export function publicUIPageContext(
 }
 
 /** Public identity and ordering only; configuration and credentials are private. */
+/** Tokens an online agent's answer used. */
+export interface AppUIMessageUsage {
+  inputTokens: number;
+  outputTokens: number;
+}
+
+/** Adds what a model call used to what a message already records. */
+export function addMessageUsage(
+  current: AppUIMessageUsage | undefined,
+  used: AppUIMessageUsage,
+): AppUIMessageUsage {
+  return {
+    inputTokens: (current?.inputTokens ?? 0) + Math.max(0, used.inputTokens),
+    outputTokens: (current?.outputTokens ?? 0) + Math.max(0, used.outputTokens),
+  };
+}
+
+/** What a conversation's answers used so far, from the usage each one records; null when none records it. */
+export function conversationUsage(
+  messages: readonly { metadata?: unknown }[],
+): AppUIMessageUsage | null {
+  let total: AppUIMessageUsage | null = null;
+  for (const message of messages) {
+    const usage =
+      message.metadata && typeof message.metadata === 'object'
+        ? (message.metadata as { usage?: AppUIMessageUsage }).usage
+        : undefined;
+    if (usage) total = addMessageUsage(total ?? undefined, usage);
+  }
+  return total;
+}
+
 export interface AppUIMessageMetadata {
   /** Reasoning effort accepted for this turn, independent of later conversation preferences. */
   effort?: string;
@@ -113,6 +145,8 @@ export interface AppUIMessageMetadata {
    * it back first, `unanswered` when the run ended without taking it.
    */
   queue?: 'queued' | 'withdrawn' | 'unanswered';
+  /** An online agent's answer: the tokens its model calls used, an approval's continuation included. */
+  usage?: AppUIMessageUsage;
   sourceRecords?: {
     recordId: string;
     seq: number;
@@ -140,6 +174,12 @@ export const appUIMessageMetadataSchema: z.ZodType<AppUIMessageMetadata> =
     revision: z.number().int().nonnegative(),
     context: appUIPageContextSchema.optional(),
     queue: z.enum(['queued', 'withdrawn', 'unanswered']).optional(),
+    usage: z
+      .strictObject({
+        inputTokens: z.number().int().nonnegative(),
+        outputTokens: z.number().int().nonnegative(),
+      })
+      .optional(),
     /** Runner aggregation keeps distinct database records and stable part identities. */
     sourceRecords: z
       .array(

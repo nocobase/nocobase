@@ -218,6 +218,7 @@ export class NativeMessages {
           'seq',
           'revision',
           'context',
+          'usage',
           'sourceRecords',
         ]),
       );

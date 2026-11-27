@@ -46,6 +46,7 @@ import {
 } from 'ai';
 import type { ServiceResolver } from '@nocobase/service-provider';
 import {
+  addMessageUsage,
   appUIMessageMetadataSchema,
   type AppUIMessageMetadata,
 } from '../../../../shared/online-agent.js';
@@ -54,6 +55,7 @@ import type { ModelRef, ReasoningLevel } from '../../../../shared/models.js';
 import { conflict, invalid } from '../../../kernel/errors.js';
 import type { IdSource } from '../../../kernel/ids.js';
 import type { OnlineAgentConfigurator } from '../configuration.js';
+import { keepRecentTurns } from '../messages/history-window.js';
 import type { OnlineAgentSessionManager } from '../contracts.js';
 import type { OnlineAgentCall } from '../persistence/types.js';
 import type {
@@ -467,7 +469,10 @@ export class NativeOnlineAgent {
           : snapshot.replay);
       preparingFiles = false;
       const original = snapshot.original;
-      const history = await this.deps.sessions.native.messages.model(prepared);
+      const history = keepRecentTurns(
+        await this.deps.sessions.native.messages.model(prepared),
+        this.deps.configurator.historyTurns,
+      );
       const page = resendHistory?.page ?? previousPage;
       if (page) history.push(page);
       if (priorMessage)
@@ -498,7 +503,6 @@ export class NativeOnlineAgent {
         stopWhen: stepCountIs(20),
         // A call can report usage before its tools settle, even if the SDK never finishes that step.
         onLanguageModelCallEnd: ({ usage: reported }) => {
-          if (!modelUsage) return;
           const tokens = textTokensOf(reported);
           usage = usage
             ? {
@@ -612,6 +616,16 @@ export class NativeOnlineAgent {
       this.deps.onError(error);
       accepted.resolve(afterSeq);
     }
+    // The answer keeps what its model calls used, so a conversation can show its tokens after a reload; an approval's
+    // continuation adds to the turn it continues. A turn that stopped or failed keeps what was reported before.
+    if (usage)
+      metadata = {
+        ...metadata,
+        usage: addMessageUsage(metadata.usage, {
+          inputTokens: usage.inputTokens,
+          outputTokens: usage.outputTokens,
+        }),
+      };
     if (modelUsage && usage)
       await modelUsage
         .record({
