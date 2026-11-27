@@ -78,7 +78,6 @@
   },
   "files": [
     "dist",
-    "CHANGELOG.md",
     "README.md",
     "skills"
   ],

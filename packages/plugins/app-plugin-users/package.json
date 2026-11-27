@@ -59,7 +59,6 @@
     "dist",
     "README.md",
     "MEMBER-ROLES.md",
-    "CHANGELOG.md",
     "skills"
   ],
   "publishConfig": {

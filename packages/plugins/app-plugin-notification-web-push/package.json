@@ -60,7 +60,6 @@
   "files": [
     "dist",
     "README.md",
-    "CHANGELOG.md",
     "skills"
   ],
   "publishConfig": {
