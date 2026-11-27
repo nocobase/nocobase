@@ -72,7 +72,7 @@ Each native answer also records what its model calls used in `metadata.usage` (`
 
 ## History window
 
-`online.configurator.setHistoryTurns(n)` limits every native conversation's model input to the latest `n` earlier turns besides the current one; unset sends every turn. A turn is a person's message with the answer, tool calls and tool results that follow it, so a call and its result are always kept or dropped together. Only the model input is shortened: the stored conversation, `history()` and what the person sees stay whole. Set it once while configuring the application, next to the scopes and tools; it applies to the next turn of every conversation.
+`online.configurator.setHistoryTurns(n)` limits every native conversation's model input to the latest `n` earlier turns besides the current one; unset sends every turn. A turn is a person's message with the answer, tool calls and tool results that follow it, so a call and its result are always kept or dropped together. The window is chosen before attachments are prepared, for a new question and a resend alike, so only the kept turns' files are read: a file of a dropped turn that was deleted or became unreadable no longer stops the current question. Only the model input is shortened: the stored conversation, `history()` and what the person sees stay whole. Set it once while configuring the application, next to the scopes and tools; it applies to the next turn of every conversation.
 
 ## Thinking level
 

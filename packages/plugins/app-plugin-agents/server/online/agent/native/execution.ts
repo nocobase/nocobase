@@ -55,7 +55,7 @@ import type { ModelRef, ReasoningLevel } from '../../../../shared/models.js';
 import { conflict, invalid } from '../../../kernel/errors.js';
 import type { IdSource } from '../../../kernel/ids.js';
 import type { OnlineAgentConfigurator } from '../configuration.js';
-import { keepRecentTurns } from '../messages/history-window.js';
+import { windowSnapshot } from '../messages/history-window.js';
 import type { OnlineAgentSessionManager } from '../contracts.js';
 import type { OnlineAgentCall } from '../persistence/types.js';
 import type {
@@ -317,7 +317,12 @@ export class NativeOnlineAgent {
             messageId,
             session,
             !context.authorization.identity.keyScope,
-            async (snapshot, conn) => {
+            async (saved, conn) => {
+              // Only the kept turns are prepared: a file of a dropped turn is never read.
+              const snapshot = windowSnapshot(
+                saved,
+                this.deps.configurator.historyTurns,
+              );
               if (!this.deps.fileInputs && snapshot.files.length)
                 throw invalid('File input preparation is unavailable.');
               const prepared = this.deps.fileInputs
@@ -447,12 +452,15 @@ export class NativeOnlineAgent {
     let usage: ReturnType<typeof textTokensOf> | undefined;
     output?.write({ type: 'start', messageId, messageMetadata: metadata });
     try {
-      const snapshot =
+      // The model reads only the kept turns, and only their files are prepared; the stored conversation stays whole.
+      const snapshot = windowSnapshot(
         resendHistory?.snapshot ??
-        (await this.deps.sessions.native.executionSnapshot(
-          context.user.id,
-          id,
-        ));
+          (await this.deps.sessions.native.executionSnapshot(
+            context.user.id,
+            id,
+          )),
+        this.deps.configurator.historyTurns,
+      );
       preparingFiles = snapshot.files.length > 0;
       if (!this.deps.fileInputs && snapshot.files.length)
         throw invalid('File input preparation is unavailable.');
@@ -469,10 +477,7 @@ export class NativeOnlineAgent {
           : snapshot.replay);
       preparingFiles = false;
       const original = snapshot.original;
-      const history = keepRecentTurns(
-        await this.deps.sessions.native.messages.model(prepared),
-        this.deps.configurator.historyTurns,
-      );
+      const history = await this.deps.sessions.native.messages.model(prepared);
       const page = resendHistory?.page ?? previousPage;
       if (page) history.push(page);
       if (priorMessage)

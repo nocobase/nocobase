@@ -8,7 +8,12 @@ import { createHarness, type Harness } from './harness.js';
 import { OnlineAgentService } from '../server/online/agent/service.js';
 import { OnlineAgentConfigurator } from '../server/online/agent/configuration.js';
 import { createSessionManager } from '../server/online/agent/persistence/manager.js';
-import { keepRecentTurns } from '../server/online/agent/messages/history-window.js';
+import {
+  keepRecentTurns,
+  windowSnapshot,
+} from '../server/online/agent/messages/history-window.js';
+import { readFileSync } from 'node:fs';
+import { createDocumentFixture } from './helpers/document-inputs.js';
 import type { OnlineAgentContext } from '../server/online/agent/types.js';
 import { addMessageUsage, conversationUsage } from '../shared/online-agent.js';
 
@@ -225,4 +230,113 @@ it('adds usage and refuses an invalid history limit', () => {
   expect(() => configurator.setHistoryTurns(1.5)).toThrow();
   configurator.setHistoryTurns(6);
   expect(configurator.historyTurns).toBe(6);
+});
+
+async function documentTurns(turns: number | undefined) {
+  const f = await createDocumentFixture({
+    register: (service) => service.configurator.setHistoryTurns(turns),
+  });
+  const pdf = await f.upload(
+    'sample.pdf',
+    'application/pdf',
+    readFileSync(
+      new URL('./fixtures/document-inputs/sample.pdf', import.meta.url),
+    ),
+  );
+  const ask = async (text: string, attachmentIds?: string[]) => {
+    await f.agent.send(
+      [{ role: 'user', content: text }],
+      attachmentIds ? { attachmentIds: [attachmentIds] } : {},
+    );
+    await f.settle();
+    return (await f.rows()).at(-1)?.metadata.nativeOutcome;
+  };
+  const unreadable = () =>
+    f.h.database
+      .connection()
+      .repository('agChatAttachments')
+      .deleteMany({ filter: { id: pdf.id } });
+  const sent = (index: number) => JSON.stringify(f.prompts.at(index));
+  return { f, pdf, ask, unreadable, sent };
+}
+
+it('reads no file of a dropped turn: a question after an unreadable early PDF still reaches the model', async () => {
+  const { f, pdf, ask, unreadable, sent } = await documentTurns(6);
+  expect(await ask('Question 1', [pdf.id])).toBe('completed');
+  expect(sent(0)).toContain('sample.pdf');
+  for (let n = 2; n <= 7; n += 1)
+    expect(await ask(`Question ${n}`)).toBe('completed');
+  // The seventh question still reads the PDF of the first turn, within the window.
+  expect(sent(6)).toContain('sample.pdf');
+  await unreadable();
+  expect(await ask('Question 8')).toBe('completed');
+  expect(f.prompts).toHaveLength(8);
+  expect(sent(7)).toContain('Question 8');
+  expect(sent(7)).not.toContain('Question 1"');
+  expect(sent(7)).not.toContain('sample.pdf');
+  // Resending the eighth question prepares the same window: the dropped PDF is not read either.
+  await f.agent.resend({ input: { text: 'Question 8 edited' } });
+  await f.settle();
+  expect((await f.rows()).at(-1)?.metadata.nativeOutcome).toBe('completed');
+  expect(f.prompts).toHaveLength(9);
+  expect(sent(8)).toContain('Question 8 edited');
+  expect(sent(8)).not.toContain('sample.pdf');
+  expect(f.errors).toEqual([]);
+  await f.close();
+});
+
+it('still reads the files of the current turn and of the turns in the window', async () => {
+  const { f, pdf, ask, unreadable, sent } = await documentTurns(2);
+  for (let n = 1; n <= 3; n += 1)
+    expect(await ask(`Question ${n}`)).toBe('completed');
+  expect(await ask('Question 4', [pdf.id])).toBe('completed');
+  expect(sent(3)).toContain('sample.pdf');
+  expect(await ask('Question 5')).toBe('completed');
+  expect(sent(4)).toContain('sample.pdf');
+  // A file of a turn the model still reads must be readable: it fails as before.
+  await unreadable();
+  expect(await ask('Question 6')).toBe('failed');
+  expect(f.prompts).toHaveLength(5);
+  await f.close();
+});
+
+it('reads every file without a limit, as before', async () => {
+  const { f, pdf, ask, unreadable } = await documentTurns(undefined);
+  expect(await ask('Question 1', [pdf.id])).toBe('completed');
+  for (let n = 2; n <= 8; n += 1)
+    expect(await ask(`Question ${n}`)).toBe('completed');
+  await unreadable();
+  expect(await ask('Question 9')).toBe('failed');
+  expect(f.prompts).toHaveLength(8);
+  await f.close();
+});
+
+it('keeps only the files of the kept turns in the execution snapshot', () => {
+  const message = (id: string, role: 'user' | 'assistant') => ({
+    id,
+    role,
+    parts: [],
+  });
+  const replay = [
+    message('u1', 'user'),
+    message('a1', 'assistant'),
+    message('u2', 'user'),
+    message('a2', 'assistant'),
+    message('u3', 'user'),
+  ];
+  const snapshot = {
+    original: replay,
+    replay,
+    files: [
+      { messageId: 'u1', partIndex: 0 },
+      { messageId: 'u2', partIndex: 0 },
+      { messageId: 'u3', partIndex: 1 },
+    ],
+  } as never;
+  const windowed = windowSnapshot(snapshot, 1);
+  expect(windowed.replay.map((item) => item.id)).toEqual(['u2', 'a2', 'u3']);
+  expect(windowed.files.map((file) => file.messageId)).toEqual(['u2', 'u3']);
+  expect(windowed.original).toBe(replay);
+  expect(windowSnapshot(snapshot, 2)).toBe(snapshot);
+  expect(windowSnapshot(snapshot, undefined)).toBe(snapshot);
 });
