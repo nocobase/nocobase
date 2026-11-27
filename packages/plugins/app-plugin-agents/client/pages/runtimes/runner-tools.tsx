@@ -77,7 +77,7 @@ function ModelDetectionWarning({
         align='start'
         className='gap-1 text-xs [overflow-wrap:anywhere]'
       >
-        <p className='font-medium text-amber-700 dark:text-amber-400'>
+        <p className='font-semibold text-amber-700 dark:text-amber-400'>
           {title}
         </p>
         {info.modelsDetectionDetail ? (
@@ -250,7 +250,7 @@ export function ToolTable({
         <colgroup>
           <col className='w-36' />
           <col className='w-14' />
-          <col className='w-36' />
+          <col className='w-44' />
           <col />
           <col className='w-28' />
           <col className='w-20' />
