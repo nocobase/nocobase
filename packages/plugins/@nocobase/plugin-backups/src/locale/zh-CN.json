@@ -28,6 +28,8 @@
   "ERROR_RESTORING_BACKUP": "还原备份失败: {{detail}}",
   "ERROR_SAVING_MEATADATA": "备份元文件保存失败: {{detail}}",
   "ERROR_TRIGGERING_BACKUP": "备份失败: {{detail}}",
+  "ERROR_PG_SAFETY_BACKUP_VERSION_UNKNOWN": "创建回滚备份之前无法确认本机 pg_dump 和目标 PostgreSQL 的版本。",
+  "ERROR_PG_SAFETY_BACKUP_VERSION": "本机 pg_dump {{localDumpMajor}} 无法备份 PostgreSQL {{serverMajor}}。请先安装 pg_dump {{serverMajor}} 或更高版本，再执行恢复。",
   "ERROR_PG_RESTORE_VERSION_UNKNOWN": "无法验证 PostgreSQL 备份兼容性：备份文件必须记录有效的 pg_dump 版本，且 pg_restore 必须能够返回有效版本。",
   "ERROR_PG_RESTORE_VERSION_MISMATCH": "该备份由 pg_dump {{backupClientVersion}} 创建，高于当前 pg_restore {{restoreClientVersion}} 的主版本。请安装 pg_restore {{backupClientVersion}} 或更高版本后再还原。",
   "ERROR_UPLOADING_FILES": "文件上传失败: {{detail}}",

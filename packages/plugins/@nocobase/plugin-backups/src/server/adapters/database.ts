@@ -44,6 +44,7 @@ export type DBBackupToolchain = 'postgres' | 'kingbase';
 export interface DBAdapter {
   dbOpts: DatabaseOptions;
   backupToolchain?: DBBackupToolchain;
+  serverVersion?(): Promise<string>;
   backup(options: DBBackupOptions): Promise<void>;
   restore(options: DBRestoreOptions): Promise<void>;
   check(op: 'backup' | 'restore'): Promise<void>;
@@ -531,6 +532,10 @@ class PostgresAdapter extends BaseDBAdapter {
     } catch (_error) {
       return undefined;
     }
+  }
+
+  async serverVersion() {
+    return this.runSql('SHOW server_version', ['-X', '-At']);
   }
 
   async backup({ dir, includeTables, excludeTables }: DBBackupOptions): Promise<void> {
