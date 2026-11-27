@@ -6,17 +6,17 @@ Read this before publishing an event from a business change, consuming one idemp
 
 ## Choose between jobs, queue and message-broker
 
-The three overlap: each runs code outside the request and retries. They differ in who consumes what. One `JobExecutor.addJob()` runs one Job class. A queue job is consumed by every handler registered on that queue, on the instance that claimed it, and completes only when all of them succeed; one failure retries the whole set. Each message-broker subscription receives every message and acknowledges, retries and dead-letters it on its own. Choose by the semantics the work needs.
+The three overlap: each runs code outside the request and retries. They differ in who consumes what. One `JobExecutor.addJob()` runs one Job class. A queue job is consumed by every handler registered on that queue, on the instance that claimed it, and completes only when all of them succeed; one failure retries the whole set. Each message-broker subscription receives every message and settles it independently. Choose by the semantics the work needs.
 
-| Need                                                                | `@nocobase/jobs` (`JobExecutor`)                      | `@nocobase/queue`                                                                                          | `@nocobase/message-broker`                                                                                   |
-| ------------------------------------------------------------------- | ----------------------------------------------------- | ---------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------ |
-| What it centers on                                                  | Executing a piece of background work                  | Queuing this application's work with execution control                                                     | Delivering messages to independent subscribers, consistently with the business transaction                   |
-| Submit only if the business transaction commits                     | No; submit after the commit and accept the gap        | No; publish after the commit and accept the gap                                                            | `publish(message, { transaction })` writes the outbox in that transaction                                    |
-| Several consumers of one message                                    | No; one submission runs one Job class                 | Every handler of a queue runs; the job completes only when all succeed, and a retry runs all of them again | Each subscription acknowledges, retries and dead-letters on its own; a failing one does not rerun the others |
-| Deduplication                                                       | None: `addJob` takes no ID; deduplicate at the effect | A job ID that still exists adds nothing; once the job is removed from history it can be added again        | Inbox: `(subscription, messageId)` recorded in the handler's transaction, for the inbox retention (7 days)   |
-| Delay, priority, rate limit, cancelling a running job, atomic batch | No                                                    | Yes                                                                                                        | Only a delayed retry, where the backend declares `delayedRetry`                                              |
-| Physical resource names                                             | Derived                                               | Derived; JSON messages in a private envelope                                                               | Configured per logical name; Buffer bodies with content type, headers, key, correlation ID                   |
-| Other systems produce or consume                                    | No                                                    | No                                                                                                         | Yes, through the middleware's own resources                                                                  |
+| Need                                                                | `@nocobase/jobs` (`JobExecutor`)                      | `@nocobase/queue`                                                                                          | `@nocobase/message-broker`                                                                                 |
+| ------------------------------------------------------------------- | ----------------------------------------------------- | ---------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------- |
+| What it centers on                                                  | Executing a piece of background work                  | Queuing this application's work with execution control                                                     | Delivering messages to independent subscribers, consistently with the business transaction                 |
+| Submit only if the business transaction commits                     | No; submit after the commit and accept the gap        | No; publish after the commit and accept the gap                                                            | `publish(message, { transaction })` writes the outbox in that transaction                                  |
+| Several consumers of one message                                    | No; one submission runs one Job class                 | Every handler of a queue runs; the job completes only when all succeed, and a retry runs all of them again | Each subscription settles each message independently                                                       |
+| Deduplication                                                       | None: `addJob` takes no ID; deduplicate at the effect | A job ID that still exists adds nothing; once the job is removed from history it can be added again        | Inbox: `(subscription, messageId)` recorded in the handler's transaction, for the inbox retention (7 days) |
+| Delay, priority, rate limit, cancelling a running job, atomic batch | No                                                    | Yes                                                                                                        | Only a delayed retry, where the backend declares `delayedRetry`                                            |
+| Physical resource names                                             | Derived                                               | Derived; JSON messages in a private envelope                                                               | Configured per logical name; Buffer bodies with content type, headers, key, correlation ID                 |
+| Other systems produce or consume                                    | No                                                    | No                                                                                                         | Yes, through the middleware's own resources                                                                |
 
 - Background work this application runs for itself, with no business event behind it: a job. Delays, priorities, rate limits or cancellation: a queue.
 - "Publish an event when this record changes, and only if the change commits": message-broker with a transactional publish, even when every consumer lives in the same application.
@@ -73,7 +73,7 @@ broker.subscription<OrderPlaced>('orderShipments', { schema, inbox: true });
 }
 ```
 
-A name binds to the backend that declares it under `publishers` or `subscriptions`, otherwise to `default`. `inMemory` accepts undeclared names, with the topic equal to the name; production backends require every name to be declared. Every subscription binding accepts `maxAttempts` (default 3), `retryDelay` in milliseconds (default 0), `concurrency` (default 1) and `ordered` (default `false`).
+A name binds to the backend that declares it under `publishers` or `subscriptions`, otherwise to `default`. `inMemory` accepts undeclared names, with the topic equal to the name; production backends require every name to be declared. Every subscription binding accepts `maxAttempts`, `retryDelay` in milliseconds (default 0), `concurrency` (default 1) and `ordered` (default `false`). `maxAttempts` includes the first attempt and defaults to 3 unless the adapter supplies a default for the subscription.
 
 Register handlers in a provider's `boot()`, keep the unregister functions, and await them in `shutdown()`:
 
@@ -89,7 +89,7 @@ public override boot(): Promise<void> {
 }
 ```
 
-A handler that returns acknowledges; one that throws is retried until `maxAttempts`, then dead-lettered. Return `retry({ delay })` or `reject(reason)` from `@nocobase/message-broker` to decide explicitly; `reject` dead-letters at once. A body that fails `schema` (any Standard Schema such as zod) or that the codec cannot decode is dead-lettered without running the handler. `context.attempt` counts deliveries from 1; `context.signal` aborts at shutdown.
+A handler that returns normally acknowledges the message. A throw requests a retry up to `maxAttempts`. Return `retry({ delay })` or `reject(reason)` from `@nocobase/message-broker` to decide explicitly. An explicit rejection, exhausted attempts, a failed `schema` check (any Standard Schema such as zod) or a codec error all use the backend's final failure handling. `context.attempt` starts at 1 and `context.signal` aborts at shutdown.
 
 ## Publish inside the business transaction
 
@@ -131,14 +131,14 @@ With `inbox: true`, the service runs the handler inside a transaction that also 
 
 ## Dev and production backends
 
-| Capability      | Needed by                                | When it is checked                                |
-| --------------- | ---------------------------------------- | ------------------------------------------------- |
-| `perMessageAck` | `concurrency` above 1                    | setup                                             |
-| `delayedRetry`  | `retryDelay` above 0, `retry({ delay })` | setup; at the call, dead-lettered with the reason |
-| `orderedByKey`  | `ordered: true`                          | setup                                             |
-| `deadLetter`    | every subscription                       | setup                                             |
+| Capability      | Needed by                                | When it is checked    |
+| --------------- | ---------------------------------------- | --------------------- |
+| `perMessageAck` | `concurrency` above 1                    | setup                 |
+| `delayedRetry`  | `retryDelay` above 0, `retry({ delay })` | setup and at the call |
+| `orderedByKey`  | `ordered: true`                          | setup                 |
+| `deadLetter`    | final failure handling                   | setup                 |
 
-The service refuses what the backend does not declare instead of quietly doing less. `broker.describe()` lists the backends, each one's `sharing` (`local` or `shared`) and capabilities, the logical names in use and whether an outbox and an inbox are registered.
+The service checks that a subscription's backend declares `deadLetter`. The capability means the backend can send final failures to a dead-letter destination. Check the adapter's documentation for whether a subscription may omit that destination and how final failures are handled in that case. `broker.describe()` lists the backends, each one's `sharing` (`local` or `shared`) and capabilities, the logical names in use and whether an outbox and an inbox are registered.
 
 `inMemory` declares every capability but runs within one process: it keeps nothing across a restart and shares nothing between instances. A message it has acknowledged to the outbox is gone if the process exits before delivery; the outbox does not make an in-memory backend reliable. Use it for development and tests only; production delivery depends on the configured backend and its deployment.
 
@@ -158,14 +158,14 @@ The application never creates middleware resources. Operators create exchanges, 
 | Startup fails with "does not support …"                                                                           | The subscription's options need a capability its backend does not declare; change the binding or the backend                                        |
 | Startup fails with "is missing …"                                                                                 | Create the named middleware resource, or fix the physical name in the backend entry                                                                 |
 | A committed message never arrives                                                                                 | `messageBrokerOutbox` rows with `sentAt` null: `attempts` and `lastError` say why the relay cannot send; `nextAttemptAt` says when it tries again   |
-| A message stops being retried                                                                                     | It reached `maxAttempts` or was rejected: read the backend's dead letter for the reason (`inMemory.deadLetters(subscription)` in tests)             |
+| A message stops being retried                                                                                     | It reached `maxAttempts` or was rejected. Check the adapter's final failures (`inMemory.deadLetters(subscription)` in tests).                       |
 | The handler's writes happen twice                                                                                 | The subscription lacks `inbox: true`, the writes bypass `context.transaction`, the same event got a new `messageId`, or the inbox retention expired |
 | Duplicates across instances                                                                                       | The concurrency service is process-local; configure a shared backend                                                                                |
 
 ## Verify
 
 - Test with a real database (`createDatabaseTest` from `@nocobase/app-testing/server`, listing the migrations of `@nocobase/app-plugin-message-broker` and of the plugin) and an `inMemory` backend created for the test, composing the outbox plugin's `MessageBrokerOutboxProvider` with the plugin's provider. The example plugin's `tests/message-broker-example.test.ts` is a complete harness.
-- Cover: a rolled-back business transaction leaves no business row and delivers nothing; a handler that writes and then fails leaves no partial write and succeeds on retry; a repeated `messageId` does not repeat the business effect; each independent subscription reaches its effect once; a malformed or unprocessable message is dead-lettered with its reason.
+- Cover: a rolled-back business transaction leaves no business row and delivers nothing; a handler that writes and then fails leaves no partial write and succeeds on retry; a repeated `messageId` does not repeat the business effect; each independent subscription reaches its effect once; a malformed or unprocessable message follows the adapter's documented final failure handling.
 - Wait for effects with `vi.waitFor` on the database, not on fixed sleeps. To show that a message did not arrive, publish a later one through the same path and wait for it.
 - In an application integration test, start the application and check `broker.describe()` shows the backend, its capabilities and `outbox: true`, `inbox: true`.
 - Run the plugin's `lint`, `typecheck`, `test` and `build`, and the application's tests.

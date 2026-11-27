@@ -41,7 +41,10 @@ export interface MissingResource {
   readonly usedBy: string;
 }
 
-/** How the service settled one delivery; the runtime carries it out. */
+/**
+ * The outcome the runtime carries out for one delivery. `deadLetter` marks a final failure that the runtime
+ * settles according to the subscription's configuration.
+ */
 export type DeliveryOutcome =
   | { readonly kind: 'ack' }
   | { readonly kind: 'retry'; readonly delay: number }
@@ -98,6 +101,11 @@ export interface BrokerImplementation {
    * in-process backend should: a real middleware needs its physical names spelled out.
    */
   readonly implicitBindings?: boolean;
+  /**
+   * Returns a positive integer from raw subscription options when `maxAttempts` is omitted. Called synchronously
+   * before `validateConfig`. If the method is absent, the service uses 3.
+   */
+  defaultMaxAttempts?(options: SubscriptionBinding['options']): number;
   /** Checks adapter options and binding options synchronously, without connecting. Throws on an error. */
   validateConfig(config: ResolvedBackendConfig): void;
   createRuntime(context: BrokerRuntimeContext): BrokerRuntime;

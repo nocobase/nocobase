@@ -512,12 +512,17 @@ class DefaultMessageBrokerService implements MessageBrokerService {
   private subscriptionBinding(
     backendName: string,
     name: string,
+    implementation: BrokerImplementation,
   ): SubscriptionBinding {
     const entry = this.config!.backends![backendName];
+    const options = bindingOptions(entry, 'subscription', name);
     return resolveSubscriptionBinding(
       name,
-      bindingOptions(entry, 'subscription', name),
+      options,
       `messageBroker.backends.${backendName}`,
+      options.maxAttempts === undefined
+        ? implementation.defaultMaxAttempts?.(options)
+        : undefined,
     );
   }
 
@@ -582,7 +587,7 @@ class DefaultMessageBrokerService implements MessageBrokerService {
           options: bindingOptions(entry, 'publisher', publisher),
         })),
         subscriptions: [...bindings.subscriptions].map((subscription) =>
-          this.subscriptionBinding(name, subscription),
+          this.subscriptionBinding(name, subscription, implementation),
         ),
       };
       for (const subscription of config.subscriptions) {
@@ -608,7 +613,7 @@ class DefaultMessageBrokerService implements MessageBrokerService {
         );
       }
     };
-    needs('deadLetter', 'every subscription');
+    needs('deadLetter', 'final failure handling');
     if (binding.concurrency > 1)
       needs('perMessageAck', `concurrency ${binding.concurrency}`);
     if (binding.retryDelay > 0)
@@ -644,7 +649,7 @@ class DefaultMessageBrokerService implements MessageBrokerService {
             options: bindingOptions(backend.config.entry, 'publisher', name),
           })
         : (backend.config.subscriptions.find((entry) => entry.name === name) ??
-          this.subscriptionBinding(backendName, name));
+          this.subscriptionBinding(backendName, name, backend.implementation));
     const known =
       kind === 'publisher'
         ? backend.config.publishers.some((entry) => entry.name === name)

@@ -65,6 +65,7 @@ export function resolveSubscriptionBinding(
   name: string,
   options: Readonly<Record<string, unknown>>,
   label: string,
+  defaultMaxAttempts: number = DEFAULT_MAX_ATTEMPTS,
 ): SubscriptionBinding {
   const at = `${label}.subscriptions.${name}`;
   if (options.ordered !== undefined && typeof options.ordered !== 'boolean') {
@@ -73,10 +74,12 @@ export function resolveSubscriptionBinding(
   return {
     name,
     options,
-    maxAttempts:
+    maxAttempts: positiveInteger(
       options.maxAttempts === undefined
-        ? DEFAULT_MAX_ATTEMPTS
-        : positiveInteger(options.maxAttempts, `${at}.maxAttempts`),
+        ? defaultMaxAttempts
+        : options.maxAttempts,
+      `${at}.maxAttempts`,
+    ),
     retryDelay:
       options.retryDelay === undefined
         ? 0

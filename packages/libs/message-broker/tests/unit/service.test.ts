@@ -158,6 +158,104 @@ describe('configuration', () => {
   });
 });
 
+describe('subscription attempt defaults', () => {
+  it.each([
+    {
+      scenario: 'uses the adapter default',
+      adapter: 'custom',
+      options: { topic: 'orders' },
+      expectedAttempts: [1],
+      expectedHookCalls: [[{ topic: 'orders' }]],
+    },
+    {
+      scenario: 'prefers an explicit limit even when the adapter has a default',
+      adapter: 'custom',
+      options: { topic: 'orders', maxAttempts: 2 },
+      expectedAttempts: [1, 2],
+      expectedHookCalls: [],
+    },
+    {
+      scenario: 'defaults to three attempts for an adapter without a default',
+      adapter: 'inMemory',
+      options: { topic: 'orders' },
+      expectedAttempts: [1, 2, 3],
+      expectedHookCalls: [],
+    },
+  ])(
+    '$scenario',
+    async ({ adapter, options, expectedAttempts, expectedHookCalls }) => {
+      const inMemory = createInMemoryBroker();
+      const service = create(
+        {
+          default: 'broker',
+          backends: { broker: { adapter, subscriptions: { worker: options } } },
+        },
+        inMemory,
+      );
+      const defaultMaxAttempts = vi.fn<
+        NonNullable<BrokerImplementation['defaultMaxAttempts']>
+      >(() => 1);
+      if (adapter === 'custom') {
+        service.registerImplementation(adapter, {
+          ...inMemory,
+          defaultMaxAttempts,
+        });
+      }
+      const attempts: number[] = [];
+      service.subscription('worker').consume((_message, { attempt }) => {
+        attempts.push(attempt);
+        return retry();
+      });
+      await service.setup();
+      await service.publisher('orders').publish({ body: {} });
+      await waitFor(() => inMemory.deadLetters('worker').length === 1);
+      expect(attempts).toEqual(expectedAttempts);
+      expect(defaultMaxAttempts.mock.calls).toEqual(expectedHookCalls);
+    },
+  );
+
+  it('uses the adapter default for an implicit subscription first used after setup', async () => {
+    const inMemory = createInMemoryBroker();
+    const service = create({
+      default: 'custom',
+      backends: { custom: { adapter: 'custom' } },
+    });
+    service.registerImplementation('custom', {
+      ...inMemory,
+      defaultMaxAttempts: () => 1,
+    });
+    await service.setup();
+    const attempts: number[] = [];
+    service.subscription('late').consume((_message, { attempt }) => {
+      attempts.push(attempt);
+      return retry();
+    });
+    await waitFor(() => service.describe().subscriptions[0]!.consuming);
+    await service.publisher('late').publish({ body: {} });
+    await waitFor(() => inMemory.deadLetters('late').length === 1);
+    expect(attempts).toEqual([1]);
+  });
+
+  it('rejects an invalid adapter default before opening the backend', async () => {
+    const service = create({
+      backends: {
+        custom: { adapter: 'custom', subscriptions: { worker: {} } },
+      },
+    });
+    const inMemory = createInMemoryBroker();
+    const createRuntime = vi.fn(inMemory.createRuntime);
+    service.registerImplementation('custom', {
+      ...inMemory,
+      createRuntime,
+      defaultMaxAttempts: () => 0,
+    });
+    await expect(service.setup()).rejects.toThrow(
+      'messageBroker.backends.custom.subscriptions.worker.maxAttempts must be a positive integer.',
+    );
+    expect(createRuntime).not.toHaveBeenCalled();
+  });
+});
+
 describe('capabilities', () => {
   function limited(capabilities: Parameters<typeof createInMemoryBroker>[0]) {
     const service = create({
@@ -185,7 +283,7 @@ describe('capabilities', () => {
     ['perMessageAck', 'concurrency 2'],
     ['delayedRetry', 'retryDelay 100'],
     ['orderedByKey', 'ordered: true'],
-    ['deadLetter', 'every subscription'],
+    ['deadLetter', 'final failure handling'],
   ] as const)(
     'rejects at setup a subscription needing %s',
     async (capability, usage) => {
