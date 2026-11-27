@@ -42,6 +42,10 @@ For each product package directly under `packages/plugins/`, provide nonblank `e
 
 Run `pnpm plugins:check` from the source repository root. It checks these manifests against the Default template’s direct dependencies and registration arrays. The check covers product plugins only; application-local plugins and packages under `packages/examples/` have their own composition.
 
+### Commercial plugins in nocobase3-pro
+
+For a commercial product plugin, set `nocobase.edition` to its minimum supported edition. Use `pro` when its `pluginPolicy` applies to both Professional and Enterprise, or `enterprise` when it applies only to Enterprise. For example, `edition: "pro"` with `pluginPolicy: "preinstall-only"` puts the plugin in both templates’ `devDependencies` and leaves it unregistered in both. Run `pnpm plugins:check` from the Pro repository root to check its commercial manifests and both generated templates.
+
 ## Select capabilities explicitly
 
 | Capability                 | Generated foundation                                  |

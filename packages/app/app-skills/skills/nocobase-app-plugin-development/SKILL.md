@@ -13,6 +13,8 @@ For work explicitly in the NocoBase source repository, the repository links this
 
 For product plugins under the source repository’s `packages/plugins/`, follow the [product plugin manifest rules](references/plugin-foundation.md#product-plugin-manifests-in-the-source-repository) and run `pnpm plugins:check` from the repository root before submitting.
 
+For commercial product plugins, follow the [minimum edition and installation policy rules](references/plugin-foundation.md#commercial-plugins-in-nocobase3-pro).
+
 ## Choose the relevant references
 
 These English references adapt the plugin development guide into task-specific instructions. Read the rows relevant to the task; do not load the entire reference set by default.
