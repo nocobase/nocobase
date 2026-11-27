@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { tExpr, FlowModelContext, type SubModelItem } from '@nocobase/flow-engine';
+import { tExpr, type Collection, type FlowModelContext, type SubModelItem } from '@nocobase/flow-engine';
 import { TableAssociationFieldGroupModel } from './TableAssociationFieldGroupModel';
 import { TableCustomColumnModel } from './TableCustomColumnModel';
 import { buildJSFieldMenuChildren } from '../utils/transformChildrenToJS';
@@ -19,13 +19,21 @@ import { buildJSFieldMenuChildren } from '../utils/transformChildrenToJS';
  * - 点击后创建 TableColumnModel，并将其 subModels.field 固定为 JSFieldModel。
  */
 export class TableJSFieldItemModel extends TableCustomColumnModel {
-  static defineChildren(ctx: FlowModelContext) {
-    return buildJSFieldMenuChildren(ctx, {
+  static async defineChildren(ctx: FlowModelContext) {
+    const items = await buildJSFieldMenuChildren(ctx, {
       useModel: 'TableColumnModel',
       fieldUseModel: 'JSFieldModel',
       refreshTargets: ['TableColumnModel'],
       associationProvider: (inner) => TableAssociationFieldGroupModel.defineChildren(inner) as SubModelItem[],
     });
+    const collection: Collection = ctx.model['collection'] || ctx.collection;
+    const treeChildrenNames = new Set(
+      collection
+        .getFields()
+        .filter((field) => field.options?.treeChildren)
+        .map((field) => field.name),
+    );
+    return items.filter((item) => item.type === 'group' || !treeChildrenNames.has(item.key));
   }
 }
 
