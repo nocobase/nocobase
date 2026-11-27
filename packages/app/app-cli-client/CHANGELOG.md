@@ -1,5 +1,12 @@
 # @nocobase/app-cli-client
 
+## 0.1.0-beta.27
+
+### Patch Changes
+
+- Updated dependencies [2b77e0d]
+  - @nocobase/agent-protocol@0.1.0-beta.24
+
 ## 0.1.0-beta.26
 
 ### Patch Changes

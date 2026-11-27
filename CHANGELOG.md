@@ -2,6 +2,36 @@
 
 All notable changes to NocoBase 3 are documented in this file, one section per release: `nocobase-v3-beta/<date>.<n>` for a beta and `nocobase-v3/<date>.<n>` for a stable release. The versions each release published are on its GitHub Release, and every package's own changes are in its CHANGELOG.md.
 
+## [nocobase-v3-beta/2026-11-27.1](https://github.com/nocobase/nocobase/releases/tag/nocobase-v3-beta%2F2026-11-27.1)
+
+### 🎉 New Features
+
+- **[Agents]** Skills return their `SKILL.md` metadata, and an application can keep chosen skills from being edited, deleted or attached. ([#11675](https://github.com/nocobase/nocobase/pull/11675))
+- **[Server]** Record important API operations and send audit events to configurable destinations, including a log file. ([#11694](https://github.com/nocobase/nocobase/pull/11694))
+- **[Message broker]** Plugins can publish and consume messages within and across applications through configurable middleware; messages published in a database transaction are sent only after it commits, and consumers can skip repeated messages in the same transaction as their database writes. ([#11695](https://github.com/nocobase/nocobase/pull/11695))
+- **[Client]** Let signed-in pages hide the application header and sidebar while keeping their access checks. ([#11720](https://github.com/nocobase/nocobase/pull/11720))
+- **[Notifications]** Send SMS through Alibaba Cloud or Tencent Cloud and verify phone numbers and sensitive actions with one-time codes. ([#11722](https://github.com/nocobase/nocobase/pull/11722))
+- **[Verification]** Integrate verification codes, phone binding, and step-up verification with typed requests and React hooks. ([#11738](https://github.com/nocobase/nocobase/pull/11738))
+- **[Skills]** Guide Community applications through an upgrade to Professional or Enterprise, and applications from retired scenario templates through a migration to Enterprise. ([#11739](https://github.com/nocobase/nocobase/pull/11739))
+
+### 🚀 Improvements
+
+- **[Client]** System settings stays beside the avatar, the settings and inbox icons show tooltips, and the authentication page is now labeled Authentication. ([#11715](https://github.com/nocobase/nocobase/pull/11715))
+- **[Agents]** Agent availability loads faster on installations with a large run history. ([#11717](https://github.com/nocobase/nocobase/pull/11717))
+- **[Mail]** Mail pages now use the same title size as the other settings pages. ([#11721](https://github.com/nocobase/nocobase/pull/11721))
+- **[Database]** Reduce schema queries in repeated PostgreSQL and SQLite transactions. ([#11741](https://github.com/nocobase/nocobase/pull/11741))
+
+### 🐛 Bug Fixes
+
+- **[Agents]**
+  - See token usage and costs for online conversations by agent, including usage reported before a turn stopped or failed. ([#11719](https://github.com/nocobase/nocobase/pull/11719))
+  - Runner claims release the agent lock sooner and keep work queued if the runner disconnects before dispatch commits. ([#11735](https://github.com/nocobase/nocobase/pull/11735))
+- **[Permissions]** Editing or deleting a default access rule that no longer exists now returns a clear error without timing out. ([#11724](https://github.com/nocobase/nocobase/pull/11724))
+- **[Agent runner]**
+  - The runner now recognizes a DeepSeek API key saved in the dsh Web settings instead of reporting that dsh needs login. ([#11726](https://github.com/nocobase/nocobase/pull/11726))
+  - Fixed missing models when a runner detects OpenCode 2.4 immediately after startup. ([#11728](https://github.com/nocobase/nocobase/pull/11728))
+- **[Database]** Load newly added and previously skipped sample data when enabled on any deployment. ([#11744](https://github.com/nocobase/nocobase/pull/11744))
+
 ## [nocobase-v3-beta/2026-11-25.1](https://github.com/nocobase/nocobase/releases/tag/nocobase-v3-beta%2F2026-11-25.1)
 
 ### 🚀 Improvements

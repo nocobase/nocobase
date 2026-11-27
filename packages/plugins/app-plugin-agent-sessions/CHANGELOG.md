@@ -1,5 +1,28 @@
 # @nocobase/app-plugin-agent-sessions
 
+## 1.0.0-beta.24
+
+### Patch Changes
+
+- cc0bf33: Run outstanding sample data when enabled on existing databases. Write seed history only after a successful run and omit disabled sample seeds from dry-run plans. Apply the preview environment's sample data setting on every deployment and document the guidance for adding sample seeds to business changes.
+- Updated dependencies [2b77e0d]
+- Updated dependencies [cc0bf33]
+- Updated dependencies [4561d5f]
+- Updated dependencies [52d0b0d]
+- Updated dependencies [c12d990]
+- Updated dependencies [1b92cdb]
+- Updated dependencies [1b92cdb]
+- Updated dependencies [1b92cdb]
+- Updated dependencies [78bdca8]
+- Updated dependencies [87e3dac]
+- Updated dependencies [9acf418]
+  - @nocobase/agent-protocol@0.1.0-beta.24
+  - @nocobase/app-server@5.0.0-beta.12
+  - @nocobase/db@1.0.0-beta.31
+  - @nocobase/app-plugin-authentication@2.0.0-beta.26
+  - @nocobase/app-client@4.0.0-beta.14
+  - @nocobase/app-plugin-file@1.0.0-beta.34
+
 ## 1.0.0-beta.23
 
 ### Patch Changes

@@ -1,5 +1,71 @@
 # @nocobase/app-template-default
 
+## 2.0.0-beta.4
+
+### Minor Changes
+
+- c12d990: Allow signed-in App Routes to render without the application header and sidebar while keeping sign-in and page permissions.
+
+### Patch Changes
+
+- cc0bf33: Run outstanding sample data when enabled on existing databases. Write seed history only after a successful run and omit disabled sample seeds from dry-run plans. Apply the preview environment's sample data setting on every deployment and document the guidance for adding sample seeds to business changes.
+- 4561d5f: Add a message broker for publishing and consuming messages within and across applications: business events, asynchronous commands and integration with external systems. Plugins publish and consume through logical names that the `messageBroker` configuration maps to the middleware's resources, so switching middleware changes configuration only. Backends declare their capabilities, and the service refuses at startup or at the call a subscription or call that needs one the backend lacks; startup fails naming any middleware resource that does not exist. Messages published inside a database transaction are stored in an outbox and sent after the commit, never after a rollback, and survive a crash; subscriptions can use an inbox that records each message in the same transaction as the handler's database writes, so a repeated message does not repeat them. Backend packages run the shared backend contract tests from `@nocobase/message-broker/contract`. The default and examples templates register the in-memory backend and the outbox plugin, the examples template adds a runnable example plugin with business tables, and the application development Skill gains a guide to choosing between jobs, queues and the message broker and to using it.
+- 87e3dac: Add an `sms` notification channel type with built-in Alibaba Cloud and Tencent Cloud services, private credential mappings, readable SMS error codes, test send and notification-rule support, and list the new channel type in the notification settings.
+- 52d0b0d: Configure audit capture for application operations and send events to multiple named destinations, including JSON Lines files. Configuring a destination enables explicitly declared audit operations by default. Audit uses the application authentication settings for its trusted proxies and forwarded IP headers.
+
+  The official templates assemble auditing with `AuditProvider` and ship the file driver. Custom application composition roots can add the provider and the audit configuration factory when they use audit routes or transports. Applications using only `@nocobase/app-server` can start without the audit package.
+
+  Built-in audit operations store English default names and translation keys. The official templates load Repository labels in the viewer's language, and JSON Lines keeps the original event names. Separate labels identify assigning and removing permission sets and enabling and disabling users and keys.
+
+- 1b92cdb: Use ampersands in English settings navigation labels, including “Roles & permissions” and “Workflows & automation”.
+  Use “角色与权限” for the Simplified Chinese roles and permissions label.
+- 1b92cdb: Move the System settings shortcut from the sidebar footer to the header beside the account menu. Header actions can target a host application page with `app:<routeName>` and use `beforeAccount` placement to remain visible on mobile, and disabling system settings routes also removes the shortcut.
+- 78bdca8: Use “Authentication” in English and “身份认证” in Simplified Chinese in navigation, page headings and permission settings.
+- Updated dependencies [55277b8]
+- Updated dependencies [5e73680]
+- Updated dependencies [11f5151]
+- Updated dependencies [2b77e0d]
+- Updated dependencies [2b77e0d]
+- Updated dependencies [5e73680]
+- Updated dependencies [173ab75]
+- Updated dependencies [1b92cdb]
+- Updated dependencies [cc0bf33]
+- Updated dependencies [169b1fb]
+- Updated dependencies [4561d5f]
+- Updated dependencies [87e3dac]
+- Updated dependencies [1b92cdb]
+- Updated dependencies [52d0b0d]
+- Updated dependencies [1b92cdb]
+- Updated dependencies [1b92cdb]
+- Updated dependencies [26ba243]
+- Updated dependencies [78bdca8]
+- Updated dependencies [91a8ff2]
+- Updated dependencies [87e3dac]
+- Updated dependencies [9acf418]
+  - @nocobase/app-plugin-agents@2.0.0-beta.21
+  - @nocobase/app-plugin-authz-default-access@1.0.0-beta.23
+  - @nocobase/app-plugin-notification-in-app@2.0.0-beta.9
+  - @nocobase/app-cli@1.0.0-beta.41
+  - @nocobase/app-server@5.0.0-beta.12
+  - @nocobase/app-plugin-foundation@0.1.0-beta.23
+  - @nocobase/app-plugin-message-broker@0.1.0-beta.0
+  - @nocobase/db@1.0.0-beta.31
+  - @nocobase/app-plugin-mail@1.0.0-beta.30
+  - @nocobase/message-broker@0.1.0-beta.0
+  - @nocobase/app-plugin-notification-providers@1.0.0-beta.22
+  - @nocobase/app-plugin-notification@2.0.0-beta.11
+  - @nocobase/audit@0.1.0-beta.0
+  - @nocobase/authorization@1.0.0-beta.18
+  - @nocobase/app-plugin-authentication@2.0.0-beta.26
+  - @nocobase/app-plugin-api-keys@1.0.0-beta.29
+  - @nocobase/app-plugin-authorization@1.0.0-beta.41
+  - @nocobase/app-plugin-authz-restriction-rules@1.0.0-beta.21
+  - @nocobase/app-plugin-authz-sharing-rules@1.0.0-beta.22
+  - @nocobase/app-plugin-users@2.0.0-beta.23
+  - @nocobase/app-plugin-knowledge@0.1.0-beta.25
+  - @nocobase/app-plugin-file@1.0.0-beta.34
+  - @nocobase/app-plugin-scheduler@1.0.0-beta.27
+
 ## 2.0.0-beta.3
 
 ### Minor Changes
