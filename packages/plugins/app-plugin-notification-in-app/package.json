@@ -9,6 +9,7 @@
     "node": ">=24.0.0"
   },
   "nocobase": {
+    "pluginPolicy": "preinstall-and-enable",
     "title": {
       "en-US": "In-app messages",
       "zh-CN": "站内信"

@@ -9,6 +9,7 @@
     "node": ">=24.0.0"
   },
   "nocobase": {
+    "pluginPolicy": "preinstall-only",
     "title": {
       "en-US": "Knowledge base",
       "zh-CN": "知识库"

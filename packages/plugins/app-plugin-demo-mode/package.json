@@ -9,6 +9,7 @@
     "node": ">=24.0.0"
   },
   "nocobase": {
+    "pluginPolicy": "do-not-preinstall",
     "title": {
       "en-US": "Demo mode",
       "zh-CN": "演示模式"

@@ -18,6 +18,10 @@ When a template, application runtime, or CLI change affects how an agent develop
 
 Each template's `AGENTS.md` follows the same size rule as this repository's: it stays at most 32 KB and holds only always-on rules and an index, and its detailed guidance lives in that template's own `.agents/rules/`, which ships with the template and is committed in every generated application. A change to a template updates the relevant rules file and its index entry rather than growing `AGENTS.md`, and generic framework guidance belongs in `packages/app/app-skills`, linked rather than copied.
 
+## Product plugin policy
+
+Every package directly under `packages/plugins/` declares `nocobase.pluginPolicy` in its package manifest. Use `preinstall-and-enable` for plugins installed and registered by default, `preinstall-only` for installed plugins that require explicit registration, `do-not-preinstall` for plugins installed separately, and `deprecated` for retired plugins. Use the Default template’s dependencies and plugin registration lists when classifying existing plugins. Run `pnpm plugins:check` to verify the declarations against Default’s dependencies and its client, server and CLI registration lists. Enabled plugins belong in `dependencies`, preinstalled-only plugins in `devDependencies`, and separately installed or deprecated plugins in neither.
+
 ## Business Permissions of a Plugin
 
 A plugin registers its own businesses with the authorization plugin from its `shared/access.ts`: a resource type of its own named by the business ids' prefix (`pm` for `pm.issues`), titles and one-line descriptions in its namespace, each level of an action its own action (`edit.related`, `edit.all`; an action without related records as itself), placed in the permission workspace. An application reads what is registered at runtime rather than keeping a union of the plugins' constants. `packages/tools/create-plugin/template/AGENTS.md` carries the rule for generated plugins; change both together.

@@ -239,6 +239,7 @@ snowflake:
 # Declaring instances does not enable indexing. Select an instance and Embedding model in Knowledge's
 # global index dialog, then explicitly confirm the all-space rebuild and possible model charges.
 # Agents supplies Embedding models only; its vector collections are not used.
+# When enabling the Knowledge plugin, register defineKnowledgeConfig() in server/config/index.ts.
 # knowledge:
 #   # Optional: select an existing host jobs configuration by name; omitted follows jobs.default.
 #   # jobs: redis

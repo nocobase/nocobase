@@ -8,6 +8,9 @@
   "engines": {
     "node": ">=24.0.0"
   },
+  "nocobase": {
+    "pluginPolicy": "preinstall-only"
+  },
   "sideEffects": false,
   "exports": {
     "./client": {
