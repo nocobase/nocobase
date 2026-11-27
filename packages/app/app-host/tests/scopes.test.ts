@@ -9,7 +9,7 @@ import { spawn } from 'node:child_process';
 import { EventEmitter } from 'node:events';
 import type { ChildProcess } from 'node:child_process';
 import http, { type IncomingMessage, type ServerResponse } from 'node:http';
-import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
+import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
@@ -234,9 +234,9 @@ function fakeService() {
 
 async function serviceHost(
   backend: ServiceBackend,
-  options: { operations?: FileOperationLog } = {},
+  options: { operations?: FileOperationLog; directory?: string } = {},
 ): Promise<AppHost> {
-  const dir = await tempDir();
+  const dir = options.directory ?? (await tempDir());
   const host = createAppHost({
     mode: 'managed',
     port: 0,
@@ -256,6 +256,53 @@ async function serviceHost(
 }
 
 describe('scopes', () => {
+  it('rejects backup retention on an unsupported backend before changing the App or its files', async () => {
+    const { backend, state } = fakeService();
+    const directory = await tempDir();
+    const host = await serviceHost(backend, { directory });
+    const { management } = host;
+    const scope = serviceScope('staging');
+    await management.applyDeployment({ ...spec('a'), scope });
+    const status = await management.getStatus({ scope: scope.id });
+    const volume = path.join(directory, 'volumes', 'a');
+    const backups = path.join(volume, 'backups');
+    const revision = path.join(directory, 'revisions', 'a');
+    await mkdir(backups, { recursive: true });
+    await mkdir(revision, { recursive: true });
+    await writeFile(path.join(revision, 'config.yml'), 'enabled: true');
+    await writeFile(path.join(volume, 'business.txt'), 'business data');
+    await writeFile(path.join(backups, 'backup.tar.gz'), 'archive');
+
+    await expect(
+      management.removeDeploymentKeepingBackups!('a', { scope }),
+    ).rejects.toMatchObject({ code: 'BACKUP_RETENTION_UNSUPPORTED' });
+
+    expect(await management.getStatus({ scope: scope.id })).toMatchObject({
+      scope: status.scope,
+      reconciledRevision: status.reconciledRevision,
+      deployments: [
+        {
+          appId: 'a',
+          scopeId: scope.id,
+          observedState: 'running',
+          revision: 1,
+        },
+      ],
+    });
+    expect(host.registry.isActive('a')).toBe(true);
+    expect(state.containers.get('a@a-d1')?.running).toBe(true);
+    expect(state.disposed).toEqual([]);
+    expect(await readFile(path.join(revision, 'config.yml'), 'utf8')).toBe(
+      'enabled: true',
+    );
+    expect(await readFile(path.join(volume, 'business.txt'), 'utf8')).toBe(
+      'business data',
+    );
+    expect(await readFile(path.join(backups, 'backup.tar.gz'), 'utf8')).toBe(
+      'archive',
+    );
+  });
+
   it('describes its backends and checks settings without touching a running scope', async () => {
     const { backend, state } = fakeService();
     const host = await serviceHost(backend);

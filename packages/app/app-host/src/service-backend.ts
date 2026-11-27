@@ -53,6 +53,8 @@ export interface ServiceBackend extends AppActivationBackend {
     definition: AppDefinition,
     options: { readonly purgeData: boolean },
   ): Promise<void>;
+  /** Purges business data by scope and App ID even when the Host lost its in-memory definition. */
+  disposeKeepingBackups?(appId: string, scopeId: string): Promise<void>;
   logs(definition: AppDefinition, query: JournalQuery): Promise<JournalPage>;
   /**
    * Runs the App's own command-line tool once beside the App, from the definition's release, with its data,

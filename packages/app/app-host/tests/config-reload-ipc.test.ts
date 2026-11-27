@@ -7,6 +7,36 @@ import {
   type HostManagementService,
 } from '../dist/management/index.js';
 
+it.each([
+  [
+    'Unknown app host IPC method "removeDeploymentKeepingBackups"',
+    'BACKUP_RETENTION_UNSUPPORTED',
+  ],
+  ['Docker volume removal failed', undefined],
+])(
+  'distinguishes a legacy IPC rejection from a removal failure',
+  async (error, code) => {
+    const child = new EventEmitter() as ChildProcess;
+    Object.defineProperty(child, 'connected', { value: true });
+    child.send = ((
+      message: Record<string, unknown>,
+      callback: (error: Error | null) => void,
+    ) => {
+      expect(message).toMatchObject({
+        method: 'removeDeploymentKeepingBackups',
+        payload: { appId: 'app' },
+      });
+      callback(null);
+      child.emit('message', { ...message, kind: 'response', error });
+      return true;
+    }) as ChildProcess['send'];
+    const client = new IpcHostManagementClient(child, { session: 'test' });
+    await expect(
+      client.removeDeploymentKeepingBackups('app'),
+    ).rejects.toMatchObject({ message: error, code });
+  },
+);
+
 it('keeps listening for completion after a deployment is accepted', async () => {
   const child = new EventEmitter() as ChildProcess;
   Object.defineProperty(child, 'connected', { value: true });
