@@ -25,7 +25,7 @@ export class MyInstruction extends Instruction {
   run(node, input, processor) {
     console.log('my instruction runs!');
     return {
-      status: JOB_STATUS.RESOVLED,
+      status: JOB_STATUS.RESOLVED,
     };
   }
 }
@@ -45,7 +45,7 @@ export default class MyPlugin extends Plugin {
 }
 ```
 
-The status value (`status`) in the instruction's return object is mandatory and must be a value from the `JOB_STATUS` constant. This value determines the flow of subsequent processing for this node in the workflow. Typically, `JOB_STATUS.RESOVLED` is used, indicating that the node has executed successfully and the execution will continue to the next nodes. If there is a result value that needs to be saved in advance, you can also call the `processor.saveJob` method and return its return object. The executor will generate an execution result record based on this object.
+The status value (`status`) in the instruction's return object is mandatory and must be a value from the `JOB_STATUS` constant. This value determines the flow of subsequent processing for this node in the workflow. Typically, `JOB_STATUS.RESOLVED` is used, indicating that the node has executed successfully and the execution will continue to the next nodes. If there is a result value that needs to be saved in advance, you can also call the `processor.saveJob` method and return its return object. The executor will generate an execution result record based on this object.
 
 ### Node Result Value
 
@@ -63,7 +63,7 @@ export class RandomStringInstruction extends Instruction {
       '0',
     );
     return {
-      status: JOB_STATUS.RESOVLED,
+      status: JOB_STATUS.RESOLVED,
       result,
     };
   },
