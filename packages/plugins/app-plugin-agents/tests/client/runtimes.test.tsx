@@ -163,20 +163,22 @@ describe('runtimes page', () => {
         name: 'runtimes.modelDetection.timedOut',
       }),
     );
-    const detail = await screen.findByText(
+    const dialog = await screen.findByRole('dialog', {
+      name: 'runtimes.modelDetection.timedOut',
+    });
+    expect(dialog).toHaveAccessibleDescription(
       'HTTP 503: Location plugins did not finish activating',
     );
-    expect(detail).toBeVisible();
 
     fireEvent.click(
       within(within(sheet).getByTestId('runner-tool-pi')).getByRole('button', {
         name: 'runtimes.modelDetection.commandFailed',
       }),
     );
-    const popup = (
-      await screen.findAllByText('runtimes.modelDetection.commandFailed')
-    ).find((node) => node.tagName === 'P');
-    expect(popup?.parentElement?.children).toHaveLength(1);
+    const popup = await screen.findByRole('dialog', {
+      name: 'runtimes.modelDetection.commandFailed',
+    });
+    expect(popup).not.toHaveAttribute('aria-describedby');
   });
 
   it('shows loading and a retryable failure while fetching a runner instead of an empty diagnostic', async () => {

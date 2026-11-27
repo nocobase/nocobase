@@ -22,6 +22,8 @@ import { TriangleAlertIcon } from 'lucide-react';
 import {
   Popover,
   PopoverContent,
+  PopoverDescription,
+  PopoverTitle,
   PopoverTrigger,
 } from '../../components/ui/popover.js';
 import { Switch } from '../../components/ui/switch.js';
@@ -77,11 +79,11 @@ function ModelDetectionWarning({
         align='start'
         className='gap-1 text-xs [overflow-wrap:anywhere]'
       >
-        <p className='font-semibold text-amber-700 dark:text-amber-400'>
+        <PopoverTitle className='text-xs font-semibold text-amber-700 dark:text-amber-400'>
           {title}
-        </p>
+        </PopoverTitle>
         {info.modelsDetectionDetail ? (
-          <p className='text-muted-foreground'>{info.modelsDetectionDetail}</p>
+          <PopoverDescription>{info.modelsDetectionDetail}</PopoverDescription>
         ) : null}
       </PopoverContent>
     </Popover>
@@ -183,9 +185,10 @@ export function ToolTable({
       onCheckedChange={(value) => onSwitch(tool, value)}
     />
   );
-  const state = (tool: AgentTool) => (
+  const state = (tool: AgentTool, tagClassName?: string) => (
     <span className='flex min-w-0 items-center gap-1'>
       <ToolStateTag
+        className={tagClassName}
         state={toolState({ enabledTools, tools: runner.tools }, tool)}
       />
       <ModelDetectionWarning
@@ -250,7 +253,7 @@ export function ToolTable({
         <colgroup>
           <col className='w-36' />
           <col className='w-14' />
-          <col className='w-44' />
+          <col className='w-36' />
           <col />
           <col className='w-28' />
           <col className='w-20' />
@@ -258,7 +261,12 @@ export function ToolTable({
         <TableHeader>
           <TableRow>
             {['tool', 'enabled', 'state'].map((key) => (
-              <TableHead key={key}>{t(`runtimes.toolTable.${key}`)}</TableHead>
+              <TableHead
+                key={key}
+                className={key === 'state' ? 'px-1!' : undefined}
+              >
+                {t(`runtimes.toolTable.${key}`)}
+              </TableHead>
             ))}
             <TableHead>{t('runtimes.quota.title')}</TableHead>
             <TableHead>{t('runtimes.toolTable.limit')}</TableHead>
@@ -298,7 +306,10 @@ export function ToolTable({
                 <TableCell>
                   <div className='flex items-center'>{toggle(tool)}</div>
                 </TableCell>
-                <TableCell>{state(tool)}</TableCell>
+                {/* Tight padding, important over the theme's unlayered table-cell padding, keeps every English state and a warning after it on one line in the w-36 column. */}
+                <TableCell className='px-px!'>
+                  {state(tool, 'px-[3px]')}
+                </TableCell>
                 <TableCell>
                   <div className='flex items-center'>{quota(tool)}</div>
                 </TableCell>

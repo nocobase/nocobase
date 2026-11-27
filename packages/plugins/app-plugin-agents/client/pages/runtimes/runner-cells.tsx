@@ -6,6 +6,7 @@
 import type { AgentTool } from '@nocobase/agent-protocol';
 import { useTranslation } from '@nocobase/i18n/client';
 import type { ReactElement } from 'react';
+import { cn } from 'cn';
 
 import {
   listedTools,
@@ -116,8 +117,10 @@ const TOOL_STATE_TONE: Readonly<Record<ToolState, Tone>> = {
 
 export function ToolStateTag({
   state,
+  className,
 }: {
   readonly state: ToolState;
+  readonly className?: string;
 }): ReactElement {
   const { t } = useTranslation();
   const label = t(`runtimes.tool.${state}`);
@@ -125,7 +128,7 @@ export function ToolStateTag({
     <AgTag
       tone={TOOL_STATE_TONE[state]}
       dot
-      className='max-w-full min-w-0 shrink'
+      className={cn('max-w-full min-w-0 shrink', className)}
       title={state === 'off' ? t('runtimes.tool.offHint') : label}
     >
       <span className='truncate'>{label}</span>
