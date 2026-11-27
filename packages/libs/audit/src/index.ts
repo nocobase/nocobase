@@ -66,4 +66,4 @@ export {
   type AuditExecutionResult,
   type AuditTargets,
 } from './request.js';
-export type { AuditRedactRule } from './redact.js';
+export type { AuditRedactRules } from './redact.js';

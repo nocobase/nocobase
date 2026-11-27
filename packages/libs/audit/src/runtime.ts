@@ -75,11 +75,14 @@ export class AuditProvider<
             },
             service: this.coordinator,
             autoDetect: audit?.autoDetect ?? auditDefaults.autoDetect,
+            captureBody: audit?.captureBody,
+            redact: audit?.redact,
             proxies,
             ipAddressHeaders: config.get<readonly string[]>(
               'auth.advanced.ipAddress.ipAddressHeaders',
             ) ?? ['x-forwarded-for'],
-            report: () => this.report('Could not collect audit event.'),
+            report: (message = 'Could not collect audit event.') =>
+              this.report(message),
           }),
         );
       },

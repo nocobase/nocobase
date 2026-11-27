@@ -25,6 +25,5 @@ export function repositoryAuditOptions(
     resolveTargets: ({ value }) => ({ collection, key: value }),
     // Collection values and filter operands can contain application secrets under arbitrary names.
     captureBody: false,
-    resultFrom: 'context',
   };
 }
