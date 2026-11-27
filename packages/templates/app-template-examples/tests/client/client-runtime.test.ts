@@ -18,25 +18,6 @@ import type { ClientApplication as ClientApplicationType } from '@nocobase/app-c
 import appRuntime from '../../client/runtime.ts';
 
 describe('app client runtime', () => {
-  it('removes the registered settings shortcut when system settings routes are disabled', async () => {
-    const enabled = await resolveAppRuntime(appRuntime);
-    expect(enabled.headerActions).toContainEqual(
-      expect.objectContaining({
-        name: 'system-settings',
-        placement: 'beforeAccount',
-      }),
-    );
-    const disabled = await resolveAppRuntime({
-      ...appRuntime,
-      systemSettingsRoutes: false,
-    });
-    expect(
-      disabled.headerActions?.some(
-        (action) => action.name === 'system-settings',
-      ),
-    ).toBe(false);
-  });
-
   it('resolves static contributions without running ServiceProvider lifecycle', async () => {
     const calls: string[] = [];
     class Provider extends ServiceProvider<ClientApplicationType> {

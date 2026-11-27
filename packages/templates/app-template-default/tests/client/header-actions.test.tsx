@@ -445,13 +445,9 @@ describe('signed-in state', () => {
   });
 });
 
-it('registers the pinned settings shortcut for the application’s own route', async () => {
+it('keeps the sidebar settings entry out of the header', async () => {
   const { headerActions } = await import('../../client/header-actions.js');
-  expect(headerActions).toMatchObject([
-    {
-      name: 'system-settings',
-      placement: 'beforeAccount',
-      routeId: 'app:settingsHome',
-    },
-  ]);
+  expect(
+    headerActions.some((action) => action.routeId === 'app:settingsHome'),
+  ).toBe(false);
 });

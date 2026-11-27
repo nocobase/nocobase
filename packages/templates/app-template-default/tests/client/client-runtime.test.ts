@@ -38,25 +38,6 @@ describe('app client runtime', () => {
     expect(name()).toBe('Create a record');
   });
 
-  it('removes the registered settings shortcut when system settings routes are disabled', async () => {
-    const enabled = await resolveAppRuntime(appRuntime);
-    expect(enabled.headerActions).toContainEqual(
-      expect.objectContaining({
-        name: 'system-settings',
-        placement: 'beforeAccount',
-      }),
-    );
-    const disabled = await resolveAppRuntime({
-      ...appRuntime,
-      systemSettingsRoutes: false,
-    });
-    expect(
-      disabled.headerActions?.some(
-        (action) => action.name === 'system-settings',
-      ),
-    ).toBe(false);
-  });
-
   it('lets an application own the chat, inbox and mail URLs with the plugins registered', async () => {
     const paths = [
       '/chat',
