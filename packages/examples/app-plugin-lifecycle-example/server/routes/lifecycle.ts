@@ -7,7 +7,6 @@ import {
   dataResponse,
   describeRoute,
 } from '@nocobase/app-server/router';
-import { describeAudit } from '@nocobase/audit';
 import {
   lifecycleDescriptionViewAsync,
   type LifecycleRuntime,
@@ -78,9 +77,6 @@ export function lifecycleRoutes(
   spec: LifecycleRoutesSpec,
 ): void {
   const { lifecycle, noun } = spec;
-  const auditExport = describeAudit(() =>
-    lifecycle === 'exports' ? false : undefined,
-  );
   const query: z.ZodType<{ readonly actAs?: string }> =
     spec.persona === false ? z.object({}) : ActAsQuery;
   const path = `${spec.basePath}/${lifecycle}`;
@@ -214,7 +210,6 @@ export function lifecycleRoutes(
 
   router.post(
     `${path}/:recordId/fire`,
-    auditExport,
     describeRoute({
       tags,
       summary: `Fire a transition on a ${lower}`,
@@ -301,7 +296,6 @@ export function lifecycleRoutes(
 
   router.post(
     `${path}/:recordId/effectRuns/:runId/retry`,
-    auditExport,
     describeRoute({
       tags,
       summary: `Retry an effect run of a ${lower}`,

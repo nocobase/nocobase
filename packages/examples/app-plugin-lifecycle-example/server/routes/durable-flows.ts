@@ -7,7 +7,6 @@ import {
   describeRoute,
   listResponse,
 } from '@nocobase/app-server/router';
-import { describeAudit } from '@nocobase/audit';
 import { Hono } from 'hono';
 import { z } from 'zod';
 
@@ -170,7 +169,6 @@ function flowRoutes<Body>(
       : z.object({});
   router.post(
     path,
-    describeAudit(() => (spec.flow === 'exports' ? false : undefined)),
     describeRoute({
       tags,
       summary: `Create a ${spec.noun.toLowerCase()}`,
@@ -271,7 +269,6 @@ export function durableFlowRoutes(
 
   router.get(
     `${base}/invoices/:recordId/pdf`,
-    describeAudit(false),
     describeRoute({
       tags,
       summary: 'Download the sample invoice PDF',

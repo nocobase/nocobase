@@ -107,7 +107,7 @@ export const apiRoutes: AppApiRouteContribution<AppPluginApplication> =
     ) =>
       describeAudit({
         operationName: auditOperationName(operation),
-        redact: [{ field: 'inviteUrl' }],
+        redact: { fields: ['inviteUrl'] },
         target: (context) => ({
           collection: 'userInvitations',
           key: context.req.param('invitationId'),

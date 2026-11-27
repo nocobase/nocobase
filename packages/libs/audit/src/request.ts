@@ -8,14 +8,9 @@ import {
   auditSnapshot,
   copyAuditRedactRules,
   readAuditBody,
-  type AuditRedactRule,
+  type AuditRedactRules,
 } from './redact.js';
-import type {
-  AuditActor,
-  AuditOutcomeEvent,
-  AuditTarget,
-  AuditTranslation,
-} from './index.js';
+import type { AuditActor, AuditTarget, AuditTranslation } from './index.js';
 import type { AuditCoordinator } from './service.js';
 import { repositoryAuditOptions } from './repository.js';
 
@@ -26,8 +21,9 @@ export interface AuditTargets {
 
 export interface AuditExecutionResult {
   readonly status: number;
-  /** Bounded JSON copies used only by the resolver and the snapshot policy. */
+  /** A bounded JSON copy when capture is enabled and the request body is available. */
   readonly request: unknown;
+  /** A bounded JSON copy when capture is enabled and the response body is available. */
   readonly response: unknown;
   /** An in-process result from a framework route, if provided. */
   readonly value: unknown;
@@ -42,15 +38,13 @@ export interface AuditRouteOptions {
   readonly target?: (
     context: Context,
   ) => AuditTarget | AuditTargets | undefined;
-  /** Runs after the handler succeeds. Only return identifiers safe for the log. */
+  /** Runs after success. Body copies and the in-process result may be unavailable. Return only safe identifiers. */
   readonly resolveTargets?: (
     result: AuditExecutionResult,
     context: Context,
   ) => AuditTarget | AuditTargets | undefined;
-  /** Select the data the target resolver needs when body snapshots are disabled. Defaults to the response. */
-  readonly resultFrom?: 'request' | 'response' | 'context';
-  readonly redact?: readonly AuditRedactRule[];
-  /** Set to false to omit both snapshots. A target resolver can still read bounded JSON. */
+  readonly redact?: AuditRedactRules;
+  /** Body capture requires an explicit true and no explicit false across the app and route. */
   readonly captureBody?: boolean;
   /** Classify credential validation errors as failures and omit identity and snapshots on failure. */
   readonly authenticationAttempt?: boolean;
@@ -107,7 +101,10 @@ export function describeAudit(
 ): MiddlewareHandler {
   const resolve =
     typeof declaration === 'function'
-      ? declaration
+      ? (context: Context) => {
+          const resolved = declaration(context);
+          return resolved === undefined ? undefined : copyDeclaration(resolved);
+        }
       : staticResolver(declaration);
   const middleware: MiddlewareHandler = async (_context, next) => next();
   Object.defineProperty(middleware, auditDeclaration, { value: resolve });
@@ -124,7 +121,7 @@ function copyDeclaration(declaration: Declaration): Declaration {
   const { redact, operationName } = declaration;
   return Object.freeze({
     ...declaration,
-    redact: redact && copyAuditRedactRules(redact),
+    redact: redact === undefined ? undefined : copyAuditRedactRules(redact),
     operationName:
       typeof operationName === 'object'
         ? Object.freeze({ ...operationName })
@@ -156,10 +153,7 @@ function routeAudit(
       context.req.routeIndex = index;
       const resolved = resolve(context);
       if (resolved === false) return false;
-      if (resolved) {
-        const copied = copyDeclaration(resolved);
-        if (copied) declaration = { ...copied, ...declaration };
-      }
+      if (resolved) declaration = { ...resolved, ...declaration };
     } catch {
       report();
       return false;
@@ -288,169 +282,52 @@ export function auditMiddleware(options: {
   readonly host: AuditRequestHost;
   readonly service: AuditCoordinator;
   readonly autoDetect: boolean;
+  readonly captureBody?: boolean;
+  readonly redact?: AuditRedactRules;
   readonly proxies: BlockList;
   readonly ipAddressHeaders: readonly string[];
-  readonly report: () => void;
+  readonly report: (message?: string) => void;
 }): MiddlewareHandler {
-  const { host, service, autoDetect, report } = options;
+  const { host, autoDetect, captureBody, report } = options;
+  const globalRedact = options.redact && copyAuditRedactRules(options.redact);
   return async (context, next) => {
     const started = performance.now();
     let route: RouteAudit | false | undefined;
+    let before: AuditTargets | undefined;
     try {
       route = routeAudit(context, host, autoDetect, report);
       if (route === undefined) {
         const forwarded = host.matchForwardedRoute(context);
         if (forwarded) route = routeAudit(forwarded, host, autoDetect, report);
       }
-    } catch {
-      report();
-    }
-    if (!route) return next();
-
-    const occurredAt = new Date().toISOString();
-    const declaration = route.options;
-    const pendingPolicy = service.readCapturePolicy();
-    const policy = pendingPolicy && (await pendingPolicy);
-
-    let before: AuditTargets | undefined;
-    if (policy !== false && declaration.target) {
-      try {
+      if (route) {
         const matched = route;
         before = targetsOf(
           withRouteParams(matched.context, () =>
             matched.options.target?.(matched.context),
           ),
         );
-      } catch {
-        report();
       }
+    } catch {
+      options.report();
     }
+    if (!route) return next();
 
+    const occurredAt = new Date().toISOString();
+    const declaration = route.options;
     const capture =
-      policy !== false &&
-      policy?.captureBody !== false &&
-      declaration.captureBody !== false;
-    const resolveTargets =
-      policy === false ? undefined : declaration.resolveTargets;
-    const resultFrom = resolveTargets
-      ? (declaration.resultFrom ?? 'response')
-      : undefined;
-    const body =
-      capture || resultFrom === 'request'
-        ? readAuditBody(context.req.raw)
-        : undefined;
+      captureBody !== false &&
+      declaration.captureBody !== false &&
+      (captureBody === true || declaration.captureBody === true);
+    const body = capture ? readAuditBody(context.req.raw) : undefined;
+    const { resolveTargets } = declaration;
     if (resolveTargets) host.enableExecutionResult(context);
     let actual: Context = context;
-    if (policy !== false && route.context !== context)
+    if (route.context !== context)
       host.observeForwardedContext(context, (child) => {
         actual = child;
         if (resolveTargets) host.enableExecutionResult(child);
       });
-    const action = route.action;
-    const record = async (
-      status: number,
-      success: boolean,
-      durationMs: number,
-    ): Promise<void> => {
-      const failedAuthentication =
-        !success && declaration.authenticationAttempt;
-      const outcome: AuditOutcomeEvent = {
-        action,
-        occurredAt,
-        outcome: success
-          ? 'success'
-          : !failedAuthentication && (status === 401 || status === 403)
-            ? 'denied'
-            : 'failure',
-        status,
-      };
-      if (policy === false) {
-        await service.record(outcome);
-        return;
-      }
-      const request = failedAuthentication ? undefined : await body;
-      const response =
-        success && (capture || resultFrom === 'response')
-          ? await readAuditBody(context.res)
-          : undefined;
-      const captured =
-        success && resolveTargets
-          ? targetsOf(
-              resolveTargets(
-                {
-                  status,
-                  request,
-                  response,
-                  value: host.executionResultOf(actual),
-                },
-                actual,
-              ),
-            )
-          : undefined;
-      const targets = captured ?? before;
-      const redact = policy?.redact.length
-        ? [...(declaration.redact ?? []), ...policy.redact]
-        : declaration.redact;
-      const snapshot = (value: unknown) => auditSnapshot(value, redact);
-      const safeTarget = ({ collection, key }: AuditTarget): AuditTarget => ({
-        collection,
-        key: failedAuthentication ? undefined : snapshot(key),
-      });
-      const operation = declaration.operationName;
-      const operationName =
-        (typeof operation === 'string'
-          ? operation.trim()
-          : operation?.defaultValue?.trim()) ||
-        route.summary ||
-        action;
-      const operationNameI18n =
-        operation && typeof operation === 'object'
-          ? { ns: operation.ns, key: operation.key }
-          : undefined;
-      const roles =
-        (context as Context<SessionContext>)
-          .get('authz')
-          ?.resolvedGrantSources?.() ?? [];
-      let actor = failedAuthentication
-        ? ({ type: 'anonymous' } as const)
-        : actorOf(context, service);
-      if (
-        actor.type === 'anonymous' &&
-        actual !== context &&
-        !failedAuthentication
-      )
-        actor = actorOf(actual, service);
-      await service.record({
-        ...outcome,
-        requestId: host.getRequestId(context),
-        operationName,
-        operationNameI18n,
-        resource: route.resource,
-        actor,
-        roles: failedAuthentication
-          ? []
-          : [
-              ...new Set(
-                roles
-                  .filter(({ plugin }) => plugin === 'permission-sets')
-                  .map(({ id }) => id),
-              ),
-            ].slice(0, 256),
-        source: targets?.source && safeTarget(targets.source),
-        targets: targets?.targets.slice(0, 64).map(safeTarget) ?? [],
-        ip: clientIp(
-          context,
-          host.getClientAddress(context),
-          options.proxies,
-          options.ipAddressHeaders,
-        ),
-        userAgent: context.req.header('user-agent')?.slice(0, 512),
-        durationMs,
-        request:
-          capture && !failedAuthentication ? snapshot(request) : undefined,
-        response: capture && success ? snapshot(response) : undefined,
-      });
-    };
     let thrown = false;
     try {
       await next();
@@ -465,9 +342,114 @@ export function auditMiddleware(options: {
         success && context.res.headers.get('Idempotency-Replayed') === 'true';
       if (!replay)
         try {
-          await record(status, success, durationMs);
+          const failedAuthentication =
+            !success && declaration.authenticationAttempt;
+          const request = failedAuthentication ? undefined : await body;
+          const response =
+            capture && success ? await readAuditBody(context.res) : undefined;
+          let targets = before;
+          if (success && resolveTargets) {
+            try {
+              targets =
+                targetsOf(
+                  resolveTargets(
+                    {
+                      status,
+                      request,
+                      response,
+                      value: host.executionResultOf(actual),
+                    },
+                    actual,
+                  ),
+                ) ?? before;
+            } catch {
+              report('Could not resolve audit targets.');
+            }
+          }
+          const redact =
+            declaration.redact && globalRedact
+              ? {
+                  fields: [
+                    ...(globalRedact.fields ?? []),
+                    ...(declaration.redact.fields ?? []),
+                  ],
+                  paths: [
+                    ...(globalRedact.paths ?? []),
+                    ...(declaration.redact.paths ?? []),
+                  ],
+                }
+              : (declaration.redact ?? globalRedact);
+          const snapshot = (value: unknown) => auditSnapshot(value, redact);
+          const safeTarget = ({
+            collection,
+            key,
+          }: AuditTarget): AuditTarget => ({
+            collection,
+            key: failedAuthentication ? undefined : snapshot(key),
+          });
+          const operation = declaration.operationName;
+          const operationName =
+            (typeof operation === 'string'
+              ? operation.trim()
+              : operation?.defaultValue?.trim()) ||
+            route.summary ||
+            route.action;
+          const operationNameI18n =
+            operation && typeof operation === 'object'
+              ? { ns: operation.ns, key: operation.key }
+              : undefined;
+          const roles =
+            (context as Context<SessionContext>)
+              .get('authz')
+              ?.resolvedGrantSources?.() ?? [];
+          let actor = failedAuthentication
+            ? ({ type: 'anonymous' } as const)
+            : actorOf(context, options.service);
+          if (
+            actor.type === 'anonymous' &&
+            actual !== context &&
+            !failedAuthentication
+          )
+            actor = actorOf(actual, options.service);
+          await options.service.record({
+            requestId: host.getRequestId(context),
+            action: route.action,
+            operationName,
+            operationNameI18n,
+            resource: route.resource,
+            actor,
+            roles: failedAuthentication
+              ? []
+              : [
+                  ...new Set(
+                    roles
+                      .filter(({ plugin }) => plugin === 'permission-sets')
+                      .map(({ id }) => id),
+                  ),
+                ].slice(0, 256),
+            source: targets?.source && safeTarget(targets.source),
+            targets: targets?.targets.slice(0, 64).map(safeTarget) ?? [],
+            ip: clientIp(
+              context,
+              host.getClientAddress(context),
+              options.proxies,
+              options.ipAddressHeaders,
+            ),
+            userAgent: context.req.header('user-agent')?.slice(0, 512),
+            outcome: success
+              ? 'success'
+              : !failedAuthentication && (status === 401 || status === 403)
+                ? 'denied'
+                : 'failure',
+            status,
+            durationMs,
+            occurredAt,
+            request:
+              capture && !failedAuthentication ? snapshot(request) : undefined,
+            response: capture && success ? snapshot(response) : undefined,
+          });
         } catch {
-          report();
+          options.report();
         }
     }
   };

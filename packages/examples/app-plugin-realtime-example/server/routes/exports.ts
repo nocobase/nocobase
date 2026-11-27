@@ -12,7 +12,6 @@ import {
   describeRoute,
   type AppApiRouteContribution,
 } from '@nocobase/app-server/router';
-import { describeAudit } from '@nocobase/audit';
 import { Hono } from 'hono';
 import { z } from 'zod';
 import type { TaskExport } from '../../shared/business.js';
@@ -54,7 +53,6 @@ export const exportRoutes: AppApiRouteContribution<AppPluginApplication> =
     );
     router.post(
       '/realtimeExample/exports',
-      describeAudit(false),
       describeRoute({
         tags,
         summary: 'Export my tasks',
@@ -69,7 +67,6 @@ export const exportRoutes: AppApiRouteContribution<AppPluginApplication> =
     );
     router.get(
       '/realtimeExample/exports/:exportId/file',
-      describeAudit(false),
       describeRoute({
         tags,
         summary: 'Read my exported CSV file',

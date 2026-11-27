@@ -7,6 +7,7 @@ import { expect, it, vi } from 'vitest';
 
 import { Application } from '@nocobase/app-server/application';
 import {
+  auditRecordKey,
   describeAudit,
   auditServiceToken,
   type AuditConfig,
@@ -53,7 +54,7 @@ async function appWithAudit(
     name: 'memory',
     createTransport: () => ({
       write: (event) => {
-        if ('requestId' in event) events.push(event);
+        events.push(event);
       },
     }),
   });
@@ -70,8 +71,147 @@ function request(path: string, json: unknown, headers?: HeadersInit): Request {
   });
 }
 
-it('masks entire sensitive fields on both snapshots and ignores forwarding without a trust list', async () => {
+it.each([undefined, true, false])(
+  'applies every route body setting with the application setting %s',
+  async (captureBody) => {
+    const { app, events } = await appWithAudit({ captureBody });
+    const resolveTargets = vi.fn(({ response }: { response: unknown }) => {
+      const id = auditRecordKey(response, 'data', 'id');
+      return id === undefined ? undefined : { collection: 'items', key: id };
+    });
+    const optionNames = ['unset', 'on', 'off'] as const;
+    const values = [undefined, true, false] as const;
+    const enabledByApp = {
+      unset: [false, true, false],
+      on: [true, true, false],
+      off: [false, false, false],
+    };
+    const expected =
+      enabledByApp[
+        captureBody === undefined ? 'unset' : captureBody ? 'on' : 'off'
+      ];
+    const requestBody = { name: 'new item' };
+    const responseBody = { data: { id: 'item-1' } };
+    app.addRoutes(
+      defineApiRoutes(() => {
+        const router = new Hono();
+        for (const [index, routeSetting] of values.entries()) {
+          router.post(
+            `/items/${optionNames[index]}`,
+            describeAudit({
+              action: 'items.create',
+              captureBody: routeSetting,
+              target: () => ({ collection: 'items' }),
+              resolveTargets,
+            }),
+            (context) => context.json(responseBody, 201),
+          );
+        }
+        return router;
+      }),
+    );
+    try {
+      await app.start();
+      for (const [index, name] of optionNames.entries()) {
+        const input = request(`items/${name}`, requestBody);
+        const cloneRequest = vi.spyOn(input, 'clone');
+        const cloneResponse = vi.spyOn(Response.prototype, 'clone');
+        const readStream = vi.spyOn(ReadableStream.prototype, 'getReader');
+        const parse = vi.spyOn(JSON, 'parse');
+        try {
+          const response = await app.fetch(input);
+          expect(response.status).toBe(201);
+          if (expected[index]) {
+            expect(events[index]).toMatchObject({
+              request: requestBody,
+              response: responseBody,
+              targets: [{ collection: 'items', key: 'item-1' }],
+            });
+          } else {
+            expect(cloneRequest).not.toHaveBeenCalled();
+            expect(cloneResponse).not.toHaveBeenCalled();
+            expect(readStream).not.toHaveBeenCalled();
+            expect(parse).not.toHaveBeenCalledWith(JSON.stringify(requestBody));
+            expect(parse).not.toHaveBeenCalledWith(
+              JSON.stringify(responseBody),
+            );
+            expect(events[index]).toMatchObject({
+              request: undefined,
+              response: undefined,
+              targets: [{ collection: 'items', key: undefined }],
+            });
+            expect(resolveTargets).toHaveBeenLastCalledWith(
+              {
+                status: 201,
+                request: undefined,
+                response: undefined,
+                value: undefined,
+              },
+              expect.anything(),
+            );
+          }
+        } finally {
+          cloneRequest.mockRestore();
+          cloneResponse.mockRestore();
+          readStream.mockRestore();
+          parse.mockRestore();
+        }
+      }
+    } finally {
+      await app.shutdown();
+    }
+  },
+);
+
+it('retains a basic event when a target resolver throws and reports no sensitive details', async () => {
   const { app, events } = await appWithAudit();
+  const log = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+  app.addRoutes(
+    defineApiRoutes(() => {
+      const router = new Hono();
+      router.post(
+        '/items/:id',
+        describeAudit({
+          action: 'items.update',
+          target: (context) => ({
+            collection: 'items',
+            key: context.req.param('id'),
+          }),
+          resolveTargets: () => {
+            throw new Error('private resolver data');
+          },
+        }),
+        (context) => context.json({ data: 'updated' }),
+      );
+      return router;
+    }),
+  );
+  try {
+    const response = await app.fetch(request('items/item-1', {}));
+    expect(await response.json()).toEqual({ data: 'updated' });
+    expect(events).toMatchObject([
+      {
+        action: 'items.update',
+        outcome: 'success',
+        status: 200,
+        targets: [{ collection: 'items', key: 'item-1' }],
+      },
+    ]);
+    expect(log.mock.calls).toEqual([['Could not resolve audit targets.']]);
+  } finally {
+    log.mockRestore();
+    await app.shutdown();
+  }
+});
+
+it('masks entire sensitive fields on both snapshots and ignores forwarding without a trust list', async () => {
+  const { app, events } = await appWithAudit({
+    redact: { fields: ['privateMarker'], paths: ['settings.privateFields'] },
+    transports: {
+      first: { driver: 'memory' },
+      second: { driver: 'memory' },
+    },
+  });
   app.addRoutes(
     defineApiRoutes(() => {
       const router = new Hono();
@@ -80,16 +220,21 @@ it('masks entire sensitive fields on both snapshots and ignores forwarding witho
         describeAudit({
           target: (context) => ({
             collection: 'settings',
-            key: context.req.param('id'),
+            key: {
+              id: context.req.param('id'),
+              privateMarker: 'target secret',
+            },
           }),
-          redact: [
-            { path: 'settings.privateFields' },
-            { path: 'team.0.mobile' },
-            { path: 'members.mobile' },
-            { path: 'groups.0.members.mobile' },
-            { path: 'matrix.0.mobile' },
-            { field: 'privateMarker' },
-          ],
+          redact: {
+            paths: [
+              'team.0.mobile',
+              'members.mobile',
+              'groups.0.members.mobile',
+              'matrix.0.mobile',
+            ],
+            fields: ['routeMarker'],
+          },
+          captureBody: true,
         }),
         describeRoute({ operationId: 'changeSettings', tags: ['Settings'] }),
         async (context) => context.json(await context.req.json()),
@@ -113,7 +258,7 @@ it('masks entire sensitive fields on both snapshots and ignores forwarding witho
       apiKey: ['never persist'],
       settings: {
         privateFields: ['never persist'],
-        other: { privateMarker: 'nested value' },
+        other: { privateMarker: 'nested value', routeMarker: 'route value' },
         visible: 'keep',
       },
       nested: {
@@ -130,7 +275,8 @@ it('masks entire sensitive fields on both snapshots and ignores forwarding witho
     );
     expect(response.status).toBe(200);
     expect(await response.json()).toEqual(json);
-    expect(events).toHaveLength(1);
+    expect(events).toHaveLength(2);
+    expect(events[1]).toEqual(events[0]);
     const expected = {
       team: [{ mobile: '******' }, { mobile: 'public' }],
       matrix: [[{ mobile: '******' }], [{ mobile: 'public' }]],
@@ -143,14 +289,16 @@ it('masks entire sensitive fields on both snapshots and ignores forwarding witho
       apiKey: '******',
       settings: {
         privateFields: '******',
-        other: { privateMarker: '******' },
+        other: { privateMarker: '******', routeMarker: '******' },
         visible: 'keep',
       },
       nested: { cookie: '******', authorization: '******', secret: '******' },
     };
     expect(events[0]).toMatchObject({
       action: 'changeSettings',
-      targets: [{ collection: 'settings', key: 'abc' }],
+      targets: [
+        { collection: 'settings', key: { id: 'abc', privateMarker: '******' } },
+      ],
       ip: '192.0.2.5',
       request: expected,
       response: expected,
@@ -295,7 +443,7 @@ it('bounds raw and serialized body snapshots while preserving the response', asy
       const router = new Hono();
       router.post(
         '/large',
-        describeAudit({ action: 'test:large' }),
+        describeAudit({ action: 'test:large', captureBody: true }),
         async (context) => {
           const input = await context.req.json<{ value: string }>();
           return context.json({
@@ -415,13 +563,6 @@ it('honors explicit declarations before guards and uses inference only for suppo
   const second = await appWithAudit();
   const disabled = await appWithAudit({ enabled: false, autoDetect: true });
   const noDestinations = await appWithAudit({ transports: {} });
-  const readPolicy = vi.fn(() =>
-    Promise.resolve({ captureBody: false, redact: [] }),
-  );
-  for (const { app } of [disabled, noDestinations])
-    app.container
-      .resolve(auditServiceToken)
-      .registerCapturePolicyProvider(readPolicy);
   const resolve = vi.fn(() => undefined);
   const declared = {
     action: 'explicit',
@@ -458,12 +599,6 @@ it('honors explicit declarations before guards and uses inference only for suppo
   child.get('/read', describeRoute({ operationId: 'read' }), (context) =>
     context.body(null, 204),
   );
-  child.post(
-    '/export',
-    describeAudit(false),
-    describeRoute({ operationId: 'export' }),
-    (context) => context.body(null, 204),
-  );
   router.route('/mounted', child);
   for (const { app } of [first, second, disabled, noDestinations])
     app.addRoutes(defineApiRoutes(() => router));
@@ -480,12 +615,10 @@ it('honors explicit declarations before guards and uses inference only for suppo
         ])
           await app.fetch(request(`mounted/${suffix}`, {}));
         await app.fetch(new Request('http://localhost/api/mounted/read'));
-        await app.fetch(request('mounted/export', {}));
         await app.fetch(request('mounted/missing', {}));
       }),
     );
     expect(resolve).toHaveBeenCalledTimes(2);
-    expect(readPolicy).not.toHaveBeenCalled();
     expect(
       first.events.map(({ action, operationName, outcome }) => ({
         action,

@@ -54,7 +54,6 @@ it('audits forwarded settings writes and records a default-access receipt only o
           createTransport: () => ({
             write(event) {
               if (
-                'requestId' in event &&
                 rules.some(
                   ([, settings]) =>
                     event.resource === `settings:authorization.${settings}`,
@@ -179,7 +178,7 @@ it('audits forwarded settings writes and records a default-access receipt only o
             key: 'audit.operations.createRule',
           },
           status: 201,
-          targets: [{ collection, key }],
+          targets: [{ collection, key: undefined }],
         },
         {
           action: 'update',
@@ -189,8 +188,8 @@ it('audits forwarded settings writes and records a default-access receipt only o
             key: 'audit.operations.updateRule',
           },
           status: 200,
-          targets: [{ collection, key: 'renamed-rule' }],
-          source: { collection, key },
+          targets: [{ collection, key }],
+          source: undefined,
         },
         {
           action: 'delete',

@@ -177,9 +177,27 @@ A `JobExecutor` job never resolves the container: the Provider that owns the exe
 
 Use `describeAudit()` from `@nocobase/audit` on important `/api` routes. Keep the declaration alongside the route. Audit is enabled by default and records explicit declarations once you configure a destination. Automatic detection is off by default. With `audit.autoDetect: true`, documented POST, PATCH, PUT and DELETE routes without an explicit declaration use their business action or OpenAPI operation ID. A declaration wins over inference, including `describeAudit(false)`. A dynamic declaration that returns `undefined` leaves the route eligible for inference. Set `audit.enabled: false` to turn off capture and delivery.
 
-Use `target(context)` for data known before authorization, such as a path parameter. Use `resolveTargets(result, context)` to read bounded JSON copies and identify records after a successful handler, such as an ID assigned on create. Return only safe collection and key identifiers. Use `operationName` for explicit display text or a translation descriptor `{ ns, key, defaultValue }`. The coordinator stores the descriptor and a readable name in the request language or the application's default language. If the translation is missing, it uses the descriptor's default text, the OpenAPI summary, or the stable action in that order. Historical readers can show the stored name or the action when a translation is unavailable.
+Use `target(context)` for data known before authorization, such as a path parameter. Use `resolveTargets(result, context)` for safe collection and key identifiers after a successful handler. The resolver always needs to handle missing values. When capture is off, `request` and `response` are `undefined`, and only the route context and any in-process `value` the framework provides are available. Even with capture on, content type or snapshot bounds can make a body unavailable. A missing record ID is expected. If the resolver throws, the event uses the known pre-handler target, if any.
 
-Snapshots mask built-in credential fields in full. Add `redact: [{ field: 'privateValue' }, { path: 'profile.mobile' }]` for exact field names at any depth and exact dotted paths. A path such as `members.mobile` matches each array element. Use a numeric segment such as `members.0.mobile` to match a specific position. Use `captureBody: false` to omit body snapshots. With snapshots off, `resultFrom` selects a bounded response or request copy for the target resolver, or context only. Reuse the application's authenticated identity and authorization context. A dispatcher with a separate Hono context registers its forwarded routers with the API document service and calls the observer returned by `forwardedAuditContext(parent)` with the child context.
+Bodies are off by default. Opt in with `audit.captureBody: true` in the application's `config.yml` or with `captureBody: true` on a route. An explicit `false` at either level always disables body capture. Audit skips body cloning, reads and parsing when capture is off. The app validates capture configuration at startup and changes take effect after a restart.
+
+Set `redact: { fields: ['privateValue'], paths: ['profile.mobile'] }` in app config or on a route. Fields match exact names at any depth. Paths match from the root of each snapshot or structured target key. A path such as `members.mobile` matches every array element. A numeric segment such as `members.0.mobile` matches a specific position. Built-in credential masking, application rules, and route rules apply together.
+
+```ts
+import { auditRecordKey, describeAudit } from '@nocobase/audit';
+
+const auditCustomerCreation = describeAudit({
+  action: 'customer.create',
+  captureBody: true,
+  redact: { fields: ['identityNumber'], paths: ['profile.mobile'] },
+  resolveTargets: ({ response }) => {
+    const id = auditRecordKey(response, 'data', 'id');
+    return id === undefined ? undefined : { collection: 'customers', key: id };
+  },
+});
+```
+
+Use `operationName` for explicit display text or a translation descriptor `{ ns, key, defaultValue }`. Audit stores the descriptor and the explicit or default text, with the OpenAPI summary and stable action as fallbacks. History readers can localize the descriptor in the viewer's language and use the stored name or action when the translation is unavailable. Reuse the application's authenticated identity and authorization context. A dispatcher with a separate Hono context registers its forwarded routers with the API document service and calls the observer returned by `forwardedAuditContext(parent)` with the child context.
 
 The official templates install `AuditProvider` in the application composition root. A custom application must add it from `@nocobase/audit/runtime` before starting the application. A transport plugin imports its contract and token from `@nocobase/audit` and calls `container.resolve(auditServiceToken).registerDriver({ name, createTransport })` during registration or boot. Application configuration selects named `audit.transports` with `{ driver, options }`. Each named destination gets its own transport instance. Supply a synchronous factory, a `write(event, { signal })` method that honors cancellation, and optional `close()` for cleanup. Unknown driver names fail startup when audit is enabled. With no destinations the app skips capture. The built-in `file` driver writes JSON Lines and resolves relative paths under application storage. The commercial audit plugin supplies the `database` driver.
 

@@ -1,34 +1,46 @@
 import { sensitiveParameterName } from '@nocobase/secrets';
 
-export type AuditRedactRule =
-  | { readonly field: string; readonly path?: never }
-  | { readonly path: string; readonly field?: never };
+export interface AuditRedactRules {
+  /** Exact field names matched at any depth. */
+  readonly fields?: readonly string[];
+  /** Exact dotted paths relative to the object being redacted. */
+  readonly paths?: readonly string[];
+}
+
+export function validateAuditRedactRules(
+  value: unknown,
+  error: (path: string, message: string) => void,
+): void {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) {
+    error('', 'must be a mapping.');
+    return;
+  }
+  for (const [key, rules] of Object.entries(value)) {
+    if (key !== 'fields' && key !== 'paths') {
+      error(key, 'is not an audit redaction setting.');
+      continue;
+    }
+    if (rules === undefined) continue;
+    if (
+      !Array.isArray(rules) ||
+      Array.from(rules).some(
+        (rule: unknown) => typeof rule !== 'string' || !rule.trim(),
+      )
+    )
+      error(key, 'must be an array of non-blank strings.');
+  }
+}
 
 export function copyAuditRedactRules(
-  rules: readonly AuditRedactRule[],
-): readonly AuditRedactRule[] {
-  if (!Array.isArray(rules))
-    throw new TypeError('Audit redaction rules must be an array.');
-  return Object.freeze(
-    Array.from(rules, (rule: AuditRedactRule) => {
-      if (
-        !rule ||
-        Object.keys(rule).length !== 1 ||
-        !(
-          (Object.hasOwn(rule, 'field') &&
-            typeof rule.field === 'string' &&
-            rule.field.trim()) ||
-          (Object.hasOwn(rule, 'path') &&
-            typeof rule.path === 'string' &&
-            rule.path.trim())
-        )
-      )
-        throw new TypeError(
-          'An audit redaction rule requires exactly one field or path.',
-        );
-      return Object.freeze({ ...rule });
-    }),
-  );
+  rules: AuditRedactRules,
+): AuditRedactRules {
+  validateAuditRedactRules(rules, (path, message) => {
+    throw new TypeError(`redact${path ? `.${path}` : ''} ${message}`);
+  });
+  return Object.freeze({
+    fields: rules.fields && Object.freeze([...rules.fields]),
+    paths: rules.paths && Object.freeze([...rules.paths]),
+  });
 }
 
 const rawLimit = 256 * 1024;
@@ -104,11 +116,11 @@ function pathsBelow(
 /** Replace sensitive values before applying the serialized size limit. */
 export function auditSnapshot(
   value: unknown,
-  rules: readonly AuditRedactRule[] = [],
+  rules?: AuditRedactRules,
 ): unknown {
   if (value === undefined) return undefined;
-  const fields = new Set(rules.map((rule) => rule.field));
-  const paths = rules.flatMap(({ path }) => (path === undefined ? [] : [path]));
+  const fields = new Set(rules?.fields);
+  const paths = rules?.paths ?? [];
   let budget = snapshotLimit;
   const seen = new Set<object>();
   const visit = (

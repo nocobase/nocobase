@@ -1,3 +1,5 @@
+import { validateAuditRedactRules, type AuditRedactRules } from './redact.js';
+
 export interface AuditDestinationConfig {
   readonly driver: string;
   readonly options?: Readonly<Record<string, unknown>>;
@@ -6,6 +8,10 @@ export interface AuditDestinationConfig {
 export interface AuditConfig {
   readonly enabled?: boolean;
   readonly autoDetect?: boolean;
+  /** Opt in to bounded JSON snapshots. A route can opt out, and false disables them for every route. */
+  readonly captureBody?: boolean;
+  /** Applied in addition to built-in credential masking and route rules. */
+  readonly redact?: AuditRedactRules;
   readonly transports?: Readonly<Record<string, AuditDestinationConfig>>;
 }
 
@@ -35,13 +41,25 @@ export function validateAuditConfig(
     return;
   }
   for (const key of Object.keys(value)) {
-    if (!['enabled', 'autoDetect', 'transports'].includes(key))
+    if (
+      ![
+        'enabled',
+        'autoDetect',
+        'captureBody',
+        'redact',
+        'transports',
+      ].includes(key)
+    )
       error(key, 'is not an audit setting.');
   }
-  for (const key of ['enabled', 'autoDetect']) {
+  for (const key of ['enabled', 'autoDetect', 'captureBody']) {
     if (value[key] !== undefined && typeof value[key] !== 'boolean')
       error(key, 'must be a boolean.');
   }
+  if (value.redact !== undefined)
+    validateAuditRedactRules(value.redact, (path, message) =>
+      error(path ? `redact.${path}` : 'redact', message),
+    );
   if (value.transports === undefined) return;
   if (!isMapping(value.transports)) {
     error('transports', 'must be a mapping.');

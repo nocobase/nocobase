@@ -13,10 +13,10 @@ import path from 'node:path';
 import { Application } from '@nocobase/app-server/application';
 import {
   auditServiceToken,
+  defineAuditConfig,
   describeAudit,
   type AuditConfig,
   type AuditEvent,
-  type AuditTransportEvent,
 } from '../src/index.js';
 import { AppConfig, createAppPaths } from '@nocobase/app-server/config';
 import { defineApiRoutes } from '@nocobase/app-server/router';
@@ -29,12 +29,17 @@ import { expect, it, vi } from 'vitest';
 
 async function start(
   rootDir: string,
-  audit: AuditConfig,
+  audit: AuditConfig | string,
   providers: readonly ServiceProviderConstructor<Application>[] = [],
 ): Promise<Application> {
   const config = new AppConfig();
+  const defaults = defineAuditConfig();
+  if (typeof audit === 'string') config.loadFile(audit);
   await config.loadAll();
-  config.mergeDefaults({ audit: { ...audit } });
+  config.mergeDefaults({
+    audit: typeof audit === 'string' ? defaults() : audit,
+  });
+  config.defineSections(new Map([['audit', defaults.rules]]));
   const app = new Application({ config, paths: createAppPaths({ rootDir }) });
   app.addServiceProviders(providers);
   app.addServiceProvider(AuditProvider);
@@ -43,7 +48,7 @@ async function start(
       const router = new Hono();
       router.post(
         '/example',
-        describeAudit({ action: 'test:example' }),
+        describeAudit({ action: 'test:example', captureBody: true }),
         (context) => context.json({ data: 'done' }),
       );
       return router;
@@ -73,6 +78,76 @@ async function lines(file: string): Promise<AuditEvent[]> {
     .split('\n')
     .map((line) => JSON.parse(line) as AuditEvent);
 }
+
+it('applies YAML settings at startup and isolates running applications', async () => {
+  const root = await mkdtemp(path.join(tmpdir(), 'audit-config-'));
+  const configFile = path.join(root, 'config.yml');
+  const audit = `audit:
+  redact:
+    fields:
+      - privateCode
+    paths:
+      - data
+  transports:
+    file:
+      driver: file
+      options:
+        path: audit.jsonl
+`;
+  await writeFile(configFile, audit);
+  const first = await start(path.join(root, 'first'), configFile);
+  try {
+    expect((await send(first, 'before-edit')).status).toBe(200);
+    await writeFile(
+      configFile,
+      audit.replace('audit:\n', 'audit:\n  captureBody: false\n'),
+    );
+    const second = await start(path.join(root, 'second'), configFile);
+    try {
+      expect((await send(second, 'new-app')).status).toBe(200);
+      expect((await send(first, 'original-app')).status).toBe(200);
+      const [beforeEdit, originalApp] = await lines(
+        first.paths.storage('audit.jsonl'),
+      );
+      expect(beforeEdit).toMatchObject({
+        request: { password: '******' },
+        response: { data: '******' },
+      });
+      expect(originalApp).toMatchObject({
+        request: beforeEdit?.request,
+        response: beforeEdit?.response,
+      });
+      const [newApp] = await lines(second.paths.storage('audit.jsonl'));
+      expect(newApp?.request).toBeUndefined();
+      expect(newApp?.response).toBeUndefined();
+    } finally {
+      await second.shutdown();
+    }
+  } finally {
+    await first.shutdown();
+    await rm(root, { recursive: true, force: true });
+  }
+});
+
+it.each([
+  ['captureBody: "false"', 'audit.captureBody'],
+  ['redact: [{ field: "password" }]', 'audit.redact'],
+  ['redact: { fields: "password" }', 'audit.redact.fields'],
+  ['redact: { paths: ["  "] }', 'audit.redact.paths'],
+  ['redact: { fields: [12] }', 'audit.redact.fields'],
+  ['redact: { path: "data" }', 'audit.redact.path'],
+])('rejects invalid audit YAML at startup: %s', async (setting, key) => {
+  const root = await mkdtemp(path.join(tmpdir(), 'audit-config-invalid-'));
+  const configFile = path.join(root, 'config.yml');
+  await writeFile(configFile, `audit:\n  ${setting}\n`);
+  const app = await start(root, configFile);
+  try {
+    await expect(app.start()).rejects.toThrow(key);
+  } finally {
+    await app.shutdown();
+    await rm(root, { recursive: true, force: true });
+  }
+});
 
 it('appends complete private JSON lines to multiple named destinations under concurrent requests', async () => {
   const root = await mkdtemp(path.join(tmpdir(), 'audit-file-'));
@@ -156,7 +231,7 @@ it.each(['register', 'boot'] as const)(
   async (phase) => {
     const root = await mkdtemp(path.join(tmpdir(), 'audit-file-'));
     const file = path.join(root, 'storage', 'audit.jsonl');
-    const write = vi.fn((event: AuditTransportEvent) => {
+    const write = vi.fn((event: AuditEvent) => {
       Object.assign(event, { action: 'changed-by-custom' });
       throw new Error('Destination failed');
     });

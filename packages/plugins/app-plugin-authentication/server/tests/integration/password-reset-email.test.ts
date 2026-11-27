@@ -8,7 +8,7 @@ import * as appMailers from '@nocobase/app-server/mailers';
 import { MailSenderFactory } from '@nocobase/app-server/mailers';
 import { Auth } from '../../auth.js';
 import { createPasswordResetSender } from '../../reset-sender.js';
-import type { AuditTransportEvent } from '@nocobase/audit';
+import type { AuditEvent } from '@nocobase/audit';
 import {
   createStandaloneServer,
   resetServerFactory,
@@ -322,7 +322,7 @@ it.each([false, true])(
       .fn()
       .mockResolvedValue(new Response(JSON.stringify({ id: 'synthetic-id' })));
     vi.stubGlobal('fetch', fetch);
-    const events: AuditTransportEvent[] = [];
+    const events: AuditEvent[] = [];
     // Also keep the legacy delivery variant as a no-audit control.
     const app = await createTestApp({
       createServer: legacy
