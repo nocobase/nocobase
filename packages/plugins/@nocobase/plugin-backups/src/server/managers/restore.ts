@@ -240,6 +240,7 @@ export class RestoreManager {
     options?: RestoreOptions,
   ): Promise<void> {
     await this.#dbAdapter.check('restore');
+    await this.#assertPreRestoreDumpVersion();
     const extractedDir = await this.#decompressFiles(filePath, password);
     const backupFiles = await fsPromises.readdir(extractedDir);
     const dbFile = backupFiles.find((file) => file === 'data');
@@ -334,6 +335,24 @@ export class RestoreManager {
           restoreClientVersion: restoreMajorVersion,
         }),
       );
+    }
+  }
+
+  async #assertPreRestoreDumpVersion(): Promise<void> {
+    if (this.#dbAdapter.dbOpts.dialect !== 'postgres') {
+      return;
+    }
+    const localDumpVersion = await this.#dbAdapter.clientVersion('backup');
+    const localDumpMajor =
+      typeof localDumpVersion === 'string' &&
+      localDumpVersion.trim().match(/^pg_dump \(PostgreSQL\) (\d+)(?:\.\d+)*(?=\s|$)/)?.[1];
+    const serverVersion = await this.#dbAdapter.serverVersion?.();
+    const serverMajor = serverVersion?.trim().match(/^(\d+)(?:\.|\s|$)/)?.[1];
+    if (!localDumpMajor || !serverMajor) {
+      throw new Error(this.#t('ERROR_PG_SAFETY_BACKUP_VERSION_UNKNOWN'));
+    }
+    if (Number(localDumpMajor) < Number(serverMajor)) {
+      throw new Error(this.#t('ERROR_PG_SAFETY_BACKUP_VERSION', { localDumpMajor, serverMajor }));
     }
   }
 
