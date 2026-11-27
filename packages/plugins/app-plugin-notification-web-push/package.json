@@ -9,6 +9,7 @@
     "node": ">=24.0.0"
   },
   "nocobase": {
+    "pluginPolicy": "preinstall-only",
     "title": {
       "en-US": "Web push",
       "zh-CN": "浏览器推送"

@@ -8,6 +8,17 @@
   "engines": {
     "node": ">=24.0.0"
   },
+  "nocobase": {
+    "pluginPolicy": "preinstall-only",
+    "title": {
+      "en-US": "Verification",
+      "zh-CN": "身份验证"
+    },
+    "description": {
+      "en-US": "Require users to verify their identity again before sensitive operations.",
+      "zh-CN": "在用户执行敏感操作前进行二次验证。"
+    }
+  },
   "sideEffects": false,
   "exports": {
     "./client": {

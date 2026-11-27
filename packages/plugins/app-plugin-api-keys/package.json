@@ -9,6 +9,7 @@
     "node": ">=24.0.0"
   },
   "nocobase": {
+    "pluginPolicy": "preinstall-and-enable",
     "title": {
       "en-US": "API keys",
       "zh-CN": "API 密钥"

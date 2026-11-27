@@ -10,6 +10,7 @@
     "node": ">=24.0.0"
   },
   "nocobase": {
+    "pluginPolicy": "preinstall-and-enable",
     "title": {
       "en-US": "Roles & permissions",
       "zh-CN": "角色与权限"
