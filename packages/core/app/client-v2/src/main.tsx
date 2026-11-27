@@ -117,6 +117,7 @@ const cdnBase = window.__webpack_public_path__;
 __webpack_public_path__ = resolveRuntimeAssetPublicPath(cdnBase, v2PublicPath, getBuildAssetDir());
 
 const app = new Application({
+  initializeAuthFromUrl: true,
   publicPath: v2PublicPath,
   apiClient: {
     shareToken: parseShareToken(window.__nocobase_api_client_share_token__ || import.meta.env.API_CLIENT_SHARE_TOKEN),
