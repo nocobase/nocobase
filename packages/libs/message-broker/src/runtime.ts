@@ -51,7 +51,19 @@ export interface MissingResource {
 export type DeliveryOutcome =
   | { readonly kind: 'ack' }
   | { readonly kind: 'retry'; readonly delay: number }
-  | { readonly kind: 'deadLetter'; readonly reason: string };
+  | {
+      readonly kind: 'deadLetter';
+      /** May contain application data. Use the failure category in logs. */
+      readonly reason: string;
+      readonly failure?:
+        | 'handlerError'
+        | 'retryExhausted'
+        | 'handlerRejected'
+        | 'decodeError'
+        | 'schemaMismatch'
+        | 'schemaError'
+        | 'unsupportedRetryDelay';
+    };
 
 export interface Delivery {
   /** 1 for the first delivery of the message. */

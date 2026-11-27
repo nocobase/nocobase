@@ -5,6 +5,7 @@ import {
   createMessageBrokerService,
   MissingTopologyError,
   rawCodec,
+  reject,
   retry,
   UnsupportedCapabilityError,
   validateMessageBrokerConfig,
@@ -237,51 +238,79 @@ describe('subscription attempt defaults', () => {
     expect(attempts).toEqual([1]);
   });
 
-  it('keeps an interrupted delivery eligible for retry at the adapter limit of one', async () => {
-    const inMemory = createInMemoryBroker();
-    const service = create({
-      default: 'custom',
-      backends: { custom: { adapter: 'custom' } },
-    });
-    const started = Promise.withResolvers<void>();
-    const interrupted = Promise.withResolvers<DeliveryOutcome>();
-    service.registerImplementation('custom', {
-      ...inMemory,
-      defaultMaxAttempts: () => 1,
-      createRuntime(context) {
-        const runtime = inMemory.createRuntime(context);
-        return {
-          open: () => runtime.open(),
-          checkTopology: (bindings) => runtime.checkTopology(bindings),
-          publish: (binding, message) => runtime.publish(binding, message),
-          close: () => runtime.close(),
-          startConsuming: (binding, deliver) =>
-            runtime.startConsuming(binding, async (message, delivery) => {
-              const outcome = await deliver(message, delivery);
-              interrupted.resolve(outcome);
-              return outcome;
-            }),
-        };
-      },
-    });
-    service.subscription('worker').consume(async (_message, { signal }) => {
-      const abort = new Promise<never>((_resolve, reject) => {
-        signal.addEventListener('abort', () => reject(signal.reason), {
-          once: true,
-        });
+  it.each([
+    { behavior: 'throw', inbox: false },
+    { behavior: 'retry', inbox: false },
+    { behavior: 'retry', inbox: true },
+    { behavior: 'reject', inbox: false },
+    { behavior: 'reject', inbox: true },
+  ] as const)(
+    'settles shutdown $behavior at the adapter limit of one (inbox $inbox)',
+    async ({ behavior, inbox }) => {
+      const inMemory = createInMemoryBroker();
+      const service = create({
+        default: 'custom',
+        backends: { custom: { adapter: 'custom' } },
       });
-      started.resolve();
-      return await abort;
-    });
-    await service.setup();
-    await service.publisher('worker').publish({ body: {} });
-    await started.promise;
-    await service.shutdown();
-    await expect(interrupted.promise).resolves.toEqual({
-      kind: 'retry',
-      delay: 0,
-    });
-  });
+      const started = Promise.withResolvers<void>();
+      const interrupted = Promise.withResolvers<DeliveryOutcome>();
+      service.registerImplementation('custom', {
+        ...inMemory,
+        defaultMaxAttempts: () => 1,
+        createRuntime(context) {
+          const runtime = inMemory.createRuntime(context);
+          return {
+            open: () => runtime.open(),
+            checkTopology: (bindings) => runtime.checkTopology(bindings),
+            publish: (binding, message) => runtime.publish(binding, message),
+            close: () => runtime.close(),
+            startConsuming: (binding, deliver) =>
+              runtime.startConsuming(binding, async (message, delivery) => {
+                const outcome = await deliver(message, delivery);
+                interrupted.resolve(outcome);
+                return outcome;
+              }),
+          };
+        },
+      });
+      const commit = vi.fn();
+      if (inbox) {
+        service.registerInbox({
+          async process(_subscription, _messageId, run) {
+            const value = await run('tx');
+            commit();
+            return { duplicate: false, value };
+          },
+        });
+      }
+      service
+        .subscription('worker', { inbox })
+        .consume(async (_message, { signal }) => {
+          const abort = new Promise<void>((resolve) => {
+            signal.addEventListener('abort', () => resolve(), { once: true });
+          });
+          started.resolve();
+          await abort;
+          if (behavior === 'throw') throw signal.reason;
+          if (behavior === 'reject') return reject('invalid business event');
+          return retry({ delay: 60_000 });
+        });
+      await service.setup();
+      await service.publisher('worker').publish({ body: {} });
+      await started.promise;
+      await service.shutdown();
+      await expect(interrupted.promise).resolves.toEqual(
+        behavior === 'reject'
+          ? {
+              kind: 'deadLetter',
+              failure: 'handlerRejected',
+              reason: 'invalid business event',
+            }
+          : { kind: 'retry', delay: 0 },
+      );
+      expect(commit).not.toHaveBeenCalled();
+    },
+  );
 
   it('rejects an invalid adapter default before opening the backend', async () => {
     const service = create({
@@ -651,6 +680,38 @@ describe('outbox and inbox', () => {
 });
 
 describe('inMemory backend', () => {
+  it('logs handler failure context without the error or body', async () => {
+    const warn = vi.fn();
+    const inMemory = createInMemoryBroker();
+    const service = createMessageBrokerService(memory, {
+      appName: 'test',
+      logger: { ...silentLogger, warn },
+      inMemory,
+    });
+    services.push(service);
+    service.subscription('orders').consume(() => {
+      throw new Error(
+        'https://example.invalid/file?sig=fixture-signature fixture-body',
+      );
+    });
+    await service.setup();
+    await service
+      .publisher('orders')
+      .publish({ body: 'fixture-body', messageId: 'order-event' });
+    await waitFor(() => inMemory.deadLetters('orders').length === 1);
+    expect(warn.mock.calls).toEqual(
+      [1, 2, 3].map((attempt) => [
+        {
+          backend: 'memory',
+          subscription: 'orders',
+          messageId: 'order-event',
+          attempt,
+        },
+        'Message broker handler failed.',
+      ]),
+    );
+  });
+
   it('keeps a delayed retry due at its time and first in line across unsubscribe', async () => {
     vi.useFakeTimers();
     try {

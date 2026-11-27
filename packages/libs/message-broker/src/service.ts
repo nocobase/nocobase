@@ -715,12 +715,14 @@ class DefaultMessageBrokerService implements MessageBrokerService {
     const usage = `subscription "${subscription.name}"`;
     const retryOutcome = (
       attempt: number,
+      failure: 'handlerError' | 'retryExhausted',
       reason: string,
       delay: number | undefined,
     ): DeliveryOutcome => {
       if (attempt >= binding.maxAttempts) {
         return {
           kind: 'deadLetter',
+          failure,
           reason: `Gave up after ${attempt} attempt(s): ${reason}`,
         };
       }
@@ -732,7 +734,12 @@ class DefaultMessageBrokerService implements MessageBrokerService {
     ): DeliveryOutcome => {
       if (result === undefined || result.kind === 'ack') return { kind: 'ack' };
       if (result.kind === 'reject')
-        return { kind: 'deadLetter', reason: result.reason };
+        return {
+          kind: 'deadLetter',
+          failure: 'handlerRejected',
+          reason: result.reason,
+        };
+      if (this.abort.signal.aborted) return { kind: 'retry', delay: 0 };
       if (
         result.delay !== undefined &&
         result.delay > 0 &&
@@ -748,9 +755,18 @@ class DefaultMessageBrokerService implements MessageBrokerService {
           { ...log, capability: 'delayedRetry' },
           error.message,
         );
-        return { kind: 'deadLetter', reason: error.message };
+        return {
+          kind: 'deadLetter',
+          failure: 'unsupportedRetryDelay',
+          reason: error.message,
+        };
       }
-      return retryOutcome(attempt, 'the handler asked to retry', result.delay);
+      return retryOutcome(
+        attempt,
+        'retryExhausted',
+        'the handler asked to retry',
+        result.delay,
+      );
     };
     return async (encoded, { attempt }) => {
       const handler = subscription.handler;
@@ -762,6 +778,7 @@ class DefaultMessageBrokerService implements MessageBrokerService {
       } catch (error) {
         return {
           kind: 'deadLetter',
+          failure: 'decodeError',
           reason: `Cannot decode the body: ${errorMessage(error)}`,
         };
       }
@@ -771,6 +788,7 @@ class DefaultMessageBrokerService implements MessageBrokerService {
           if (result.issues) {
             return {
               kind: 'deadLetter',
+              failure: 'schemaMismatch',
               reason: `The body does not match the schema: ${result.issues.map((issue) => issue.message).join('; ')}`,
             };
           }
@@ -778,6 +796,7 @@ class DefaultMessageBrokerService implements MessageBrokerService {
         } catch (error) {
           return {
             kind: 'deadLetter',
+            failure: 'schemaError',
             reason: `Schema validation failed: ${errorMessage(error)}`,
           };
         }
@@ -818,12 +837,16 @@ class DefaultMessageBrokerService implements MessageBrokerService {
         if (error instanceof SettleWithoutCommit)
           return settle(error.result, attempt);
         if (this.abort.signal.aborted) return { kind: 'retry', delay: 0 };
-        const reason = errorMessage(error);
         this.logger.warn(
-          { ...log, messageId: encoded.messageId, attempt, error: reason },
+          { ...log, messageId: encoded.messageId, attempt },
           'Message broker handler failed.',
         );
-        return retryOutcome(attempt, reason, undefined);
+        return retryOutcome(
+          attempt,
+          'handlerError',
+          errorMessage(error),
+          undefined,
+        );
       }
     };
   }
