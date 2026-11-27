@@ -1,5 +1,41 @@
 # @nocobase/app-plugin-api-keys
 
+## 1.0.0-beta.29
+
+### Patch Changes
+
+- 52d0b0d: Configure audit capture for application operations and send events to multiple named destinations, including JSON Lines files. Configuring a destination enables explicitly declared audit operations by default. Audit uses the application authentication settings for its trusted proxies and forwarded IP headers.
+
+  The official templates assemble auditing with `AuditProvider` and ship the file driver. Custom application composition roots can add the provider and the audit configuration factory when they use audit routes or transports. Applications using only `@nocobase/app-server` can start without the audit package.
+
+  Built-in audit operations store English default names and translation keys. The official templates load Repository labels in the viewer's language, and JSON Lines keeps the original event names. Separate labels identify assigning and removing permission sets and enabling and disabling users and keys.
+
+- 1b92cdb: Group Notifications and Mailbox connections under Communications in system settings and list Authentication before API keys.
+- 1b92cdb: Use ampersands in English settings navigation labels, including “Roles & permissions” and “Workflows & automation”.
+  Use “角色与权限” for the Simplified Chinese roles and permissions label.
+- 78bdca8: Use “Authentication” in English and “身份认证” in Simplified Chinese in navigation, page headings and permission settings.
+- Updated dependencies [cc0bf33]
+- Updated dependencies [4561d5f]
+- Updated dependencies [87e3dac]
+- Updated dependencies [52d0b0d]
+- Updated dependencies [c12d990]
+- Updated dependencies [1b92cdb]
+- Updated dependencies [1b92cdb]
+- Updated dependencies [1b92cdb]
+- Updated dependencies [78bdca8]
+- Updated dependencies [91a8ff2]
+- Updated dependencies [87e3dac]
+- Updated dependencies [9acf418]
+  - @nocobase/app-server@5.0.0-beta.12
+  - @nocobase/db@1.0.0-beta.31
+  - @nocobase/app-plugin-notification@2.0.0-beta.11
+  - @nocobase/audit@0.1.0-beta.0
+  - @nocobase/authorization@1.0.0-beta.18
+  - @nocobase/app-plugin-authentication@2.0.0-beta.26
+  - @nocobase/app-plugin-authorization@1.0.0-beta.41
+  - @nocobase/app-client@4.0.0-beta.14
+  - @nocobase/app-plugin-scheduler@1.0.0-beta.27
+
 ## 1.0.0-beta.28
 
 ### Minor Changes

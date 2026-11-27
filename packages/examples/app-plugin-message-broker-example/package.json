@@ -2,7 +2,7 @@
   "name": "@nocobase/app-plugin-message-broker-example",
   "displayName": "Message Broker Example App Plugin",
   "description": "Example app plugin that publishes an order event in the business transaction and consumes it in independent subscriptions that update business tables through the inbox.",
-  "version": "0.0.1",
+  "version": "0.1.0-beta.0",
   "type": "module",
   "prettier": "@nocobase/dev-config/prettier",
   "engines": {

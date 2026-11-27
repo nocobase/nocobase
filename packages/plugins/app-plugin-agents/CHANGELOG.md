@@ -1,5 +1,41 @@
 # @nocobase/app-plugin-agents
 
+## 2.0.0-beta.21
+
+### Minor Changes
+
+- 2b77e0d: Let an application explain why a protected skill is read only through `SkillSettings.useReadOnlyNote`.
+- 2b77e0d: Skills expose their `SKILL.md` front matter `metadata` and who wrote their current version (`updatedById`, null for the application), and an application may bind `skillPolicyToken` to keep skills from being edited, deleted or attached to a scope's defaults through the admin API (403 `SKILL_PROTECTED`). A skill's view reports `canDelete`, checking a scope's new attachments reads only those skills, and the skill page's settings extension receives the skill and may hide the team default mount.
+- 5e73680: An application may bind `usagePolicyToken` to decide who sees every run in the usage reports (`GET /api/agents/usage` and `/usage/models`); everyone it refuses sees the runs they started or own. Unbound, a reader of usage (`agents.prices` read) still sees every run.
+
+### Patch Changes
+
+- 55277b8: Improve agent availability lookup times on installations with a large run history.
+- 5e73680: Expose the data hooks, cache keys, and runtime helpers for application-owned Agent management pages. Remove the scope UI exports, the exported Agent list wrapper, and the skill list customization hook. Applications can continue to use the plugin's built-in management pages.
+- 11f5151: Show online agent conversations and their token costs by agent in Usage, including model usage received before a turn was stopped or interrupted.
+- 26ba243: Reuse runner selection diagnostics and prepared subject data for model fallback. Read PostgreSQL collection definitions, including those declared by subjects and mounts, before locking the agent. Abort cancelled run claims before dispatch. Prepare and batch knowledge snapshot reads separately from recording the snapshot.
+- Updated dependencies [2b77e0d]
+- Updated dependencies [cc0bf33]
+- Updated dependencies [4561d5f]
+- Updated dependencies [52d0b0d]
+- Updated dependencies [c12d990]
+- Updated dependencies [1b92cdb]
+- Updated dependencies [1b92cdb]
+- Updated dependencies [1b92cdb]
+- Updated dependencies [78bdca8]
+- Updated dependencies [87e3dac]
+- Updated dependencies [9acf418]
+  - @nocobase/agent-protocol@0.1.0-beta.24
+  - @nocobase/app-cli@1.0.0-beta.41
+  - @nocobase/app-server@5.0.0-beta.12
+  - @nocobase/db@1.0.0-beta.31
+  - @nocobase/authorization@1.0.0-beta.18
+  - @nocobase/app-plugin-authentication@2.0.0-beta.26
+  - @nocobase/app-plugin-authorization@1.0.0-beta.41
+  - @nocobase/app-client@4.0.0-beta.14
+  - @nocobase/app-cli-client@0.1.0-beta.27
+  - @nocobase/app-plugin-file@1.0.0-beta.34
+
 ## 2.0.0-beta.20
 
 ### Minor Changes

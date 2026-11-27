@@ -1,5 +1,15 @@
 # @nocobase/agent-runner
 
+## 0.1.0-beta.35
+
+### Patch Changes
+
+- 1f0b485: Detect the DeepSeek API key saved in the dsh Web settings (`$DSH_HOME/.credentials.yaml`, `~/.dsh` by default) in addition to `DEEPSEEK_API_KEY`, so a runner whose dsh already has a saved key no longer reports that it needs login.
+- 051d5e8: Fix missing OpenCode models when a runner detects them before OpenCode 2.4 finishes loading its plugins.
+- Updated dependencies [2b77e0d]
+  - @nocobase/agent-protocol@0.1.0-beta.24
+  - @nocobase/app-cli-client@0.1.0-beta.27
+
 ## 0.1.0-beta.34
 
 ### Patch Changes

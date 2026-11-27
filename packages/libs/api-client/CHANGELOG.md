@@ -1,5 +1,11 @@
 # @nocobase/api-client
 
+## 1.0.0-beta.7
+
+### Patch Changes
+
+- dd0f4bd: Preserve the Retry-After response header on API errors so callers can display when to retry.
+
 ## 1.0.0-beta.6
 
 ### Minor Changes
