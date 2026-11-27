@@ -75,14 +75,18 @@ describe('api', () => {
           type: 'date',
           name: 'createdAt',
         },
+        {
+          name: 'day',
+          type: 'dateOnly',
+        },
       ],
     });
     await db.sync();
     repo = db.getRepository('chart_test');
     await repo.create({
       values: [
-        { id: 1, price: 1, count: 1, title: 'title1', createdAt: '2023-02-02' },
-        { id: 2, price: 2, count: 2, title: 'title2', createdAt: '2023-01-01' },
+        { id: 1, price: 1, count: 1, title: 'title1', createdAt: '2023-02-02', day: '2023-07-19' },
+        { id: 2, price: 2, count: 2, title: 'title2', createdAt: '2023-01-01', day: '2023-07-20' },
       ],
     });
 
@@ -251,6 +255,23 @@ describe('api', () => {
     expect(response.statusCode).toBe(200);
     expect(response.body.data.map((row: { Title: string }) => row.Title).sort()).toEqual(['title1', 'title2']);
   });
+
+  it.each(['+00:00', '+01:00', '+08:00', '-07:00'])(
+    'keeps date-only filters on their calendar day in %s',
+    async (timezone) => {
+      const response = await requestChart(memberToken, 'member', {
+        mode: 'builder',
+        variableResolution: 'legacy-schema',
+        collection: 'chart_test',
+        dataSource: 'main',
+        dimensions: [{ alias: 'Title', field: ['title'] }],
+        measures: [{ alias: 'Price', field: ['price'] }],
+        filter: { day: { $dateOn: '2023-07-20' } },
+      }).set('X-Timezone', timezone);
+      expect(response.statusCode).toBe(200);
+      expect(response.body.data).toEqual([expect.objectContaining({ Title: 'title2' })]);
+    },
+  );
 
   test('keeps row-level ACL filters in the explicit legacy lane', async () => {
     const response = await requestChart(limitedToken, 'chart-limited', {
