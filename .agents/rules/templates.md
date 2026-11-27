@@ -20,7 +20,7 @@ Each template's `AGENTS.md` follows the same size rule as this repository's: it 
 
 ## Product plugin policy
 
-Every package directly under `packages/plugins/` declares `nocobase.pluginPolicy` in its package manifest. Use `preinstall-and-enable` for plugins installed and registered by default, `preinstall-only` for installed plugins that require explicit registration, `do-not-preinstall` for plugins installed separately, and `deprecated` for retired plugins. Use the Default template’s dependencies and plugin registration lists when classifying existing plugins. Run `pnpm plugins:check` to verify the declarations against Default’s dependencies and its client, server and CLI registration lists. Enabled plugins belong in `dependencies`, preinstalled-only plugins in `devDependencies`, and separately installed or deprecated plugins in neither.
+Every package directly under `packages/plugins/` declares `nocobase.pluginPolicy` in its package manifest. Both `nocobase.title` and `nocobase.description` must contain non-empty strings for `en-US` and `zh-CN`. Use `preinstall-and-enable` for plugins installed and registered by default, `preinstall-only` for installed plugins that require explicit registration, `do-not-preinstall` for plugins installed separately, and `deprecated` for retired plugins. Use the Default template’s dependencies and plugin registration lists when classifying existing plugins. Run `pnpm plugins:check` to verify the declarations against Default’s dependencies and its client, server and CLI registration lists. Enabled plugins belong in `dependencies`, preinstalled-only plugins in `devDependencies`, and separately installed or deprecated plugins in neither.
 
 ## Business Permissions of a Plugin
 

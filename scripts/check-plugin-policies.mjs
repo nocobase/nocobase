@@ -13,13 +13,21 @@ const expectedSection = new Map([
 ]);
 
 export function policyErrors(plugin, template, registrations) {
+  const errors = [];
+  for (const field of ['title', 'description']) {
+    for (const locale of ['en-US', 'zh-CN']) {
+      const value = plugin.nocobase?.[field]?.[locale];
+      if (typeof value !== 'string' || !value.trim())
+        errors.push(`nocobase.${field}.${locale} must be a non-empty string`);
+    }
+  }
   const policy = plugin.nocobase?.pluginPolicy;
   if (!expectedSection.has(policy))
     return [
+      ...errors,
       `nocobase.pluginPolicy must be one of: ${[...expectedSection.keys()].join(', ')}`,
     ];
 
-  const errors = [];
   const expected = expectedSection.get(policy);
   const sections = ['dependencies', 'devDependencies'].filter((key) =>
     Object.hasOwn(template[key] ?? {}, plugin.name),

@@ -17,7 +17,11 @@ function check(policy, sections, registered = []) {
     {
       name,
       exports: { './server': {}, './client': {} },
-      nocobase: { pluginPolicy: policy },
+      nocobase: {
+        pluginPolicy: policy,
+        title: { 'en-US': 'Knowledge', 'zh-CN': '知识库' },
+        description: { 'en-US': 'Search documents', 'zh-CN': '搜索文档' },
+      },
     },
     template,
     registrations,
@@ -62,4 +66,25 @@ test('excluded and deprecated plugins are absent; missing and unknown policies f
   }
   for (const policy of [undefined, 'unknown'])
     assert.match(check(policy, [])[0], /nocobase.pluginPolicy/);
+});
+
+test('requires nonblank English and Chinese titles and descriptions', () => {
+  const errors = policyErrors(
+    {
+      name,
+      nocobase: {
+        pluginPolicy: 'do-not-preinstall',
+        title: { 'en-US': '   ', 'zh-CN': 42 },
+        description: 'Search documents',
+      },
+    },
+    {},
+    {},
+  );
+  assert.deepEqual(errors, [
+    'nocobase.title.en-US must be a non-empty string',
+    'nocobase.title.zh-CN must be a non-empty string',
+    'nocobase.description.en-US must be a non-empty string',
+    'nocobase.description.zh-CN must be a non-empty string',
+  ]);
 });

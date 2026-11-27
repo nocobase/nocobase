@@ -9,7 +9,15 @@
     "node": ">=24.0.0"
   },
   "nocobase": {
-    "pluginPolicy": "preinstall-only"
+    "pluginPolicy": "preinstall-only",
+    "title": {
+      "en-US": "Verification",
+      "zh-CN": "身份验证"
+    },
+    "description": {
+      "en-US": "Verify phone numbers and use one-time codes for additional identity checks.",
+      "zh-CN": "验证手机号码，并使用一次性验证码进行额外的身份核验。"
+    }
   },
   "sideEffects": false,
   "exports": {
