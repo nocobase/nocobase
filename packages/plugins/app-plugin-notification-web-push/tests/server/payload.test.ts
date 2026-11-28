@@ -6,11 +6,7 @@ import {
   MAX_WEB_PUSH_PAYLOAD_BYTES,
   pushPayload,
 } from '../../server/service.js';
-import {
-  createBadgeVersions,
-  nextBadgeVersion,
-} from '../../server/badge.js';
-import { MemoryCounter } from '@nocobase/caching';
+import { createBadgeVersions, nextBadgeVersion } from '../../server/badge.js';
 
 const message = {
   to: [{ id: 'device', userId: 'alice' }],
@@ -122,7 +118,14 @@ it('gives reads in the same millisecond distinct, increasing badge versions', ()
 it('orders badge versions taken on instances sharing a counter, also in the same millisecond', async () => {
   vi.useFakeTimers({ now: 1_800_000_000_000 });
   try {
-    const counter = new MemoryCounter({ namespace: 'badge', maxSize: 100 });
+    // The application's caching counter, shared by both instances.
+    const values = new Map<string, number>();
+    const counter = {
+      increment: async (key: string, amount = 1) => {
+        values.set(key, (values.get(key) ?? 0) + amount);
+        return values.get(key)!;
+      },
+    };
     const first = createBadgeVersions(counter);
     const second = createBadgeVersions(counter);
     const versions = [
