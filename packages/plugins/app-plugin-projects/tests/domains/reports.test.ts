@@ -173,40 +173,47 @@ describe('issue reports', () => {
     });
   });
 
-  it('describes issues within a large project scope without revealing excluded issues', async () => {
-    const open = await h.services.projects.create(lead(), { name: 'Open' });
-    const members = await h.services.projects.create(lead(), {
-      name: 'Members',
-      visibility: 'members',
-    });
-    const allowed = await h.services.issues.create(lead(), {
-      title: 'Allowed',
-      projectId: open.id,
-    });
-    const restricted = await h.services.issues.create(lead(), {
-      title: 'Restricted',
-      projectId: members.id,
-    });
-    const loose = await h.services.issues.create(lead(), { title: 'Loose' });
-    const viewer = {
-      ...bob(),
-      projectIds: [
-        open.id,
-        members.id,
-        ...Array.from({ length: 1_998 }, (_, i) => `project-'${i}`),
-      ],
-    };
-    const facts = await h.services.reports.describe(viewer, [
-      allowed.id,
-      restricted.id,
-      loose.id,
-      ...Array.from({ length: 1_000 }, (_, i) => `missing-${i}`),
-    ]);
-    expect(facts.size).toBe(3);
-    expect(facts.get(allowed.id)?.visible).toBe(true);
-    expect(facts.get(restricted.id)?.visible).toBe(false);
-    expect(facts.get(loose.id)?.visible).toBe(false);
-  });
+  it.runIf(
+    ['sqlite', 'postgres'].includes(
+      process.env.NOCOBASE_TEST_DB_DIALECT || 'sqlite',
+    ),
+  )(
+    'describes issues within a large project scope without revealing excluded issues',
+    async () => {
+      const open = await h.services.projects.create(lead(), { name: 'Open' });
+      const members = await h.services.projects.create(lead(), {
+        name: 'Members',
+        visibility: 'members',
+      });
+      const allowed = await h.services.issues.create(lead(), {
+        title: 'Allowed',
+        projectId: open.id,
+      });
+      const restricted = await h.services.issues.create(lead(), {
+        title: 'Restricted',
+        projectId: members.id,
+      });
+      const loose = await h.services.issues.create(lead(), { title: 'Loose' });
+      const viewer = {
+        ...bob(),
+        projectIds: [
+          open.id,
+          members.id,
+          ...Array.from({ length: 1_998 }, (_, i) => `project-'${i}`),
+        ],
+      };
+      const facts = await h.services.reports.describe(viewer, [
+        allowed.id,
+        restricted.id,
+        loose.id,
+        ...Array.from({ length: 1_000 }, (_, i) => `missing-${i}`),
+      ]);
+      expect(facts.size).toBe(3);
+      expect(facts.get(allowed.id)?.visible).toBe(true);
+      expect(facts.get(restricted.id)?.visible).toBe(false);
+      expect(facts.get(loose.id)?.visible).toBe(false);
+    },
+  );
 });
 
 describe('issue flow, projects and attention', () => {

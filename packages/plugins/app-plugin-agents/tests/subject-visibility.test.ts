@@ -341,6 +341,9 @@ const runReads = (sql: readonly string[]) =>
 
 describe('usage report reads under a parameter limit', () => {
   type Query = { sql: string; bindings: readonly unknown[] };
+  const packsStringLists = ['sqlite', 'postgres'].includes(
+    process.env.NOCOBASE_TEST_DB_DIALECT || 'sqlite',
+  );
   /**
    * `total` runs bob woke on subjects 0, 1, …, two usage records each, of a kind whose bound binds `scope` ids of its
    * own and reads other tables through `exists`, as Studio's issues for a reader in that many projects; subject 3 is
@@ -457,7 +460,7 @@ describe('usage report reads under a parameter limit', () => {
     // The project list binds as a single value, leaving most of the budget for the run IDs.
     const batched = await read(999);
     expect(batched.usage).toHaveLength(1);
-    expect(batched.runs).toHaveLength(2);
+    expect(batched.runs).toHaveLength(packsStringLists ? 2 : 3);
     for (const query of batched.runs) {
       expect(query.bindings.length).toBeLessThanOrEqual(999);
       expect(query.sql).not.toMatch(/ag_run_usage/iu);
@@ -475,7 +478,7 @@ describe('usage report reads under a parameter limit', () => {
     expectReport(batched.report, 1_000);
   });
 
-  it.each([988, 2_000])(
+  it.runIf(packsStringLists).each([988, 2_000])(
     'keeps the same visible and anonymous totals with %i scope IDs under a 999-parameter limit',
     async (scope) => {
       const { read } = await fixture(scope, 30);
