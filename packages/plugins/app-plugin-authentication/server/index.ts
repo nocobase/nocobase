@@ -26,14 +26,17 @@ export type { AuthConfig, AuthEmailConfig } from './config.js';
 export type { PasswordResetDiagnosis } from './password-reset.js';
 export * from './sign-in-methods.js';
 export type {
+  AuthenticationProviderSummary,
   AuthenticationSettings,
   AuthenticationSettingsIssue,
   AuthenticationSignInMethod,
+  ConfigOrigin,
+  ConfigSource,
   PasswordResetSenderDescription,
   SettingValue,
-} from './settings.js';
+  SignInMethodText,
+} from '../shared/settings.js';
 export {
   authenticationSettingsServiceToken,
-  type AuthenticationProviderSummary,
   type AuthenticationSettingsService,
 } from './settings-service.js';

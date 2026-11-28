@@ -1,14 +1,14 @@
 import { useApiClient } from '@nocobase/app-client';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
-import type { DemoDataStatus } from '../shared/data.js';
+import type { DemoDataStatus } from '../shared/data-status.js';
 
 export type {
   DemoAccountSummary,
   DemoDataOperation,
   DemoDataState,
   DemoDataStatus,
-} from '../shared/data.js';
+} from '../shared/data-status.js';
 
 export interface DemoDataControls {
   /** Null until the first answer; stays at the last answer while a later request fails. */

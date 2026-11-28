@@ -1,16 +1,18 @@
 import { useApiClient } from '@nocobase/app-client';
 import { useCallback, useEffect, useState } from 'react';
 
-import type { AuthenticationSettings } from '../../server/settings.js';
-import type { AuthenticationProviderSummary } from '../../server/settings-service.js';
+import type {
+  AuthenticationProviderSummary,
+  AuthenticationSettings,
+} from '../../shared/settings.js';
 
 export type {
+  AuthenticationProviderSummary,
   AuthenticationSettings,
   AuthenticationSignInMethod,
+  ConfigOrigin,
   SettingValue,
-} from '../../server/settings.js';
-export type { AuthenticationProviderSummary } from '../../server/settings-service.js';
-export type { ConfigOrigin } from '../../server/sign-in-methods.js';
+} from '../../shared/settings.js';
 
 export interface Query<TData> {
   readonly data?: TData;
