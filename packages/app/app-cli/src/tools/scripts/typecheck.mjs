@@ -1,10 +1,9 @@
-import path from 'node:path';
 import spawn from 'cross-spawn';
 
 import { buildNodeOptions } from './utils/build-workspace.mjs';
 import { resolveTypeScript } from './utils/typescript.mjs';
 
-const rootDir = path.resolve(process.env.NOCOBASE_TOOL_ROOT || process.cwd());
+const rootDir = process.cwd();
 const compiler = resolveTypeScript(rootDir);
 process.env.NODE_OPTIONS = buildNodeOptions(process.env.NODE_OPTIONS);
 

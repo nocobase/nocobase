@@ -6312,7 +6312,7 @@ importers:
         specifier: workspace:*
         version: link:../../libs/session
       '@nocobase/typescript7':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../tools/typescript7
       '@playwright/test':
         specifier: 'catalog:'
@@ -6721,7 +6721,7 @@ importers:
         specifier: workspace:*
         version: link:../../libs/session
       '@nocobase/typescript7':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../tools/typescript7
       '@playwright/test':
         specifier: 'catalog:'

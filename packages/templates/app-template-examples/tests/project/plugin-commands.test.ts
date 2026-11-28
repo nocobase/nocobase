@@ -39,6 +39,10 @@ describe('application scripts', () => {
     expect(scripts[name]).toBe(command);
   });
 
+  it('keeps typecheck as a standalone quality script', () => {
+    expect(scripts['typecheck']).toBe('nocobase-typecheck');
+  });
+
   it('keeps no alias for a CLI command', () => {
     const aliases = Object.entries(scripts).filter(
       ([name, command]) =>
