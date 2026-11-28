@@ -27,6 +27,12 @@ export interface WebPushMessage extends PushDeliveryOptions {
   body?: string;
   url: string;
   dedupeKey: string;
+  /** The count the installed app's icon badge shows once this push arrives; 0 clears it. */
+  badge?: number;
+  /** The application's durable revision for this exact count, shared with the page. */
+  badgeVersion?: number;
+  /** The account or other application-defined scope of the count and its revisions. */
+  badgeScope?: string;
   /** Device diagnostics need an explicit failure when the device cannot be reached. */
   requireDelivery?: boolean;
   beforeSend?: { name: string; context?: unknown };
@@ -37,6 +43,9 @@ export const PushMessage: z.ZodType<WebPushMessage> = z.object({
   body: z.string().optional(),
   url: z.string().max(4096),
   dedupeKey: z.string().max(512),
+  badge: z.number().int().min(0).max(1_000_000).optional(),
+  badgeVersion: z.number().int().min(0).optional(),
+  badgeScope: z.string().max(128).optional(),
   urgency: z.enum(['very-low', 'low', 'normal', 'high']).optional(),
   ttl: z.number().int().min(0).max(2_419_200).optional(),
   requireDelivery: z.boolean().optional(),
@@ -92,6 +101,9 @@ export interface WebPushPayload {
   body: string;
   url: string;
   dedupeKey: string;
+  badge?: number;
+  badgeVersion?: number;
+  badgeScope?: string;
 }
 export function pushPayload(
   message: Omit<WebPushMessage, 'to'>,
@@ -102,6 +114,16 @@ export function pushPayload(
     body: message.body ?? '',
     url: pushTarget(message.url, base),
     dedupeKey: message.dedupeKey,
+    ...(Number.isSafeInteger(message.badge) &&
+    message.badge! >= 0 &&
+    Number.isSafeInteger(message.badgeVersion) &&
+    message.badgeVersion! >= 0
+      ? {
+          badge: message.badge,
+          badgeVersion: message.badgeVersion,
+          badgeScope: message.badgeScope ?? '',
+        }
+      : {}),
   };
   if (
     Buffer.byteLength(JSON.stringify(payload), 'utf8') >
