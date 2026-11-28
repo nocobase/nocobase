@@ -190,7 +190,7 @@ for (const template of templates) {
     for (const file of [
       'tsconfig.json',
       'tsconfig.server.json',
-      'eslint.config.js',
+      'oxlint.config.ts',
       'vitest.config.ts',
       'vite.config.ts',
       'ecosystem.config.js',

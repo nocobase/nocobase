@@ -1,7 +1,6 @@
-import { createApplicationConfig } from '@nocobase/dev-config/eslint';
+import { createApplicationConfig } from '@nocobase/dev-config/oxlint';
 
 export default createApplicationConfig({
-  tsconfigRootDir: import.meta.dirname,
   ignores: [
     '.extension-state/**',
     'client-old/**',

@@ -2,7 +2,7 @@
 
 Shared, ESM-only development configuration for the NocoBase monorepo and
 independently installed NocoBase packages. The package provides stable subpath
-exports for TypeScript, ESLint, Prettier, Vitest, and application Vite configuration.
+exports for TypeScript, Oxlint, ESLint, Prettier, Vitest, and application Vite configuration.
 
 This package is publish-ready but is not published as part of the initial
 monorepo migration.
@@ -44,6 +44,7 @@ compiled entries available after a monorepo install, and this package's
 | TypeScript | `tsconfig/server.json`         | Node applications that emit JavaScript        |
 | TypeScript | `tsconfig/server-library.json` | Node libraries that emit declarations         |
 | TypeScript | `tsconfig/node-tooling.json`   | Vite, Vitest, and build scripts               |
+| Oxlint     | `oxlint`                       | Type-aware linting and rules for applications |
 | ESLint     | `eslint`                       | Composable flat-config segments and factories |
 | Prettier   | `prettier`                     | The repository formatting baseline            |
 | Vitest     | `vitest/node`                  | Node test projects                            |

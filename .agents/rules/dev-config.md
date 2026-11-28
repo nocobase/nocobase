@@ -21,12 +21,13 @@ First determine the runtime environment, then whether the package emits declarat
 
 A hybrid Node/DOM package such as `app-host` should use `server-library` and add the DOM library locally. Keep the package-specific `include`, `exclude`, `paths`, `rootDir`, `outDir`, `tsBuildInfoFile`, and special `types` settings in the consuming package because they depend on its directory layout.
 
-### ESLint, Prettier, Vitest, and Vite
+### Oxlint, ESLint, Prettier, Vitest, and Vite
 
-- Use a thin `eslint.config.js`. Node libraries call `createNodeLibraryConfig`, browser libraries call `createClientLibraryConfig`, and applications call `createApplicationConfig`.
+- Application templates use a thin `oxlint.config.ts` with `createApplicationConfig` from `@nocobase/dev-config/oxlint`. Run `pnpm lint <paths>` or `pnpm lint:fix <paths>` for a scoped check. See the [Oxlint preset](../../packages/tools/dev-config/oxlint/README.md).
+- For packages using ESLint, use a thin `eslint.config.js`. Node libraries call `createNodeLibraryConfig`, browser libraries call `createClientLibraryConfig`, and applications call `createApplicationConfig`.
 - A package may add precise `ignores` or documented, narrowly scoped rule exceptions. Do not disable type-aware linting across an entire package merely to complete a migration.
 - Inherit Prettier through `"prettier": "@nocobase/dev-config/prettier"` in `package.json`.
-- Prefer `pnpm fix` after editing code. It always runs ESLint `--fix` before Prettier `--write`. `pnpm format:check` is a read-only incremental check.
+- Prefer `pnpm fix` after editing code. It runs the package’s linter with `--fix` before Prettier `--write`. `pnpm format:check` is a read-only incremental check.
 - Node tests use `createNodeVitestConfig`. React/jsdom tests use `createReactVitestConfig`. The React preset already installs jest-dom matchers and Testing Library cleanup.
 - Application Vite configurations use `createAppViteConfig`. Keep proxy settings and aliases local.
 - Keep Playwright configuration package-local for now; there is no shared Playwright preset.

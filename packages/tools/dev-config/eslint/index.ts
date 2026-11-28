@@ -8,46 +8,27 @@ import reactRefresh from 'eslint-plugin-react-refresh';
 import globals from 'globals';
 import tseslint from 'typescript-eslint';
 
+import {
+  additionalTestBlockFunctions,
+  applicationBrowserApiFiles,
+  applicationClientFiles,
+  applicationNodeFiles,
+  browserApiFiles,
+  browserApiRestrictions,
+  clientEnvRestrictions,
+  commandFiles,
+  commandImportRestrictions,
+  commandPropertyRestrictions,
+  commandSyntaxRestrictions,
+  defaultIgnores,
+  nonBrowserApiFiles,
+  reactFiles,
+  testFiles,
+  toolingFiles,
+  typescriptFiles,
+} from '../lint/policy.js';
+
 const allFiles: string[] = ['**/*.{js,jsx,mjs,cjs,ts,tsx,mts,cts}'];
-const typescriptFiles: string[] = ['**/*.{ts,tsx,mts,cts}'];
-const reactFiles: string[] = ['**/*.{js,jsx,ts,tsx}'];
-const testFiles: string[] = [
-  '**/*.{test,spec}.{js,jsx,ts,tsx,mts,cts}',
-  '**/{test,tests}/**/*.{js,mjs,cjs,ts,tsx,mts,cts}',
-  '**/e2e/**/*.{js,mjs,cjs,ts,tsx,mts,cts}',
-];
-const toolingFiles: string[] = [
-  '**/*.{config,setup}.{ts,mts,cts}',
-  '**/scripts/**/*.{ts,mts,cts}',
-  '**/cli/**/*.{ts,mts,cts}',
-];
-const applicationClientFiles: string[] = [
-  'client/**/*.{js,jsx,ts,tsx}',
-  'registry/**/*.{js,jsx,ts,tsx}',
-  'tests/**/*.{js,jsx,ts,tsx}',
-];
-const applicationNodeFiles: string[] = [
-  '*.{js,mjs,cjs}',
-  'server/**/*.{js,mjs,cjs,ts,tsx,mts,cts}',
-  'scripts/**/*.{js,mjs,cjs,ts,tsx,mts,cts}',
-  'cli/**/*.{js,mjs,cjs,ts,tsx,mts,cts}',
-  '*.config.{js,mjs,cjs,ts,mts,cts}',
-];
-const commandFiles: string[] = ['**/cli/**/*.{js,mjs,cjs,ts,tsx,mts,cts}'];
-const defaultIgnores: string[] = [
-  '**/dist/**',
-  '**/build/**',
-  '**/coverage/**',
-  '**/generated/**',
-  '**/playwright-report/**',
-  '**/test-results/**',
-  // Skills are prose for agents to read. `.claude/skills/` holds symbolic links into `.agents/skills/` in an
-  // application, written by `nocobase skills sync`, and both hold links into `skills/` in the monorepo, written by
-  // `scripts/sync-skills.mjs`, so linting through one would report the same file twice and `--fix` would edit the
-  // committed original.
-  '**/.agents/skills/**',
-  '**/.claude/skills/**',
-];
 
 const scopeConfigs = (
   configs: Linter.Config[],
@@ -185,21 +166,10 @@ export const react: Linter.Config[] = [
     },
   },
   {
-    // The server renders every runtime value the browser needs into the page's client configuration, so browser
-    // code has no environment of its own to read. Vite replaces `PROD`, `DEV`, `MODE` and the asset `BASE_URL` with
-    // build-time literals. Resolve shipped assets through resolveAssetUrl; runtime paths still use resolveAppUrl.
     name: '@nocobase/dev-config/client-env',
     files: reactFiles,
     rules: {
-      'no-restricted-syntax': [
-        'error',
-        {
-          selector:
-            "MemberExpression[object.type='MemberExpression'][object.object.type='MetaProperty'][object.property.name='env']:not([property.name=/^(PROD|DEV|MODE|BASE_URL)$/])",
-          message:
-            'Read runtime values from the client configuration (resolveAppUrl, useClientApplication().config); use resolveAssetUrl for built assets. import.meta.env is limited to PROD, DEV, MODE and BASE_URL.',
-        },
-      ],
+      'no-restricted-syntax': ['error', ...clientEnvRestrictions],
     },
   },
 ];
@@ -208,22 +178,10 @@ export const react: Linter.Config[] = [
 export const browserApis: Linter.Config[] = [
   {
     name: '@nocobase/dev-config/browser-apis',
-    files: ['{src,client,shared,registry,website}/**/*.{js,jsx,ts,tsx}'],
-    ignores: ['**/{server,cli,scripts,tests,test}/**'],
+    files: browserApiFiles,
+    ignores: nonBrowserApiFiles,
     rules: {
-      'no-restricted-properties': [
-        'error',
-        {
-          property: 'randomUUID',
-          message:
-            'Use createUuid() from @nocobase/app-client for HTTP-compatible UUIDs.',
-        },
-        {
-          property: 'clipboard',
-          message:
-            'Use copyText() from @nocobase/app-client for HTTP-compatible copying and handle its result.',
-        },
-      ],
+      'no-restricted-properties': ['error', ...browserApiRestrictions],
     },
   },
 ];
@@ -252,13 +210,11 @@ export const vitest: Linter.Config[] = [
       // `down` callbacks inside a test it declares; the rule would otherwise treat every expect in them as standalone.
       'vitest/no-standalone-expect': [
         'error',
-        { additionalTestBlockFunctions: ['test', 'it', 'describeMigration'] },
+        { additionalTestBlockFunctions },
       ],
     },
   },
 ];
-
-const APP_SERVER_NODE = '@nocobase/app-server/node';
 
 /**
  * Commands in an application's or a plugin's `cli/` run inside the `nocobase` command line, which owns stdout and puts
@@ -270,53 +226,9 @@ export const commandRules: Linter.Config[] = [
     files: commandFiles,
     ignores: testFiles,
     rules: {
-      'no-restricted-imports': [
-        'error',
-        {
-          paths: [
-            {
-              name: APP_SERVER_NODE,
-              message:
-                'Use withApp() from AppCommand instead of creating the application yourself.',
-            },
-          ],
-        },
-      ],
-      'no-restricted-properties': [
-        'error',
-        {
-          object: 'process',
-          property: 'cwd',
-          message:
-            'Use this.rootDir for application files, or an appPath() flag for paths the user passes.',
-        },
-      ],
-      'no-restricted-syntax': [
-        'error',
-        {
-          selector: `ImportExpression[source.value='${APP_SERVER_NODE}']`,
-          message:
-            'Use withApp() from AppCommand instead of creating the application yourself.',
-        },
-        {
-          selector:
-            "CallExpression[callee.object.name='console'][callee.property.name=/^(log|info|debug|table)$/]",
-          message:
-            'Use this.log for text and return the result from run(); console output bypasses --json.',
-        },
-        {
-          selector:
-            "CallExpression[callee.object.type='ThisExpression'][callee.property.name='exit']",
-          message:
-            'Return the result or throw CommandError instead of calling exit().',
-        },
-        {
-          selector:
-            "CallExpression[callee.object.type='ThisExpression'][callee.property.name='logJson']",
-          message:
-            'Return the result from run(); AppCommand prints the --json document.',
-        },
-      ],
+      'no-restricted-imports': ['error', commandImportRestrictions],
+      'no-restricted-properties': ['error', ...commandPropertyRestrictions],
+      'no-restricted-syntax': ['error', ...commandSyntaxRestrictions],
     },
   },
 ];
@@ -447,9 +359,7 @@ export const createApplicationConfig: (
     ...options,
     environment: [
       ...scopeConfigs(react, applicationClientFiles),
-      ...scopeConfigs(browserApis, [
-        '{client,shared,registry}/**/*.{js,jsx,ts,tsx}',
-      ]),
+      ...scopeConfigs(browserApis, applicationBrowserApiFiles),
       ...scopeConfigs(node, applicationNodeFiles),
       ...createShadcnRegistryConfig(),
       ...(options.environment ?? []),

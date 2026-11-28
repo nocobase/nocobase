@@ -101,6 +101,8 @@ catalog:
   pino: ^10.3.1
   pino-pretty: ^13.0.0
   postcss: ^8.5.3
+  oxlint: 1.95.0
+  oxlint-tsgolint: 7.0.2009
   prettier: ^3.9.6
   publint: ^0.3.24
   react: ^19.2.8
