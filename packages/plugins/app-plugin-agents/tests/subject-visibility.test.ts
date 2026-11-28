@@ -186,6 +186,67 @@ it('filters before pagination and prepares each subject policy once per page', a
   expect(predicate).toBeTypeOf('function');
 });
 
+it('matches equivalent datetimeTz values in run visibility and usage reports', async () => {
+  h = await createHarness();
+  const sample = h.services.subjects.get('sample')!;
+  const conn = h.database.connection();
+  const instant = '2026-10-01T12:00:00.000Z';
+  const dates = ['2026-10-01T14:00:00.000+02:00', '2026-10-03T12:00:00.000Z'];
+  h.services.subjects.register({
+    ...sample,
+    kind: 'dated',
+    visibleSubjects: async () => (eb, column) =>
+      eb.exists(
+        eb
+          .selectFrom('agRuns as subjectRun')
+          .select('subjectRun.id')
+          .whereRef('subjectRun.subjectId', '=', column)
+          .where('subjectRun.createdAt', 'in', dates),
+      ),
+  });
+  const agent = await h.createAgent();
+  const visible = await h.enqueue(agent, 'visible', { actorUserId: 'bob' });
+  const hidden = await h.enqueue(agent, 'hidden', { actorUserId: 'bob' });
+  for (const [id, at] of [
+    [visible, instant],
+    [hidden, '2026-10-02T12:00:00.000Z'],
+  ]) {
+    await conn.query
+      .updateTable('agRuns')
+      .set({ subjectKind: 'dated', createdAt: at })
+      .where('id', '=', id)
+      .execute();
+    await conn.repository('agRunUsage').createOne({
+      values: {
+        id: `usage-${id}`,
+        runId: id,
+        tool: 'claude',
+        modelService: null,
+        model: 'test',
+        inputTokens: 7,
+        outputTokens: 0,
+        cacheReadTokens: 0,
+        cacheWriteTokens: 0,
+        reasoningTokens: 0,
+        createdAt: h.clock.now().toISOString(),
+      },
+    });
+  }
+  const ordinary = await h.request('GET', '/agents/runs', {
+    user: 'reader',
+    can: ['agents.agents/read'],
+  });
+  expect(ordinary.body.data.map((run: { id: string }) => run.id)).toEqual([
+    visible,
+  ]);
+  const report = await h.services.reporting.usage(
+    { userId: 'reader', allRuns: true },
+    { groupBy: 'subject' },
+  );
+  expect(report.rows.map((row) => row.key)).toEqual(['dated:visible']);
+  expect(report.totals).toMatchObject({ runs: 1, inputTokens: 7 });
+});
+
 it('denies real subscriptions and revokes delivery after subject visibility changes', async () => {
   h = await createHarness();
   let allowed = true;

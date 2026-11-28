@@ -11,7 +11,7 @@ QueryAdapter composes database queries. Obtain it from `db.query(name?)` or `con
 | `QueryAdapter`            | `selectFrom`, `insertInto`, `updateTable`, `deleteFrom`                                                                                              |
 | `SelectQuery` composition | `select`, `selectAll`, `distinct`, `where`, `whereRef`, inner/left/right/cross joins, `groupBy`, `having`, `havingRef`, `orderBy`, `limit`, `offset` |
 | `SelectQuery clearing`    | `clearSelect`, `clearWhere`, `clearJoins`, `clearGroupBy`, `clearHaving`, `clearOrderBy`, `clearLimit`, `clearOffset`                                |
-| `SelectQuery` execution   | `execute`, `executeTakeFirst`, `executeTakeFirstOrThrow`, `value`, `pluck`, `exists`, `compile`                                                      |
+| `SelectQuery` execution   | `execute`, `executeTakeFirst`, `executeTakeFirstOrThrow`, `value`, `pluck`, `exists`, `compile`, `compileForExecution`                               |
 | `InsertQuery`             | `values`, `execute`, `compile`                                                                                                                       |
 | `UpdateQuery`             | `set`, `where`, `whereRef`, `clearWhere`, `allowAllRows`, `execute`, `compile`                                                                       |
 | `DeleteQuery`             | `where`, `whereRef`, `clearWhere`, `allowAllRows`, `execute`, `compile`                                                                              |
@@ -23,7 +23,7 @@ QueryAdapter composes database queries. Obtain it from `db.query(name?)` or `con
 
 `ExpressionBuilder` supplies comparisons, references, values, Boolean composition and subqueries. `fn` supplies aggregate expressions. Join callbacks receive `JoinBuilder`; subqueries use `SubqueryBuilder` and can be aliased. These supporting contracts are reachable through callbacks without requiring root-exported constructors.
 
-Use `eb.compactStringLists(predicate)` when a predicate compares text columns to large lists of strings. SQLite and PostgreSQL bind each list as one value, including lists inside the predicate's subqueries. Drivers without this capability use the usual bindings.
+Use `eb.compactStringLists(predicate)` when a predicate compares columns to large lists of strings. SQLite and PostgreSQL bind each list as one value when field metadata confirms a compatible text type. Qualify references inside subqueries and joins so the builder can resolve their types. Other comparisons use the usual bindings and field conversions.
 
 Use the [expression and query signatures](./signatures/query.md) for overloads and the existing [where](../zh-CN/query/where.md), [join](../zh-CN/query/joins.md) and [aggregate](../zh-CN/query/aggregates.md) pages for examples.
 
@@ -33,7 +33,7 @@ Query chains are immutable. Derive queries from an existing chain or use the `cl
 
 ## Compilation, writes and result decoding
 
-`compile()` returns `{ sql, parameters }` without executing or performing the asynchronous metadata work used for some numeric projections. Executing compiled SQL directly through Knex bypasses Query result decoding. Unrestricted updates/deletes require an explicit `allowAllRows()` call.
+`compile()` returns `{ sql, parameters }` synchronously without resolving field metadata. Use `await select.compileForExecution()` to inspect the SQL and parameter count prepared with the same metadata and projections as `execute()`. Executing compiled SQL directly through Knex bypasses Query result decoding. Unrestricted updates/deletes require an explicit `allowAllRows()` call.
 
 Execution can inspect resolved numeric field metadata for precision handling. This differs from applying Collection-level naming overrides or Repository policies. Output type arguments such as `execute<MyRow>()` are caller assertions; they do not validate a selected row's shape. The default query result is a general `Row`, and selecting fields does not provide Repository-style projection inference.
 

@@ -370,25 +370,11 @@ class KnexSelectQuery<
   }
 
   async execute<T = TResult>(): Promise<T[]> {
-    const lookup = memoizedCollectionLookup(this.lookup);
-    const numericLookup = hasNativeNumericResults(this.getClient())
-      ? undefined
-      : lookup;
-    const selections = await prepareDecimalSelections(
-      this.state.selections,
-      [this.tableName, ...this.state.joins.map((join) => join.table)],
-      numericLookup,
-    );
-    const numericCollections = lookup
-      ? await collectNumericCollections(this.state, this.tableName, lookup)
-      : undefined;
-    const { query, resultMap } = this.buildSelectQuery(
-      selections,
-      numericCollections,
-    );
+    const { query, resultMap, selections, tables, numericLookup } =
+      await this.prepareSelect();
     const decode = await prepareAggregateDecoder(
       selections,
-      [this.tableName, ...this.state.joins.map((join) => join.table)],
+      tables,
       numericLookup,
     );
     const rows = await query;
@@ -397,25 +383,11 @@ class KnexSelectQuery<
   }
 
   async executeTakeFirst<T = TResult>(): Promise<T | undefined> {
-    const lookup = memoizedCollectionLookup(this.lookup);
-    const numericLookup = hasNativeNumericResults(this.getClient())
-      ? undefined
-      : lookup;
-    const selections = await prepareDecimalSelections(
-      this.state.selections,
-      [this.tableName, ...this.state.joins.map((join) => join.table)],
-      numericLookup,
-    );
-    const numericCollections = lookup
-      ? await collectNumericCollections(this.state, this.tableName, lookup)
-      : undefined;
-    const { query, resultMap } = this.buildSelectQuery(
-      selections,
-      numericCollections,
-    );
+    const { query, resultMap, selections, tables, numericLookup } =
+      await this.prepareSelect();
     const decode = await prepareAggregateDecoder(
       selections,
-      [this.tableName, ...this.state.joins.map((join) => join.table)],
+      tables,
       numericLookup,
     );
     const row = await query.first();
@@ -447,7 +419,14 @@ class KnexSelectQuery<
 
   async exists(): Promise<boolean> {
     const client = this.getClient();
-    const tableScope = this.createTableScope();
+    const lookup = memoizedCollectionLookup(this.lookup);
+    const state = { ...this.state, selections: [], having: [] };
+    const tableScope: TableScope = {
+      ...this.createTableScope(),
+      numericCollections: lookup
+        ? await collectNumericCollections(state, this.tableName, lookup)
+        : undefined,
+    };
     const query = this.buildFilteredQuery(client, tableScope)
       .select(client.raw('1 as value'))
       .limit(1);
@@ -460,6 +439,37 @@ class KnexSelectQuery<
     return {
       sql: compiled.sql,
       parameters: compiled.bindings ?? [],
+    };
+  }
+
+  async compileForExecution(): Promise<CompiledQuery> {
+    const { query } = await this.prepareSelect();
+    const compiled = query.toSQL();
+    return { sql: compiled.sql, parameters: compiled.bindings ?? [] };
+  }
+
+  private async prepareSelect() {
+    const tables = [
+      this.tableName,
+      ...this.state.joins.map((join) => join.table),
+    ];
+    const lookup = memoizedCollectionLookup(this.lookup);
+    const numericLookup = hasNativeNumericResults(this.getClient())
+      ? undefined
+      : lookup;
+    const selections = await prepareDecimalSelections(
+      this.state.selections,
+      tables,
+      numericLookup,
+    );
+    const collections = lookup
+      ? await collectNumericCollections(this.state, this.tableName, lookup)
+      : undefined;
+    return {
+      ...this.buildSelectQuery(selections, collections),
+      selections,
+      tables,
+      numericLookup,
     };
   }
 
@@ -2067,22 +2077,39 @@ function applyBinaryExpression(
     bool,
     lhs,
     op,
-    compactStringList(context, op, rhs.value) ??
+    compactStringList(context, expression.lhs, op, rhs.value) ??
       normalizeQueryComparisonValue(context, expression.lhs, rhs.value, op),
   );
 }
 
 function compactStringList(
   context: ExpressionCompileContext,
+  operand: OperandNode,
   op: ComparisonOperator,
   value: unknown,
 ): Knex.Raw | undefined {
+  const scope = context.tableScope;
   if (
-    !context.tableScope.compactStringLists ||
+    !scope.compactStringLists ||
+    operand.type !== 'ref' ||
+    (!operand.reference.includes('.') &&
+      (scope.parent || scope.tables?.length !== 1)) ||
     (op !== 'in' && op !== 'not in') ||
     !Array.isArray(value) ||
     value.length < 2 ||
     !value.every((item): item is string => typeof item === 'string')
+  )
+    return undefined;
+  const field = scalarSource(operand.reference, scope);
+  const nativeType = field?.db?.nativeType?.trim() ?? '';
+  // Native types such as PostgreSQL citext can have different comparison operators against text.
+  if (
+    (field?.type !== 'string' && field?.type !== 'text') ||
+    !/^(?:text|(?:varchar|character varying)(?:\(\d+\))?)$/iu.test(
+      nativeType,
+    ) ||
+    (field.db?.nativeTypeSchema !== undefined &&
+      field.db.nativeTypeSchema !== 'pg_catalog')
   )
     return undefined;
   return getDatabaseDriverRuntime(context.client)?.query?.stringListSource?.({
@@ -2554,7 +2581,7 @@ function applyJoinBinaryExpression(
       bool,
       lhs,
       op,
-      compactStringList(context, op, rhs.value) ?? rhs.value,
+      compactStringList(context, expression.lhs, op, rhs.value) ?? rhs.value,
     );
     return;
   }

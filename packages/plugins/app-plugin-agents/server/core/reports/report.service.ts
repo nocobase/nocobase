@@ -440,15 +440,14 @@ export function createReportService(deps: {
             : []),
         ])
         .where('run.id', 'in', batch);
-    // SQLite adds no projection parameters. Server drivers may bind values when formatting the selected fields.
+    // Count the actual bindings for the scope and projections, excluding the probe's one run ID.
     const limit =
       usageReadLimits.parameters ?? PARAMETER_LIMITS[conn.dialect] ?? 999;
     const own =
       ids.length === 0
         ? 0
-        : runsOf(ids.slice(0, 1)).compile().parameters.length -
-          1 +
-          (conn.dialect === 'sqlite' ? 0 : USAGE_RUN_COLUMNS.length);
+        : (await runsOf(ids.slice(0, 1)).compileForExecution()).parameters
+            .length - 1;
     if (ids.length > 0 && own >= limit)
       throw new Error(
         `The visibility of the usage report's subjects needs ${own} parameters of the ${limit} one statement may bind, leaving none for the runs.`,

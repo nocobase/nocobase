@@ -175,8 +175,8 @@ export interface ExpressionBuilder {
   ): Expression<SqlBool>;
   not(expression: ExpressionInput<SqlBool>): Expression<SqlBool>;
   /**
-   * Bind multi-value string lists in this predicate as sets when the driver supports it.
-   * Use for text-column comparisons in `in` and `not in`, including in nested subqueries.
+   * Bind multi-value string lists in this predicate as sets on supported drivers
+   * when column metadata confirms a compatible text type.
    */
   compactStringLists(expression: ExpressionInput<SqlBool>): Expression<SqlBool>;
   between(
@@ -514,6 +514,8 @@ export interface SelectQuery<
   pluck<T = unknown>(column: string): Promise<T[]>;
   exists(): Promise<boolean>;
   compile(): CompiledQuery;
+  /** Compile the executable select using the same field metadata as execute(). */
+  compileForExecution(): Promise<CompiledQuery>;
 }
 ```
 
