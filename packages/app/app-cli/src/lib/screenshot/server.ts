@@ -212,6 +212,7 @@ export async function startScreenshotServer(
         waitForHttpReady({
           url: appRelativeURL(baseURL, readyPath).href,
           label: 'Application screenshot readiness check',
+          redirect: 'error',
           signal: startupSignal,
         }),
         prematureExit,

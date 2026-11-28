@@ -1,6 +1,6 @@
 # Development screenshots
 
-Use `pnpm nocobase screenshot` from the application root for UI evidence. It starts a loopback-only development application on free ports with its own SQLite database, storage and Vite cache. It signs in as a temporary administrator and removes the instance when the command exits. No application build or local configuration file is needed.
+Use `pnpm nocobase screenshot` from the application root for UI evidence. It starts a loopback-only development application on free ports with its own SQLite database, storage and Vite cache. It signs in as a temporary administrator and removes the instance when the command exits. It runs directly from source with its temporary configuration.
 
 ```bash
 pnpm exec playwright install chromium
@@ -26,7 +26,7 @@ For an existing authorized test instance, pass its exact application entry URL a
 
 ## Prepare data and interact with the page
 
-Pass `--setup <file.mjs>` to run a default-exported function once after sign-in, before the capture matrix, for data or session preparation. Pass `--script <file.mjs>` to run a default-exported function after opening each target page and before capturing it. Use a trusted local module. Both hooks receive `{ page, context, baseURL, api, signal }`. Setup starts with a blank page. The `api(path, options)` function sends paths relative to `<baseURL>/api/` with the same authentication cookies as the browser, returning a Playwright `APIResponse`.
+Pass `--setup <file.mjs>` to run a default-exported function once after sign-in, before the capture matrix, for data or session preparation. Pass `--script <file.mjs>` to run a default-exported function after opening each target page and before capturing it. Use a trusted local module. Both hooks receive `{ page, context, baseURL, api, signal }`. Setup starts with a blank page. The `api(path, options)` function sends paths relative to `<baseURL>/api/` with the same authentication cookies as the browser, returning a Playwright `APIResponse`. Pass app-required request headers through `options.headers`, such as `Idempotency-Key` for standard writes.
 
 ```js
 export default async function showDialog({ page }) {

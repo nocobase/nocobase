@@ -299,11 +299,11 @@ async function capturePage(
         const response = await page.goto(url.href, { waitUntil: 'load' });
         if (response && !response.ok())
           throw new Error(`Navigation returned HTTP ${response.status()}.`);
-        await page
-          .locator('#root > :not(.app-bootstrap-loading)')
-          .first()
-          .waitFor({ state: 'attached' });
         if (!options.waitFor) {
+          await page
+            .locator('#root > :not(.app-bootstrap-loading)')
+            .first()
+            .waitFor({ state: 'attached' });
           // Authentication can replace the bootstrap element with an empty shell while a route loads.
           const content = page.locator(
             '#root :is(main, [role="main"]), #root:not(:has(main, [role="main"]))',

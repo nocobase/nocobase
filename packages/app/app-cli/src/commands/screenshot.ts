@@ -82,6 +82,7 @@ export default class Screenshot extends Command {
         'Run an application-local module after each page opens and before capture.',
     }),
     'sample-data': Flags.boolean({
+      allowNo: true,
       default: false,
       description: 'Enable the application’s optional sample seeds.',
     }),

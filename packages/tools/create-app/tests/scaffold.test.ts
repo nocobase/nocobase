@@ -510,7 +510,7 @@ describe('gitignore handling', () => {
 
     expect(contents).toBe(
       'node_modules/\n/.agents/*\n!/.agents/rules/\n/.env\n/.claude/skills/\n' +
-        '\n# Written when this project was generated.\n/.agent-annotations/\n',
+        '\n# Written when this project was generated.\n/.agent-annotations/\n/output/screenshots/\n',
     );
   });
 

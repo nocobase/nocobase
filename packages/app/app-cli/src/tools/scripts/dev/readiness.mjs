@@ -12,6 +12,7 @@ export const waitForHttpReady = async ({
   isReady = (response) => response.ok,
   label,
   requestTimeoutMs = DEFAULT_REQUEST_TIMEOUT_MS,
+  redirect,
   signal,
   timeoutMs = DEFAULT_START_TIMEOUT_MS,
   url,
@@ -24,6 +25,7 @@ export const waitForHttpReady = async ({
     try {
       const requestSignal = AbortSignal.timeout(requestTimeoutMs);
       const response = await fetch(url, {
+        redirect,
         signal: signal
           ? AbortSignal.any([signal, requestSignal])
           : requestSignal,
