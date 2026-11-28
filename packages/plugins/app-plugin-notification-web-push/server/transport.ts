@@ -43,7 +43,8 @@ export async function sendPush(
         body: details.body,
         signal,
       });
-      response.body.destroy();
+      // Undici aborts the unread body on destroy, which can emit a stream error.
+      response.body.on('error', () => {}).destroy();
       return response.statusCode;
     } catch {
       throw new Error('Web Push proxy transport failed.');

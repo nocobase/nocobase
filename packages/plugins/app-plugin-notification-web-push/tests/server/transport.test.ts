@@ -1,13 +1,21 @@
 import { createECDH, randomBytes } from 'node:crypto';
-import { once } from 'node:events';
+import { EventEmitter, once } from 'node:events';
 import { createServer } from 'node:net';
-import { EventEmitter } from 'node:events';
+import { Readable } from 'node:stream';
 import { expect, it, vi } from 'vitest';
 import { parsePushProxy } from '../../server/config.js';
 import { sendPush } from '../../server/transport.js';
 
-const mocks = vi.hoisted(() => ({ request: vi.fn() }));
+const mocks = vi.hoisted(() => ({ request: vi.fn(), proxyResponse: vi.fn() }));
 vi.mock('node:https', () => ({ request: mocks.request }));
+vi.mock('undici', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('undici')>();
+  return {
+    ...actual,
+    request: (...args: Parameters<typeof actual.request>) =>
+      mocks.proxyResponse() ?? actual.request(...args),
+  };
+});
 
 const config = {
   privateKey: 'a'.repeat(64),
@@ -131,3 +139,25 @@ it.each(['http', 'socks5'])(
     }
   },
 );
+
+it('returns the gateway status even when discarding the unread proxy response aborts the stream', async () => {
+  const body = new Readable({
+    read() {
+      throw new Error('Web Push must discard gateway response bodies.');
+    },
+    destroy(_error, callback) {
+      callback(new Error('The unread response was aborted.'));
+    },
+  });
+  const closed = new Promise<void>((resolve) => body.once('close', resolve));
+  mocks.proxyResponse.mockReturnValueOnce({ statusCode: 201, body });
+  expect(
+    await sendPush(
+      subscription(),
+      { title: 'Private reminder text' },
+      { ...config, proxyUrl: 'https://localhost:3128' },
+      AbortSignal.timeout(3_000),
+    ),
+  ).toBe(201);
+  await closed;
+});
