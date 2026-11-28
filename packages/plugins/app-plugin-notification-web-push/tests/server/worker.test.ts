@@ -235,7 +235,9 @@ it('asks open windows to set the badge again after a push sets it', async () => 
     kind: 'webPush.badge',
   });
   await f.dispatch('push', {
-    data: { json: () => ({ title: 'T', dedupeKey: 'b', badge: 5, badgeAt: 0 }) },
+    data: {
+      json: () => ({ title: 'T', dedupeKey: 'b', badge: 5, badgeAt: 0 }),
+    },
   });
   expect(f.existing.postMessage).toHaveBeenCalledOnce();
 });
