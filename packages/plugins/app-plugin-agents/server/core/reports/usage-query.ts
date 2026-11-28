@@ -146,6 +146,7 @@ const dimensionColumns = {
   type: 'run.agentType',
 } as const;
 
+type SqlDay<T> = Omit<T, 'utc_day'> & { readonly utc_day?: string | number };
 type Dimension = UsageGroupBy | null;
 export type SubjectProjection = 'none' | 'legacy' | 'shown';
 
@@ -162,7 +163,7 @@ export function createUsageQueries(
     ? "date_format(??, '%Y-%m-%d')"
     : sqlite
       ? "strftime('%Y-%m-%d', ??)"
-      : "to_char(?? at time zone 'UTC', 'YYYY-MM-DD')";
+      : "cast(?? at time zone 'UTC' as date) - date '1970-01-01'";
   const duration = mysql
     ? 'greatest(0, coalesce(timestampdiff(microsecond, ??, ??) div 1000, 0))'
     : sqlite
@@ -171,6 +172,18 @@ export function createUsageQueries(
   // Default MySQL collations can merge distinct JS strings (including model IDs that differ only in case).
   const exact = (column: string) =>
     mysql ? client.raw('cast(?? as binary)', [column]) : client.ref(column);
+  // PostgreSQL-family engines group on compact day numbers. Format each bucket only after the read.
+  const dayText = (value: string | number): string =>
+    mysql || sqlite
+      ? String(value)
+      : new Date(Number(value) * 86_400_000).toISOString().slice(0, 10);
+  const formatDays = <T extends { readonly utc_day?: string }>(
+    rows: readonly SqlDay<T>[],
+  ) =>
+    rows.map((row) => ({
+      ...row,
+      utc_day: row.utc_day === undefined ? undefined : dayText(row.utc_day),
+    }));
   const scoped = scope.online(online);
 
   function projected(
@@ -295,21 +308,24 @@ export function createUsageQueries(
         ),
       );
       // The legacy rounding order needs only token inputs. Run counts and timing stay aggregated in SQL.
-      if (preserveCostOrder)
-        return rows
+      if (preserveCostOrder) {
+        const ordered = (await rows
           .select(tokenColumns)
           .select(client.raw('1 as records'))
-          .orderBy('usage_id');
+          .orderBy('usage_id')) as SqlDay<TokenBucket>[];
+        return formatDays<TokenBucket>(ordered);
+      }
       for (const column of tokenColumns) {
         if (sqlite)
           rows.select(client.raw('nb_decimal_sum(??) as ??', [column, column]));
         else rows.sum({ [column]: column });
       }
-      return rows
+      const buckets = (await rows
         .count({ records: '*' })
         .min({ first_id: 'usage_id' })
         .groupBy([...keys, ...sourceColumns.map(exact)])
-        .orderBy('first_id');
+        .orderBy('first_id')) as SqlDay<TokenBucket>[];
+      return formatDays<TokenBucket>(buckets);
     },
 
     async runs(
@@ -378,7 +394,8 @@ export function createUsageQueries(
         .sum({ duration: 'duration' })
         .sum({ unpriced_runs: 'unpriced' });
       if (keys.length) totals.select(keys).groupBy(keys);
-      return totals;
+      const buckets = (await totals) as SqlDay<RunBucket>[];
+      return formatDays<RunBucket>(buckets);
     },
 
     async firstDays(): Promise<
@@ -391,9 +408,11 @@ export function createUsageQueries(
         false,
       );
       // Group first in SQL by the outer projection, which includes the naming bound.
-      return rows
-        .select(client.raw(`min(${day}) as utc_day`, ['first_at']))
-        .groupBy(keys);
+      const buckets: (SubjectBucket & { readonly utc_day: string | number })[] =
+        await rows
+          .select(client.raw(`min(${day}) as utc_day`, ['first_at']))
+          .groupBy(keys);
+      return buckets.map((row) => ({ ...row, utc_day: dayText(row.utc_day) }));
     },
   };
 }

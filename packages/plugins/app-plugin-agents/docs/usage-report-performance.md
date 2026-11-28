@@ -6,9 +6,9 @@ Use an all-runs reader and the default 30 UTC days, grouped by agent with `serie
 
 | Usage rows / days | Rows in 30 days | Baseline median | SQL median | Speedup | Statements |
 | ----------------- | --------------: | --------------: | ---------: | ------: | ---------: |
-| 50,000 / 51       |          37,143 |        875.9 ms |   106.3 ms |   8.24× |     78 → 5 |
-| 500,000 / 365     |          41,096 |        947.5 ms |   184.8 ms |   5.13× |     77 → 5 |
+| 50,000 / 51       |          37,143 |        808.2 ms |   130.8 ms |   6.18× |     78 → 5 |
+| 500,000 / 365     |          41,096 |        787.6 ms |   152.6 ms |   5.16× |     77 → 5 |
 
 Both comparisons returned equal report objects. These service timings include no HTTP transport, authentication or host-defined subject lookup. Typical work includes two usage statements for the series view, two price reads and one agent-name read. Separate daily or overlap totals and host subject policies can add reads. The report adds no writes, explicit locks or transactions. The group picker issues a distinct-subject read and resolves visible groups through the host. It skips the database when no subject kind provides report groups.
 
-If a cost is close enough to a half-millionth for floating-point addition order to change the rounding, the report makes one additional read for the ordered token inputs. Run IDs, durations and price coverage still use the SQL totals.
+If a cost is close enough to a half-millionth for floating-point addition order to change the rounding, the report makes one additional read for the ordered token inputs. Run counts, durations and price coverage still use the SQL totals.
