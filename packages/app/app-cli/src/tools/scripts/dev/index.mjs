@@ -90,6 +90,8 @@ const spawnDevProcess = (label, command, args, env, options = {}) => {
       options.stdio ??
       (options.filterViteStartup ? ['inherit', 'pipe', 'pipe'] : 'inherit'),
   });
+  children.add(child);
+  child.once('close', () => children.delete(child));
 
   if (options.filterViteStartup) {
     pipeViteOutput(child);
@@ -112,7 +114,9 @@ const spawnDevProcess = (label, command, args, env, options = {}) => {
   return child;
 };
 
+const children = new Set();
 let shuttingDown = false;
+let shutdownPromise;
 let envRestartTimer;
 let envWatcher;
 let dependencyWatchers = [];
@@ -135,12 +139,21 @@ const shutdown = (exitCode = 0) => {
     dependencyRestartTimer = undefined;
   }
   for (const watcher of dependencyWatchers.splice(0)) watcher.close();
-  instanceLock?.release();
-  void connectionProxy?.close();
-
-  // The supervisor owns the complete process group. Exiting the worker starts
-  // Execa's graceful termination and bounded escalation for all descendants.
-  process.exit(exitCode);
+  // Let each immediate command forward its own signal and finish cleanup before
+  // this worker exits. The supervisor only force-kills the group on timeout/exit.
+  const closed = [...children].map(
+    (child) => new Promise((resolve) => child.once('close', resolve)),
+  );
+  for (const child of children) child.kill('SIGTERM');
+  shutdownPromise = Promise.all([...closed, connectionProxy?.close()])
+    .then(() => {
+      instanceLock?.release();
+      process.exit(exitCode);
+    })
+    .catch((error) => {
+      console.error('[dev] Development shutdown failed', error);
+      process.exit(1);
+    });
 };
 
 process.on('SIGINT', () => shutdown(0));
@@ -269,6 +282,8 @@ console.log(
   `\n  Starting ${proxyTarget ? 'Vite with remote backend' : 'app dev server'}...`,
 );
 
+// Do not spawn another command if shutdown began during asynchronous startup.
+if (shuttingDown) await shutdownPromise;
 progress('Starting Vite');
 spawnDevProcess(
   'client',
@@ -318,6 +333,7 @@ if (!proxyTarget) {
     // override config.yml, where the application's browser-facing origin may be a LAN address or a domain.
   };
 
+  if (shuttingDown) await shutdownPromise;
   progress('Starting application server');
   const serverChild = spawnDevProcess(
     'server',
