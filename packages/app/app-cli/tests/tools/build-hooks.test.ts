@@ -282,7 +282,7 @@ describe('build pipeline hook stages', () => {
   it.skipIf(process.platform === 'win32')(
     'runs each hook stage at its place in the pipeline and packs last with --tar',
     () => {
-      const { result, commands, sentinel } = runBuild(['--tar']);
+      const { root, result, commands, sentinel } = runBuild(['--tar']);
 
       expect(result.stderr).toBe('');
       expect(result.status).toBe(0);
@@ -293,7 +293,7 @@ describe('build pipeline hook stages', () => {
         'pnpm exec tsc -p tsconfig.node.json',
         'pnpm exec vite build',
         'pnpm demo after-client',
-        'pnpm exec tsc -p tsconfig.server.json',
+        `pnpm exec tsc -p tsconfig.server.json --tsBuildInfoFile ${path.join(root, 'dist', '.server.tsbuildinfo')}`,
         'pnpm exec tsc-alias -p tsconfig.server.json',
         'node after-server.mjs',
         'pnpm exec nocobase config variables --out dist/variables.json',
@@ -474,7 +474,11 @@ describe('build pipeline hook stages', () => {
 
       expect(result.status).toBe(4);
       expect(commands.at(-1)).toBe('pnpm demo after-client');
-      expect(commands).not.toContain('pnpm exec tsc -p tsconfig.server.json');
+      expect(
+        commands.some((command) =>
+          command.startsWith('pnpm exec tsc -p tsconfig.server.json'),
+        ),
+      ).toBe(false);
     },
   );
 });

@@ -1,4 +1,3 @@
-import type { CreatedTargetReference } from '@nocobase/db';
 export interface FileRecord {
   id: string;
   disk: string;
@@ -20,6 +19,17 @@ export interface UploadOneInput {
 export interface UploadManyInput {
   readonly files: readonly File[];
 }
+/** A related record returned by the upload API. */
+export interface CreatedTargetReference {
+  readonly clientKey: string;
+  readonly collection: string;
+  readonly unique: {
+    readonly kind: 'unique';
+    readonly fields: readonly string[];
+    readonly values: Readonly<Record<string, unknown>>;
+  };
+}
+
 export interface UploadOneResult {
   readonly record: FileRecord;
   readonly createdTargets: readonly CreatedTargetReference[];

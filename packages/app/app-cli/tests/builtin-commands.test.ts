@@ -45,6 +45,7 @@ const EXPECTED_IDS = [
   'secrets:status',
   'skills:sync',
   'start',
+  'typecheck',
 ];
 
 /** The commands that manage an application's packages, and take the application from a flag. */

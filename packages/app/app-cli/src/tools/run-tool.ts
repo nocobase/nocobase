@@ -9,6 +9,7 @@ import path from 'node:path';
 const TOOL_ENTRIES = {
   dev: 'dev/index',
   build: 'build',
+  typecheck: 'typecheck',
   start: 'start',
   retarget: 'utils/retarget-native',
   verify: 'utils/verify-server-deps',

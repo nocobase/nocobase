@@ -29,6 +29,7 @@ export const DEVELOPMENT_TOPICS: readonly string[] = Object.freeze([
   PLUGIN_TOPIC,
   'skills',
   'start',
+  'typecheck',
 ]);
 
 /** First segments of commands that act on the application the run is in, and so need one. */
@@ -45,6 +46,7 @@ export const APPLICATION_TOPICS: readonly string[] = Object.freeze([
   'locales',
   'secrets',
   'start',
+  'typecheck',
 ]);
 
 /**
