@@ -315,8 +315,9 @@ it('keeps list and statistics visibility reads constant as the dataset grows', a
   for (let i = 1; i < 20; i++) await add(i);
   expect([await measure(list), await measure(usage)]).toEqual(before);
   expect(before[0]).toBeLessThanOrEqual(5);
-  // Usage reads its records, run facts, prices, subscriptions and agent names in seven fixed reads.
-  expect(before[1]).toBe(7);
+  // Usage reads its records, its runs, which of them are inside the subjects' bound now (so subjects the reader may
+  // no longer see go unnamed), run facts, prices, subscriptions and agent names in eight fixed reads.
+  expect(before[1]).toBe(8);
 });
 
 it('keeps private sessions participant-only even for unrestricted readers and pages past them', async () => {

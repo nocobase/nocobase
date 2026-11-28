@@ -11,7 +11,7 @@
  * Who sees what: a caller who may see every run (`allRuns`, which the application decides) counts every run, anyone
  * else the runs they started or own; either way only runs on subjects they may see (`SubjectReports.describe`).
  */
-import { runVisibility } from '../runs/access.js';
+import { runVisibility, subjectBounds } from '../runs/access.js';
 import type { DatabaseConnection, SelectQuery } from '@nocobase/db';
 
 import {
@@ -345,12 +345,15 @@ export function createReportService(deps: {
       readonly subject?: { readonly kind: string; readonly id: string } | null;
     },
   ) {
+    // Read once: what the caller may see of each subject kind now, for the runs they count and for naming subjects.
+    const bounds = await subjectBounds(conn, deps.subjects, caller.userId);
     const visibility = await runVisibility(
       conn,
       deps.subjects,
       caller.userId,
       caller.allRuns,
       'run',
+      bounds,
     );
     const ofRuns = <Q extends SelectQuery<Row, Row>>(query: Q): Q => {
       let scoped = query.where(visibility) as Q;
@@ -410,12 +413,45 @@ export function createReportService(deps: {
                 ),
             ).execute<Row>()
           ).map((row) => runRow(row));
-    const { runs: kept, facts } = await countable(
-      conn,
-      caller,
-      runs,
-      filter.groupId,
-    );
+    const { runs: counted, facts } = await countable(conn, caller, runs, null);
+    // The caller counts the runs they woke or own even on subjects they may no longer see (`runVisibility`). Of the
+    // counted runs, those on subjects inside their kind's bound now, in one more read whatever its size.
+    const inside =
+      bounds && runs.length > 0
+        ? new Set(
+            (
+              await ofRuns(
+                conn.query
+                  .selectFrom('agRuns as run')
+                  .select('run.id as id')
+                  .where((eb) =>
+                    eb(
+                      'run.id',
+                      'in',
+                      eb
+                        .selectFrom('agRunUsage')
+                        .select('runId')
+                        .where('createdAt', '>=', range.start)
+                        .where('createdAt', '<', range.end),
+                    ),
+                  )
+                  .where((eb) => bounds(eb, 'run')),
+              ).execute<Row>()
+            ).map((row) => text(row.id)),
+          )
+        : null;
+    // What identifies a subject the caller may not see now (it, its group) is left out of the records, and a group
+    // filter matches only the groups the caller sees, so asking for that group never counts it either.
+    const shown = (run: ReportRunRow): boolean =>
+      facts.get(`${run.subjectKind}:${run.subjectId}`)?.visible === true &&
+      (inside === null || inside.has(run.id));
+    const groupOf = (run: ReportRunRow) =>
+      shown(run)
+        ? (facts.get(`${run.subjectKind}:${run.subjectId}`)?.group?.id ?? null)
+        : null;
+    const kept = filter.groupId
+      ? counted.filter((run) => groupOf(run) === filter.groupId)
+      : counted;
     const byId = new Map(kept.map((run) => [run.id, run]));
     const records: UsageRecord[] = [];
     for (const row of usage) {
@@ -431,10 +467,11 @@ export function createReportService(deps: {
         tool: text(row.tool),
         modelService: textOrNull(row.modelService),
         model: textOrNull(row.model),
-        subjectKind: run.subjectKind,
-        subjectId: run.subjectId,
-        groupId:
-          facts.get(`${run.subjectKind}:${run.subjectId}`)?.group?.id ?? null,
+        // A subject left out of the caller's view adds to one unnamed row by subject or group.
+        ...(shown(run)
+          ? { subjectKind: run.subjectKind, subjectId: run.subjectId }
+          : { subjectKind: '', subjectId: '' }),
+        groupId: groupOf(run),
         day: (iso(row.createdAt) ?? '').slice(0, 10),
         durationMs:
           started && finished
@@ -528,19 +565,10 @@ export function createReportService(deps: {
         subject,
       });
       const { facts } = read;
-      // A caller counts the runs they woke or own even on a subject they may no longer see (`runVisibility`), so their
-      // totals stay whole; what identifies such a subject (its row, its label, its group) is left out, and a report of
-      // that one subject is empty.
-      const shown = (record: UsageRecord): boolean =>
-        facts.get(`${record.subjectKind}:${record.subjectId}`)?.visible ===
-        true;
+      // A report of one subject the caller may no longer see is empty (its records come unnamed).
       const records = subject
-        ? read.records.filter(shown)
-        : read.records.map((record) =>
-            shown(record)
-              ? record
-              : { ...record, subjectKind: '', subjectId: '', groupId: null },
-          );
+        ? read.records.filter((record) => record.subjectKind !== '')
+        : read.records;
       const prices = await listPrices(conn);
       const online = await deps.includeOnlineUsage();
       const first = aggregateUsage(

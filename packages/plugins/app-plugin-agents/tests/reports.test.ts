@@ -648,10 +648,90 @@ describe('reporting service', () => {
       });
       expect(revoked.rows).toEqual([]);
       expect(revoked.totals.runs).toBe(0);
+      // The group the caller no longer sees the subject in is never matched: neither the person total nor their
+      // subjects under it link the run to that group.
+      for (const groupBy of ['person', 'subject'] as const) {
+        const inRevokedGroup = await h.services.reporting.usage(bob, {
+          groupBy,
+          groupId: 'g-revoked',
+        });
+        expect(inRevokedGroup.rows).toEqual([]);
+        expect(inRevokedGroup.totals.runs).toBe(0);
+      }
+      const inOpenGroup = await h.services.reporting.usage(bob, {
+        groupBy: 'subject',
+        groupId: 'g-open',
+      });
+      expect(inOpenGroup.rows.map((row) => row.key)).toEqual(['doc:open']);
     }
     const carol = await h.services.reporting.usage(ALL, {
       groupBy: 'model',
       subjectKind: 'doc',
+      subjectId: 'revoked',
+    });
+    expect(carol.totals.runs).toBe(1);
+    const carolsGroup = await h.services.reporting.usage(ALL, {
+      groupBy: 'subject',
+      groupId: 'g-revoked',
+    });
+    expect(carolsGroup.rows.map((row) => row.key)).toEqual(['doc:revoked']);
+  });
+
+  it('names no subject outside the visibility its kind alone bounds', async () => {
+    // A kind with current visibility and no report descriptions: every subject reads as visible but for the bound.
+    h = await createHarness();
+    h.services.subjects.register({
+      kind: 'note',
+      context: h.services.subjects.get('sample')!.context,
+      visibleSubjects: (_conn, userId) =>
+        Promise.resolve(
+          userId === 'carol'
+            ? null
+            : (eb, column) => eb(column, '!=', 'revoked'),
+        ),
+    });
+    const agentId = await h.createAgent();
+    const runner = await h.registerRunner();
+    for (const id of ['open', 'revoked']) {
+      await h.services.runs.enqueue({
+        agentId,
+        subject: { kind: 'note', id },
+        actorUserId: 'bob',
+        input: {
+          type: 'comment',
+          actor: { kind: 'user', id: 'bob', name: 'Bob' },
+          text: 'Go.',
+        },
+      });
+      await complete(runner, [
+        { tool: 'claude', model: 'm', inputTokens: 10, outputTokens: 1 },
+      ]);
+    }
+    for (const allRuns of [true, false]) {
+      const bob: ReportCaller = { userId: 'bob', allRuns };
+      const people = await h.services.reporting.usage(bob, {
+        groupBy: 'person',
+      });
+      expect(people.rows.map((row) => [row.key, row.runs])).toEqual([
+        ['bob', 2],
+      ]);
+      const subjects = await h.services.reporting.usage(bob, {
+        groupBy: 'subject',
+      });
+      expect(subjects.rows.map((row) => [row.key, row.name])).toEqual([
+        ['note:open', 'open'],
+        ['', null],
+      ]);
+      const revoked = await h.services.reporting.usage(bob, {
+        groupBy: 'model',
+        subjectKind: 'note',
+        subjectId: 'revoked',
+      });
+      expect(revoked.totals.runs).toBe(0);
+    }
+    const carol = await h.services.reporting.usage(ALL, {
+      groupBy: 'model',
+      subjectKind: 'note',
       subjectId: 'revoked',
     });
     expect(carol.totals.runs).toBe(1);
