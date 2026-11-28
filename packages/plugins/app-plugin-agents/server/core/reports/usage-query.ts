@@ -109,6 +109,7 @@ export interface SourceBucket {
 export interface TokenBucket extends SubjectBucket, SourceBucket {
   readonly dimension?: string | null;
   readonly utc_day?: string;
+  readonly records: string | number;
   readonly input_tokens: string | number;
   readonly output_tokens: string | number;
   readonly cache_read_tokens: string | number;
@@ -272,6 +273,7 @@ export function createUsageQueries(
       projection: SubjectProjection,
       groupBy: Dimension,
       byDay: boolean,
+      preserveCostOrder = false,
     ): Promise<TokenBucket[]> {
       const { rows, keys } = projected(
         scoped.select([
@@ -287,13 +289,24 @@ export function createUsageQueries(
         groupBy,
         byDay,
       );
-      for (const column of tokenColumns) rows.sum({ [column]: column });
+      rows.select(
+        sourceColumns.map((column) =>
+          client.raw('?? as ??', [exact(column), column]),
+        ),
+      );
+      // The legacy rounding order needs only token inputs. Run counts and timing stay aggregated in SQL.
+      if (preserveCostOrder)
+        return rows
+          .select(tokenColumns)
+          .select(client.raw('1 as records'))
+          .orderBy('usage_id');
+      for (const column of tokenColumns) {
+        if (sqlite)
+          rows.select(client.raw('nb_decimal_sum(??) as ??', [column, column]));
+        else rows.sum({ [column]: column });
+      }
       return rows
-        .select(
-          sourceColumns.map((column) =>
-            client.raw('?? as ??', [exact(column), column]),
-          ),
-        )
+        .count({ records: '*' })
         .min({ first_id: 'usage_id' })
         .groupBy([...keys, ...sourceColumns.map(exact)])
         .orderBy('first_id');

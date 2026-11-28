@@ -384,25 +384,27 @@ export function createReportService(deps: {
     caller: ReportCaller,
     range: ReportRange,
     filter: UsageFilter & { readonly groupId?: string | null },
+    preserveCostOrder = false,
   ) {
     const scope = await usageScope(conn, deps.subjects, caller, range, filter);
-    const usage = await scope
-      .withInside(
-        scope.base.select([
-          ...USAGE_RUN_COLUMNS.map((column) => `run.${column} as ${column}`),
-          'usage.tool as tool',
-          'usage.modelService as modelService',
-          'usage.model as model',
-          'usage.inputTokens as inputTokens',
-          'usage.outputTokens as outputTokens',
-          'usage.cacheReadTokens as cacheReadTokens',
-          'usage.cacheWriteTokens as cacheWriteTokens',
-          'usage.reasoningTokens as reasoningTokens',
-          'usage.createdAt as usageAt',
-        ]),
-        'insideId',
-      )
-      .execute<Row>();
+    const query = scope.withInside(
+      scope.base.select([
+        ...USAGE_RUN_COLUMNS.map((column) => `run.${column} as ${column}`),
+        'usage.tool as tool',
+        'usage.modelService as modelService',
+        'usage.model as model',
+        'usage.inputTokens as inputTokens',
+        'usage.outputTokens as outputTokens',
+        'usage.cacheReadTokens as cacheReadTokens',
+        'usage.cacheWriteTokens as cacheWriteTokens',
+        'usage.reasoningTokens as reasoningTokens',
+        'usage.createdAt as usageAt',
+      ]),
+      'insideId',
+    );
+    const usage = await (
+      preserveCostOrder ? query.orderBy('usage.id') : query
+    ).execute<Row>();
     const byId = new Map<string, UsageRun>();
     for (const row of usage) {
       const id = text(row.id);
@@ -601,7 +603,7 @@ export function createReportService(deps: {
         ])
       : [[], null];
     const runs = runRows.filter(keep);
-    const report = mergeUsageBuckets({
+    const buckets = {
       groupBy,
       tokens,
       daily: dayRows ? dayRows.filter(keep) : tokens,
@@ -610,7 +612,18 @@ export function createReportService(deps: {
       price,
       keyOf,
       series,
-    });
+    };
+    let report = mergeUsageBuckets(buckets);
+    if (report.roundingSensitive) {
+      const ordered = (
+        await sql.tokens(projection, groupBy, true, true)
+      ).filter(keep);
+      report = mergeUsageBuckets({
+        ...buckets,
+        tokens: ordered,
+        daily: ordered,
+      });
+    }
     const from = range.unbounded
       ? (firstDays
           .filter(keep)
@@ -631,7 +644,13 @@ export function createReportService(deps: {
     prices: PriceBook,
     online: boolean,
   ) {
-    const read = await usageRecords(conn, caller, range, { ...query, subject });
+    const read = await usageRecords(
+      conn,
+      caller,
+      range,
+      { ...query, subject },
+      true,
+    );
     const records = subject
       ? read.records.filter((record) => record.subjectKind !== '')
       : read.records;

@@ -627,6 +627,60 @@ describe('reporting service', () => {
     }
   });
 
+  it('preserves the historical cost at a floating-point rounding boundary', async () => {
+    h = await createHarness();
+    const agentId = await h.createAgent();
+    const runId = await h.enqueue(agentId);
+    const conn = h.database.connection();
+    const data = Array.from({ length: 150 }, () =>
+      record({
+        runId,
+        agentId,
+        type: 'runner',
+        durationMs: 0,
+        model: 'boundary',
+        inputTokens: 1,
+        outputTokens: 0,
+        cacheReadTokens: 0,
+      }),
+    );
+    await conn.query
+      .insertInto('agRunUsage')
+      .values(
+        data.map((row, index) => ({
+          id: String(index),
+          runId: row.runId,
+          tool: row.tool,
+          model: row.model,
+          inputTokens: 1,
+          createdAt: `${row.day}T00:00:00.000Z`,
+        })),
+      )
+      .execute();
+    await h.services.prices.replace({
+      prices: [
+        { tool: 'claude', model: 'boundary', inputPerM: 0.01, outputPerM: 0 },
+      ],
+      subscriptions: [],
+    });
+    const result = await h.services.reporting.usage(ALL, {
+      from: '2026-10-01',
+      to: '2026-10-01',
+      groupBy: 'agent',
+      series: true,
+    });
+    const expected = aggregateUsage(
+      data,
+      'agent',
+      await listPrices(conn),
+      undefined,
+      true,
+    );
+    expect(result.totals).toEqual(expected.totals);
+    expect(result.daily).toEqual(expected.daily);
+    expect(result.totals.cost).toEqual({ USD: 0.000001 });
+  });
+
   it('narrows usage to one subject, and to one person on it', async () => {
     h = await createHarness();
     const { agentId } = await seed();

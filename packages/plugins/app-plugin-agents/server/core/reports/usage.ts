@@ -354,7 +354,7 @@ export function mergeUsageBuckets(options: {
   readonly price: BucketPrices;
   readonly keyOf: (row: TokenBucket | RunBucket) => string;
   readonly series: boolean;
-}): AggregatedUsage {
+}): AggregatedUsage & { readonly roundingSensitive: boolean } {
   const groups = new Map<string, TokenTotals>();
   const days = new Map<string, TokenTotals>();
   const dayGroups = new Map<string, Map<string, TokenTotals>>();
@@ -366,7 +366,8 @@ export function mergeUsageBuckets(options: {
     addTokens(totalsFor(groups, key), tokens, price);
     addTokens(total, tokens, price);
     if (options.series && row.utc_day) {
-      const byKey = dayGroups.get(row.utc_day) ?? new Map<string, TokenTotals>();
+      const byKey =
+        dayGroups.get(row.utc_day) ?? new Map<string, TokenTotals>();
       dayGroups.set(row.utc_day, byKey);
       addTokens(totalsFor(byKey, key), tokens, price);
     }
@@ -400,7 +401,25 @@ export function mergeUsageBuckets(options: {
   const rows = [...groups].map(([key, tokens]) =>
     rowOf(key, tokens, groupRuns.get(key) ?? []),
   );
+  const records = options.tokens.reduce(
+    (sum, row) => sum + Number(row.records),
+    0,
+  );
+  // Summing buckets changes the order of floating-point addition. At a rounding boundary
+  // the original usage-ID order may change the last reported decimal place.
+  const nearHalf = (amounts: TokenTotals) =>
+    [...amounts.cost.values()].some((cost) => {
+      const scaled = cost * 1e6;
+      const margin = Number.EPSILON * Math.max(1, scaled) * (records + 8) * 4;
+      return Math.abs(scaled - Math.floor(scaled) - 0.5) <= margin;
+    });
+  const roundingSensitive =
+    nearHalf(total) ||
+    [...groups.values()].some(nearHalf) ||
+    [...days.values()].some(nearHalf) ||
+    [...dayGroups.values()].some((day) => [...day.values()].some(nearHalf));
   return {
+    roundingSensitive,
     rows,
     daily: orderUsage(
       options.groupBy,
