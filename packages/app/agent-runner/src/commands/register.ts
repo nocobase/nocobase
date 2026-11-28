@@ -143,6 +143,7 @@ export default class Register extends RunnerCommand {
       product: runnerHost().product,
       protocolVersion: PROTOCOL_VERSION,
       features: policy.features,
+      toolsRefreshSupported: true,
       tools: [],
       ...(policy.policy.reported ? { policy: policy.policy.reported } : {}),
       variables: providedNames(

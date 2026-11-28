@@ -114,6 +114,11 @@ export interface FakeServerOptions {
   app?: { id: string; name: string };
   /** Gate dispatch on the reported tool authentication, as an application does. */
   requireAuthentication?: boolean;
+  /** Validators from a receiver version being exercised by a compatibility test. */
+  validateRegister?: (body: RegisterRequest) => void;
+  validateHeartbeat?: (body: HeartbeatRequest) => void;
+  /** Delay acknowledgement after receiving a heartbeat. */
+  beforeHeartbeatResponse?: (body: HeartbeatRequest) => Promise<void>;
 }
 
 type RunInit = Partial<Omit<RunPayload, 'run'>> & {
@@ -204,6 +209,7 @@ export class FakeServer {
   diagnostics: DiagnosticsRequest | undefined;
   readonly diagnosticsUploads: unknown[][] = [];
   upgrade: UpgradeNotice | undefined;
+  toolsRefreshRequestId?: string;
   /** The protocol heartbeat answers say the server speaks while set; left out otherwise, as an older server does. */
   protocolVersion: number | undefined;
   /** Sent with every heartbeat answer while set, to a runner whose heartbeat declares the `npm` feature. */
@@ -523,6 +529,7 @@ export class FakeServer {
 
     app.post(RUNNER_ROUTES.register, async (c) => {
       const body = (await c.req.json()) as RegisterRequest;
+      this.options.validateRegister?.(body);
       if (!this.registrationTokens.delete(body.registrationToken))
         return error(c, 401, 'REGISTRATION_TOKEN_INVALID');
       const id = `runner-${this.runners.size + 1}`;
@@ -580,6 +587,8 @@ export class FakeServer {
       const runner = c.get('runner' as never) as FakeRunner;
       runner.heartbeats.push((await c.req.json()) as HeartbeatRequest);
       const heartbeat = runner.heartbeats.at(-1)!;
+      this.options.validateHeartbeat?.(heartbeat);
+      await this.options.beforeHeartbeatResponse?.(heartbeat);
       const jobs = heartbeat.jobs
         ? {
             cancelRequested: heartbeat.jobs
@@ -607,6 +616,7 @@ export class FakeServer {
         )
         .map(([id]) => id);
       return ok(c, {
+        toolsRefreshRequestId: this.toolsRefreshRequestId,
         ok: true,
         ...(this.capacity ? { capacity: this.capacity } : {}),
         serverTime: new Date().toISOString(),
