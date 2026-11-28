@@ -6,9 +6,10 @@ import type { AppPluginApplication } from '@nocobase/app-server/plugins';
 import { agentsToken } from '../server/tokens.js';
 import { AgentsProvider } from '../server/providers/agents.js';
 import type { Knex } from 'knex';
-import { afterEach, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { createHarness, type Harness } from './harness.js';
 import { runsRepo } from '../server/core/runs/run.store.js';
+import { usageReadLimits } from '../server/core/reports/report.service.js';
 import {
   runVisibility,
   subjectVisibleForRun,
@@ -338,123 +339,157 @@ const runReads = (sql: readonly string[]) =>
     ),
   );
 
-it('reads a usage report’s runs once each, in batches the statement’s parameter limit leaves room for', async () => {
-  h = await createHarness();
-  const sample = h.services.subjects.get('sample')!;
-  // As Studio's issues for a reader in 500 projects: the bound binds 500 ids of its own and reads other tables
-  // through `exists`; subject 3 is outside it.
-  const projects = [
-    '3',
-    ...Array.from({ length: 499 }, (_, i) => `project-${i}`),
-  ];
-  h.services.subjects.register({
-    ...sample,
-    kind: 'measured',
-    visibleSubjects: async () => (eb, column) =>
-      eb.and([
-        eb(column, 'not in', projects),
-        eb.exists(
-          eb
-            .selectFrom('agAgents as agent')
-            .select('agent.id')
-            .where('agent.id', 'is not', null),
-        ),
-      ]),
-  });
-  const conn = h.database.connection();
-  const client = await conn.client<Knex>();
-  const agentId = await h.createAgent();
-  const seedId = await h.enqueue(agentId, 'seed', { actorUserId: 'bob' });
-  const { revision: _revision, ...seed } = (await runsRepo(conn).findOne({
-    filter: { id: seedId },
-  }))!;
-  await runsRepo(conn).deleteMany({ filter: { id: seedId } });
-  // More runs than one read of 999 parameters takes beside the bound's 500, two usage records each.
-  const total = 700;
-  const ids = Array.from(
-    { length: total },
-    (_, i) => `run-${String(i).padStart(4, '0')}`,
-  );
-  for (let at = 0; at < total; at += 20) {
-    const chunk = ids.slice(at, at + 20);
-    await runsRepo(conn).createMany({
-      values: chunk.map((id) => ({
-        ...seed,
-        id,
-        subjectKind: 'measured',
-        subjectId: String(Number(id.slice(4))),
-      })),
+describe('usage report reads under a parameter limit', () => {
+  type Query = { sql: string; bindings: readonly unknown[] };
+  /**
+   * `total` runs bob woke on subjects 0, 1, …, two usage records each, of a kind whose bound binds `scope` ids of its
+   * own and reads other tables through `exists`, as Studio's issues for a reader in that many projects; subject 3 is
+   * outside it.
+   */
+  async function fixture(scope: number, total: number) {
+    h = await createHarness();
+    const sample = h.services.subjects.get('sample')!;
+    const projects = [
+      '3',
+      ...Array.from({ length: scope - 1 }, (_, i) => `project-${i}`),
+    ];
+    h.services.subjects.register({
+      ...sample,
+      kind: 'measured',
+      visibleSubjects: async () => (eb, column) =>
+        eb.and([
+          eb(column, 'not in', projects),
+          eb.exists(
+            eb
+              .selectFrom('agAgents as agent')
+              .select('agent.id')
+              .where('agent.id', 'is not', null),
+          ),
+        ]),
     });
-    await conn.repository('agRunUsage').createMany({
-      values: chunk.flatMap((runId) =>
-        [0, 1].map((part) => ({
-          id: `usage-${runId}-${part}`,
-          runId,
-          tool: 'claude',
-          modelService: null,
-          model: `m${part}`,
-          inputTokens: 1,
-          outputTokens: 0,
-          cacheReadTokens: 0,
-          cacheWriteTokens: 0,
-          reasoningTokens: 0,
-          createdAt: h.clock.now().toISOString(),
+    const conn = h.database.connection();
+    const client = await conn.client<Knex>();
+    const agentId = await h.createAgent();
+    const seedId = await h.enqueue(agentId, 'seed', { actorUserId: 'bob' });
+    const { revision: _revision, ...seed } = (await runsRepo(conn).findOne({
+      filter: { id: seedId },
+    }))!;
+    await runsRepo(conn).deleteMany({ filter: { id: seedId } });
+    const ids = Array.from(
+      { length: total },
+      (_, i) => `run-${String(i).padStart(4, '0')}`,
+    );
+    for (let at = 0; at < total; at += 20) {
+      const chunk = ids.slice(at, at + 20);
+      await runsRepo(conn).createMany({
+        values: chunk.map((id) => ({
+          ...seed,
+          id,
+          subjectKind: 'measured',
+          subjectId: String(Number(id.slice(4))),
         })),
-      ),
-    });
-  }
-  const read = async () => {
-    const queries: { sql: string; bindings: readonly unknown[] }[] = [];
-    const listener = (query: { sql: string; bindings?: readonly unknown[] }) =>
-      queries.push({ sql: query.sql, bindings: query.bindings ?? [] });
-    client.on('query', listener);
-    try {
-      // Bob woke every run, so he counts the one outside the bound too, unnamed.
-      const report = await h.services.reporting.usage(
-        { userId: 'bob', allRuns: true },
-        { groupBy: 'subject' },
-      );
-      return { report, queries };
-    } finally {
-      client.removeListener('query', listener);
+      });
+      await conn.repository('agRunUsage').createMany({
+        values: chunk.flatMap((runId) =>
+          [0, 1].map((part) => ({
+            id: `usage-${runId}-${part}`,
+            runId,
+            tool: 'claude',
+            modelService: null,
+            model: `m${part}`,
+            inputTokens: 1,
+            outputTokens: 0,
+            cacheReadTokens: 0,
+            cacheWriteTokens: 0,
+            reasoningTokens: 0,
+            createdAt: h.clock.now().toISOString(),
+          })),
+        ),
+      });
     }
-  };
-  const batched = await read();
-  const reads = batched.queries.filter((query) => runReads([query.sql]).length);
-  // 700 ids beside some 500 parameters of the bound: two reads, each within SQLite's oldest limit of 999.
-  expect(reads).toHaveLength(2);
-  for (const query of reads)
-    expect(query.bindings.length).toBeLessThanOrEqual(999);
-  expect(reads[0]!.bindings.length).toBe(999);
-  expect(
-    batched.queries.filter((query) => /ag_run_usage/iu.test(query.sql)),
-  ).toHaveLength(1);
-  // The same report as when every id fits in one read.
-  const { usageReadLimits } =
-    await import('../server/core/reports/report.service.js');
-  const limit = usageReadLimits.parameters;
-  usageReadLimits.parameters = 32_766;
-  try {
-    const whole = await read();
-    expect(
-      whole.queries.filter((query) => runReads([query.sql]).length),
-    ).toHaveLength(1);
-    expect(whole.report).toEqual(batched.report);
-  } finally {
-    usageReadLimits.parameters = limit;
+    // Bob woke every run, so he counts the one outside the bound too, unnamed.
+    const read = async (parameters: number | null) => {
+      const queries: Query[] = [];
+      const listener = (query: {
+        sql: string;
+        bindings?: readonly unknown[];
+      }) => queries.push({ sql: query.sql, bindings: query.bindings ?? [] });
+      const limit = usageReadLimits.parameters;
+      usageReadLimits.parameters = parameters;
+      client.on('query', listener);
+      try {
+        const report = await h.services.reporting.usage(
+          { userId: 'bob', allRuns: true },
+          { groupBy: 'subject' },
+        );
+        return {
+          report,
+          usage: queries.filter((query) => /ag_run_usage/iu.test(query.sql)),
+          runs: queries.filter((query) => runReads([query.sql]).length),
+        };
+      } finally {
+        client.removeListener('query', listener);
+        usageReadLimits.parameters = limit;
+      }
+    };
+    return { read };
   }
-  // Bob sees every subject but 3 by name; subject 3 is one unnamed row.
-  const rows = batched.report.rows;
-  expect(rows).toHaveLength(total);
-  expect(rows.find((row) => row.key === '')).toMatchObject({
-    name: null,
-    runs: 1,
-    inputTokens: 2,
+  const expectReport = (
+    report: Awaited<ReturnType<typeof h.services.reporting.usage>>,
+    total: number,
+  ) => {
+    // Bob sees every subject but 3 by name; subject 3 is one unnamed row.
+    expect(report.rows).toHaveLength(total);
+    expect(report.rows.find((row) => row.key === '')).toMatchObject({
+      name: null,
+      runs: 1,
+      inputTokens: 2,
+    });
+    expect(report.rows.find((row) => row.key === 'measured:3')).toBeUndefined();
+    expect(report.totals).toMatchObject({
+      runs: total,
+      inputTokens: total * 2,
+    });
+  };
+
+  it('reads the runs once each, in batches the statement’s parameters leave room for', async () => {
+    const { read } = await fixture(500, 700);
+    // SQLite's oldest limit: 700 ids beside some 500 parameters of the bound take two reads, each within 999.
+    const batched = await read(999);
+    expect(batched.usage).toHaveLength(1);
+    expect(batched.runs).toHaveLength(2);
+    for (const query of batched.runs)
+      expect(query.bindings.length).toBeLessThanOrEqual(999);
+    // The same report as when every id fits in one read, the dialect's own limit.
+    const whole = await read(null);
+    expect(whole.runs).toHaveLength(1);
+    expect(whole.report).toEqual(batched.report);
+    expectReport(batched.report, 700);
   });
-  expect(rows.find((row) => row.key === 'measured:3')).toBeUndefined();
-  expect(batched.report.totals).toMatchObject({
-    runs: total,
-    inputTokens: total * 2,
+
+  it('binds none of the bound’s ids in the usage read, however many the reader sees', async () => {
+    const { read } = await fixture(2_000, 30);
+    const { report, usage, runs } = await read(null);
+    expect(usage).toHaveLength(1);
+    expect(usage[0]!.bindings.length).toBeLessThan(10);
+    expect(usage[0]!.sql).not.toMatch(/not in/iu);
+    expect(runs).toHaveLength(1);
+    expectReport(report, 30);
+    // Up to a bound that leaves room for one id in 999 parameters, one id a read.
+    const { read: tight } = await fixture(987, 5);
+    const close = await tight(999);
+    expect(close.usage[0]!.bindings.length).toBeLessThan(10);
+    expect(close.runs).toHaveLength(5);
+    for (const query of close.runs) {
+      expect(query.bindings.length).toBeLessThanOrEqual(999);
+      expect(
+        query.bindings.filter((value) => /^run-/u.test(String(value))),
+      ).toHaveLength(1);
+    }
+    expectReport(close.report, 5);
+    // A bound of more than that fails plainly before any read binds past the limit.
+    const { read: over } = await fixture(988, 3);
+    await expect(over(999)).rejects.toThrow(/leaving none for the runs/u);
   });
 });
 

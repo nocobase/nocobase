@@ -86,6 +86,7 @@ const USAGE_RUN_COLUMNS = [
   'agentId',
   'agentType',
   'actorUserId',
+  'ownerUserId',
   'subjectKind',
   'subjectId',
   'startedAt',
@@ -95,11 +96,28 @@ const USAGE_RUN_COLUMNS = [
 type Row = Record<string, unknown>;
 
 /**
- * How many parameters one read of a usage report's runs binds at most, the lowest limit of the supported databases
- * (SQLite's oldest default, 999). Each read takes as many run ids as the statement's other parameters (the visibility
- * bound's, such as the project ids a reader sees) leave room for. Tests lower it.
+ * The most parameters one statement may bind, by dialect: SQLite as bundled with better-sqlite3 (32766 since SQLite
+ * 3.32), the 16-bit count of PostgreSQL's and MySQL's protocols, SQL Server's 2100; 999, SQLite's oldest default,
+ * for any other.
  */
-export const usageReadLimits = { parameters: 999 };
+const PARAMETER_LIMITS: Readonly<Record<string, number>> = {
+  sqlite: 32_766,
+  postgres: 65_535,
+  mysql: 65_535,
+  mariadb: 65_535,
+  oracle: 65_535,
+  mssql: 2_100,
+};
+
+/**
+ * How a usage report reads its runs: at most `runIds` ids a read (Oracle takes no more in one `IN` list), and within
+ * `parameters`, or the dialect's limit when null, with the statement's other parameters (the visibility bound's, such
+ * as the ids of the projects a reader sees). Tests lower them.
+ */
+export const usageReadLimits: { parameters: number | null; runIds: number } = {
+  parameters: null,
+  runIds: 1_000,
+};
 
 const text = (value: unknown): string =>
   typeof value === 'string'
@@ -339,7 +357,8 @@ export function createReportService(deps: {
 
   /**
    * The usage reported in the range of the runs the caller counts: one read of the usage, and one read of the runs it
-   * was reported for per batch of ids (`usageReadLimits`), a single batch unless the runs are many.
+   * was reported for per batch of ids (`usageReadLimits`), a single batch unless the runs are many. However many ids
+   * a reader's visibility binds, the usage read binds none of them: the runs' reads say which runs the caller sees.
    */
   async function usageRecords(
     conn: DatabaseConnection,
@@ -354,13 +373,15 @@ export function createReportService(deps: {
   ) {
     // Read once: what the caller may see of each subject kind now, for the runs they count and for naming subjects.
     const bounds = await subjectBounds(conn, deps.subjects, caller.userId);
+    // In the usage read only what binds no more than a few parameters: a caller who may not see every run counts the
+    // runs they woke or own; one who may counts those and the runs inside their bound, which their runs' reads say.
     const visibility = await runVisibility(
       conn,
       deps.subjects,
       caller.userId,
       caller.allRuns,
       'run',
-      bounds,
+      null,
     );
     const ofRuns = <Q extends SelectQuery<Row, Row>>(query: Q): Q => {
       let scoped = query.where(visibility) as Q;
@@ -374,7 +395,7 @@ export function createReportService(deps: {
           .where('run.subjectId', '=', filter.subject.id) as Q;
       return scoped;
     };
-    // The usage of the runs the caller counts, in one read. The caller counts the runs they woke or own even on
+    // The usage of the runs the caller may count, in one read. The caller counts the runs they woke or own even on
     // subjects they may no longer see (`runVisibility`).
     const usage = await ofRuns(
       conn.query
@@ -419,15 +440,21 @@ export function createReportService(deps: {
             : []),
         ])
         .where('run.id', 'in', batch);
-    // The ids fill what the statement's own parameters leave of the limit, at least one.
-    const size =
+    // The ids fill what the statement's own parameters leave of the limit, and what the adapter may add when it runs
+    // it: at most one a column read (PostgreSQL formats each time column with one).
+    const limit =
+      usageReadLimits.parameters ?? PARAMETER_LIMITS[conn.dialect] ?? 999;
+    const own =
       ids.length === 0
         ? 0
-        : Math.max(
-            1,
-            usageReadLimits.parameters -
-              (runsOf(ids.slice(0, 1)).compile().parameters.length - 1),
-          );
+        : runsOf(ids.slice(0, 1)).compile().parameters.length -
+          1 +
+          USAGE_RUN_COLUMNS.length;
+    if (ids.length > 0 && own >= limit)
+      throw new Error(
+        `The visibility of the usage report's subjects needs ${own} parameters of the ${limit} one statement may bind, leaving none for the runs.`,
+      );
+    const size = Math.min(usageReadLimits.runIds, limit - own);
     for (let at = 0; at < ids.length; at += size) {
       const rows = await runsOf(ids.slice(at, at + size)).execute<Row>();
       for (const row of rows) {
@@ -437,7 +464,16 @@ export function createReportService(deps: {
           inside.add(run.id);
       }
     }
-    const { runs: counted, facts } = await countable(conn, caller, runs, null);
+    // Of a caller who may see every run, the runs they neither woke nor own count only inside their bound.
+    const seen = runs.filter(
+      (run) =>
+        !caller.allRuns ||
+        inside === null ||
+        inside.has(run.id) ||
+        run.actorUserId === caller.userId ||
+        run.ownerUserId === caller.userId,
+    );
+    const { runs: counted, facts } = await countable(conn, caller, seen, null);
     // What identifies a subject the caller may not see now (it, its group) is left out of the records, and a group
     // filter matches only the groups the caller sees, so asking for that group never counts it either.
     // A private kind's counted runs are all the caller's own (`runVisibility` keeps no one else's), and its people see
