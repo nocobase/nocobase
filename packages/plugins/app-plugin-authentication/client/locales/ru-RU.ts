@@ -1,9 +1,11 @@
+import auditLabels from '../../locales/ru-RU.js';
 import type { LocaleResource } from '@nocobase/i18n';
 
 import { withPluralForms } from '../plural-forms.js';
 import enUS from './en-US.js';
 
 const ruRU: LocaleResource<typeof enUS> = {
+  ...auditLabels,
   errors: {
     generic: 'Что-то пошло не так. Повторите попытку.',
     network:

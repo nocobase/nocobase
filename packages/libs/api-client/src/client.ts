@@ -175,6 +175,7 @@ function throwResponseError(
       requestId:
         executed.response.headers.get('x-request-id') ??
         readErrorField(payload, 'requestId'),
+      retryAfter: executed.response.headers.get('retry-after') ?? undefined,
       reason: readErrorField(payload, 'reason'),
       domain: readErrorField(payload, 'domain'),
       method: executed.method,

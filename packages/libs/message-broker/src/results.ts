@@ -6,8 +6,8 @@ export function ack(): MessageResult {
 }
 
 /**
- * Redelivers the message, after `delay` milliseconds when given; after `maxAttempts` deliveries it goes to the dead
- * letter instead. Throwing from a handler retries without a delay.
+ * Retries the message, using `delay` in milliseconds when given. When `maxAttempts` is reached, the backend
+ * settles it as a final failure. Throwing from a handler uses the subscription's retry delay.
  */
 export function retry(
   options: { readonly delay?: number } = {},
@@ -17,7 +17,7 @@ export function retry(
     : { kind: 'retry', delay: options.delay };
 }
 
-/** Moves the message to the dead letter at once. */
+/** Marks the message as a final failure with the given reason, skipping retries. */
 export function reject(reason: string): MessageResult {
   return { kind: 'reject', reason };
 }

@@ -296,6 +296,8 @@ export interface HostBackendCapabilities {
   images: boolean;
   /** Backs an App's databases and files up and restores them on request (`createBackup`, `restoreBackup`). */
   backup: boolean;
+  /** Keeps backup archives when the App's business data is purged. */
+  keepBackupsOnPurge?: boolean;
   logs: boolean;
   urlModes: ('path' | 'subdomain')[];
 }

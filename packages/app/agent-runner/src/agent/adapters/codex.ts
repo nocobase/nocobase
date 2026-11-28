@@ -245,12 +245,14 @@ export class CodexAdapter implements AgentAdapter {
         };
         signal.addEventListener('abort', abort, { once: true });
         if (signal.aborted) abort();
+        let method = 'initialize';
         try {
           await rpc.request('initialize', {
             clientInfo: CLIENT_INFO,
             capabilities: { experimentalApi: false },
           });
           rpc.notify('initialized');
+          method = 'model/list';
           const models: { id: unknown; efforts?: unknown[] }[] = [];
           let cursor: string | null = null;
           const cursors = new Set<string>();
@@ -293,6 +295,10 @@ export class CodexAdapter implements AgentAdapter {
                 modelsDetectionError: signal.aborted
                   ? 'Model detection timed out'
                   : 'Model detection failed',
+                modelsDetectionDetail:
+                  error instanceof RpcError
+                    ? `Codex ${method} returned RPC error ${error.code}`
+                    : `Codex app-server did not complete ${method}`,
               };
         } finally {
           signal.removeEventListener('abort', abort);

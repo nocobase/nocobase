@@ -43,7 +43,7 @@ class SampleProvider extends ServiceProvider<Application> {
 }
 
 describe('db sample', () => {
-  it('runs the sample seeds and services an installation skipped', async () => {
+  it('omits disabled samples from dry runs and loads them on request', async () => {
     const databases = await provisionTestDatabases({ connections: ['main'] });
     provisioned.push(databases);
     const fixture = databaseCommandFixture({
@@ -76,6 +76,18 @@ export default defineSeed({ name: '001_sample', sample: true, async run() {} });
     expect(
       applied.results.find((entry) => entry.kind === 'seeds'),
     ).toMatchObject({ skippedSamples: ['001_sample'], freshInstall: true });
+
+    const preview = await runDatabaseApplyCommand(
+      fixture.command as never,
+      { all: false, dryRun: true },
+      fixture.runtime,
+    );
+    expect(
+      preview.results.find((entry) => entry.kind === 'seeds'),
+    ).toMatchObject({
+      pending: [],
+      skipped: [],
+    });
 
     const sampled = await runDatabaseSampleCommand(
       fixture.command as never,

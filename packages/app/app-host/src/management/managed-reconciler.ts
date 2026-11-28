@@ -35,6 +35,7 @@ import path from 'node:path';
 import { randomUUID } from 'node:crypto';
 import {
   access,
+  lstat,
   mkdir,
   readFile,
   readdir,
@@ -43,6 +44,7 @@ import {
   writeFile,
 } from 'node:fs/promises';
 import { readHostRuntime } from './runtime.ts';
+import { HostManagementError } from './scopes.ts';
 import type {
   ApplyDeploymentSetResult,
   HostDeploymentSet,
@@ -571,33 +573,65 @@ export class ManagedReconciler {
    */
   removeDeployment(
     appId: string,
-    options: { readonly purgeData?: boolean } = {},
+    options: {
+      readonly purgeData?: boolean;
+      readonly keepBackups?: boolean;
+      readonly scopeId?: string;
+      readonly backend?: ServiceBackend | null;
+    } = {},
   ): Promise<HostStatus> {
     return this.enqueue(async () => {
       if (!/^[a-zA-Z0-9_-]+$/.test(appId)) throw new Error('Invalid app ID');
       const purgeData = options.purgeData !== false;
+      const keepBackups = options.keepBackups === true;
       const revision = this.nextRevision();
       const status = [...this.statuses.values()].find(
         (candidate) => candidate.appId === appId,
       );
       const definition = this.definitionForDisposal(appId);
+      const backend = keepBackups
+        ? (options.backend ??
+          (definition && this.serviceBackend(definition.backend)))
+        : null;
+      const scopeId = options.scopeId ?? this.specs.get(appId)?.scope?.id;
+      if (backend && (!backend.disposeKeepingBackups || !scopeId))
+        throw new HostManagementError(
+          'This backend cannot keep backups when purging an App',
+          'BACKUP_RETENTION_UNSUPPORTED',
+        );
       await this.registry.unregister(appId, {
         reason: status
           ? `deployment ${status.id} removed`
           : `app ${appId} removed`,
       });
-      if (definition) await this.disposeService(definition, purgeData);
+      if (keepBackups) {
+        // A recoverable failure must keep the spec that identifies the backend's resources.
+        if (scopeId) await backend?.disposeKeepingBackups?.(appId, scopeId);
+      } else if (definition) await this.disposeService(definition, purgeData);
+      const remove = { recursive: true, force: true };
+      const volume = path.join(this.volumes.volumesDir, appId);
+      if (purgeData && keepBackups) {
+        const info = await lstat(volume).catch(
+          (error: NodeJS.ErrnoException) => {
+            if (error.code === 'ENOENT') return undefined;
+            throw error;
+          },
+        );
+        if (info && !info.isDirectory())
+          throw new Error('Invalid App volume directory');
+        const entries = await readdir(volume).catch(
+          (error: NodeJS.ErrnoException) => {
+            if (error.code === 'ENOENT') return [];
+            throw error;
+          },
+        );
+        for (const entry of entries) {
+          if (entry !== 'backups') await rm(path.join(volume, entry), remove);
+        }
+      } else if (purgeData) await rm(volume, remove);
+      await rm(path.join(this.deploymentsDir, appId), remove);
       if (status) this.statuses.delete(status.id);
       this.specs.delete(appId);
-      await rm(path.join(this.deploymentsDir, appId), {
-        recursive: true,
-        force: true,
-      });
-      if (purgeData)
-        await rm(path.join(this.volumes.volumesDir, appId), {
-          recursive: true,
-          force: true,
-        });
       this.reconciledRevision = revision;
       return this.getStatus();
     });

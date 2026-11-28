@@ -1,5 +1,39 @@
 # @nocobase/app-plugin-foundation
 
+## 0.1.0-beta.24
+
+### Patch Changes
+
+- 1952789: Declare whether each product plugin is enabled by default, preinstalled only, available separately, or deprecated.
+- cf23bfe: Stop publishing CHANGELOG.md in the package; the changelog stays in the repository.
+- Updated dependencies [888bca5]
+- Updated dependencies [1952789]
+- Updated dependencies [cf23bfe]
+  - @nocobase/app-plugin-authentication@2.0.0-beta.27
+  - @nocobase/app-plugin-authorization@1.0.0-beta.42
+
+## 0.1.0-beta.23
+
+### Patch Changes
+
+- cc0bf33: Run outstanding sample data when enabled on existing databases. Write seed history only after a successful run and omit disabled sample seeds from dry-run plans. Apply the preview environment's sample data setting on every deployment and document the guidance for adding sample seeds to business changes.
+- 1b92cdb: Show preinstalled plugins as “Not enabled” in the plugin list without a development dependency suffix.
+- Updated dependencies [cc0bf33]
+- Updated dependencies [4561d5f]
+- Updated dependencies [52d0b0d]
+- Updated dependencies [c12d990]
+- Updated dependencies [1b92cdb]
+- Updated dependencies [1b92cdb]
+- Updated dependencies [1b92cdb]
+- Updated dependencies [78bdca8]
+- Updated dependencies [87e3dac]
+- Updated dependencies [9acf418]
+  - @nocobase/app-server@5.0.0-beta.12
+  - @nocobase/db@1.0.0-beta.31
+  - @nocobase/app-plugin-authentication@2.0.0-beta.26
+  - @nocobase/app-plugin-authorization@1.0.0-beta.41
+  - @nocobase/app-client@4.0.0-beta.14
+
 ## 0.1.0-beta.22
 
 ### Patch Changes

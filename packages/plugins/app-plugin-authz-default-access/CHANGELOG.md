@@ -1,5 +1,48 @@
 # @nocobase/app-plugin-authz-default-access
 
+## 1.0.0-beta.24
+
+### Patch Changes
+
+- 1952789: Declare whether each product plugin is enabled by default, preinstalled only, available separately, or deprecated.
+- cf23bfe: Stop publishing CHANGELOG.md in the package; the changelog stays in the repository.
+- Updated dependencies [888bca5]
+- Updated dependencies [1952789]
+- Updated dependencies [c1f20c6]
+- Updated dependencies [cf23bfe]
+  - @nocobase/audit@0.1.0-beta.1
+  - @nocobase/app-plugin-authentication@2.0.0-beta.27
+  - @nocobase/app-plugin-authorization@1.0.0-beta.42
+
+## 1.0.0-beta.23
+
+### Patch Changes
+
+- 173ab75: Return a not-found error promptly when an administrator tries to edit or delete a default access rule that no longer exists.
+- 52d0b0d: Configure audit capture for application operations and send events to multiple named destinations, including JSON Lines files. Configuring a destination enables explicitly declared audit operations by default. Audit uses the application authentication settings for its trusted proxies and forwarded IP headers.
+
+  The official templates assemble auditing with `AuditProvider` and ship the file driver. Custom application composition roots can add the provider and the audit configuration factory when they use audit routes or transports. Applications using only `@nocobase/app-server` can start without the audit package.
+
+  Built-in audit operations store English default names and translation keys. The official templates load Repository labels in the viewer's language, and JSON Lines keeps the original event names. Separate labels identify assigning and removing permission sets and enabling and disabling users and keys.
+
+- Updated dependencies [cc0bf33]
+- Updated dependencies [4561d5f]
+- Updated dependencies [52d0b0d]
+- Updated dependencies [c12d990]
+- Updated dependencies [1b92cdb]
+- Updated dependencies [1b92cdb]
+- Updated dependencies [1b92cdb]
+- Updated dependencies [78bdca8]
+- Updated dependencies [87e3dac]
+- Updated dependencies [9acf418]
+  - @nocobase/app-server@5.0.0-beta.12
+  - @nocobase/db@1.0.0-beta.31
+  - @nocobase/audit@0.1.0-beta.0
+  - @nocobase/authorization@1.0.0-beta.18
+  - @nocobase/app-plugin-authentication@2.0.0-beta.26
+  - @nocobase/app-plugin-authorization@1.0.0-beta.41
+  - @nocobase/app-client@4.0.0-beta.14
+
 ## 1.0.0-beta.22
 
 ### Minor Changes

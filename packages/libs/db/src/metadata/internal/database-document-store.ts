@@ -1,5 +1,6 @@
 import { createHash, randomUUID } from 'node:crypto';
 import type { Knex } from 'knex';
+import { getDatabaseDriverRuntime } from '../../database/runtime.js';
 import type {
   CollectionMetadataStore,
   CollectionMetadataPage,
@@ -30,6 +31,11 @@ import {
   registerMetadataNamingSnapshot,
   type CollectionMetadataNamingSnapshot,
 } from './naming-snapshot.js';
+
+export interface CollectionSchemaVersion {
+  readonly sequence: number;
+  readonly version: string;
+}
 
 interface NamingSnapshotCache {
   generation: number;
@@ -64,7 +70,9 @@ export class DatabaseCollectionMetadataStore implements CollectionMetadataStore 
   private initializationPromise?: Promise<void>;
   private initialized = false;
   private cacheInitialized = false;
+  private schemaVersionInitialized = false;
   private transactionGeneration?: number;
+  onSchemaWrite?: () => void;
 
   private readonly versionTableName: string;
 
@@ -124,15 +132,16 @@ export class DatabaseCollectionMetadataStore implements CollectionMetadataStore 
     if (this.initialized) {
       store.initialized = true;
       store.cacheInitialized = this.cacheInitialized;
+      store.schemaVersionInitialized = this.schemaVersionInitialized;
       store.initializationPromise = Promise.resolve();
     }
     return store;
   }
 
   /** Capture cache eligibility before BEGIN; savepoints inherit their parent's generation. */
-  async prepareTransaction(): Promise<
-    (client: Knex.Transaction) => DatabaseCollectionMetadataStore
-  > {
+  async prepareTransaction(
+    isolated: boolean = false,
+  ): Promise<(client: Knex.Transaction) => DatabaseCollectionMetadataStore> {
     await this.initialize();
     const client = await this.options.resolveClient();
     const generation = (client as Knex.Transaction).isTransaction
@@ -140,7 +149,7 @@ export class DatabaseCollectionMetadataStore implements CollectionMetadataStore 
       : this.namingCache.generation;
     return (transaction) => {
       const store = this.withClient(async () => transaction);
-      store.transactionGeneration = generation;
+      store.transactionGeneration = isolated ? undefined : generation;
       return store;
     };
   }
@@ -162,6 +171,7 @@ export class DatabaseCollectionMetadataStore implements CollectionMetadataStore 
     this.initializationPromise = undefined;
     this.initialized = false;
     this.cacheInitialized = false;
+    this.schemaVersionInitialized = false;
     this.invalidateNamingSnapshots();
     await this.initialize();
   }
@@ -285,6 +295,7 @@ export class DatabaseCollectionMetadataStore implements CollectionMetadataStore 
         'Initialize the database Collection Metadata Store before opening a transaction that writes metadata.',
       );
     }
+    this.onSchemaWrite?.();
     const client = await this.options.resolveClient();
     const execute = async (knex: Knex): Promise<T> => {
       // Lock writers and give concurrent reads in this transaction a temporary
@@ -319,10 +330,98 @@ export class DatabaseCollectionMetadataStore implements CollectionMetadataStore 
     }
   }
 
+  get cacheGeneration(): number {
+    return this.namingCache.generation;
+  }
+
+  async readSchemaVersion(): Promise<CollectionSchemaVersion | undefined> {
+    if (!this.schemaVersionInitialized) return undefined;
+    const client = await this.options.resolveClient();
+    const row = (await this.table(client, this.versionTableName)
+      .where({ id: 1 })
+      .first()) as
+      | {
+          version: string;
+          schema_seq?: number | string;
+          schema_changes?: number | string;
+        }
+      | undefined;
+    if (
+      !row ||
+      row.schema_seq == null ||
+      row.schema_changes == null ||
+      Number(row.schema_changes) !== 0 ||
+      typeof row.version !== 'string' ||
+      !/^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i.test(row.version)
+    )
+      return undefined;
+    const sequence = Number(row.schema_seq);
+    if (!Number.isSafeInteger(sequence) || sequence < 0) return undefined;
+    return { sequence, version: row.version };
+  }
+
+  readSchemaNaming(
+    version?: CollectionSchemaVersion,
+  ): Promise<CollectionMetadataNamingSnapshot> {
+    const cached = version && this.namingCache.snapshots.get(version.version);
+    return cached ? Promise.resolve(cached) : listMetadataNamingSnapshot(this);
+  }
+
+  async changeSchema<T>(operation: () => Promise<T>): Promise<T> {
+    await this.initialize();
+    if (!this.schemaVersionInitialized) return operation();
+    const client = await this.options.resolveClient();
+    if ((client as Knex.Transaction).isTransaction) {
+      // The version and DDL commit atomically on the supported dialects.
+      // Advance first so a failed statement never needs SQL in an aborted trx.
+      await this.changeVersion(client);
+      return operation();
+    }
+    await this.updateSchemaChanges(client, 1);
+    let result: T;
+    try {
+      result = await operation();
+    } catch (error) {
+      // A failed operation may already have committed some of its DDL.
+      try {
+        await this.updateSchemaChanges(client, -1);
+      } catch (notificationError) {
+        throw new AggregateError(
+          [error, notificationError],
+          'Schema change and schema invalidation both failed.',
+          { cause: notificationError },
+        );
+      }
+      throw error;
+    }
+    await this.updateSchemaChanges(client, -1);
+    return result;
+  }
+
+  private async updateSchemaChanges(
+    client: Knex,
+    delta: 1 | -1,
+  ): Promise<void> {
+    const updated = await this.table(client, this.versionTableName)
+      .where({ id: 1 })
+      .update({
+        schema_changes: client.raw('?? + ?', ['schema_changes', delta]),
+        schema_seq: client.raw('?? + 1', ['schema_seq']),
+        version: randomUUID(),
+      });
+    if (Number(updated) !== 1)
+      throw new Error('Collection Metadata cache version is missing.');
+  }
+
   private async changeVersion(knex: Knex): Promise<void> {
     const updated = await this.table(knex, this.versionTableName)
       .where({ id: 1 })
-      .update({ version: randomUUID() });
+      .update({
+        version: randomUUID(),
+        ...(this.schemaVersionInitialized
+          ? { schema_seq: knex.raw('?? + 1', ['schema_seq']) }
+          : {}),
+      });
     if (Number(updated) !== 1)
       throw new Error('Collection Metadata cache version is missing.');
   }
@@ -337,6 +436,8 @@ export class DatabaseCollectionMetadataStore implements CollectionMetadataStore 
     if (!this.cacheInitialized) return listMetadataNamingSnapshot(this);
     const client = await this.options.resolveClient();
     if ((client as Knex.Transaction).isTransaction) {
+      if (client.client.config.client === 'mssql')
+        return listMetadataNamingSnapshot(this);
       // An externally opened transaction may already hold an older read view.
       // Only bindings prepared before BEGIN can safely reuse shared snapshots,
       // and explicit invalidation revokes that permission for the whole tree.
@@ -439,6 +540,28 @@ export class DatabaseCollectionMetadataStore implements CollectionMetadataStore 
       }
     }
     this.cacheInitialized = true;
+    const dialect = getDatabaseDriverRuntime(knex)?.dialect;
+    const supportsSchemaVersions = dialect
+      ? dialect === 'postgres' || dialect === 'sqlite'
+      : ['pg', 'better-sqlite3'].includes(knex.client.config.client);
+    if (supportsSchemaVersions) {
+      await this.ensureVersionColumn(knex, 'schema_seq');
+      await this.ensureVersionColumn(knex, 'schema_changes');
+      this.schemaVersionInitialized = true;
+    }
+  }
+
+  private async ensureVersionColumn(knex: Knex, column: string): Promise<void> {
+    if (await this.schema(knex).hasColumn(this.versionTableName, column))
+      return;
+    try {
+      await this.schema(knex).alterTable(this.versionTableName, (table) => {
+        table.bigInteger(column).notNullable().defaultTo(0);
+      });
+    } catch (error) {
+      if (!(await this.schema(knex).hasColumn(this.versionTableName, column)))
+        throw error;
+    }
   }
 
   private async createTable(): Promise<void> {

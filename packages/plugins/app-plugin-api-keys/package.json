@@ -2,13 +2,14 @@
   "name": "@nocobase/app-plugin-api-keys",
   "displayName": "API Keys App Plugin",
   "description": "API key authentication for NocoBase applications, built on Better Auth.",
-  "version": "1.0.0-beta.28",
+  "version": "1.0.0-beta.30",
   "type": "module",
   "prettier": "@nocobase/dev-config/prettier",
   "engines": {
     "node": ">=24.0.0"
   },
   "nocobase": {
+    "pluginPolicy": "preinstall-and-enable",
     "title": {
       "en-US": "API keys",
       "zh-CN": "API 密钥"
@@ -47,7 +48,6 @@
   "files": [
     "dist",
     "README.md",
-    "CHANGELOG.md",
     "skills"
   ],
   "publishConfig": {
@@ -104,6 +104,7 @@
     "@nocobase/app-plugin-notification": "workspace:^",
     "@nocobase/app-plugin-scheduler": "workspace:^",
     "@nocobase/app-server": "workspace:^",
+    "@nocobase/audit": "workspace:^",
     "@nocobase/authorization": "workspace:^",
     "@nocobase/db": "workspace:^",
     "@nocobase/i18n": "workspace:^",

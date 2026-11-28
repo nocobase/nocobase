@@ -115,8 +115,8 @@ export class DatabaseProvider extends ServiceProvider<DatabaseProviderApplicatio
 
   /**
    * Tells the sample data service where samples are recorded — the default connection's seed history — and whether
-   * this start installed that connection with `app.sampleData` set. Without a seeds run on the default connection,
-   * nothing is prepared and no sample is built or recorded.
+   * `app.sampleData` is enabled. This only prepares registrations when automatic seeding is allowed on
+   * the default connection. Registrations can run even when there are no seed files.
    */
   private prepareSampleData(
     config: AppDatabaseConfig,
@@ -137,7 +137,7 @@ export class DatabaseProvider extends ServiceProvider<DatabaseProviderApplicatio
       (entry) =>
         entry.kind === 'seeds' &&
         entry.connection === connection &&
-        entry.status === 'completed',
+        (entry.status === 'completed' || entry.reason === 'missing-directory'),
     );
     if (!task || !seeded) return;
     const seeder = createAppSeeder({
@@ -153,9 +153,7 @@ export class DatabaseProvider extends ServiceProvider<DatabaseProviderApplicatio
         history: () => seeder.history(),
         record: (entry) => seeder.record(entry),
       },
-      enabled:
-        seeded.freshInstall === true &&
-        this.app.config.get<unknown>('app.sampleData') === true,
+      enabled: this.app.config.get<unknown>('app.sampleData') === true,
     });
   }
 

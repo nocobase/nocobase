@@ -188,8 +188,16 @@ jobs:
           } >> "$GITHUB_OUTPUT"
           echo "Version: $BATCH ($CHANNEL)"
 
+      # Leaving prerelease mode, changeset version reads every beta's changesets in .changeset/pre/ again to release each package at its final version, and would list all their entries again in the new stable CHANGELOG sections. scripts/version-first-stable.mjs runs the same changeset version and keeps those sections to what is new since the last beta. Pro's packages are versioned the same way in pro-check and pro-candidate, and in v3-pro-release.yml.
       - name: Version
-        run: pnpm changeset version
+        env:
+          EXITING: ${{ steps.channel.outputs.exiting }}
+        run: |
+          if [ "$EXITING" = true ]; then
+            node ../scripts/version-first-stable.mjs --root .
+          else
+            pnpm changeset version
+          fi
 
       # changesets updates package versions but does not know about create-app's defaultTemplateVersion field.
       - name: Sync template version
@@ -668,11 +676,18 @@ jobs:
             echo "release=$PLANNED" >> "$GITHUB_OUTPUT"
           fi
 
+      # Leaving prerelease mode, the first stable CHANGELOG sections list only what is new since the last beta, as for the open-source packages in prepare.
       - name: Version Pro packages
         if: steps.plan.outputs.release == 'true'
         id: changed
+        env:
+          EXITING: ${{ steps.pro_channel.outputs.exiting }}
         run: |
-          pnpm changeset version
+          if [ "$EXITING" = true ]; then
+            node ./vendor/nocobase3/scripts/version-first-stable.mjs --root .
+          else
+            pnpm changeset version
+          fi
           CHANGED=$(node ./vendor/nocobase3/scripts/list-package-versions.mjs --changed "$RUNNER_TEMP/pro-versions-before.json")
           test -n "$CHANGED" || { echo '::error::Pro changesets changed no package versions'; exit 1; }
           echo "$CHANGED"
@@ -922,11 +937,18 @@ jobs:
             echo "release=$PLANNED" >> "$GITHUB_OUTPUT"
           fi
 
+      # Leaving prerelease mode, the first stable CHANGELOG sections list only what is new since the last beta, as for the open-source packages in prepare.
       - name: Version Pro packages
         if: steps.plan.outputs.release == 'true'
         id: changed
+        env:
+          EXITING: ${{ steps.pro_channel.outputs.exiting }}
         run: |
-          pnpm changeset version
+          if [ "$EXITING" = true ]; then
+            node ./vendor/nocobase3/scripts/version-first-stable.mjs --root .
+          else
+            pnpm changeset version
+          fi
           CHANGED=$(node ./vendor/nocobase3/scripts/list-package-versions.mjs --changed "$RUNNER_TEMP/pro-versions-before.json")
           test -n "$CHANGED" || { echo '::error::Pro changesets changed no package versions'; exit 1; }
           echo "$CHANGED"

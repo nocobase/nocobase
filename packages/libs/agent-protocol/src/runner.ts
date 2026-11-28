@@ -163,6 +163,8 @@ export interface ToolCapabilities {
   readonly modelsDetectedAt?: string;
   readonly modelsDetectionStatus?: ModelsDetectionStatus;
   readonly modelsDetectionError?: ModelsDetectionError;
+  /** A redacted diagnostic for the latest failed model listing. */
+  readonly modelsDetectionDetail?: string;
 }
 
 /**
@@ -279,6 +281,7 @@ export const ToolInfoSchema: z.ZodType<ToolInfo> = z
     modelsDetectedAt: z.iso.datetime().optional(),
     modelsDetectionStatus: ModelsDetectionStatusSchema.optional(),
     modelsDetectionError: ModelsDetectionErrorSchema.optional(),
+    modelsDetectionDetail: ToolStatusDetailSchema.optional(),
   })
   .superRefine((tool, context) => {
     if (isNativeTool(tool.kind))
@@ -320,6 +323,7 @@ export const ReportedToolInfoSchema: z.ZodType<ToolInfo> = z
       ModelsDetectionStatusSchema.optional().catch(undefined),
     modelsDetectionError:
       ModelsDetectionErrorSchema.optional().catch(undefined),
+    modelsDetectionDetail: ToolStatusDetailSchema.optional().catch(undefined),
     statusReason: ToolStatusReasonSchema.optional().catch(undefined),
     statusDetail: ToolStatusDetailSchema.optional().catch(undefined),
   })

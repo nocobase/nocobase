@@ -1,7 +1,7 @@
 {
   "name": "@nocobase/app-template-examples",
   "displayName": "NocoBase Examples",
-  "version": "2.0.0-beta.3",
+  "version": "2.0.0-beta.6",
   "type": "module",
   "prettier": "@nocobase/dev-config/prettier",
   "engines": {
@@ -10,7 +10,7 @@
   "packageManager": "pnpm@11.11.0",
   "nocobase": {
     "templateKind": "app",
-    "defaultTemplateVersion": "2.0.0-beta.3",
+    "defaultTemplateVersion": "2.0.0-beta.6",
     "cli": {
       "bin": "nocobase-examples",
       "displayName": "NocoBase Examples",
@@ -217,6 +217,7 @@
     "@nocobase/app-plugin-skills-example": "workspace:*",
     "@nocobase/app-plugin-users": "workspace:*",
     "@nocobase/app-server": "workspace:*",
+    "@nocobase/audit": "workspace:*",
     "@nocobase/config": "workspace:*",
     "@nocobase/db": "workspace:*",
     "@nocobase/db-sqlite": "workspace:*",

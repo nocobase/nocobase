@@ -41,11 +41,29 @@ export interface MissingResource {
   readonly usedBy: string;
 }
 
-/** How the service settled one delivery; the runtime carries it out. */
+/**
+ * The outcome the runtime carries out for one delivery. `deadLetter` marks a final failure that the runtime
+ * settles according to the subscription's configuration.
+ * A missing handler or shutdown interruption can return an immediate `retry` regardless of the attempt limit.
+ * If the subscription has no application retry route, leave that delivery eligible for broker redelivery
+ * at the same attempt.
+ */
 export type DeliveryOutcome =
   | { readonly kind: 'ack' }
   | { readonly kind: 'retry'; readonly delay: number }
-  | { readonly kind: 'deadLetter'; readonly reason: string };
+  | {
+      readonly kind: 'deadLetter';
+      /** May contain application data. Use the failure category in logs. */
+      readonly reason: string;
+      readonly failure?:
+        | 'handlerError'
+        | 'retryExhausted'
+        | 'handlerRejected'
+        | 'decodeError'
+        | 'schemaMismatch'
+        | 'schemaError'
+        | 'unsupportedRetryDelay';
+    };
 
 export interface Delivery {
   /** 1 for the first delivery of the message. */
@@ -98,6 +116,11 @@ export interface BrokerImplementation {
    * in-process backend should: a real middleware needs its physical names spelled out.
    */
   readonly implicitBindings?: boolean;
+  /**
+   * Returns a positive integer from raw subscription options when `maxAttempts` is omitted. Called synchronously
+   * before `validateConfig`. If the method is absent, the service uses 3.
+   */
+  defaultMaxAttempts?(options: SubscriptionBinding['options']): number;
   /** Checks adapter options and binding options synchronously, without connecting. Throws on an error. */
   validateConfig(config: ResolvedBackendConfig): void;
   createRuntime(context: BrokerRuntimeContext): BrokerRuntime;

@@ -92,10 +92,18 @@ self.addEventListener('notificationclick', (event) => {
       });
       const scope = self.registration.scope;
       const existing = windows.find((client) => client.url.startsWith(scope));
-      if (existing) {
+      if (!existing) {
+        await self.clients.openWindow(url);
+        return;
+      }
+      // Focus first: the click's permission to focus can expire while a slow navigation loads.
+      await existing.focus().catch(() => undefined);
+      try {
         await existing.navigate(url);
-        await existing.focus();
-      } else await self.clients.openWindow(url);
+      } catch {
+        // Only a window this worker controls can be navigated; a page loaded before it or by a forced reload is not.
+        existing.postMessage({ kind: 'webPush.navigate', url });
+      }
     })(),
   );
 });

@@ -2,7 +2,7 @@
   "name": "@nocobase/app-plugin-file",
   "displayName": "File App Plugin",
   "description": "File repositories, uploads, stable content URLs for NocoBase applications.",
-  "version": "1.0.0-beta.34",
+  "version": "1.0.0-beta.35",
   "type": "module",
   "prettier": "@nocobase/dev-config/prettier",
   "sideEffects": false,
@@ -16,6 +16,7 @@
     "node": ">=24.0.0"
   },
   "nocobase": {
+    "pluginPolicy": "preinstall-and-enable",
     "title": {
       "en-US": "File storage",
       "zh-CN": "文件存储"
@@ -40,7 +41,6 @@
     "dist",
     "docs",
     "README.md",
-    "CHANGELOG.md",
     "skills"
   ],
   "publishConfig": {

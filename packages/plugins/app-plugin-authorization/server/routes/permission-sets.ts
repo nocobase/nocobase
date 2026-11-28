@@ -1,3 +1,5 @@
+import { auditOperationName } from '../audit-operation-name.js';
+import { auditRecordKey, describeAudit } from '@nocobase/audit';
 import { z } from 'zod';
 import { submitSettingsMutation } from '../extension/submission.js';
 import {
@@ -79,6 +81,9 @@ export const PERMISSION_SETS_SETTINGS = 'authorization.permission-sets';
 type Api = PermissionSetsApi;
 
 /** Every `/permissionSets` route, gated by `settings:authorization.permission-sets`. */
+const setsCollection = 'authorizationPermissionSets';
+const assignmentsCollection = 'authorizationPermissionSetAssignments';
+
 export function createPermissionSetHandler(
   host: AuthorizationExtensionHost,
   api: Api,
@@ -190,6 +195,26 @@ export function createPermissionSetHandler(
   );
   routes.post(
     '/permissionSets',
+    describeAudit({
+      operationName: auditOperationName('createPermissionSet'),
+      action: 'create',
+      resource: `settings:${PERMISSION_SETS_SETTINGS}`,
+      target: (context) => ({
+        collection: setsCollection,
+        key: context.req.param('key'),
+      }),
+      resolveTargets: ({ response }, context) => {
+        const previous = context.req.param('key');
+        const key = auditRecordKey(response, 'data', 'key') ?? previous;
+        return {
+          source:
+            previous && previous !== key
+              ? { collection: setsCollection, key: previous }
+              : undefined,
+          targets: [{ collection: setsCollection, key }],
+        };
+      },
+    }),
     settingsAccess(PERMISSION_SETS_SETTINGS, 'create'),
     describeRoute({
       tags,
@@ -273,6 +298,29 @@ export function createPermissionSetHandler(
   );
   routes.post(
     '/permissionSets/:key/assignments',
+    describeAudit({
+      operationName: auditOperationName('assignPermissionSet'),
+      action: 'assign',
+      resource: `settings:${PERMISSION_SETS_SETTINGS}`,
+      target: (context) => ({
+        source: { collection: setsCollection, key: context.req.param('key') },
+        targets: [
+          {
+            collection: assignmentsCollection,
+            key: context.req.param('assignmentId'),
+          },
+        ],
+      }),
+      resolveTargets: ({ response }, context) => ({
+        source: { collection: setsCollection, key: context.req.param('key') },
+        targets: [
+          {
+            collection: assignmentsCollection,
+            key: auditRecordKey(response, 'data', 'id'),
+          },
+        ],
+      }),
+    }),
     settingsAccess(PERMISSION_SETS_SETTINGS, 'assign'),
     describeRoute({
       tags,
@@ -315,6 +363,20 @@ export function createPermissionSetHandler(
   );
   routes.delete(
     '/permissionSets/:key/assignments/:assignmentId',
+    describeAudit({
+      operationName: auditOperationName('unassignPermissionSet'),
+      action: 'assign',
+      resource: `settings:${PERMISSION_SETS_SETTINGS}`,
+      target: (context) => ({
+        source: { collection: setsCollection, key: context.req.param('key') },
+        targets: [
+          {
+            collection: assignmentsCollection,
+            key: context.req.param('assignmentId'),
+          },
+        ],
+      }),
+    }),
     settingsAccess(PERMISSION_SETS_SETTINGS, 'assign'),
     describeRoute({
       tags,
@@ -379,6 +441,26 @@ export function createPermissionSetHandler(
   );
   routes.patch(
     '/permissionSets/:key',
+    describeAudit({
+      operationName: auditOperationName('updatePermissionSet'),
+      action: 'update',
+      resource: `settings:${PERMISSION_SETS_SETTINGS}`,
+      target: (context) => ({
+        collection: setsCollection,
+        key: context.req.param('key'),
+      }),
+      resolveTargets: ({ response }, context) => {
+        const previous = context.req.param('key');
+        const key = auditRecordKey(response, 'data', 'key') ?? previous;
+        return {
+          source:
+            previous && previous !== key
+              ? { collection: setsCollection, key: previous }
+              : undefined,
+          targets: [{ collection: setsCollection, key }],
+        };
+      },
+    }),
     settingsAccess(PERMISSION_SETS_SETTINGS, 'update'),
     describeRoute({
       tags,
@@ -468,6 +550,15 @@ export function createPermissionSetHandler(
   );
   routes.delete(
     '/permissionSets/:key',
+    describeAudit({
+      operationName: auditOperationName('deletePermissionSet'),
+      action: 'delete',
+      resource: `settings:${PERMISSION_SETS_SETTINGS}`,
+      target: (context) => ({
+        collection: setsCollection,
+        key: context.req.param('key'),
+      }),
+    }),
     settingsAccess(PERMISSION_SETS_SETTINGS, 'delete'),
     describeRoute({
       tags,

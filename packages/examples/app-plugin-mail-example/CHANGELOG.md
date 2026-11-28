@@ -1,5 +1,14 @@
 # @nocobase/app-plugin-mail-example
 
+## 1.0.0-beta.16
+
+### Patch Changes
+
+- cf23bfe: Stop publishing CHANGELOG.md in the package; the changelog stays in the repository.
+- Updated dependencies [1952789]
+- Updated dependencies [cf23bfe]
+  - @nocobase/app-plugin-mail@1.0.0-beta.31
+
 ## 1.0.0-beta.15
 
 ### Patch Changes

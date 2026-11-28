@@ -1,14 +1,30 @@
 import {
   ToolInfoSchema,
+  ToolStatusDetailSchema,
+  MAX_STATUS_DETAIL_LENGTH,
+  createRedactor,
   type AgentTool,
   type ToolInfo,
 } from '../protocol/index.ts';
 import type { AgentAdapter } from '../agent/adapters/types.ts';
 
 export const MODEL_REFRESH_INTERVAL_MS: number = 5 * 60_000;
-export const MODEL_DETECTION_TIMEOUT_MS = 30_000;
+export const MODEL_DETECTION_TIMEOUT_MS = 60_000;
 export const TOOL_DETECTION_TIMEOUT_MS = 30_000;
 const CLEANUP_TIMEOUT_MS = 3_000;
+const detailRedactor = createRedactor();
+
+function reportableDetail(detail: string | undefined): string | undefined {
+  if (!detail) return undefined;
+  const redacted = detailRedactor
+    .text(detail.replace(/[\p{Cc}\p{Cf}]/gu, ' '))
+    .trim()
+    .slice(0, MAX_STATUS_DETAIL_LENGTH);
+  const result = ToolStatusDetailSchema.safeParse(redacted);
+  return result.success ? result.data : undefined;
+}
+
+class DetectionDeadline extends Error {}
 
 /** A deadline also cancels the command; late results never reach the cache. */
 async function bounded<T>(
@@ -23,7 +39,7 @@ async function bounded<T>(
   try {
     signal.throwIfAborted();
     const aborted = new Promise<never>((_resolve, reject) => {
-      onAbort = () => reject(new Error('Detection cancelled'));
+      onAbort = () => reject(new DetectionDeadline());
       signal.addEventListener('abort', onAbort, { once: true });
     });
     return await Promise.race([detect(signal), aborted]);
@@ -127,8 +143,9 @@ export class ToolCapabilitiesCache {
             continue;
           if (fingerprint !== undefined)
             this.fingerprints.set(kind, fingerprint);
-          const detected = await this.inspect((signal) =>
-            adapter.detect(signal),
+          const detected = await this.inspect(
+            (signal) => adapter.detect(signal),
+            Math.min(TOOL_DETECTION_TIMEOUT_MS, this.timeoutMs),
           );
           const { installed, ...fields } = detected;
           const base = ToolInfoSchema.parse({
@@ -163,18 +180,25 @@ export class ToolCapabilitiesCache {
               ToolInfoSchema.parse({
                 ...base,
                 ...capability,
+                modelsDetectionDetail: reportableDetail(
+                  capability.modelsDetectionDetail,
+                ),
                 modelsDetectedAt: new Date(this.now()).toISOString(),
               }),
             );
           } catch (error) {
+            const timedOut = error instanceof DetectionDeadline;
             this.replace(kind, {
               ...base,
               modelsDetectionStatus: 'failed',
-              modelsDetectionError:
-                error instanceof Error &&
-                error.message === 'Detection cancelled'
-                  ? 'Model detection timed out'
-                  : 'Model detection failed',
+              modelsDetectionError: timedOut
+                ? 'Model detection timed out'
+                : 'Model detection failed',
+              ...(timedOut
+                ? {
+                    modelsDetectionDetail: `Model discovery exceeded ${this.timeoutMs} ms`,
+                  }
+                : {}),
               modelsDetectedAt: new Date(this.now()).toISOString(),
             });
           }
@@ -192,7 +216,10 @@ export class ToolCapabilitiesCache {
       });
   }
 
-  private inspect<T>(detect: (signal: AbortSignal) => Promise<T>): Promise<T> {
+  private inspect<T>(
+    detect: (signal: AbortSignal) => Promise<T>,
+    timeout = this.timeoutMs,
+  ): Promise<T> {
     return bounded(
       (signal) => {
         const work = detect(signal);
@@ -204,7 +231,7 @@ export class ToolCapabilitiesCache {
         return work;
       },
       this.stopped.signal,
-      this.timeoutMs,
+      timeout,
     );
   }
 

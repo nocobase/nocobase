@@ -12,12 +12,14 @@ import type { ChildProcess } from 'node:child_process';
 import type { JournalPage, JournalQuery } from '@nocobase/logging';
 import {
   IPC_CHANNEL,
+  IpcRemoteError,
   callIpc,
   isIpcRequest,
   sendIpcResponse,
   type IpcRequest,
 } from '../ipc-channel.ts';
 import type { HostManagementService } from './manager.ts';
+import { HostManagementError } from './scopes.ts';
 import type {
   ApplyDeploymentSetResult,
   HostBackup,
@@ -48,6 +50,7 @@ type IpcMethod =
   | 'startDeployment'
   | 'stopDeployment'
   | 'removeDeployment'
+  | 'removeDeploymentKeepingBackups'
   | 'getStatus'
   | 'restartApp'
   | 'getOperation'
@@ -155,6 +158,31 @@ export class IpcHostManagementClient implements HostManagementService {
       appId,
       ...(options?.purgeData === false ? { purgeData: false } : {}),
     });
+  }
+
+  async removeDeploymentKeepingBackups(
+    appId: string,
+    options?: { scope?: HostScope },
+  ): Promise<HostStatus> {
+    try {
+      return await this.call<HostStatus>('removeDeploymentKeepingBackups', {
+        appId,
+        ...options,
+      });
+    } catch (error) {
+      // Older Host children reject the unknown method before dispatching any deletion.
+      if (
+        error instanceof IpcRemoteError &&
+        error.code === undefined &&
+        error.message ===
+          'Unknown app host IPC method "removeDeploymentKeepingBackups"'
+      )
+        throw new HostManagementError(
+          error.message,
+          'BACKUP_RETENTION_UNSUPPORTED',
+        );
+      throw error;
+    }
   }
 
   getStatus(query?: HostStatusQuery): Promise<HostStatus> {
@@ -333,6 +361,22 @@ export class IpcHostManagementServer {
             : {},
         );
         break;
+      case 'removeDeploymentKeepingBackups': {
+        if (!this.service.removeDeploymentKeepingBackups)
+          throw new HostManagementError(
+            'This Host cannot keep backups when purging an App',
+            'BACKUP_RETENTION_UNSUPPORTED',
+          );
+        this.accept(request);
+        const { appId, scope } = request.payload as {
+          appId: string;
+          scope?: HostScope;
+        };
+        result = await this.service.removeDeploymentKeepingBackups(appId, {
+          scope,
+        });
+        break;
+      }
       case 'reloadAppConfig':
         result = await this.service.reloadAppConfig(payloadAppId(request));
         break;

@@ -2,13 +2,14 @@
   "name": "@nocobase/app-plugin-message-broker",
   "displayName": "Message Broker App Plugin",
   "description": "Transactional outbox, inbox and outbox relay for the application message broker.",
-  "version": "0.0.1",
+  "version": "0.1.0-beta.1",
   "type": "module",
   "prettier": "@nocobase/dev-config/prettier",
   "engines": {
     "node": ">=24.0.0"
   },
   "nocobase": {
+    "pluginPolicy": "preinstall-and-enable",
     "title": {
       "en-US": "Message broker",
       "zh-CN": "消息代理"
@@ -28,8 +29,7 @@
   },
   "files": [
     "dist",
-    "README.md",
-    "CHANGELOG.md"
+    "README.md"
   ],
   "publishConfig": {
     "access": "public",

@@ -34,7 +34,28 @@ const frFR: LocaleResource<typeof enUS> = {
   'push.cancel': 'Annuler',
   'push.saved': "Paramètres de l'appareil enregistrés",
   'push.saving': "Sauvegarde des paramètres de l'appareil",
-  'push.testSent': "Notification de test en file d'attente",
+  'push.testSent': 'Le service push a accepté la notification de test.',
+  'push.invalid':
+    'Le navigateur a renvoyé des données d’abonnement non valides. Réessayez de vous abonner.',
+  'push.endpoint':
+    'Le serveur ne prend pas en charge le service push de ce navigateur.',
+  'push.owned':
+    'L’abonnement de ce navigateur appartient à un autre compte. Supprimez-le de ce compte avant de vous réabonner.',
+  'push.browserFailed':
+    'Le navigateur n’a pas pu créer l’abonnement push. Vérifiez les paramètres de notification et la connexion.',
+  'push.expired':
+    'L’abonnement a expiré ou a été supprimé. Réabonnez-vous depuis cet appareil.',
+  'push.testPaused':
+    'Réactivez le push sur cet appareil avant d’envoyer un test.',
+  'push.testLimited': 'Attendez 30 secondes entre les notifications de test.',
+  'push.testNetwork':
+    'Le serveur n’a pas pu joindre le service push. Demandez à un administrateur de vérifier le réseau et le proxy Web Push.',
+  'push.testGatewayAuth':
+    'Le service push a refusé les identifiants du serveur. Demandez à un administrateur de vérifier la clé VAPID.',
+  'push.testGatewayLimited':
+    'Le service push limite les requêtes. Réessayez plus tard.',
+  'push.testGateway':
+    'Le service push n’a pas pu accepter la notification de test. Réessayez plus tard.',
   'push.failed':
     'Impossible de mettre à jour les notifications push. Veuillez réessayer.',
   'push.loadingFailed':

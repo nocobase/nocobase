@@ -8,6 +8,7 @@ const koKR: LocaleResource<typeof enUS> = {
     resend: 'Resend',
     feishuWebhook: 'Feishu 웹훅',
     dingtalkWebhook: 'DingTalk 웹훅',
+    sms: 'SMS',
   },
 };
 

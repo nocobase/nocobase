@@ -21,7 +21,7 @@
  */
 import { StreamOutput } from './stream-output.ts';
 import { programFingerprint } from './program-fingerprint.ts';
-import { existsSync, constants as fsConstants } from 'node:fs';
+import { constants as fsConstants } from 'node:fs';
 import { access } from 'node:fs/promises';
 import path from 'node:path';
 import type { ToolCapabilities } from '@nocobase/agent-protocol';
@@ -33,9 +33,15 @@ import {
   recoveryPrompt,
 } from './session-recovery.ts';
 import { withDetectionEnvironment } from './detection.ts';
+import { buildAgentEnv } from '../env.ts';
 
 import { detectExec } from './detect-exec.ts';
-import { OpencodeClient, OpencodeHttpError } from './opencode/client.ts';
+import {
+  OpencodeClient,
+  OpencodeHttpError,
+  PluginActivationTimeout,
+  retryPluginActivation,
+} from './opencode/client.ts';
 import type {
   FetchFn,
   ModelRef,
@@ -44,7 +50,12 @@ import type {
 } from './opencode/client.ts';
 import { classifyOpencodeFailure } from './opencode/classify.ts';
 import type { OpencodeFailureSignal } from './opencode/classify.ts';
-import { launchServer } from './opencode/server.ts';
+import { launchServer, ServerStartError } from './opencode/server.ts';
+import {
+  globalConfigFor,
+  hasConfiguredKey,
+  parseOpencodeConfig,
+} from './opencode/config.ts';
 import type { LaunchFn, ServerHandle } from './opencode/server.ts';
 import {
   Channel,
@@ -78,34 +89,40 @@ export type { LaunchFn, ServerHandle } from './opencode/server.ts';
 /** The adapter speaks the 2.x server API (`/api/...`). */
 export const MIN_OPENCODE_VERSION = '2.0.0';
 
-/** The person's own OpenCode configuration file under `configHome`, if there is one. */
-export function globalOpencodeConfig(configHome: string): string | undefined {
-  return ['opencode.json', 'opencode.jsonc', 'config.json']
-    .map((name) => path.join(configHome, 'opencode', name))
-    .find((file) => existsSync(file));
-}
-
 /**
- * The server's environment. The run's skills folder is OpenCode's extra config directory (`OPENCODE_CONFIG_DIR`,
- * searched like `.opencode/`, whose `skills/` holds skills: https://opencode.ai/docs/config/,
- * https://opencode.ai/docs/skills/), so its skills load next to the repository's and the person's without either
- * being written to. OpenCode 2.x then no longer reads the person's global `opencode.json` (its providers and models
- * are gone, and a run naming one fails "Model unavailable"), so that file is named again as `OPENCODE_CONFIG`.
+ * OpenCode 2.x can skip the global file when an extra config directory is set.
+ * Name it explicitly while preserving an operator-supplied config or directory.
  */
 export function opencodeEnv(session: AdapterSession): Record<string, string> {
-  if (!session.skills) return { ...session.env };
-  const configHome =
-    session.env.XDG_CONFIG_HOME ??
-    (session.env.HOME ? path.join(session.env.HOME, '.config') : undefined);
-  const global =
-    session.env.OPENCODE_CONFIG === undefined && configHome !== undefined
-      ? globalOpencodeConfig(configHome)
-      : undefined;
-  return {
-    ...session.env,
-    OPENCODE_CONFIG_DIR: session.skills.root,
-    ...(global === undefined ? {} : { OPENCODE_CONFIG: global }),
-  };
+  const env = { ...session.env };
+  if (session.skills && !env.OPENCODE_CONFIG_DIR)
+    env.OPENCODE_CONFIG_DIR = session.skills.root;
+  else if (session.skills) {
+    // OpenCode skips malformed inline config. In that case, add only the run
+    // skills and leave the operator's config files and directory in effect.
+    const inline = parseOpencodeConfig(env.OPENCODE_CONFIG_CONTENT ?? '') ?? {};
+    const skills = inline.skills;
+    // OpenCode 2.x normalizes the legacy paths and URLs into a single array.
+    let configuredSkills: unknown[] = [];
+    if (Array.isArray(skills)) {
+      configuredSkills = skills;
+    } else if (isRecord(skills)) {
+      const paths: unknown[] = Array.isArray(skills.paths) ? skills.paths : [];
+      const urls: unknown[] = Array.isArray(skills.urls) ? skills.urls : [];
+      configuredSkills = [...paths, ...urls];
+    }
+    env.OPENCODE_CONFIG_CONTENT = JSON.stringify({
+      ...inline,
+      skills: [...configuredSkills, session.skills.dir],
+    });
+  }
+  return withGlobalConfig(env);
+}
+
+function withGlobalConfig(env: Record<string, string>): Record<string, string> {
+  if (!env.OPENCODE_CONFIG_DIR || env.OPENCODE_CONFIG) return env;
+  const config = globalConfigFor(env);
+  return config ? { ...env, OPENCODE_CONFIG: config } : env;
 }
 
 /** Asks before every tool call, so each one reaches the runner's policy. */
@@ -118,6 +135,10 @@ export const INSTRUCTION_KEY = 'nocobase-runner-brief';
 /** stop(): interrupt, then SIGTERM, then SIGKILL; well under 5 s in total. */
 const INTERRUPT_TIMEOUT_MS = 1000;
 const CLOSE_GRACE_MS = 2500;
+
+// The listening socket can open before the provider registry and plugins are ready.
+const OPENCODE_STARTUP_TIMEOUT_MS = 45_000;
+const OPENCODE_LISTEN_TIMEOUT_MS = 40_000;
 
 export interface ExecResult {
   code: number;
@@ -204,13 +225,15 @@ export class OpencodeAdapter implements AgentAdapter {
   private readonly searchPath: string;
   private readonly home?: string;
   private readonly fallbackPaths?: string[];
-  private readonly detectionEnv?: Record<string, string>;
+  private readonly detectionEnv: Record<string, string>;
   private detection?: Promise<ToolDetection>;
 
   constructor(options: OpencodeAdapterOptions = {}) {
     const env = options.env ?? process.env;
-    this.detectionEnv = options.env;
-    this.exec = options.exec ?? detectExec(options.env);
+    this.detectionEnv = withGlobalConfig(
+      options.env ?? buildAgentEnv({ source: process.env }),
+    );
+    this.exec = options.exec ?? detectExec(this.detectionEnv);
     this.launch = options.launch ?? launchServer;
     this.fetchFn = options.fetch;
     this.searchPath = options.searchPath ?? env.PATH ?? '';
@@ -248,21 +271,37 @@ export class OpencodeAdapter implements AgentAdapter {
     return withDetectionEnvironment(
       signal,
       async (cwd, env) => {
-        const server = await this.launch({
-          binary,
-          cwd,
-          env,
-          signal,
-          startTimeoutMs: 15_000,
-        });
+        const deadline = AbortSignal.timeout(OPENCODE_STARTUP_TIMEOUT_MS);
+        const startup = AbortSignal.any([signal, deadline]);
+        let server: ServerHandle | undefined;
+        let stage = 'start the OpenCode server';
         try {
+          server = await this.launch({
+            binary,
+            cwd,
+            env,
+            signal: startup,
+            startTimeoutMs: OPENCODE_LISTEN_TIMEOUT_MS,
+          });
+          stage = 'list OpenCode models';
           const client = new OpencodeClient({
             baseUrl: server.baseUrl,
             username: server.username,
             password: server.password,
             fetch: this.fetchFn,
           });
-          const models = await client.listModels(signal);
+          if (
+            detection.version &&
+            compareVersions(detection.version, '2.4.0') >= 0
+          )
+            await retryPluginActivation(
+              () => client.waitForPlugins(startup),
+              startup,
+            );
+          const models = await retryPluginActivation(
+            () => client.listModels(startup),
+            startup,
+          );
           if (
             models.some(
               (model) =>
@@ -285,8 +324,32 @@ export class OpencodeAdapter implements AgentAdapter {
               })),
             ),
           };
+        } catch (error) {
+          signal.throwIfAborted();
+          const timedOut =
+            deadline.aborted ||
+            error instanceof PluginActivationTimeout ||
+            (error instanceof Error && error.name === 'TimeoutError');
+          // Response bodies, fetch errors and stderr can echo credentials from provider config.
+          const detail =
+            error instanceof PluginActivationTimeout
+              ? error.message
+              : error instanceof OpencodeHttpError
+                ? `OpenCode model discovery returned HTTP ${error.status}`
+                : error instanceof ServerStartError
+                  ? error.reason
+                  : timedOut
+                    ? `Timed out while trying to ${stage}`
+                    : `Could not ${stage}`;
+          return {
+            modelsDetectionStatus: 'failed',
+            modelsDetectionError: timedOut
+              ? 'Model detection timed out'
+              : 'Model detection failed',
+            modelsDetectionDetail: detail,
+          };
         } finally {
-          await server.close(1000);
+          await server?.close(1000);
         }
       },
       this.detectionEnv,
@@ -295,8 +358,10 @@ export class OpencodeAdapter implements AgentAdapter {
 
   private async runDetection(signal?: AbortSignal): Promise<ToolDetection> {
     const found = await this.program();
+    signal?.throwIfAborted();
     if (!found) return { installed: false, authenticated: false };
     const v = await this.exec(found, ['--version'], { signal });
+    signal?.throwIfAborted();
     const version = v.code === 0 ? parseVersion(v.stdout) : undefined;
     // 1.x serves a different API; treat it as not installed for this adapter.
     const installed = Boolean(
@@ -305,7 +370,10 @@ export class OpencodeAdapter implements AgentAdapter {
     let authenticated = false;
     if (installed) {
       const auth = await this.exec(found, ['auth', 'list'], { signal });
-      authenticated = auth.code === 0 && hasCredentials(auth.stdout);
+      signal?.throwIfAborted();
+      authenticated =
+        (auth.code === 0 && hasCredentials(auth.stdout)) ||
+        (await hasConfiguredKey(this.detectionEnv, signal));
     }
     return {
       installed,
@@ -485,11 +553,17 @@ class OpencodeRun {
           : 'OpenCode executable not found (ENOENT)',
       );
     }
+    if (this.stopping) return { kind: 'stopped' };
+    const startup = AbortSignal.any([
+      this.launchAbort.signal,
+      AbortSignal.timeout(OPENCODE_STARTUP_TIMEOUT_MS),
+    ]);
     this.launching = this.deps.launch({
       binary: detection.path,
       cwd: session.workDir,
       env: opencodeEnv(session),
-      signal: this.launchAbort.signal,
+      signal: startup,
+      startTimeoutMs: OPENCODE_LISTEN_TIMEOUT_MS,
     });
     this.server = await this.launching;
     if (this.stopping) return { kind: 'stopped' };
@@ -507,15 +581,28 @@ class OpencodeRun {
     });
     this.client = client;
 
-    const stream = await client.events(this.streamAbort.signal);
-    void this.consume(stream);
+    const requestDuringStartup = <T>(request: () => Promise<T>) =>
+      retryPluginActivation(request, startup);
+    const cancelSubscription = () => this.streamAbort.abort(startup.reason);
+    startup.addEventListener('abort', cancelSubscription, { once: true });
+    try {
+      const stream = await requestDuringStartup(() =>
+        client.events(this.streamAbort.signal),
+      );
+      void this.consume(stream);
+    } finally {
+      startup.removeEventListener('abort', cancelSubscription);
+    }
 
-    const model = await this.resolveModel(client);
+    const model = await this.resolveModel(client, startup);
     let sessionId: string | undefined;
     let recovered = false;
-    if (session.resumeSessionId) {
+    const resumeId = session.resumeSessionId;
+    if (resumeId) {
       try {
-        sessionId = (await client.getSession(session.resumeSessionId)).id;
+        sessionId = (
+          await requestDuringStartup(() => client.getSession(resumeId, startup))
+        ).id;
       } catch (error) {
         if (
           !(error instanceof OpencodeHttpError) ||
@@ -538,12 +625,17 @@ class OpencodeRun {
       if (model) await client.switchModel(sessionId, model);
     } else {
       sessionId = (
-        await client.createSession({
-          title: 'Agent run',
-          location: { directory: session.workDir },
-          permissions: [...ASK_EVERYTHING],
-          ...(model ? { model } : {}),
-        })
+        await requestDuringStartup(() =>
+          client.createSession(
+            {
+              title: 'Agent run',
+              location: { directory: session.workDir },
+              permissions: [...ASK_EVERYTHING],
+              ...(model ? { model } : {}),
+            },
+            startup,
+          ),
+        )
       ).id;
     }
     this.sessionId = sessionId;
@@ -582,30 +674,30 @@ class OpencodeRun {
 
   private async resolveModel(
     client: OpencodeClient,
+    signal: AbortSignal,
   ): Promise<ModelRef | undefined> {
     const { model, effort } = this.session;
     if (!model) return undefined;
     let ref = parseModel(model);
     if (!ref || effort) {
-      try {
-        const models = await client.listModels();
-        const match = models.find(
-          (m) =>
-            (ref &&
-              m.providerID === ref.providerID &&
-              (m.modelID === ref.id || m.id === ref.id)) ||
-            (!ref &&
-              (m.modelID === model ||
-                m.id === model ||
-                `${m.providerID}/${m.modelID ?? m.id}` === model)),
-        );
-        if (match) {
-          ref = { providerID: match.providerID, id: match.modelID ?? match.id };
-          if (effort && match.variants?.some((v) => v.id === effort))
-            ref.variant = effort;
-        }
-      } catch {
-        // keep what the name says
+      const models = await retryPluginActivation(
+        () => client.listModels(signal),
+        signal,
+      );
+      const match = models.find(
+        (m) =>
+          (ref &&
+            m.providerID === ref.providerID &&
+            (m.modelID === ref.id || m.id === ref.id)) ||
+          (!ref &&
+            (m.modelID === model ||
+              m.id === model ||
+              `${m.providerID}/${m.modelID ?? m.id}` === model)),
+      );
+      if (match) {
+        ref = { providerID: match.providerID, id: match.modelID ?? match.id };
+        if (effort && match.variants?.some((v) => v.id === effort))
+          ref.variant = effort;
       }
     }
     return ref;

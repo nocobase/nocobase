@@ -24,7 +24,13 @@ Sample data is optional example content for exploring or developing an applicati
 
 Use `@nocobase/app-plugin-demo-mode` when the requirement is a dedicated demo system with a separate database and storage, repeatable data lifecycle, visitor write policies and optional Agent or external-call simulation. Follow that installed plugin's Skill for its application-owned dataset and full-business cleanup contract. A request for a few example records does not require this plugin. Both mechanisms can use the same fictional story or application fixture helpers, but keep their execution and cleanup lifecycles separate; do not register the same data-generation routine in both paths and run it twice.
 
-Put sample data in the same `seeds` directory as `defineSeed({ name, sample: true, run })`, or, when it has to go through plugins' services, register it on `sampleDataToken` from `@nocobase/app-server/sample-data` in a service provider's `boot()`; `.agents/skills/nocobase-db/SKILL.md` section 2 has the details. Both load only while the run installs the connection — it held no migration or seed history, or `db reset` rebuilt it — with `app.sampleData` set (`APP_SAMPLE_DATA=true`); otherwise they are recorded as skipped. The seeds entry of a run reports `freshInstall` and, when it skipped any, `skippedSamples`. `pnpm nocobase db sample` runs what was skipped, in development only: a built `dist/` refuses it. `db reset` and `db apply` never start the application, so a `sampleDataToken` registration (accounts, anything through plugin services) is not built by them even with `app.sampleData` set; it appears only after `pnpm nocobase db sample`. The sequence that rebuilds a development database with its demo data is `pnpm nocobase db reset --force`, then `pnpm nocobase db sample`.
+Add sample data for new business models, business pages and core workflows. Use a small, realistic dataset that covers relevant list and detail views and key states. Keep each sample idempotent and preserve any existing user edits. Pure refactors, configuration changes and tasks without business data changes are exempt.
+
+Put sample data in the same `seeds` directory as `defineSeed({ name, sample: true, run })`. When the data has to go through plugin services, register it on `sampleDataToken` from `@nocobase/app-server/sample-data` in a service provider's `boot()`. See section 2 of `.agents/skills/nocobase-db/SKILL.md`.
+
+Start the app with `APP_SAMPLE_DATA=true` in development to verify your samples. This runs all outstanding samples on new and existing databases, including legacy skipped entries. Successful runs are recorded as executed and run only once. Disabled samples leave seed history untouched. Keep sample data off in production.
+
+`db reset` and `db apply` can run seed files, and starting the app with sample data enabled also runs service registrations once their providers are ready. `db apply --dry-run` lists pending sample seeds only when enabled. In development, `pnpm nocobase db sample` runs outstanding sample seeds and service registrations on demand.
 
 ## Multiple connections
 
@@ -141,7 +147,7 @@ Set `onChecksumMismatch: 'error'` per connection when both halves of that trade 
 - `pnpm nocobase db apply` applies cleanly on an empty database and on an already-migrated one.
 - The physical schema matches what the migration declared, checked against a real test database rather than the builder's return value.
 - Running the same seed twice changes nothing.
-- With sample data enabled (`APP_SAMPLE_DATA=true`), the first start on an empty database runs every sample seed and `pnpm dev` reaches its `Local:` URL; a generated seed is not done until that start succeeds.
+- With sample data enabled (`APP_SAMPLE_DATA=true`), start the app with `pnpm dev` and use the printed `Local:` URL to verify the new sample records and the states they cover.
 - For the per-file checks — filename against exported `name`, immutability, `down` ordering — follow the `nocobase-db` Skill's own verification list.
 
 ## Compiled migration and seed manifests

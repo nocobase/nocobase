@@ -13,6 +13,17 @@ export * from './api-error.js';
 export * from './api-limits.js';
 export * from './health.js';
 export * from './routes.js';
+export {
+  apiExecutionResultOf,
+  enableApiExecutionResult,
+  isApiExecutionResultObserved,
+} from './execution-result.js';
+export {
+  getForwardedApiContextObserver,
+  matchForwardedApiRoute,
+  observeForwardedApiContext,
+} from './forwarded-context.js';
+export { repositoryEndpointOf } from './openapi/repository-document.js';
 export * from './repository-routes.js';
 export * from './openapi/index.js';
 export * from './cli/index.js';

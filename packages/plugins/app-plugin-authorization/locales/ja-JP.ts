@@ -3,6 +3,15 @@ import type { LocaleResource } from '@nocobase/i18n';
 import type enUS from './en-US.js';
 
 const jaJP: LocaleResource<typeof enUS> = {
+  audit: {
+    operations: {
+      createPermissionSet: '権限セットを作成',
+      assignPermissionSet: '権限セットを割り当て',
+      unassignPermissionSet: '権限セットの割り当てを解除',
+      updatePermissionSet: '権限セットを編集',
+      deletePermissionSet: '権限セットを削除',
+    },
+  },
   sections: {
     pages: 'ページ権限',
     page: 'ページ',

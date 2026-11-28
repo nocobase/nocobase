@@ -1,5 +1,26 @@
 # @nocobase/agent-runner
 
+## 0.1.0-beta.36
+
+### Patch Changes
+
+- 24d0cad: Give OpenCode time to activate providers on offline machines, recognize credentials configured in OpenCode JSONC, and show model discovery failures with safe diagnostics on the runtime details page. Load run skills alongside skills from the operator's OpenCode configuration.
+- Updated dependencies [24d0cad]
+- Updated dependencies [cf23bfe]
+  - @nocobase/agent-protocol@0.1.0-beta.25
+  - @nocobase/acp-bridge@1.0.0-beta.9
+  - @nocobase/app-cli-client@0.1.0-beta.28
+
+## 0.1.0-beta.35
+
+### Patch Changes
+
+- 1f0b485: Detect the DeepSeek API key saved in the dsh Web settings (`$DSH_HOME/.credentials.yaml`, `~/.dsh` by default) in addition to `DEEPSEEK_API_KEY`, so a runner whose dsh already has a saved key no longer reports that it needs login.
+- 051d5e8: Fix missing OpenCode models when a runner detects them before OpenCode 2.4 finishes loading its plugins.
+- Updated dependencies [2b77e0d]
+  - @nocobase/agent-protocol@0.1.0-beta.24
+  - @nocobase/app-cli-client@0.1.0-beta.27
+
 ## 0.1.0-beta.34
 
 ### Patch Changes

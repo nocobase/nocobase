@@ -152,6 +152,8 @@ export class Application<
   private apiRouterValue: Hono | undefined;
   private readonly httpMiddleware: AppHttpMiddleware<Application<TConfig>>[] =
     [];
+  private readonly apiMiddleware: AppHttpMiddleware<Application<TConfig>>[] =
+    [];
   private readonly routes: {
     readonly contribution: AppRouteContribution<Application<TConfig>>;
     readonly owner: string | undefined;
@@ -337,6 +339,14 @@ export class Application<
     this.httpMiddleware.push(middleware);
   }
 
+  /** Registers middleware after request ID assignment and before API limits and route handlers. */
+  public addApiMiddleware(
+    middleware: AppHttpMiddleware<Application<TConfig>>,
+  ): void {
+    this.assertRoutesMutable();
+    this.apiMiddleware.push(middleware);
+  }
+
   public registerProviders(): void {
     if (this.serviceProvidersRegistered) {
       return;
@@ -390,7 +400,7 @@ export class Application<
 
   /**
    * Builds the sample data services registered, once every provider is ready, so that a sample may go through any
-   * plugin's services. A sample that fails is logged and recorded as skipped rather than failing the start.
+   * plugin's services. A failed sample is logged and remains eligible for a later run.
    */
   private async buildSampleData(): Promise<void> {
     if (!this.container.has(sampleDataToken)) return;
@@ -477,8 +487,12 @@ export class Application<
     // unknown API path with a page.
     const api = new Hono();
     api.use('*', requestIdMiddleware());
+    const apiConfig = this.config.get<ApiConfig>('api');
+    for (const middleware of this.apiMiddleware) {
+      await middleware.register(api, this);
+    }
     // The `api` section's global limits, each installed only when configured.
-    installApiLimits(api, this.config.get<ApiConfig>('api'));
+    installApiLimits(api, apiConfig);
     // The last resort: anything no router recognized is an unexpected failure, answered with an opaque 500.
     api.onError((error, context) =>
       apiErrorHandler(toApiError(error), context),

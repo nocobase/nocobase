@@ -779,6 +779,12 @@ const koKR: LocaleResource<typeof enUS> = {
         '{{tools}}의 한도가 최대 동시 실행 수({{slots}})보다 큽니다. 동시에 최대 {{slots}}개만 실행됩니다.',
       noneChecked: '한도를 두려면 위에서 코딩 도구를 체크하세요.',
     },
+    modelDetection: {
+      failed: '모델 감지 실패',
+      timedOut: '모델 감지 시간 초과',
+      commandFailed: '모델 목록 조회 명령 실패',
+      invalidResponse: '모델 목록 응답이 올바르지 않음',
+    },
     toolTable: {
       tool: '도구',
       enabled: '켬',

@@ -1,8 +1,10 @@
+import auditLabels from '../../locales/ko-KR.js';
 import type { LocaleResource } from '@nocobase/i18n';
 
 import type enUS from './en-US.js';
 
 const koKR: LocaleResource<typeof enUS> = {
+  ...auditLabels,
   invitationEmail: {
     subject: '{{inviter}} 님이 {{app}}에 초대했습니다',
     intro: '{{inviter}} 님이 {{app}}에 초대했습니다.',

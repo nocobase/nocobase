@@ -132,6 +132,53 @@ describe('knowledge snapshots', () => {
     expect((await snapshot('run-2'))!.hash).toBe(taken.hash);
   });
 
+  it('batches document versions and serves the same bytes after recording', async () => {
+    const conn = h.database.connection();
+    for (let i = 0; i < 100; i += 1)
+      await h.knowledge.docs.create(h.user('lead'), {
+        ...project,
+        title: `Extra ${i}`,
+        slug: `extra-${i}`,
+        content: `# Extra ${i}`,
+      });
+    const knex = await conn.client<{
+      on(event: 'query', callback: (query: { sql: string }) => void): void;
+      off(event: 'query', callback: (query: { sql: string }) => void): void;
+    }>();
+    let versionReads = 0;
+    const count = ({ sql }: { sql: string }) => {
+      if (/^select.*kb_doc_versions/is.test(sql)) versionReads += 1;
+    };
+    knex.on('query', count);
+    try {
+      const composed = await h.knowledge.snapshots.compose(conn, readable, {
+        layout,
+      });
+      expect(composed?.docs).toHaveLength(103);
+      expect(versionReads).toBe(2);
+      const recorded = await h.database.transaction((tx) =>
+        h.knowledge.snapshots.record(tx, composed!, {
+          key: 'batch',
+          seriesKey: 'batch',
+        }),
+      );
+      expect(versionReads).toBe(2);
+      const bundle = (await filesOf('batch'))!;
+      expect(bundle.hash).toBe(recorded.hash);
+      expect(bundle.hash).toBe(
+        sha(
+          JSON.stringify([
+            2,
+            bundle.files.map((file) => [file.path, sha(file.content)]),
+          ]),
+        ),
+      );
+      expect(versionReads).toBe(4);
+    } finally {
+      knex.off('query', count);
+    }
+  });
+
   it('tells a later run of the same session what changed, and lists what does not fit', async () => {
     const first = (await snapshot('run-1'))!;
     const doc = first.docs.find((entry) => entry.slug === 'sqlite-locks')!;

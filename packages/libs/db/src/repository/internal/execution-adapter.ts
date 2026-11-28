@@ -185,7 +185,9 @@ export interface RepositoryExecutedMutation {
 }
 
 export interface RepositoryDeletedMutation {
-  readonly record: RepositoryRecord;
+  /** The matched row's selector, even when the caller selected no fields. */
+  readonly identity?: RepositoryRecord;
+  readonly record?: RepositoryRecord;
 }
 
 export interface RepositoryExecutedManyMutation {

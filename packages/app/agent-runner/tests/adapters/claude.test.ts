@@ -435,7 +435,7 @@ describe('model detection', () => {
     expect(calls).toHaveLength(0);
   });
 
-  it('reports a failure without its message', async () => {
+  it('reports the failed operation without exposing the SDK error text', async () => {
     setSupportedModels(() =>
       Promise.reject(new Error('/private/config secret=never-upload')),
     );
@@ -445,6 +445,7 @@ describe('model detection', () => {
     expect(result).toEqual({
       modelsDetectionStatus: 'failed',
       modelsDetectionError: 'Model detection failed',
+      modelsDetectionDetail: 'Claude Code did not complete supportedModels()',
     });
     expect(calls[0]!.closed).toBe(true);
   });
@@ -458,6 +459,7 @@ describe('model detection', () => {
     expect(await result).toEqual({
       modelsDetectionStatus: 'failed',
       modelsDetectionError: 'Model detection timed out',
+      modelsDetectionDetail: 'Claude Code did not complete supportedModels()',
     });
     expect(calls[0]!.options.abortController?.signal.aborted).toBe(true);
     expect(calls[0]!.closed).toBe(true);

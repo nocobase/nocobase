@@ -1,5 +1,20 @@
 # @nocobase/authorization
 
+## 1.0.0-beta.18
+
+### Patch Changes
+
+- 52d0b0d: Configure audit capture for application operations and send events to multiple named destinations, including JSON Lines files. Configuring a destination enables explicitly declared audit operations by default. Audit uses the application authentication settings for its trusted proxies and forwarded IP headers.
+
+  The official templates assemble auditing with `AuditProvider` and ship the file driver. Custom application composition roots can add the provider and the audit configuration factory when they use audit routes or transports. Applications using only `@nocobase/app-server` can start without the audit package.
+
+  Built-in audit operations store English default names and translation keys. The official templates load Repository labels in the viewer's language, and JSON Lines keeps the original event names. Separate labels identify assigning and removing permission sets and enabling and disabling users and keys.
+
+- Updated dependencies [cc0bf33]
+- Updated dependencies [52d0b0d]
+- Updated dependencies [9acf418]
+  - @nocobase/db@1.0.0-beta.31
+
 ## 1.0.0-beta.17
 
 ### Minor Changes

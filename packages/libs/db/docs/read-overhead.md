@@ -1,6 +1,6 @@
 # Query decoding and transaction inspection overhead
 
-This change addresses [PM-397](https://studio.v2.test.nocobase.com/main/issues/392187556659200) without sharing resolved physical schemas across transactions. Query result mapping prepares column names and decoder references once per execution instead of creating several entry arrays and remapping names for every row. Common stored UTC and offset-free timestamps are validated and formatted in one pass; nonzero offsets, legacy epoch values, invalid values, nulls, and the public temporal contract retain their existing paths.
+The original inspection and decoding change addresses [PM-397](https://studio.v2.test.nocobase.com/main/issues/392187556659200) without sharing resolved physical schemas across transactions. Query result mapping prepares column names and decoder references once per execution instead of creating several entry arrays and remapping names for every row. Common stored UTC and offset-free timestamps are validated and formatted in one pass; nonzero offsets, legacy epoch values, invalid values, nulls, and the public temporal contract retain their existing paths.
 
 PostgreSQL now reads the physical table, columns, constraints, indexes, and expression index keys in one catalog statement. Its catalog arrays are grouped independently as JSON to avoid a Cartesian product. An explicitly named schema still requires its existing permission/existence check. SQLite joins the index-list, index-key, and schema SQL sources in one read, removing two queries per index. Both inspectors still use the transaction's client and snapshot, and both continue to inspect hand-written DDL. No cross-transaction Collection cache or public configuration option was added.
 
@@ -107,3 +107,46 @@ Coverage includes duplicate prevention when four runners claim twelve runs concu
 Raw samples, SQL traces, JSON test results, environment details, fixture scripts, and a verification script are retained in the local `pm397-acceptance-2026-10-15.tar.gz` evidence archive. Its verifier checks the performance gates, counts, normalized business SQL sequences, and zero failed or skipped PostgreSQL tests. The archive is generated output and is not part of the package release.
 
 Local performance, SQL-count, and PostgreSQL claim acceptance are complete. Studio deployment, page and project/issue integration checks, application request latency, and database CPU measurements remain pending. The previously completed cross-dialect suites were not rerun for this documentation-only acceptance update.
+
+## Reusing resolved Collections in transactions
+
+A local comparison used baseline `26ba2431542`, PostgreSQL 16.15, SQLite in memory, and Node 24.22.2 on the same Linux runner. The twelve-table fixture gets each definition on the root connection before opening transactions. The claim comparison uses the Agents plugin harness with one eligible run, one team runner and no Studio integrations. The benchmark authenticates and enqueues outside the measurement. Every sampled claim returns its expected run. Each variant uses 10 warmups and 30 samples.
+
+Each table cell below shows baseline → candidate. Counts include BEGIN and COMMIT. The complete invocation captures every statement up to the returned promise, including any after-commit work. The captured query events contained one SQL statement each.
+
+| Workload and scope                                                                | PostgreSQL total statements | SQLite total statements | PostgreSQL version / catalog / per-table metadata | SQLite version / catalog / per-table metadata |
+| --------------------------------------------------------------------------------- | --------------------------: | ----------------------: | ------------------------------------------------: | --------------------------------------------: |
+| Prepared empty transaction, inside / complete                                     |               2 / 2 → 2 / 2 |           2 / 2 → 2 / 2 |                             0 / 0 / 0 → 0 / 0 / 0 |                         0 / 0 / 0 → 0 / 0 / 0 |
+| Twelve tables, inside / complete                                                  |           39 / 39 → 26 / 26 |       87 / 87 → 15 / 15 |                          1 / 12 / 12 → 12 / 0 / 0 |                       1 / 60 / 12 → 1 / 0 / 0 |
+| Second two-table transaction with no root prewarm, inside / complete              |             10 / 10 → 6 / 6 |         18 / 18 → 5 / 5 |                             1 / 2 / 2 → 2 / 0 / 0 |                        1 / 10 / 2 → 1 / 0 / 0 |
+| Warm root write with in-transaction and after-commit listeners, inside / complete |               7 / 8 → 5 / 6 |         11 / 12 → 5 / 6 |                             1 / 1 / 1 → 1 / 0 / 0 |                         1 / 5 / 1 → 1 / 0 / 0 |
+| Warm claim, inside / complete                                                     |           51 / 62 → 36 / 47 |     107 / 118 → 23 / 34 |                          1 / 14 / 14 → 14 / 0 / 0 |                       1 / 70 / 14 → 1 / 0 / 0 |
+
+The two-table baseline includes one additional naming-summary read in each dialect. The observed root write reads one Collection inside its listener and issues one business read after COMMIT. The claim inspects 14 distinct Collections in both baselines. In steady state, 14 Collections therefore map to 14 PostgreSQL probes and one SQLite probe. The claim executes the same 33 business and control statements in every variant. The shared integration contract separately checks the second call to a root Repository with a transaction listener and a transaction whose tables were never read on the root.
+
+| Timing, ms              |        PostgreSQL median / p95 |             SQLite median / p95 |
+| ----------------------- | -----------------------------: | ------------------------------: |
+| Twelve-table invocation | 82.81 / 107.39 → 17.25 / 29.16 |     31.12 / 41.13 → 4.77 / 8.74 |
+| Claim lock interval     |  40.36 / 58.13 → 37.22 / 64.01 | 84.07 / 126.80 → 72.96 / 119.76 |
+
+For the claim lock interval, the test harness records elapsed time from the Knex driver acknowledging the first agent-row lock update through its acknowledgment of COMMIT on the same transaction. This interval approximates the lock hold from the client and includes COMMIT acknowledgment latency. PostgreSQL's claim median improved in this sample and its p95 increased. These timings describe the local fixture. The SQL counts are the regression gates, and Studio production latency requires a deployment measurement.
+
+## SQL Server naming cost
+
+On the first naming lookup in a prepared SQL Server transaction, the baseline read the version row once and reused the warmed naming snapshot and its index. That cache hit read zero metadata documents and performed zero document parses. The new path skips the version query, reads the metadata documents in pages of 1,000, parses each returned document, and builds a transaction-local index. For a store with 136 documents this changes the naming work from one version read, zero documents and zero parses to one metadata page, 136 documents and 136 parses. For larger stores the page reader also reads and parses one lookahead row per nonfinal page. Physical inspection and individual Collection metadata reads are separate costs in both versions.
+
+These are counts derived from the Store implementation. The scan runs with both SQL Server RCSI settings. With READ COMMITTED and RCSI disabled, it can still wait for an exclusive lock held by a metadata writer. No SQL Server parse-time or lock-duration measurements were collected.
+
+## PostgreSQL claim lock interval follow-up
+
+The local rerun used the same Agents claim fixture on baseline `26ba2431542` and candidate `bacf4854698`. Each version ran in four blocks of 50 measured claims, with 10 warmups and a fresh fixture per block. The paired order was baseline then candidate, candidate then baseline, baseline then candidate, and candidate then baseline. The fixture authenticated once and enqueued each run outside the sample. Each measurement started at acknowledgment of the first agent-row update and ended at acknowledgment of COMMIT on the same transaction.
+
+| Pair and order              | Baseline median / p95, ms | Candidate median / p95, ms |
+| --------------------------- | ------------------------: | -------------------------: |
+| 1, baseline then candidate  |             26.23 / 32.24 |              20.71 / 31.40 |
+| 2, candidate then baseline  |             25.36 / 33.53 |              19.77 / 26.89 |
+| 3, baseline then candidate  |             26.72 / 39.45 |              23.05 / 27.53 |
+| 4, candidate then baseline  |             38.75 / 60.14 |              23.09 / 34.22 |
+| All 200 samples per version |             27.79 / 48.63 |              21.80 / 28.15 |
+
+Median and nearest-rank p95 were lower in each pair. The baseline timings varied across pairs on the shared runner. PostgreSQL 16.15 ran on loopback with READ COMMITTED, `fsync=on`, `synchronous_commit=on` and `shared_buffers=128MB`. The Linux runner exposed six logical CPUs on an Intel Xeon E-2386G and used Node 24.22.2. The suite ran one benchmark block at a time. Every sampled claim retained the same statement count in its variant, with transaction/complete totals of 51/62 → 36/47 and version/catalog/per-Collection metadata counts of 1/14/14 → 14/0/0. These timings describe the local claim fixture.

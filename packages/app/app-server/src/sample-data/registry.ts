@@ -41,24 +41,16 @@ export function createSampleDataService(): SampleDataService {
       if (!state || registrations.size === 0)
         return { executed, skipped, failed };
       const { ledger, enabled } = state;
+      const shouldRun = enabled || rerun;
+      rerun = false;
       const recorded = new Map(
         (await ledger.history()).map((record) => [record.name, record.status]),
       );
       for (const registration of registrations.values()) {
         const name = sampleDataRecordName(registration.name);
-        const status = recorded.get(name);
-        const build = rerun
-          ? status !== 'executed'
-          : status === undefined && enabled;
-        if (!build) {
-          if (status === undefined) {
-            await ledger.record({
-              packageName: registration.packageName,
-              name,
-              status: 'skipped',
-            });
-            skipped.push(registration.name);
-          }
+        if (recorded.get(name) === 'executed') continue;
+        if (!shouldRun) {
+          skipped.push(registration.name);
           continue;
         }
         const startedAt = Date.now();
@@ -66,11 +58,6 @@ export function createSampleDataService(): SampleDataService {
           await registration.run();
         } catch (error) {
           failed.push({ name: registration.name, error });
-          await ledger.record({
-            packageName: registration.packageName,
-            name,
-            status: 'skipped',
-          });
           continue;
         }
         await ledger.record({
@@ -81,7 +68,6 @@ export function createSampleDataService(): SampleDataService {
         });
         executed.push(registration.name);
       }
-      rerun = false;
       return { executed, skipped, failed };
     },
   };

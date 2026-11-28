@@ -1,5 +1,51 @@
 # @nocobase/app-plugin-knowledge
 
+## 0.1.0-beta.26
+
+### Patch Changes
+
+- 1952789: Declare whether each product plugin is enabled by default, preinstalled only, available separately, or deprecated.
+- cf23bfe: Stop publishing CHANGELOG.md in the package; the changelog stays in the repository.
+- Updated dependencies [888bca5]
+- Updated dependencies [1952789]
+- Updated dependencies [24d0cad]
+- Updated dependencies [cf23bfe]
+  - @nocobase/app-plugin-authentication@2.0.0-beta.27
+  - @nocobase/app-plugin-agents@2.0.0-beta.22
+  - @nocobase/app-plugin-authorization@1.0.0-beta.42
+  - @nocobase/app-plugin-file@1.0.0-beta.35
+
+## 0.1.0-beta.25
+
+### Patch Changes
+
+- 26ba243: Reuse runner selection diagnostics and prepared subject data for model fallback. Read PostgreSQL collection definitions, including those declared by subjects and mounts, before locking the agent. Abort cancelled run claims before dispatch. Prepare and batch knowledge snapshot reads separately from recording the snapshot.
+- Updated dependencies [55277b8]
+- Updated dependencies [5e73680]
+- Updated dependencies [11f5151]
+- Updated dependencies [2b77e0d]
+- Updated dependencies [2b77e0d]
+- Updated dependencies [5e73680]
+- Updated dependencies [cc0bf33]
+- Updated dependencies [4561d5f]
+- Updated dependencies [52d0b0d]
+- Updated dependencies [c12d990]
+- Updated dependencies [1b92cdb]
+- Updated dependencies [1b92cdb]
+- Updated dependencies [1b92cdb]
+- Updated dependencies [26ba243]
+- Updated dependencies [78bdca8]
+- Updated dependencies [87e3dac]
+- Updated dependencies [9acf418]
+  - @nocobase/app-plugin-agents@2.0.0-beta.21
+  - @nocobase/app-server@5.0.0-beta.12
+  - @nocobase/db@1.0.0-beta.31
+  - @nocobase/authorization@1.0.0-beta.18
+  - @nocobase/app-plugin-authentication@2.0.0-beta.26
+  - @nocobase/app-plugin-authorization@1.0.0-beta.41
+  - @nocobase/app-client@4.0.0-beta.14
+  - @nocobase/app-plugin-file@1.0.0-beta.34
+
 ## 0.1.0-beta.24
 
 ### Patch Changes

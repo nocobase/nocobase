@@ -1,3 +1,4 @@
+import { AuditProvider } from '@nocobase/audit/runtime';
 import type { Application } from '@nocobase/app-server/application';
 import { DatabaseProvider } from '@nocobase/app-server/database';
 import { I18nProvider, i18nHttpMiddleware } from '@nocobase/app-server/i18n';
@@ -49,6 +50,7 @@ export function createApp(runtime: AppRuntimeContext): Application {
   // The installation manifest, served anonymously from the pwa section; before the SPA, whose catch-all answers pages.
   app.addRoutes(createPwaRoutes());
   app.addRoutes(spaRootRoutes);
+  app.addServiceProvider(AuditProvider);
 
   return app;
 }

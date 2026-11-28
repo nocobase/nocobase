@@ -2,13 +2,14 @@
   "name": "@nocobase/app-plugin-users",
   "displayName": "User Management",
   "description": "Reusable user administration APIs and pages for NocoBase applications.",
-  "version": "2.0.0-beta.22",
+  "version": "2.0.0-beta.24",
   "type": "module",
   "prettier": "@nocobase/dev-config/prettier",
   "engines": {
     "node": ">=24.0.0"
   },
   "nocobase": {
+    "pluginPolicy": "preinstall-and-enable",
     "title": {
       "en-US": "Users",
       "zh-CN": "用户"
@@ -58,7 +59,6 @@
     "dist",
     "README.md",
     "MEMBER-ROLES.md",
-    "CHANGELOG.md",
     "skills"
   ],
   "publishConfig": {
@@ -122,6 +122,7 @@
     "@nocobase/app-plugin-authorization": "workspace:^",
     "@nocobase/app-plugin-notification": "workspace:^",
     "@nocobase/app-server": "workspace:^",
+    "@nocobase/audit": "workspace:^",
     "@nocobase/authorization": "workspace:^",
     "@nocobase/db": "workspace:^",
     "@nocobase/i18n": "workspace:^",

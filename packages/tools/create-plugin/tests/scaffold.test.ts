@@ -283,10 +283,10 @@ describe('createPlugin', () => {
 
   it.each([
     // Compiled plugins resolve database resources from baseDir inside dist.
-    ['database', ['dist', 'README.md', 'CHANGELOG.md']],
-    ['server.jobs', ['dist', 'README.md', 'CHANGELOG.md']],
-    ['client.react-providers', ['dist', 'README.md', 'CHANGELOG.md']],
-    ['skills', ['dist', 'README.md', 'CHANGELOG.md', 'skills']],
+    ['database', ['dist', 'README.md']],
+    ['server.jobs', ['dist', 'README.md']],
+    ['client.react-providers', ['dist', 'README.md']],
+    ['skills', ['dist', 'README.md', 'skills']],
   ] as const)(
     '%s publishes only its declared package files',
     async (capability, packageFiles) => {
@@ -445,7 +445,7 @@ describe('createPlugin', () => {
     expect(manifest.engines).toBeUndefined();
     expect(manifest.devDependencies).toHaveProperty('@types/node', 'catalog:');
     expect(manifest.exports).toEqual({ './package.json': './package.json' });
-    expect(manifest.files).toEqual(['dist', 'README.md', 'CHANGELOG.md']);
+    expect(manifest.files).toEqual(['dist', 'README.md']);
   });
 
   it('tests the database capability with app-testing', async () => {

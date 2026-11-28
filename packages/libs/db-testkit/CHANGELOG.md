@@ -1,5 +1,15 @@
 # @nocobase/db-testkit
 
+## 0.1.0-beta.6
+
+### Patch Changes
+
+- 9acf418: Reuse committed Collection definitions in PostgreSQL and SQLite transactions and invalidate them across replicas when the schema changes.
+- Updated dependencies [cc0bf33]
+- Updated dependencies [52d0b0d]
+- Updated dependencies [9acf418]
+  - @nocobase/db@1.0.0-beta.31
+
 ## 0.1.0-beta.5
 
 ### Patch Changes

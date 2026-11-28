@@ -2,6 +2,59 @@
 
 このファイルには NocoBase 3 の主な変更を、リリースごとに 1 セクションずつ記録します。`nocobase-v3-beta/<日付>.<連番>` はベータ版、`nocobase-v3/<日付>.<連番>` は正式版です。各リリースで公開されたパッケージのバージョンは対応する GitHub Release を、各パッケージ自体の変更はパッケージ内の CHANGELOG.md を参照してください。
 
+## [nocobase-v3-beta/2026-11-27.3](https://github.com/nocobase/nocobase/releases/tag/nocobase-v3-beta%2F2026-11-27.3)
+
+### 🎉 新機能
+
+- **[メッセージブローカー]** メッセージブローカーのアダプターでサブスクリプションごとの既定の試行回数を設定でき、明示した回数が優先されます。 ([#11760](https://github.com/nocobase/nocobase/pull/11760))
+
+## [nocobase-v3-beta/2026-11-27.2](https://github.com/nocobase/nocobase/releases/tag/nocobase-v3-beta%2F2026-11-27.2)
+
+### 🎉 新機能
+
+- **[サーバー]** 監査ファイルを UTC の日付とサイズでローテーションし、最終書き込みから設定された期間以上アーカイブを保持します。 ([#11742](https://github.com/nocobase/nocobase/pull/11742))
+- **[アプリホスティング]** マネージド App Host で、アプリと業務データを削除してもバックアップを有効期限まで保持できるようになりました。 ([#11743](https://github.com/nocobase/nocobase/pull/11743))
+- **[監査]** アプリケーションの YAML で監査スナップショットとマスキングを設定でき、リクエストとレスポンスの本文は既定で記録しません。 ([#11745](https://github.com/nocobase/nocobase/pull/11745))
+
+### 🚀 改善
+
+- **[アプリテンプレート]** デフォルトアプリにはナレッジと検証のプラグインがプリインストールされ、必要に応じて有効化できます。 ([#11747](https://github.com/nocobase/nocobase/pull/11747))
+- **[全般]** 公開パッケージに CHANGELOG.md を含めなくなり、サイズが小さくなりました。 ([#11754](https://github.com/nocobase/nocobase/pull/11754))
+
+### 🐛 不具合修正
+
+- **[Agent]** オフラインのランタイムで OpenCode の起動を待ち、モデル検出に失敗した原因をランタイムの詳細に表示します。 ([#11751](https://github.com/nocobase/nocobase/pull/11751))
+
+## [nocobase-v3-beta/2026-11-27.1](https://github.com/nocobase/nocobase/releases/tag/nocobase-v3-beta%2F2026-11-27.1)
+
+### 🎉 新機能
+
+- **[Agent]** スキルが `SKILL.md` のメタデータを返し、アプリケーションは指定したスキルの編集・削除・割り当てを禁止できます。 ([#11675](https://github.com/nocobase/nocobase/pull/11675))
+- **[サーバー]** 重要な API 操作を記録し、ログファイルなどの設定済みの送信先に監査イベントを送信できます。 ([#11694](https://github.com/nocobase/nocobase/pull/11694))
+- **[メッセージブローカー]** プラグインは設定可能なメッセージミドルウェアを通じてアプリケーション内外でメッセージを発行・消費でき、データベーストランザクション内で発行したメッセージはコミット後にのみ送信され、消費側はデータベース書き込みと同じトランザクションで重複メッセージをスキップできます。 ([#11695](https://github.com/nocobase/nocobase/pull/11695))
+- **[クライアント]** サインインが必要なページで、アクセス権の確認を維持したままアプリのヘッダーとサイドバーを非表示にできます。 ([#11720](https://github.com/nocobase/nocobase/pull/11720))
+- **[通知]** 阿里雲またはテンセントクラウドから SMS を送信し、ワンタイムコードで電話番号や機密性の高い操作を確認できるようにしました。 ([#11722](https://github.com/nocobase/nocobase/pull/11722))
+- **[認証コード]** 型安全なリクエストと React フックで、認証コード、電話番号の登録、追加認証を組み込めるようになりました。 ([#11738](https://github.com/nocobase/nocobase/pull/11738))
+- **[Skills]** コミュニティ版アプリを Professional または Enterprise へアップグレードする手順と、旧シナリオテンプレートのアプリを Enterprise へ移行する手順を案内します。 ([#11739](https://github.com/nocobase/nocobase/pull/11739))
+
+### 🚀 改善
+
+- **[クライアント]** システム設定がアバターの左に常時表示され、設定と受信トレイのアイコンにツールチップが付き、認証設定の英語・中国語表記が短くなりました。 ([#11715](https://github.com/nocobase/nocobase/pull/11715))
+- **[Agent]** 実行履歴が多い環境で Agent の稼働状況をより速く確認できます。 ([#11717](https://github.com/nocobase/nocobase/pull/11717))
+- **[メール]** メール関連ページのタイトルの文字サイズを、ほかの設定ページと同じにしました。 ([#11721](https://github.com/nocobase/nocobase/pull/11721))
+- **[データベース]** PostgreSQL と SQLite の繰り返しトランザクションでスキーマ照会を削減します。 ([#11741](https://github.com/nocobase/nocobase/pull/11741))
+
+### 🐛 不具合修正
+
+- **[Agent]**
+  - 使用量ページで、停止や失敗の前に報告された分も含め、オンライン会話のトークン使用量と費用をエージェント別に確認できます。 ([#11719](https://github.com/nocobase/nocobase/pull/11719))
+  - Runner が処理を取得する際のロック時間を短縮し、割り当ての確定前に接続が切れた場合は処理をキューに残します。 ([#11735](https://github.com/nocobase/nocobase/pull/11735))
+- **[権限]** すでに存在しないデフォルトアクセスルールを編集または削除すると、タイムアウトせずにルールが見つからないことを通知します。 ([#11724](https://github.com/nocobase/nocobase/pull/11724))
+- **[Agent ランナー]**
+  - Runner は dsh の Web 設定に保存された DeepSeek API キーを認識し、dsh のログインが必要と誤って表示しなくなりました。 ([#11726](https://github.com/nocobase/nocobase/pull/11726))
+  - OpenCode 2.4 の起動直後にランナーがモデルを検出できない問題を修正しました。 ([#11728](https://github.com/nocobase/nocobase/pull/11728))
+- **[データベース]** どのデプロイでもサンプルデータを有効にすると、新規および以前にスキップされたサンプルデータを読み込みます。 ([#11744](https://github.com/nocobase/nocobase/pull/11744))
+
 ## [nocobase-v3-beta/2026-11-25.1](https://github.com/nocobase/nocobase/releases/tag/nocobase-v3-beta%2F2026-11-25.1)
 
 ### 🚀 改善

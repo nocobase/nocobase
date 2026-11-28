@@ -1,3 +1,4 @@
+import type { DatabaseTransactionOptions } from '../../connection.js';
 import type { CollectionBuilder } from '../../../collection/builder/builder.js';
 import type { ConnectionCollections } from '../../../collection/registry/types.js';
 import type { CollectionMetadataService } from '../../../metadata/service.js';
@@ -147,16 +148,23 @@ export class RepositoryListenerConnection implements PolicyBindableConnection {
     return this.inner.resetManagedSchema();
   }
 
+  notifySchemaChange<T>(operation: () => Promise<T>): Promise<T> {
+    return this.inner.notifySchemaChange(operation);
+  }
+
   async transaction<T>(
     fn: (connection: DatabaseConnection) => Promise<T>,
+    options?: DatabaseTransactionOptions,
   ): Promise<T> {
-    return this.inner.transaction((connection) =>
-      fn(
-        new RepositoryListenerConnection(
-          connection as KnexDatabaseConnection,
-          this.parent,
+    return this.inner.transaction(
+      (connection) =>
+        fn(
+          new RepositoryListenerConnection(
+            connection as KnexDatabaseConnection,
+            this.parent,
+          ),
         ),
-      ),
+      options,
     );
   }
 

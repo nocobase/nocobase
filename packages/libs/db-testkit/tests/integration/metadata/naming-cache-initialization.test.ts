@@ -113,26 +113,35 @@ describeIntegrationDatabases(
       expect((await root.get('orders'))?.document.title).toBe('After');
     });
 
-    it('converges concurrent root initializers before opening their transactions', async () => {
-      const tableName = await legacyTable();
-      const roots = Array.from(
-        { length: 2 },
-        () =>
-          new DatabaseCollectionMetadataStore({
-            resolveClient: async () => context.db,
-            tableName,
-          }),
-      );
-      await Promise.all(roots.map((root) => root.initialize()));
-      for (const root of roots) {
-        const index = await CollectionNamingIndex.create(root);
-        const bindTransaction = await root.prepareTransaction();
-        await context.db.transaction(async (transaction) => {
-          expect(
-            await CollectionNamingIndex.create(bindTransaction(transaction)),
-          ).toBe(index);
-        });
-      }
-    });
+    it.each([false, true])(
+      'converges concurrent root initializers before opening transactions (isolated: %s)',
+      async (isolated) => {
+        const tableName = await legacyTable();
+        const roots = Array.from(
+          { length: 2 },
+          () =>
+            new DatabaseCollectionMetadataStore({
+              resolveClient: async () => context.db,
+              tableName,
+            }),
+        );
+        await Promise.all(roots.map((root) => root.initialize()));
+        for (const root of roots) {
+          const index = await CollectionNamingIndex.create(root);
+          const bindTransaction = await root.prepareTransaction(isolated);
+          await context.db.transaction(async (transaction) => {
+            const transactionIndex = await CollectionNamingIndex.create(
+              bindTransaction(transaction),
+            );
+            expect(transactionIndex.metadata('orders')).toEqual(
+              index.metadata('orders'),
+            );
+            expect(transactionIndex === index).toBe(
+              !isolated && !context.profile.coldTransactionNaming,
+            );
+          });
+        }
+      },
+    );
   },
 );

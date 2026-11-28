@@ -11,6 +11,8 @@ metadata:
 
 # NocoBase 3 application development
 
+The “3” in NocoBase 3 identifies the product generation. The `@nocobase/app-template-*` and `@nocobase/app-plugin-*` prefixes identify NocoBase 3 application templates and plugins, respectively. Each package has its own version. When describing a project, label the value as the template version or plugin version and name the package it belongs to.
+
 When the task creates or maintains a plugin under this App's `packages/`, read `<app-root>/.agents/skills/nocobase-app-plugin-development/SKILL.md` by its explicit project path. It ships alongside this Skill in `@nocobase/app-skills`. Use this application's guidance for App-owned features and the plugin Skill for plugin-owned contracts and packaging; do not install the older global plugin development Skill.
 
 Use this Skill when building a complete application or an individual feature: business and administration pages, endpoints, data, services and their tests.
@@ -59,11 +61,13 @@ NocoBase packages may publish Skills under `.agents/skills/`. Current applicatio
 
 | The requirement sounds like                                    | Read the Skill for                                      |
 | -------------------------------------------------------------- | ------------------------------------------------------- |
-| Email, IM, or in-app messages                                  | `@nocobase/app-plugin-notification`                     |
+| Email, SMS, IM, or in-app messages                             | `@nocobase/app-plugin-notification`                     |
+| Setting up built-in channels: email, SMS, Feishu, DingTalk     | `@nocobase/app-plugin-notification-providers`           |
+| Verification codes, phone binding, step-up confirmation        | `@nocobase/app-plugin-verification`                     |
 | Knowledge bases, document spaces, search and document review   | `@nocobase/app-plugin-knowledge`                        |
 | Approval processes, joint decisions and approval tasks         | `@nocobase/app-plugin-approval` (commercial Pro plugin) |
 | Roles, permissions, per-user or per-record access              | `@nocobase/app-plugin-authorization`                    |
-| Sign-in, registration, sessions                                | `@nocobase/app-plugin-authentication`                   |
+| Sign-in, registration, account policy, sessions                | `@nocobase/app-plugin-authentication`                   |
 | File upload and metadata through Repository                    | `@nocobase/app-plugin-file`                             |
 | File storage, disk configuration, or custom drivers            | `@nocobase/drive`                                       |
 | Translated text and language switching                         | `@nocobase/app-plugin-i18n`                             |
@@ -85,6 +89,10 @@ When requirements call for administrators to suspend, resume, reset, or restart 
 
 Before changing lifecycle behavior or removing a version, read [versions of a process](references/lifecycle-versions.md): behavior freezes against the target main branch, unmerged new versions can be edited continuously, and deleting a frozen version requires explicit user retirement confirmation.
 
+Messages, channels and codes are three layers: `notification` sends, `notification-providers` supplies and configures the built-in channels (email transports, Alibaba Cloud or Tencent Cloud SMS with signature, templates and credentials, Feishu, DingTalk), and `verification` owns one-time codes, verified phones, step-up credentials and their browser hooks. Sign-in, account policy and sessions stay with `authentication` and the application's business code; installing `verification` adds no sign-in by SMS, no password-reset flow and no pages. Check `package.json`, `server/plugins.ts`, `client/plugins.ts` and the effective `notification` configuration before relying on any of them, and register a missing plugin as [plugins](references/plugins.md) describes.
+
+Never send a verification code, one-time password or other credential with an ordinary `notification.send()`, because it persists the message in the delivery history, queue and logs. Use the `verification` service, which delivers the code without storing it; SMS transport settings stay in the `notification-providers` Skill. A verification client hook only improves the user experience: the business server still checks the caller's permission on the target and consumes the step-up credential with `consumeStepUp` before the write. For browser integration, read `.agents/skills/nocobase-app-plugin-verification/references/client.md` once the Skill is synchronized instead of rewriting its hooks.
+
 For notification configuration or sending, follow the notification plugin Skill: `notification.channels` maps each name to one flat channel configuration with `type` (`provider` remains a compatibility alias), and `send({ idempotencyKey, messages })` supplies a complete message per Channel. Use native addresses; email and in-app arrays create independent deliveries, while Webhooks forbid `to`.
 
 Install, update and customize plugins, and remove a direct NocoBase package, as [plugins](references/plugins.md) describes: `pnpm nocobase plugin register`, `plugin update` and `package remove` keep the manifest, the lockfile, the composition roots and the synchronized Skills consistent, so never hand-edit only one of them.
@@ -99,7 +107,7 @@ For page/panel waits and native submit buttons, follow [pending feedback](refere
 
 ## Choose sample data or a demo system
 
-A request to add example customers, orders or tasks normally means sample data in the existing application. Use `sample: true` seeds or `sampleDataToken`; see [sample data and demo systems](references/migrations.md#sample-data-and-demo-systems). Keep required initialization data in ordinary seeds. Do not infer an isolated demo deployment from the words "demo data" alone.
+When adding a business data model, page or core workflow, include small, realistic and idempotent `sample: true` seeds by default. Cover the list, detail and key workflow states that apply so reviewers can verify the feature in Preview. Pure refactors, configuration changes and work without business data changes are exempt. Start the app with `APP_SAMPLE_DATA=true` to verify outstanding seeds on a new or existing database. With sample data disabled, skipped seeds leave seed history untouched. Keep required initialization in ordinary seeds. For examples that need to use plugin services, see [sample data and demo systems](references/migrations.md#sample-data-and-demo-systems).
 
 A dedicated demo system has its own database and storage, repeatable business-data generation/clear/reset, visitor write policies and optional simulated external or Agent execution. For that requirement, follow the `nocobase-app-plugin-demo-mode` Skill. If `@nocobase/app-plugin-demo-mode` is not yet a dependency, register it with `pnpm nocobase plugin register demo-mode`, which also synchronizes its Skill; the Skill exists in the application only after synchronization. The plugin supplies the environment mechanisms; the application supplies its dataset, cleanup, management UI and any simulation adapters. Sample data alone supplies none of those operating policies. Use the user's stated deployment and lifecycle requirements to choose; if the intended scope remains ambiguous, clarify it before adding full-business cleanup or changing the environment mode. A trial, staging or customer environment where users keep their data, a provider's sandbox credentials and an in-app presentation mode are not demo systems.
 

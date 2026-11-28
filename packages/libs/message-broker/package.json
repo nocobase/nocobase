@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/message-broker",
-  "version": "0.0.1",
+  "version": "0.1.0-beta.1",
   "description": "Middleware-neutral message publishing and consuming within and across applications: logical publishers and subscriptions, an in-process backend and application-owned backend implementations.",
   "type": "module",
   "prettier": "@nocobase/dev-config/prettier",

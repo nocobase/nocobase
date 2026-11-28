@@ -4,13 +4,13 @@ Middleware-neutral publishing and consuming of messages, inside an application a
 
 ## When to use it
 
-`@nocobase/jobs`, `@nocobase/queue` and this package overlap: each runs code outside the request and retries. They differ in who consumes what: one `JobExecutor.addJob()` runs one Job class; a queue job is consumed by every handler registered on that queue, on the instance that claimed it, and completes only when all of them succeed, so one failure retries the whole set; each message-broker subscription receives every message and acknowledges, retries and dead-letters it on its own. They differ in what they center on and what they guarantee; whether another system is involved is not the deciding factor.
+`@nocobase/jobs`, `@nocobase/queue` and this package overlap: each runs code outside the request and retries. They differ in who consumes what: one `JobExecutor.addJob()` runs one Job class; a queue job is consumed by every handler registered on that queue, on the instance that claimed it, and completes only when all of them succeed, so one failure retries the whole set; each message-broker subscription receives every message and settles it independently. They differ in what they center on and what they guarantee; whether another system is involved is not the deciding factor.
 
 | Need                                           | `@nocobase/jobs`                      | `@nocobase/queue`                                                                                             | `@nocobase/message-broker`                                                                       |
 | ---------------------------------------------- | ------------------------------------- | ------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------ |
 | Centers on                                     | Executing background work             | Queuing this application's work with execution control                                                        | Delivering messages to independent subscriptions, consistently with the business transaction     |
 | Leave only if the business transaction commits | No                                    | No                                                                                                            | `publish(message, { transaction })` writes the outbox in that transaction                        |
-| Several consumers of one message               | No; one submission runs one Job class | Every handler of a queue runs each job; the job completes only when all succeed, and a retry runs all of them | Each subscription acknowledges, retries and dead-letters on its own                              |
+| Several consumers of one message               | No; one submission runs one Job class | Every handler of a queue runs each job; the job completes only when all succeed, and a retry runs all of them | Each subscription settles each message independently                                             |
 | Deduplication                                  | None; each submission is a task       | A job ID that still exists adds nothing; once removed from history it can be added again                      | The inbox records `(subscription, messageId)` in the handler's transaction, for `inboxRetention` |
 | Delay, priority, rate limit, cancellation      | No                                    | Yes                                                                                                           | A delayed retry, where the backend declares `delayedRetry`                                       |
 | Physical names and format                      | Derived                               | Derived; JSON in a private envelope                                                                           | Configured per logical name to match the middleware; Buffer bodies with headers                  |
@@ -49,9 +49,9 @@ await database.transaction(async (transaction) => {
 });
 ```
 
-A message carries `body`, `contentType`, `headers` (string values), `messageId`, `key` (the partition or ordering key), `correlationId`, `replyTo`, `type` and `timestamp`. `messageId` defaults to a random UUID and `timestamp` to now. Bodies go through a codec: `jsonCodec` by default, `rawCodec` for a `Buffer` passed as is, or any object with `contentType`, `encode()` and `decode()`, given as `{ codec }` to `publisher()` or `subscription()`. A subscription's `schema` takes any [Standard Schema](https://standardschema.dev) such as zod; a body that fails it, like one the codec cannot decode, goes to the dead letter without running the handler.
+A message carries `body`, `contentType`, `headers` (string values), `messageId`, `key` (the partition or ordering key), `correlationId`, `replyTo`, `type` and `timestamp`. `messageId` defaults to a random UUID and `timestamp` to now. Bodies go through a codec: `jsonCodec` by default, `rawCodec` for a `Buffer` passed as is, or any object with `contentType`, `encode()` and `decode()`, given as `{ codec }` to `publisher()` or `subscription()`. A subscription's `schema` takes any [Standard Schema](https://standardschema.dev) such as zod. Schema and decoding failures go directly to the backend's final failure handling and skip the handler.
 
-A handler that returns acknowledges the message, and one that throws retries it. It may return `ack()`, `retry({ delay })` or `reject(reason)` to decide explicitly; `reject` dead-letters at once. A message that has been delivered `maxAttempts` times goes to the dead letter instead of another retry. `context.attempt` counts deliveries from 1 and `context.signal` aborts when the service shuts down.
+A handler that returns normally acknowledges the message. A throw requests a retry. The handler may also return `ack()`, `retry({ delay })` or `reject(reason)`. An explicit rejection or a failure on the last allowed attempt goes to the backend's final failure handling. `context.attempt` starts at 1 and `context.signal` aborts when the service shuts down. A throw or `retry()` after that signal aborts requests an immediate retry even at the attempt limit. Handler failure warnings include the message context and failure category. Keep sensitive data out of error and rejection reasons because the backend may forward them to a dead-letter destination.
 
 `publish()` without a transaction resolves once the backend has confirmed the message, within 10 seconds; it needs the service to be set up. With `{ transaction }` it resolves once the message is written to the outbox in that transaction, which needs `@nocobase/app-plugin-message-broker` (below), and it may run before setup.
 
@@ -81,7 +81,7 @@ messageBroker: {
 }
 ```
 
-Every subscription binding accepts `maxAttempts` (default 3), `retryDelay` in milliseconds (default 0), `concurrency` (default 1) and `ordered` (default `false`) besides the backend's physical names. Switching middleware means changing this section only.
+Every subscription binding accepts `maxAttempts`, `retryDelay` in milliseconds (default 0), `concurrency` (default 1) and `ordered` (default `false`) besides the backend's physical names. `maxAttempts` includes the first attempt. When omitted, it uses the adapter's default for the subscription or 3 if the adapter supplies none. Switching middleware means changing this section only.
 
 The templates configure `inMemory`, which delivers within the process, shares nothing between instances and loses everything when it exits, including messages the outbox already handed to it; use it for development and tests. Production delivery guarantees depend on the backend and how it is deployed. It accepts `topics` (a list; when given, every binding's topic must be in it), `publishers: { <name>: { topic } }` and `subscriptions: { <name>: { topic, …common options } }`. A binding's topic defaults to its logical name, and every subscription of a topic receives every message published to it.
 
@@ -89,13 +89,15 @@ The templates configure `inMemory`, which delivers within the process, shares no
 
 Each backend declares what it can do, and the service refuses a configuration or call that needs something it cannot, at setup or at the call, instead of quietly doing less:
 
-| Capability      | Needed by                                               | Checked                                 |
-| --------------- | ------------------------------------------------------- | --------------------------------------- |
-| `perMessageAck` | `concurrency` above 1                                   | setup                                   |
-| `delayedRetry`  | `retryDelay` above 0                                    | setup                                   |
-| `delayedRetry`  | `retry({ delay })` from a handler                       | the call; dead-lettered with the reason |
-| `orderedByKey`  | `ordered: true`                                         | setup                                   |
-| `deadLetter`    | every subscription (`maxAttempts`, `reject()`, schemas) | setup                                   |
+| Capability      | Needed by                         | Checked                                    |
+| --------------- | --------------------------------- | ------------------------------------------ |
+| `perMessageAck` | `concurrency` above 1             | setup                                      |
+| `delayedRetry`  | `retryDelay` above 0              | setup                                      |
+| `delayedRetry`  | `retry({ delay })` from a handler | at the call (final failure if unsupported) |
+| `orderedByKey`  | `ordered: true`                   | setup                                      |
+| `deadLetter`    | final failure handling            | setup                                      |
+
+`deadLetter` means the backend can send failed messages to a dead-letter destination. An adapter may allow a subscription to omit that destination and documents how it settles final failures in that case.
 
 `inbox: true` needs a registered inbox and a transactional publish a registered outbox; both are checked too. A name first used after setup is bound and checked on first use, by a transactional publish as well as a direct one, so that a message the middleware cannot route fails the caller instead of waiting in the outbox; a failed check runs again on the next call, so a resource an operator creates later takes effect without a restart.
 
@@ -116,6 +118,10 @@ Sent rows are deleted after `outboxRetention` (1 day) and inbox rows after `inbo
 ## Implementing a backend
 
 A backend plugin calls `registerImplementation(adapter, implementation)` in its provider's `register()`; registration performs no I/O and closes once the service is set up. A `BrokerImplementation` declares `sharing` and `capabilities`, may set `implicitBindings` to accept undeclared names, validates its backend entry synchronously in `validateConfig()`, and creates a `BrokerRuntime` per backend. The runtime opens its connection in `open()`, reports missing resources from `checkTopology()`, resolves `publish()` only once the middleware confirmed the message, and delivers messages to the callback `startConsuming()` receives: the callback answers `ack`, `retry` with a delay, or `deadLetter` with a reason, and the runtime settles the message accordingly. `close()` stops consuming and releases the connection.
+
+A missing handler or an error during shutdown can return an immediate `retry` even at the configured attempt limit. An adapter without an application retry route keeps that delivery eligible for broker redelivery at the same attempt.
+
+An adapter may implement `defaultMaxAttempts(options)` to return a positive integer based on the raw subscription options. The service calls it synchronously during binding resolution, before adapter validation, and only when `maxAttempts` is omitted. The resolved binding carries the effective limit in `maxAttempts` and preserves the raw `options`.
 
 `@nocobase/message-broker/contract` holds the contract every backend passes, grouped as `core` plus one group per capability that runs only when the target declares it. It imports `vitest`, an optional peer dependency the backend's test setup provides. A backend suite imports it and calls `defineMessageBrokerContract(target)` with how to build a backend entry for a set of names, an entry whose topology is missing, and how to read a subscription's dead letters; `tests/unit/memory-contract.test.ts` is the `inMemory` target.
 

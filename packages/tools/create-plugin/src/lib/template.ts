@@ -515,7 +515,7 @@ export async function renderManifest(
   }
 
   // Compiled plugins resolve resources from baseDir inside dist; only that runtime tree is published.
-  const files = ['dist', 'README.md', 'CHANGELOG.md'];
+  const files = ['dist', 'README.md'];
   if (capabilities.skills) files.push('skills');
 
   const manifest = {

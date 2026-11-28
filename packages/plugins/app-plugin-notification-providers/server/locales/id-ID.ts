@@ -8,6 +8,7 @@ const idID: LocaleResource<typeof enUS> = {
     resend: 'Kirim ulang',
     feishuWebhook: 'kait web Feishu',
     dingtalkWebhook: 'kait web DingTalk',
+    sms: 'SMS',
   },
 };
 

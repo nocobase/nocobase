@@ -1,3 +1,6 @@
+import { describeAudit } from '@nocobase/audit';
+import type { AuthEnv } from '../auth.js';
+import { authAuditOptions } from '../audit.js';
 import type { AppPluginApplication } from '@nocobase/app-server/plugins';
 import {
   ApiError,
@@ -8,9 +11,10 @@ import {
   defineApiRoutes,
   describeRoute,
   getClientAddress,
+  isApiExecutionResultObserved,
   type AppApiRouteContribution,
 } from '@nocobase/app-server/router';
-import { Hono } from 'hono';
+import { Hono, type Context } from 'hono';
 
 import type { MiddlewareHandler } from 'hono';
 
@@ -37,12 +41,25 @@ export const apiRoutes: AppApiRouteContribution<
   router.on(
     ['GET', 'POST'],
     '/auth/*',
+    describeAudit((context) =>
+      context.req.method === 'POST'
+        ? authAuditOptions(
+            context.req.path.slice(context.req.routePath.indexOf('*') - 1),
+          )
+        : false,
+    ),
     // A catch-all handing every request to Better Auth; its endpoints are documented one by one from Better Auth's own
     // generator, through the fragment the provider adds.
     describeRoute({ hide: true }),
-    (context) =>
+    (context: Context<AuthEnv>) =>
       auth.handler(context.req.raw, {
         clientAddress: getClientAddress(context),
+        onIdentity: isApiExecutionResultObserved(context)
+          ? ({ userId, session }) => {
+              if (session) context.set('auth', session);
+              context.set('authHttpIdentity', { userId });
+            }
+          : undefined,
       }),
   );
   router.get(

@@ -63,6 +63,7 @@ export type HostManagementErrorCode =
   | 'APP_NOT_FOUND'
   | 'BACKUP_NOT_FOUND'
   | 'BACKUP_UNSUPPORTED'
+  | 'BACKUP_RETENTION_UNSUPPORTED'
   | 'BACKUP_COMMAND_UNAVAILABLE'
   | 'BACKUP_FAILED'
   | 'BACKUP_INCOMPLETE'
@@ -210,6 +211,7 @@ export class ManagedScopes {
             rollout: 'stop-first',
             images: false,
             backup: true,
+            keepBackupsOnPurge: true,
             logs: true,
             urlModes: ['path'],
           },
@@ -483,6 +485,19 @@ export class ManagedScopes {
   ): Promise<{ deleted: boolean }> {
     await this.taskScope(appId, scope);
     return { deleted: await this.backups.delete(appId, backupId) };
+  }
+
+  async removeDeploymentKeepingBackups(
+    appId: string,
+    scope: HostScope | undefined,
+  ): Promise<HostStatus> {
+    await this.taskScope(appId, scope);
+    const status = await this.options.reconciler.removeDeployment(appId, {
+      keepBackups: true,
+      ...(scope ? { scopeId: scope.id, backend: this.backendOf(scope) } : {}),
+    });
+    this.forget(appId);
+    return status;
   }
 
   /** Whether a backup or restore is under way. */

@@ -2,13 +2,14 @@
   "name": "@nocobase/app-plugin-authz-restriction-rules",
   "displayName": "Authz Restriction Rules App Plugin",
   "description": "Restriction Rules authorization rules and administration UI.",
-  "version": "1.0.0-beta.20",
+  "version": "1.0.0-beta.22",
   "type": "module",
   "prettier": "@nocobase/dev-config/prettier",
   "engines": {
     "node": ">=24.0.0"
   },
   "nocobase": {
+    "pluginPolicy": "preinstall-and-enable",
     "title": {
       "en-US": "Restriction rules",
       "zh-CN": "限制规则"
@@ -37,7 +38,6 @@
   "files": [
     "dist",
     "README.md",
-    "CHANGELOG.md",
     "skills"
   ],
   "publishConfig": {
@@ -73,6 +73,7 @@
     "@nocobase/app-client": "workspace:^",
     "@nocobase/app-plugin-authentication": "workspace:^",
     "@nocobase/app-server": "workspace:^",
+    "@nocobase/audit": "workspace:^",
     "@nocobase/db": "workspace:^",
     "@nocobase/i18n": "workspace:^",
     "@nocobase/app-plugin-authorization": "workspace:^",

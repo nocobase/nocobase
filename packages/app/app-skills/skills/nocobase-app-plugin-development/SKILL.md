@@ -11,6 +11,10 @@ This Skill ships with the App's installed `@nocobase/app-skills`; update it thro
 
 For work explicitly in the NocoBase source repository, the repository links this same maintained Skill locally. Read `.agents/rules/plugin-development.md` from that repository root for source-only creation, registration and validation commands. An App does not need those repository files. Source paths in references are optional lookup locations; use installed exports, declarations and synchronized Skills to verify APIs for the App's version. Do not apply the legacy `Plugin` class, `src/client-v2/` or `nb scaffold plugin` protocol. If the creation tool or App CLI lacks App-workspace support, report the incompatible packages instead of hand-building a scaffold or downloading the source repository.
 
+For product plugins under the source repository’s `packages/plugins/`, follow the [product plugin manifest rules](references/plugin-foundation.md#product-plugin-manifests-in-the-source-repository) and run `pnpm plugins:check` from the repository root before submitting.
+
+For commercial product plugins, follow the [minimum edition and installation policy rules](references/plugin-foundation.md#commercial-plugins-in-nocobase3-pro).
+
 ## Choose the relevant references
 
 These English references adapt the plugin development guide into task-specific instructions. Read the rows relevant to the task; do not load the entire reference set by default.
@@ -26,6 +30,7 @@ These English references adapt the plugin development guide into task-specific i
 | Add business pages, menus, Tabs, route dialogs/drawers, child routes, or page overrides                 | [Client routing](references/client-routing.md)                       |
 | Design configuration entities, settings permissions, routed editors and safe saves                    | [System settings](references/system-settings.md)                     |
 | Define service contracts, Tokens, dependency injection, or lifecycle                                  | [Services and Providers](references/services.md)                     |
+| Collect audit events, configure snapshots or redaction, or resolve audit targets                      | [Audit events](references/services.md#audit-events)                   |
 | Add HTTP endpoints, authorization, Repository operations, background jobs, queues, or messages        | [Server development](references/server.md)                           |
 | Name an `/api` path, choose its method, shape its response or error, or validate its input            | [HTTP API rules](references/http-api.md)                             |
 | Add migrations, seeds, or package resource/checksum handling                                          | [Database resources](references/database.md)                         |

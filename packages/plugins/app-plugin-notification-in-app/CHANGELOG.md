@@ -1,5 +1,40 @@
 # @nocobase/app-plugin-notification-in-app
 
+## 2.0.0-beta.10
+
+### Patch Changes
+
+- 1952789: Declare whether each product plugin is enabled by default, preinstalled only, available separately, or deprecated.
+- cf23bfe: Stop publishing CHANGELOG.md in the package; the changelog stays in the repository.
+- Updated dependencies [888bca5]
+- Updated dependencies [1952789]
+- Updated dependencies [cf23bfe]
+  - @nocobase/app-plugin-authentication@2.0.0-beta.27
+  - @nocobase/app-plugin-notification@2.0.0-beta.12
+
+## 2.0.0-beta.9
+
+### Patch Changes
+
+- 1b92cdb: Show a localized tooltip when the inbox header button is hovered or focused.
+- Updated dependencies [cc0bf33]
+- Updated dependencies [4561d5f]
+- Updated dependencies [87e3dac]
+- Updated dependencies [52d0b0d]
+- Updated dependencies [c12d990]
+- Updated dependencies [1b92cdb]
+- Updated dependencies [1b92cdb]
+- Updated dependencies [1b92cdb]
+- Updated dependencies [78bdca8]
+- Updated dependencies [91a8ff2]
+- Updated dependencies [87e3dac]
+- Updated dependencies [9acf418]
+  - @nocobase/app-server@5.0.0-beta.12
+  - @nocobase/db@1.0.0-beta.31
+  - @nocobase/app-plugin-notification@2.0.0-beta.11
+  - @nocobase/app-plugin-authentication@2.0.0-beta.26
+  - @nocobase/app-client@4.0.0-beta.14
+
 ## 2.0.0-beta.8
 
 ### Minor Changes

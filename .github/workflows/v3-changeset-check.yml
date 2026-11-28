@@ -43,6 +43,17 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Check the local Default workspace app
+        run: |
+          node --test tests/scripts/dev-local.test.mjs
+          pnpm local:refresh default
+          git diff --exit-code -- pnpm-lock.yaml packages/templates/app-template-default
+
+      - name: Validate product plugin policies
+        run: |
+          pnpm plugins:check
+          node --test tests/scripts/check-plugin-policies.test.mjs
+
       - name: Validate changeset files
         shell: bash
         run: node scripts/validate-changesets.mjs

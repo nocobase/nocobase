@@ -136,7 +136,7 @@ export interface PublisherOptions<T = unknown> {
 export interface SubscriptionOptions<T = unknown> {
   /** Defaults to `jsonCodec`. */
   readonly codec?: Codec<T>;
-  /** Validates the decoded body; a message that fails goes to the dead letter without a retry. */
+  /** Validates the decoded body. A validation failure is final and skips retries. */
   readonly schema?: StandardSchema<T>;
   /** Skips a message whose `messageId` this subscription already processed. Needs a registered inbox. */
   readonly inbox?: boolean;
@@ -155,7 +155,10 @@ export interface BrokerCapabilities {
   readonly delayedRetry: boolean;
   /** Delivers messages with the same key in order (`ordered: true`). */
   readonly orderedByKey: boolean;
-  /** Moves a message to a dead letter (`maxAttempts`, `reject()`, schema failures). Every subscription needs it. */
+  /**
+   * Can send final failures to a dead letter. An adapter may let a subscription omit the destination and define
+   * how it settles final failures in that case.
+   */
   readonly deadLetter: boolean;
 }
 
@@ -163,7 +166,7 @@ export type BrokerCapability = keyof BrokerCapabilities;
 
 /** Options every backend's subscription binding accepts besides its physical names. */
 export interface SubscriptionBindingOptions {
-  /** Deliveries per message, the first included, before it goes to the dead letter. Defaults to `3`. */
+  /** Attempts per message, including the first, before a failure becomes final. Defaults to `3` unless the adapter sets a default. */
   readonly maxAttempts?: number;
   /** Milliseconds before a failed message is redelivered. Defaults to `0`. */
   readonly retryDelay?: number;

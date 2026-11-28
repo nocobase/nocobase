@@ -2,7 +2,7 @@
   "name": "@nocobase/app-plugin-authentication",
   "displayName": "Authentication App Plugin",
   "description": "Authentication plugin for NocoBase applications.",
-  "version": "2.0.0-beta.25",
+  "version": "2.0.0-beta.27",
   "type": "module",
   "sideEffects": false,
   "prettier": "@nocobase/dev-config/prettier",
@@ -10,6 +10,7 @@
     "node": ">=24.0.0"
   },
   "nocobase": {
+    "pluginPolicy": "preinstall-and-enable",
     "title": {
       "en-US": "Authentication",
       "zh-CN": "身份认证"
@@ -81,7 +82,6 @@
   "files": [
     "dist",
     "README.zh-CN.md",
-    "CHANGELOG.md",
     "skills"
   ],
   "scripts": {
@@ -99,6 +99,7 @@
   "peerDependencies": {
     "@nocobase/app-client": "workspace:^",
     "@nocobase/app-server": "workspace:^",
+    "@nocobase/audit": "workspace:^",
     "@nocobase/db": "workspace:^",
     "@nocobase/service-provider": "workspace:^",
     "react": "^19.0.0",

@@ -12,6 +12,24 @@ import {
 } from 'better-auth';
 import { createAuthMiddleware, getIP } from 'better-auth/api';
 
+export function resolveClientAddress(
+  headers: Headers | undefined,
+  peer: string | undefined,
+  options: BetterAuthOptions,
+): string | null {
+  if (!peer) return null;
+  const ipOptions = options.advanced?.ipAddress;
+  const anchored = new Headers();
+  for (const name of ipOptions?.ipAddressHeaders ?? ['x-forwarded-for']) {
+    // Anchor proxy parsing to the actual peer. An untrusted peer wins over every forwarded value.
+    const forwarded = ipOptions?.trustedProxies?.length
+      ? headers?.get(name)
+      : undefined;
+    anchored.set(name, forwarded ? `${forwarded},${peer}` : peer);
+  }
+  return getIP(anchored, options);
+}
+
 type ResetSender = NonNullable<
   NonNullable<BetterAuthOptions['emailAndPassword']>['sendResetPassword']
 >;
@@ -388,17 +406,7 @@ export class PasswordResetPolicy {
 
   private clientAddress(request: Request | undefined): string | null {
     const peer = this.requestAddress.getStore();
-    if (!peer) return null;
-    const ipOptions = this.options.advanced?.ipAddress;
-    const headers = new Headers();
-    for (const name of ipOptions?.ipAddressHeaders ?? ['x-forwarded-for']) {
-      // Anchor proxy parsing to the actual peer. An untrusted peer wins over every forwarded value.
-      const forwarded = ipOptions?.trustedProxies?.length
-        ? request?.headers.get(name)
-        : undefined;
-      headers.set(name, forwarded ? `${forwarded},${peer}` : peer);
-    }
-    return getIP(headers, this.options);
+    return resolveClientAddress(request?.headers, peer, this.options);
   }
 
   public async guardWrite(

@@ -15,6 +15,10 @@ import {
   runAppDatabaseTasks,
   type AppDatabaseConfig as GenericAppDatabaseConfig,
   type AppDatabaseTaskContributions,
+  type AppDatabasePlanExecutionOptions,
+  createAppDatabaseManager,
+  executeAppDatabasePlan,
+  planAppDatabaseTasks,
 } from '../src/database/index.js';
 
 const drivers = { sqlite };
@@ -59,11 +63,23 @@ export default defineMigration({ name: '001_rows', async up({ builder }) {
 await builder.createCollection('rows', c => { c.increments('id'); c.string('value'); });
 }, async down({ builder }) { await builder.dropCollection('rows'); } });`,
     );
+    const seeds = paths.database('main/seeds');
+    mkdirSync(seeds, { recursive: true });
+    for (const [name, sample] of [
+      ['002_required', false],
+      ['003_sample', true],
+    ]) {
+      writeFileSync(
+        path.join(seeds, `${name}.ts`),
+        `import { defineSeed } from '@nocobase/db';
+export default defineSeed({ name: '${name}', sample: ${sample}, async run() {} });`,
+      );
+    }
 
     const plan = await runAppDatabaseTasks(config, {
       paths,
       contributions,
-      kind: 'migrations',
+      kind: ['migrations', 'seeds'],
       dryRun: true,
     });
     expect(plan.results).toEqual([
@@ -75,7 +91,56 @@ await builder.createCollection('rows', c => { c.increments('id'); c.string('valu
         skipped: [],
         dryRun: true,
       },
+      {
+        connection: 'main',
+        kind: 'seeds',
+        status: 'completed',
+        pending: ['002_required'],
+        skipped: [],
+        dryRun: true,
+      },
     ]);
+
+    const samplePlan = planAppDatabaseTasks(config, ['seeds'], {
+      paths,
+      contributions,
+      drivers,
+    });
+    const database = createAppDatabaseManager(config, paths, drivers)!;
+    const options: AppDatabasePlanExecutionOptions = {
+      paths,
+      contributions,
+      drivers,
+      dryRun: true,
+      runtimeConfig: {
+        get: <T>(key: string): T | undefined =>
+          key === 'app.sampleData' ? (true as T) : undefined,
+      },
+    };
+    try {
+      const enabled = await executeAppDatabasePlan(
+        database,
+        config,
+        samplePlan,
+        options,
+      );
+      expect(enabled.results[0].pending).toEqual([
+        '002_required',
+        '003_sample',
+      ]);
+      const overridden = await executeAppDatabasePlan(
+        database,
+        config,
+        samplePlan,
+        {
+          ...options,
+          sample: { enabled: false },
+        },
+      );
+      expect(overridden.results[0].pending).toEqual(['002_required']);
+    } finally {
+      await database.destroy();
+    }
     // The database did not exist, and a dry run does not create it: it answers for an empty one without connecting.
     const file = paths.storage('main/data.sqlite');
     expect(existsSync(file)).toBe(false);

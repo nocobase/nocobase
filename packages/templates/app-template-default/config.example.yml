@@ -23,6 +23,22 @@
 #     max: 600
 #     window: 1m
 
+# Audit collection is off without destinations. With a destination it defaults to enabled.
+# autoDetect defaults to false, so only explicitly declared operations are recorded.
+# The file driver rotates at UTC midnight and at the size limit. Retention is measured
+# from the archive's last write. This path writes files such as logs/audit.2026-11-26.000000.jsonl.
+# Remove the comment markers to enable this example.
+# audit:
+#   enabled: true
+#   autoDetect: false
+#   transports:
+#     localFile:
+#       driver: file
+#       options:
+#         path: logs/audit.jsonl
+#         maxFileSizeMB: 50
+#         retentionDays: 180
+
 # Realtime defaults to inMemory when broker is omitted. An explicit broker requires adapter.
 # For local-only selection: realtime: { broker: { adapter: inMemory } }.
 # For multiple processes, install @nocobase/app-plugin-realtime-redis and register its
@@ -161,6 +177,16 @@ notification:
     #   mailer: system # omit to use mailers.default
     # Legacy type: smtp/resend inline channels and SMTP_PASSWORD/RESEND_API_KEY remain supported.
 
+    # SMS needs templates approved by the provider. Map the credentials from the environment (SMS_ALIYUN_ACCESS_KEY_ID,
+    # SMS_ALIYUN_ACCESS_KEY_SECRET or SMS_TENCENT_SECRET_ID, SMS_TENCENT_SECRET_KEY), never write them here.
+    # system-sms:
+    #   type: sms
+    #   service: aliyun # or tencent
+    #   signName: Example
+    #   templates:
+    #     code: { templateId: SMS_123456789, params: { code: code } }
+    #     notification: { templateId: SMS_987654321, params: { title: title, body: body } }
+
     # ops-feishu:
     #   type: feishu-webhook
     #   webhookUrl: https://open.feishu.cn/open-apis/bot/v2/hook/replace-with-the-token
@@ -243,6 +269,7 @@ snowflake:
 # Declaring instances does not enable indexing. Select an instance and Embedding model in Knowledge's
 # global index dialog, then explicitly confirm the all-space rebuild and possible model charges.
 # Agents supplies Embedding models only; its vector collections are not used.
+# When enabling the Knowledge plugin, register defineKnowledgeConfig() in server/config/index.ts.
 # knowledge:
 #   # Optional: select an existing host jobs configuration by name; omitted follows jobs.default.
 #   # jobs: redis
