@@ -60,6 +60,10 @@ function lint(...paths: string[]) {
     },
   );
   expect(result.error).toBeUndefined();
+  expect(
+    result.signal,
+    'Oxlint terminated before reporting diagnostics',
+  ).toBeNull();
   expect(result.stderr).toBe('');
   expect(result.stdout).toMatch(/^\{\s*"diagnostics"/);
   const { diagnostics } = JSON.parse(result.stdout) as {
