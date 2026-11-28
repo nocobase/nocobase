@@ -64,6 +64,20 @@ async function openTheme(name = 'Theme'): Promise<void> {
 }
 
 describe('app client theme', () => {
+  it('mounts without an executable bootstrap script or console errors', async () => {
+    const error = vi.spyOn(console, 'error');
+    const { container } = render(
+      <AppThemeProvider>
+        <ThemeProbe />
+      </AppThemeProvider>,
+    );
+    await waitFor(() => expect(document.documentElement).toHaveClass('dark'));
+    expect(
+      container.querySelector('script:not([type="text/plain"])'),
+    ).toBeNull();
+    expect(error).not.toHaveBeenCalled();
+  });
+
   it.each([
     ['Light', 'light', 'Compact', 'compact'],
     ['Dark', 'dark', 'Compact', 'compact'],

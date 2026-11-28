@@ -49,6 +49,10 @@
     "./client/settings": {
       "types": "./client/settings/index.ts",
       "import": "./client/settings/index.ts"
+    },
+    "./cli": {
+      "types": "./cli/index.ts",
+      "import": "./cli/index.ts"
     }
   },
   "imports": {
@@ -109,6 +113,10 @@
       "./client/settings": {
         "types": "./dist/client/settings/index.d.ts",
         "import": "./dist/client/settings/index.js"
+      },
+      "./cli": {
+        "types": "./dist/cli/index.d.ts",
+        "import": "./dist/cli/index.js"
       }
     },
     "imports": {
@@ -139,6 +147,7 @@
   },
   "peerDependencies": {
     "@base-ui/react": "catalog:",
+    "@nocobase/app-cli": "workspace:^",
     "@nocobase/app-client": "workspace:^",
     "@nocobase/app-plugin-authentication": "workspace:^",
     "@nocobase/app-server": "workspace:^",
@@ -147,6 +156,7 @@
     "@nocobase/db": "workspace:^",
     "@nocobase/i18n": "workspace:^",
     "@nocobase/service-provider": "workspace:^",
+    "@oclif/core": "catalog:",
     "@tanstack/react-table": "catalog:",
     "class-variance-authority": "catalog:",
     "cn": "catalog:",

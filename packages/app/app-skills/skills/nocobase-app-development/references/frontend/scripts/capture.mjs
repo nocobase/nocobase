@@ -2,7 +2,9 @@
 /* global console, document, process, setTimeout, URL, window */
 // Acceptance screenshot tool: opens pages, performs actions and takes screenshots according to a configuration, and records console errors, page exceptions and failed requests.
 //
-// 1) Save the sign-in session (the user signs in themselves in the browser window that opens; the script never touches the password):
+// 1) Create a development session: pnpm nocobase authorization dev-session --base <url>
+//    Headless checks: node capture.mjs check / /projects --base <url>
+//    Optional visible-browser fallback (the user signs in themselves):
 //    node .agents/skills/nocobase-app-development/references/frontend/scripts/capture.mjs login --base http://127.0.0.1:13000/main/ [--timeout 10]
 // 2) Take screenshots from a configuration (--only a,b runs only the named shots):
 //    node .agents/skills/nocobase-app-development/references/frontend/scripts/capture.mjs shoot --spec storage/ui-workflow/<feature>/capture.json [--only list,dark]
@@ -23,6 +25,7 @@
 // Run from the application root: the script loads @playwright/test from the application's node_modules. If Playwright's bundled browser is not installed, it uses the local Chrome instead.
 import fs from 'node:fs';
 import path from 'node:path';
+import { pathToFileURL } from 'node:url';
 import { chromium } from '@playwright/test';
 
 const DEFAULT_STATE = 'storage/ui-workflow/auth.json';
@@ -42,9 +45,13 @@ async function formatJson(value, filePath) {
 function parseArgs(argv) {
   const [command, ...rest] = argv;
   const options = {};
+  const paths = [];
   for (let index = 0; index < rest.length; index += 1) {
     const arg = rest[index];
-    if (!arg.startsWith('--')) continue;
+    if (!arg.startsWith('--')) {
+      paths.push(arg);
+      continue;
+    }
     const key = arg.slice(2);
     const value = rest[index + 1];
     if (value === undefined || value.startsWith('--')) options[key] = true;
@@ -53,7 +60,7 @@ function parseArgs(argv) {
       index += 1;
     }
   }
-  return { command, options };
+  return { command, options, paths };
 }
 
 async function launch(options, headless) {
@@ -198,14 +205,132 @@ async function shoot(options) {
       'Missing --spec, for example --spec storage/ui-workflow/customers/capture.json',
     );
   const spec = JSON.parse(fs.readFileSync(specPath, 'utf8'));
+  return runCapture(options, spec, path.dirname(specPath));
+}
+
+async function runShot(browser, spec, shot, { base, out, statePath }) {
+  const context = await browser.newContext({
+    storageState: statePath,
+    viewport: shot.viewport ?? spec.viewport ?? { width: 1440, height: 900 },
+    // Playwright emulates only light and dark; for system, leave the browser's own preference in place.
+    colorScheme: toContextColorScheme(shot.colorScheme ?? spec.colorScheme),
+    deviceScaleFactor: shot.deviceScaleFactor ?? spec.deviceScaleFactor ?? 1,
+    // Phone emulation: the meta viewport, touch events and coarse-pointer media queries a phone would have.
+    isMobile: shot.isMobile ?? spec.isMobile ?? false,
+    hasTouch:
+      shot.hasTouch ?? spec.hasTouch ?? shot.isMobile ?? spec.isMobile ?? false,
+  });
+  const hide = spec.hide ?? [];
+  if (hide.length > 0) {
+    await context.addInitScript((selectors) => {
+      const apply = () => {
+        const style = document.createElement('style');
+        style.textContent = `${selectors.join(',')} { display: none !important; }`;
+        document.documentElement.appendChild(style);
+      };
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', apply);
+      } else apply();
+    }, hide);
+  }
+  const locale = shot.locale ?? spec.locale;
+  if (locale) {
+    const basePath = new URL(base).pathname.replace(/^\/+|\/+$/gu, '');
+    const appBase = basePath ? `/${basePath}/` : '/';
+    await context.addInitScript(
+      ({ value, key }) => {
+        window.localStorage.setItem(key, value);
+      },
+      { value: locale, key: `nocobase.locale:${appBase}` },
+    );
+  }
+  // Save the color mode and preset the way the Appearance popover does, under keys scoped to the deployment base
+  // path (client/theme/theme-preferences.ts), so a default in config.yml does not override the requested look.
+  const appearance = {
+    'color-scheme': shot.colorScheme ?? spec.colorScheme,
+    preset: shot.theme ?? spec.theme,
+  };
+  if (appearance['color-scheme'] || appearance.preset) {
+    const basePath = new URL(base).pathname.replace(/^\/+|\/+$/gu, '');
+    const scope = basePath ? encodeURIComponent(basePath) : '%2F';
+    await context.addInitScript(
+      ({ values, keyScope }) => {
+        for (const [name, value] of Object.entries(values)) {
+          if (value)
+            window.localStorage.setItem(
+              `nocobase:${keyScope}:theme:${name}`,
+              value,
+            );
+        }
+      },
+      { values: appearance, keyScope: scope },
+    );
+  }
+  const page = await context.newPage();
+  const entry = {
+    name: shot.name,
+    files: [],
+    consoleErrors: [],
+    failedRequests: [],
+    pageErrors: [],
+  };
+  page.on('console', (message) => {
+    if (message.type() === 'error') entry.consoleErrors.push(message.text());
+  });
+  page.on('pageerror', (error) => entry.pageErrors.push(String(error)));
+  page.on('response', (response) => {
+    if (response.status() >= 400) {
+      entry.failedRequests.push(
+        `${response.status()} ${response.request().method()} ${response.url()}`,
+      );
+    }
+  });
+  page.on('requestfailed', (request) => {
+    entry.failedRequests.push(
+      `FAILED ${request.method()} ${request.url()} ${request.failure()?.errorText ?? ''}`,
+    );
+  });
+  const state = { base, out, entry };
+  try {
+    // setup runs before the page opens; suited to block, fulfill and delay.
+    for (const step of shot.setup ?? [])
+      await runStep(page, context, step, state);
+    await page.goto(`${base}${shot.path ?? '/'}`, {
+      waitUntil: shot.waitUntil ?? 'networkidle',
+    });
+    for (const step of shot.steps ?? [])
+      await runStep(page, context, step, state);
+    if (shot.screenshot !== false) {
+      await page.waitForTimeout(shot.settle ?? 500);
+      // A page that scrolls sideways fails the phone layout (mobile.md, M1.2); record its widths for the report.
+      const overflow = await page.evaluate(() => ({
+        scrollWidth: document.documentElement.scrollWidth,
+        viewportWidth: window.innerWidth,
+      }));
+      if (overflow.scrollWidth > overflow.viewportWidth)
+        entry.horizontalOverflow = overflow;
+      const file = path.join(out, `${shot.name}.png`);
+      await page.screenshot({ path: file, fullPage: shot.fullPage ?? false });
+      entry.files.push(file);
+    }
+  } catch (error) {
+    entry.error = String(error);
+  }
+  await context.close();
+  return entry;
+}
+
+async function runCapture(
+  options,
+  spec,
+  directory = 'storage/ui-workflow/check',
+) {
   const base = String(spec.base ?? '').replace(/\/$/u, '');
-  const out = String(
-    spec.out ?? path.join(path.dirname(specPath), 'screenshots'),
-  );
+  const out = String(spec.out ?? path.join(directory, 'screenshots'));
   const statePath = String(options.state ?? spec.state ?? DEFAULT_STATE);
   if (!fs.existsSync(statePath)) {
     throw new Error(
-      `No sign-in session found at ${statePath}; run the login command first.`,
+      `No sign-in session found at ${statePath}; run pnpm nocobase authorization dev-session first.`,
     );
   }
   fs.mkdirSync(out, { recursive: true });
@@ -214,123 +339,29 @@ async function shoot(options) {
 
   const browser = await launch(options, true);
   const log = [];
-  for (const shot of spec.shots) {
-    if (only && !only.includes(shot.name)) continue;
-    const context = await browser.newContext({
-      storageState: statePath,
-      viewport: shot.viewport ?? spec.viewport ?? { width: 1440, height: 900 },
-      // Playwright emulates only light and dark; for system, leave the browser's own preference in place.
-      colorScheme: toContextColorScheme(shot.colorScheme ?? spec.colorScheme),
-      deviceScaleFactor: shot.deviceScaleFactor ?? spec.deviceScaleFactor ?? 1,
-      // Phone emulation: the meta viewport, touch events and coarse-pointer media queries a phone would have.
-      isMobile: shot.isMobile ?? spec.isMobile ?? false,
-      hasTouch:
-        shot.hasTouch ??
-        spec.hasTouch ??
-        shot.isMobile ??
-        spec.isMobile ??
-        false,
-    });
-    const hide = spec.hide ?? [];
-    if (hide.length > 0) {
-      await context.addInitScript((selectors) => {
-        const apply = () => {
-          const style = document.createElement('style');
-          style.textContent = `${selectors.join(',')} { display: none !important; }`;
-          document.documentElement.appendChild(style);
-        };
-        if (document.readyState === 'loading') {
-          document.addEventListener('DOMContentLoaded', apply);
-        } else apply();
-      }, hide);
-    }
-    const locale = shot.locale ?? spec.locale;
-    if (locale) {
-      const basePath = new URL(base).pathname.replace(/^\/+|\/+$/gu, '');
-      const appBase = basePath ? `/${basePath}/` : '/';
-      await context.addInitScript(
-        ({ value, key }) => {
-          window.localStorage.setItem(key, value);
-        },
-        { value: locale, key: `nocobase.locale:${appBase}` },
-      );
-    }
-    // Save the color mode and preset the way the Appearance popover does, under keys scoped to the deployment base
-    // path (client/theme/theme-preferences.ts), so a default in config.yml does not override the requested look.
-    const appearance = {
-      'color-scheme': shot.colorScheme ?? spec.colorScheme,
-      preset: shot.theme ?? spec.theme,
-    };
-    if (appearance['color-scheme'] || appearance.preset) {
-      const basePath = new URL(base).pathname.replace(/^\/+|\/+$/gu, '');
-      const scope = basePath ? encodeURIComponent(basePath) : '%2F';
-      await context.addInitScript(
-        ({ values, keyScope }) => {
-          for (const [name, value] of Object.entries(values)) {
-            if (value)
-              window.localStorage.setItem(
-                `nocobase:${keyScope}:theme:${name}`,
-                value,
-              );
-          }
-        },
-        { values: appearance, keyScope: scope },
-      );
-    }
-    const page = await context.newPage();
-    const entry = {
-      name: shot.name,
-      files: [],
-      consoleErrors: [],
-      failedRequests: [],
-      pageErrors: [],
-    };
-    page.on('console', (message) => {
-      if (message.type() === 'error') entry.consoleErrors.push(message.text());
-    });
-    page.on('pageerror', (error) => entry.pageErrors.push(String(error)));
-    page.on('response', (response) => {
-      if (response.status() >= 400) {
-        entry.failedRequests.push(
-          `${response.status()} ${response.request().method()} ${response.url()}`,
+  try {
+    if (options.check) {
+      const context = await browser.newContext({ storageState: statePath });
+      try {
+        const response = await context.request.get(
+          `${base}/api/auth/get-session`,
         );
+        const session = response.ok() ? await response.json() : null;
+        if (!session?.user)
+          throw new Error(
+            'The session is missing or expired; run pnpm nocobase authorization dev-session first.',
+          );
+      } finally {
+        await context.close();
       }
-    });
-    page.on('requestfailed', (request) => {
-      entry.failedRequests.push(
-        `FAILED ${request.method()} ${request.url()} ${request.failure()?.errorText ?? ''}`,
-      );
-    });
-    const state = { base, out, entry };
-    try {
-      // setup runs before the page opens; suited to block, fulfill and delay.
-      for (const step of shot.setup ?? [])
-        await runStep(page, context, step, state);
-      await page.goto(`${base}${shot.path ?? '/'}`, {
-        waitUntil: shot.waitUntil ?? 'networkidle',
-      });
-      for (const step of shot.steps ?? [])
-        await runStep(page, context, step, state);
-      if (shot.screenshot !== false) {
-        await page.waitForTimeout(shot.settle ?? 500);
-        // A page that scrolls sideways fails the phone layout (mobile.md, M1.2); record its widths for the report.
-        const overflow = await page.evaluate(() => ({
-          scrollWidth: document.documentElement.scrollWidth,
-          viewportWidth: window.innerWidth,
-        }));
-        if (overflow.scrollWidth > overflow.viewportWidth)
-          entry.horizontalOverflow = overflow;
-        const file = path.join(out, `${shot.name}.png`);
-        await page.screenshot({ path: file, fullPage: shot.fullPage ?? false });
-        entry.files.push(file);
-      }
-    } catch (error) {
-      entry.error = String(error);
     }
-    log.push(entry);
-    await context.close();
+    for (const shot of spec.shots) {
+      if (only && !only.includes(shot.name)) continue;
+      log.push(await runShot(browser, spec, shot, { base, out, statePath }));
+    }
+  } finally {
+    await browser.close();
   }
-  await browser.close();
 
   const logPath = path.join(out, 'capture-log.json');
   // When --only reruns some shots, keep the earlier entries of the other shots.
@@ -345,6 +376,19 @@ async function shoot(options) {
     ...log,
   ];
   fs.writeFileSync(logPath, await formatJson(merged, logPath));
+  if (options.check) {
+    const ok = log.every(
+      (entry) =>
+        !entry.error &&
+        !entry.horizontalOverflow &&
+        !entry.consoleErrors.length &&
+        !entry.pageErrors.length &&
+        !entry.failedRequests.length,
+    );
+    console.log(JSON.stringify({ ok, logPath, shots: log }, null, 2));
+    if (!ok) process.exitCode = 1;
+    return;
+  }
   for (const entry of log) {
     const problems =
       entry.consoleErrors.length +
@@ -360,12 +404,58 @@ async function shoot(options) {
   console.log(`Detailed log: ${logPath}`);
 }
 
-const { command, options } = parseArgs(process.argv.slice(2));
-if (command === 'login') await login(options);
-else if (command === 'shoot') await shoot(options);
-else {
-  console.log(
-    'Usage: capture.mjs login --base <url> | capture.mjs shoot --spec <file>',
+export async function check(options, paths) {
+  if (!options.base || !paths.length)
+    throw new Error('Usage: capture.mjs check <paths...> --base <url>');
+  const base = new URL(String(options.base));
+  for (const value of paths) {
+    if (
+      !value.startsWith('/') ||
+      value.startsWith('//') ||
+      value.includes('..') ||
+      value.includes('\\')
+    )
+      throw new Error(
+        'Check paths must be application-relative paths beginning with /.',
+      );
+  }
+  await runCapture(
+    { ...options, check: true },
+    {
+      base: base.href,
+      out: options.out,
+      locale: options.locale ?? 'en-US',
+      shots: paths.flatMap((value, index) =>
+        [1440, 390].map((width) => ({
+          name: `${index + 1}-${value.replace(/[^a-z0-9_-]+/giu, '-').replace(/^-|-$/gu, '') || 'home'}-${width}`,
+          path: value,
+          viewport: { width, height: width === 390 ? 844 : 900 },
+          isMobile: width === 390,
+        })),
+      ),
+    },
   );
-  process.exitCode = 1;
+}
+
+if (
+  process.argv[1] &&
+  import.meta.url === pathToFileURL(path.resolve(process.argv[1])).href
+) {
+  const { command, options, paths } = parseArgs(process.argv.slice(2));
+  try {
+    if (command === 'login') await login(options);
+    else if (command === 'shoot') await shoot(options);
+    else if (command === 'check') await check(options, paths);
+    else
+      throw new Error(
+        'Usage: capture.mjs check <paths...> --base <url> | login --base <url> | shoot --spec <file>',
+      );
+  } catch (error) {
+    if (command === 'check')
+      console.log(
+        JSON.stringify({ ok: false, error: String(error), shots: [] }, null, 2),
+      );
+    else console.error(String(error));
+    process.exitCode = 1;
+  }
 }
