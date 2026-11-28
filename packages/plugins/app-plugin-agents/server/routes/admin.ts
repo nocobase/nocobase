@@ -1831,7 +1831,7 @@ export function createAdminRoutes(
         examples: ['run usage --group-by agent --from 2026-09-01'],
       }),
       description:
-        "What runs used and cost, grouped by `groupBy`, over `from` to `to` (UTC days, the last 30 by default, at most 366). Every run for a reader of usage (`agents.prices` read, or whom the application's usage policy admits), otherwise the runs the caller started or owns.",
+        "What runs used and cost, grouped by `groupBy`, over `from` to `to` (UTC days, the last 30 by default, at most 366; with `subjectKind` and `subjectId`, that subject's runs, every day of them up to `to` unless `from` is given). Runs the caller counts on subjects they may no longer see add up to an unnamed row (`key` `''`) by subject or group, and a report of such a subject is empty. Every run for a reader of usage (`agents.prices` read, or whom the application's usage policy admits), otherwise the runs the caller started or owns.",
       responses: {
         200: dataResponse(UsageReportSchema),
         400: apiErrorResponse(

@@ -6,8 +6,8 @@
  */
 
 /**
- * `GET`: `from`, `to`, `groupBy`, `groupId`, `agentId`, `userId`, `series` → `{ data: UsageReport }`. Needs the usage
- * page's grant.
+ * `GET`: `from`, `to`, `groupBy`, `groupId`, `agentId`, `userId`, `subjectKind` with `subjectId`, `series` →
+ * `{ data: UsageReport }`. Needs the usage page's grant.
  */
 export const USAGE_ROUTE = 'agents/usage';
 
@@ -222,7 +222,10 @@ export type Costs = Readonly<Record<string, number>>;
 /** Usage of a group of runs: tokens of every model, the runs' working time, and their cost where a price matched. */
 export interface UsageRow {
   readonly key: string;
-  /** What a person reads for the key (an agent's or a person's name, a subject's label); null when unknown. */
+  /**
+   * What a person reads for the key (an agent's or a person's name, a subject's label); null when unknown. By subject or
+   * group, runs the caller woke or owns on subjects they may no longer see add up to one row keyed `''`, unnamed.
+   */
   readonly name: string | null;
   readonly runs: number;
   /** The runs' time from start to finish, added up. */
@@ -282,6 +285,12 @@ export interface UsageQuery {
   readonly groupId?: string;
   readonly agentId?: string;
   readonly userId?: string;
+  /**
+   * Only runs on this subject (`subjectId` of `subjectKind`); both or neither. Without `from`, every day of its runs up to
+   * `to`. Nothing when the caller may not see the subject now, even of runs they woke or own.
+   */
+  readonly subjectKind?: string;
+  readonly subjectId?: string;
   /** Also break each day of `daily` down by the `groupBy` key (`UsagePoint.series`). */
   readonly series?: boolean;
 }

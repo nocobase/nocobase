@@ -454,6 +454,477 @@ describe('reporting service', () => {
     ).toThrow(/from must not be after to/u);
   });
 
+  it('narrows usage to one subject, and to one person on it', async () => {
+    h = await createHarness();
+    const { agentId } = await seed();
+    const runner = await h.registerRunner();
+    await h.enqueue(agentId, '1', { actorUserId: 'bob' });
+    await complete(runner, [
+      {
+        tool: 'claude',
+        model: 'claude-haiku-4-5',
+        inputTokens: 10,
+        outputTokens: 20,
+        cacheReadTokens: 30,
+        cacheWriteTokens: 40,
+      },
+    ]);
+    const subject = { subjectKind: 'sample', subjectId: '1' };
+    const byModel = await h.services.reporting.usage(ALL, {
+      groupBy: 'model',
+      ...subject,
+    });
+    expect(byModel.rows.map((row) => row.key)).toEqual([
+      'claude-sonnet-4-5',
+      'claude-haiku-4-5',
+    ]);
+    expect(byModel.totals).toMatchObject({
+      runs: 2,
+      inputTokens: 1_000_010,
+      outputTokens: 100_020,
+      cacheReadTokens: 1_000_030,
+      cacheWriteTokens: 40,
+    });
+    // The subject's model rows add up to what the subject row of the whole report says.
+    const bySubject = await h.services.reporting.usage(ALL, {
+      groupBy: 'subject',
+    });
+    expect(bySubject.rows.find((row) => row.key === 'sample:1')).toMatchObject({
+      runs: 2,
+      inputTokens: byModel.totals.inputTokens,
+      cacheWriteTokens: byModel.totals.cacheWriteTokens,
+    });
+    // Each person's subjects count only the runs that person woke.
+    const bobs = await h.services.reporting.usage(ALL, {
+      groupBy: 'subject',
+      userId: 'bob',
+    });
+    expect(
+      bobs.rows.map((row) => [row.key, row.runs, row.inputTokens]),
+    ).toEqual([
+      ['sample:2', 1, 500_000],
+      ['sample:1', 1, 10],
+    ]);
+
+    const response = await h.app.request(
+      '/agents/usage?groupBy=model&subjectId=1',
+      { headers: { 'x-test-user': 'carol' } },
+    );
+    expect(response.status).toBe(400);
+  });
+
+  it('reports one subject over its whole life unless a start is asked', async () => {
+    h = await createHarness();
+    const agentId = await h.createAgent();
+    const runner = await h.registerRunner();
+    await h.enqueue(agentId, '1', { actorUserId: 'alice' });
+    await complete(runner, [
+      {
+        tool: 'claude',
+        model: 'claude-sonnet-4-5',
+        inputTokens: 1_000,
+        outputTokens: 100,
+        cacheReadTokens: 10,
+        cacheWriteTokens: 1,
+      },
+    ]);
+    const firstDay = h.clock.now().toISOString().slice(0, 10);
+    h.clock.advance(400 * 24 * 3600 * 1000);
+    await h.enqueue(agentId, '1', { actorUserId: 'bob' });
+    await complete(runner, [
+      {
+        tool: 'claude',
+        model: 'unpriced-model',
+        inputTokens: 2_000,
+        outputTokens: 200,
+        cacheReadTokens: 20,
+        cacheWriteTokens: 2,
+      },
+    ]);
+    const subject = { subjectKind: 'sample', subjectId: '1' };
+    const life = await h.services.reporting.usage(ALL, {
+      groupBy: 'model',
+      ...subject,
+    });
+    expect(life.from).toBe(firstDay);
+    expect(life.totals).toMatchObject({
+      runs: 2,
+      inputTokens: 3_000,
+      outputTokens: 300,
+      cacheReadTokens: 30,
+      cacheWriteTokens: 3,
+      pricedRuns: 0,
+    });
+    expect(life.unpricedModels).toEqual([
+      'claude-sonnet-4-5 (claude)',
+      'unpriced-model (claude)',
+    ]);
+    // A start asked keeps the report's limit; the last 30 days hold the later run only.
+    const recent = await h.services.reporting.usage(ALL, {
+      groupBy: 'model',
+      ...subject,
+      from: h.clock.now().toISOString().slice(0, 10),
+    });
+    expect(recent.rows.map((row) => row.key)).toEqual(['unpriced-model']);
+    const all = await h.services.reporting.usage(ALL, { groupBy: 'subject' });
+    expect(all.totals.runs).toBe(1);
+  });
+
+  it('names no subject the caller may no longer see, but keeps their totals', async () => {
+    h = await createHarness();
+    h.services.subjects.register({
+      kind: 'doc',
+      context: h.services.subjects.get('sample')!.context,
+      // As Studio's issues: a member removed from a project keeps the runs they woke, not the issue.
+      visibleSubjects: (_conn, userId) =>
+        Promise.resolve(
+          userId === 'carol'
+            ? null
+            : (eb, column) => eb(column, '!=', 'revoked'),
+        ),
+      reports: {
+        describe(_conn, userId, ids) {
+          return Promise.resolve(
+            new Map(
+              ids.map((id) => [
+                id,
+                {
+                  label: `DOC-${id}`,
+                  visible: id !== 'revoked' || userId === 'carol',
+                  group: { id: `g-${id}`, name: `Group ${id}` },
+                },
+              ]),
+            ),
+          );
+        },
+      },
+    });
+    const agentId = await h.createAgent();
+    const runner = await h.registerRunner();
+    for (const id of ['open', 'revoked']) {
+      await h.services.runs.enqueue({
+        agentId,
+        subject: { kind: 'doc', id },
+        actorUserId: 'bob',
+        input: {
+          type: 'comment',
+          actor: { kind: 'user', id: 'bob', name: 'Bob' },
+          text: 'Go.',
+        },
+      });
+      await complete(runner, [
+        { tool: 'claude', model: 'm', inputTokens: 10, outputTokens: 1 },
+      ]);
+    }
+    for (const allRuns of [true, false]) {
+      const bob: ReportCaller = { userId: 'bob', allRuns };
+      const people = await h.services.reporting.usage(bob, {
+        groupBy: 'person',
+      });
+      expect(people.rows.map((row) => [row.key, row.runs])).toEqual([
+        ['bob', 2],
+      ]);
+      const subjects = await h.services.reporting.usage(bob, {
+        groupBy: 'subject',
+        userId: 'bob',
+      });
+      expect(subjects.rows.map((row) => [row.key, row.name, row.runs])).toEqual(
+        [
+          ['doc:open', 'DOC-open', 1],
+          ['', null, 1],
+        ],
+      );
+      const groups = await h.services.reporting.usage(bob, {
+        groupBy: 'group',
+      });
+      expect(groups.rows.map((row) => [row.key, row.name]).sort()).toEqual([
+        ['', null],
+        ['g-open', 'Group open'],
+      ]);
+      const revoked = await h.services.reporting.usage(bob, {
+        groupBy: 'model',
+        subjectKind: 'doc',
+        subjectId: 'revoked',
+      });
+      expect(revoked.rows).toEqual([]);
+      expect(revoked.totals.runs).toBe(0);
+      // The group the caller no longer sees the subject in is never matched: neither the person total nor their
+      // subjects under it link the run to that group.
+      for (const groupBy of ['person', 'subject'] as const) {
+        const inRevokedGroup = await h.services.reporting.usage(bob, {
+          groupBy,
+          groupId: 'g-revoked',
+        });
+        expect(inRevokedGroup.rows).toEqual([]);
+        expect(inRevokedGroup.totals.runs).toBe(0);
+      }
+      const inOpenGroup = await h.services.reporting.usage(bob, {
+        groupBy: 'subject',
+        groupId: 'g-open',
+      });
+      expect(inOpenGroup.rows.map((row) => row.key)).toEqual(['doc:open']);
+    }
+    const carol = await h.services.reporting.usage(ALL, {
+      groupBy: 'model',
+      subjectKind: 'doc',
+      subjectId: 'revoked',
+    });
+    expect(carol.totals.runs).toBe(1);
+    const carolsGroup = await h.services.reporting.usage(ALL, {
+      groupBy: 'subject',
+      groupId: 'g-revoked',
+    });
+    expect(carolsGroup.rows.map((row) => row.key)).toEqual(['doc:revoked']);
+  });
+
+  it('reports a subject over its whole life and merges the ones the caller no longer sees into one unnamed row', async () => {
+    h = await createHarness();
+    h.services.subjects.register({
+      kind: 'doc',
+      context: h.services.subjects.get('sample')!.context,
+      visibleSubjects: (_conn, userId) =>
+        Promise.resolve(
+          userId === 'carol'
+            ? null
+            : // As Studio's issues, the bound reads other tables through `exists`.
+              (eb, column) =>
+                eb.and([
+                  eb(column, 'not in', ['gone', 'lost']),
+                  eb.exists(
+                    eb
+                      .selectFrom('agAgents as agent')
+                      .select('agent.id')
+                      .where('agent.id', 'is not', null),
+                  ),
+                ]),
+        ),
+      reports: {
+        describe(_conn, _userId, ids) {
+          return Promise.resolve(
+            new Map(
+              ids.map((id) => [
+                id,
+                { label: `DOC-${id}`, visible: true, group: null },
+              ]),
+            ),
+          );
+        },
+      },
+    });
+    const agentId = await h.createAgent();
+    const runner = await h.registerRunner();
+    const run = async (id: string) => {
+      await h.services.runs.enqueue({
+        agentId,
+        subject: { kind: 'doc', id },
+        actorUserId: 'bob',
+        input: {
+          type: 'comment',
+          actor: { kind: 'user', id: 'bob', name: 'Bob' },
+          text: 'Go.',
+        },
+      });
+      // Two usage records each, from two models.
+      await complete(runner, [
+        { tool: 'claude', model: 'a', inputTokens: 10, outputTokens: 1 },
+        { tool: 'claude', model: 'b', inputTokens: 100, outputTokens: 2 },
+      ]);
+    };
+    await run('open');
+    await run('gone');
+    const firstDay = h.clock.now().toISOString().slice(0, 10);
+    h.clock.advance(400 * 24 * 3600 * 1000);
+    for (const id of ['open', 'gone', 'lost']) await run(id);
+    for (const allRuns of [true, false]) {
+      const bob: ReportCaller = { userId: 'bob', allRuns };
+      const open = await h.services.reporting.usage(bob, {
+        groupBy: 'model',
+        subjectKind: 'doc',
+        subjectId: 'open',
+      });
+      expect(open.from).toBe(firstDay);
+      expect(open.rows.map((row) => [row.key, row.runs])).toEqual([
+        ['b', 2],
+        ['a', 2],
+      ]);
+      expect(open.totals).toMatchObject({
+        runs: 2,
+        inputTokens: 220,
+        outputTokens: 6,
+      });
+      const gone = await h.services.reporting.usage(bob, {
+        groupBy: 'model',
+        subjectKind: 'doc',
+        subjectId: 'gone',
+      });
+      expect(gone.rows).toEqual([]);
+      expect(gone.totals.runs).toBe(0);
+      // The two subjects bob no longer sees, two runs and four usage records, are one row with no name.
+      const subjects = await h.services.reporting.usage(bob, {
+        groupBy: 'subject',
+        userId: 'bob',
+      });
+      expect(
+        subjects.rows.map((row) => [
+          row.key,
+          row.name,
+          row.runs,
+          row.inputTokens,
+        ]),
+      ).toEqual([
+        ['', null, 2, 220],
+        ['doc:open', 'DOC-open', 1, 110],
+      ]);
+      expect(subjects.totals.runs).toBe(3);
+    }
+    const carol = await h.services.reporting.usage(ALL, {
+      groupBy: 'model',
+      subjectKind: 'doc',
+      subjectId: 'gone',
+    });
+    expect(carol.from).toBe(firstDay);
+    expect(carol.totals).toMatchObject({ runs: 2, inputTokens: 220 });
+  });
+
+  it('names no subject outside the visibility its kind alone bounds', async () => {
+    // A kind with current visibility and no report descriptions: every subject reads as visible but for the bound.
+    h = await createHarness();
+    h.services.subjects.register({
+      kind: 'note',
+      context: h.services.subjects.get('sample')!.context,
+      visibleSubjects: (_conn, userId) =>
+        Promise.resolve(
+          userId === 'carol'
+            ? null
+            : (eb, column) => eb(column, '!=', 'revoked'),
+        ),
+    });
+    const agentId = await h.createAgent();
+    const runner = await h.registerRunner();
+    for (const id of ['open', 'revoked']) {
+      await h.services.runs.enqueue({
+        agentId,
+        subject: { kind: 'note', id },
+        actorUserId: 'bob',
+        input: {
+          type: 'comment',
+          actor: { kind: 'user', id: 'bob', name: 'Bob' },
+          text: 'Go.',
+        },
+      });
+      await complete(runner, [
+        { tool: 'claude', model: 'm', inputTokens: 10, outputTokens: 1 },
+      ]);
+    }
+    for (const allRuns of [true, false]) {
+      const bob: ReportCaller = { userId: 'bob', allRuns };
+      const people = await h.services.reporting.usage(bob, {
+        groupBy: 'person',
+      });
+      expect(people.rows.map((row) => [row.key, row.runs])).toEqual([
+        ['bob', 2],
+      ]);
+      const subjects = await h.services.reporting.usage(bob, {
+        groupBy: 'subject',
+      });
+      expect(subjects.rows.map((row) => [row.key, row.name])).toEqual([
+        ['note:open', 'open'],
+        ['', null],
+      ]);
+      const revoked = await h.services.reporting.usage(bob, {
+        groupBy: 'model',
+        subjectKind: 'note',
+        subjectId: 'revoked',
+      });
+      expect(revoked.totals.runs).toBe(0);
+    }
+    const carol = await h.services.reporting.usage(ALL, {
+      groupBy: 'model',
+      subjectKind: 'note',
+      subjectId: 'revoked',
+    });
+    expect(carol.totals.runs).toBe(1);
+  });
+
+  it('names a private subject to the people of its runs and to no one else', async () => {
+    h = await createHarness();
+    h.services.subjects.register({
+      kind: 'chat',
+      private: true,
+      context: h.services.subjects.get('sample')!.context,
+    });
+    // A bounded kind beside it, as Studio's issues, so the report reads the bound.
+    h.services.subjects.register({
+      kind: 'doc',
+      context: h.services.subjects.get('sample')!.context,
+      visibleSubjects: (_conn, userId) =>
+        Promise.resolve(
+          userId === 'carol'
+            ? null
+            : (eb, column) => eb(column, '!=', 'revoked'),
+        ),
+    });
+    const agentId = await h.createAgent();
+    const runner = await h.registerRunner();
+    for (const [kind, id, actor] of [
+      ['chat', 'mine', 'bob'],
+      ['chat', 'theirs', 'dave'],
+      ['doc', 'revoked', 'bob'],
+    ] as const) {
+      await h.services.runs.enqueue({
+        agentId,
+        subject: { kind, id },
+        actorUserId: actor,
+        input: {
+          type: 'comment',
+          actor: { kind: 'user', id: actor, name: actor },
+          text: 'Go.',
+        },
+      });
+      await complete(runner, [
+        { tool: 'claude', model: 'm', inputTokens: 10, outputTokens: 1 },
+      ]);
+    }
+    for (const allRuns of [true, false]) {
+      const bob: ReportCaller = { userId: 'bob', allRuns };
+      const subjects = await h.services.reporting.usage(bob, {
+        groupBy: 'subject',
+      });
+      // Bob's own conversation by name; the issue he lost, unnamed; Dave's conversation, not at all.
+      expect(subjects.rows.map((row) => [row.key, row.runs])).toEqual([
+        ['chat:mine', 1],
+        ['', 1],
+      ]);
+      const mine = await h.services.reporting.usage(bob, {
+        groupBy: 'model',
+        subjectKind: 'chat',
+        subjectId: 'mine',
+      });
+      expect(mine.totals.runs).toBe(1);
+      const theirs = await h.services.reporting.usage(bob, {
+        groupBy: 'model',
+        subjectKind: 'chat',
+        subjectId: 'theirs',
+      });
+      expect(theirs.totals.runs).toBe(0);
+      const revoked = await h.services.reporting.usage(bob, {
+        groupBy: 'model',
+        subjectKind: 'doc',
+        subjectId: 'revoked',
+      });
+      expect(revoked.totals.runs).toBe(0);
+      const people = await h.services.reporting.usage(bob, {
+        groupBy: 'person',
+      });
+      expect(people.rows.map((row) => [row.key, row.runs])).toEqual([
+        ['bob', 2],
+      ]);
+    }
+    // Someone who sees every run still never sees another person's conversation.
+    const carol = await h.services.reporting.usage(ALL, { groupBy: 'subject' });
+    expect(carol.rows.map((row) => row.key)).toEqual(['doc:revoked']);
+  });
+
   it('lets the application’s usage policy decide who sees every run', async () => {
     // As Studio does: every run only for a reader of both usage and agents.
     h = await createHarness({

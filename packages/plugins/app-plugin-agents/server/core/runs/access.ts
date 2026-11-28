@@ -23,45 +23,73 @@ export async function mayAccessRun(
   return !privateSubject && (await hasPermission()) && (await subjectVisible());
 }
 
-/** Prepare once per query, independent of the number of runs, and apply before pagination or aggregation. */
-export async function runVisibility(
+/**
+ * What a reader may see of each subject kind now, prepared once per query: a kind that bounds who sees its subjects
+ * (`visibleSubjects`) keeps its runs inside that bound, a private kind keeps none (its runs are only their own people's).
+ * Null when nothing is bounded.
+ */
+export type SubjectBounds = (
+  eb: ExpressionBuilder,
+  table: string,
+) => Expression<SqlBool>;
+
+export async function subjectBounds(
   conn: DatabaseConnection,
   subjects: SubjectRegistry,
   userId: string,
-  all: boolean,
-  table = 'agRuns',
-): Promise<(eb: ExpressionBuilder) => Expression<SqlBool>> {
-  const policies = all
-    ? await Promise.all(
-        subjects.list().map(async (binding) => ({
-          kind: binding.kind,
-          private: binding.private === true,
-          predicate: binding.private
-            ? null
-            : await binding.visibleSubjects?.(conn, userId),
-        })),
-      )
-    : [];
-  return (eb) => {
-    const involved = eb.or([
-      eb(`${table}.actorUserId`, '=', userId),
-      eb(`${table}.ownerUserId`, '=', userId),
-    ]);
-    if (!all) return involved;
-    const restrictions = policies.flatMap((policy) => {
-      if (!policy.private && !policy.predicate) return [];
-      return [
+): Promise<SubjectBounds | null> {
+  const policies = await Promise.all(
+    subjects.list().map(async (binding) => ({
+      kind: binding.kind,
+      private: binding.private === true,
+      predicate: binding.private
+        ? null
+        : await binding.visibleSubjects?.(conn, userId),
+    })),
+  );
+  const bounded = policies.filter(
+    (policy) => policy.private || policy.predicate,
+  );
+  if (bounded.length === 0) return null;
+  return (eb, table) =>
+    eb.and(
+      bounded.map((policy) =>
         eb.or([
           eb(`${table}.subjectKind`, '!=', policy.kind),
           ...(policy.private
             ? []
             : [policy.predicate!(eb, `${table}.subjectId`)]),
         ]),
-      ];
-    });
-    return restrictions.length === 0
-      ? eb(`${table}.id`, 'is not', null)
-      : eb.or([involved, eb.and(restrictions)]);
+      ),
+    );
+}
+
+/**
+ * Prepare once per query, independent of the number of runs, and apply before pagination or aggregation. `bounds`, when
+ * the caller already prepared them, are used instead of reading them again.
+ */
+export async function runVisibility(
+  conn: DatabaseConnection,
+  subjects: SubjectRegistry,
+  userId: string,
+  all: boolean,
+  table = 'agRuns',
+  bounds?: SubjectBounds | null,
+): Promise<(eb: ExpressionBuilder) => Expression<SqlBool>> {
+  const bound = all
+    ? bounds !== undefined
+      ? bounds
+      : await subjectBounds(conn, subjects, userId)
+    : null;
+  return (eb) => {
+    const involved = eb.or([
+      eb(`${table}.actorUserId`, '=', userId),
+      eb(`${table}.ownerUserId`, '=', userId),
+    ]);
+    if (!all) return involved;
+    return bound
+      ? eb.or([involved, bound(eb, table)])
+      : eb(`${table}.id`, 'is not', null);
   };
 }
 

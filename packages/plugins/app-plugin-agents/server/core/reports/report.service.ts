@@ -11,7 +11,7 @@
  * Who sees what: a caller who may see every run (`allRuns`, which the application decides) counts every run, anyone
  * else the runs they started or own; either way only runs on subjects they may see (`SubjectReports.describe`).
  */
-import { runVisibility } from '../runs/access.js';
+import { runVisibility, subjectBounds } from '../runs/access.js';
 import type { DatabaseConnection, SelectQuery } from '@nocobase/db';
 
 import {
@@ -86,6 +86,7 @@ const USAGE_RUN_COLUMNS = [
   'agentId',
   'agentType',
   'actorUserId',
+  'ownerUserId',
   'subjectKind',
   'subjectId',
   'startedAt',
@@ -93,6 +94,8 @@ const USAGE_RUN_COLUMNS = [
 ] as const;
 
 type Row = Record<string, unknown>;
+type UsageRun = ReportRunRow & { readonly inside: boolean };
+const USAGE_RUN_BATCH_SIZE = 500;
 
 const text = (value: unknown): string =>
   typeof value === 'string'
@@ -173,6 +176,8 @@ export interface ReportRange {
   readonly start: Date;
   /** Exclusive: the day after `to`. */
   readonly end: Date;
+  /** No start was asked and none applies: every day up to `to` (one subject's report). */
+  readonly unbounded?: boolean;
 }
 
 const DAY_PATTERN = /^\d{4}-\d{2}-\d{2}$/u;
@@ -192,9 +197,12 @@ function day(value: string | undefined, name: string): string | null {
 export function reportRange(
   query: { readonly from?: string; readonly to?: string },
   now: Date,
+  options: { readonly unbounded?: boolean } = {},
 ): ReportRange {
   const to = day(query.to, 'to') ?? now.toISOString().slice(0, 10);
   const end = new Date(Date.parse(`${to}T00:00:00Z`) + DAY_MS);
+  if (options.unbounded && !day(query.from, 'from'))
+    return { from: '1970-01-01', to, start: new Date(0), end, unbounded: true };
   const from =
     day(query.from, 'from') ??
     new Date(end.getTime() - DEFAULT_REPORT_DAYS * DAY_MS)
@@ -326,8 +334,8 @@ export function createReportService(deps: {
   }
 
   /**
-   * The usage reported in the range of the runs the caller counts, in two reads whatever its size: the usage, and the
-   * runs it was reported for.
+   * The usage reported in the range of the runs the caller counts: one scoped usage read, then one run read per
+   * batch of distinct run IDs.
    */
   async function usageRecords(
     conn: DatabaseConnection,
@@ -337,75 +345,95 @@ export function createReportService(deps: {
       readonly groupId: string | null;
       readonly agentId?: string | null;
       readonly userId?: string | null;
+      readonly subject?: { readonly kind: string; readonly id: string } | null;
     },
   ) {
+    // Read once: what the caller may see of each subject kind now, for the runs they count and for naming subjects.
+    const bounds = await subjectBounds(conn, deps.subjects, caller.userId);
     const visibility = await runVisibility(
       conn,
       deps.subjects,
       caller.userId,
       caller.allRuns,
       'run',
+      bounds,
     );
-    const ofRuns = <Q extends SelectQuery<Row, Row>>(query: Q): Q => {
-      let scoped = query.where(visibility) as Q;
-      if (filter.agentId)
-        scoped = scoped.where('run.agentId', '=', filter.agentId) as Q;
-      if (filter.userId)
-        scoped = scoped.where('run.actorUserId', '=', filter.userId) as Q;
-      return scoped;
-    };
-    const usage = await ofRuns(
-      conn.query
-        .selectFrom('agRunUsage as usage')
-        .innerJoin('agRuns as run', 'run.id', 'usage.runId')
-        .select([
-          'usage.runId as runId',
-          'usage.tool as tool',
-          'usage.modelService as modelService',
-          'usage.model as model',
-          'usage.inputTokens as inputTokens',
-          'usage.outputTokens as outputTokens',
-          'usage.cacheReadTokens as cacheReadTokens',
-          'usage.cacheWriteTokens as cacheWriteTokens',
-          'usage.reasoningTokens as reasoningTokens',
-          'usage.createdAt as createdAt',
-        ])
-        .where('usage.createdAt', '>=', range.start)
-        .where('usage.createdAt', '<', range.end)
-        .orderBy('usage.id'),
-    ).execute<Row>();
-    // Each run once, however many usage records it has.
-    const runs =
-      usage.length === 0
-        ? []
-        : (
-            await ofRuns(
-              conn.query
-                .selectFrom('agRuns as run')
-                .select(
-                  USAGE_RUN_COLUMNS.map(
-                    (column) => `run.${column} as ${column}`,
-                  ),
-                )
-                .where((eb) =>
-                  eb(
-                    'run.id',
-                    'in',
-                    eb
-                      .selectFrom('agRunUsage')
-                      .select('runId')
-                      .where('createdAt', '>=', range.start)
-                      .where('createdAt', '<', range.end),
-                  ),
-                ),
-            ).execute<Row>()
-          ).map((row) => runRow(row));
-    const { runs: kept, facts } = await countable(
-      conn,
-      caller,
-      runs,
-      filter.groupId,
-    );
+    // The usage of the runs the caller may count, in one read. The caller counts the runs they woke or own even on
+    // subjects they may no longer see (`runVisibility`).
+    let usageQuery = conn.query
+      .selectFrom('agRunUsage as usage')
+      .innerJoin('agRuns as run', 'run.id', 'usage.runId')
+      .select([
+        'usage.runId as runId',
+        'usage.tool as tool',
+        'usage.modelService as modelService',
+        'usage.model as model',
+        'usage.inputTokens as inputTokens',
+        'usage.outputTokens as outputTokens',
+        'usage.cacheReadTokens as cacheReadTokens',
+        'usage.cacheWriteTokens as cacheWriteTokens',
+        'usage.reasoningTokens as reasoningTokens',
+        'usage.createdAt as createdAt',
+      ])
+      .where('usage.createdAt', '>=', range.start)
+      .where('usage.createdAt', '<', range.end)
+      .where(visibility);
+    if (filter.agentId)
+      usageQuery = usageQuery.where('run.agentId', '=', filter.agentId);
+    if (filter.userId)
+      usageQuery = usageQuery.where('run.actorUserId', '=', filter.userId);
+    if (filter.subject)
+      usageQuery = usageQuery
+        .where('run.subjectKind', '=', filter.subject.kind)
+        .where('run.subjectId', '=', filter.subject.id);
+    const usage = await usageQuery.orderBy('usage.id').execute<Row>();
+    const ids = [...new Set(usage.map((row) => text(row.runId)))];
+    const runs: UsageRun[] = [];
+    for (let at = 0; at < ids.length; at += USAGE_RUN_BATCH_SIZE) {
+      let query = conn.query
+        .selectFrom('agRuns as run')
+        .select(USAGE_RUN_COLUMNS.map((column) => `run.${column} as ${column}`))
+        .where('run.id', 'in', ids.slice(at, at + USAGE_RUN_BATCH_SIZE));
+      if (bounds) {
+        // QueryAdapter cannot project a predicate. A primary-key match gives its truth value in the same read.
+        // Double negation renders the bound through the WHERE expression compiler, whose EXISTS syntax works on SQLite.
+        query = query
+          .leftJoin('agRuns as scopeRun', (join) =>
+            join
+              .onRef('scopeRun.id', '=', 'run.id')
+              .on((eb) => eb.not(eb.not(bounds(eb, 'run')))),
+          )
+          .select('scopeRun.id as insideId');
+      }
+      const rows = await query.execute<Row>();
+      for (const row of rows) {
+        const run = runRow(row);
+        const inside = !bounds || row.insideId != null;
+        // Keep the permission check if the run or its subject changed between the two reads.
+        if (
+          (!caller.allRuns || !inside) &&
+          run.actorUserId !== caller.userId &&
+          run.ownerUserId !== caller.userId
+        )
+          continue;
+        runs.push({ ...run, inside });
+      }
+    }
+    const { runs: counted, facts } = await countable(conn, caller, runs, null);
+    // What identifies a subject the caller may not see now (it, its group) is left out of the records, and a group
+    // filter matches only the groups the caller sees, so asking for that group never counts it either.
+    // A private kind's counted runs are all the caller's own (`runVisibility` keeps no one else's), and its people see
+    // its subjects, so they stay named; its bound only keeps other people's runs out.
+    const shown = (run: UsageRun): boolean =>
+      facts.get(`${run.subjectKind}:${run.subjectId}`)?.visible === true &&
+      (run.inside || deps.subjects.get(run.subjectKind)?.private === true);
+    const groupOf = (run: UsageRun) =>
+      shown(run)
+        ? (facts.get(`${run.subjectKind}:${run.subjectId}`)?.group?.id ?? null)
+        : null;
+    const kept = filter.groupId
+      ? counted.filter((run) => groupOf(run) === filter.groupId)
+      : counted;
     const byId = new Map(kept.map((run) => [run.id, run]));
     const records: UsageRecord[] = [];
     for (const row of usage) {
@@ -421,10 +449,11 @@ export function createReportService(deps: {
         tool: text(row.tool),
         modelService: textOrNull(row.modelService),
         model: textOrNull(row.model),
-        subjectKind: run.subjectKind,
-        subjectId: run.subjectId,
-        groupId:
-          facts.get(`${run.subjectKind}:${run.subjectId}`)?.group?.id ?? null,
+        // A subject left out of the caller's view adds to one unnamed row by subject or group.
+        ...(shown(run)
+          ? { subjectKind: run.subjectKind, subjectId: run.subjectId }
+          : { subjectKind: '', subjectId: '' }),
+        groupId: groupOf(run),
         day: (iso(row.createdAt) ?? '').slice(0, 10),
         durationMs:
           started && finished
@@ -471,7 +500,9 @@ export function createReportService(deps: {
       }
       case 'subject':
         return new Map(
-          keys.map((key) => [key, facts.get(key)?.label ?? key] as const),
+          keys
+            .filter(Boolean)
+            .map((key) => [key, facts.get(key)?.label ?? key] as const),
         );
       case 'type':
         // `online` and `runner` are words the application's pages translate; no name of the server's.
@@ -500,13 +531,26 @@ export function createReportService(deps: {
       const groupBy = query.groupBy ?? 'agent';
       if (!USAGE_GROUP_BYS.includes(groupBy))
         throw invalid(`groupBy must be one of ${USAGE_GROUP_BYS.join(', ')}.`);
-      const range = reportRange(query, deps.clock.now());
+      const subject =
+        query.subjectKind && query.subjectId
+          ? { kind: query.subjectKind, id: query.subjectId }
+          : null;
+      // One subject's report covers its whole life unless a start is asked: it is never more than that subject's runs.
+      const range = reportRange(query, deps.clock.now(), {
+        unbounded: subject !== null,
+      });
       const conn = deps.tx.read();
-      const { records, facts } = await usageRecords(conn, caller, range, {
+      const read = await usageRecords(conn, caller, range, {
         groupId: query.groupId ?? null,
         agentId: query.agentId ?? null,
         userId: query.userId ?? null,
+        subject,
       });
+      const { facts } = read;
+      // A report of one subject the caller may no longer see is empty (its records come unnamed).
+      const records = subject
+        ? read.records.filter((record) => record.subjectKind !== '')
+        : read.records;
       const prices = await listPrices(conn);
       const online = await deps.includeOnlineUsage();
       const first = aggregateUsage(
@@ -527,9 +571,16 @@ export function createReportService(deps: {
         facts,
       );
       return {
-        from: range.from,
         to: range.to,
         groupBy,
+        from:
+          range.unbounded && !query.from
+            ? (records.reduce<string | null>(
+                (first, record) =>
+                  first === null || record.day < first ? record.day : first,
+                null,
+              ) ?? range.to)
+            : range.from,
         rows: first.rows.map((row) => ({
           ...row,
           name: names.get(row.key) ?? null,

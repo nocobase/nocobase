@@ -128,7 +128,10 @@ export function keyOf(record: UsageRecord, groupBy: UsageGroupBy): string {
     case 'group':
       return record.groupId ?? '';
     case 'subject':
-      return `${record.subjectKind}:${record.subjectId}`;
+      // A subject left out of the caller's view (`subjectKind` emptied) adds to one unnamed row.
+      return record.subjectKind
+        ? `${record.subjectKind}:${record.subjectId}`
+        : '';
     case 'day':
       return record.day;
     case 'model':

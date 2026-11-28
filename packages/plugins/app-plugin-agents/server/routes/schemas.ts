@@ -369,32 +369,48 @@ export const UsageQuerySchema: z.ZodType<{
   groupId?: string | undefined;
   agentId?: string | undefined;
   userId?: string | undefined;
+  subjectKind?: string | undefined;
+  subjectId?: string | undefined;
   series?: boolean | undefined;
-}> = z.object({
-  from: z
-    .string()
-    .min(1)
-    .max(40)
-    .optional()
-    .describe('The beginning of the reporting period.'),
-  to: z
-    .string()
-    .min(1)
-    .max(40)
-    .optional()
-    .describe('The end of the reporting period.'),
-  groupBy: z
-    .enum(USAGE_GROUP_BYS)
-    .default('agent')
-    .describe('The dimension to group usage by.'),
-  groupId: id.optional().describe('The group identifier.'),
-  agentId: id.optional().describe('The agent identifier.'),
-  userId: id.optional().describe('The user identifier.'),
-  series: queryBoolean.optional().meta({
-    description:
-      'Also break each day of `daily` down by the `groupBy` key (`daily[].series`).',
-  }),
-});
+}> = z
+  .object({
+    from: z
+      .string()
+      .min(1)
+      .max(40)
+      .optional()
+      .describe('The beginning of the reporting period.'),
+    to: z
+      .string()
+      .min(1)
+      .max(40)
+      .optional()
+      .describe('The end of the reporting period.'),
+    groupBy: z
+      .enum(USAGE_GROUP_BYS)
+      .default('agent')
+      .describe('The dimension to group usage by.'),
+    groupId: id.optional().describe('The group identifier.'),
+    agentId: id.optional().describe('The agent identifier.'),
+    userId: id.optional().describe('The user identifier.'),
+    subjectKind: z
+      .string()
+      .min(1)
+      .max(64)
+      .optional()
+      .describe('Only runs on subjects of this kind; given with `subjectId`.'),
+    subjectId: id
+      .optional()
+      .describe('Only runs on this subject; given with `subjectKind`.'),
+    series: queryBoolean.optional().meta({
+      description:
+        'Also break each day of `daily` down by the `groupBy` key (`daily[].series`).',
+    }),
+  })
+  .refine((query) => !query.subjectKind === !query.subjectId, {
+    message: '`subjectKind` and `subjectId` are given together.',
+    path: ['subjectId'],
+  });
 
 export const ModelUsageQuery: z.ZodType<{
   from?: string | undefined;

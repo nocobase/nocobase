@@ -8,6 +8,7 @@ import { AgentsProvider } from '../server/providers/agents.js';
 import type { Knex } from 'knex';
 import { afterEach, expect, it, vi } from 'vitest';
 import { createHarness, type Harness } from './harness.js';
+import { runsRepo } from '../server/core/runs/run.store.js';
 import {
   runVisibility,
   subjectVisibleForRun,
@@ -184,6 +185,67 @@ it('filters before pagination and prepares each subject policy once per page', a
   expect(predicate).toBeTypeOf('function');
 });
 
+it('matches equivalent datetimeTz values in run visibility and usage reports', async () => {
+  h = await createHarness();
+  const sample = h.services.subjects.get('sample')!;
+  const conn = h.database.connection();
+  const instant = '2026-10-01T12:00:00.000Z';
+  const dates = ['2026-10-01T14:00:00.000+02:00', '2026-10-03T12:00:00.000Z'];
+  h.services.subjects.register({
+    ...sample,
+    kind: 'dated',
+    visibleSubjects: async () => (eb, column) =>
+      eb.exists(
+        eb
+          .selectFrom('agRuns as subjectRun')
+          .select('subjectRun.id')
+          .whereRef('subjectRun.subjectId', '=', column)
+          .where('subjectRun.createdAt', 'in', dates),
+      ),
+  });
+  const agent = await h.createAgent();
+  const visible = await h.enqueue(agent, 'visible', { actorUserId: 'bob' });
+  const hidden = await h.enqueue(agent, 'hidden', { actorUserId: 'bob' });
+  for (const [id, at] of [
+    [visible, instant],
+    [hidden, '2026-10-02T12:00:00.000Z'],
+  ]) {
+    await conn.query
+      .updateTable('agRuns')
+      .set({ subjectKind: 'dated', createdAt: at })
+      .where('id', '=', id)
+      .execute();
+    await conn.repository('agRunUsage').createOne({
+      values: {
+        id: `usage-${id}`,
+        runId: id,
+        tool: 'claude',
+        modelService: null,
+        model: 'test',
+        inputTokens: 7,
+        outputTokens: 0,
+        cacheReadTokens: 0,
+        cacheWriteTokens: 0,
+        reasoningTokens: 0,
+        createdAt: h.clock.now().toISOString(),
+      },
+    });
+  }
+  const ordinary = await h.request('GET', '/agents/runs', {
+    user: 'reader',
+    can: ['agents.agents/read'],
+  });
+  expect(ordinary.body.data.map((run: { id: string }) => run.id)).toEqual([
+    visible,
+  ]);
+  const report = await h.services.reporting.usage(
+    { userId: 'reader', allRuns: true },
+    { groupBy: 'subject' },
+  );
+  expect(report.rows.map((row) => row.key)).toEqual(['dated:visible']);
+  expect(report.totals).toMatchObject({ runs: 1, inputTokens: 7 });
+});
+
 it('denies real subscriptions and revokes delivery after subject visibility changes', async () => {
   h = await createHarness();
   let allowed = true;
@@ -298,7 +360,7 @@ it('keeps list and statistics visibility reads constant as the dataset grows', a
     try {
       await read();
       expect(hook).toHaveBeenCalledTimes(1);
-      return sql.filter((text) => /^select/iu.test(text)).length;
+      return sql.filter((text) => /^select/iu.test(text));
     } finally {
       client.removeListener('query', listener);
     }
@@ -313,10 +375,125 @@ it('keeps list and statistics visibility reads constant as the dataset grows', a
     h.services.reporting.usage({ userId: 'reader', allRuns: true }, {});
   const before = [await measure(list), await measure(usage)];
   for (let i = 1; i < 20; i++) await add(i);
-  expect([await measure(list), await measure(usage)]).toEqual(before);
-  expect(before[0]).toBeLessThanOrEqual(5);
-  // Usage reads its records, run facts, prices, subscriptions and agent names in seven fixed reads.
-  expect(before[1]).toBe(7);
+  const after = [await measure(list), await measure(usage)];
+  expect(after.map((sql) => sql.length)).toEqual(
+    before.map((sql) => sql.length),
+  );
+  expect(before[0]!.length).toBeLessThanOrEqual(5);
+  // Usage reads its records, then their runs with whether each run's subject is inside its kind's bound now (so
+  // subjects the reader may no longer see go unnamed), then run facts, prices, subscriptions and agent names: seven
+  // fixed reads.
+  expect(before[1]).toHaveLength(7);
+  const usageReads = after[1]!.filter((sql) => /ag_run_usage/iu.test(sql));
+  expect(usageReads).toHaveLength(1);
+  expect(runReads(after[1]!)).toHaveLength(1);
+  // The runs come by the ids the usage named, never from a scan of every usage record in the range.
+  expect(after[1]!.join('\n')).not.toMatch(/\(\s*select[^)]*ag_run_usage/iu);
+});
+
+/** The reads of a usage report's runs by id. */
+const runReads = (sql: readonly string[]) =>
+  sql.filter((text) =>
+    /from `?"?ag_runs`?"? as `?"?run`?"? .*?where `?"?run`?"?\.`?"?id`?"? in/iu.test(
+      text,
+    ),
+  );
+
+it('scopes the usage read and reads each distinct run ID in batches of 500', async () => {
+  const total = 501;
+  h = await createHarness();
+  const sample = h.services.subjects.get('sample')!;
+  h.services.subjects.register({
+    ...sample,
+    kind: 'measured',
+    visibleSubjects: async () => (eb, column) =>
+      eb.and([
+        eb(column, '!=', '3'),
+        eb.exists(
+          eb
+            .selectFrom('agAgents as agent')
+            .select('agent.id')
+            .where('agent.id', 'is not', null),
+        ),
+      ]),
+  });
+  const conn = h.database.connection();
+  const client = await conn.client<Knex>();
+  const agentId = await h.createAgent();
+  const seedId = await h.enqueue(agentId, 'seed', { actorUserId: 'bob' });
+  const { revision: _revision, ...seed } = (await runsRepo(conn).findOne({
+    filter: { id: seedId },
+  }))!;
+  await runsRepo(conn).deleteMany({ filter: { id: seedId } });
+  const ids = Array.from(
+    { length: total },
+    (_, i) => `run-${String(i).padStart(4, '0')}`,
+  );
+  for (let at = 0; at < total; at += 10) {
+    const chunk = ids.slice(at, at + 10);
+    await runsRepo(conn).createMany({
+      values: chunk.map((id) => ({
+        ...seed,
+        id,
+        subjectKind: 'measured',
+        subjectId: String(Number(id.slice(4))),
+      })),
+    });
+    await conn.repository('agRunUsage').createMany({
+      values: chunk.flatMap((runId) =>
+        [0, 1].map((part) => ({
+          id: `usage-${runId}-${part}`,
+          runId,
+          tool: 'claude',
+          modelService: null,
+          model: `m${part}`,
+          inputTokens: 1,
+          outputTokens: 0,
+          cacheReadTokens: 0,
+          cacheWriteTokens: 0,
+          reasoningTokens: 0,
+          createdAt: h.clock.now().toISOString(),
+        })),
+      ),
+    });
+  }
+  const captured: { sql: string; bindings?: readonly unknown[] }[] = [];
+  const listener = (query: (typeof captured)[number]) => captured.push(query);
+  client.on('query', listener);
+  try {
+    const report = await h.services.reporting.usage(
+      { userId: 'bob', allRuns: true },
+      { groupBy: 'subject' },
+    );
+    const sql = captured.map((query) => query.sql);
+    const usage = sql.filter((statement) => /ag_run_usage/iu.test(statement));
+    expect(usage).toHaveLength(1);
+    expect(usage[0]).toMatch(/where.*exists/iu);
+    const batches = captured.filter((query) => runReads([query.sql]).length);
+    expect(batches).toHaveLength(2);
+    const requested = batches.map((query) =>
+      query.bindings?.filter(
+        (value) => typeof value === 'string' && value.startsWith('run-'),
+      ),
+    );
+    expect(requested.map((batch) => batch?.length)).toEqual([500, 1]);
+    expect(new Set(requested.flat())).toEqual(new Set(ids));
+    for (const query of batches)
+      expect(query.sql).not.toMatch(/ag_run_usage/iu);
+    expect(report.totals).toMatchObject({
+      runs: total,
+      inputTokens: total * 2,
+    });
+    expect(report.rows.find((row) => row.key === '')).toMatchObject({
+      name: null,
+      runs: 1,
+      inputTokens: 2,
+    });
+    expect(report.rows.find((row) => row.key === 'measured:500')).toBeDefined();
+    expect(report.rows.find((row) => row.key === 'measured:3')).toBeUndefined();
+  } finally {
+    client.removeListener('query', listener);
+  }
 });
 
 it('keeps private sessions participant-only even for unrestricted readers and pages past them', async () => {
