@@ -227,7 +227,10 @@ it('asks open windows to set the badge again after a push sets it', async () => 
       json: () => ({ title: 'T', dedupeKey: 'a', badge: 3, badgeAt: 1 }),
     },
   });
-  expect(f.clients.matchAll).toHaveBeenCalledWith({ type: 'window' });
+  expect(f.clients.matchAll).toHaveBeenCalledWith({
+    type: 'window',
+    includeUncontrolled: true,
+  });
   expect(f.existing.postMessage).toHaveBeenCalledExactlyOnceWith({
     kind: 'webPush.badge',
   });

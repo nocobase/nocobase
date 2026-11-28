@@ -105,7 +105,10 @@ self.addEventListener('push', (event) => {
           : self.navigator?.clearAppBadge?.()
         )?.catch(() => undefined);
         // An open page reads the count again and sets it, since a page may have read a newer count than this push.
-        for (const client of await self.clients.matchAll({ type: 'window' }))
+        for (const client of await self.clients.matchAll({
+          type: 'window',
+          includeUncontrolled: true,
+        }))
           client.postMessage({ kind: 'webPush.badge' });
       }
       // WebKit requires a user-visible notification for every Push, including a foreground race.
