@@ -5431,6 +5431,9 @@ importers:
       react:
         specifier: ^19.0.0
         version: 19.2.8
+      undici:
+        specifier: ^8.12.2
+        version: 8.12.2
       web-push:
         specifier: ^3.6.7
         version: 3.6.7

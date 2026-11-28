@@ -70,6 +70,7 @@ it.each([404, 410])(
         dedupeKey: 'task:1',
       },
       expect.any(AbortSignal),
+      { ttl: undefined, urgency: undefined },
     );
     expect(f.remove).toHaveBeenCalledWith('alice', 'device');
   },
@@ -90,7 +91,7 @@ it('rejects external, traversal and sibling-base click destinations', () => {
 it.each([...Object.keys(locales), 'de-DE-u-co-phonebk'])(
   'uses the device language for a test notification in %s',
   async (locale) => {
-    const send = vi.fn(async () => ({}));
+    const sendTransient = vi.fn(async () => [{ status: 'accepted' }]);
     const i18n = await createTestI18nRuntime({
       namespaces: { '@nocobase/app-plugin-notification-web-push': locales },
     });
@@ -101,20 +102,15 @@ it.each([...Object.keys(locales), 'de-DE-u-co-phonebk'])(
     const service = createWebPushService({
       subscriptions: { get: async () => ({ enabled: true, locale }) } as never,
       i18n,
-      notifications: () => ({ send }) as never,
+      notifications: () => ({ sendTransient }) as never,
       transport: async () => 201,
       base: '/',
     });
     await service.test('alice', 'device');
-    expect(send).toHaveBeenCalledWith(
-      expect.objectContaining({
-        messages: {
-          webPush: expect.objectContaining({
-            title: copy.testNotification,
-          }),
-        },
-      }),
-    );
+    expect(sendTransient).toHaveBeenCalledWith({
+      channel: 'webPush',
+      message: expect.objectContaining({ title: copy.testNotification }),
+    });
   },
 );
 it('rejects hook-produced oversized payloads without transport or retries', async () => {

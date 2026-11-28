@@ -32,7 +32,27 @@ const viVN: LocaleResource<typeof enUS> = {
   'push.cancel': 'Hủy',
   'push.saved': 'Đã lưu cài đặt thiết bị',
   'push.saving': 'Lưu cài đặt thiết bị',
-  'push.testSent': 'Đã xếp hàng đợi thông báo kiểm tra',
+  'push.testSent': 'Dịch vụ push đã chấp nhận thông báo thử.',
+  'push.invalid':
+    'Trình duyệt trả về thông tin đăng ký không hợp lệ. Hãy thử đăng ký lại.',
+  'push.endpoint': 'Máy chủ không hỗ trợ dịch vụ push của trình duyệt này.',
+  'push.owned':
+    'Đăng ký của trình duyệt này thuộc một tài khoản khác. Hãy xóa đăng ký ở tài khoản đó trước khi đăng ký lại.',
+  'push.browserFailed':
+    'Trình duyệt không thể tạo đăng ký push. Hãy kiểm tra cài đặt thông báo và kết nối của trình duyệt.',
+  'push.expired':
+    'Đăng ký của thiết bị đã hết hạn hoặc đã bị xóa. Hãy đăng ký lại trên thiết bị đó.',
+  'push.testPaused':
+    'Hãy bật lại push trên thiết bị này trước khi gửi thông báo thử.',
+  'push.testLimited': 'Chờ 30 giây giữa các lần gửi thông báo thử.',
+  'push.testNetwork':
+    'Máy chủ không thể kết nối với dịch vụ push. Hãy nhờ quản trị viên kiểm tra mạng và proxy Web Push.',
+  'push.testGatewayAuth':
+    'Dịch vụ push đã từ chối thông tin xác thực của máy chủ. Hãy nhờ quản trị viên kiểm tra khóa VAPID.',
+  'push.testGatewayLimited':
+    'Dịch vụ push đang giới hạn yêu cầu. Hãy thử lại sau.',
+  'push.testGateway':
+    'Dịch vụ push không thể chấp nhận thông báo thử. Hãy thử lại sau.',
   'push.failed': 'Không thể cập nhật thông báo đẩy. Vui lòng thử lại.',
   'push.loadingFailed': 'Không thể tải thiết bị. Vui lòng thử lại.',
   'push.retry': 'Thử lại',

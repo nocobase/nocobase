@@ -7,7 +7,11 @@ export const PUSH_SECRET_PURPOSE = 'web-push/subscription';
 export interface SubscriptionInputValue {
   name: string;
   locale: string;
-  subscription: { endpoint: string; keys: { p256dh: string; auth: string } };
+  subscription: {
+    endpoint: string;
+    expirationTime?: number | null;
+    keys: { p256dh: string; auth: string };
+  };
 }
 export const SubscriptionInput: z.ZodType<SubscriptionInputValue> =
   z.strictObject({
@@ -15,6 +19,7 @@ export const SubscriptionInput: z.ZodType<SubscriptionInputValue> =
     locale: z.string().trim().min(1).max(100),
     subscription: z.strictObject({
       endpoint: z.string().url().max(4096),
+      expirationTime: z.number().nonnegative().nullable().optional(),
       keys: z.strictObject({
         p256dh: z.string().regex(/^[\w-]{87}$/u),
         auth: z.string().regex(/^[\w-]{22}$/u),
@@ -39,7 +44,18 @@ export type Device = Pick<
 export class PushError extends Error {
   constructor(
     public readonly code:
-      'unavailable' | 'endpoint' | 'owned' | 'missing' | 'limited' | 'payload',
+      | 'unavailable'
+      | 'endpoint'
+      | 'owned'
+      | 'missing'
+      | 'limited'
+      | 'payload'
+      | 'paused'
+      | 'expired'
+      | 'network'
+      | 'gateway_auth'
+      | 'gateway_limited'
+      | 'gateway',
   ) {
     super(`Web Push ${code}.`);
   }
@@ -129,8 +145,8 @@ export function createSubscriptions(
     ): Promise<Device> {
       if (!secrets.ready) throw new PushError('unavailable');
       const subscription = {
-        ...input.subscription,
         endpoint: validateEndpoint(input.subscription.endpoint).href,
+        keys: input.subscription.keys,
       };
       const endpointHash = createHash('sha256')
         .update(subscription.endpoint)
