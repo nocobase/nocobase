@@ -60,10 +60,13 @@ function record(data) {
   });
 }
 
-/** Records the badge's read time and answers whether it is not older than the newest badge applied. */
+/**
+ * Records the badge's version and answers whether it is not older than the newest a push or page applied. Pages write
+ * the same record through setAppBadge() in the client, so a count a page set also outranks an older push.
+ */
 function newest(data) {
-  const at = Number(data.badgeAt);
-  if (!Number.isFinite(at)) return Promise.resolve(true);
+  const version = Number(data.badgeVersion);
+  if (!Number.isFinite(version)) return Promise.resolve(true);
   return new Promise((resolve) => {
     const base = new URL(self.registration.scope).pathname;
     const opening = indexedDB.open(\`nocobase:push-badge:\${base}\`, 1);
@@ -77,8 +80,8 @@ function newest(data) {
       const store = tx.objectStore('state');
       const request = store.get('badge');
       request.onsuccess = () => {
-        if (request.result && request.result.at > at) apply = false;
-        else store.put({ id: 'badge', at });
+        if (request.result && request.result.version > version) apply = false;
+        else store.put({ id: 'badge', version });
       };
       tx.oncomplete = tx.onerror = tx.onabort = () => {
         db.close();

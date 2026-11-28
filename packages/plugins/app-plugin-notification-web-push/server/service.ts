@@ -1,3 +1,4 @@
+import { nextBadgeVersion } from './badge.js';
 import { randomUUID } from 'node:crypto';
 import { resolveSupportedLocale, type I18nRuntime } from '@nocobase/i18n';
 import locales from './locales/index.js';
@@ -30,10 +31,11 @@ export interface WebPushMessage extends PushDeliveryOptions {
   /** The count the installed app's icon badge shows once this push arrives; 0 clears it. */
   badge?: number;
   /**
-   * When `badge` was read, in epoch milliseconds; the worker ignores a badge read before the newest it applied, so a
-   * late push cannot restore an older count. Defaults to the time the payload is built.
+   * The version of `badge` from `nextBadgeVersion()`, taken before the count was read; the worker ignores a badge older
+   * than the newest a push or page applied, so a late push cannot restore an older count. Defaults to a version taken
+   * when the payload is built.
    */
-  badgeAt?: number;
+  badgeVersion?: number;
   /** Device diagnostics need an explicit failure when the device cannot be reached. */
   requireDelivery?: boolean;
   beforeSend?: { name: string; context?: unknown };
@@ -45,7 +47,7 @@ export const PushMessage: z.ZodType<WebPushMessage> = z.object({
   url: z.string().max(4096),
   dedupeKey: z.string().max(512),
   badge: z.number().int().min(0).max(1_000_000).optional(),
-  badgeAt: z.number().int().min(0).optional(),
+  badgeVersion: z.number().int().min(0).optional(),
   urgency: z.enum(['very-low', 'low', 'normal', 'high']).optional(),
   ttl: z.number().int().min(0).max(2_419_200).optional(),
   requireDelivery: z.boolean().optional(),
@@ -102,7 +104,7 @@ export interface WebPushPayload {
   url: string;
   dedupeKey: string;
   badge?: number;
-  badgeAt?: number;
+  badgeVersion?: number;
 }
 export function pushPayload(
   message: Omit<WebPushMessage, 'to'>,
@@ -116,10 +118,11 @@ export function pushPayload(
     ...(Number.isSafeInteger(message.badge) && message.badge! >= 0
       ? {
           badge: message.badge,
-          badgeAt:
-            Number.isSafeInteger(message.badgeAt) && message.badgeAt! >= 0
-              ? message.badgeAt
-              : Date.now(),
+          badgeVersion:
+            Number.isSafeInteger(message.badgeVersion) &&
+            message.badgeVersion! >= 0
+              ? message.badgeVersion
+              : nextBadgeVersion(),
         }
       : {}),
   };

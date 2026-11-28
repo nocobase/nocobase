@@ -1,4 +1,4 @@
-import { expect, it } from 'vitest';
+import { expect, it, vi } from 'vitest';
 import { createECDH, randomBytes } from 'node:crypto';
 import webPush from 'web-push';
 import {
@@ -6,6 +6,7 @@ import {
   MAX_WEB_PUSH_PAYLOAD_BYTES,
   pushPayload,
 } from '../../server/service.js';
+import { nextBadgeVersion } from '../../server/badge.js';
 
 const message = {
   to: [{ id: 'device', userId: 'alice' }],
@@ -88,15 +89,30 @@ it('fits the maximum validated JSON into a 4096-byte encrypted aes128gcm request
   expect(details.body?.length).toBe(4096);
 });
 
-it('stamps the badge with the time it was read, or the time the payload is built', () => {
+it('carries the badge version, or a version taken when the payload is built', () => {
   expect(
-    pushPayload({ ...message, badge: 2, badgeAt: 1_234 }, '/main'),
-  ).toMatchObject({ badge: 2, badgeAt: 1_234 });
-  const before = Date.now();
+    pushPayload({ ...message, badge: 2, badgeVersion: 1_234 }, '/main'),
+  ).toMatchObject({ badge: 2, badgeVersion: 1_234 });
+  const before = nextBadgeVersion();
   const stamped = pushPayload({ ...message, badge: 2 }, '/main');
-  expect(stamped.badgeAt).toBeGreaterThanOrEqual(before);
-  expect(stamped.badgeAt).toBeLessThanOrEqual(Date.now());
-  expect(() => service.validateMessage({ ...message, badgeAt: -1 })).toThrow();
+  expect(stamped.badgeVersion).toBeGreaterThan(before);
+  expect(() =>
+    service.validateMessage({ ...message, badgeVersion: -1 }),
+  ).toThrow();
+});
+
+it('gives reads in the same millisecond distinct, increasing badge versions', () => {
+  vi.useFakeTimers({ now: 1_800_000_000_000 });
+  try {
+    const versions = Array.from({ length: 5 }, () => nextBadgeVersion());
+    expect(new Set(versions).size).toBe(5);
+    expect([...versions].sort((a, b) => a - b)).toEqual(versions);
+    vi.setSystemTime(1_799_999_999_000);
+    // A clock stepping back never reorders versions within the process.
+    expect(nextBadgeVersion()).toBeGreaterThan(versions.at(-1)!);
+  } finally {
+    vi.useRealTimers();
+  }
 });
 
 it('carries the icon badge count to the worker only when it is a non-negative integer', () => {
@@ -107,7 +123,7 @@ it('carries the icon badge count to the worker only when it is a non-negative in
     badge: 0,
   });
   expect(pushPayload(message, '/main')).not.toHaveProperty('badge');
-  expect(pushPayload(message, '/main')).not.toHaveProperty('badgeAt');
+  expect(pushPayload(message, '/main')).not.toHaveProperty('badgeVersion');
   expect(() => service.validateMessage({ ...message, badge: -1 })).toThrow();
   expect(() => service.validateMessage({ ...message, badge: 1.5 })).toThrow();
 });

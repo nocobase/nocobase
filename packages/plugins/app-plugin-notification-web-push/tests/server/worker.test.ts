@@ -1,54 +1,7 @@
 import { workerSource } from '../../server/worker.js';
+import { memoryIndexedDB } from '../fixtures/memory-indexeddb.js';
 import vm from 'node:vm';
 import { expect, it, vi } from 'vitest';
-
-/** A minimal in-memory IndexedDB: enough for the worker's single-store transactions. */
-function memoryIndexedDB() {
-  const databases = new Map<string, Map<string, Map<string, unknown>>>();
-  return {
-    open(name: string) {
-      const request: Record<string, unknown> & {
-        onupgradeneeded?: () => void;
-        onsuccess?: () => void;
-      } = {};
-      queueMicrotask(() => {
-        let stores = databases.get(name);
-        const fresh = !stores;
-        if (!stores) databases.set(name, (stores = new Map()));
-        request.result = {
-          createObjectStore: (store: string) => stores!.set(store, new Map()),
-          close: () => undefined,
-          transaction: (storeName: string) => {
-            const tx: { oncomplete?: () => void; objectStore?: unknown } = {};
-            const store = stores!.get(storeName)!;
-            let pending = 0;
-            const run = (fn: () => unknown) => {
-              const r: { result?: unknown; onsuccess?: () => void } = {};
-              pending++;
-              queueMicrotask(() => {
-                r.result = fn();
-                r.onsuccess?.();
-                if (--pending === 0) queueMicrotask(() => tx.oncomplete?.());
-              });
-              return r;
-            };
-            tx.objectStore = () => ({
-              get: (id: string) => run(() => store.get(id)),
-              put: (value: { id: string }) =>
-                run(() => store.set(value.id, value)),
-              getAll: () => run(() => [...store.values()]),
-              delete: (id: string) => run(() => store.delete(id)),
-            });
-            return tx;
-          },
-        };
-        if (fresh) request.onupgradeneeded?.();
-        request.onsuccess?.();
-      });
-      return request;
-    },
-  };
-}
 
 async function worker(storage?: ReturnType<typeof memoryIndexedDB>) {
   const handlers = new Map<string, (event: unknown) => void>();
@@ -206,9 +159,9 @@ it('keeps the newest badge when a push read earlier arrives later, and still sho
   const f = await worker(memoryIndexedDB());
   const push = (data: object) =>
     f.dispatch('push', { data: { json: () => ({ title: 'T', ...data }) } });
-  await push({ dedupeKey: 'a', badge: 2, badgeAt: 1_000 });
-  await push({ dedupeKey: 'b', badge: 0, badgeAt: 3_000 });
-  await push({ dedupeKey: 'late', badge: 4, badgeAt: 2_000 });
+  await push({ dedupeKey: 'a', badge: 2, badgeVersion: 1_000 });
+  await push({ dedupeKey: 'b', badge: 0, badgeVersion: 3_000 });
+  await push({ dedupeKey: 'late', badge: 4, badgeVersion: 2_000 });
   expect(f.navigator.setAppBadge).toHaveBeenCalledExactlyOnceWith(2);
   expect(f.navigator.clearAppBadge).toHaveBeenCalledOnce();
   expect(f.registration.showNotification).toHaveBeenCalledTimes(3);
@@ -216,7 +169,7 @@ it('keeps the newest badge when a push read earlier arrives later, and still sho
     'T',
     expect.objectContaining({ tag: 'late' }),
   );
-  await push({ dedupeKey: 'c', badge: 1, badgeAt: 4_000 });
+  await push({ dedupeKey: 'c', badge: 1, badgeVersion: 4_000 });
   expect(f.navigator.setAppBadge).toHaveBeenLastCalledWith(1);
 });
 
@@ -224,7 +177,7 @@ it('asks open windows to set the badge again after a push sets it', async () => 
   const f = await worker(memoryIndexedDB());
   await f.dispatch('push', {
     data: {
-      json: () => ({ title: 'T', dedupeKey: 'a', badge: 3, badgeAt: 1 }),
+      json: () => ({ title: 'T', dedupeKey: 'a', badge: 3, badgeVersion: 1 }),
     },
   });
   expect(f.clients.matchAll).toHaveBeenCalledWith({
@@ -236,7 +189,7 @@ it('asks open windows to set the badge again after a push sets it', async () => 
   });
   await f.dispatch('push', {
     data: {
-      json: () => ({ title: 'T', dedupeKey: 'b', badge: 5, badgeAt: 0 }),
+      json: () => ({ title: 'T', dedupeKey: 'b', badge: 5, badgeVersion: 0 }),
     },
   });
   expect(f.existing.postMessage).toHaveBeenCalledOnce();

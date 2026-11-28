@@ -79,3 +79,57 @@ export async function unsubscribeDevice(
   }
   rememberDevice(base, userId, null);
 }
+
+/**
+ * Records a badge version in the store the push worker uses, and answers whether it is not older than the newest a
+ * page or push applied. Without IndexedDB nothing is compared.
+ */
+function newestBadge(base: string, version: number): Promise<boolean> {
+  if (typeof indexedDB === 'undefined') return Promise.resolve(true);
+  return new Promise((resolve) => {
+    const opening = indexedDB.open(`nocobase:push-badge:${pushBase(base)}`, 1);
+    opening.onupgradeneeded = () =>
+      opening.result.createObjectStore('state', { keyPath: 'id' });
+    opening.onerror = () => resolve(true);
+    opening.onsuccess = () => {
+      const db = opening.result;
+      let apply = true;
+      const tx = db.transaction('state', 'readwrite');
+      const store = tx.objectStore('state');
+      const request = store.get('badge');
+      request.onsuccess = () => {
+        const stored = request.result as { version?: number } | undefined;
+        if ((stored?.version ?? -1) > version) apply = false;
+        else store.put({ id: 'badge', version });
+      };
+      tx.oncomplete =
+        tx.onerror =
+        tx.onabort =
+          () => {
+            db.close();
+            resolve(apply);
+          };
+    };
+  });
+}
+
+/**
+ * Shows a count on the installed app's icon, or clears it at zero. With a `version` (the server's
+ * `nextBadgeVersion()`, taken before the count was read), a count older than the newest one a page or the push worker
+ * applied is ignored, so pages and late pushes cannot overwrite a newer count with an older one. Without a version,
+ * such as on signing out, it applies unconditionally. Resolves whether it applied; browsers without badging ignore it.
+ */
+export async function setAppBadge(
+  base: string,
+  count: number,
+  version?: number,
+): Promise<boolean> {
+  if (typeof navigator === 'undefined' || !('setAppBadge' in navigator))
+    return false;
+  if (version !== undefined && !(await newestBadge(base, version)))
+    return false;
+  await (
+    count > 0 ? navigator.setAppBadge(count) : navigator.clearAppBadge()
+  ).catch(() => undefined);
+  return true;
+}
