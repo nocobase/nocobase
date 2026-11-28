@@ -38,7 +38,7 @@ export interface SharedConfigOptions {
   ignores?: string[];
   rules?: DummyRuleMap;
   overrides?: OxlintOverride[];
-  /** Files using node:test keep syntax lint but skip the Vitest preset. */
+  /** Files using node:test get Node globals and skip the Vitest preset. */
   nodeTestFiles?: string[];
 }
 
@@ -75,6 +75,16 @@ const createBrowserApiOverride = (files: string[]): OxlintOverride => ({
     'no-restricted-properties': ['error', ...browserApiRestrictions],
   },
 });
+
+const createTestOverrides = (nodeTests: string[]): OxlintOverride[] => [
+  { files: nodeTests, env: { node: true } },
+  {
+    files: testFiles,
+    excludeFiles: nodeTests,
+    env: { vitest: true },
+    rules: vitestRules,
+  },
+];
 
 const createConfig = (
   options: SharedConfigOptions,
@@ -117,12 +127,10 @@ const createConfig = (
       rules: { ...typescriptRules, ...typeAwareRules },
     },
     ...environment,
-    {
-      files: testFiles,
-      excludeFiles: [...nodeTestFiles, ...(options.nodeTestFiles ?? [])],
-      env: { vitest: true },
-      rules: vitestRules,
-    },
+    ...createTestOverrides([
+      ...nodeTestFiles,
+      ...(options.nodeTestFiles ?? []),
+    ]),
     {
       files: testFiles,
       rules: {

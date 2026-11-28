@@ -11,7 +11,7 @@ import { createApplicationConfig } from '@nocobase/dev-config/oxlint';
 
 export default createApplicationConfig({
   ignores: ['storage/**'],
-  nodeTestFiles: ['scripts/smoke/**/*.test.mjs'],
+  nodeTestFiles: ['tests/smoke/**/*.test.mjs'],
 });
 ```
 
@@ -21,7 +21,7 @@ Use `oxlint --type-aware --deny-warnings` for `lint` and add `--fix` for `lint:f
 - `createNodeLibraryConfig` enables Node globals. `createUniversalLibraryConfig` uses only ECMAScript globals.
 - `createClientLibraryConfig` applies React and browser rules and uses Node globals for tooling. Include `...createShadcnRegistryConfig('website')` in `overrides` when that directory contains registry output.
 - `rules` augments the shared rules and `overrides` applies file-specific options afterwards. The exported `react` and `node` overrides can be re-scoped to additional client or server entry points.
-- `nodeTestFiles` extends the Vitest exclusion for `tests/build/**/*.test.mjs`. These files still receive syntax lint. Type-aware rules apply to TypeScript sources and keep the preset's test and tooling exceptions.
+- `nodeTestFiles` extends the Node test paths, which include `tests/build/**/*.test.mjs` by default. They get Node globals and syntax lint with the Vitest rules disabled. Type-aware rules apply to TypeScript sources and keep the preset's test and tooling exceptions.
 
 Existing ESLint directives for native rules, including `@typescript-eslint`, `react-hooks`, and `react-refresh`, are recognized. Use `nocobase/no-restricted-syntax` for a directive that targets a selector-based restriction. Declare extra globals in the relevant configuration override.
 

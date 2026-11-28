@@ -25,7 +25,7 @@ const backend = requireTsgolint.resolve(
 let allDiagnostics: Diagnostic[];
 const root = mkdtempSync(path.join(os.tmpdir(), 'nocobase-oxlint-'));
 const config = createApplicationConfig({
-  nodeTestFiles: ['scripts/checks/**/*.test.mjs'],
+  nodeTestFiles: ['tests/checks/**/*.test.mjs'],
 });
 
 function write(file: string, source: string) {
@@ -177,8 +177,12 @@ export const unsafe = () => [
     describeMigration('users', () => { expect(true).toBe(true); });
   `,
   );
-  write('tests/build/assembly.test.mjs', nodeTest + '\ndebugger;\n');
-  write('scripts/checks/health.test.mjs', nodeTest);
+  const nodeGlobals = '\nassert.ok(process.pid > 0);\n';
+  write(
+    'tests/build/assembly.test.mjs',
+    nodeTest + nodeGlobals + 'debugger;\n',
+  );
+  write('tests/checks/health.test.mjs', nodeTest + nodeGlobals);
   write('tests/server/node.spec.js', nodeTest);
   write(
     'server/legacy.cjs',
@@ -278,9 +282,8 @@ describe('Oxlint application preset', () => {
   });
 
   it('keeps the Vitest exception narrow and still lints Node build tests', () => {
-    const diagnostics = allDiagnostics.filter(
-      ({ filename }) =>
-        filename.startsWith('tests/') || filename.startsWith('scripts/checks/'),
+    const diagnostics = allDiagnostics.filter(({ filename }) =>
+      filename.startsWith('tests/'),
     );
     expect(diagnostics).toEqual(
       expect.arrayContaining([
