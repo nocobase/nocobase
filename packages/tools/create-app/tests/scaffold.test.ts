@@ -444,6 +444,7 @@ describe('gitignore handling', () => {
 
     expect(contents).toContain('node_modules');
     expect(contents).toContain('/config.yml');
+    expect(contents).toContain('/output/screenshots/');
     // `.agents/` is generated except `rules/`, and the negation only works after the line ignoring the contents.
     const lines = contents.split('\n');
     expect(lines).not.toContain('/.agents/');

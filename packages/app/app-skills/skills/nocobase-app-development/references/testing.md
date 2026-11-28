@@ -1,5 +1,7 @@
 # Testing and verification
 
+For manual browser evidence, use [development screenshots](screenshots.md). The command starts an isolated, disposable app and supports signed-in scripts for data setup and interactions. Keep automated Playwright assertions in the existing e2e suite.
+
 ## Testing with `@nocobase/app-testing`
 
 Application tests use `@nocobase/app-testing` in `devDependencies`. It exposes `/server`, `/client` and `/cli`; choose the entry that matches the test environment. Use the real repository, application composition or command class whose behavior the test needs to prove. The examples below are references of the `nocobase-app-development` Skill delivered by `@nocobase/app-skills`.

@@ -28,7 +28,11 @@ export function loadStandaloneAppEnv(
     path.join(options.rootDir, '.env.local'),
   ];
   return {
-    ...readDotenvFiles(files, baseEnv),
+    // An isolated development run supplies a complete environment. Local dotenv settings could redirect
+    // migrations, storage or integrations back to the developer's ordinary instance.
+    ...(baseEnv.NOCOBASE_DEV_ISOLATED === 'true'
+      ? {}
+      : readDotenvFiles(files, baseEnv)),
     ...baseEnv,
     ...options.overrides,
   };

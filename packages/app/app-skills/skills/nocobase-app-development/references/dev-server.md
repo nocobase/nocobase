@@ -10,6 +10,10 @@ For an existing run without available startup output, identify its process and w
 
 With `PROXY_TARGET_URL`, the local Hono server is skipped and Vite becomes the local application entry. Use the printed `Local:` URL in this mode too; `APP_SERVER_PORT` selects its local port (default 5173). See [remote backend development](#remote-backend-development) below.
 
+## Isolated UI verification
+
+Use [`pnpm nocobase screenshot`](screenshots.md) to start a disposable app for UI verification. It selects its own loopback ports and Vite cache. Keep it running with `--serve` for repeated captures and use Ctrl+C to stop it. Never use `pkill` or `killall` against shared development processes or take over default development ports.
+
 ## What restarts the development run
 
 Changes to `.env` and `.env.local` (including creation, atomic replacement, and deletion) restart the full development run after its previous processes exit. The new run reloads environment files, ports, proxy settings, and startup hooks; explicit shell variables still take precedence. Use the newly printed URL if the port or base path changes. This also applies in proxy mode. `config.yml` changes restart only the local server. `NOCOBASE_STRICT_STARTUP=true` disables both automatic restarts.

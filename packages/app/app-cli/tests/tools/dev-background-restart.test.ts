@@ -26,6 +26,7 @@ it('reloads configuration in a real tsx worker after parent stdin reaches EOF', 
   let output = '';
   const context = {
     strictStartup: false,
+    isolated: false,
     path,
     rootDir: root,
     serverEnv: {},

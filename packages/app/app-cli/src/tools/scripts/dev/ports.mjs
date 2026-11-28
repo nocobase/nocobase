@@ -85,3 +85,18 @@ export const findAvailablePort = async ({
     `Unable to find an available ${label} port from ${preferredPort} to ${preferredPort + 99}.`,
   );
 };
+
+// Ask the kernel for an ephemeral loopback port, away from development and preview defaults.
+export const findEphemeralPort = async ({ excludedPorts = [], host }) => {
+  for (;;) {
+    const port = await new Promise((resolve, reject) => {
+      const server = net.createServer();
+      server.once('error', reject);
+      server.listen(0, host, () => {
+        const { port } = server.address();
+        server.close(() => resolve(port));
+      });
+    });
+    if (!excludedPorts.includes(port)) return port;
+  }
+};

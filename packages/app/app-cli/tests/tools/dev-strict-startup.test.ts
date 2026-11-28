@@ -22,6 +22,7 @@ it.each([true, false])(
       ),
       {
         strictStartup,
+        isolated: false,
         path,
         serverEnv: {},
         spawnDevProcess,
@@ -62,6 +63,7 @@ it('preserves startup failure and delegates descendant cleanup to the supervisor
     ) + '\nshutdown(1);',
     {
       shuttingDown: false,
+      isolated: false,
       envRestartTimer: undefined,
       envWatcher: { close },
       dependencyRestartTimer: undefined,
