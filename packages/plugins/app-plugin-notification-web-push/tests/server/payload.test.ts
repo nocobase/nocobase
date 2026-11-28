@@ -1,4 +1,4 @@
-import { expect, it, vi } from 'vitest';
+import { expect, it } from 'vitest';
 import { createECDH, randomBytes } from 'node:crypto';
 import webPush from 'web-push';
 import {
@@ -6,7 +6,6 @@ import {
   MAX_WEB_PUSH_PAYLOAD_BYTES,
   pushPayload,
 } from '../../server/service.js';
-import { createBadgeVersions, nextBadgeVersion } from '../../server/badge.js';
 
 const message = {
   to: [{ id: 'device', userId: 'alice' }],
@@ -89,78 +88,25 @@ it('fits the maximum validated JSON into a 4096-byte encrypted aes128gcm request
   expect(details.body?.length).toBe(4096);
 });
 
-it('carries the badge version, or a version taken when the payload is built', () => {
+it('carries a badge only with the exact revision supplied by the application', () => {
   expect(
-    pushPayload({ ...message, badge: 2, badgeVersion: 1_234 }, '/main'),
-  ).toMatchObject({ badge: 2, badgeVersion: 1_234 });
-  const before = nextBadgeVersion();
-  const stamped = pushPayload({ ...message, badge: 2 }, '/main');
-  expect(stamped.badgeVersion).toBeGreaterThan(before);
-  expect(() =>
-    service.validateMessage({ ...message, badgeVersion: -1 }),
-  ).toThrow();
-});
-
-it('gives reads in the same millisecond distinct, increasing badge versions', () => {
-  vi.useFakeTimers({ now: 1_800_000_000_000 });
-  try {
-    const versions = Array.from({ length: 5 }, () => nextBadgeVersion());
-    expect(new Set(versions).size).toBe(5);
-    expect([...versions].sort((a, b) => a - b)).toEqual(versions);
-    vi.setSystemTime(1_799_999_999_000);
-    // A clock stepping back never reorders versions within the process.
-    expect(nextBadgeVersion()).toBeGreaterThan(versions.at(-1)!);
-  } finally {
-    vi.useRealTimers();
+    pushPayload(
+      { ...message, badge: 2, badgeVersion: 1234, badgeScope: 'alice' },
+      '/main',
+    ),
+  ).toMatchObject({ badge: 2, badgeVersion: 1234, badgeScope: 'alice' });
+  expect(
+    pushPayload({ ...message, badge: 0, badgeVersion: 1235 }, '/main'),
+  ).toMatchObject({ badge: 0, badgeVersion: 1235, badgeScope: '' });
+  for (const incomplete of [
+    { badge: 2 },
+    { badgeVersion: 1 },
+    { badge: 2, badgeVersion: -1 },
+  ]) {
+    expect(
+      pushPayload({ ...message, ...incomplete }, '/main'),
+    ).not.toHaveProperty('badge');
   }
-});
-
-it('orders badge versions taken on instances sharing a counter, also in the same millisecond', async () => {
-  vi.useFakeTimers({ now: 1_800_000_000_000 });
-  try {
-    // The application's caching counter, shared by both instances.
-    const values = new Map<string, number>();
-    const counter = {
-      increment: async (key: string, amount = 1) => {
-        values.set(key, (values.get(key) ?? 0) + amount);
-        return values.get(key)!;
-      },
-    };
-    const first = createBadgeVersions(counter);
-    const second = createBadgeVersions(counter);
-    const versions = [
-      await first('alice'),
-      await second('alice'),
-      await first('alice'),
-      await second('alice'),
-    ];
-    expect([...new Set(versions)].sort((a, b) => a - b)).toEqual(versions);
-    // The first in a millisecond takes its start; the next millisecond outranks every version of this one.
-    expect(versions[0]).toBe(1_800_000_000_000_000);
-    expect(await createBadgeVersions(counter)('bob')).toBe(versions[0]);
-    vi.setSystemTime(1_800_000_000_001);
-    expect(await second('alice')).toBeGreaterThan(versions.at(-1)!);
-  } finally {
-    vi.useRealTimers();
-  }
-});
-
-it('takes process-local badge versions without a counter', async () => {
-  const versions = createBadgeVersions();
-  const a = await versions('alice');
-  expect(await versions('alice')).toBeGreaterThan(a);
-  expect(nextBadgeVersion()).toBeGreaterThan(a);
-});
-
-it('carries the icon badge count to the worker only when it is a non-negative integer', () => {
-  expect(pushPayload({ ...message, badge: 3 }, '/main')).toMatchObject({
-    badge: 3,
-  });
-  expect(pushPayload({ ...message, badge: 0 }, '/main')).toMatchObject({
-    badge: 0,
-  });
-  expect(pushPayload(message, '/main')).not.toHaveProperty('badge');
-  expect(pushPayload(message, '/main')).not.toHaveProperty('badgeVersion');
   expect(() => service.validateMessage({ ...message, badge: -1 })).toThrow();
   expect(() => service.validateMessage({ ...message, badge: 1.5 })).toThrow();
 });

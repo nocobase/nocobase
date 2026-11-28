@@ -65,14 +65,16 @@ function record(data) {
  * the same record through setAppBadge() in the client, so a count a page set also outranks an older push.
  */
 function newest(data) {
-  const version = Number(data.badgeVersion);
-  if (!Number.isFinite(version)) return Promise.resolve(true);
+  const version = data.badgeVersion;
+  const scope = data.badgeScope;
+  if (!Number.isSafeInteger(version) || version < 0 || typeof scope !== 'string' ||
+      typeof indexedDB === 'undefined') return Promise.resolve(false);
   return new Promise((resolve) => {
     const base = new URL(self.registration.scope).pathname;
-    const opening = indexedDB.open(\`nocobase:push-badge:\${base}\`, 1);
+    const opening = indexedDB.open(\`nocobase:push-badge-v2:\${base}\`, 1);
     opening.onupgradeneeded = () =>
       opening.result.createObjectStore('state', { keyPath: 'id' });
-    opening.onerror = () => resolve(true);
+    opening.onerror = () => resolve(false);
     opening.onsuccess = () => {
       const db = opening.result;
       let apply = true;
@@ -80,12 +82,16 @@ function newest(data) {
       const store = tx.objectStore('state');
       const request = store.get('badge');
       request.onsuccess = () => {
-        if (request.result && request.result.version > version) apply = false;
-        else store.put({ id: 'badge', version });
+        if (request.result && (request.result.scope !== scope || request.result.version > version)) apply = false;
+        else store.put({ id: 'badge', version, scope });
       };
-      tx.oncomplete = tx.onerror = tx.onabort = () => {
+      tx.oncomplete = () => {
         db.close();
         resolve(apply);
+      };
+      tx.onerror = tx.onabort = () => {
+        db.close();
+        resolve(false);
       };
     };
   });
@@ -102,7 +108,7 @@ self.addEventListener('push', (event) => {
       }
       if (data.dedupeKey) await record(data);
       // The installed app's icon badge follows the newest count the server read; browsers without badging ignore it.
-      if (typeof data.badge === 'number' && (await newest(data))) {
+      if (Number.isSafeInteger(data.badge) && data.badge >= 0 && (await newest(data))) {
         await (data.badge > 0
           ? self.navigator?.setAppBadge?.(data.badge)
           : self.navigator?.clearAppBadge?.()

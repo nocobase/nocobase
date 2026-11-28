@@ -5,7 +5,6 @@ export * from './subscriptions.js';
 export * from './keys.js';
 export * from './transport.js';
 export * from './service.js';
-export * from './badge.js';
 export * from './tokens.js';
 export * from './routes/devices.js';
 export * from './worker.js';

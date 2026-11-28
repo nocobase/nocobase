@@ -143,12 +143,12 @@ it('opens the target when no app window is running', async () => {
 });
 
 it('sets the app icon badge to the pushed count and clears it at zero', async () => {
-  const f = await worker();
+  const f = await worker(memoryIndexedDB());
   const push = (data: object) =>
     f.dispatch('push', { data: { json: () => ({ title: 'T', ...data }) } });
-  await push({ dedupeKey: 'a', badge: 4 });
+  await push({ dedupeKey: 'a', badge: 4, badgeScope: '', badgeVersion: 1 });
   expect(f.navigator.setAppBadge).toHaveBeenCalledExactlyOnceWith(4);
-  await push({ dedupeKey: 'b', badge: 0 });
+  await push({ dedupeKey: 'b', badge: 0, badgeScope: '', badgeVersion: 2 });
   expect(f.navigator.clearAppBadge).toHaveBeenCalledOnce();
   await push({ dedupeKey: 'c' });
   expect(f.navigator.setAppBadge).toHaveBeenCalledOnce();
@@ -159,9 +159,14 @@ it('keeps the newest badge when a push read earlier arrives later, and still sho
   const f = await worker(memoryIndexedDB());
   const push = (data: object) =>
     f.dispatch('push', { data: { json: () => ({ title: 'T', ...data }) } });
-  await push({ dedupeKey: 'a', badge: 2, badgeVersion: 1_000 });
-  await push({ dedupeKey: 'b', badge: 0, badgeVersion: 3_000 });
-  await push({ dedupeKey: 'late', badge: 4, badgeVersion: 2_000 });
+  await push({ dedupeKey: 'a', badge: 2, badgeScope: '', badgeVersion: 1_000 });
+  await push({ dedupeKey: 'b', badge: 0, badgeScope: '', badgeVersion: 3_000 });
+  await push({
+    dedupeKey: 'late',
+    badge: 4,
+    badgeScope: '',
+    badgeVersion: 2_000,
+  });
   expect(f.navigator.setAppBadge).toHaveBeenCalledExactlyOnceWith(2);
   expect(f.navigator.clearAppBadge).toHaveBeenCalledOnce();
   expect(f.registration.showNotification).toHaveBeenCalledTimes(3);
@@ -169,7 +174,7 @@ it('keeps the newest badge when a push read earlier arrives later, and still sho
     'T',
     expect.objectContaining({ tag: 'late' }),
   );
-  await push({ dedupeKey: 'c', badge: 1, badgeVersion: 4_000 });
+  await push({ dedupeKey: 'c', badge: 1, badgeScope: '', badgeVersion: 4_000 });
   expect(f.navigator.setAppBadge).toHaveBeenLastCalledWith(1);
 });
 
@@ -177,7 +182,13 @@ it('asks open windows to set the badge again after a push sets it', async () => 
   const f = await worker(memoryIndexedDB());
   await f.dispatch('push', {
     data: {
-      json: () => ({ title: 'T', dedupeKey: 'a', badge: 3, badgeVersion: 1 }),
+      json: () => ({
+        title: 'T',
+        dedupeKey: 'a',
+        badge: 3,
+        badgeScope: '',
+        badgeVersion: 1,
+      }),
     },
   });
   expect(f.clients.matchAll).toHaveBeenCalledWith({
@@ -189,7 +200,13 @@ it('asks open windows to set the badge again after a push sets it', async () => 
   });
   await f.dispatch('push', {
     data: {
-      json: () => ({ title: 'T', dedupeKey: 'b', badge: 5, badgeVersion: 0 }),
+      json: () => ({
+        title: 'T',
+        dedupeKey: 'b',
+        badge: 5,
+        badgeScope: '',
+        badgeVersion: 0,
+      }),
     },
   });
   expect(f.existing.postMessage).toHaveBeenCalledOnce();

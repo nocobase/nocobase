@@ -1,5 +1,4 @@
 import { i18nToken } from '@nocobase/app-server/i18n';
-import { cachingToken } from '@nocobase/app-server/caching';
 import { ServiceProvider } from '@nocobase/service-provider';
 import type { AppPluginApplication } from '@nocobase/app-server/plugins';
 import { databaseManagerToken } from '@nocobase/db';
@@ -34,14 +33,6 @@ export default class WebPushProvider extends ServiceProvider<AppPluginApplicatio
         notifications: () => resolver.resolve(notificationServiceToken),
         base: this.app.config.get<string>('app.publicBasePath') ?? '/',
         channel: this.app.config.get<string>('push.channel') ?? 'webPush',
-        // Shared between instances when the configured cache is, so their badge versions sort.
-        ...(resolver.has(cachingToken)
-          ? {
-              badgeCounter: resolver
-                .resolve(cachingToken)
-                .getCounter({ namespace: 'web-push:badge-versions' }),
-            }
-          : {}),
         transport: (subscription, payload, signal, options) => {
           const config = this.app.config.get<PushConfig>('push');
           if (!config?.privateKey) throw new PushError('unavailable');

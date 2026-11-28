@@ -1,8 +1,3 @@
-import {
-  createBadgeVersions,
-  nextBadgeVersion,
-  type BadgeCounter,
-} from './badge.js';
 import { randomUUID } from 'node:crypto';
 import { resolveSupportedLocale, type I18nRuntime } from '@nocobase/i18n';
 import locales from './locales/index.js';
@@ -34,12 +29,10 @@ export interface WebPushMessage extends PushDeliveryOptions {
   dedupeKey: string;
   /** The count the installed app's icon badge shows once this push arrives; 0 clears it. */
   badge?: number;
-  /**
-   * The version of `badge` from `WebPushService.badgeVersion()`, taken before the count was read; the worker ignores a badge older
-   * than the newest a push or page applied, so a late push cannot restore an older count. Defaults to a version taken
-   * when the payload is built.
-   */
+  /** The application's durable revision for this exact count, shared with the page. */
   badgeVersion?: number;
+  /** The account or other application-defined scope of the count and its revisions. */
+  badgeScope?: string;
   /** Device diagnostics need an explicit failure when the device cannot be reached. */
   requireDelivery?: boolean;
   beforeSend?: { name: string; context?: unknown };
@@ -52,6 +45,7 @@ export const PushMessage: z.ZodType<WebPushMessage> = z.object({
   dedupeKey: z.string().max(512),
   badge: z.number().int().min(0).max(1_000_000).optional(),
   badgeVersion: z.number().int().min(0).optional(),
+  badgeScope: z.string().max(128).optional(),
   urgency: z.enum(['very-low', 'low', 'normal', 'high']).optional(),
   ttl: z.number().int().min(0).max(2_419_200).optional(),
   requireDelivery: z.boolean().optional(),
@@ -81,8 +75,6 @@ export interface WebPushDependencies {
   base: string;
   channel?: string;
   i18n?: I18nRuntime;
-  /** The application's caching counter, so badge versions taken on different instances sort. */
-  badgeCounter?: BadgeCounter;
 }
 /** Constrain even malformed/absolute click URLs to the application's path; the worker rechecks origin. */
 export function pushTarget(value: string, base: string): string {
@@ -111,6 +103,7 @@ export interface WebPushPayload {
   dedupeKey: string;
   badge?: number;
   badgeVersion?: number;
+  badgeScope?: string;
 }
 export function pushPayload(
   message: Omit<WebPushMessage, 'to'>,
@@ -121,14 +114,14 @@ export function pushPayload(
     body: message.body ?? '',
     url: pushTarget(message.url, base),
     dedupeKey: message.dedupeKey,
-    ...(Number.isSafeInteger(message.badge) && message.badge! >= 0
+    ...(Number.isSafeInteger(message.badge) &&
+    message.badge! >= 0 &&
+    Number.isSafeInteger(message.badgeVersion) &&
+    message.badgeVersion! >= 0
       ? {
           badge: message.badge,
-          badgeVersion:
-            Number.isSafeInteger(message.badgeVersion) &&
-            message.badgeVersion! >= 0
-              ? message.badgeVersion
-              : nextBadgeVersion(),
+          badgeVersion: message.badgeVersion,
+          badgeScope: message.badgeScope ?? '',
         }
       : {}),
   };
@@ -144,11 +137,6 @@ export interface WebPushService {
   validateMessage(input: unknown): WebPushMessage;
   beforeSend(name: string, hook: BeforePush): () => void;
   afterSubscribe(name: string, hook: AfterSubscribe): () => void;
-  /**
-   * A version for the person's icon badge count, taken before reading the count. A page or push carrying a count with
-   * it overrides only counts with lower versions, also those read on other instances in the same millisecond.
-   */
-  badgeVersion(userId: string): Promise<number>;
   subscribe(userId: string, input: SubscriptionInputValue): Promise<Device>;
   test(userId: string, id: string): Promise<void>;
   deliver(
@@ -180,10 +168,8 @@ export function createWebPushService(
   const hooks = new Map<string, BeforePush>();
   const subscribed = new Map<string, AfterSubscribe>();
   const testing = new Map<string, number>();
-  const badgeVersions = createBadgeVersions(deps.badgeCounter);
   return {
     subscriptions: deps.subscriptions,
-    badgeVersion: badgeVersions,
     validateMessage(input: unknown): WebPushMessage {
       const message = PushMessage.parse(input);
       return { ...message, ...pushPayload(message, deps.base) };

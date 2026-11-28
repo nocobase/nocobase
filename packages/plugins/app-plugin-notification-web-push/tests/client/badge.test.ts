@@ -1,7 +1,6 @@
 import vm from 'node:vm';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import { setAppBadge } from '../../client/browser.js';
-import { nextBadgeVersion } from '../../server/badge.js';
 import { workerSource } from '../../server/worker.js';
 import { memoryIndexedDB } from '../fixtures/memory-indexeddb.js';
 
@@ -47,7 +46,7 @@ function worker() {
   const push = async (data: object) => {
     let done: Promise<void> | undefined;
     handlers.get('push')!({
-      data: { json: () => ({ title: 'T', ...data }) },
+      data: { json: () => ({ title: 'T', badgeScope: '', ...data }) },
       waitUntil: (value: Promise<void>) => (done = value),
     });
     await done;
@@ -57,9 +56,9 @@ function worker() {
 
 it('keeps a count a page cleared when an older push arrives after the page closed, and shows that push', async () => {
   const sw = worker();
-  const early = nextBadgeVersion(); // A reminder's count is read: 4 wait.
+  const early = 2; // A reminder's count is read: 4 wait.
   await sw.push({ dedupeKey: 'a', badge: 3, badgeVersion: early - 1 });
-  const cleared = nextBadgeVersion(); // The page reads 0, clears the badge, then closes.
+  const cleared = 3; // The page reads 0, clears the badge, then closes.
   expect(await setAppBadge('/main', 0, cleared)).toBe(true);
   await sw.push({ dedupeKey: 'late', badge: 4, badgeVersion: early });
   expect(badge).toEqual(['set:3', 'clear']);
@@ -68,26 +67,34 @@ it('keeps a count a page cleared when an older push arrives after the page close
   await sw.push({
     dedupeKey: 'next',
     badge: 1,
-    badgeVersion: nextBadgeVersion(),
+    badgeVersion: 4,
   });
   expect(badge.at(-1)).toBe('set:1');
 });
 
-it('orders snapshots read in the same millisecond', async () => {
-  vi.useFakeTimers({ now: 1_900_000_000_000, toFake: ['Date'] });
-  const older = nextBadgeVersion();
-  const newer = nextBadgeVersion();
-  vi.useRealTimers();
+it('switches the badge to the account opened by the page and still shows a late push for the previous account', async () => {
   const sw = worker();
-  await sw.push({ dedupeKey: 'new', badge: 0, badgeVersion: newer });
-  await sw.push({ dedupeKey: 'old', badge: 5, badgeVersion: older });
-  expect(badge).toEqual(['clear']);
-  expect(sw.shown).toEqual(['new', 'old']);
+  expect(await setAppBadge('/main', 7, 100, 'alice')).toBe(true);
+  expect(await setAppBadge('/main', 0, 1, 'bob')).toBe(true);
+  await sw.push({
+    dedupeKey: 'late',
+    badge: 5,
+    badgeVersion: 101,
+    badgeScope: 'alice',
+  });
+  await sw.push({
+    dedupeKey: 'legacy',
+    badge: 4,
+    badgeVersion: 10_000,
+    badgeScope: undefined,
+  });
+  expect(badge).toEqual(['set:7', 'clear']);
+  expect(sw.shown).toEqual(['late', 'legacy']);
 });
 
 it('lets a page set the same version again, ignores an older page read, and clears without a version', async () => {
   const sw = worker();
-  const version = nextBadgeVersion();
+  const version = 10;
   await sw.push({ dedupeKey: 'a', badge: 2, badgeVersion: version });
   expect(await setAppBadge('/main', 2, version)).toBe(true);
   expect(await setAppBadge('/main', 6, version - 1)).toBe(false);
