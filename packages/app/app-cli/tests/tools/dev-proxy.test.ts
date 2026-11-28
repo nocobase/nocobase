@@ -746,6 +746,7 @@ async function runDevMode(
         }
       },
       shuttingDown: false,
+      isolated: false,
       spawn: { sync },
       spawnDevProcess,
       viteDevPreferredPort: 5173,

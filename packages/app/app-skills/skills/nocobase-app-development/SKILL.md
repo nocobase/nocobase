@@ -271,6 +271,8 @@ These cause real damage and appear in every reference:
 
 ## The development server
 
+Use [the isolated screenshot command](references/screenshots.md) for UI evidence and repeated captures during development.
+
 When reporting or opening this application's address, use the `Local:` URL printed by `pnpm dev`, including the application base path; never infer it from default ports or from a response on Vite's port. [The development server](references/dev-server.md) covers verifying an existing run's URL, what restarts the development run, file watching, and developing the client against another backend with `PROXY_TARGET_URL`.
 
 ## Finishing

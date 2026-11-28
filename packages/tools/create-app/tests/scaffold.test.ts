@@ -444,6 +444,7 @@ describe('gitignore handling', () => {
 
     expect(contents).toContain('node_modules');
     expect(contents).toContain('/config.yml');
+    expect(contents).toContain('/output/screenshots/');
     // `.agents/` is generated except `rules/`, and the negation only works after the line ignoring the contents.
     const lines = contents.split('\n');
     expect(lines).not.toContain('/.agents/');
@@ -509,7 +510,7 @@ describe('gitignore handling', () => {
 
     expect(contents).toBe(
       'node_modules/\n/.agents/*\n!/.agents/rules/\n/.env\n/.claude/skills/\n' +
-        '\n# Written when this project was generated.\n/.agent-annotations/\n',
+        '\n# Written when this project was generated.\n/.agent-annotations/\n/output/screenshots/\n',
     );
   });
 

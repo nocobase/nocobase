@@ -91,14 +91,14 @@ const FALLBACK_GITIGNORE = [
 /**
  * Entries added even to a `.gitignore` the template shipped itself.
  *
- * Each names something this command writes rather than something the template owns, which is why a template has no
- * particular reason to have thought of it.
+ * These cover generated files shared by applications, including those written by the CLI and by agent workflows.
  */
 const REQUIRED_GITIGNORE_ENTRIES = [
   '/.env',
   ...AGENTS_GITIGNORE_ENTRIES,
   '/.claude/skills/',
   '/.agent-annotations/',
+  '/output/screenshots/',
 ] as const;
 
 /**

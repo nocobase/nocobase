@@ -15,6 +15,7 @@ config.yml
 coverage/
 playwright-report/
 test-results/
+/output/screenshots/
 client-old/
 
 sdk/

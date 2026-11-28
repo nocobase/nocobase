@@ -1,5 +1,6 @@
 import spawn from 'cross-spawn';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { loadStandaloneAppEnv } from '@nocobase/app-server/node';
 import {
   DEFAULT_APP_BASE_PATH,
@@ -19,7 +20,7 @@ import {
 import { acquireDevInstanceLock } from './instance-lock.mjs';
 import { resolveDevShutdownEnv } from './shutdown-budget.mjs';
 import { resolveWatchEnvironment } from './watch-environment.mjs';
-import { findAvailablePort } from './ports.mjs';
+import { findAvailablePort, findEphemeralPort } from './ports.mjs';
 import { waitForHttpReady } from './readiness.mjs';
 import { parseProxyTarget } from './proxy.mjs';
 import { resolveDevTrustedOrigins } from './trusted-origins.mjs';
@@ -33,6 +34,12 @@ const progress = (message) =>
 // All child commands run from the explicitly supplied application root.
 const rootDir = path.resolve(process.env.NOCOBASE_TOOL_ROOT || process.cwd());
 const viteDevPreferredPort = 5173;
+const isolated = process.env.NOCOBASE_DEV_ISOLATED === 'true';
+const isolatedChildren = new Set();
+const isolatedStartup = new AbortController();
+const isolatedViteEntry = fileURLToPath(
+  new URL('./isolated-vite.mjs', import.meta.url),
+);
 
 const loadEnv = () => loadStandaloneAppEnv({ rootDir });
 
@@ -95,9 +102,14 @@ const spawnDevProcess = (label, command, args, env, options = {}) => {
     pipeViteOutput(child);
   }
 
+  if (isolated) {
+    isolatedChildren.add(child);
+    child.once('close', () => isolatedChildren.delete(child));
+  }
+
   child.once('error', (error) => {
     console.error(`[${label}] failed to start`, error);
-    shutdown(1);
+    shutdown(1, true);
   });
 
   child.once('exit', (code, signal) => {
@@ -106,7 +118,7 @@ const spawnDevProcess = (label, command, args, env, options = {}) => {
     console.error(
       `[${label}] exited unexpectedly; code=${code ?? 'null'} signal=${signal ?? 'null'}`,
     );
-    shutdown(typeof code === 'number' && code !== 0 ? code : 1);
+    shutdown(typeof code === 'number' && code !== 0 ? code : 1, true);
   });
 
   return child;
@@ -120,7 +132,7 @@ let dependencyRestartTimer;
 let instanceLock;
 let connectionProxy;
 
-const shutdown = (exitCode = 0) => {
+const shutdown = (exitCode = 0, terminateChildren = false) => {
   if (shuttingDown) return;
   shuttingDown = true;
   process.exitCode = exitCode;
@@ -140,11 +152,21 @@ const shutdown = (exitCode = 0) => {
 
   // The supervisor owns the complete process group. Exiting the worker starts
   // Execa's graceful termination and bounded escalation for all descendants.
+  if (isolated) {
+    isolatedStartup.abort();
+    if (terminateChildren) {
+      for (const child of isolatedChildren) child.kill('SIGTERM');
+    }
+    // The screenshot controller owns the group. Reap direct children before exiting its leader.
+    if (process.connected) process.disconnect();
+    return;
+  }
   process.exit(exitCode);
 };
 
 process.on('SIGINT', () => shutdown(0));
 process.on('SIGTERM', () => shutdown(0));
+if (isolated) process.on('disconnect', () => shutdown(1, true));
 
 progress('Loading application environment');
 const env = loadEnv();
@@ -157,13 +179,16 @@ progress('Selecting development ports');
 const proxyTarget = parseProxyTarget(env.PROXY_TARGET_URL);
 const viteDevHost = env.APP_VITE_DEV_HOST || '0.0.0.0';
 // In proxy mode Vite is the public app server, so it owns APP_SERVER_PORT.
+const ordinaryPorts = [3000, 4173, 5173, 8000, 8080, 13000, 13100, 14000];
 const configuredVitePort = proxyTarget
   ? numberFromEnv(env.APP_SERVER_PORT, viteDevPreferredPort)
   : viteDevPreferredPort;
-const vitePort = await findAvailablePort({
+const selectPort = isolated ? findEphemeralPort : findAvailablePort;
+const vitePort = await selectPort({
   host: viteDevHost,
   label: 'Vite dev',
   preferredPort: configuredVitePort,
+  ...(isolated ? { excludedPorts: ordinaryPorts } : {}),
 });
 // Resolved once and passed to both children, so the server mounts and Vite serves the same path. The server keeps
 // the only default; an empty value mounts at the origin root, as it does for the server.
@@ -185,18 +210,18 @@ const configuredAppServerPort = numberFromEnv(
 );
 const appServerPort = proxyTarget
   ? undefined
-  : await findAvailablePort({
-      excludedPorts: [vitePort],
+  : await selectPort({
+      excludedPorts: isolated ? [vitePort, ...ordinaryPorts] : [vitePort],
       host: appServerHost,
       label: 'application server',
       preferredPort: configuredAppServerPort,
     });
-if (proxyTarget && vitePort !== configuredVitePort) {
+if (!isolated && proxyTarget && vitePort !== configuredVitePort) {
   console.log(
     `  Vite port ${configuredVitePort} is unavailable; using ${vitePort}.`,
   );
 }
-if (!proxyTarget && appServerPort !== configuredAppServerPort) {
+if (!isolated && !proxyTarget && appServerPort !== configuredAppServerPort) {
   console.log(
     `  App server port ${configuredAppServerPort} is unavailable; using ${appServerPort}.`,
   );
@@ -233,6 +258,7 @@ const runDevHook = (label, command, args) => {
   if (result.status !== 0) process.exit(result.status ?? 1);
 };
 
+if (shuttingDown) process.exit(process.exitCode);
 progress('Running beforeDev hooks');
 runHookStage(readCliHooks().dev, 'beforeDev', runDevHook);
 const pluginWatchIncludes = proxyTarget
@@ -269,14 +295,19 @@ console.log(
   `\n  Starting ${proxyTarget ? 'Vite with remote backend' : 'app dev server'}...`,
 );
 
+if (shuttingDown) process.exit(process.exitCode);
 progress('Starting Vite');
-spawnDevProcess(
-  'client',
-  'vite',
-  ['--host', viteDevHost, '--port', String(vitePort), '--strictPort'],
-  nextEnv,
-  { filterViteStartup: true },
-);
+if (isolated) {
+  spawnDevProcess('client', process.execPath, [isolatedViteEntry], nextEnv);
+} else {
+  spawnDevProcess(
+    'client',
+    'vite',
+    ['--host', viteDevHost, '--port', String(vitePort), '--strictPort'],
+    nextEnv,
+    { filterViteStartup: true },
+  );
+}
 
 // A remote backend owns its lifecycle; do not allocate, start, or watch a local server.
 if (!proxyTarget) {
@@ -309,7 +340,9 @@ if (!proxyTarget) {
     // Asks the server to refresh database/<connection>/collections/ after its startup migrations change a schema.
     // It names this application's root, so other applications a host runs in the same process, which see the same
     // environment, leave their deployed revisions alone. Read by DatabaseProvider in @nocobase/app-server.
-    NOCOBASE_COLLECTIONS_REFRESH: rootDir,
+    ...(isolated
+      ? { TSX_TSCONFIG_PATH: path.join(rootDir, 'tsconfig.server.json') }
+      : { NOCOBASE_COLLECTIONS_REFRESH: rootDir }),
     BETTER_AUTH_TRUSTED_ORIGINS: resolveDevTrustedOrigins(
       nextEnv.BETTER_AUTH_TRUSTED_ORIGINS,
       appServerPort,
@@ -321,11 +354,15 @@ if (!proxyTarget) {
   progress('Starting application server');
   const serverChild = spawnDevProcess(
     'server',
-    'tsx',
+    isolated ? process.execPath : 'tsx',
     [
-      ...(strictStartup ? [] : ['watch']),
-      '--tsconfig',
-      'tsconfig.server.json',
+      ...(isolated
+        ? ['--import', 'tsx']
+        : [
+            ...(strictStartup ? [] : ['watch']),
+            '--tsconfig',
+            'tsconfig.server.json',
+          ]),
       ...(strictStartup
         ? []
         : [
@@ -387,6 +424,7 @@ try {
       waitForHttpReady({
         label: 'Vite dev server',
         url: viteUrl,
+        ...(isolated ? { signal: isolatedStartup.signal } : {}),
       }).then(() => progress('Vite HTTP ready')),
       ...(!proxyTarget
         ? [
@@ -402,6 +440,7 @@ try {
               },
               label: 'Application server',
               url: healthUrl,
+              ...(isolated ? { signal: isolatedStartup.signal } : {}),
             }).then(() => progress('Application HTTP ready')),
           ]
         : []),
@@ -410,8 +449,10 @@ try {
     clearInterval(waiting);
   }
 } catch (error) {
-  console.error(`[dev] ${error instanceof Error ? error.message : error}`);
-  shutdown(1);
+  if (!shuttingDown) {
+    console.error(`[dev] ${error instanceof Error ? error.message : error}`);
+    shutdown(1, true);
+  }
 }
 
 if (!shuttingDown) {
@@ -419,6 +460,7 @@ if (!shuttingDown) {
     `\n  App dev server ready in ${((performance.now() - startedAt) / 1000).toFixed(1)}s`,
   );
   console.log(`  Local:     ${appUrl}`);
+  if (isolated && process.connected) process.send?.({ appUrl, viteUrl });
   if (proxyTarget) console.log(`  Backend:   ${proxyTarget.href}`);
   console.log();
 }

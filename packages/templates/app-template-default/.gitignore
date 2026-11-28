@@ -18,6 +18,7 @@ dist-ssr
 /coverage/
 /playwright-report/
 /test-results/
+/output/screenshots/
 /.pnpm-store/
 /storage/
 # .agents/skills/ is synchronized output; .agents/rules/ is application-owned guidance linked from AGENTS.md.

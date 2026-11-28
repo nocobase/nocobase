@@ -2,8 +2,7 @@ const DEFAULT_INTERVAL_MS = 100;
 const DEFAULT_REQUEST_TIMEOUT_MS = 2_000;
 const DEFAULT_START_TIMEOUT_MS = 120_000;
 
-const delay = (milliseconds) =>
-  new Promise((resolve) => setTimeout(resolve, milliseconds));
+import { setTimeout as delay } from 'node:timers/promises';
 
 const formatError = (error) =>
   error instanceof Error ? error.message : String(error);
@@ -13,6 +12,8 @@ export const waitForHttpReady = async ({
   isReady = (response) => response.ok,
   label,
   requestTimeoutMs = DEFAULT_REQUEST_TIMEOUT_MS,
+  redirect,
+  signal,
   timeoutMs = DEFAULT_START_TIMEOUT_MS,
   url,
 }) => {
@@ -20,9 +21,14 @@ export const waitForHttpReady = async ({
   let lastFailure = 'the endpoint did not return a ready response';
 
   while (Date.now() - startedAt < timeoutMs) {
+    signal?.throwIfAborted();
     try {
+      const requestSignal = AbortSignal.timeout(requestTimeoutMs);
       const response = await fetch(url, {
-        signal: AbortSignal.timeout(requestTimeoutMs),
+        redirect,
+        signal: signal
+          ? AbortSignal.any([signal, requestSignal])
+          : requestSignal,
       });
       const body = await response.text();
 
@@ -37,7 +43,7 @@ export const waitForHttpReady = async ({
 
     const remainingMs = timeoutMs - (Date.now() - startedAt);
     if (remainingMs > 0) {
-      await delay(Math.min(intervalMs, remainingMs));
+      await delay(Math.min(intervalMs, remainingMs), undefined, { signal });
     }
   }
 

@@ -27,6 +27,7 @@ export const DEVELOPMENT_TOPICS: readonly string[] = Object.freeze([
   'dist',
   'package',
   PLUGIN_TOPIC,
+  'screenshot',
   'skills',
   'start',
 ]);
@@ -43,6 +44,7 @@ export const APPLICATION_TOPICS: readonly string[] = Object.freeze([
   'dist',
   'info',
   'locales',
+  'screenshot',
   'secrets',
   'start',
 ]);

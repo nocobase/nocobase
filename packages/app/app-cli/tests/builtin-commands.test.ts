@@ -41,6 +41,7 @@ const EXPECTED_IDS = [
   'plugin:remove',
   'plugin:unregister',
   'plugin:update',
+  'screenshot',
   'secrets:rotate',
   'secrets:status',
   'skills:sync',
