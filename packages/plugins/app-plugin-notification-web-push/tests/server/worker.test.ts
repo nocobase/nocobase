@@ -2,7 +2,55 @@ import { workerSource } from '../../server/worker.js';
 import vm from 'node:vm';
 import { expect, it, vi } from 'vitest';
 
-async function worker() {
+/** A minimal in-memory IndexedDB: enough for the worker's single-store transactions. */
+function memoryIndexedDB() {
+  const databases = new Map<string, Map<string, Map<string, unknown>>>();
+  return {
+    open(name: string) {
+      const request: Record<string, unknown> & {
+        onupgradeneeded?: () => void;
+        onsuccess?: () => void;
+      } = {};
+      queueMicrotask(() => {
+        let stores = databases.get(name);
+        const fresh = !stores;
+        if (!stores) databases.set(name, (stores = new Map()));
+        request.result = {
+          createObjectStore: (store: string) => stores!.set(store, new Map()),
+          close: () => undefined,
+          transaction: (storeName: string) => {
+            const tx: { oncomplete?: () => void; objectStore?: unknown } = {};
+            const store = stores!.get(storeName)!;
+            let pending = 0;
+            const run = (fn: () => unknown) => {
+              const r: { result?: unknown; onsuccess?: () => void } = {};
+              pending++;
+              queueMicrotask(() => {
+                r.result = fn();
+                r.onsuccess?.();
+                if (--pending === 0) queueMicrotask(() => tx.oncomplete?.());
+              });
+              return r;
+            };
+            tx.objectStore = () => ({
+              get: (id: string) => run(() => store.get(id)),
+              put: (value: { id: string }) =>
+                run(() => store.set(value.id, value)),
+              getAll: () => run(() => [...store.values()]),
+              delete: (id: string) => run(() => store.delete(id)),
+            });
+            return tx;
+          },
+        };
+        if (fresh) request.onupgradeneeded?.();
+        request.onsuccess?.();
+      });
+      return request;
+    },
+  };
+}
+
+async function worker(storage?: ReturnType<typeof memoryIndexedDB>) {
   const handlers = new Map<string, (event: unknown) => void>();
   const existing = {
     url: 'https://app.example.test/nested/app/dashboard',
@@ -40,7 +88,7 @@ async function worker() {
   vm.runInNewContext(workerSource({ title: 'Application' }), {
     self,
     URL,
-    indexedDB,
+    indexedDB: storage ?? indexedDB,
   });
   const dispatch = async (kind: string, extra: object) => {
     let complete: Promise<void> | undefined;
@@ -152,4 +200,39 @@ it('sets the app icon badge to the pushed count and clears it at zero', async ()
   await push({ dedupeKey: 'c' });
   expect(f.navigator.setAppBadge).toHaveBeenCalledOnce();
   expect(f.registration.showNotification).toHaveBeenCalledTimes(3);
+});
+
+it('keeps the newest badge when a push read earlier arrives later, and still shows that push', async () => {
+  const f = await worker(memoryIndexedDB());
+  const push = (data: object) =>
+    f.dispatch('push', { data: { json: () => ({ title: 'T', ...data }) } });
+  await push({ dedupeKey: 'a', badge: 2, badgeAt: 1_000 });
+  await push({ dedupeKey: 'b', badge: 0, badgeAt: 3_000 });
+  await push({ dedupeKey: 'late', badge: 4, badgeAt: 2_000 });
+  expect(f.navigator.setAppBadge).toHaveBeenCalledExactlyOnceWith(2);
+  expect(f.navigator.clearAppBadge).toHaveBeenCalledOnce();
+  expect(f.registration.showNotification).toHaveBeenCalledTimes(3);
+  expect(f.registration.showNotification).toHaveBeenLastCalledWith(
+    'T',
+    expect.objectContaining({ tag: 'late' }),
+  );
+  await push({ dedupeKey: 'c', badge: 1, badgeAt: 4_000 });
+  expect(f.navigator.setAppBadge).toHaveBeenLastCalledWith(1);
+});
+
+it('asks open windows to set the badge again after a push sets it', async () => {
+  const f = await worker(memoryIndexedDB());
+  await f.dispatch('push', {
+    data: {
+      json: () => ({ title: 'T', dedupeKey: 'a', badge: 3, badgeAt: 1 }),
+    },
+  });
+  expect(f.clients.matchAll).toHaveBeenCalledWith({ type: 'window' });
+  expect(f.existing.postMessage).toHaveBeenCalledExactlyOnceWith({
+    kind: 'webPush.badge',
+  });
+  await f.dispatch('push', {
+    data: { json: () => ({ title: 'T', dedupeKey: 'b', badge: 5, badgeAt: 0 }) },
+  });
+  expect(f.existing.postMessage).toHaveBeenCalledOnce();
 });

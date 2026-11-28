@@ -60,6 +60,34 @@ function record(data) {
   });
 }
 
+/** Records the badge's read time and answers whether it is not older than the newest badge applied. */
+function newest(data) {
+  const at = Number(data.badgeAt);
+  if (!Number.isFinite(at)) return Promise.resolve(true);
+  return new Promise((resolve) => {
+    const base = new URL(self.registration.scope).pathname;
+    const opening = indexedDB.open(\`nocobase:push-badge:\${base}\`, 1);
+    opening.onupgradeneeded = () =>
+      opening.result.createObjectStore('state', { keyPath: 'id' });
+    opening.onerror = () => resolve(true);
+    opening.onsuccess = () => {
+      const db = opening.result;
+      let apply = true;
+      const tx = db.transaction('state', 'readwrite');
+      const store = tx.objectStore('state');
+      const request = store.get('badge');
+      request.onsuccess = () => {
+        if (request.result && request.result.at > at) apply = false;
+        else store.put({ id: 'badge', at });
+      };
+      tx.oncomplete = tx.onerror = tx.onabort = () => {
+        db.close();
+        resolve(apply);
+      };
+    };
+  });
+}
+
 self.addEventListener('push', (event) => {
   event.waitUntil(
     (async () => {
@@ -70,12 +98,16 @@ self.addEventListener('push', (event) => {
         /* Display a safe fallback. */
       }
       if (data.dedupeKey) await record(data);
-      // The installed app's icon badge follows the count the server sent; browsers without badging ignore it.
-      if (typeof data.badge === 'number')
+      // The installed app's icon badge follows the newest count the server read; browsers without badging ignore it.
+      if (typeof data.badge === 'number' && (await newest(data))) {
         await (data.badge > 0
           ? self.navigator?.setAppBadge?.(data.badge)
           : self.navigator?.clearAppBadge?.()
         )?.catch(() => undefined);
+        // An open page reads the count again and sets it, since a page may have read a newer count than this push.
+        for (const client of await self.clients.matchAll({ type: 'window' }))
+          client.postMessage({ kind: 'webPush.badge' });
+      }
       // WebKit requires a user-visible notification for every Push, including a foreground race.
       await self.registration.showNotification(String(data.title || options.title), {
         tag: String(data.dedupeKey || 'web-push'),

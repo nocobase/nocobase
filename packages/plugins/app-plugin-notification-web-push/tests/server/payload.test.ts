@@ -88,6 +88,17 @@ it('fits the maximum validated JSON into a 4096-byte encrypted aes128gcm request
   expect(details.body?.length).toBe(4096);
 });
 
+it('stamps the badge with the time it was read, or the time the payload is built', () => {
+  expect(
+    pushPayload({ ...message, badge: 2, badgeAt: 1_234 }, '/main'),
+  ).toMatchObject({ badge: 2, badgeAt: 1_234 });
+  const before = Date.now();
+  const stamped = pushPayload({ ...message, badge: 2 }, '/main');
+  expect(stamped.badgeAt).toBeGreaterThanOrEqual(before);
+  expect(stamped.badgeAt).toBeLessThanOrEqual(Date.now());
+  expect(() => service.validateMessage({ ...message, badgeAt: -1 })).toThrow();
+});
+
 it('carries the icon badge count to the worker only when it is a non-negative integer', () => {
   expect(pushPayload({ ...message, badge: 3 }, '/main')).toMatchObject({
     badge: 3,
@@ -96,6 +107,7 @@ it('carries the icon badge count to the worker only when it is a non-negative in
     badge: 0,
   });
   expect(pushPayload(message, '/main')).not.toHaveProperty('badge');
+  expect(pushPayload(message, '/main')).not.toHaveProperty('badgeAt');
   expect(() => service.validateMessage({ ...message, badge: -1 })).toThrow();
   expect(() => service.validateMessage({ ...message, badge: 1.5 })).toThrow();
 });
