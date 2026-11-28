@@ -6,6 +6,8 @@
   },
   "include": [
     "eslint/**/*.ts",
+    "lint/**/*.ts",
+    "oxlint/**/*.ts",
     "prettier/**/*.ts",
     "vite/**/*.ts",
     "vitest/**/*.ts",

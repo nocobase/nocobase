@@ -64,6 +64,7 @@ export function MarkdownView({
   mentionIcon,
 }: MarkdownViewProps): ReactElement {
   let heading = 0;
+  // eslint-disable-next-line react-hooks/immutability -- The markdown renderer consumes this local index in document order.
   const nextId = (): string | undefined => headingIds?.[heading++];
   const components: Components = {
     a: ({

@@ -12,9 +12,13 @@ const FORMATTABLE =
  * single rule, and its configuration loads plugins only it depends on (`docs` lints `.astro` components with
  * `eslint-plugin-astro`), so the binary has to come from there too.
  *
- * Everything under `packages/` is covered by the root configuration and must not be listed.
+ * Packages using the shared root ESLint configuration are grouped by package below.
  */
 const SELF_LINTING_DIRECTORIES = ['docs', 'ui-library'];
+const OXLINT_TEMPLATES = new Set([
+  'packages/templates/app-template-default',
+  'packages/templates/app-template-examples',
+]);
 
 /**
  * ESLint runs once per package rather than once for every staged file.
@@ -64,6 +68,9 @@ export default {
     const formattable = files.filter((file) => FORMATTABLE.test(file));
 
     const commands = groupByPackage(code).map(([key, group]) => {
+      if (OXLINT_TEMPLATES.has(key)) {
+        return `pnpm --dir ${JSON.stringify(key)} lint:fix ${quote(group)}`;
+      }
       const lint = `eslint --fix --no-warn-ignored --max-warnings 0 ${quote(group)}`;
 
       // A self-linting directory needs its own ESLint, resolved from its own node_modules and reading its own

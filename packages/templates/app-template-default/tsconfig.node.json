@@ -5,6 +5,7 @@
   },
   "include": [
     "vite.config.ts",
+    "oxlint.config.ts",
     "cli/**/*.ts",
     "playwright.config.ts",
     "tests/playwright/**/*.ts"

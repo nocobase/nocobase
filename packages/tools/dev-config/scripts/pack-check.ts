@@ -93,6 +93,8 @@ try {
 
   const runtimeEntries: string[] = [
     'eslint/index.js',
+    'oxlint/index.js',
+    'oxlint/eslint-rules.js',
     'prettier/index.js',
     'vitest/node.js',
     'vitest/react.js',
@@ -119,6 +121,7 @@ await run('pnpm', [
   'esm-only',
   '--entrypoints',
   'eslint',
+  'oxlint',
   'prettier',
   'vitest/node',
   'vitest/react',
