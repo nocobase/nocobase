@@ -21,10 +21,10 @@ npx skills@latest add nocobase/skills-v3 --skill '*' -g
 
 ## 1. 创建并启动应用
 
-在用于存放项目的目录中运行下面这条命令，从 npm 的 beta 渠道获取创建工具和默认应用模板，并安装依赖：
+在用于存放项目的目录中运行下面这条命令，从 npm 获取创建工具和默认应用模板，并安装依赖：
 
 ```bash
-PNPM_CONFIG_MINIMUM_RELEASE_AGE=0 pnpm create @nocobase/app@beta northstar-logistics --template-tag=beta
+PNPM_CONFIG_MINIMUM_RELEASE_AGE=0 pnpm create @nocobase/app northstar-logistics
 ```
 
 进入新建的应用目录，初始化配置并启动。本例使用 SQLite，无需另外准备数据库服务：

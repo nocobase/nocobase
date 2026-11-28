@@ -4,7 +4,7 @@ Read this reference when creating a plugin, choosing capability ownership, or ch
 
 ## Scope and ownership
 
-Create the App first, install its dependencies, then create a local plugin from the App root with `pnpm create @nocobase/plugin@beta`. The command invokes `@nocobase/create-plugin`; it creates `packages/app-plugin-<name>/`, includes it in the pnpm workspace, adds an App dependency with `workspace:*`, and installs. Runtime registration is separate. No NocoBase source checkout is needed. For an existing plugin, inspect its manifest, declarations, public exports, tests, and target App composition before adding a capability.
+Create the App first, install its dependencies, then create a local plugin from the App root with `pnpm create @nocobase/plugin`. The command invokes `@nocobase/create-plugin`; it creates `packages/app-plugin-<name>/`, includes it in the pnpm workspace, adds an App dependency with `workspace:*`, and installs. Runtime registration is separate. No NocoBase source checkout is needed. For an existing plugin, inspect its manifest, declarations, public exports, tests, and target App composition before adding a capability.
 
 App-local plugins start with `private: true` and can remain local: the App builds and deploys them with the application. Publish only when sharing and independent versioning require it.
 
@@ -66,7 +66,7 @@ The optional `nocobase.edition` field names the minimum supported edition. Omit 
 Use repeatable `--with`; repeated capabilities are deduplicated. Use `--empty` for only a package foundation. Omitting both is an error. `--with all` is available when all capabilities are actually required; it is not a reason to generate unused modules. Locale capabilities are explicit: selecting Routes or Providers does not create locale resources.
 
 ```bash
-pnpm create @nocobase/plugin@beta audit-log \
+pnpm create @nocobase/plugin audit-log \
   --with client.routes \
   --with client.components \
   --with server.service-providers \

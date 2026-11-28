@@ -83,7 +83,7 @@ The archive is written to storage/exports/dist.tar.gz. Supply the initial admini
 **Local · application project root**
 
 ```bash
-npx --yes @nocobase/app-installer@beta install \
+npx --yes @nocobase/app-installer install \
   --ssh deploy@server.example.com \
   --dir /srv/apps/purchase \
   --archive storage/exports/dist.tar.gz \
@@ -94,7 +94,7 @@ npx --yes @nocobase/app-installer@beta install \
   --json
 ```
 
-The installer uploads the archive, generates configuration, runs migrations, and starts the application. These examples use @beta; pin a tested installer version in CI.
+The installer uploads the archive, generates configuration, runs migrations, and starts the application. These examples use the latest installer; pin a tested installer version in CI.
 
 ### 3. Configure PM2 startup and verify {#pm2-verify}
 
@@ -117,7 +117,7 @@ After configuring HTTPS and the reverse proxy described above, check application
 **Local · application project root**
 
 ```bash
-npx --yes @nocobase/app-installer@beta status \
+npx --yes @nocobase/app-installer status \
   --ssh deploy@server.example.com \
   --dir /srv/apps/purchase --json
 
@@ -134,7 +134,7 @@ Rebuild the archive, check status for unfinished operations, then run the upgrad
 **Local · application project root**
 
 ```bash
-npx --yes @nocobase/app-installer@beta upgrade \
+npx --yes @nocobase/app-installer upgrade \
   --ssh deploy@server.example.com \
   --dir /srv/apps/purchase \
   --archive storage/exports/dist.tar.gz \

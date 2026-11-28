@@ -98,7 +98,7 @@ export function formatHelp(): string {
     ...describeFlags(STATUS_FLAGS),
     '',
     'EXAMPLES',
-    `  $ ${installerCommand('install /srv/nocobase/crm --app @acme/crm@beta --origin https://crm.example.com')}`,
+    `  $ ${installerCommand('install /srv/nocobase/crm --app @acme/crm --origin https://crm.example.com')}`,
     `  $ ${installerCommand('upgrade --dir /srv/nocobase/crm --yes')}`,
     `  $ ${installerCommand('install /srv/nocobase/crm --archive /tmp/crm.tar.gz --origin https://apps.example.com')}`,
     `  $ ${installerCommand('upgrade --dir /srv/nocobase/crm --archive /tmp/crm.tar.gz --yes')}`,

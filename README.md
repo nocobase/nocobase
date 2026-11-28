@@ -62,7 +62,7 @@ Follow the nocobase-create-app Skill to create and start a NocoBase 3 applicatio
 Run the following commands from the parent directory where you keep your projects:
 
 ```bash
-PNPM_CONFIG_MINIMUM_RELEASE_AGE=0 pnpm create @nocobase/app@beta my-app --template-tag=beta
+PNPM_CONFIG_MINIMUM_RELEASE_AGE=0 pnpm create @nocobase/app my-app
 cd my-app
 pnpm nocobase config init --dialect sqlite
 pnpm nocobase config check

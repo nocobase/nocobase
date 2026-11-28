@@ -44,11 +44,11 @@
             },
             {
               "context": "Local · application project root",
-              "code": "npx --yes @nocobase/app-installer@beta install \\\n  --ssh deploy@server.example.com \\\n  --dir /srv/apps/purchase \\\n  --archive storage/exports/dist.tar.gz \\\n  --origin https://purchase.example.com \\\n  --base-path /main \\\n  --port 13000 --name nocobase-purchase \\\n  --set-from-env users.initialAdmin.password=INITIAL_ADMIN_PASSWORD \\\n  --json",
+              "code": "npx --yes @nocobase/app-installer install \\\n  --ssh deploy@server.example.com \\\n  --dir /srv/apps/purchase \\\n  --archive storage/exports/dist.tar.gz \\\n  --origin https://purchase.example.com \\\n  --base-path /main \\\n  --port 13000 --name nocobase-purchase \\\n  --set-from-env users.initialAdmin.password=INITIAL_ADMIN_PASSWORD \\\n  --json",
               "language": "bash"
             },
             {
-              "text": "The installer uploads the archive, generates configuration, runs migrations, and starts the application. These examples use @beta; pin a tested installer version in CI."
+              "text": "The installer uploads the archive, generates configuration, runs migrations, and starts the application. These examples use the latest installer; pin a tested installer version in CI."
             }
           ]
         },
@@ -74,7 +74,7 @@
             },
             {
               "context": "Local · application project root",
-              "code": "npx --yes @nocobase/app-installer@beta status \\\n  --ssh deploy@server.example.com \\\n  --dir /srv/apps/purchase --json\n\ncurl --fail --silent --show-error \\\n  https://purchase.example.com/main/api/healthz",
+              "code": "npx --yes @nocobase/app-installer status \\\n  --ssh deploy@server.example.com \\\n  --dir /srv/apps/purchase --json\n\ncurl --fail --silent --show-error \\\n  https://purchase.example.com/main/api/healthz",
               "language": "bash"
             },
             {
@@ -91,7 +91,7 @@
             },
             {
               "context": "Local · application project root",
-              "code": "npx --yes @nocobase/app-installer@beta upgrade \\\n  --ssh deploy@server.example.com \\\n  --dir /srv/apps/purchase \\\n  --archive storage/exports/dist.tar.gz \\\n  --json",
+              "code": "npx --yes @nocobase/app-installer upgrade \\\n  --ssh deploy@server.example.com \\\n  --dir /srv/apps/purchase \\\n  --archive storage/exports/dist.tar.gz \\\n  --json",
               "language": "bash"
             },
             {
