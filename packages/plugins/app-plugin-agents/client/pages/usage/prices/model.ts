@@ -135,7 +135,36 @@ export function amountText(value: number): string {
     : String(Number(value.toFixed(6)));
 }
 
-/** The (service, model) pairs online agents may use, so the ones priced: each enabled service's models, in order. */
+/** Price every offered kind, grouping a service once and a model once because prices have no kind dimension. */
+export function mergePriceCatalogs(
+  catalogs: readonly ModelCatalog[],
+): ModelCatalog['services'] {
+  const services = new Map<string, ModelCatalog['services'][number]>();
+  for (const catalog of catalogs) {
+    for (const service of catalog.services) {
+      const previous = services.get(service.name);
+      services.set(
+        service.name,
+        previous
+          ? {
+              ...previous,
+              models: [
+                ...new Map(
+                  [...previous.models, ...service.models].map((model) => [
+                    model.value,
+                    model,
+                  ]),
+                ).values(),
+              ],
+            }
+          : service,
+      );
+    }
+  }
+  return [...services.values()];
+}
+
+/** The priced (service, model) pairs from all offered kinds, in catalog order. */
 export function onlinePairs(services: ModelCatalog['services']): {
   readonly service: ModelCatalog['services'][number];
   readonly models: string[];
