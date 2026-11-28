@@ -489,13 +489,11 @@ describe('reporting service', () => {
     const bySubject = await h.services.reporting.usage(ALL, {
       groupBy: 'subject',
     });
-    expect(bySubject.rows.find((row) => row.key === 'sample:1')).toMatchObject(
-      {
-        runs: 2,
-        inputTokens: byModel.totals.inputTokens,
-        cacheWriteTokens: byModel.totals.cacheWriteTokens,
-      },
-    );
+    expect(bySubject.rows.find((row) => row.key === 'sample:1')).toMatchObject({
+      runs: 2,
+      inputTokens: byModel.totals.inputTokens,
+      cacheWriteTokens: byModel.totals.cacheWriteTokens,
+    });
     // Each person's subjects count only the runs that person woke.
     const bobs = await h.services.reporting.usage(ALL, {
       groupBy: 'subject',
@@ -513,6 +511,150 @@ describe('reporting service', () => {
       { headers: { 'x-test-user': 'carol' } },
     );
     expect(response.status).toBe(400);
+  });
+
+  it('reports one subject over its whole life unless a start is asked', async () => {
+    h = await createHarness();
+    const agentId = await h.createAgent();
+    const runner = await h.registerRunner();
+    await h.enqueue(agentId, '1', { actorUserId: 'alice' });
+    await complete(runner, [
+      {
+        tool: 'claude',
+        model: 'claude-sonnet-4-5',
+        inputTokens: 1_000,
+        outputTokens: 100,
+        cacheReadTokens: 10,
+        cacheWriteTokens: 1,
+      },
+    ]);
+    const firstDay = h.clock.now().toISOString().slice(0, 10);
+    h.clock.advance(400 * 24 * 3600 * 1000);
+    await h.enqueue(agentId, '1', { actorUserId: 'bob' });
+    await complete(runner, [
+      {
+        tool: 'claude',
+        model: 'unpriced-model',
+        inputTokens: 2_000,
+        outputTokens: 200,
+        cacheReadTokens: 20,
+        cacheWriteTokens: 2,
+      },
+    ]);
+    const subject = { subjectKind: 'sample', subjectId: '1' };
+    const life = await h.services.reporting.usage(ALL, {
+      groupBy: 'model',
+      ...subject,
+    });
+    expect(life.from).toBe(firstDay);
+    expect(life.totals).toMatchObject({
+      runs: 2,
+      inputTokens: 3_000,
+      outputTokens: 300,
+      cacheReadTokens: 30,
+      cacheWriteTokens: 3,
+      pricedRuns: 0,
+    });
+    expect(life.unpricedModels).toEqual([
+      'claude-sonnet-4-5 (claude)',
+      'unpriced-model (claude)',
+    ]);
+    // A start asked keeps the report's limit; the last 30 days hold the later run only.
+    const recent = await h.services.reporting.usage(ALL, {
+      groupBy: 'model',
+      ...subject,
+      from: h.clock.now().toISOString().slice(0, 10),
+    });
+    expect(recent.rows.map((row) => row.key)).toEqual(['unpriced-model']);
+    const all = await h.services.reporting.usage(ALL, { groupBy: 'subject' });
+    expect(all.totals.runs).toBe(1);
+  });
+
+  it('names no subject the caller may no longer see, but keeps their totals', async () => {
+    h = await createHarness();
+    h.services.subjects.register({
+      kind: 'doc',
+      context: h.services.subjects.get('sample')!.context,
+      // As Studio's issues: a member removed from a project keeps the runs they woke, not the issue.
+      visibleSubjects: (_conn, userId) =>
+        Promise.resolve(
+          userId === 'carol'
+            ? null
+            : (eb, column) => eb(column, '!=', 'revoked'),
+        ),
+      reports: {
+        describe(_conn, userId, ids) {
+          return Promise.resolve(
+            new Map(
+              ids.map((id) => [
+                id,
+                {
+                  label: `DOC-${id}`,
+                  visible: id !== 'revoked' || userId === 'carol',
+                  group: { id: `g-${id}`, name: `Group ${id}` },
+                },
+              ]),
+            ),
+          );
+        },
+      },
+    });
+    const agentId = await h.createAgent();
+    const runner = await h.registerRunner();
+    for (const id of ['open', 'revoked']) {
+      await h.services.runs.enqueue({
+        agentId,
+        subject: { kind: 'doc', id },
+        actorUserId: 'bob',
+        input: {
+          type: 'comment',
+          actor: { kind: 'user', id: 'bob', name: 'Bob' },
+          text: 'Go.',
+        },
+      });
+      await complete(runner, [
+        { tool: 'claude', model: 'm', inputTokens: 10, outputTokens: 1 },
+      ]);
+    }
+    for (const allRuns of [true, false]) {
+      const bob: ReportCaller = { userId: 'bob', allRuns };
+      const people = await h.services.reporting.usage(bob, {
+        groupBy: 'person',
+      });
+      expect(people.rows.map((row) => [row.key, row.runs])).toEqual([
+        ['bob', 2],
+      ]);
+      const subjects = await h.services.reporting.usage(bob, {
+        groupBy: 'subject',
+        userId: 'bob',
+      });
+      expect(subjects.rows.map((row) => [row.key, row.name, row.runs])).toEqual(
+        [
+          ['doc:open', 'DOC-open', 1],
+          ['', null, 1],
+        ],
+      );
+      const groups = await h.services.reporting.usage(bob, {
+        groupBy: 'group',
+      });
+      expect(groups.rows.map((row) => [row.key, row.name]).sort()).toEqual([
+        ['', null],
+        ['g-open', 'Group open'],
+      ]);
+      const revoked = await h.services.reporting.usage(bob, {
+        groupBy: 'model',
+        subjectKind: 'doc',
+        subjectId: 'revoked',
+      });
+      expect(revoked.rows).toEqual([]);
+      expect(revoked.totals.runs).toBe(0);
+    }
+    const carol = await h.services.reporting.usage(ALL, {
+      groupBy: 'model',
+      subjectKind: 'doc',
+      subjectId: 'revoked',
+    });
+    expect(carol.totals.runs).toBe(1);
   });
 
   it('lets the application’s usage policy decide who sees every run', async () => {

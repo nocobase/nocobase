@@ -173,6 +173,8 @@ export interface ReportRange {
   readonly start: Date;
   /** Exclusive: the day after `to`. */
   readonly end: Date;
+  /** No start was asked and none applies: every day up to `to` (one subject's report). */
+  readonly unbounded?: boolean;
 }
 
 const DAY_PATTERN = /^\d{4}-\d{2}-\d{2}$/u;
@@ -192,9 +194,12 @@ function day(value: string | undefined, name: string): string | null {
 export function reportRange(
   query: { readonly from?: string; readonly to?: string },
   now: Date,
+  options: { readonly unbounded?: boolean } = {},
 ): ReportRange {
   const to = day(query.to, 'to') ?? now.toISOString().slice(0, 10);
   const end = new Date(Date.parse(`${to}T00:00:00Z`) + DAY_MS);
+  if (options.unbounded && !day(query.from, 'from'))
+    return { from: '1970-01-01', to, start: new Date(0), end, unbounded: true };
   const from =
     day(query.from, 'from') ??
     new Date(end.getTime() - DEFAULT_REPORT_DAYS * DAY_MS)
@@ -476,7 +481,9 @@ export function createReportService(deps: {
       }
       case 'subject':
         return new Map(
-          keys.map((key) => [key, facts.get(key)?.label ?? key] as const),
+          keys
+            .filter(Boolean)
+            .map((key) => [key, facts.get(key)?.label ?? key] as const),
         );
       case 'type':
         // `online` and `runner` are words the application's pages translate; no name of the server's.
@@ -505,17 +512,35 @@ export function createReportService(deps: {
       const groupBy = query.groupBy ?? 'agent';
       if (!USAGE_GROUP_BYS.includes(groupBy))
         throw invalid(`groupBy must be one of ${USAGE_GROUP_BYS.join(', ')}.`);
-      const range = reportRange(query, deps.clock.now());
+      const subject =
+        query.subjectKind && query.subjectId
+          ? { kind: query.subjectKind, id: query.subjectId }
+          : null;
+      // One subject's report covers its whole life unless a start is asked: it is never more than that subject's runs.
+      const range = reportRange(query, deps.clock.now(), {
+        unbounded: subject !== null,
+      });
       const conn = deps.tx.read();
-      const { records, facts } = await usageRecords(conn, caller, range, {
+      const read = await usageRecords(conn, caller, range, {
         groupId: query.groupId ?? null,
         agentId: query.agentId ?? null,
         userId: query.userId ?? null,
-        subject:
-          query.subjectKind && query.subjectId
-            ? { kind: query.subjectKind, id: query.subjectId }
-            : null,
+        subject,
       });
+      const { facts } = read;
+      // A caller counts the runs they woke or own even on a subject they may no longer see (`runVisibility`), so their
+      // totals stay whole; what identifies such a subject (its row, its label, its group) is left out, and a report of
+      // that one subject is empty.
+      const shown = (record: UsageRecord): boolean =>
+        facts.get(`${record.subjectKind}:${record.subjectId}`)?.visible ===
+        true;
+      const records = subject
+        ? read.records.filter(shown)
+        : read.records.map((record) =>
+            shown(record)
+              ? record
+              : { ...record, subjectKind: '', subjectId: '', groupId: null },
+          );
       const prices = await listPrices(conn);
       const online = await deps.includeOnlineUsage();
       const first = aggregateUsage(
@@ -536,9 +561,16 @@ export function createReportService(deps: {
         facts,
       );
       return {
-        from: range.from,
         to: range.to,
         groupBy,
+        from:
+          range.unbounded && !query.from
+            ? (records.reduce<string | null>(
+                (first, record) =>
+                  first === null || record.day < first ? record.day : first,
+                null,
+              ) ?? range.to)
+            : range.from,
         rows: first.rows.map((row) => ({
           ...row,
           name: names.get(row.key) ?? null,
