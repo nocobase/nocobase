@@ -137,7 +137,7 @@ import {
   VariableValueSchema,
   VocabularySchema,
   AuditListQuery,
-  ModelUsageQuery,
+  UsageRangeQuery,
   PreviewBriefQuery,
   RunEventsQuery,
   RunAgentsQuery,
@@ -1862,6 +1862,39 @@ export function createAdminRoutes(
     },
   );
 
+  router.get(
+    '/usage/groups',
+    scoped,
+    describeRoute({
+      tags,
+      summary: 'List visible groups with run usage',
+      operationId: 'agentsListUsageGroups',
+      ...cliRoute(false),
+      description:
+        'The filter options for the usage report. Lists the caller’s visible groups with run usage in the selected UTC date range, using the same run permissions as the report.',
+      responses: {
+        200: dataResponse(
+          z.array(z.object({ id: z.string(), name: z.string() })),
+        ),
+        400: apiErrorResponse(
+          400,
+          'The UTC date range is invalid (INVALID_ARGUMENT).',
+        ),
+        ...apiErrorResponses,
+      },
+    }),
+    apiValidator('query', UsageRangeQuery),
+    async (context) => {
+      const who = caller(context);
+      return context.json({
+        data: await services.reporting.usageGroups(
+          { userId: who.userId, allRuns: await usageOfAll(who) },
+          context.req.valid('query'),
+        ),
+      });
+    },
+  );
+
   // Model use outside runs, including native online agent turns.
   router.get(
     '/usage/models',
@@ -1882,7 +1915,7 @@ export function createAdminRoutes(
         ...apiErrorResponses,
       },
     }),
-    apiValidator('query', ModelUsageQuery),
+    apiValidator('query', UsageRangeQuery),
     async (context) => {
       const who = caller(context);
       const range = Object.fromEntries(

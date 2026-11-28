@@ -202,13 +202,8 @@ function Toolbar({
   const { t } = useTranslation();
   const api = useAgentsApi();
   const groups = useQuery({
-    queryKey: agentsKeys.usage({
-      from: params.from,
-      to: params.to,
-      groupBy: 'group',
-    }),
-    queryFn: () =>
-      api.usage({ from: params.from, to: params.to, groupBy: 'group' }),
+    queryKey: agentsKeys.usageGroups(params.from, params.to),
+    queryFn: () => api.usageGroups({ from: params.from, to: params.to }),
   });
   const agents = useQuery({
     queryKey: agentsKeys.agentNames,
@@ -235,9 +230,7 @@ function Toolbar({
       <OptionSelect
         label={groupTitle}
         allLabel={t('usage.filters.allGroups', { group: groupTitle })}
-        options={(groups.data?.rows ?? [])
-          .filter((row) => row.key)
-          .map((row) => ({ id: row.key, name: row.name ?? row.key }))}
+        options={groups.data ?? []}
         value={params.groupId}
         onChange={(value) => update({ group: value })}
       />

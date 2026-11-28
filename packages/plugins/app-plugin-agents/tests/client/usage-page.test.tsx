@@ -71,10 +71,7 @@ function report(groupBy: UsageReport['groupBy']): UsageReport {
   };
 }
 
-const usageCalls = () =>
-  callsTo('GET', 'agents/usage').filter(
-    (call) => call.query.groupBy !== 'group',
-  );
+const usageCalls = () => callsTo('GET', 'agents/usage');
 
 describe('Agent management › Usage', () => {
   beforeEach(() => {
@@ -83,6 +80,7 @@ describe('Agent management › Usage', () => {
       'agents/usage': (request) =>
         report(request.query.groupBy as UsageReport['groupBy']),
       'agents/models': () => [],
+      'agents/usage/groups': () => [{ id: 'p1', name: 'Project one' }],
       'agents/usage/models': () => ({ from: DAY, to: DAY, rows: [] }),
       'agents/vocabulary': () => ({ subjects: [], sources: [], scopes: [] }),
       agents: () => [],
@@ -119,6 +117,8 @@ describe('Agent management › Usage', () => {
     renderRoute(<UsagePage />, '/usage', '/usage');
     expect(await screen.findByText('usage.chart.title')).toBeInTheDocument();
     expect(await screen.findByRole('link', { name: 'A1' })).toBeVisible();
+    expect(usageCalls()).toHaveLength(1);
+    expect(callsTo('GET', 'agents/usage/groups')).toHaveLength(1);
     expect(usageCalls()[0]?.query).toMatchObject({
       groupBy: 'agent',
       series: true,
@@ -158,7 +158,14 @@ describe('Agent management › Usage', () => {
       screen.getByRole('button', { name: 'usage.presets.last7' }),
     );
     const week = presetRange('last7');
-    await waitFor(() => expect(usageCalls().at(-1)?.query).toMatchObject(week));
+    await waitFor(() => {
+      expect(usageCalls().at(-1)?.query).toMatchObject(week);
+      expect(callsTo('GET', 'agents/usage/groups').at(-1)?.query).toMatchObject(
+        week,
+      );
+    });
+    expect(usageCalls()).toHaveLength(2);
+    expect(callsTo('GET', 'agents/usage/groups')).toHaveLength(2);
     expect(screen.queryByRole('grid')).toBeNull();
   });
 
@@ -192,6 +199,7 @@ describe('Agent management › Usage', () => {
         totals: row('total', { durationMs: 0 }),
       }),
       'agents/models': () => [],
+      'agents/usage/groups': () => [{ id: 'p1', name: 'Project one' }],
       'agents/usage/models': () => ({ from: DAY, to: DAY, rows: [] }),
       'agents/vocabulary': () => ({ subjects: [], sources: [], scopes: [] }),
       agents: () => [],
@@ -211,6 +219,7 @@ describe('Agent management › Usage', () => {
         daily: [],
       }),
       'agents/models': () => [{ name: 'local' }],
+      'agents/usage/groups': () => [{ id: 'p1', name: 'Project one' }],
       'agents/usage/models': () => ({
         from: DAY,
         to: DAY,

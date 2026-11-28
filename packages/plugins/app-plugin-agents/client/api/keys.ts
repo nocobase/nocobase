@@ -27,6 +27,10 @@ export const agentsKeys: {
   readonly usage: (
     query: UsageQuery,
   ) => readonly ['agents', 'usage', UsageQuery];
+  readonly usageGroups: (
+    from: string,
+    to: string,
+  ) => readonly ['agents', 'usage', 'groups', string, string];
   readonly modelUsage: (
     from: string,
     to: string,
@@ -94,6 +98,7 @@ export const agentsKeys: {
   providerModels: (service) => ['agents', 'provider-models', service],
   vocabulary: ['agents', 'vocabulary'],
   usage: (query) => ['agents', 'usage', query],
+  usageGroups: (from, to) => ['agents', 'usage', 'groups', from, to],
   modelUsage: (from, to) => ['agents', 'usage', 'models', from, to],
   runners: ['agents', 'runners'],
   runnerRuns: (runnerId) => ['agents', 'runners', 'runs', runnerId],

@@ -333,6 +333,13 @@ export class AgentsApi {
     return this.get('usage', { ...query });
   }
 
+  public usageGroups(query: {
+    readonly from?: string;
+    readonly to?: string;
+  }): Promise<AgentName[]> {
+    return this.get('usage/groups', { ...query });
+  }
+
   /** What model calls outside runs used (`MODEL_USAGE_ROUTE`); needs the usage page's grant. */
   public modelUsage(query: {
     readonly from?: string;

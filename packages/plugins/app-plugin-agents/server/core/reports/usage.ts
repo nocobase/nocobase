@@ -18,6 +18,7 @@ import {
   type UsageSeriesPoint,
 } from '../../../shared/reports.js';
 import { costOf } from './prices.js';
+import type { RunBucket, SourceBucket, TokenBucket } from './usage-query.js';
 
 export interface UsageRecord {
   readonly runId: string;
@@ -45,9 +46,7 @@ export interface UsageRecord {
   readonly reasoningTokens: number;
 }
 
-interface Accumulator {
-  readonly runs: Map<string, number>;
-  readonly unpriced: Set<string>;
+interface TokenTotals {
   inputTokens: number;
   outputTokens: number;
   cacheReadTokens: number;
@@ -56,10 +55,8 @@ interface Accumulator {
   readonly cost: Map<string, number>;
 }
 
-function accumulator(): Accumulator {
+function tokenTotals(): TokenTotals {
   return {
-    runs: new Map(),
-    unpriced: new Set(),
     inputTokens: 0,
     outputTokens: 0,
     cacheReadTokens: 0,
@@ -69,12 +66,22 @@ function accumulator(): Accumulator {
   };
 }
 
-function add(
-  acc: Accumulator,
-  record: UsageRecord,
+interface Accumulator extends TokenTotals {
+  readonly runs: Map<string, number>;
+  readonly unpriced: Set<string>;
+}
+
+function accumulator(): Accumulator {
+  return { ...tokenTotals(), runs: new Map(), unpriced: new Set() };
+}
+
+type TokenCounts = Omit<TokenTotals, 'cost'>;
+
+function addTokens(
+  acc: TokenTotals,
+  record: TokenCounts,
   price: ModelPrice | null,
 ): void {
-  acc.runs.set(record.runId, record.durationMs);
   acc.inputTokens += record.inputTokens;
   acc.outputTokens += record.outputTokens;
   acc.cacheReadTokens += record.cacheReadTokens;
@@ -85,7 +92,12 @@ function add(
       price.currency,
       (acc.cost.get(price.currency) ?? 0) + costOf(price, record),
     );
-  else acc.unpriced.add(record.runId);
+}
+
+function add(acc: Accumulator, record: UsageRecord, price: ModelPrice | null) {
+  acc.runs.set(record.runId, record.durationMs);
+  if (!price) acc.unpriced.add(record.runId);
+  addTokens(acc, record, price);
 }
 
 /** Amounts rounded to a millionth, or null when nothing was priced. */
@@ -160,7 +172,7 @@ export interface AggregatedUsage {
   readonly unpricedModels: string[];
 }
 
-const tokensAndCost = (acc: Accumulator): Omit<UsageSeriesPoint, 'key'> => ({
+const tokensAndCost = (acc: TokenTotals): Omit<UsageSeriesPoint, 'key'> => ({
   inputTokens: acc.inputTokens,
   outputTokens: acc.outputTokens,
   cacheReadTokens: acc.cacheReadTokens,
@@ -209,31 +221,194 @@ export function aggregateUsage(
   const rows = [...groups].map(([key, acc]) =>
     toRow(key, names.get(key) ?? null, acc),
   );
+  const daily = orderUsage(groupBy, rows, days, series ? dayGroups : null);
+  return {
+    rows,
+    totals: toRow('total', null, total),
+    daily,
+    unpricedModels: [...unpricedModels].sort(),
+  };
+}
+
+function orderUsage(
+  groupBy: UsageGroupBy,
+  rows: UsageRow[],
+  days: ReadonlyMap<string, TokenTotals>,
+  dayGroups: ReadonlyMap<string, ReadonlyMap<string, TokenTotals>> | null,
+): UsagePoint[] {
+  const series = dayGroups !== null;
   rows.sort((a, b) =>
     groupBy === 'day'
       ? a.key.localeCompare(b.key)
       : firstCost(b) - firstCost(a) || tokensOf(b) - tokensOf(a),
   );
-  const daily = [...days]
+  return [...days]
     .sort(([a], [b]) => a.localeCompare(b))
     .map(([day, acc]): UsagePoint => {
       const point = { day, ...tokensAndCost(acc) };
       if (!series) return point;
-      const byKey = dayGroups.get(day) ?? new Map<string, Accumulator>();
+      const byKey = dayGroups?.get(day) ?? new Map<string, TokenTotals>();
       return {
         ...point,
         series: rows
           .filter((row) => byKey.has(row.key))
           .map((row) => ({
             key: row.key,
-            ...tokensAndCost(byKey.get(row.key) ?? accumulator()),
+            ...tokensAndCost(byKey.get(row.key) ?? tokenTotals()),
           })),
       };
     });
+}
+
+const stringOrNull = (value: string | null): string | null =>
+  value === null ? null : String(value);
+
+function sourceOf(row: SourceBucket): SourceBucket {
+  return {
+    tool: String(row.tool),
+    model_service: stringOrNull(row.model_service),
+    model: stringOrNull(row.model),
+  };
+}
+
+interface BucketPrices {
+  readonly of: (row: SourceBucket) => ModelPrice | null;
+  readonly unpriced: readonly SourceBucket[];
+  readonly allUnpriced: boolean;
+  readonly unpricedModels: string[];
+}
+
+export function priceBuckets(
+  rows: readonly TokenBucket[],
+  book: PriceBook,
+): BucketPrices {
+  const combinations = new Map<
+    string,
+    { source: SourceBucket; price: ModelPrice | null }
+  >();
+  const prices = new Map<string, ModelPrice | null>();
+  const unpricedModels = new Set<string>();
+  for (const row of rows) {
+    const source = sourceOf(row);
+    const key = JSON.stringify(source);
+    if (combinations.has(key)) continue;
+    const usageSource = { ...source, modelService: source.model_service };
+    const label = sourceLabel(usageSource);
+    // The detail report resolves the first occurrence of every display source in usage-ID order.
+    if (!prices.has(label)) prices.set(label, priceFor(book, usageSource));
+    const price = prices.get(label) ?? null;
+    combinations.set(key, { source, price });
+    if (!price) unpricedModels.add(source.model ? label : '');
+  }
+  const unpriced = [...combinations.values()]
+    .filter(({ price }) => !price)
+    .map(({ source }) => source);
+  return {
+    of: (row: SourceBucket) =>
+      combinations.get(JSON.stringify(sourceOf(row)))?.price ?? null,
+    unpriced,
+    allUnpriced: unpriced.length === combinations.size,
+    unpricedModels: [...unpricedModels].sort(),
+  };
+}
+
+type RunTotals = Pick<UsageRow, 'runs' | 'durationMs' | 'pricedRuns'>;
+
+function runTotals(rows: readonly RunBucket[]): RunTotals {
+  let runs = 0;
+  let durationMs = 0;
+  let unpriced = 0;
+  for (const row of rows) {
+    runs += Number(row.runs);
+    durationMs += Number(row.duration);
+    unpriced += Number(row.unpriced_runs);
+  }
+  return { runs, durationMs, pricedRuns: runs - unpriced };
+}
+
+function totalsFor(map: Map<string, TokenTotals>, key: string): TokenTotals {
+  const found = map.get(key);
+  if (found) return found;
+  const entry = tokenTotals();
+  map.set(key, entry);
+  return entry;
+}
+
+function counts(row: TokenBucket): TokenCounts {
+  return {
+    inputTokens: Number(row.input_tokens),
+    outputTokens: Number(row.output_tokens),
+    cacheReadTokens: Number(row.cache_read_tokens),
+    cacheWriteTokens: Number(row.cache_write_tokens),
+    reasoningTokens: Number(row.reasoning_tokens),
+  };
+}
+
+/** Merge SQL buckets after subject names, visibility and price rules have been resolved. */
+export function mergeUsageBuckets(options: {
+  readonly groupBy: UsageGroupBy;
+  readonly tokens: readonly TokenBucket[];
+  readonly daily: readonly TokenBucket[];
+  readonly runs: readonly RunBucket[];
+  readonly totalRuns: readonly RunBucket[];
+  readonly price: BucketPrices;
+  readonly keyOf: (row: TokenBucket | RunBucket) => string;
+  readonly series: boolean;
+}): AggregatedUsage {
+  const groups = new Map<string, TokenTotals>();
+  const days = new Map<string, TokenTotals>();
+  const dayGroups = new Map<string, Map<string, TokenTotals>>();
+  const total = tokenTotals();
+  for (const row of options.tokens) {
+    const key = options.keyOf(row);
+    const price = options.price.of(row);
+    const tokens = counts(row);
+    addTokens(totalsFor(groups, key), tokens, price);
+    addTokens(total, tokens, price);
+    if (options.series && row.utc_day) {
+      const byKey = dayGroups.get(row.utc_day) ?? new Map();
+      dayGroups.set(row.utc_day, byKey);
+      addTokens(totalsFor(byKey, key), tokens, price);
+    }
+  }
+  for (const row of options.daily) {
+    if (row.utc_day)
+      addTokens(
+        totalsFor(days, row.utc_day),
+        counts(row),
+        options.price.of(row),
+      );
+  }
+  const groupRuns = new Map<string, RunBucket[]>();
+  for (const row of options.runs) {
+    const key = options.keyOf(row);
+    const group = groupRuns.get(key) ?? [];
+    group.push(row);
+    groupRuns.set(key, group);
+  }
+  const rowOf = (
+    key: string,
+    tokens: TokenTotals,
+    runs: readonly RunBucket[],
+  ): UsageRow => ({
+    key,
+    name: null,
+    ...tokensAndCost(tokens),
+    reasoningTokens: tokens.reasoningTokens,
+    ...runTotals(runs),
+  });
+  const rows = [...groups].map(([key, tokens]) =>
+    rowOf(key, tokens, groupRuns.get(key) ?? []),
+  );
   return {
     rows,
-    totals: toRow('total', null, total),
-    daily,
-    unpricedModels: [...unpricedModels].sort(),
+    daily: orderUsage(
+      options.groupBy,
+      rows,
+      days,
+      options.series ? dayGroups : null,
+    ),
+    totals: rowOf('total', total, options.totalRuns),
+    unpricedModels: options.price.unpricedModels,
   };
 }
