@@ -366,7 +366,7 @@ export function mergeUsageBuckets(options: {
     addTokens(totalsFor(groups, key), tokens, price);
     addTokens(total, tokens, price);
     if (options.series && row.utc_day) {
-      const byKey = dayGroups.get(row.utc_day) ?? new Map();
+      const byKey = dayGroups.get(row.utc_day) ?? new Map<string, TokenTotals>();
       dayGroups.set(row.utc_day, byKey);
       addTokens(totalsFor(byKey, key), tokens, price);
     }
