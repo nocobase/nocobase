@@ -69,7 +69,7 @@ export default {
 
     const commands = groupByPackage(code).map(([key, group]) => {
       if (OXLINT_TEMPLATES.has(key)) {
-        return `pnpm --dir ${JSON.stringify(key)} lint:fix ${quote(group)}`;
+        return `pnpm --dir ${JSON.stringify(key)} lint:fix --no-error-on-unmatched-pattern ${quote(group)}`;
       }
       const lint = `eslint --fix --no-warn-ignored --max-warnings 0 ${quote(group)}`;
 
