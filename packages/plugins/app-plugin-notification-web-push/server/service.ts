@@ -1,4 +1,8 @@
-import { nextBadgeVersion } from './badge.js';
+import {
+  createBadgeVersions,
+  nextBadgeVersion,
+  type BadgeCounter,
+} from './badge.js';
 import { randomUUID } from 'node:crypto';
 import { resolveSupportedLocale, type I18nRuntime } from '@nocobase/i18n';
 import locales from './locales/index.js';
@@ -31,7 +35,7 @@ export interface WebPushMessage extends PushDeliveryOptions {
   /** The count the installed app's icon badge shows once this push arrives; 0 clears it. */
   badge?: number;
   /**
-   * The version of `badge` from `nextBadgeVersion()`, taken before the count was read; the worker ignores a badge older
+   * The version of `badge` from `WebPushService.badgeVersion()`, taken before the count was read; the worker ignores a badge older
    * than the newest a push or page applied, so a late push cannot restore an older count. Defaults to a version taken
    * when the payload is built.
    */
@@ -77,6 +81,8 @@ export interface WebPushDependencies {
   base: string;
   channel?: string;
   i18n?: I18nRuntime;
+  /** The application's caching counter, so badge versions taken on different instances sort. */
+  badgeCounter?: BadgeCounter;
 }
 /** Constrain even malformed/absolute click URLs to the application's path; the worker rechecks origin. */
 export function pushTarget(value: string, base: string): string {
@@ -138,6 +144,11 @@ export interface WebPushService {
   validateMessage(input: unknown): WebPushMessage;
   beforeSend(name: string, hook: BeforePush): () => void;
   afterSubscribe(name: string, hook: AfterSubscribe): () => void;
+  /**
+   * A version for the person's icon badge count, taken before reading the count. A page or push carrying a count with
+   * it overrides only counts with lower versions, also those read on other instances in the same millisecond.
+   */
+  badgeVersion(userId: string): Promise<number>;
   subscribe(userId: string, input: SubscriptionInputValue): Promise<Device>;
   test(userId: string, id: string): Promise<void>;
   deliver(
@@ -169,8 +180,10 @@ export function createWebPushService(
   const hooks = new Map<string, BeforePush>();
   const subscribed = new Map<string, AfterSubscribe>();
   const testing = new Map<string, number>();
+  const badgeVersions = createBadgeVersions(deps.badgeCounter);
   return {
     subscriptions: deps.subscriptions,
+    badgeVersion: badgeVersions,
     validateMessage(input: unknown): WebPushMessage {
       const message = PushMessage.parse(input);
       return { ...message, ...pushPayload(message, deps.base) };

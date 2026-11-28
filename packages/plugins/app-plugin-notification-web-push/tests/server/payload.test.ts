@@ -6,7 +6,11 @@ import {
   MAX_WEB_PUSH_PAYLOAD_BYTES,
   pushPayload,
 } from '../../server/service.js';
-import { nextBadgeVersion } from '../../server/badge.js';
+import {
+  createBadgeVersions,
+  nextBadgeVersion,
+} from '../../server/badge.js';
+import { MemoryCounter } from '@nocobase/caching';
 
 const message = {
   to: [{ id: 'device', userId: 'alice' }],
@@ -113,6 +117,36 @@ it('gives reads in the same millisecond distinct, increasing badge versions', ()
   } finally {
     vi.useRealTimers();
   }
+});
+
+it('orders badge versions taken on instances sharing a counter, also in the same millisecond', async () => {
+  vi.useFakeTimers({ now: 1_800_000_000_000 });
+  try {
+    const counter = new MemoryCounter({ namespace: 'badge', maxSize: 100 });
+    const first = createBadgeVersions(counter);
+    const second = createBadgeVersions(counter);
+    const versions = [
+      await first('alice'),
+      await second('alice'),
+      await first('alice'),
+      await second('alice'),
+    ];
+    expect([...new Set(versions)].sort((a, b) => a - b)).toEqual(versions);
+    // The first in a millisecond takes its start; the next millisecond outranks every version of this one.
+    expect(versions[0]).toBe(1_800_000_000_000_000);
+    expect(await createBadgeVersions(counter)('bob')).toBe(versions[0]);
+    vi.setSystemTime(1_800_000_000_001);
+    expect(await second('alice')).toBeGreaterThan(versions.at(-1)!);
+  } finally {
+    vi.useRealTimers();
+  }
+});
+
+it('takes process-local badge versions without a counter', async () => {
+  const versions = createBadgeVersions();
+  const a = await versions('alice');
+  expect(await versions('alice')).toBeGreaterThan(a);
+  expect(nextBadgeVersion()).toBeGreaterThan(a);
 });
 
 it('carries the icon badge count to the worker only when it is a non-negative integer', () => {
