@@ -737,6 +737,85 @@ describe('reporting service', () => {
     expect(carol.totals.runs).toBe(1);
   });
 
+  it('names a private subject to the people of its runs and to no one else', async () => {
+    h = await createHarness();
+    h.services.subjects.register({
+      kind: 'chat',
+      private: true,
+      context: h.services.subjects.get('sample')!.context,
+    });
+    // A bounded kind beside it, as Studio's issues, so the report reads the bound.
+    h.services.subjects.register({
+      kind: 'doc',
+      context: h.services.subjects.get('sample')!.context,
+      visibleSubjects: (_conn, userId) =>
+        Promise.resolve(
+          userId === 'carol'
+            ? null
+            : (eb, column) => eb(column, '!=', 'revoked'),
+        ),
+    });
+    const agentId = await h.createAgent();
+    const runner = await h.registerRunner();
+    for (const [kind, id, actor] of [
+      ['chat', 'mine', 'bob'],
+      ['chat', 'theirs', 'dave'],
+      ['doc', 'revoked', 'bob'],
+    ] as const) {
+      await h.services.runs.enqueue({
+        agentId,
+        subject: { kind, id },
+        actorUserId: actor,
+        input: {
+          type: 'comment',
+          actor: { kind: 'user', id: actor, name: actor },
+          text: 'Go.',
+        },
+      });
+      await complete(runner, [
+        { tool: 'claude', model: 'm', inputTokens: 10, outputTokens: 1 },
+      ]);
+    }
+    for (const allRuns of [true, false]) {
+      const bob: ReportCaller = { userId: 'bob', allRuns };
+      const subjects = await h.services.reporting.usage(bob, {
+        groupBy: 'subject',
+      });
+      // Bob's own conversation by name; the issue he lost, unnamed; Dave's conversation, not at all.
+      expect(subjects.rows.map((row) => [row.key, row.runs])).toEqual([
+        ['chat:mine', 1],
+        ['', 1],
+      ]);
+      const mine = await h.services.reporting.usage(bob, {
+        groupBy: 'model',
+        subjectKind: 'chat',
+        subjectId: 'mine',
+      });
+      expect(mine.totals.runs).toBe(1);
+      const theirs = await h.services.reporting.usage(bob, {
+        groupBy: 'model',
+        subjectKind: 'chat',
+        subjectId: 'theirs',
+      });
+      expect(theirs.totals.runs).toBe(0);
+      const revoked = await h.services.reporting.usage(bob, {
+        groupBy: 'model',
+        subjectKind: 'doc',
+        subjectId: 'revoked',
+      });
+      expect(revoked.totals.runs).toBe(0);
+      const people = await h.services.reporting.usage(bob, {
+        groupBy: 'person',
+      });
+      expect(people.rows.map((row) => [row.key, row.runs])).toEqual([
+        ['bob', 2],
+      ]);
+    }
+    // Someone who sees every run still never sees another person's conversation.
+    const carol = await h.services.reporting.usage(ALL, { groupBy: 'subject' });
+    expect(carol.rows.map((row) => row.key)).toEqual(['doc:revoked']);
+  });
+
   it('lets the application’s usage policy decide who sees every run', async () => {
     // As Studio does: every run only for a reader of both usage and agents.
     h = await createHarness({

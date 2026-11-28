@@ -442,9 +442,13 @@ export function createReportService(deps: {
         : null;
     // What identifies a subject the caller may not see now (it, its group) is left out of the records, and a group
     // filter matches only the groups the caller sees, so asking for that group never counts it either.
+    // A private kind's counted runs are all the caller's own (`runVisibility` keeps no one else's), and its people see
+    // its subjects, so they stay named; its bound only keeps other people's runs out.
     const shown = (run: ReportRunRow): boolean =>
       facts.get(`${run.subjectKind}:${run.subjectId}`)?.visible === true &&
-      (inside === null || inside.has(run.id));
+      (inside === null ||
+        inside.has(run.id) ||
+        deps.subjects.get(run.subjectKind)?.private === true);
     const groupOf = (run: ReportRunRow) =>
       shown(run)
         ? (facts.get(`${run.subjectKind}:${run.subjectId}`)?.group?.id ?? null)
