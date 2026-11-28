@@ -70,6 +70,12 @@ self.addEventListener('push', (event) => {
         /* Display a safe fallback. */
       }
       if (data.dedupeKey) await record(data);
+      // The installed app's icon badge follows the count the server sent; browsers without badging ignore it.
+      if (typeof data.badge === 'number')
+        await (data.badge > 0
+          ? self.navigator?.setAppBadge?.(data.badge)
+          : self.navigator?.clearAppBadge?.()
+        )?.catch(() => undefined);
       // WebKit requires a user-visible notification for every Push, including a foreground race.
       await self.registration.showNotification(String(data.title || options.title), {
         tag: String(data.dedupeKey || 'web-push'),

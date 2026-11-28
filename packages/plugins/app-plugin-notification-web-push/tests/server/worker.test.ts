@@ -19,7 +19,12 @@ async function worker() {
     scope: 'https://app.example.test/nested/app/',
     showNotification: vi.fn(async () => undefined),
   };
+  const navigator = {
+    setAppBadge: vi.fn(async (_count: number) => undefined),
+    clearAppBadge: vi.fn(async () => undefined),
+  };
   const self = {
+    navigator,
     registration,
     clients,
     addEventListener: (name: string, handler: (event: unknown) => void) =>
@@ -47,7 +52,7 @@ async function worker() {
     });
     await complete;
   };
-  return { dispatch, existing, clients, registration };
+  return { dispatch, existing, clients, registration, navigator };
 }
 
 it('always displays an incoming push, including with a visible window, as WebKit requires', async () => {
@@ -134,4 +139,17 @@ it('opens the target when no app window is running', async () => {
   expect(f.clients.openWindow).toHaveBeenCalledExactlyOnceWith(
     'https://app.example.test/nested/app/tasks/1',
   );
+});
+
+it('sets the app icon badge to the pushed count and clears it at zero', async () => {
+  const f = await worker();
+  const push = (data: object) =>
+    f.dispatch('push', { data: { json: () => ({ title: 'T', ...data }) } });
+  await push({ dedupeKey: 'a', badge: 4 });
+  expect(f.navigator.setAppBadge).toHaveBeenCalledExactlyOnceWith(4);
+  await push({ dedupeKey: 'b', badge: 0 });
+  expect(f.navigator.clearAppBadge).toHaveBeenCalledOnce();
+  await push({ dedupeKey: 'c' });
+  expect(f.navigator.setAppBadge).toHaveBeenCalledOnce();
+  expect(f.registration.showNotification).toHaveBeenCalledTimes(3);
 });

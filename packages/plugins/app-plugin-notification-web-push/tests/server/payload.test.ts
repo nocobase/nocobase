@@ -87,3 +87,15 @@ it('fits the maximum validated JSON into a 4096-byte encrypted aes128gcm request
   );
   expect(details.body?.length).toBe(4096);
 });
+
+it('carries the icon badge count to the worker only when it is a non-negative integer', () => {
+  expect(pushPayload({ ...message, badge: 3 }, '/main')).toMatchObject({
+    badge: 3,
+  });
+  expect(pushPayload({ ...message, badge: 0 }, '/main')).toMatchObject({
+    badge: 0,
+  });
+  expect(pushPayload(message, '/main')).not.toHaveProperty('badge');
+  expect(() => service.validateMessage({ ...message, badge: -1 })).toThrow();
+  expect(() => service.validateMessage({ ...message, badge: 1.5 })).toThrow();
+});
