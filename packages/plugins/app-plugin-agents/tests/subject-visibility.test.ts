@@ -318,14 +318,114 @@ it('keeps list and statistics visibility reads constant as the dataset grows', a
     before.map((sql) => sql.length),
   );
   expect(before[0]!.length).toBeLessThanOrEqual(5);
-  // Usage reads its records with their runs and whether each run's subject is inside its kind's bound now (so
-  // subjects the reader may no longer see go unnamed) in one read, then run facts, prices, subscriptions and agent
-  // names: six fixed reads.
-  expect(before[1]).toHaveLength(6);
+  // Usage reads its records, then their runs with whether each run's subject is inside its kind's bound now (so
+  // subjects the reader may no longer see go unnamed), then run facts, prices, subscriptions and agent names: seven
+  // fixed reads.
+  expect(before[1]).toHaveLength(7);
   const usageReads = after[1]!.filter((sql) => /ag_run_usage/iu.test(sql));
   expect(usageReads).toHaveLength(1);
-  // The runs come from the usage rows themselves, never from a scan of every usage record in the range.
-  expect(usageReads[0]).not.toMatch(/\(\s*select[^)]*ag_run_usage/iu);
+  expect(runReads(after[1]!)).toHaveLength(1);
+  // The runs come by the ids the usage named, never from a scan of every usage record in the range.
+  expect(after[1]!.join('\n')).not.toMatch(/\(\s*select[^)]*ag_run_usage/iu);
+});
+
+/** The reads of a usage report's runs by id. */
+const runReads = (sql: readonly string[]) =>
+  sql.filter((text) =>
+    /from `?"?ag_runs`?"? as `?"?run`?"? where `?"?run`?"?\.`?"?id`?"? in/iu.test(
+      text,
+    ),
+  );
+
+it('reads a usage report’s runs once each, in batches of ids, however many usage records they have', async () => {
+  h = await createHarness();
+  const sample = h.services.subjects.get('sample')!;
+  h.services.subjects.register({
+    ...sample,
+    kind: 'measured',
+    // As Studio's issues, the bound reads other tables through `exists`; subject 3 is outside it.
+    visibleSubjects: async () => (eb, column) =>
+      eb.and([
+        eb(column, '!=', '3'),
+        eb.exists(
+          eb
+            .selectFrom('agAgents as agent')
+            .select('agent.id')
+            .where('agent.id', 'is not', null),
+        ),
+      ]),
+  });
+  const conn = h.database.connection();
+  const client = await conn.client<Knex>();
+  const agentId = await h.createAgent();
+  for (let i = 0; i < 5; i++) {
+    const id = await h.enqueue(agentId, String(i), { actorUserId: 'bob' });
+    await conn.query
+      .updateTable('agRuns')
+      .set({ subjectKind: 'measured' })
+      .where('id', '=', id)
+      .execute();
+    for (const part of [0, 1])
+      await conn.repository('agRunUsage').createOne({
+        values: {
+          id: `usage-${i}-${part}`,
+          runId: id,
+          tool: 'claude',
+          modelService: null,
+          model: `m${part}`,
+          inputTokens: 1,
+          outputTokens: 0,
+          cacheReadTokens: 0,
+          cacheWriteTokens: 0,
+          reasoningTokens: 0,
+          createdAt: h.clock.now().toISOString(),
+        },
+      });
+  }
+  const read = async () => {
+    const sql: string[] = [];
+    const listener = (query: { sql: string }) => sql.push(query.sql);
+    client.on('query', listener);
+    try {
+      // Bob woke every run, so he counts the one outside the bound too, unnamed.
+      const report = await h.services.reporting.usage(
+        { userId: 'bob', allRuns: true },
+        { groupBy: 'subject' },
+      );
+      return { report, sql };
+    } finally {
+      client.removeListener('query', listener);
+    }
+  };
+  const whole = await read();
+  expect(runReads(whole.sql)).toHaveLength(1);
+  const { usageReadLimits } =
+    await import('../server/core/reports/report.service.js');
+  const runBatch = usageReadLimits.runBatch;
+  usageReadLimits.runBatch = 2;
+  try {
+    const batched = await read();
+    // Five runs, ten usage records: three reads of two ids at most, each run once.
+    const reads = runReads(batched.sql);
+    expect(reads).toHaveLength(3);
+    expect(
+      batched.sql.filter((sql) => /ag_run_usage/iu.test(sql)),
+    ).toHaveLength(1);
+    expect(batched.report).toEqual(whole.report);
+  } finally {
+    usageReadLimits.runBatch = runBatch;
+  }
+  // Bob sees four subjects by name; the one outside the bound is one unnamed row.
+  expect(
+    whole.report.rows.map((row) => [row.key, row.runs, row.inputTokens]).sort(),
+  ).toEqual([
+    ['', 1, 2],
+    ['measured:0', 1, 2],
+    ['measured:1', 1, 2],
+    ['measured:2', 1, 2],
+    ['measured:4', 1, 2],
+  ]);
+  expect(whole.report.totals).toMatchObject({ runs: 5, inputTokens: 10 });
 });
 
 it('keeps private sessions participant-only even for unrestricted readers and pages past them', async () => {

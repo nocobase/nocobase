@@ -94,9 +94,11 @@ const USAGE_RUN_COLUMNS = [
 
 type Row = Record<string, unknown>;
 
-/** A run's column read beside its usage, under a name of its own. */
-const runAlias = (column: string) =>
-  `run${column[0].toUpperCase()}${column.slice(1)}`;
+/**
+ * How many run ids one read of a usage report's runs binds, well under every supported database's parameter limit
+ * (SQLite's oldest default is 999) with room for the visibility bound's own parameters. Tests lower it.
+ */
+export const usageReadLimits = { runBatch: 500 };
 
 const text = (value: unknown): string =>
   typeof value === 'string'
@@ -335,8 +337,8 @@ export function createReportService(deps: {
   }
 
   /**
-   * The usage reported in the range of the runs the caller counts, in one read whatever its size: the usage, joined
-   * to the runs it was reported for.
+   * The usage reported in the range of the runs the caller counts, in two reads whatever its size: the usage, and the
+   * runs it was reported for (in batches of `usageReadLimits.runBatch` ids).
    */
   async function usageRecords(
     conn: DatabaseConnection,
@@ -371,14 +373,13 @@ export function createReportService(deps: {
           .where('run.subjectId', '=', filter.subject.id) as Q;
       return scoped;
     };
-    // One read whatever its size: the usage with the run it was reported for and, when a kind bounds who sees its
-    // subjects, whether the run's subject is inside that bound now (`insideId`, null outside it). The caller counts
-    // the runs they woke or own even on subjects they may no longer see (`runVisibility`).
+    // The usage of the runs the caller counts, in one read. The caller counts the runs they woke or own even on
+    // subjects they may no longer see (`runVisibility`).
     const usage = await ofRuns(
       conn.query
         .selectFrom('agRunUsage as usage')
         .innerJoin('agRuns as run', 'run.id', 'usage.runId')
-        .select((eb) => [
+        .select([
           'usage.runId as runId',
           'usage.tool as tool',
           'usage.modelService as modelService',
@@ -389,9 +390,23 @@ export function createReportService(deps: {
           'usage.cacheWriteTokens as cacheWriteTokens',
           'usage.reasoningTokens as reasoningTokens',
           'usage.createdAt as createdAt',
-          ...USAGE_RUN_COLUMNS.filter((column) => column !== 'id').map(
-            (column) => `run.${column} as ${runAlias(column)}`,
-          ),
+        ])
+        .where('usage.createdAt', '>=', range.start)
+        .where('usage.createdAt', '<', range.end)
+        .orderBy('usage.id'),
+    ).execute<Row>();
+    // Each of those runs once, however many usage records it has, by the ids the usage named (one read unless they
+    // exceed a batch) and, when a kind bounds who sees its subjects, whether the run's subject is inside that bound now
+    // (`insideId`, null outside it), worked out once per run.
+    const ids = [...new Set(usage.map((row) => text(row.runId)))];
+    const runs: ReportRunRow[] = [];
+    const inside = bounds ? new Set<string>() : null;
+    for (let at = 0; at < ids.length; at += usageReadLimits.runBatch) {
+      const batch = ids.slice(at, at + usageReadLimits.runBatch);
+      const rows = await conn.query
+        .selectFrom('agRuns as run')
+        .select((eb) => [
+          ...USAGE_RUN_COLUMNS.map((column) => `run.${column} as ${column}`),
           ...(bounds
             ? [
                 eb
@@ -403,27 +418,15 @@ export function createReportService(deps: {
               ]
             : []),
         ])
-        .where('usage.createdAt', '>=', range.start)
-        .where('usage.createdAt', '<', range.end)
-        .orderBy('usage.id'),
-    ).execute<Row>();
-    // Each run once, however many usage records it has.
-    const byRun = new Map<string, ReportRunRow>();
-    const inside = bounds ? new Set<string>() : null;
-    for (const row of usage) {
-      const run = runRow(
-        Object.fromEntries(
-          USAGE_RUN_COLUMNS.map((column) => [
-            column,
-            column === 'id' ? row.runId : row[runAlias(column)],
-          ]),
-        ),
-      );
-      if (!byRun.has(run.id)) byRun.set(run.id, run);
-      if (inside && row.insideId !== null && row.insideId !== undefined)
-        inside.add(run.id);
+        .where('run.id', 'in', batch)
+        .execute<Row>();
+      for (const row of rows) {
+        const run = runRow(row);
+        runs.push(run);
+        if (inside && row.insideId !== null && row.insideId !== undefined)
+          inside.add(run.id);
+      }
     }
-    const runs = [...byRun.values()];
     const { runs: counted, facts } = await countable(conn, caller, runs, null);
     // What identifies a subject the caller may not see now (it, its group) is left out of the records, and a group
     // filter matches only the groups the caller sees, so asking for that group never counts it either.
