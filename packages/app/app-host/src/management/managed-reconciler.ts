@@ -34,6 +34,8 @@ import { fullErrorMessage } from '../errors.ts';
 import path from 'node:path';
 import { randomUUID } from 'node:crypto';
 import {
+  access,
+  lstat,
   mkdir,
   readFile,
   readdir,
@@ -42,6 +44,7 @@ import {
   writeFile,
 } from 'node:fs/promises';
 import { readHostRuntime } from './runtime.ts';
+import { HostManagementError } from './scopes.ts';
 import type {
   ApplyDeploymentSetResult,
   HostDeploymentSet,
@@ -570,33 +573,65 @@ export class ManagedReconciler {
    */
   removeDeployment(
     appId: string,
-    options: { readonly purgeData?: boolean } = {},
+    options: {
+      readonly purgeData?: boolean;
+      readonly keepBackups?: boolean;
+      readonly scopeId?: string;
+      readonly backend?: ServiceBackend | null;
+    } = {},
   ): Promise<HostStatus> {
     return this.enqueue(async () => {
       if (!/^[a-zA-Z0-9_-]+$/.test(appId)) throw new Error('Invalid app ID');
       const purgeData = options.purgeData !== false;
+      const keepBackups = options.keepBackups === true;
       const revision = this.nextRevision();
       const status = [...this.statuses.values()].find(
         (candidate) => candidate.appId === appId,
       );
       const definition = this.definitionForDisposal(appId);
+      const backend = keepBackups
+        ? (options.backend ??
+          (definition && this.serviceBackend(definition.backend)))
+        : null;
+      const scopeId = options.scopeId ?? this.specs.get(appId)?.scope?.id;
+      if (backend && (!backend.disposeKeepingBackups || !scopeId))
+        throw new HostManagementError(
+          'This backend cannot keep backups when purging an App',
+          'BACKUP_RETENTION_UNSUPPORTED',
+        );
       await this.registry.unregister(appId, {
         reason: status
           ? `deployment ${status.id} removed`
           : `app ${appId} removed`,
       });
-      if (definition) await this.disposeService(definition, purgeData);
+      if (keepBackups) {
+        // A recoverable failure must keep the spec that identifies the backend's resources.
+        if (scopeId) await backend?.disposeKeepingBackups?.(appId, scopeId);
+      } else if (definition) await this.disposeService(definition, purgeData);
+      const remove = { recursive: true, force: true };
+      const volume = path.join(this.volumes.volumesDir, appId);
+      if (purgeData && keepBackups) {
+        const info = await lstat(volume).catch(
+          (error: NodeJS.ErrnoException) => {
+            if (error.code === 'ENOENT') return undefined;
+            throw error;
+          },
+        );
+        if (info && !info.isDirectory())
+          throw new Error('Invalid App volume directory');
+        const entries = await readdir(volume).catch(
+          (error: NodeJS.ErrnoException) => {
+            if (error.code === 'ENOENT') return [];
+            throw error;
+          },
+        );
+        for (const entry of entries) {
+          if (entry !== 'backups') await rm(path.join(volume, entry), remove);
+        }
+      } else if (purgeData) await rm(volume, remove);
+      await rm(path.join(this.deploymentsDir, appId), remove);
       if (status) this.statuses.delete(status.id);
       this.specs.delete(appId);
-      await rm(path.join(this.deploymentsDir, appId), {
-        recursive: true,
-        force: true,
-      });
-      if (purgeData)
-        await rm(path.join(this.volumes.volumesDir, appId), {
-          recursive: true,
-          force: true,
-        });
       this.reconciledRevision = revision;
       return this.getStatus();
     });
@@ -639,6 +674,115 @@ export class ManagedReconciler {
       this.reconciledRevision = revision;
       return this.getStatus();
     });
+  }
+
+  /**
+   * The definition an App's command-line tool runs with for a spec, without registering or starting anything: an
+   * in-process App's release expanded here (reused when it is), its configuration file written and its data
+   * directory; an external service's definition as its backend runs it. Queued behind deployments, so a release is
+   * never pruned or replaced while it is prepared.
+   */
+  commandDefinition(
+    spec: HostDeploymentSpec,
+    options: {
+      /**
+       * Which configuration file the command runs with. By default the spec's, written where the App's deployment
+       * reads it. `current`: the one the App runs with now, as deployed or published since (`publishAppConfig`), which
+       * a backup has to read its databases from.
+       */
+      readonly config?: 'current';
+    } = {},
+  ): Promise<AppDefinition> {
+    return this.enqueue(async () => {
+      validateDeploymentSet({ revision: 1, deployments: [spec] });
+      const configPath =
+        options.config === 'current'
+          ? ((await this.currentConfig(spec)) ??
+            (await this.prepareConfig(spec)))
+          : await this.prepareConfig(spec);
+      return await this.definitionFor(spec, configPath);
+    });
+  }
+
+  /**
+   * The definition to check a restore with before the App stops: the spec's inline configuration is written to a
+   * file of its own rather than where the running App reads it, so a refused restore never changes that. `dispose`
+   * removes that file and nothing else; it is already removed when preparing the definition fails.
+   */
+  preflightDefinition(spec: HostDeploymentSpec): Promise<{
+    readonly definition: AppDefinition;
+    readonly dispose: () => Promise<void>;
+  }> {
+    return this.enqueue(async () => {
+      validateDeploymentSet({ revision: 1, deployments: [spec] });
+      const isolated =
+        spec.config?.content !== undefined
+          ? await this.volumes.writeIsolatedConfig(
+              spec.appId,
+              spec.config.content,
+            )
+          : undefined;
+      const dispose = async (): Promise<void> => {
+        if (isolated) await rm(isolated, { force: true });
+      };
+      try {
+        const definition = await this.definitionFor(
+          spec,
+          isolated ?? (await this.prepareConfig(spec)),
+        );
+        return { definition, dispose };
+      } catch (error) {
+        await dispose();
+        throw error;
+      }
+    });
+  }
+
+  private async definitionFor(
+    spec: HostDeploymentSpec,
+    configPath: string | undefined,
+  ): Promise<AppDefinition> {
+    if (spec.backend !== 'in-process')
+      return this.serviceDefinition(spec, configPath);
+    const artifact = await this.artifactResolver
+      .restore(spec.artifact)
+      .catch(() => this.artifactResolver.resolve(spec.artifact));
+    return {
+      ...artifact.definition,
+      id: spec.appId,
+      appName: spec.appId,
+      backend: spec.backend,
+      isolation: spec.backend,
+      dataDir: await this.volumes.prepareStorageDir(spec.appId),
+      configPath,
+      env: spec.env ? { ...spec.env } : undefined,
+    };
+  }
+
+  /** The configuration file an App runs with now, when the Host keeps one: published content survives here. */
+  private async currentConfig(
+    spec: HostDeploymentSpec,
+  ): Promise<string | undefined> {
+    const registered = this.registry.definition(spec.appId)?.configPath;
+    if (registered) return registered;
+    if (spec.config?.content === undefined) return undefined;
+    const written = this.volumes.managedConfigPath(
+      spec.appId,
+      spec.config.revision ?? spec.id,
+    );
+    return (await access(written).then(
+      () => true,
+      () => false,
+    ))
+      ? written
+      : undefined;
+  }
+
+  /** Stops an App before its data is restored; an App this Host does not run is left alone. */
+  stopForRestore(appId: string): Promise<void> {
+    if (![...this.statuses.values()].some((status) => status.appId === appId))
+      return Promise.resolve();
+    return this.stopDeployment(appId).then(() => undefined);
   }
 
   /** The spec an App was last deployed or restored with. */

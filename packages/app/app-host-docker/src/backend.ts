@@ -19,15 +19,19 @@
  * Everything the backend creates carries labels naming the scope, so it finds its resources again after a restart
  * and never touches containers it did not create.
  */
-import { createHash } from 'node:crypto';
+import { createHash, randomUUID } from 'node:crypto';
 import { readFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 
 import {
+  HostManagementError,
   deploymentLog,
   type AppActivationRequest,
+  type AppCommandOutput,
+  type AppCommandRunner,
   type AppDefinition,
+  type BackupArchiveLocation,
   type HostBackendCapabilities,
   type HostDeploymentStatus,
   type HostScopeCheck,
@@ -72,7 +76,8 @@ export const DOCKER_BACKEND_CAPABILITIES: HostBackendCapabilities = {
   onDemand: true,
   rollout: 'start-first',
   images: true,
-  backup: false,
+  backup: true,
+  keepBackupsOnPurge: true,
   logs: true,
   urlModes: ['path', 'subdomain'],
 };
@@ -363,22 +368,40 @@ export class DockerBackend implements ServiceBackend {
     return container.State.Running ? 'running' : 'stopped';
   }
 
-  async dispose(
+  dispose(
     definition: AppDefinition,
     options: { readonly purgeData: boolean },
   ): Promise<void> {
-    assertAppId(definition.id);
-    const service = serviceOptions(definition);
-    const scope = this.scope(service.scope);
+    return this.disposeApp(
+      definition.id,
+      serviceOptions(definition).scope,
+      options.purgeData,
+      false,
+    );
+  }
+
+  disposeKeepingBackups(appId: string, scopeId: string): Promise<void> {
+    return this.disposeApp(appId, scopeId, true, true);
+  }
+
+  private async disposeApp(
+    appId: string,
+    scopeId: string,
+    purgeData: boolean,
+    keepBackups: boolean,
+  ): Promise<void> {
+    assertAppId(appId);
+    const scope = this.scope(scopeId);
     const { docker, names } = scope;
-    await this.locked(definition.id, async () => {
+    await this.locked(appId, async () => {
       for (const container of await docker.listContainers(
-        names.selector('app', definition.id),
+        names.selector('app', appId),
       ))
         await docker.removeContainer(container.Id);
-      if (!options.purgeData) return;
-      await docker.removeVolume(names.volume(definition.id));
-      for (const image of await this.appImages(scope, definition.id))
+      if (!purgeData) return;
+      await docker.removeVolume(names.volume(appId));
+      if (!keepBackups) await docker.removeVolume(names.backupVolume(appId));
+      for (const image of await this.appImages(scope, appId))
         for (const reference of image.RepoTags?.length
           ? image.RepoTags
           : [image.Id])
@@ -401,6 +424,219 @@ export class DockerBackend implements ServiceBackend {
     const scope = this.scope(service.scope);
     const container = await this.current(scope, definition.id);
     return await containerLogPage(scope.docker, container?.Id ?? null, query);
+  }
+
+  /**
+   * Runs the App's command-line tool in one-off containers of the definition's image, with the App's storage volume,
+   * its backup volume (`backupsPath`), network, environment and configuration file, as the App's own container has
+   * them. Each run's container is removed once it exits.
+   */
+  async commandRunner(definition: AppDefinition): Promise<AppCommandRunner> {
+    assertAppId(definition.id);
+    const service = serviceOptions(definition);
+    const scope = this.scope(service.scope);
+    const config = this.settings;
+    const { docker, names } = scope;
+    await this.ensureInfrastructure(scope, definition.id);
+    await docker.ensureVolume(
+      names.backupVolume(definition.id),
+      names.labels('app', { [LABEL.app]: definition.id }),
+    );
+    const target = imageTargetOf(definition);
+    const image = await this.ensureImage(scope, config, target);
+    // The image this platform runs, which is what a backup was taken with; not the first of the release's list.
+    const platform = await this.targetPlatform(docker, config);
+    const selected = target.images.find((item) => item.platform === platform)!;
+    const env: Record<string, string> = {
+      ...definition.env,
+      NODE_ENV: 'production',
+      ...(service.configFile ? { APP_CONFIG_FILE: config.configPath } : {}),
+    };
+    const run = async (cmd: readonly string[]): Promise<AppCommandOutput> => {
+      // A command a previous Host process left running would race this one on the same archive.
+      for (const container of await docker.listContainers(
+        names.selector('command', definition.id),
+      ))
+        await docker.removeContainer(container.Id);
+      const id = await docker.createContainer(
+        names.commandContainer(definition.id, randomUUID().slice(0, 8)),
+        {
+          Image: image,
+          Cmd: [...cmd],
+          Env: Object.entries(env).map(([key, value]) => `${key}=${value}`),
+          Labels: names.labels('command', { [LABEL.app]: definition.id }),
+          HostConfig: {
+            Mounts: [
+              {
+                Type: 'volume',
+                Source: names.volume(definition.id),
+                Target: config.storagePath,
+              },
+              {
+                Type: 'volume',
+                Source: names.backupVolume(definition.id),
+                Target: config.backupsPath,
+              },
+            ],
+            NetworkMode: names.network(),
+            Init: true,
+            CapDrop: ['ALL'],
+            SecurityOpt: ['no-new-privileges'],
+          },
+          NetworkingConfig: { EndpointsConfig: { [names.network()]: {} } },
+        },
+        config.image.platform,
+      );
+      try {
+        await this.copyConfig(docker, id, definition, config);
+        await docker.startContainer(id);
+        const exitCode = await docker.waitContainer(id);
+        const lines = await docker.logs(id, {});
+        const text = (stream: 'stdout' | 'stderr'): string =>
+          lines
+            .filter((line) => line.stream === stream)
+            .map((line) => line.text)
+            .join('\n');
+        return { exitCode, stdout: text('stdout'), stderr: text('stderr') };
+      } finally {
+        await docker.removeContainer(id).catch(() => undefined);
+      }
+    };
+    return {
+      backupsDir: config.backupsPath,
+      release: selected.digest,
+      location: {
+        backend: this.name,
+        scope: service.scope,
+        image,
+        reference: `${selected.ref}@${selected.digest}`,
+        platform: selected.platform,
+      },
+      run: async (args) => {
+        const output = await run(['node', 'dist/cli/index.js', ...args]);
+        if (
+          output.exitCode !== 0 &&
+          /Cannot find module '[^']*dist\/cli\/index\.js'/.test(output.stderr)
+        )
+          throw new HostManagementError(
+            `The image of App "${definition.id}" has no command-line tool (dist/cli/index.js); rebuild it with an @nocobase/app-cli that has the backup commands`,
+            'BACKUP_COMMAND_UNAVAILABLE',
+          );
+        return output;
+      },
+      removeBackupFile: async (name) => {
+        const output = await run(removeCommand(config, name));
+        if (output.exitCode !== 0)
+          throw new Error(
+            `Could not remove backup ${name}: ${output.stderr.trim().slice(-500)}`,
+          );
+      },
+    };
+  }
+
+  /**
+   * Removes an archive from an App's backup volume in a one-off container of the image that wrote it, with only that
+   * volume mounted and no network: what deletes a backup once the App was removed with its data kept. A volume that
+   * is gone took the archive with it.
+   */
+  async removeBackupArchive(
+    location: BackupArchiveLocation,
+    appId: string,
+    name: string,
+  ): Promise<void> {
+    assertAppId(appId);
+    const {
+      scope: scopeId,
+      image: written,
+      reference,
+      platform,
+    } = location as {
+      scope?: unknown;
+      image?: unknown;
+      reference?: unknown;
+      platform?: unknown;
+    };
+    if (typeof scopeId !== 'string' || typeof written !== 'string')
+      throw new Error(
+        `Backup ${name} of App "${appId}" has no Docker location`,
+      );
+    const scope = this.scope(scopeId);
+    const { docker, names } = scope;
+    const volume = names.backupVolume(appId);
+    if (!(await docker.volumeExists(volume))) return;
+    // Any of the App's own release images can remove a file; the one that wrote it may have been pruned since. With
+    // none left, the writing image is pulled again by digest for the removal and dropped afterwards.
+    let image = (await docker.imageExists(written))
+      ? written
+      : (await this.appImages(scope, appId))
+          .flatMap((record) => record.RepoTags ?? [])
+          .find((tag) => tag.startsWith(`${names.imageRepository(appId)}:d-`));
+    let pulled = false;
+    if (!image) {
+      if (typeof reference !== 'string')
+        throw new HostManagementError(
+          `Backup ${name} of App "${appId}" cannot be removed: no image of the App is left on this Docker host`,
+          'BACKEND_UNAVAILABLE',
+        );
+      await docker.pullImage(
+        reference,
+        typeof platform === 'string' ? platform : null,
+        scope.secret.registryAuth,
+      );
+      image = reference;
+      pulled = true;
+    }
+    try {
+      await this.removeArchive(scope, appId, image, name);
+    } finally {
+      if (pulled) await docker.removeImage(image).catch(() => undefined);
+    }
+  }
+
+  /** Removes one archive from an App's backup volume in a one-off container of `image`. */
+  private async removeArchive(
+    scope: BoundScope,
+    appId: string,
+    image: string,
+    name: string,
+  ): Promise<void> {
+    const { docker, names } = scope;
+    const config = this.settings;
+    const volume = names.backupVolume(appId);
+    const id = await docker.createContainer(
+      names.commandContainer(appId, randomUUID().slice(0, 8)),
+      {
+        Image: image,
+        Cmd: removeCommand(config, name),
+        Labels: names.labels('command', { [LABEL.app]: appId }),
+        HostConfig: {
+          Mounts: [
+            { Type: 'volume', Source: volume, Target: config.backupsPath },
+          ],
+          NetworkMode: 'none',
+          Init: true,
+          CapDrop: ['ALL'],
+          SecurityOpt: ['no-new-privileges'],
+        },
+      },
+      config.image.platform,
+    );
+    try {
+      await docker.startContainer(id);
+      const exitCode = await docker.waitContainer(id);
+      if (exitCode !== 0) {
+        const lines = await docker.logs(id, {});
+        throw new Error(
+          `Could not remove backup ${name} of App "${appId}": ${lines
+            .map((line) => line.text)
+            .join('\n')
+            .trim()
+            .slice(-500)}`,
+        );
+      }
+    } finally {
+      await docker.removeContainer(id).catch(() => undefined);
+    }
   }
 
   // ---- containers -----------------------------------------------------------------------------------------------
@@ -846,6 +1082,16 @@ export class DockerBackend implements ServiceBackend {
       if (this.locks.get(appId) === settled) this.locks.delete(appId);
     }
   }
+}
+
+/** Removes one archive of the backups directory by name; an absent one is fine. */
+function removeCommand(config: DockerSettings, name: string): string[] {
+  return [
+    'node',
+    '-e',
+    'require("node:fs").rmSync(process.argv[1], { force: true })',
+    path.posix.join(config.backupsPath, path.posix.basename(name)),
+  ];
 }
 
 function imageTargetOf(definition: AppDefinition): ImageTarget {

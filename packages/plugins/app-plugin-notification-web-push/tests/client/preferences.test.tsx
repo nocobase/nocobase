@@ -12,12 +12,14 @@ import {
   createTestI18nRuntime,
   TestI18nProvider,
 } from '@nocobase/i18n/testing';
+import { ApiClientError } from '@nocobase/app-client';
 import webPushEn from '../../client/locales/en-US.js';
 import { PushPreferences } from '../../client/components/preferences.js';
 import { deviceKey } from '../../client/browser.js';
 
 const mocks = vi.hoisted(() => ({ request: vi.fn(), toast: vi.fn() }));
-vi.mock('@nocobase/app-client', () => ({
+vi.mock('@nocobase/app-client', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@nocobase/app-client')>()),
   useApiClient: () => ({ request: mocks.request }),
   useToaster: () => ({ show: mocks.toast }),
 }));
@@ -33,6 +35,7 @@ afterEach(() => {
   vi.unstubAllGlobals();
   localStorage.clear();
   mocks.request.mockReset();
+  mocks.toast.mockClear();
 });
 
 async function show(rows: object[] = [], faults = { key: false }) {
@@ -122,4 +125,28 @@ it('recovers a failed public-key read through Retry instead of leaving subscript
   expect(
     await screen.findByRole('button', { name: 'Subscribe this device' }),
   ).toBeEnabled();
+});
+
+it('reports the test push network failure with its request ID', async () => {
+  await show([{ id: 'device1', name: 'My phone', enabled: true }]);
+  const button = await screen.findByRole('button', {
+    name: 'Send test notification',
+  });
+  mocks.request.mockRejectedValueOnce(
+    new ApiClientError('Internal diagnostic', {
+      status: 503,
+      reason: 'PUSH_NETWORK',
+      requestId: 'push-test-request',
+      method: 'POST',
+      url: '/webPush/subscriptions/device1/test',
+    }),
+  );
+  fireEvent.click(button);
+  await waitFor(() =>
+    expect(mocks.toast).toHaveBeenCalledWith({
+      requestId: 'push-test-request',
+      type: 'error',
+      title: webPushEn['push.testNetwork'],
+    }),
+  );
 });

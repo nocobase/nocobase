@@ -4,9 +4,11 @@ import defaultAccess from '@nocobase/app-plugin-authz-default-access/client';
 import sharingRules from '@nocobase/app-plugin-authz-sharing-rules/client';
 import restrictionRules from '@nocobase/app-plugin-authz-restriction-rules/client';
 import {
+  defineClientPlugin,
   defineClientPlugins,
   type AppClientPlugins,
 } from '@nocobase/app-client/plugins';
+import auditLocales from '@nocobase/audit/locales';
 import authentication from '@nocobase/app-plugin-authentication/client';
 import authorization from '@nocobase/app-plugin-authorization/client';
 import { pagePermissionTitles } from './pages/settings/page-permission-titles.js';
@@ -16,7 +18,6 @@ import authorizationExample from '@nocobase/app-plugin-authorization-example/cli
 import templatePrintExample from '@nocobase/app-plugin-template-print-example/client';
 import users from '@nocobase/app-plugin-users/client';
 import databaseExplorer from '@nocobase/app-plugin-database-explorer/client';
-import distributed from '@nocobase/app-plugin-distributed/client';
 import notificationInApp from '@nocobase/app-plugin-notification-in-app/client';
 import notificationExample from '@nocobase/app-plugin-notification-example/client';
 import jobsExample from '@nocobase/app-plugin-jobs-example/client';
@@ -37,6 +38,11 @@ import foundation from '@nocobase/app-plugin-foundation/client';
 import knowledge from '@nocobase/app-plugin-knowledge/client';
 import { FormProposalRenderer } from '#components/online-agent/form-proposal-card';
 import { EXAMPLES_FORM_TOOL } from '../shared/ai-form-fill.js';
+
+const auditLabels = defineClientPlugin({
+  packageName: '@nocobase/audit',
+  locales: auditLocales,
+});
 
 // The AI form demonstration's proposal card, shown in the Agent panel wherever the agent calls its tool.
 agents.toolRenderers.add({
@@ -63,6 +69,7 @@ const clientPlugins: AppClientPlugins = defineClientPlugins([
   databaseExplorer(),
   apiKeys(),
   i18n(),
+  auditLabels(),
   notificationInApp(),
   notificationExample(),
   jobsExample(),
@@ -74,7 +81,6 @@ const clientPlugins: AppClientPlugins = defineClientPlugins([
   notificationWebPush(),
   repositoryExample(),
   file(),
-  distributed(),
   fileExample(),
   scheduler(),
   mail(),

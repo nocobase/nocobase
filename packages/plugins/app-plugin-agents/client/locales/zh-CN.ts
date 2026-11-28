@@ -373,7 +373,7 @@ const zhCN: AgentsResource = {
       purposes: {
         embedding: '向量化',
         rerank: '重排序',
-        text: '辅助文本',
+        text: '文本生成',
       },
     },
     title: '用量',
@@ -577,13 +577,11 @@ const zhCN: AgentsResource = {
   access: accessZhCN.access,
 };
 
-// What the plugin brings on its own (`shell.zh-CN.ts`), outside the typed shape: the other languages fall back to
-// English for these keys.
-const withShell: typeof zhCN = {
+const withShell: AgentsResource & typeof shellZhCN = {
   ...zhCN,
   agents: mergeLocale(zhCN.agents, shellZhCN.agents),
   usage: mergeLocale(zhCN.usage, shellZhCN.usage),
-  ...{ me: shellZhCN.me },
+  me: shellZhCN.me,
 };
 
 export default withShell;

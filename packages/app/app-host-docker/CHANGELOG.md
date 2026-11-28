@@ -1,5 +1,30 @@
 # @nocobase/app-host-docker
 
+## 0.1.0-beta.7
+
+### Minor Changes
+
+- c6b8a62: Add a managed Host request that purges an application's business data while keeping its backup records and archives.
+
+### Patch Changes
+
+- cf23bfe: Stop publishing CHANGELOG.md in the package; the changelog stays in the repository.
+- Updated dependencies [c6b8a62]
+  - @nocobase/app-host@0.1.0-beta.28
+
+## 0.1.0-beta.6
+
+### Minor Changes
+
+- 63100e7: Back up and restore Apps on a managed Host with their own backup commands, deduplicated by operation ID: in-process Apps through a child process of the Host and Docker Apps through one-off containers on their image and volumes, with both backends reporting the backup capability. A restore refuses an incomplete backup, another release or an archive that does not verify before it stops the App, and is not repeated once its data is back; a restore that fails or is cancelled after that keeps the record that its data was restored.
+
+### Patch Changes
+
+- Updated dependencies [fcc0c18]
+- Updated dependencies [63100e7]
+  - @nocobase/app-server@5.0.0-beta.11
+  - @nocobase/app-host@0.1.0-beta.27
+
 ## 0.1.0-beta.5
 
 ### Patch Changes

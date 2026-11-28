@@ -155,6 +155,7 @@ const enUS = {
       'feishu-webhook': 'Feishu group',
       'dingtalk-webhook': 'DingTalk group',
       'web-push': 'Browser push',
+      sms: 'SMS',
       retry: 'Retry policy',
     },
     title: 'Channels',
@@ -215,6 +216,7 @@ const enUS = {
     'in-app': 'In-app messages',
     email: 'Email',
     'web-push': 'Browser push',
+    sms: 'SMS',
     im: 'Group chat',
   },
   deliveries: {

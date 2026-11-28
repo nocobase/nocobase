@@ -1,3 +1,4 @@
+import type { DatabaseTransactionOptions } from '../../connection.js';
 import type { DatabasePolicyMap } from '../../policy-map.js';
 import type { CollectionBuilder } from '../../../collection/builder/builder.js';
 import type { ConnectionCollections } from '../../../collection/registry/types.js';
@@ -166,16 +167,23 @@ export class PolicyBoundConnection implements ScopedDatabaseConnection {
    * for one — the deferred invalidation collector above all — stays in place.
    * The bindings ride along into the transaction.
    */
+  notifySchemaChange<T>(operation: () => Promise<T>): Promise<T> {
+    return this.inner.notifySchemaChange(operation);
+  }
+
   async transaction<T>(
     fn: (connection: ScopedDatabaseConnection) => Promise<T>,
+    options?: DatabaseTransactionOptions,
   ): Promise<T> {
-    return this.inner.transaction((connection) =>
-      fn(
-        new PolicyBoundConnection(
-          connection as PolicyBindableConnection,
-          this.policies,
+    return this.inner.transaction(
+      (connection) =>
+        fn(
+          new PolicyBoundConnection(
+            connection as PolicyBindableConnection,
+            this.policies,
+          ),
         ),
-      ),
+      options,
     );
   }
 }

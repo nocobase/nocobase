@@ -492,30 +492,28 @@ test('keeps concurrent root reads separate from an uncommitted schema change', a
   );
 });
 
-test('retains live physical reads and transaction inspection after external DDL', async ({
+test('refreshes physical and logical definitions after notified native DDL', async ({
   connection,
 }) => {
   await createDocuments(connection);
   await describeCollection(connection, 'documents');
   const physical = await connection.collections.getPhysical('documents');
   const knex = await connection.client<Knex>();
-  await knex.schema.alterTable(physical!.tableName, (table) =>
-    table.integer('raw_field'),
-  );
+  await connection.notifySchemaChange(async () => {
+    await knex.schema.alterTable(physical!.tableName, (table) =>
+      table.integer('raw_field'),
+    );
+  });
   expect(
     (await connection.collections.getPhysical('documents'))?.columns.map(
       (column) => column.columnName,
     ),
   ).toContain('raw_field');
-  expect(
-    (await describeCollection(connection, 'documents'))?.fields,
-  ).not.toContain('rawField');
   await connection.transaction(async (transaction) => {
     expect(
       (await describeCollection(transaction, 'documents'))?.fields,
     ).toContain('rawField');
   });
-  connection.collections.invalidate();
   expect((await describeCollection(connection, 'documents'))?.fields).toContain(
     'rawField',
   );

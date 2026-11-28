@@ -1,6 +1,15 @@
 import type { AuthorizationServerResource } from './en-US.js';
 
 const zhCN: AuthorizationServerResource = {
+  audit: {
+    operations: {
+      createPermissionSet: '创建权限集',
+      assignPermissionSet: '分配权限集',
+      unassignPermissionSet: '取消分配权限集',
+      updatePermissionSet: '修改权限集',
+      deletePermissionSet: '删除权限集',
+    },
+  },
   // Workspace sections this plugin registers through `authz.ui`.
   sections: {
     pages: '页面访问',
@@ -28,7 +37,7 @@ const zhCN: AuthorizationServerResource = {
     },
     settings: {
       'permission-sets': '权限集',
-      'authentication-settings': '登录与认证',
+      'authentication-settings': '身份认证',
     },
     subjectTypes: {
       authenticated: '所有已登录用户',

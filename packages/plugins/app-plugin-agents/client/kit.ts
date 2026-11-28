@@ -1,75 +1,65 @@
-/**
- * What the agents plugin offers the application's own pages (for example, in `client/agents/`):
- *
- * - `VariablesSection`: the variables and secrets of a scope (`workdir`, or a scope the application registers on the
- *   server), write-only and audited as on an agent;
- * - `ScopedVariablesSection`: the same for several scopes in one table with a Scope column (a project and its working
- *   directories), adding a variable choosing its scope;
- * - `DefaultSkillsSection`: the skills every run in that scope gets;
- * - `useRunnerOptions`: the runners a directory used in place may be on, for a runner picker;
- * - `useAgentOptions`: the enabled agents, for an agent picker, with their names and what each is good at, and as
- *   `ChatAgent`s for the UI Library's `AgentPicker`;
- * - `AgentAvatar`: an agent's generated avatar, the same on the application's pages as on this plugin's;
- * - `useAgentText`: an agent's name and description in the viewer's language, for agents the application's own API
- *   returns with their `nameText` and `descriptionText`.
- *
- * Each component brings this plugin's translations and query cache; the hooks read that cache from any tree.
- */
+/** Data access, hooks and small building blocks for application-owned Agent pages. */
 import { useTranslation } from '@nocobase/i18n/client';
 import { useQuery, type QueryClient } from '@tanstack/react-query';
-import {
-  createElement,
-  useEffect,
-  type ComponentType,
-  type ReactElement,
-} from 'react';
+import { useEffect } from 'react';
 
 import { ACCESS_NAMESPACE } from '../shared/access.js';
 import type { ChatAgent } from '../shared/conversations.js';
+import { RUNNERS_TOPIC } from '../shared/realtime.js';
 import { agentsKeys } from './api/keys.js';
-import { DefaultSkillsPanel } from './components/default-skills.js';
-import {
-  VariablesPanel,
-  type VariableScopeOption,
-} from './components/variables/variables-panel.js';
+import { coalescedInvalidation } from './chat/coalesced-invalidation.js';
 import { useAgentsApi } from './hooks/use-agents-api.js';
-import { useAgentText } from './hooks/use-vocabulary.js';
 import { useQuotaExpiry } from './hooks/use-quota-expiry.js';
 import { useRealtimeTopic } from './hooks/use-realtime-topic.js';
-import { RUNNERS_TOPIC } from '../shared/realtime.js';
-import { coalescedInvalidation } from './chat/coalesced-invalidation.js';
+import { useAgentText } from './hooks/use-vocabulary.js';
 import { pickerAgentOf } from './lib/agents.js';
-import { RunnerAgentsSection as RunnerAgents } from './pages/agents/runner-agents.js';
-import { agentsQueryClient, withAgents } from './query.js';
+import { agentsQueryClient } from './query.js';
 
+export type { QuotaMarkTarget } from '../shared/quota.js';
+export type { AgentsApi } from './api/client.js';
+export { agentsKeys } from './api/keys.js';
 export {
   AgentAvatar,
   type AgentAvatarSize,
 } from './components/agent-avatar.js';
-export { useAgentText, type AgentText } from './hooks/use-vocabulary.js';
-export { useFormatters, type Formatters } from './lib/format.js';
-
-export interface ScopeSectionProps {
-  /** `workdir`, or a scope key the application registered. */
-  readonly scope: string;
-  readonly scopeId: string;
-  /** Whether the viewer may change it (the scope's kind decides on the server as well). */
-  readonly canEdit: boolean;
-  /** What the section says the values are for, in the viewer's language; a general line when absent. */
-  readonly description?: string;
-}
-
-export type { VariableScopeOption };
-
-export interface ScopedVariablesSectionProps {
-  /** The scopes listed, the broadest first; each named in the Scope column. */
-  readonly scopes: readonly VariableScopeOption[];
-  readonly canEdit: boolean;
-  /** What the section says the values are for; a general line when absent. */
-  readonly description?: string;
-  /** Said under the table, such as which scope wins when two set the same name. */
-  readonly note?: string;
-}
+export {
+  AgentQuotaHint,
+  QuotaLabel,
+  QuotaQueueHint,
+} from './components/quota-status.js';
+export { useAgentsApi } from './hooks/use-agents-api.js';
+export { useQuotaClock, useQuotaExpiry } from './hooks/use-quota-expiry.js';
+export { useServerUrl } from './hooks/use-server-url.js';
+export {
+  useAgentText,
+  useText,
+  useVocabulary,
+  type AgentText,
+} from './hooks/use-vocabulary.js';
+export {
+  compactDateTime,
+  durationText,
+  quotaWindowLabel,
+  useFormatters,
+  type Formatters,
+} from './lib/format.js';
+export {
+  guessSystem,
+  installCommand,
+  INSTALL_SYSTEMS,
+  upgradeCommand,
+  type InstallSystem,
+} from './lib/install.js';
+export { noCodingToolsFound } from './lib/runner-tools.js';
+export { valueTooLong } from './lib/text.js';
+export {
+  readToolSlots,
+  toolSlotsDraft,
+  toolsOverTotal,
+  type ToolSlotsDraft,
+} from './lib/tool-slots.js';
+export { modelSuggestion } from './model-suggestion.js';
+export { agentsQueryClient } from './query.js';
 
 export interface PickerOption {
   readonly value: string;
@@ -98,61 +88,6 @@ export interface AgentOptions {
   /** An agent's name, or null when the viewer cannot see it. */
   nameOf(agentId: string): string | null;
 }
-
-function ScopeVariables({
-  scope,
-  scopeId,
-  canEdit,
-  description,
-}: ScopeSectionProps): ReactElement {
-  const { t } = useTranslation();
-  return createElement(VariablesPanel, {
-    scope,
-    scopeId,
-    canEdit,
-    title: t('scopeVariables.title'),
-    description: description ?? t('scopeVariables.description'),
-    className: 'max-w-none',
-  });
-}
-
-function ScopedVariables({
-  scopes,
-  canEdit,
-  description,
-  note,
-}: ScopedVariablesSectionProps): ReactElement {
-  const { t } = useTranslation();
-  return createElement(VariablesPanel, {
-    scopes,
-    canEdit,
-    title: t('scopeVariables.title'),
-    description: description ?? t('scopeVariables.description'),
-    ...(note ? { note } : {}),
-    className: 'max-w-none',
-  });
-}
-
-function ScopeSkills(props: ScopeSectionProps): ReactElement {
-  // As wide as the card or dialog it is placed in, like the variables.
-  return createElement(DefaultSkillsPanel, {
-    ...props,
-    className: 'max-w-none',
-  });
-}
-
-export const VariablesSection: ComponentType<ScopeSectionProps> =
-  withAgents(ScopeVariables);
-export const ScopedVariablesSection: ComponentType<ScopedVariablesSectionProps> =
-  withAgents(ScopedVariables);
-/**
- * The runner agents, as the Agent page lists them, with adding and editing for those who manage
- * agents: for an application that composes its own Agent page.
- */
-export const RunnerAgentsSection: ComponentType = withAgents(RunnerAgents);
-
-export const DefaultSkillsSection: ComponentType<ScopeSectionProps> =
-  withAgents(ScopeSkills);
 
 /** The runners the viewer may see, as picker options. A hook: reads this plugin's cache from any tree. */
 export function useRunnerOptions(): RunnerOptions {
@@ -274,12 +209,3 @@ export function useAgentOption(agentId: string): ChatAgent | null {
     ? pickerAgentOf(result.data, text.name(result.data))
     : null;
 }
-
-export {
-  AgentQuotaHint,
-  QuotaLabel,
-  QuotaQueueHint,
-} from './components/quota-status.js';
-export { compactDateTime, quotaWindowLabel } from './lib/format.js';
-
-export { useQuotaClock } from './hooks/use-quota-expiry.js';

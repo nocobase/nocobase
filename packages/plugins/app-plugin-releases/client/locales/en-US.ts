@@ -665,9 +665,9 @@ const ui = {
     apps: 'Apps',
     appsDescription: 'The apps deployed to this environment.',
     appsEmpty: 'No apps are deployed here yet.',
-    sampleData: 'Load sample data on first deployment',
+    sampleData: 'Load sample data on deployment',
     sampleDataHint:
-      'An app’s first deployment here installs its sample data (APP_SAMPLE_DATA=true). Use it for previews, not for production.',
+      'Each deployment here loads any sample data that has yet to run (APP_SAMPLE_DATA=true). Use this for previews. Leave it off in production.',
     add: 'Add environment',
     edit: 'Edit',
     delete: 'Delete',

@@ -1,5 +1,107 @@
 # @nocobase/app-plugin-foundation
 
+## 0.1.0-beta.24
+
+### Patch Changes
+
+- 1952789: Declare whether each product plugin is enabled by default, preinstalled only, available separately, or deprecated.
+- cf23bfe: Stop publishing CHANGELOG.md in the package; the changelog stays in the repository.
+- Updated dependencies [888bca5]
+- Updated dependencies [1952789]
+- Updated dependencies [cf23bfe]
+  - @nocobase/app-plugin-authentication@2.0.0-beta.27
+  - @nocobase/app-plugin-authorization@1.0.0-beta.42
+
+## 0.1.0-beta.23
+
+### Patch Changes
+
+- cc0bf33: Run outstanding sample data when enabled on existing databases. Write seed history only after a successful run and omit disabled sample seeds from dry-run plans. Apply the preview environment's sample data setting on every deployment and document the guidance for adding sample seeds to business changes.
+- 1b92cdb: Show preinstalled plugins as “Not enabled” in the plugin list without a development dependency suffix.
+- Updated dependencies [cc0bf33]
+- Updated dependencies [4561d5f]
+- Updated dependencies [52d0b0d]
+- Updated dependencies [c12d990]
+- Updated dependencies [1b92cdb]
+- Updated dependencies [1b92cdb]
+- Updated dependencies [1b92cdb]
+- Updated dependencies [78bdca8]
+- Updated dependencies [87e3dac]
+- Updated dependencies [9acf418]
+  - @nocobase/app-server@5.0.0-beta.12
+  - @nocobase/db@1.0.0-beta.31
+  - @nocobase/app-plugin-authentication@2.0.0-beta.26
+  - @nocobase/app-plugin-authorization@1.0.0-beta.41
+  - @nocobase/app-client@4.0.0-beta.14
+
+## 0.1.0-beta.22
+
+### Patch Changes
+
+- 89c4785: List development dependency plugins under Not enabled in deployed applications without installing them as production dependencies.
+
+## 0.1.0-beta.21
+
+### Minor Changes
+
+- a6b9b74: Replace the App Foundation overview with a Plugins page under System settings › System (`/settings/plugins`): the plugins an application uses, their versions and states, grouped as enabled and not enabled, with the plugins needing attention first and the commands that enable, update or disable each one. It reads `GET /api/foundation/plugins`, and both the page and the API require the new «Plugins · View» settings item (`foundation.plugins` / `read`) instead of unrestricted access. A plugin that ships only a CLI entry counts as enabled when the application's `cli/plugins.ts` registers it, and the disable command lists separately the enabled plugins that need it and those that only use it optionally. The earlier `/settings/foundation` and `/settings/capabilities` addresses open the new page.
+
+  Removed: the capability overview, the Features and extensions guide and all of its detail pages, the source, API and database scans with their evidence, module matrix and record counts, the saved snapshots and background scan, the `foundation modules build` command and its `afterServerBuild` hook, the `foundation` configuration section with `FOUNDATION_SCAN_ON_START`, the `page:capability-guide` grant, and the `./capability-guide`, `./cli`, `./config` and `./client/pages` exports together with `CAPABILITY_GUIDE_ACCESS`, `groupFoundationNavigation` and the client factory's options. A new migration drops the `foundationSnapshots` table. Both templates register `foundation()` without options, no longer register the plugin's CLI or its configuration section, and the default template's home page no longer shows the built-in capability cards.
+
+### Patch Changes
+
+- a6b9b74: Register the Foundation overview and capability guide as system settings pages. The overview moves to `/settings/foundation` with a redirect from its previous address, and capability guide links keep their existing URLs. Without `settingsGroup` the pages join the built-in System category.
+- a6b9b74: Add the Schedules System settings page at `/settings/automation/schedules`, registered by the Scheduler client plugin, with three tabs: Tasks (state, rule, next and last run, totals, pause and resume, each Schedule's detail and runs), Runs (the history of every Schedule, filtered by Schedule, result and time range) and Configuration (the jobs configuration Schedules run on, read-only, and the Schedules still active in the database that the running code no longer defines). Replace the page with `routeComponentOverrides` under `@nocobase/app-plugin-scheduler:schedules`.
+
+  Fix the Scheduler permissions: the API now checks the `scheduler.schedules` settings item the role editor offers instead of a page grant that did not exist, so a role granted Schedules · Read can use it. Its reading routes check `read`, and enabling and disabling check the new `manage` action (403 `SCHEDULE_MANAGE_REQUIRED` without it).
+
+  List items gain `sourceType`, `from`, `to`, `limit` and `lastRun` (the latest run's status, reason and finish time); the list's `meta.jobs` describes the jobs configuration and where each value comes from, without passwords, and lists `removedFromCode`; the detail gains `upcomingRuns`; and `GET /api/scheduler/occurrences` returns the history of every Schedule, filtered by `scheduleId`, `status`, `from` and `to`, cursor-paged by each run's planned time. A migration fills in the planned time of runs recorded before it was kept and adds two indexes to the occurrence table.
+
+  `AppConfigAccessor` gains the optional `layers()`, `environmentVariableMappings()` and `loadedEnvironmentVariables()` methods, so a plugin can tell whether a value comes from `config.yml`, the application's own environment variables or a default. The capability guide's scheduler steps name the new page and permissions.
+
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [1048669]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [1048669]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [1048669]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [1048669]
+- Updated dependencies [1048669]
+- Updated dependencies [1048669]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [1048669]
+  - @nocobase/app-client@4.0.0-beta.12
+  - @nocobase/app-plugin-authorization@1.0.0-beta.39
+  - @nocobase/app-plugin-authentication@2.0.0-beta.24
+  - @nocobase/app-server@5.0.0-beta.9
+  - @nocobase/db@1.0.0-beta.30
+  - @nocobase/i18n@2.0.0-beta.2
+  - @nocobase/service-provider@0.0.2-beta.2
+
 ## 0.1.0-beta.20
 
 ### Patch Changes

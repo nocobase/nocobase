@@ -1,6 +1,6 @@
 import type { S3ClientConfig } from '@aws-sdk/client-s3';
 import { DriveManager } from 'flydrive';
-import { FSDriver } from 'flydrive/drivers/fs';
+import { BackupAwareFsDriver } from './backup-deletions.js';
 import { S3Driver } from 'flydrive/drivers/s3';
 import type { S3DriverOptions } from 'flydrive/drivers/s3/types';
 import type { DriverContract } from 'flydrive/types';
@@ -80,7 +80,7 @@ function createDriver(disk: AppDriveDiskDefinition): DriverContract {
 }
 
 function createFsDriver(disk: FsDriveDiskConfig): DriverContract {
-  return new FSDriver(
+  return new BackupAwareFsDriver(
     compactObject({
       location: disk.location,
       visibility: disk.visibility,
@@ -90,6 +90,7 @@ function createFsDriver(disk: FsDriveDiskConfig): DriverContract {
           }
         : undefined,
     }),
+    disk.location,
   );
 }
 

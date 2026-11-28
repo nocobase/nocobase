@@ -28,6 +28,9 @@ export class SchemaManagementSchemaAdapter implements SchemaAdapter {
   constructor(
     private readonly adapter: SchemaAdapter,
     private readonly options: SchemaManagementGuardOptions,
+    private readonly executeSchemaChange?: (
+      operation: () => Promise<void>,
+    ) => Promise<void>,
   ) {
     this.dialect = adapter.dialect;
     this.capabilities = adapter.capabilities;
@@ -46,7 +49,11 @@ export class SchemaManagementSchemaAdapter implements SchemaAdapter {
 
   async execute(operations: SchemaOperation[]): Promise<void> {
     this.assertExecutable(operations);
-    await this.adapter.execute(operations);
+    if (operations.length > 0 && this.executeSchemaChange) {
+      await this.executeSchemaChange(() => this.adapter.execute(operations));
+    } else {
+      await this.adapter.execute(operations);
+    }
   }
 
   async compile(operations: SchemaOperation[]): Promise<string[]> {

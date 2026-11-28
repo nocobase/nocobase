@@ -1,5 +1,86 @@
 # @nocobase/app-plugin-authentication
 
+## 2.0.0-beta.27
+
+### Patch Changes
+
+- 888bca5: Configure audit body capture and additional redaction in application YAML. Body capture defaults to off, and target resolution can use any available context without reading disabled bodies. Application and route redaction use `{ fields, paths }`.
+- 1952789: Declare whether each product plugin is enabled by default, preinstalled only, available separately, or deprecated.
+- cf23bfe: Stop publishing CHANGELOG.md in the package; the changelog stays in the repository.
+- Updated dependencies [888bca5]
+- Updated dependencies [c1f20c6]
+  - @nocobase/audit@0.1.0-beta.1
+
+## 2.0.0-beta.26
+
+### Patch Changes
+
+- 52d0b0d: Configure audit capture for application operations and send events to multiple named destinations, including JSON Lines files. Configuring a destination enables explicitly declared audit operations by default. Audit uses the application authentication settings for its trusted proxies and forwarded IP headers.
+
+  The official templates assemble auditing with `AuditProvider` and ship the file driver. Custom application composition roots can add the provider and the audit configuration factory when they use audit routes or transports. Applications using only `@nocobase/app-server` can start without the audit package.
+
+  Built-in audit operations store English default names and translation keys. The official templates load Repository labels in the viewer's language, and JSON Lines keeps the original event names. Separate labels identify assigning and removing permission sets and enabling and disabling users and keys.
+
+- 1b92cdb: Use ampersands in English settings navigation labels, including “Roles & permissions” and “Workflows & automation”.
+  Use “角色与权限” for the Simplified Chinese roles and permissions label.
+- 78bdca8: Use “Authentication” in English and “身份认证” in Simplified Chinese in navigation, page headings and permission settings.
+- 87e3dac: Apply the authentication proxy rules to anonymous verification sends, give signed-in users their own send quota, and preserve the old-phone credential when the new-phone code is incorrect.
+- Updated dependencies [cc0bf33]
+- Updated dependencies [4561d5f]
+- Updated dependencies [52d0b0d]
+- Updated dependencies [c12d990]
+- Updated dependencies [1b92cdb]
+- Updated dependencies [1b92cdb]
+- Updated dependencies [1b92cdb]
+- Updated dependencies [9acf418]
+  - @nocobase/app-server@5.0.0-beta.12
+  - @nocobase/db@1.0.0-beta.31
+  - @nocobase/audit@0.1.0-beta.0
+  - @nocobase/app-client@4.0.0-beta.14
+
+## 2.0.0-beta.25
+
+### Minor Changes
+
+- 29c62bd: Expose the active authentication transaction connection so server extensions can commit or roll back their database changes together with authentication.
+
+### Patch Changes
+
+- Updated dependencies [300f760]
+- Updated dependencies [28a7606]
+- Updated dependencies [8ff2df3]
+  - @nocobase/app-client@4.0.0-beta.13
+  - @nocobase/app-server@5.0.0-beta.10
+
+## 2.0.0-beta.24
+
+### Minor Changes
+
+- a6b9b74: Add two settings pages to the authentication plugin. System settings › Accounts › Sign-in and authentication (`/settings/authentication`) shows the effective sign-in methods, registration, password, password recovery and session settings, where each value comes from (environment variable, `config.yml`, code or default), the problems to fix such as password recovery being off or `app.publicOrigin` missing, a "How to change" snippet per section, and a "How to enable" guide for single sign-on, social sign-in, two-factor authentication and passkeys that builds the callback URL where one is needed and an editable prompt for a development agent to turn the method on in the application's repository; it is read-only and saves nothing. Personal settings › Account › Account and security (`/me/security`) lets every signed-in person change their password, sign out of other devices, see and sign out command-line and browser sessions, and link or unlink single sign-on and social accounts through Better Auth's own endpoints. Applications replace either page with `authentication({ settingsComponentLoader, accountSecurityComponentLoader })` or `routeComponentOverrides`, and name the providers their sign-in page shows a button for with `authentication({ signInButtons })`.
+
+  The authentication plugin adds `GET /api/authentication/settings`, which needs the new `authentication.settings` settings item's `read` action and never returns a secret, signing key, client secret or mail credential, and `GET /api/authentication/providers`, the providers a signed-in person can link. Other plugins add rows to the page's sign-in methods with `signInMethodsToken`; the API keys plugin adds its API keys row. The authorization plugin declares the `authentication.settings` item and binds `authenticationSettingsAccessToken`. The templates' `config.example.yml` points to the new page.
+
+### Patch Changes
+
+- a6b9b74: A Permission Set protected by name stays its owner's even under another owner's protected key prefix, whichever is registered first, so an application whose root or default set is named in a reserved prefix still starts; a prefix protection may also leave named keys alone (`except`). Deleting a user whose deletion was interrupted after the account was marked deleted finishes the remaining cleanup instead of doing nothing.
+- a6b9b74: Declare the plugin's title and one-line description in English and Chinese under `nocobase` in `package.json`, which the App Foundation plugins page lists it by.
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [1048669]
+  - @nocobase/app-client@4.0.0-beta.12
+  - @nocobase/caching@1.0.0-beta.5
+  - @nocobase/app-server@5.0.0-beta.9
+  - @nocobase/db@1.0.0-beta.30
+  - @nocobase/i18n@2.0.0-beta.2
+  - @nocobase/service-provider@0.0.2-beta.2
+
 ## 2.0.0-beta.23
 
 ### Patch Changes

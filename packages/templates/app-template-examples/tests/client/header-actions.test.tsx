@@ -4,6 +4,8 @@ import {
   type AppClientRegisteredHeaderAction,
   type ClientApplication,
 } from '@nocobase/app-client';
+import type { AppClientRegisteredRoute } from '@nocobase/app-client/plugins';
+import { MemoryRouter } from 'react-router';
 import { act, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {
@@ -24,6 +26,8 @@ import {
   HeaderActions,
 } from '../../client/layouts/components/header-actions.js';
 import enUS from '../../client/locales/en-US.js';
+import { RouteTreeProvider } from '../../client/routing/route-context.js';
+import { routeKey } from '../../client/routing/route-navigation.js';
 
 const authentication = vi.hoisted(() => ({
   session: null as { user: { id: string } } | null,
@@ -152,6 +156,7 @@ describe('header actions', () => {
           action('assistant'),
           action('inbox', () => ({ count: 3, tone: 'attention' })),
           action('mail', mail.useBadge),
+          { ...action('settings'), placement: 'beforeAccount' },
         ]}
       />,
       { wrapper: I18n },
@@ -159,6 +164,7 @@ describe('header actions', () => {
     expect(screen.getByRole('button', { name: 'assistant' })).toBeVisible();
     expect(screen.queryByRole('button', { name: /^inbox/ })).toBeNull();
     const more = screen.getByRole('button', { name: 'More actions' });
+    expect(slotOf('settings').previousElementSibling).toContainElement(more);
     const moreBadge = more.querySelector('[data-slot="header-action-badge"]');
     expect(moreBadge).toHaveTextContent('5');
     expect(moreBadge).toHaveAttribute('data-tone', 'attention');
@@ -362,6 +368,66 @@ describe('signed-in state', () => {
     expect(screen.getByRole('button', { name: 'Account' })).toBeVisible();
   });
 
+  it('keeps route shortcuts and their badge hooks hidden while permissions are pending or denied', () => {
+    setWidth(1440);
+    authentication.session = { user: { id: '1' } };
+    const componentLoader = async () => ({ default: () => null });
+    const child: AppClientRegisteredRoute = {
+      id: '@example/plugin:child',
+      name: 'child',
+      packageName: '@example/plugin',
+      source: 'plugin',
+      path: '/parent/child',
+      auth: 'required',
+      authz: 'skip',
+      componentLoader,
+    };
+    const parent: AppClientRegisteredRoute = {
+      ...child,
+      id: '@example/plugin:parent',
+      name: 'parent',
+      path: '/parent',
+      authz: 'unrestricted',
+      children: [child],
+    };
+    const routes = [parent];
+    const badge = vi.fn(() => ({ count: 4 }));
+    const app = {
+      runtime: {
+        headerActions: [
+          { ...action('shortcut', badge), routeId: child.id },
+          action('help'),
+        ],
+      },
+    } as unknown as ClientApplication;
+    const header = (loading: boolean, denied: ReadonlySet<string>) => (
+      <MemoryRouter>
+        <ClientApplicationContext value={app}>
+          <RouteTreeProvider routes={routes} access={{ loading, denied }}>
+            <HeaderActions />
+          </RouteTreeProvider>
+        </ClientApplicationContext>
+      </MemoryRouter>
+    );
+    const { rerender } = render(header(true, new Set()), { wrapper: I18n });
+    expect(screen.getByRole('button', { name: 'help' })).toBeVisible();
+    expect(screen.queryByRole('button', { name: 'shortcut' })).toBeNull();
+    expect(badge).not.toHaveBeenCalled();
+
+    rerender(header(false, new Set([routeKey(parent)])));
+    expect(screen.queryByRole('button', { name: 'shortcut' })).toBeNull();
+    expect(badge).not.toHaveBeenCalled();
+
+    rerender(header(false, new Set()));
+    expect(screen.getByRole('button', { name: 'shortcut' })).toBeVisible();
+    expect(
+      slotOf('shortcut').querySelector('[data-slot="header-action-badge"]'),
+    ).toHaveTextContent('4');
+
+    rerender(header(false, new Set([routeKey(child)])));
+    expect(screen.queryByRole('button', { name: 'shortcut' })).toBeNull();
+  });
+
   it('shows a signed-in person every action with its badge', () => {
     setWidth(1440);
     authentication.session = { user: { id: '1' } };
@@ -379,9 +445,13 @@ describe('signed-in state', () => {
   });
 });
 
-it('registers no header action of its own; the Agent button comes from the agents plugin', async () => {
-  const { headerActions, headerActionOverrides } =
-    await import('../../client/header-actions.js');
-  expect(headerActions).toEqual([]);
-  expect(headerActionOverrides).toEqual([]);
+it('registers the pinned settings shortcut for the application’s own route', async () => {
+  const { headerActions } = await import('../../client/header-actions.js');
+  expect(headerActions).toMatchObject([
+    {
+      name: 'system-settings',
+      placement: 'beforeAccount',
+      routeId: 'app:settingsHome',
+    },
+  ]);
 });

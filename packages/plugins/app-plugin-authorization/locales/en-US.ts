@@ -4,6 +4,15 @@ import type { LocaleResource } from '@nocobase/i18n';
  * Display vocabulary shared by the client and server locale catalogues.
  */
 const enUS = {
+  audit: {
+    operations: {
+      createPermissionSet: 'Create a permission set',
+      assignPermissionSet: 'Assign a permission set',
+      unassignPermissionSet: 'Remove a permission set assignment',
+      updatePermissionSet: 'Edit a permission set',
+      deletePermissionSet: 'Delete a permission set',
+    },
+  },
   // Workspace sections this plugin registers through `authz.ui`.
   sections: {
     pages: 'Page access',
@@ -32,7 +41,7 @@ const enUS = {
     },
     settings: {
       'permission-sets': 'Permission Sets',
-      'authentication-settings': 'Sign-in and authentication',
+      'authentication-settings': 'Authentication',
     },
     subjectTypes: {
       authenticated: 'All signed-in users',

@@ -226,16 +226,31 @@ describe('system keys', () => {
         new MemberKeys({ connection: () => database.connection(), keys }),
       ],
     ]);
-    const api = await apiRoutes.createRouter({
+    const host = {
       container: {
         has: (token: unknown) => services.has(token),
         resolve: (token: unknown) => services.get(token),
       },
-    } as unknown as AppPluginApplication);
+    };
+    const router = (
+      options: {
+        systemApiKeyRoutes?: boolean;
+        keyAdministrationRoutes?: boolean;
+      } = {},
+    ) =>
+      apiRoutes.createRouter({
+        ...host,
+        config: { get: () => options },
+      } as unknown as AppPluginApplication);
     const routes = new Hono<{
       Variables: AuthEnv['Variables'] & AuthorizationEnv['Variables'];
     }>();
-    routes.route('/api', api);
+    routes.route('/api', await router());
+    routes.route('/api/disabled', await router({ systemApiKeyRoutes: false }));
+    routes.route(
+      '/api/no-admin',
+      await router({ keyAdministrationRoutes: false }),
+    );
     routes.get(
       '/settings/:id/:action',
       auth.required({ scopedKeys: true }),
@@ -261,6 +276,55 @@ describe('system keys', () => {
 
   afterAll(async () => {
     await testDatabase.destroy();
+  });
+
+  it('can omit member and rule administration independently of system and personal keys', async () => {
+    for (const [method, path] of [
+      ['GET', '/apiKeys/members'],
+      ['DELETE', '/apiKeys/members/missing-key'],
+      ['GET', '/apiKeys/rules'],
+      ['PUT', '/apiKeys/rules'],
+    ]) {
+      expect((await call('/no-admin' + path, adminCookie, method)).status).toBe(
+        404,
+      );
+    }
+    expect((await call('/no-admin/apiKeys', adminCookie)).status).toBe(200);
+    expect((await call('/no-admin/systemApiKeys', adminCookie)).status).toBe(
+      200,
+    );
+  });
+
+  it('omits only system key management routes when disabled', async () => {
+    const created = await systemKeys.create(adminId, {
+      name: 'Existing integration',
+      expiresInDays: 30,
+      permissions: readOrders,
+    });
+    const id = created.key.identityId;
+    try {
+      for (const [method, suffix] of [
+        ['GET', ''],
+        ['POST', ''],
+        ['GET', '/' + id],
+        ['POST', '/' + id + '/rotate'],
+        ['DELETE', '/' + id],
+      ]) {
+        expect(
+          (await call('/disabled/systemApiKeys' + suffix, adminCookie, method))
+            .status,
+        ).toBe(404);
+      }
+      expect((await call('/disabled/apiKeys', adminCookie)).status).toBe(200);
+      expect((await call('/disabled/apiKeys/rules', adminCookie)).status).toBe(
+        200,
+      );
+      expect(
+        (await asKey(created.secret, '/settings/orders/read')).status,
+      ).toBe(200);
+    } finally {
+      await call('/systemApiKeys/' + id, adminCookie, 'DELETE');
+    }
   });
 
   it('shows someone who holds everything the person-only actions of a type without items, and refuses them to a key', async () => {
@@ -1141,6 +1205,15 @@ describe('system keys', () => {
       await keys.identityOf(memberId),
     );
     expect((await save({ personalMaxDays: 30 })).status).toBe(200);
+    const rejected = await call('/no-admin/apiKeys', adminCookie, 'POST', {
+      name: 'too long',
+      expiresInDays: 60,
+      permissions: readOrders,
+    });
+    expect(rejected.status).toBe(400);
+    expect(await rejected.json()).toMatchObject({
+      error: { reason: 'INVALID_EXPIRY' },
+    });
     // A key that exists keeps its expiry.
     expect((await keys.get(memberId, before.key.id)).expiresAt).toBe(
       before.key.expiresAt,

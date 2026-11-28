@@ -859,9 +859,9 @@ const esES: LocaleResource<typeof enUS> = {
       apps: 'Aplicaciones',
       appsDescription: 'Las aplicaciones implementadas en este entorno.',
       appsEmpty: 'Aún no se han implementado aplicaciones aquí.',
-      sampleData: 'Cargar datos de muestra en la primera implementación',
+      sampleData: 'Cargar datos de muestra al desplegar',
       sampleDataHint:
-        'La primera implementación de una aplicación aquí instala sus datos de muestra (APP_SAMPLE_DATA=true). Úselo para vistas previas, no para producción.',
+        'Cada despliegue carga los datos de muestra pendientes (APP_SAMPLE_DATA=true). Active esta opción en entornos de vista previa y déjela desactivada en producción.',
       add: 'Añadir entorno',
       edit: 'Editar',
       delete: 'Eliminar',

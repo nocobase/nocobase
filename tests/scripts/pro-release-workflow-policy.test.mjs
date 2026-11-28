@@ -217,6 +217,69 @@ test('pro-candidate writes the Pro changelog into the tested tree as the standal
   );
 });
 
+// pro-candidate requires versioning the tested commit again to reproduce the tested tree, so every job that versions Pro runs the same command, and only the release that leaves prerelease mode runs version-first-stable.mjs.
+test('every job that versions a release versions it the same way, with version-first-stable.mjs only when leaving prerelease mode', async () => {
+  const gate = (script) =>
+    [
+      'if [ "$EXITING" = true ]; then',
+      `  node ${script} --root .`,
+      'else',
+      '  pnpm changeset version',
+      'fi',
+    ].join('\n');
+  const step = (job, name) =>
+    job
+      .split(/\n(?=      - name: )/u)
+      .find((block) => block.startsWith(`      - name: ${name}\n`));
+
+  const release = await workflow('v3-release.yml');
+  const standalone = await workflow('v3-pro-release.yml');
+  const prepare = workflowJob(release, 'prepare');
+  assert.ok(
+    runBlock(prepare, 'Version').includes(
+      gate('../scripts/version-first-stable.mjs'),
+    ),
+  );
+  assert.match(
+    step(prepare, 'Version'),
+    /EXITING: \$\{\{ steps\.channel\.outputs\.exiting \}\}/u,
+  );
+
+  const proJobs = [
+    [await jointProJob('pro-check'), 'steps.pro_channel.outputs.exiting'],
+    [await jointProJob('pro-candidate'), 'steps.pro_channel.outputs.exiting'],
+    [workflowJob(standalone, 'check'), 'needs.prepare.outputs.exiting'],
+    [workflowJob(standalone, 'release'), 'needs.prepare.outputs.exiting'],
+  ];
+  for (const [job, exiting] of proJobs) {
+    assert.ok(
+      runBlock(job, 'Version Pro packages').includes(
+        gate('./vendor/nocobase3/scripts/version-first-stable.mjs'),
+      ),
+    );
+    assert.ok(
+      step(job, 'Version Pro packages').includes(`EXITING: \${{ ${exiting} }}`),
+    );
+  }
+  assert.match(
+    workflowJob(standalone, 'prepare'),
+    /exiting: \$\{\{ steps\.channel\.outputs\.exiting \}\}/u,
+  );
+  for (const source of [release, standalone]) {
+    const versioning = source.match(/changeset version$/gmu) ?? [];
+    const gated = source.match(/^\s+pnpm changeset version$/gmu) ?? [];
+    assert.equal(versioning.length, gated.length);
+  }
+  assert.equal(
+    (release.match(/version-first-stable\.mjs --root \./gu) ?? []).length,
+    3,
+  );
+  assert.equal(
+    (standalone.match(/version-first-stable\.mjs --root \./gu) ?? []).length,
+    2,
+  );
+});
+
 // The standalone Pro beta builds Pro in the job that publishes it while two other jobs test and smoke-test the same versioned tree, and writes nothing until both passed on that tree.
 test('the standalone Pro beta builds while Pro is checked, and writes only after both checks passed on its tree', async () => {
   const source = await workflow('v3-pro-release.yml');

@@ -64,6 +64,8 @@ export default defineAppRuntime({
 
 `plugins` is the complete value returned by `defineClientPlugins()`. Runtime resolution collects its route component overrides automatically. An application can explicitly pass `routeComponentOverrides` when it needs to replace an existing route's component; omit the option when no replacements are needed. The templates do not include empty route-override or source-extension entry files. UI Library source assets under `client/extensions/` are imported by the application where needed, without automatic extension discovery.
 
+Set `systemSettingsRoutes: false` or `personalSettingsRoutes: false` in `defineAppRuntime()` to omit that settings surface before route paths are claimed. Both surfaces are enabled by default.
+
 Static import makes the composition plan available to runtime resolution. It does not register a service, execute lifecycle hooks, render a React component, load a route page, or load locale messages. Declaration modules must therefore remain side-effect-free.
 
 ## Client entry
@@ -318,6 +320,10 @@ export default defineAppRoutes([
 ]);
 ```
 
+Set `layout: 'none'` on a signed-in App Route to render it without the application header and sidebar. Use `defineAppRoutes(routes, { layout: 'none' })` to set the default for every signed-in route in a contribution. The application still requires sign-in, prepares the session, and checks the route's `authz`. The registered route carries the resolved `layout` value. Omit the option to use the application's standard layout.
+
+A group can set the layout for its descendants. A page and the children it renders through its `Outlet` share one layout, so declare `layout: 'none'` on the parent page for that branch. Guest, optional, and settings routes keep their existing layouts. The application router in both templates consumes this option.
+
 Locale manifests are static, while each language module remains lazy:
 
 ```ts
@@ -459,3 +465,13 @@ The templates' copied `FeedbackForm` component supplies native field discovery, 
 ## Correlating error notifications
 
 When reporting an API failure, pass `...errorToastOptions(error)` from `@nocobase/app-client` into `toaster.show({ type: 'error', title, ...errorToastOptions(error) })`. The helper preserves `ApiClientError.requestId` for the host toaster to display and copy; ordinary local errors have no request ID. Keep the error's translated title and any existing action unchanged.
+
+### Exclude application routes
+
+Set `excludedRouteIds` in `defineAppRuntime()` to remove routes by package-qualified ID before the application claims paths. A route exclusion also removes its descendants and their component overrides. A header action may declare its target's `routeId` to hide it when its target is excluded. In a header action, `app:<routeName>` always targets the host application's route, including when a plugin declares the action. Use a package-qualified ID for a plugin's route. The standard shells also hide linked actions while page permissions are pending or denied. A missing route ID or a group used as a target raises an error during Client runtime setup. Set `placement: 'beforeAccount'` to keep an action beside the account menu on desktop and mobile, including when other actions move into More. To hide, reposition or replace an action, use the application's `headerActionOverrides`.
+
+For system and personal settings, exclude individual pages or modules. Excluding a shared settings category ID raises an error. Categories emptied by exclusions disappear from navigation. Use `defineSettingsCategories()` to hide a category and move its pages to the fallback category.
+
+A plugin can offer an option that turns off its own pages, such as `agents({ chatRoutes: false })`, by passing `{ disabled: true }` to `defineAppRoutes()`, `defineSystemSettingsRoutes()` or `definePersonalSettingsRoutes()`. Disabled routes behave exactly like excluded ones: their paths stay free, and component overrides and header actions that target their IDs are dropped instead of failing. Prefer the plugin's option when it has one; use `excludedRouteIds` for any other page or for finer control. Both may name the same route.
+
+Use `useHasRoute(routeId)` before rendering a link to another contributed page. It reports whether the page is registered after exclusions. The route still applies its normal access check. In development, an exclusion whose package is present but whose route is missing produces one warning per ID.

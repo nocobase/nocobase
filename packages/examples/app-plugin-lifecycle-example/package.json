@@ -2,7 +2,17 @@
   "name": "@nocobase/app-plugin-lifecycle-example",
   "displayName": "Lifecycle Example App Plugin",
   "description": "Example app plugin showing record lifecycles: a support ticket that waits for its customer and an expense report that goes through approval.",
-  "version": "0.1.0-beta.20",
+  "nocobase": {
+    "title": {
+      "en-US": "Record lifecycle example",
+      "zh-CN": "记录生命周期示例"
+    },
+    "description": {
+      "en-US": "Follow a support ticket through a customer reply or an expense report through approval.",
+      "zh-CN": "查看等待客户回复的工单和等待审批的报销单如何流转。"
+    }
+  },
+  "version": "0.1.0-beta.22",
   "type": "module",
   "prettier": "@nocobase/dev-config/prettier",
   "engines": {
@@ -22,8 +32,7 @@
   },
   "files": [
     "dist",
-    "README.md",
-    "CHANGELOG.md"
+    "README.md"
   ],
   "publishConfig": {
     "access": "public",

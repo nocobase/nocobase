@@ -2,7 +2,17 @@
   "name": "@nocobase/app-plugin-authorization-example",
   "displayName": "Authorization Example App Plugin",
   "description": "Sales permissions example with business resources, role data scopes, default access, sharing and restrictions.",
-  "version": "1.0.0-beta.26",
+  "nocobase": {
+    "title": {
+      "en-US": "Sales permissions example",
+      "zh-CN": "销售权限示例"
+    },
+    "description": {
+      "en-US": "Explore how roles, sharing rules and restrictions control access to sales records.",
+      "zh-CN": "了解角色、共享规则和限制规则如何控制销售记录的访问范围。"
+    }
+  },
+  "version": "1.0.0-beta.29",
   "type": "module",
   "prettier": "@nocobase/dev-config/prettier",
   "engines": {
@@ -30,8 +40,7 @@
   },
   "files": [
     "dist",
-    "README.md",
-    "CHANGELOG.md"
+    "README.md"
   ],
   "publishConfig": {
     "access": "public",

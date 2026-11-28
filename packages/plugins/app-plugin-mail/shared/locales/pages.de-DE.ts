@@ -7,7 +7,7 @@ const pagesDeDE: MailPagesResource = {
     mailAccounts: 'E-Mail-Konten',
     mailAccountsDescription:
       'Verbinden Sie Ihre Postfächer und verwalten Sie Signaturen, Vorlagen und Etiketten.',
-    mailSettings: 'E-Mail',
+    mailSettings: 'Postfachverbindungen',
     mailSettingsDescription:
       'E-Mail-Anbieter, der Status jedes Kontos sowie Synchronisierungs- und Sendeprotokolle.',
   },
@@ -22,7 +22,7 @@ const pagesDeDE: MailPagesResource = {
       },
     },
     settings: {
-      title: 'E-Mail',
+      title: 'Postfachverbindungen',
       actions: {
         read: 'Anzeigen',
         manage:
@@ -113,7 +113,7 @@ const pagesDeDE: MailPagesResource = {
       },
     },
     settings: {
-      title: 'E-Mail',
+      title: 'Postfachverbindungen',
       description:
         'Die E-Mail-Anbieter, die Mitglieder verbinden können, und der Verbindungs-, Synchronisierungs- und Sendestatus jedes Kontos. Hier werden keine Nachrichteninhalte angezeigt. System-Benachrichtigungs-E-Mails werden unter Benachrichtigungen konfiguriert.',
       tabs: {

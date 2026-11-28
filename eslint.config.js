@@ -2,7 +2,6 @@ import {
   base,
   createClientLibraryConfig,
   createNodeLibraryConfig,
-  createApplicationConfig,
   node,
   typescript,
 } from '@nocobase/dev-config/eslint';
@@ -34,7 +33,6 @@ const nodeLibraryRoots = [
 ];
 const devConfigRoots = ['packages/tools/dev-config'];
 const clientLibraryRoots = ['packages/app/app-client'];
-const applicationRoots = ['packages/templates/app-template-default'];
 const prefixPatterns = (roots, patterns) =>
   roots.flatMap((root) => patterns.map((pattern) => `${root}/${pattern}`));
 
@@ -92,19 +90,5 @@ export default [
     }),
     ['packages/plugins/app-plugin-authentication'],
     'app-plugin-authentication',
-  ),
-  ...scopePackageConfigs(
-    createApplicationConfig({
-      tsconfigRootDir: import.meta.dirname,
-      ignores: [
-        '.extension-state/**',
-        'public/r/**',
-        'public/storage/**',
-        'src/extensions/**',
-        'storage/**',
-      ],
-    }),
-    applicationRoots,
-    'applications',
   ),
 ];

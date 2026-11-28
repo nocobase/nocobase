@@ -9,7 +9,7 @@ import { ShieldCheckIcon, LockKeyholeIcon } from 'lucide-react';
 
 const PACKAGE = '@nocobase/app-plugin-authentication';
 
-/** System settings › Accounts › Sign-in and authentication (`/settings/authentication`). */
+/** System settings › Accounts › Authentication (`/settings/authentication`). */
 export const AUTHENTICATION_SETTINGS_ROUTE_ID: string = `${PACKAGE}:authenticationSettings`;
 /** The single sign-on guide it links to (`/settings/authentication/sso`). */
 export const AUTHENTICATION_SSO_GUIDE_ROUTE_ID: string = `${PACKAGE}:authenticationSsoGuide`;
@@ -27,7 +27,7 @@ const readSettings = {
 } as const;
 
 /**
- * The read-only Sign-in and authentication page in the built-in Accounts category, for whoever may read the
+ * The read-only Authentication page in the built-in Accounts category, for whoever may read the
  * `authentication.settings` settings item. An application replaces either page through `routeComponentOverrides`
  * with the route ids above.
  */

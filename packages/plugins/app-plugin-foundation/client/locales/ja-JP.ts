@@ -22,7 +22,7 @@ const jaJP: LocaleResource<typeof enUS> = {
     description:
       'このアプリが使っているプラグインです。有効化や無効化はアプリのコードを変更し、再起動後に反映されるため、ここにはスイッチではなく実行するコマンドを表示します。',
     deployed:
-      'これはデプロイ済みのアプリです。アプリと一緒にデプロイされたプラグインだけを表示します。開発時のみ見えるプラグインはここにありません。',
+      'プラグインを有効にするには、ソースプロジェクトで登録してからアプリケーションを再デプロイしてください。',
     attention_one:
       '{{count}} 件のプラグインに注意が必要です。先頭に表示しています。',
     attention_other:
@@ -55,7 +55,6 @@ const jaJP: LocaleResource<typeof enUS> = {
     skillsOnly: '有効 · Skill のみ',
     enabledAttention: '有効 · 要注意',
     disabled: '未有効',
-    preinstalled: '未有効 · 開発時のみ',
     disabledAttention: '未有効 · 要注意',
     unknown: '確認できません · 再ビルドが必要',
   },

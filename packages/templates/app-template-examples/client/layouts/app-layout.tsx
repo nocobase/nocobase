@@ -1,5 +1,5 @@
 import { useSyncServerLocale } from '@nocobase/app-plugin-i18n/client';
-import { useMemo, type ReactElement } from 'react';
+import { Fragment, useMemo, type ReactElement } from 'react';
 import type { AppClientRegisteredRoute } from '@nocobase/app-client/plugins';
 import { Outlet, useLocation } from 'react-router';
 
@@ -58,11 +58,18 @@ export function AppLayout({
   const routes = useMemo(() => withSettingsShell(registered), [registered]);
   const { items, denied, loading } = useRouteNavigation(routes);
   const access = useMemo(() => ({ denied, loading }), [denied, loading]);
-  // System and personal settings pages replace the application's menu with their own, the way back first; elsewhere
-  // the single System settings entry stands apart at the bottom of the menu, and personal settings open from the
-  // account menu.
-  const inPersonalSettings = isPersonalSettingsPath(pathname);
-  const inSettings = isSettingsPath(pathname) || inPersonalSettings;
+  const hasPersonalSettings = routes.some(
+    (route) => route.surface === 'personalSettings',
+  );
+  const Background = hasPersonalSettings
+    ? PersonalSettingsBackground
+    : Fragment;
+  const inPersonalSettings =
+    hasPersonalSettings && isPersonalSettingsPath(pathname);
+  const inSystemSettings =
+    routes.some((route) => route.surface === 'systemSettings') &&
+    isSettingsPath(pathname);
+  const inSettings = inSystemSettings || inPersonalSettings;
   const settingsItems = useMemo(
     () =>
       !inSettings || loading
@@ -71,9 +78,6 @@ export function AppLayout({
           ? buildPersonalSettingsNavigation(routes, denied)
           : buildSettingsNavigation(routes, denied),
     [inSettings, inPersonalSettings, loading, routes, denied],
-  );
-  const settingsEntry = items.filter(
-    (item) => item.route.name === SETTINGS_HOME,
   );
   const menuItems = inSettings
     ? settingsItems
@@ -97,24 +101,7 @@ export function AppLayout({
       <RouteTreeProvider routes={routes} access={access}>
         <PageBreadcrumbProvider>
           <AppSidebarProvider>
-            <AppSidebar
-              label={navigationLabel}
-              footer={
-                <>
-                  {/* The System settings entry stays in view at the bottom of the sidebar, outside the scrolling menu. */}
-                  {!inSettings && settingsEntry.length ? (
-                    <div className='shrink-0 border-t border-sidebar-border'>
-                      <NavigationMenu
-                        items={settingsEntry}
-                        label={t('settings.title')}
-                        selectedKey={undefined}
-                      />
-                    </div>
-                  ) : null}
-                  <AppSidebarFooter />
-                </>
-              }
-            >
+            <AppSidebar label={navigationLabel} footer={<AppSidebarFooter />}>
               {inSettings ? <SettingsBack /> : null}
               {inPersonalSettings ? <PersonalSettingsIdentity /> : null}
               <NavigationMenu
@@ -141,18 +128,18 @@ export function AppLayout({
                   {/* main only positions; the page scrolls in here, so a child page layer laid over main is neither
             moved by the page's scrolling nor stretched by its height. */}
                   <div className='h-full overflow-y-auto'>
-                    <PersonalSettingsBackground>
-                      <RememberSettingsReturn />
+                    <Background>
+                      <RememberSettingsReturn inSettings={inSettings} />
                       <RouteLeaveBoundary hidden={loading}>
                         <Outlet />
                       </RouteLeaveBoundary>
-                    </PersonalSettingsBackground>
+                    </Background>
                   </div>
                 </main>
                 <AppAsideOutlet />
               </div>
             </div>
-            <PersonalSettingsDialog />
+            {hasPersonalSettings && <PersonalSettingsDialog />}
           </AppSidebarProvider>
         </PageBreadcrumbProvider>
       </RouteTreeProvider>
@@ -160,7 +147,12 @@ export function AppLayout({
   );
 }
 
-function RememberSettingsReturn() {
-  useRememberSettingsReturn();
+function RememberSettingsReturn({
+  inSettings,
+}: {
+  readonly inSettings: boolean;
+}): null {
+  // The layout's own answer for this location, so a page the application owns under a disabled surface is remembered.
+  useRememberSettingsReturn(() => inSettings);
   return null;
 }

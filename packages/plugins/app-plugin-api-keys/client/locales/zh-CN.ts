@@ -1,8 +1,10 @@
+import auditLabels from '../../locales/zh-CN.js';
 import type { LocaleResource } from '@nocobase/i18n';
 
 import type enUS from './en-US.js';
 
 const zhCN: LocaleResource<typeof enUS> = {
+  ...auditLabels,
   navigation: {
     personal: 'API 密钥',
     system: 'API 密钥',
@@ -178,7 +180,7 @@ const zhCN: LocaleResource<typeof enUS> = {
   rules: {
     newKeysOnly:
       '这些规则只对之后新建和轮换的密钥生效，已有密钥的有效期不变。谁能进入此页、管理系统密钥或创建个人密钥，在角色上设置。',
-    whoMay: '角色和权限',
+    whoMay: '角色与权限',
     sameAsMe: {
       title: '个人密钥的权限范围',
       description:

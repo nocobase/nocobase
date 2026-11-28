@@ -2,7 +2,17 @@
   "name": "@nocobase/app-plugin-jobs-example",
   "displayName": "Jobs Example App Plugin",
   "description": "Example app plugin running a recurring schedule and one-off background jobs on the application's jobs service.",
-  "version": "1.0.0-beta.14",
+  "nocobase": {
+    "title": {
+      "en-US": "Background jobs example",
+      "zh-CN": "后台任务示例"
+    },
+    "description": {
+      "en-US": "Run one-off jobs and schedule recurring tasks.",
+      "zh-CN": "运行一次性后台任务并安排周期性任务。"
+    }
+  },
+  "version": "1.0.0-beta.15",
   "type": "module",
   "prettier": "@nocobase/dev-config/prettier",
   "engines": {

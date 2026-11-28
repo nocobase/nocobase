@@ -1,7 +1,7 @@
 {
   "name": "@nocobase/dev-config",
-  "version": "0.1.0-beta.25",
-  "description": "Shared TypeScript, ESLint, Prettier, Vitest, and Vite configuration for NocoBase packages.",
+  "version": "0.1.0-beta.26",
+  "description": "Shared TypeScript, Oxlint, ESLint, Prettier, Vitest, and Vite configuration for NocoBase packages.",
   "type": "module",
   "sideEffects": [
     "./dist/vitest/react-setup.js"
@@ -20,6 +20,7 @@
     "docs",
     "dist",
     "eslint/README.md",
+    "oxlint/README.md",
     "prettier/README.md",
     "tsconfig",
     "vite/README.md",
@@ -36,6 +37,10 @@
     "./eslint": {
       "types": "./dist/eslint/index.d.ts",
       "import": "./dist/eslint/index.js"
+    },
+    "./oxlint": {
+      "types": "./dist/oxlint/index.d.ts",
+      "import": "./dist/oxlint/index.js"
     },
     "./prettier": {
       "types": "./dist/prettier/index.d.ts",
@@ -102,6 +107,8 @@
     "@types/node": "catalog:",
     "@vitejs/plugin-react": "catalog:",
     "eslint": "catalog:",
+    "oxlint": "catalog:",
+    "oxlint-tsgolint": "catalog:",
     "prettier": "catalog:",
     "publint": "catalog:",
     "react": "catalog:",
@@ -117,6 +124,7 @@
     "@vitejs/plugin-react": "catalog:",
     "eslint": "catalog:",
     "jsdom": "catalog:",
+    "oxlint": "catalog:",
     "prettier": "catalog:",
     "react": "catalog:",
     "react-dom": "catalog:",
@@ -138,6 +146,9 @@
       "optional": true
     },
     "jsdom": {
+      "optional": true
+    },
+    "oxlint": {
       "optional": true
     },
     "react": {

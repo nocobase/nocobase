@@ -28,7 +28,7 @@ function resolve() {
 }
 
 describe('the authentication plugin’s settings pages in the application', () => {
-  it('lists Sign-in and authentication under Accounts and permissions, and hides it when denied', () => {
+  it('lists Authentication under Accounts and permissions, and hides it when denied', () => {
     const routes = resolve();
     const accounts = (denied: Set<string>) =>
       buildSettingsCatalog(routes, denied)

@@ -151,8 +151,10 @@ pnpm exec vitest run <related-test-files>
 ```
 
 ```bash
-pnpm exec eslint --max-warnings 0 <related-test-files>
+pnpm lint <related-test-files>
 ```
+
+In a project with `eslint.config.js`, run `pnpm exec eslint --max-warnings 0 <related-test-files>` for the scoped check.
 
 `vitest.config.ts` sets `passWithNoTests: true`, so a mistyped or missing path prints "No test files found" and exits 0 without running anything. Confirm that the summary line counts every file you named (`Test Files  N passed (N)`).
 

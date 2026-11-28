@@ -8,6 +8,7 @@ const zhTW: LocaleResource<typeof enUS> = {
     resend: '重新傳送',
     feishuWebhook: 'Feishu Webhook',
     dingtalkWebhook: 'DingTalk Webhook',
+    sms: '簡訊',
   },
 };
 

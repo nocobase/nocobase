@@ -1,5 +1,7 @@
 # Client integration
 
+Set `workspaceRoutes: false` to omit the Mail and Team mail business pages.
+
 See the [public API inventory](public-api.md) for the exact package entries, exported Client methods, component props and Server extension contracts.
 
 ## Production composition
@@ -8,7 +10,7 @@ Register the Mail Client plugin before rendering its UI. Use `MailWorkspacePage`
 
 Use the application's client services and permission context. `useMailClient()` resolves the application-owned client in React; `app.services.resolve(mailClientToken)` does so elsewhere. Use the Mail translation namespace for application-owned copy that reuses Mail translation keys. Follow the target application's routing and theme conventions for new pages.
 
-The plugin registers four pages: `mail` (`/mail`, the workspace, with the unread count in the navigation), `mailTeam` (`/mail/team`, Team mail), `mailAccounts` (`/me/mail`, Personal settings › Integrations › Mail accounts) and `mailSettings` (`/settings/mail`, System settings › Messages › Mail). Their `authz` use the constants in `MAIL_ACCESS`, the same the API checks. An application moves or hides the two navigation entries with `mail({ routes: { mail: { order, parent }, mailTeam: false } })`, and replaces a page as a whole by its route name with `routeComponentOverrides`. Do not register application pages that duplicate them.
+The plugin registers four pages: `mail` (`/mail`, the workspace, with the unread count in the navigation), `mailTeam` (`/mail/team`, Team mail), `mailAccounts` (`/me/mail`, Personal settings › Integrations › Mail accounts) and `mailSettings` (`/settings/mail`, System settings › Communications › Mailbox connections). Their `authz` use the constants in `MAIL_ACCESS`, the same the API checks. An application moves or hides the two navigation entries with `mail({ routes: { mail: { order, parent }, mailTeam: false } })`, and replaces a page as a whole by its route name with `routeComponentOverrides`. Do not register application pages that duplicate them.
 
 `mail.oauthReturnUrl` defaults to `/me/mail`, the plugin's Mail accounts page, which reads the `mailAuthorization` result and reloads the accounts. Configure it only when the application replaces or leaves out that page; see [OAuth callback and return page](configuration-and-accounts.md#oauth-callback-and-return-page).
 

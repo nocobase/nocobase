@@ -26,7 +26,7 @@ const settings = {
       'This prerequisite could not be verified. Ask the application maintainer to check its configuration.',
   },
 
-  permissionManagement: 'Roles and permissions',
+  permissionManagement: 'Roles & permissions',
   defaultAccess: {
     kindBusiness: 'business operations',
     kindTable: 'data table',
@@ -51,7 +51,7 @@ const settings = {
     chooseResource: 'Choose a business object',
     action: 'Operation',
     scope: 'Data scope',
-    scopes: 'Operations and data scopes',
+    scopes: 'Operations & data scopes',
     none: 'No default scope',
     all: 'All records',
     custom: 'Custom filter',
@@ -96,7 +96,7 @@ const settings = {
   unnamedPage: 'Unnamed page ({{path}})',
   revokeRoles: 'Revoke roles',
   keyConflict: 'This role key is already in use.',
-  userPermissions: 'Users and accounts',
+  userPermissions: 'Users & accounts',
   readUsers: 'View users',
   createUsers: 'Create users',
   updateUsers: 'Edit users',

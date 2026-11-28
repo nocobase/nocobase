@@ -4,6 +4,8 @@
     "eslint.config.ts",
     "prettier.config.ts",
     "eslint/**/*.ts",
+    "lint/**/*.ts",
+    "oxlint/**/*.ts",
     "prettier/**/*.ts",
     "scripts/**/*.ts",
     "vite/**/*.ts",

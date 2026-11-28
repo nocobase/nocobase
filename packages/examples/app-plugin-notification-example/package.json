@@ -2,7 +2,17 @@
   "name": "@nocobase/app-plugin-notification-example",
   "displayName": "Notification Example App Plugin",
   "description": "A task assignment example that persists tasks and sends in-app notifications.",
-  "version": "1.0.0-beta.18",
+  "nocobase": {
+    "title": {
+      "en-US": "Task notification example",
+      "zh-CN": "任务通知示例"
+    },
+    "description": {
+      "en-US": "Assign a task and notify its recipient with an in-app message.",
+      "zh-CN": "分派任务时，向接收人发送站内信。"
+    }
+  },
+  "version": "1.0.0-beta.21",
   "type": "module",
   "prettier": "@nocobase/dev-config/prettier",
   "sideEffects": false,
@@ -23,8 +33,7 @@
   },
   "files": [
     "dist",
-    "README.md",
-    "CHANGELOG.md"
+    "README.md"
   ],
   "publishConfig": {
     "access": "public",

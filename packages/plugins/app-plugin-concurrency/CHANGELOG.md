@@ -1,5 +1,27 @@
 # @nocobase/app-plugin-concurrency
 
+## 0.1.0-beta.5
+
+### Patch Changes
+
+- 1952789: Declare whether each product plugin is enabled by default, preinstalled only, available separately, or deprecated.
+
+## 0.1.0-beta.4
+
+### Minor Changes
+
+- a6b9b74: Add the read-only Cluster and distributed settings page and `GET /api/distributed/status`, which show the backend each shared service selected on the answering instance, whether it is shared between instances, and what must change before running several instances, with server and client extension points. Caching, concurrency, Jobs, Queue and Realtime gain a read-only `describe()` and let an adapter declare `sharing: 'local' | 'shared'` when it registers. The file plugin reports the file collections stored on a local disk. Both application templates register the plugin.
+
+### Patch Changes
+
+- a6b9b74: Declare the plugin's title and one-line description in English and Chinese under `nocobase` in `package.json`, which the App Foundation plugins page lists it by.
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+  - @nocobase/app-server@5.0.0-beta.9
+  - @nocobase/concurrency@0.1.0-beta.1
+  - @nocobase/service-provider@0.0.2-beta.2
+
 ## 0.1.0-beta.3
 
 ### Minor Changes

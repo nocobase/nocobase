@@ -24,3 +24,5 @@ For UI components, copy the files and targets listed in `ui-library/registry/com
 Run the plugin's scoped checks and relevant consumer checks. When locale resources change, run `pnpm i18n:check` (and `--strict` when required). For HTTP changes use `pnpm openapi:check` or `node scripts/check-openapi.mjs default` as appropriate. Migrations follow `.agents/rules/database-migrations.md`. These repository scripts are not commands to assume in an installed App.
 
 The shared Skill's executable example is a private nested workspace at `packages/app/app-skills/skills/nocobase-app-plugin-development/assets/testing-example/`. Its source and verifier ship as learning resources; installed dependencies, test storage and build output must not enter the published Skill.
+
+Use the Collection Builder or `connection.schema.execute()` for schema changes. When native DDL is required, pass the DDL callback to `connection.notifySchemaChange()` and use that connection's client inside the callback. This keeps Collection definitions current across transactions and replicas, including in isolated migration transactions that inspect a table before changing it.

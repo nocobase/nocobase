@@ -1,6 +1,8 @@
 import concurrency from '@nocobase/app-plugin-concurrency/server';
+import messageBroker from '@nocobase/app-plugin-message-broker/server';
 import mail from '@nocobase/app-plugin-mail/server';
 import mailExample from '@nocobase/app-plugin-mail-example/server';
+import messageBrokerExample from '@nocobase/app-plugin-message-broker-example/server';
 import defaultAccess from '@nocobase/app-plugin-authz-default-access/server';
 import sharingRules from '@nocobase/app-plugin-authz-sharing-rules/server';
 import restrictionRules from '@nocobase/app-plugin-authz-restriction-rules/server';
@@ -10,7 +12,6 @@ import users from '@nocobase/app-plugin-users/server';
 import authorizationExample from '@nocobase/app-plugin-authorization-example/server';
 import templatePrintExample from '@nocobase/app-plugin-template-print-example/server';
 import databaseExplorer from '@nocobase/app-plugin-database-explorer/server';
-import distributed from '@nocobase/app-plugin-distributed/server';
 import databaseExample from '@nocobase/app-plugin-database-example/server';
 import i18n from '@nocobase/app-plugin-i18n/server';
 import jobsExample from '@nocobase/app-plugin-jobs-example/server';
@@ -41,6 +42,7 @@ import knowledge from '@nocobase/app-plugin-knowledge/server';
 
 const serverPlugins: AppServerPlugins = defineServerPlugins([
   concurrency,
+  messageBroker,
   authentication,
   authorization,
   defaultAccess,
@@ -59,6 +61,7 @@ const serverPlugins: AppServerPlugins = defineServerPlugins([
   notificationWebPush,
   notificationExample,
   queueExample,
+  messageBrokerExample,
   realtimeExample,
   jobsExample,
   lifecycleExample,
@@ -68,7 +71,6 @@ const serverPlugins: AppServerPlugins = defineServerPlugins([
   skillsExample,
   repositoryExample,
   file,
-  distributed,
   fileExample,
   scheduler,
   mail,

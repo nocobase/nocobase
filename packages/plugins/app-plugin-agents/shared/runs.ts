@@ -127,6 +127,7 @@ export interface ModelSelectionWait {
     readonly compatibleCount: number;
     readonly blockers?: readonly ModelWaitReason[];
     readonly runners: readonly {
+      readonly runnerId?: string;
       readonly name: string;
       readonly reason?: ModelWaitReason;
       readonly lastSeenAt?: string | null;

@@ -10,19 +10,16 @@ import {
 
 import type { Auth } from './auth.js';
 import type { AuthConfig } from './config.js';
+import type {
+  AuthenticationProviderSummary,
+  AuthenticationSettings,
+  PasswordResetSenderDescription,
+} from '../shared/settings.js';
 import {
   collectAuthenticationSettings,
   configuredProviders,
-  type AuthenticationSettings,
-  type PasswordResetSenderDescription,
 } from './settings.js';
 import type { SignInMethodRegistry } from './sign-in-methods.js';
-
-/** A single sign-on or social provider a person can link to their account. */
-export interface AuthenticationProviderSummary {
-  readonly id: string;
-  readonly name: string;
-}
 
 /** What `GET /api/authentication/settings` and `GET /api/authentication/providers` answer. */
 export interface AuthenticationSettingsService {

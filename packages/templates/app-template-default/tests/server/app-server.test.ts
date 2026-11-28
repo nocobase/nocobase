@@ -1251,7 +1251,14 @@ function createTestApp(options: CreateTestAppOptions = {}): TestApp {
     },
   };
   const config = createTestConfig(configValues);
-  const paths = createAppPaths({ rootDir: '/test/app-template-default' });
+  const storageDir = mkdtempSync(
+    path.join(tmpdir(), 'app-template-default-storage-'),
+  );
+  tempDirs.push(storageDir);
+  const paths = createAppPaths({
+    rootDir: '/test/app-template-default',
+    storageDir,
+  });
   const database =
     options.database === false
       ? undefined

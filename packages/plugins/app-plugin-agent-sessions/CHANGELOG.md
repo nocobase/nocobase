@@ -1,5 +1,75 @@
 # @nocobase/app-plugin-agent-sessions
 
+## 1.0.0-beta.25
+
+### Patch Changes
+
+- 1952789: Declare whether each product plugin is enabled by default, preinstalled only, available separately, or deprecated.
+- cf23bfe: Stop publishing CHANGELOG.md in the package; the changelog stays in the repository.
+- Updated dependencies [888bca5]
+- Updated dependencies [1952789]
+- Updated dependencies [24d0cad]
+- Updated dependencies [cf23bfe]
+  - @nocobase/app-plugin-authentication@2.0.0-beta.27
+  - @nocobase/app-plugin-file@1.0.0-beta.35
+  - @nocobase/agent-protocol@0.1.0-beta.25
+  - @nocobase/acp-bridge@1.0.0-beta.9
+
+## 1.0.0-beta.24
+
+### Patch Changes
+
+- cc0bf33: Run outstanding sample data when enabled on existing databases. Write seed history only after a successful run and omit disabled sample seeds from dry-run plans. Apply the preview environment's sample data setting on every deployment and document the guidance for adding sample seeds to business changes.
+- Updated dependencies [2b77e0d]
+- Updated dependencies [cc0bf33]
+- Updated dependencies [4561d5f]
+- Updated dependencies [52d0b0d]
+- Updated dependencies [c12d990]
+- Updated dependencies [1b92cdb]
+- Updated dependencies [1b92cdb]
+- Updated dependencies [1b92cdb]
+- Updated dependencies [78bdca8]
+- Updated dependencies [87e3dac]
+- Updated dependencies [9acf418]
+  - @nocobase/agent-protocol@0.1.0-beta.24
+  - @nocobase/app-server@5.0.0-beta.12
+  - @nocobase/db@1.0.0-beta.31
+  - @nocobase/app-plugin-authentication@2.0.0-beta.26
+  - @nocobase/app-client@4.0.0-beta.14
+  - @nocobase/app-plugin-file@1.0.0-beta.34
+
+## 1.0.0-beta.23
+
+### Patch Changes
+
+- a6b9b74: Add a File storage page under System settings › System. It lists the configured disks with their location, visibility, size limit, completeness and setting sources, lists the features that store files with their disk, download method, file count and total size, and checks that a disk can be written, read, linked and deleted. Plugins declare the features that store files with `registerUsage()`, file repositories exposed with `defineFileRepositoryApiRoutes()` are listed automatically as public links, and the projects, knowledge, agents and agent sessions plugins list their file tables. Responses never include credentials or absolute server paths.
+- a6b9b74: Declare the plugin's title and one-line description in English and Chinese under `nocobase` in `package.json`, which the App Foundation plugins page lists it by.
+- Updated dependencies [a6b9b74]
+- Updated dependencies [44395d2]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [acc1f0d]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [1048669]
+  - @nocobase/app-client@4.0.0-beta.12
+  - @nocobase/acp-bridge@1.0.0-beta.8
+  - @nocobase/agent-protocol@0.1.0-beta.23
+  - @nocobase/app-plugin-authentication@2.0.0-beta.24
+  - @nocobase/app-server@5.0.0-beta.9
+  - @nocobase/app-plugin-file@1.0.0-beta.33
+  - @nocobase/db@1.0.0-beta.30
+  - @nocobase/i18n@2.0.0-beta.2
+  - @nocobase/service-provider@0.0.2-beta.2
+
 ## 1.0.0-beta.22
 
 ### Patch Changes

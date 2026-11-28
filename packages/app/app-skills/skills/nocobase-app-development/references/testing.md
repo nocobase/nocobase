@@ -1,5 +1,7 @@
 # Testing and verification
 
+For manual browser evidence, use [development screenshots](screenshots.md). The command starts an isolated, disposable app and supports signed-in scripts for data setup and interactions. Keep automated Playwright assertions in the existing e2e suite.
+
 ## Testing with `@nocobase/app-testing`
 
 Application tests use `@nocobase/app-testing` in `devDependencies`. It exposes `/server`, `/client` and `/cli`; choose the entry that matches the test environment. Use the real repository, application composition or command class whose behavior the test needs to prove. The examples below are references of the `nocobase-app-development` Skill delivered by `@nocobase/app-skills`.
@@ -261,7 +263,9 @@ Do not delete or rebuild a running development server's cache. For an already co
 
 `@nocobase/app-cli` implements the application's scripts and commands: `pnpm dev`, `pnpm build` and `pnpm start` run `nocobase dev`, `nocobase build` and `nocobase start`, and every standard command is `pnpm nocobase <topic> <command>`. In the source repository, run shared implementation tests in `packages/app/app-cli` and application composition tests in each affected template. Keep tests for the application's own commands in the application. A generated application consumes the compiled package; do not edit installed package files to customize behavior.
 
-Application server source supports extensionless relative imports. Keep `module: "ESNext"`, `moduleResolution: "Bundler"`, and `tsc-alias.resolveFullPaths: true` in `tsconfig.server.json`. Development uses `tsx`; production builds run `tsc-alias` after `tsc` to complete ESM paths, before build hooks run. When changing this configuration, verify the compiled output with plain Node and no source files or TypeScript loader.
+The templates install `@nocobase/typescript7` as a dev dependency. `pnpm build` and `pnpm typecheck` use it when installed and otherwise use the application's `tsc`. Set `NOCOBASE_TSC=tsc` to select TypeScript 6 explicitly. Keep `typescript` installed for ESLint and the JS compiler API. Each template project has an incremental checking cache under `node_modules/.tmp`. The server build uses a fresh cache so it emits a complete deployment after clearing `dist/`.
+
+Application server source supports extensionless relative imports. Keep `module: "ESNext"`, `moduleResolution: "Bundler"`, and `tsc-alias.resolveFullPaths: true` in `tsconfig.server.json`. Development uses `tsx`; production builds run `tsc-alias` after the compiler to complete ESM paths, before build hooks run. When changing this configuration, verify the compiled output with plain Node and no source files or TypeScript loader.
 
 Vite configuration imports the proxy helpers from `@nocobase/app-cli/dev/proxy`. Watcher, proxy, supervisor and build-step unit tests live in `app-cli`; templates verify their composition and Vite integration.
 

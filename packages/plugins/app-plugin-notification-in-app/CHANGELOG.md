@@ -1,5 +1,92 @@
 # @nocobase/app-plugin-notification-in-app
 
+## 2.0.0-beta.10
+
+### Patch Changes
+
+- 1952789: Declare whether each product plugin is enabled by default, preinstalled only, available separately, or deprecated.
+- cf23bfe: Stop publishing CHANGELOG.md in the package; the changelog stays in the repository.
+- Updated dependencies [888bca5]
+- Updated dependencies [1952789]
+- Updated dependencies [cf23bfe]
+  - @nocobase/app-plugin-authentication@2.0.0-beta.27
+  - @nocobase/app-plugin-notification@2.0.0-beta.12
+
+## 2.0.0-beta.9
+
+### Patch Changes
+
+- 1b92cdb: Show a localized tooltip when the inbox header button is hovered or focused.
+- Updated dependencies [cc0bf33]
+- Updated dependencies [4561d5f]
+- Updated dependencies [87e3dac]
+- Updated dependencies [52d0b0d]
+- Updated dependencies [c12d990]
+- Updated dependencies [1b92cdb]
+- Updated dependencies [1b92cdb]
+- Updated dependencies [1b92cdb]
+- Updated dependencies [78bdca8]
+- Updated dependencies [91a8ff2]
+- Updated dependencies [87e3dac]
+- Updated dependencies [9acf418]
+  - @nocobase/app-server@5.0.0-beta.12
+  - @nocobase/db@1.0.0-beta.31
+  - @nocobase/app-plugin-notification@2.0.0-beta.11
+  - @nocobase/app-plugin-authentication@2.0.0-beta.26
+  - @nocobase/app-client@4.0.0-beta.14
+
+## 2.0.0-beta.8
+
+### Minor Changes
+
+- 8ff2df3: Applications can disable system settings, personal settings, chat, inbox and mail workspace routes independently. All five are enabled by default, so existing applications keep their pages when upgrading. Plugins can turn off their own pages with `{ disabled: true }` on `defineAppRoutes()` and the settings route helpers; disabled routes behave like `excludedRouteIds`, so overrides and header actions that target them no longer fail.
+
+### Patch Changes
+
+- 8e7f898: Complete the Agent and inbox translations and allow Demo Mode to start when hosted model services are disabled.
+- Updated dependencies [300f760]
+- Updated dependencies [29c62bd]
+- Updated dependencies [28a7606]
+- Updated dependencies [8ff2df3]
+  - @nocobase/app-client@4.0.0-beta.13
+  - @nocobase/app-plugin-authentication@2.0.0-beta.25
+  - @nocobase/app-server@5.0.0-beta.10
+  - @nocobase/app-plugin-notification@2.0.0-beta.10
+
+## 2.0.0-beta.7
+
+### Minor Changes
+
+- a6b9b74: Notify people instead of channels. Notification templates become notification kinds that declare a policy per channel type (`required`, `on` or `off`), and the notification service gains `notify(kind, { to: userIds, data, target, source, idempotencyKey })`, which applies each person's choices, reaches them through every channel type that can (in-app by user, email by account address, web-push by enabled device) and makes one ordinary `send()`; `send()` and `sendTransient()` are unchanged. Each person chooses channels per kind in the new `notificationPreferences` table through `GET`/`PUT /api/notifications/preferences`; required channels cannot be turned off. In-app items record their kind, category and source, and the inbox list filters by `category`. The plugins now own every notification page: the in-app client plugin registers the `/inbox` page and the header's inbox button with a pending-or-unread badge and exports inbox entry renderers and pending sources as extension points, replacing `NotificationInAppInbox` and `NotificationInAppProvider`; the notification client plugin registers System settings › Messages › Notifications (channels with a test send to yourself, kinds, and a filterable delivery log with retry) and Personal settings › Messages › Notifications, with channel type displays and personal sections as extension points, and web-push adds its devices section. The settings pages and their API check the new `notification` settings item (`read`, `manage`) instead of `page:notification.templates` and `page:notification.logs`, and `/api/notifications/templates` is replaced by `/api/notifications/kinds`. Projects and the notification example send with `notify()`; Projects drops its `inboxChannel` option. Both templates drop their copied inbox and notification template pages and only register the plugins, and Examples registers web-push with a sample channel.
+
+### Patch Changes
+
+- a6b9b74: Apply personal API key rules consistently at issuance and rotation, and keep recently used or rotated keys active during idle checks. Notification retries preserve previously skipped recipients, and the inbox shows available items when a source fails.
+- a6b9b74: Declare the plugin's title and one-line description in English and Chinese under `nocobase` in `package.json`, which the App Foundation plugins page lists it by.
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [1048669]
+  - @nocobase/app-client@4.0.0-beta.12
+  - @nocobase/app-plugin-authentication@2.0.0-beta.24
+  - @nocobase/app-server@5.0.0-beta.9
+  - @nocobase/app-plugin-notification@2.0.0-beta.10
+  - @nocobase/db@1.0.0-beta.30
+  - @nocobase/i18n@2.0.0-beta.2
+  - @nocobase/service-provider@0.0.2-beta.2
+
 ## 2.0.0-beta.6
 
 ### Patch Changes

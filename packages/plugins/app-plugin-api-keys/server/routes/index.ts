@@ -1,3 +1,5 @@
+import { auditOperationName } from '../audit-operation-name.js';
+import { auditRecordKey, describeAudit } from '@nocobase/audit';
 import { authenticationToken } from '@nocobase/app-plugin-authentication/server';
 import {
   authorizationOptions,
@@ -25,7 +27,7 @@ import {
 import { Hono, type Context, type MiddlewareHandler } from 'hono';
 
 import { requireSignInSession } from '../key-sessions.js';
-import { ApiKeyRequestError } from '../scoped-keys.js';
+import { ApiKeyRequestError, type ApiKeysConfig } from '../scoped-keys.js';
 import {
   memberApiKeysToken,
   scopedApiKeysToken,
@@ -81,7 +83,7 @@ const newRouteOffCommandLine = cliRoute(false);
  * keys only, and only from a sign-in: a request made with any API key is refused (`requireSignInSession`).
  */
 export const apiRoutes: AppApiRouteContribution<AppPluginApplication> =
-  defineApiRoutes(({ container }) => {
+  defineApiRoutes(({ container, config }) => {
     const router = new Hono();
     if (!container.has(authenticationToken)) return router;
     const keys = container.resolve(scopedApiKeysToken);
@@ -100,7 +102,11 @@ export const apiRoutes: AppApiRouteContribution<AppPluginApplication> =
       (await keys.identityOf(userId(context)));
     // Members' keys and the rules: administration, registered before `/:keyId`, which would otherwise match them. A
     // host that composes these routes without the plugin's provider, as an application's own tests may, goes without.
-    if (container.has(authorizationToken) && container.has(memberApiKeysToken))
+    if (
+      container.has(authorizationToken) &&
+      container.has(memberApiKeysToken) &&
+      config.get<ApiKeysConfig>('apiKeys')?.keyAdministrationRoutes !== false
+    )
       installKeyAdministration(routes, {
         keys,
         members: container.resolve(memberApiKeysToken),
@@ -312,6 +318,16 @@ export const apiRoutes: AppApiRouteContribution<AppPluginApplication> =
     );
     routes.post(
       '/',
+      describeAudit({
+        operationName: auditOperationName('createPersonalKey'),
+        resource: 'apikey',
+        target: () => ({ collection: 'apikey' }),
+        captureBody: false,
+        resolveTargets: ({ response }) => ({
+          collection: 'apikey',
+          key: auditRecordKey(response, 'data', 'key', 'id'),
+        }),
+      }),
       mayCreate,
       describeRoute({
         tags,
@@ -342,16 +358,12 @@ export const apiRoutes: AppApiRouteContribution<AppPluginApplication> =
       apiValidator('json', CreateApiKeyInput),
       async (context) => {
         context.header('Cache-Control', 'no-store');
-        return context.json(
-          {
-            data: await keys.create(
-              userId(context),
-              context.req.valid('json'),
-              await identity(context),
-            ),
-          },
-          201,
+        const data = await keys.create(
+          userId(context),
+          context.req.valid('json'),
+          await identity(context),
         );
+        return context.json({ data }, 201);
       },
     );
     // The permission catalogue a key's detail shows: what the caller holds, plus the actions this key still names after
@@ -401,6 +413,27 @@ export const apiRoutes: AppApiRouteContribution<AppPluginApplication> =
     );
     routes.post(
       '/:keyId/rotate',
+      describeAudit({
+        operationName: auditOperationName('rotatePersonalKey'),
+        resource: 'apikey',
+        captureBody: false,
+        resolveTargets: ({ response }, context) => {
+          const key = auditRecordKey(response, 'data', 'key', 'id');
+          return key === undefined
+            ? undefined
+            : {
+                source: {
+                  collection: 'apikey',
+                  key: context.req.param('keyId'),
+                },
+                targets: [{ collection: 'apikey', key }],
+              };
+        },
+        target: (context) => ({
+          collection: 'apikey',
+          key: context.req.param('keyId'),
+        }),
+      }),
       mayCreate,
       describeRoute({
         tags,
@@ -432,6 +465,14 @@ export const apiRoutes: AppApiRouteContribution<AppPluginApplication> =
     );
     routes.delete(
       '/:keyId',
+      describeAudit({
+        operationName: auditOperationName('revokePersonalKey'),
+        resource: 'apikey',
+        target: (context) => ({
+          collection: 'apikey',
+          key: context.req.param('keyId'),
+        }),
+      }),
       describeRoute({
         tags,
         summary: 'Revoke an API key',
@@ -458,7 +499,8 @@ export const apiRoutes: AppApiRouteContribution<AppPluginApplication> =
     router.route('/apiKeys', routes);
     if (
       container.has(authorizationToken) &&
-      container.has(systemApiKeysToken)
+      container.has(systemApiKeysToken) &&
+      config.get<ApiKeysConfig>('apiKeys')?.systemApiKeyRoutes !== false
     ) {
       const system = new Hono<Env>();
       system.onError((error, context) =>

@@ -25,19 +25,23 @@ export function createDeviceRoutes(): AppApiRouteContribution<Application> {
     const router = new Hono();
     router.onError((error, context) => {
       if (error instanceof PushError) {
-        const status =
-          error.code === 'missing'
-            ? 'NOT_FOUND'
-            : error.code === 'owned'
-              ? 'PERMISSION_DENIED'
-              : error.code === 'unavailable'
-                ? 'UNAVAILABLE'
-                : error.code === 'limited'
-                  ? 'RESOURCE_EXHAUSTED'
-                  : 'INVALID_ARGUMENT';
+        const status = {
+          missing: 'NOT_FOUND',
+          owned: 'PERMISSION_DENIED',
+          unavailable: 'UNAVAILABLE',
+          limited: 'RESOURCE_EXHAUSTED',
+          endpoint: 'INVALID_ARGUMENT',
+          payload: 'INVALID_ARGUMENT',
+          paused: 'UNAVAILABLE',
+          expired: 'FAILED_PRECONDITION',
+          network: 'UNAVAILABLE',
+          gateway_auth: 'FAILED_PRECONDITION',
+          gateway_limited: 'UNAVAILABLE',
+          gateway: 'UNAVAILABLE',
+        } as const;
         return apiErrorHandler(
           new ApiError({
-            status,
+            status: status[error.code],
             reason: `PUSH_${error.code.toUpperCase()}`,
             domain: 'webPush',
             message: error.message,
@@ -68,6 +72,7 @@ export function createDeviceRoutes(): AppApiRouteContribution<Application> {
       response: ReturnType<typeof dataResponse>,
       errors: Parameters<typeof apiErrorResponse>[0][] = [],
       status: number = 200,
+      badRequest?: string,
     ) =>
       describeRoute({
         operationId,
@@ -81,6 +86,7 @@ export function createDeviceRoutes(): AppApiRouteContribution<Application> {
           ...Object.fromEntries(
             errors.map((code) => [code, apiErrorResponse(code)]),
           ),
+          ...(badRequest ? { 400: apiErrorResponse(400, badRequest) } : {}),
         },
       });
     router.get(
@@ -178,14 +184,21 @@ export function createDeviceRoutes(): AppApiRouteContribution<Application> {
       '/subscriptions/:id/test',
       describe(
         'webPushTestPushSubscription',
-        'Send a test notification to the caller’s device',
+        'Submit a test notification to the push service for the caller’s device',
         dataResponse(Done),
         [404, 429, 503],
         202,
+        'Invalid device ID, expired or removed subscription, or VAPID credentials rejected by the push service.',
       ),
       apiValidator('param', Id),
       async (context) => {
-        await service().test(owner(context), context.req.valid('param').id);
+        const userId = owner(context);
+        if (
+          !app.config.get<PushConfig>('push')?.privateKey ||
+          !service().subscriptions.ready
+        )
+          throw new PushError('unavailable');
+        await service().test(userId, context.req.valid('param').id);
         return context.json({ data: { ok: true } }, 202);
       },
     );

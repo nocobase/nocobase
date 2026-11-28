@@ -1,3 +1,5 @@
+import { enterRunningApplication } from '../backup/runtime-guard.js';
+import type { ReleaseStorageLock } from '@nocobase/drive';
 import { MailSenderFactoryProvider } from '../mailers/index.js';
 import type { AppRuntimeLogging } from '../logging/config.js';
 import { loggingToken } from '../logging/token.js';
@@ -82,6 +84,7 @@ export interface ApplicationOptions<
   /** The application's resolved NODE_ENV, not the hosting process's environment. */
   readonly nodeEnv?: string;
   readonly paths: AppPaths;
+  readonly configurationFile?: string;
   readonly websocket?: ApplicationWebSocketFactory;
   readonly runtimeLogging?: AppRuntimeLogging;
   /** Where console log records go; see `AppScope.consoleLogStream`. */
@@ -128,6 +131,7 @@ export class Application<
   public readonly mode: 'standalone' | 'embedded';
   public readonly nodeEnv: string | undefined;
   public readonly paths: AppPaths;
+  public readonly configurationFile: string | undefined;
   public readonly container: ServiceContainer;
   public readonly fetch: ApplicationFetchHandler = async (
     request,
@@ -148,11 +152,15 @@ export class Application<
   private apiRouterValue: Hono | undefined;
   private readonly httpMiddleware: AppHttpMiddleware<Application<TConfig>>[] =
     [];
+  private readonly apiMiddleware: AppHttpMiddleware<Application<TConfig>>[] =
+    [];
   private readonly routes: {
     readonly contribution: AppRouteContribution<Application<TConfig>>;
     readonly owner: string | undefined;
   }[] = [];
+  private releaseStorage: ReleaseStorageLock | undefined;
   private startPromise: Promise<void> | undefined;
+  private shutdownPromise: Promise<void> | undefined;
   private websocketHandler: AppWebSocketHandler | undefined;
   private appPackageName: string | undefined;
   private registeredServerPluginsValue: readonly AppServerPluginSnapshot[] = [];
@@ -178,6 +186,7 @@ export class Application<
     this.mode = options.mode ?? 'embedded';
     this.nodeEnv = options.nodeEnv;
     this.paths = options.paths;
+    this.configurationFile = options.configurationFile;
     this.container = new ServiceContainer();
     this.usesDefaultWebSocket = options.websocket === undefined;
     this.websocketFactory = options.websocket ?? createRealtimeWebSocketHandler;
@@ -330,6 +339,14 @@ export class Application<
     this.httpMiddleware.push(middleware);
   }
 
+  /** Registers middleware after request ID assignment and before API limits and route handlers. */
+  public addApiMiddleware(
+    middleware: AppHttpMiddleware<Application<TConfig>>,
+  ): void {
+    this.assertRoutesMutable();
+    this.apiMiddleware.push(middleware);
+  }
+
   public registerProviders(): void {
     if (this.serviceProvidersRegistered) {
       return;
@@ -347,7 +364,18 @@ export class Application<
   }
 
   public shutdown(): Promise<void> {
-    return this.providerRegistry.shutdown();
+    this.shutdownPromise ??= this.shutdownProviders();
+    return this.shutdownPromise;
+  }
+
+  private async shutdownProviders(): Promise<void> {
+    await this.startPromise?.catch(() => undefined);
+    try {
+      await this.providerRegistry.shutdown();
+    } finally {
+      this.releaseStorage?.();
+      this.releaseStorage = undefined;
+    }
   }
 
   private getWebSocketHandler(): AppWebSocketHandler {
@@ -357,6 +385,9 @@ export class Application<
 
   private async startServiceProviders(): Promise<void> {
     await this.validateConfig();
+    if (this.config.get('drive') || this.config.get('database')) {
+      this.releaseStorage = await enterRunningApplication(this.paths);
+    }
     this.registerProviders();
     this.reportQueueJobPlugins();
     await this.registerLocales();
@@ -369,7 +400,7 @@ export class Application<
 
   /**
    * Builds the sample data services registered, once every provider is ready, so that a sample may go through any
-   * plugin's services. A sample that fails is logged and recorded as skipped rather than failing the start.
+   * plugin's services. A failed sample is logged and remains eligible for a later run.
    */
   private async buildSampleData(): Promise<void> {
     if (!this.container.has(sampleDataToken)) return;
@@ -456,8 +487,12 @@ export class Application<
     // unknown API path with a page.
     const api = new Hono();
     api.use('*', requestIdMiddleware());
+    const apiConfig = this.config.get<ApiConfig>('api');
+    for (const middleware of this.apiMiddleware) {
+      await middleware.register(api, this);
+    }
     // The `api` section's global limits, each installed only when configured.
-    installApiLimits(api, this.config.get<ApiConfig>('api'));
+    installApiLimits(api, apiConfig);
     // The last resort: anything no router recognized is an unexpected failure, answered with an opaque 500.
     api.onError((error, context) =>
       apiErrorHandler(toApiError(error), context),

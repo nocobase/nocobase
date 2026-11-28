@@ -39,6 +39,10 @@ export interface FakeOptions {
   /** Status for PUT instructions (default 204). */
   instructionStatus?: number;
   models?: unknown[];
+  plugins?: () => unknown[];
+  failure?: (
+    request: RecordedRequest,
+  ) => { status: number; body: unknown } | undefined;
   /** Sessions GET /api/session/:id knows (resume). */
   knownSessions?: string[];
 }
@@ -189,7 +193,8 @@ export class FakeOpencode {
     const url = new URL(req.url ?? '/', 'http://x');
     const method = req.method ?? 'GET';
     const p = url.pathname;
-    this.requests.push({ method, path: p, body });
+    const request = { method, path: p, body };
+    this.requests.push(request);
     const json = (status: number, payload?: unknown) => {
       if (payload === undefined) res.writeHead(status).end();
       else
@@ -197,6 +202,9 @@ export class FakeOpencode {
           .writeHead(status, { 'content-type': 'application/json' })
           .end(JSON.stringify(payload));
     };
+
+    const failure = this.options.failure?.(request);
+    if (failure) return json(failure.status, failure.body);
 
     if (method === 'GET' && p === '/api/event') {
       res.writeHead(200, { 'content-type': 'text/event-stream' });
@@ -209,6 +217,8 @@ export class FakeOpencode {
     }
     if (method === 'POST' && p === '/api/session')
       return json(200, { data: { id: this.sessionId } });
+    if (method === 'GET' && p === '/api/plugin' && this.options.plugins)
+      return json(200, { data: this.options.plugins() });
     if (method === 'GET' && p === '/api/model')
       return json(200, { data: this.options.models ?? [] });
     let m = /^\/api\/session\/([^/]+)$/.exec(p);

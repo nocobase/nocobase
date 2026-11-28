@@ -106,7 +106,7 @@ Each is explained where the pointer leads:
 - `/api` or `/main` in an `api.request` path ([`references/api.md`](references/api.md)).
 - `useForm<z.infer<typeof schema>>` instead of letting the resolver infer the type ([`references/form.md`](references/form.md)).
 - A search box whose `value` comes straight from the URL, which breaks Chinese input ([section 5 of `references/table.md`](references/table.md#5-writing-search-and-filters-to-the-url)).
-- `setState` called synchronously in an effect, which fails lint (`react-hooks/set-state-in-effect`, with `--max-warnings 0`); set state in request callbacks, or compare with the previous value during render ([`references/api.md`](references/api.md)).
+- `setState` called synchronously in an effect, which fails lint (`react-hooks/set-state-in-effect`); set state in request callbacks, or compare with the previous value during render ([`references/api.md`](references/api.md)).
 - A confirmation dialog that clears its target when closing, so its title flickers ([section 4 of `references/overlay.md`](references/overlay.md#4-delete-confirmation-alertdialog)).
 - A form whose dirty flag is not cleared before `close()` after a successful save, so the close asks to discard the changes that were just saved ([section 2.5 of `references/overlay.md`](references/overlay.md#25-beforeclose-checks-before-closing)).
 - A file upload or attachment list built by hand as an `<input type='file'>` plus filenames, instead of the preinstalled `file-component-ui` block ([File uploads and attachments](references/form.md#file-uploads-and-attachments)).
@@ -117,12 +117,12 @@ This is the one list of checks every workflow runs, scoped to the changed files 
 
 ```bash
 pnpm exec tsc -p tsconfig.json --noEmit
-pnpm exec eslint --max-warnings 0 <changed-files>
+pnpm lint <changed-files>
 pnpm exec prettier --check <changed-files>
 pnpm exec vitest run <related-test-files>
 ```
 
-- Give ESLint only the changed `.ts`, `.tsx`, `.js` and `.mjs` files, test files included; it has no configuration for `.css` or `.md` and exits nonzero on them. Prettier takes every changed file, CSS and Markdown too.
+- Pass changed JavaScript and TypeScript files, including tests, to `pnpm lint`. In a project with `eslint.config.js`, use `pnpm exec eslint --max-warnings 0 <changed-files>` for the scoped check. Prettier takes every changed file, CSS and Markdown too.
 - Primitives the change added are changed files too: formatted with Prettier, their built-in English translated as ["English built into primitives"](references/shadcn.md#english-built-into-primitives) lists, and otherwise exactly what the CLI wrote.
 - Run the [targeted component checker](component-selection.md#run-the-targeted-check) on the changed client source in each owning package. Review actual imports and local wrappers against the component source list; resolve findings and review every native/custom exception. Record the command and scanned scope; a missing parser or failed scan is Not verified.
 - Lint does not check the shadcn skill's "Critical Rules". Read the changed components against them: items inside their groups, `gap-*` rather than `space-*`, `data-icon` and no sizing classes on icons inside components, full `Card` structure, semantic tokens ([`references/shadcn.md`](references/shadcn.md)).

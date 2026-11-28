@@ -755,9 +755,8 @@ describe('structured extraction page', () => {
     await user.click(button);
     await waitFor(() => expect(view.reportedToasts()).toHaveLength(1));
     expect(view.extractions()).toHaveLength(1);
-    expect((view.extractions()[0]?.json as { text: string }).text).toHaveLength(
-      20_000,
-    );
+    const result = view.extractions()[0]?.json as { text: string } | undefined;
+    expect(result?.text).toHaveLength(20_000);
   });
 
   it('renders and extracts with the real Chinese labels, samples, nested fields and toast', async () => {

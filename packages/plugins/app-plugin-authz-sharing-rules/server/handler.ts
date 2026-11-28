@@ -1,3 +1,5 @@
+import { auditOperationName } from './audit-operation-name.js';
+import { auditRecordKey, describeAudit } from '@nocobase/audit';
 import {
   ApiError,
   apiErrorResponse,
@@ -37,6 +39,8 @@ export const SHARING_RULES_RULE = 'sharing-rules';
 export const SHARING_RULES_SETTINGS: string = `authorization.${SHARING_RULES_RULE}`;
 /** The route prefix under `/api/authorization`. */
 export const SHARING_RULES_PATH = '/sharingRules';
+
+const auditCollection = 'authorizationSharingRules';
 
 type SharingRulesAdministrationApi = Omit<SharingRulesApi, 'withTransaction'>;
 
@@ -107,6 +111,26 @@ export function createSharingRulesHandler(
   );
   routes.post(
     SHARING_RULES_PATH,
+    describeAudit({
+      operationName: auditOperationName('createRule'),
+      action: 'create',
+      resource: `settings:${SHARING_RULES_SETTINGS}`,
+      target: (context) => ({
+        collection: auditCollection,
+        key: context.req.param('key'),
+      }),
+      resolveTargets: ({ response }, context) => {
+        const previous = context.req.param('key');
+        const key = auditRecordKey(response, 'data', 'key') ?? previous;
+        return {
+          source:
+            previous && previous !== key
+              ? { collection: auditCollection, key: previous }
+              : undefined,
+          targets: [{ collection: auditCollection, key }],
+        };
+      },
+    }),
     settingsAccess(SHARING_RULES_SETTINGS, 'create'),
     describeRoute({
       tags,
@@ -141,6 +165,26 @@ export function createSharingRulesHandler(
   );
   routes.patch(
     `${SHARING_RULES_PATH}/:key`,
+    describeAudit({
+      operationName: auditOperationName('updateRule'),
+      action: 'update',
+      resource: `settings:${SHARING_RULES_SETTINGS}`,
+      target: (context) => ({
+        collection: auditCollection,
+        key: context.req.param('key'),
+      }),
+      resolveTargets: ({ response }, context) => {
+        const previous = context.req.param('key');
+        const key = auditRecordKey(response, 'data', 'key') ?? previous;
+        return {
+          source:
+            previous && previous !== key
+              ? { collection: auditCollection, key: previous }
+              : undefined,
+          targets: [{ collection: auditCollection, key }],
+        };
+      },
+    }),
     settingsAccess(SHARING_RULES_SETTINGS, 'update'),
     describeRoute({
       tags,
@@ -182,6 +226,15 @@ export function createSharingRulesHandler(
   );
   routes.delete(
     `${SHARING_RULES_PATH}/:key`,
+    describeAudit({
+      operationName: auditOperationName('deleteRule'),
+      action: 'delete',
+      resource: `settings:${SHARING_RULES_SETTINGS}`,
+      target: (context) => ({
+        collection: auditCollection,
+        key: context.req.param('key'),
+      }),
+    }),
     settingsAccess(SHARING_RULES_SETTINGS, 'delete'),
     describeRoute({
       tags,

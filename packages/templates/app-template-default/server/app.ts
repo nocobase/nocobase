@@ -1,3 +1,4 @@
+import { AuditProvider } from '@nocobase/audit/runtime';
 import type { Application } from '@nocobase/app-server/application';
 import { DatabaseProvider } from '@nocobase/app-server/database';
 import { I18nProvider, i18nHttpMiddleware } from '@nocobase/app-server/i18n';
@@ -11,6 +12,7 @@ import {
 import { QueueServiceProvider } from '@nocobase/app-server/queue';
 import { SecretsProvider } from '@nocobase/app-server/secrets';
 import { JobExecutorServiceProvider } from '@nocobase/app-server/jobs';
+import { MessageBrokerServiceProvider } from '@nocobase/app-server/message-broker';
 import {
   SessionProvider,
   sessionHttpMiddleware,
@@ -39,12 +41,14 @@ export function createApp(runtime: AppRuntimeContext): Application {
   app.addServiceProvider(JobExecutorServiceProvider, {
     nodeEnv: runtime.env.NODE_ENV,
   });
+  app.addServiceProvider(MessageBrokerServiceProvider);
   app.addHttpMiddleware(requestLoggingMiddleware);
   app.addHttpMiddleware(sessionHttpMiddleware);
   app.addHttpMiddleware(i18nHttpMiddleware);
   app.addRoutes(healthCheckApiRoutes);
   app.addRuntimeContributions(runtime);
   app.addRoutes(spaRootRoutes);
+  app.addServiceProvider(AuditProvider);
 
   return app;
 }

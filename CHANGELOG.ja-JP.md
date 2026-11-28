@@ -2,6 +2,131 @@
 
 このファイルには NocoBase 3 の主な変更を、リリースごとに 1 セクションずつ記録します。`nocobase-v3-beta/<日付>.<連番>` はベータ版、`nocobase-v3/<日付>.<連番>` は正式版です。各リリースで公開されたパッケージのバージョンは対応する GitHub Release を、各パッケージ自体の変更はパッケージ内の CHANGELOG.md を参照してください。
 
+## [nocobase-v3-beta/2026-11-27.3](https://github.com/nocobase/nocobase/releases/tag/nocobase-v3-beta%2F2026-11-27.3)
+
+### 🎉 新機能
+
+- **[メッセージブローカー]** メッセージブローカーのアダプターでサブスクリプションごとの既定の試行回数を設定でき、明示した回数が優先されます。 ([#11760](https://github.com/nocobase/nocobase/pull/11760))
+
+## [nocobase-v3-beta/2026-11-27.2](https://github.com/nocobase/nocobase/releases/tag/nocobase-v3-beta%2F2026-11-27.2)
+
+### 🎉 新機能
+
+- **[サーバー]** 監査ファイルを UTC の日付とサイズでローテーションし、最終書き込みから設定された期間以上アーカイブを保持します。 ([#11742](https://github.com/nocobase/nocobase/pull/11742))
+- **[アプリホスティング]** マネージド App Host で、アプリと業務データを削除してもバックアップを有効期限まで保持できるようになりました。 ([#11743](https://github.com/nocobase/nocobase/pull/11743))
+- **[監査]** アプリケーションの YAML で監査スナップショットとマスキングを設定でき、リクエストとレスポンスの本文は既定で記録しません。 ([#11745](https://github.com/nocobase/nocobase/pull/11745))
+
+### 🚀 改善
+
+- **[アプリテンプレート]** デフォルトアプリにはナレッジと検証のプラグインがプリインストールされ、必要に応じて有効化できます。 ([#11747](https://github.com/nocobase/nocobase/pull/11747))
+- **[全般]** 公開パッケージに CHANGELOG.md を含めなくなり、サイズが小さくなりました。 ([#11754](https://github.com/nocobase/nocobase/pull/11754))
+
+### 🐛 不具合修正
+
+- **[Agent]** オフラインのランタイムで OpenCode の起動を待ち、モデル検出に失敗した原因をランタイムの詳細に表示します。 ([#11751](https://github.com/nocobase/nocobase/pull/11751))
+
+## [nocobase-v3-beta/2026-11-27.1](https://github.com/nocobase/nocobase/releases/tag/nocobase-v3-beta%2F2026-11-27.1)
+
+### 🎉 新機能
+
+- **[Agent]** スキルが `SKILL.md` のメタデータを返し、アプリケーションは指定したスキルの編集・削除・割り当てを禁止できます。 ([#11675](https://github.com/nocobase/nocobase/pull/11675))
+- **[サーバー]** 重要な API 操作を記録し、ログファイルなどの設定済みの送信先に監査イベントを送信できます。 ([#11694](https://github.com/nocobase/nocobase/pull/11694))
+- **[メッセージブローカー]** プラグインは設定可能なメッセージミドルウェアを通じてアプリケーション内外でメッセージを発行・消費でき、データベーストランザクション内で発行したメッセージはコミット後にのみ送信され、消費側はデータベース書き込みと同じトランザクションで重複メッセージをスキップできます。 ([#11695](https://github.com/nocobase/nocobase/pull/11695))
+- **[クライアント]** サインインが必要なページで、アクセス権の確認を維持したままアプリのヘッダーとサイドバーを非表示にできます。 ([#11720](https://github.com/nocobase/nocobase/pull/11720))
+- **[通知]** 阿里雲またはテンセントクラウドから SMS を送信し、ワンタイムコードで電話番号や機密性の高い操作を確認できるようにしました。 ([#11722](https://github.com/nocobase/nocobase/pull/11722))
+- **[認証コード]** 型安全なリクエストと React フックで、認証コード、電話番号の登録、追加認証を組み込めるようになりました。 ([#11738](https://github.com/nocobase/nocobase/pull/11738))
+- **[Skills]** コミュニティ版アプリを Professional または Enterprise へアップグレードする手順と、旧シナリオテンプレートのアプリを Enterprise へ移行する手順を案内します。 ([#11739](https://github.com/nocobase/nocobase/pull/11739))
+
+### 🚀 改善
+
+- **[クライアント]** システム設定がアバターの左に常時表示され、設定と受信トレイのアイコンにツールチップが付き、認証設定の英語・中国語表記が短くなりました。 ([#11715](https://github.com/nocobase/nocobase/pull/11715))
+- **[Agent]** 実行履歴が多い環境で Agent の稼働状況をより速く確認できます。 ([#11717](https://github.com/nocobase/nocobase/pull/11717))
+- **[メール]** メール関連ページのタイトルの文字サイズを、ほかの設定ページと同じにしました。 ([#11721](https://github.com/nocobase/nocobase/pull/11721))
+- **[データベース]** PostgreSQL と SQLite の繰り返しトランザクションでスキーマ照会を削減します。 ([#11741](https://github.com/nocobase/nocobase/pull/11741))
+
+### 🐛 不具合修正
+
+- **[Agent]**
+  - 使用量ページで、停止や失敗の前に報告された分も含め、オンライン会話のトークン使用量と費用をエージェント別に確認できます。 ([#11719](https://github.com/nocobase/nocobase/pull/11719))
+  - Runner が処理を取得する際のロック時間を短縮し、割り当ての確定前に接続が切れた場合は処理をキューに残します。 ([#11735](https://github.com/nocobase/nocobase/pull/11735))
+- **[権限]** すでに存在しないデフォルトアクセスルールを編集または削除すると、タイムアウトせずにルールが見つからないことを通知します。 ([#11724](https://github.com/nocobase/nocobase/pull/11724))
+- **[Agent ランナー]**
+  - Runner は dsh の Web 設定に保存された DeepSeek API キーを認識し、dsh のログインが必要と誤って表示しなくなりました。 ([#11726](https://github.com/nocobase/nocobase/pull/11726))
+  - OpenCode 2.4 の起動直後にランナーがモデルを検出できない問題を修正しました。 ([#11728](https://github.com/nocobase/nocobase/pull/11728))
+- **[データベース]** どのデプロイでもサンプルデータを有効にすると、新規および以前にスキップされたサンプルデータを読み込みます。 ([#11744](https://github.com/nocobase/nocobase/pull/11744))
+
+## [nocobase-v3-beta/2026-11-25.1](https://github.com/nocobase/nocobase/releases/tag/nocobase-v3-beta%2F2026-11-25.1)
+
+### 🚀 改善
+
+- **[アプリ作成]** マルチアプリ、子アプリ、マルチポータルの既存の作成エイリアスで、Enterprise アプリの各機能を有効にできます。 ([#11702](https://github.com/nocobase/nocobase/pull/11702))
+- **[インターフェース]** ライフサイクル図をコンパクトなプロセス表示デフォルトにし、複数ステージ共通の早期終了ステータスをホバー詳細と実行結果バッジに集約できるようになりました。 ([#11707](https://github.com/nocobase/nocobase/pull/11707))
+
+### 🐛 不具合修正
+
+- **[アプリ基盤]** デプロイ済みのアプリケーションで、開発用依存関係のプラグインがシステム設定の未有効一覧に表示されるようになりました。 ([#11704](https://github.com/nocobase/nocobase/pull/11704))
+
+## [nocobase-v3-beta/2026-11-24.2](https://github.com/nocobase/nocobase/releases/tag/nocobase-v3-beta%2F2026-11-24.2)
+
+### 🎉 新機能
+
+- **[アプリホスティング]** マネージド App Host が、各アプリ自身のバックアップコマンドでアプリ（プロセス内と Docker の両方）をバックアップ・復元できるようになり、アプリのイメージ（amd64 と arm64）に必要な PostgreSQL・MySQL・MariaDB のクライアントツールが含まれるようになりました。 ([#11668](https://github.com/nocobase/nocobase/pull/11668))
+
+### 🚀 改善
+
+- **[API キー]** アプリケーションで個人キーとシステムキーの管理を維持したまま、メンバーキーとルールの管理 API を無効にできます。 ([#11696](https://github.com/nocobase/nocobase/pull/11696))
+
+### 🐛 不具合修正
+
+- **[メール]** 既に使っている名前でメールテンプレートを保存すると、サーバーエラーではなく名前が使用中であることが表示されるようになりました。 ([#11682](https://github.com/nocobase/nocobase/pull/11682))
+- **[権限]** ユーザーが既に持っている権限セットを割り当てると、サーバーエラーではなく競合として報告されるようになりました。 ([#11683](https://github.com/nocobase/nocobase/pull/11683))
+- **[サーバー]** Host がインプロセスで読み込むアプリは、standalone・Docker・CLI と同じくアプリ自身のパッケージ名でマイグレーションを記録するようになり、起動方法をまたいだバージョン検査とバックアップの復元が正しく動作します。 ([#11692](https://github.com/nocobase/nocobase/pull/11692))
+- **[Agent ランナー]** サブモジュール内に残った正常な linked worktree メタデータによるチェックアウト拒否を修正し、有効なサブモジュールの `core.worktree` 検証と簡潔な Git エラー出力を追加するとともに、所有する実行一時ディレクトリの権限ずれの自動修復と詳細な診断エラーに対応しました。 ([#11701](https://github.com/nocobase/nocobase/pull/11701))
+
+## [nocobase-v3-beta/2026-11-24.1](https://github.com/nocobase/nocobase/releases/tag/nocobase-v3-beta%2F2026-11-24.1)
+
+### 🎉 新機能
+
+- **[バックアップ]** 組み込みのバックアップコマンドで、アプリのデータベースとアップロードファイルのバックアップを作成、確認、検証、復元できます。 ([#11642](https://github.com/nocobase/nocobase/pull/11642))
+- **[クライアント]**
+  - アプリケーションはプラグインのページを ID で除外し、そのページを開くツールバーのショートカットも自動的に非表示にできます。 ([#11670](https://github.com/nocobase/nocobase/pull/11670))
+  - アプリケーションで組み込みの設定、チャット、受信トレイ、メールのページを個別に無効化できます。 ([#11679](https://github.com/nocobase/nocobase/pull/11679))
+- **[認証]** サーバー側の認証拡張は、実行中のトランザクションを使って、データベースの変更を認証処理と一緒にコミットまたはロールバックできます。 ([#11681](https://github.com/nocobase/nocobase/pull/11681))
+- **[ファイル]** アプリケーションは添付ファイル機能を維持したまま、ファイルストレージ管理 API を無効にできます。 ([#11685](https://github.com/nocobase/nocobase/pull/11685))
+- **[Agent]** アプリケーションは Runner のモデルと利用状況レポートを維持したまま、ホスト型モデルサービスを無効にできます。 ([#11686](https://github.com/nocobase/nocobase/pull/11686))
+- **[API キー]** 既存のキーを維持したまま、システム API キーの管理エンドポイントを無効にできます。 ([#11687](https://github.com/nocobase/nocobase/pull/11687))
+
+### 🚀 改善
+
+- **[クラスターと分散]** Default と Examples テンプレートから分散プラグインが外れ、既存のアプリは Pro のクラスタ準備状況プラグインに移行できます。 ([#11678](https://github.com/nocobase/nocobase/pull/11678))
+
+### 🐛 不具合修正
+
+- **[Agent]** モデルサービスが無効でもデモデータを利用できるようになり、エージェントと受信トレイの操作項目に全対応言語の翻訳が揃いました。 ([#11690](https://github.com/nocobase/nocobase/pull/11690))
+
+## [nocobase-v3-beta/2026-11-23.1](https://github.com/nocobase/nocobase/releases/tag/nocobase-v3-beta%2F2026-11-23.1)
+
+### 🎉 新機能
+
+- **[インターフェース]** UI Library の権限エディターは「メニュー」「業務オブジェクト」「システム設定」の 3 つのタブで設定するようになりました。メニューはサイドバーの表示だけを決め、各業務オブジェクトの操作とデータ範囲は一か所で設定して他の操作は閲覧に従うか狭め、システム設定のページはデータ範囲なしで個別に設定します。 ([#11603](https://github.com/nocobase/nocobase/pull/11603))
+- **[メール]**
+  - メールアカウントごとに同期するフォルダーを選べるようになりました。外したフォルダーのメールは確認後にローカルから削除され、サーバー上のメールには影響しません。 ([#11605](https://github.com/nocobase/nocobase/pull/11605))
+  - 添付ファイルを含む個別のメールを元の .eml ファイルとしてダウンロードできます。 ([#11623](https://github.com/nocobase/nocobase/pull/11623))
+- **[プラグインライフサイクル]** ライフサイクル定義で、インスタンスの再開と同じトランザクション内で関連レコードを更新できるようになりました。 ([#11659](https://github.com/nocobase/nocobase/pull/11659))
+- **[アプリテンプレート]** デフォルトテンプレートで作成したアプリでは、最初のワークフローを追加する前から、管理者がシステム設定でワークフロー管理を開けます。 ([#11660](https://github.com/nocobase/nocobase/pull/11660))
+- **[クライアント]** メンバーは個人設定でアカウントのセキュリティと個人 API キーを管理でき、管理者はシステム設定でユーザー、ロール、ファイルストレージ、スケジュールを管理できます。 ([#11663](https://github.com/nocobase/nocobase/pull/11663))
+- **[Agent]** ランタイムで Antigravity CLI を Agent ツールとして利用でき、ツール一覧では Pi の次に表示されます。 ([#11664](https://github.com/nocobase/nocobase/pull/11664))
+
+### 🚀 改善
+
+- **[Agent]**
+  - 同じモデルを別のプロバイダーが提供している場合、新しいエージェント名の末尾に半角括弧でプロバイダー名を付けます（例：「OpenCode · Qwen3.8 Flash (example-provider)」）。 ([#11632](https://github.com/nocobase/nocobase/pull/11632))
+  - Skill ページから「オンライン Agent はスクリプトを読むだけで実行しない」という表示を削除し、ファイルツリーでは各ファイルのバッジの代わりに scripts フォルダーにアイコンを 1 つ表示します。 ([#11635](https://github.com/nocobase/nocobase/pull/11635))
+- **[Skills]** アプリ開発 Skill に、レコード単位の権限と監査履歴を備えたライフサイクルインスタンスの一時停止、再開、リセット、再起動の操作を追加するためのガイドが加わりました。 ([#11641](https://github.com/nocobase/nocobase/pull/11641))
+- **[Agent ランナー]** Codex、OpenCode、Pi で GPT-6.2 Sol と Astra が推奨され、標準の使用料金が既定で設定されます。 ([#11645](https://github.com/nocobase/nocobase/pull/11645))
+- **[プラグインライフサイクル]** 拡張機能は、指定した履歴以降にインスタンスがその状態を離れたかを確認できます。 ([#11661](https://github.com/nocobase/nocobase/pull/11661))
+- **[アプリテンプレート]** フロー定義と実行履歴が空のときの余白を統一し、定義画面にプロジェクトのリポジトリで Agent にフローの管理を依頼する方法を表示します。 ([#11667](https://github.com/nocobase/nocobase/pull/11667))
+
 ## [nocobase-v3-beta/2026-11-20.1](https://github.com/nocobase/nocobase/releases/tag/nocobase-v3-beta%2F2026-11-20.1)
 
 ### 🎉 新機能

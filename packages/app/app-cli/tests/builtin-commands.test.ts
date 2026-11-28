@@ -8,6 +8,10 @@ import { loadTestConfig, runCommand } from './helpers.ts';
  * `src/commands/` shows up here before it ships.
  */
 const EXPECTED_IDS = [
+  'backup:create',
+  'backup:inspect',
+  'backup:restore',
+  'backup:verify',
   'build',
   'cli:build',
   'cli:link',
@@ -37,6 +41,7 @@ const EXPECTED_IDS = [
   'plugin:remove',
   'plugin:unregister',
   'plugin:update',
+  'screenshot',
   'secrets:rotate',
   'secrets:status',
   'skills:sync',

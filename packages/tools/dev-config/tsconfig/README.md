@@ -1,6 +1,6 @@
 # TypeScript presets
 
-All presets target TypeScript 6. Keep package-relative fields such as
+The application presets support TypeScript 6 and 7. Library builds use TypeScript 6. Keep package-relative fields such as
 `include`, `exclude`, `paths`, `baseUrl`, `rootDir`, `outDir`, and
 `tsBuildInfoFile` in the consuming package. Relative paths in a published
 preset would otherwise resolve inside `@nocobase/dev-config`.
@@ -29,6 +29,7 @@ therefore have a declaration-safe, explicit type.
     "paths": {
       "@/*": ["./client/*"]
     },
+    "incremental": true,
     "tsBuildInfoFile": "./node_modules/.tmp/client.tsbuildinfo"
   },
   "include": ["client", "registry"]

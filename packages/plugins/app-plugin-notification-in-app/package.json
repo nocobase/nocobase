@@ -2,13 +2,14 @@
   "name": "@nocobase/app-plugin-notification-in-app",
   "displayName": "In-app Notification App Plugin",
   "description": "Provides the authenticated in-app inbox, its notification Channel, the inbox page and the header inbox button.",
-  "version": "2.0.0-beta.6",
+  "version": "2.0.0-beta.10",
   "type": "module",
   "prettier": "@nocobase/dev-config/prettier",
   "engines": {
     "node": ">=24.0.0"
   },
   "nocobase": {
+    "pluginPolicy": "preinstall-and-enable",
     "title": {
       "en-US": "In-app messages",
       "zh-CN": "站内信"
@@ -21,7 +22,6 @@
   "sideEffects": false,
   "files": [
     "dist",
-    "CHANGELOG.md",
     "README.md",
     "skills"
   ],

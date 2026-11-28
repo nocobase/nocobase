@@ -12,14 +12,20 @@ import type { ChildProcess } from 'node:child_process';
 import type { JournalPage, JournalQuery } from '@nocobase/logging';
 import {
   IPC_CHANNEL,
+  IpcRemoteError,
   callIpc,
   isIpcRequest,
   sendIpcResponse,
   type IpcRequest,
 } from '../ipc-channel.ts';
 import type { HostManagementService } from './manager.ts';
+import { HostManagementError } from './scopes.ts';
 import type {
   ApplyDeploymentSetResult,
+  HostBackup,
+  HostBackupOptions,
+  HostRestoreOptions,
+  HostRestoreResult,
   HostDeploymentSpec,
   HostDeploymentSet,
   HostDescription,
@@ -44,12 +50,16 @@ type IpcMethod =
   | 'startDeployment'
   | 'stopDeployment'
   | 'removeDeployment'
+  | 'removeDeploymentKeepingBackups'
   | 'getStatus'
   | 'restartApp'
   | 'getOperation'
   | 'describeHost'
   | 'checkScope'
-  | 'readAppLogs';
+  | 'readAppLogs'
+  | 'createBackup'
+  | 'restoreBackup'
+  | 'deleteBackup';
 
 export interface IpcHostManagementClientOptions {
   session: string;
@@ -150,6 +160,31 @@ export class IpcHostManagementClient implements HostManagementService {
     });
   }
 
+  async removeDeploymentKeepingBackups(
+    appId: string,
+    options?: { scope?: HostScope },
+  ): Promise<HostStatus> {
+    try {
+      return await this.call<HostStatus>('removeDeploymentKeepingBackups', {
+        appId,
+        ...options,
+      });
+    } catch (error) {
+      // Older Host children reject the unknown method before dispatching any deletion.
+      if (
+        error instanceof IpcRemoteError &&
+        error.code === undefined &&
+        error.message ===
+          'Unknown app host IPC method "removeDeploymentKeepingBackups"'
+      )
+        throw new HostManagementError(
+          error.message,
+          'BACKUP_RETENTION_UNSUPPORTED',
+        );
+      throw error;
+    }
+  }
+
   getStatus(query?: HostStatusQuery): Promise<HostStatus> {
     return this.call<HostStatus>('getStatus', query);
   }
@@ -178,6 +213,29 @@ export class IpcHostManagementClient implements HostManagementService {
 
   readAppLogs(appId: string, query: JournalQuery): Promise<JournalPage> {
     return this.call<JournalPage>('readAppLogs', { appId, query });
+  }
+
+  createBackup(appId: string, options: HostBackupOptions): Promise<HostBackup> {
+    return this.call<HostBackup>('createBackup', { appId, options });
+  }
+
+  restoreBackup(
+    appId: string,
+    options: HostRestoreOptions,
+  ): Promise<HostRestoreResult> {
+    return this.call<HostRestoreResult>('restoreBackup', { appId, options });
+  }
+
+  deleteBackup(
+    appId: string,
+    backupId: string,
+    options?: { scope?: HostScope },
+  ): Promise<{ deleted: boolean }> {
+    return this.call<{ deleted: boolean }>('deleteBackup', {
+      appId,
+      backupId,
+      ...(options?.scope ? { scope: options.scope } : {}),
+    });
   }
 
   private call<T>(
@@ -228,13 +286,15 @@ export class IpcHostManagementServer {
       return;
     }
     this.respond(message).catch((error: unknown) => {
-      const code = (error as { code?: unknown } | null)?.code;
+      const { code, details } =
+        (error as { code?: unknown; details?: unknown } | null) ?? {};
       sendIpcResponse({
         channel: IPC_CHANNEL,
         kind: 'response',
         requestId: message.requestId,
         error: error instanceof Error ? error.message : String(error),
         ...(typeof code === 'string' ? { errorCode: code } : {}),
+        ...(details !== undefined ? { errorDetails: details } : {}),
       });
     });
   };
@@ -301,6 +361,22 @@ export class IpcHostManagementServer {
             : {},
         );
         break;
+      case 'removeDeploymentKeepingBackups': {
+        if (!this.service.removeDeploymentKeepingBackups)
+          throw new HostManagementError(
+            'This Host cannot keep backups when purging an App',
+            'BACKUP_RETENTION_UNSUPPORTED',
+          );
+        this.accept(request);
+        const { appId, scope } = request.payload as {
+          appId: string;
+          scope?: HostScope;
+        };
+        result = await this.service.removeDeploymentKeepingBackups(appId, {
+          scope,
+        });
+        break;
+      }
       case 'reloadAppConfig':
         result = await this.service.reloadAppConfig(payloadAppId(request));
         break;
@@ -353,6 +429,44 @@ export class IpcHostManagementServer {
           query: JournalQuery;
         };
         result = await this.service.readAppLogs(appId, query ?? {});
+        break;
+      }
+      case 'createBackup': {
+        if (!this.service.createBackup)
+          throw new Error('Host backups are unavailable');
+        this.accept(request);
+        const { appId, options } = request.payload as {
+          appId: string;
+          options: HostBackupOptions;
+        };
+        result = await this.service.createBackup(appId, options);
+        break;
+      }
+      case 'restoreBackup': {
+        if (!this.service.restoreBackup)
+          throw new Error('Host backups are unavailable');
+        this.accept(request);
+        const { appId, options } = request.payload as {
+          appId: string;
+          options: HostRestoreOptions;
+        };
+        result = await this.service.restoreBackup(appId, options);
+        break;
+      }
+      case 'deleteBackup': {
+        if (!this.service.deleteBackup)
+          throw new Error('Host backups are unavailable');
+        this.accept(request);
+        const { appId, backupId, scope } = request.payload as {
+          appId: string;
+          backupId: string;
+          scope?: HostScope;
+        };
+        result = await this.service.deleteBackup(
+          appId,
+          backupId,
+          scope ? { scope } : {},
+        );
         break;
       }
       default:

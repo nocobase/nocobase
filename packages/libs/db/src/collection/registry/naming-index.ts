@@ -39,8 +39,9 @@ export class CollectionNamingIndex implements CollectionResolutionContext {
     store: CollectionMetadataStore,
     naming: NamingOptions = {},
     overrides: readonly CollectionMetadataSummary[] = [],
+    snapshot?: CollectionMetadataNamingSnapshot,
   ): Promise<CollectionNamingIndex> {
-    const snapshot = await readMetadataNamingSnapshot(store);
+    snapshot ??= await readMetadataNamingSnapshot(store);
     const key = JSON.stringify(effectiveNaming(naming));
     const cached = indexes.get(snapshot)?.get(key);
     if (cached && overrides.length === 0) return cached;

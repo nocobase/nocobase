@@ -1,8 +1,10 @@
+import auditLabels from '../../locales/ko-KR.js';
 import type { LocaleResource } from '@nocobase/i18n';
 
 import type enUS from './en-US.js';
 
 const koKR: LocaleResource<typeof enUS> = {
+  ...auditLabels,
   // The shared list, form and overlay components (`components/`).
   actions: {
     close: '닫기',

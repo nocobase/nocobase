@@ -1,5 +1,101 @@
 # @nocobase/app-plugin-releases
 
+## 0.1.0-beta.29
+
+### Patch Changes
+
+- 1952789: Declare whether each product plugin is enabled by default, preinstalled only, available separately, or deprecated.
+- cf23bfe: Stop publishing CHANGELOG.md in the package; the changelog stays in the repository.
+- Updated dependencies [888bca5]
+- Updated dependencies [c6b8a62]
+- Updated dependencies [1952789]
+- Updated dependencies [cf23bfe]
+  - @nocobase/app-plugin-authentication@2.0.0-beta.27
+  - @nocobase/app-host@0.1.0-beta.28
+  - @nocobase/app-host-docker@0.1.0-beta.7
+  - @nocobase/app-plugin-authorization@1.0.0-beta.42
+
+## 0.1.0-beta.28
+
+### Patch Changes
+
+- cc0bf33: Run outstanding sample data when enabled on existing databases. Write seed history only after a successful run and omit disabled sample seeds from dry-run plans. Apply the preview environment's sample data setting on every deployment and document the guidance for adding sample seeds to business changes.
+- Updated dependencies [cc0bf33]
+- Updated dependencies [4561d5f]
+- Updated dependencies [52d0b0d]
+- Updated dependencies [c12d990]
+- Updated dependencies [1b92cdb]
+- Updated dependencies [1b92cdb]
+- Updated dependencies [1b92cdb]
+- Updated dependencies [78bdca8]
+- Updated dependencies [87e3dac]
+- Updated dependencies [9acf418]
+  - @nocobase/app-server@5.0.0-beta.12
+  - @nocobase/db@1.0.0-beta.31
+  - @nocobase/secrets@0.1.0-beta.2
+  - @nocobase/authorization@1.0.0-beta.18
+  - @nocobase/app-plugin-authentication@2.0.0-beta.26
+  - @nocobase/app-plugin-authorization@1.0.0-beta.41
+  - @nocobase/app-client@4.0.0-beta.14
+
+## 0.1.0-beta.27
+
+### Minor Changes
+
+- a6b9b74: API key permissions now take the shape of a permission set's grants. `POST /api/apiKeys` accepts `permissions` (the same resources, actions and composite record scopes a role holds, plus the records a business is limited to), checks that the maker holds each action (`KEY_SCOPE_EXCEEDS_YOURS`) and that a key may hold it (`KEY_ACTION_HUMAN_ONLY`), and every key answers `permissions`; `GET /api/apiKeys/grantable` lists what the caller may give and the templates resolved to it. Keys are stored in a new format `2` of the `permissions` column. Actions can be declared human-only (`humanOnly: <reason>`, with an optional `risk`) where they are registered with the authorization plugin: any API key, including one without permissions and a service account's, is then denied them with `KEY_HUMAN_ONLY`, while a signed-in person keeps them. Plugins register key templates and record sources with `authz.credentials`, and a key's composite record scopes restrict records like a restriction rule (`KeyScope.policy`). Releases marks configuring, deleting and protected deploys human-only and registers the "CI deploy" and "CI upload" templates and the Apps record source; projects registers its projects record source; agents marks managing model services human-only.
+
+  Deprecated, still working for one more minor release and then removed: scope groups and presets (`KeyScopeGroupDeclaration`, `KeyScopePresetDeclaration`, `apiKeyScopesToken`'s `groups.add`, `presets.add`, `mapAccess`), the `scope` field of `/api/apiKeys`, `GET /api/apiKeys/scopeOptions` and `/scopeObjects/:group`, `ScopedApiKeys.scopeOptions`, `scopeObjects` and `setScope`, `encodeKeyScope` and `decodeKeyScope`, and the `KEY_SCOPE_GROUPS` and `KEY_SCOPE_PRESETS` of releases, projects and agents. They keep their behaviour and convert to format `2`. Keys stored in format `1` keep working and are converted in the background on the first request after the upgrade, exactly as they are enforced then, so no key widens and none has to be regenerated. To migrate, register templates and record sources with `authz.credentials`, mark the actions no key may hold `humanOnly`, and send `permissions` instead of `scope`; the API keys README describes the formats.
+
+### Patch Changes
+
+- a6b9b74: Declare the plugin's title and one-line description in English and Chinese under `nocobase` in `package.json`, which the App Foundation plugins page lists it by.
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [1048669]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [1048669]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [1048669]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [1048669]
+- Updated dependencies [1048669]
+- Updated dependencies [1048669]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [1048669]
+  - @nocobase/app-client@4.0.0-beta.12
+  - @nocobase/authorization@1.0.0-beta.17
+  - @nocobase/app-plugin-authorization@1.0.0-beta.39
+  - @nocobase/app-plugin-authentication@2.0.0-beta.24
+  - @nocobase/app-server@5.0.0-beta.9
+  - @nocobase/db@1.0.0-beta.30
+  - @nocobase/app-host-docker@0.1.0-beta.5
+  - @nocobase/config@0.1.0-beta.3
+  - @nocobase/i18n@2.0.0-beta.2
+  - @nocobase/service-provider@0.0.2-beta.2
+
 ## 0.1.0-beta.26
 
 ### Patch Changes

@@ -239,7 +239,6 @@ const STATUS_STYLES: Record<PluginStatus, string> = {
   disabledAttention:
     'bg-amber-500/15 text-amber-800 dark:text-amber-200 border-transparent',
   disabled: 'bg-muted text-muted-foreground border-transparent',
-  preinstalled: 'bg-muted text-muted-foreground border-transparent',
   unknown: 'bg-muted text-muted-foreground border-transparent',
 };
 

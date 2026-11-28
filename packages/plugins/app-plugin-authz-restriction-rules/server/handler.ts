@@ -1,3 +1,5 @@
+import { auditOperationName } from './audit-operation-name.js';
+import { auditRecordKey, describeAudit } from '@nocobase/audit';
 import {
   ApiError,
   apiErrorResponse,
@@ -37,6 +39,8 @@ export const RESTRICTION_RULES_RULE = 'restriction-rules';
 export const RESTRICTION_RULES_SETTINGS: string = `authorization.${RESTRICTION_RULES_RULE}`;
 /** The route prefix under `/api/authorization`. */
 export const RESTRICTION_RULES_PATH = '/restrictionRules';
+
+const auditCollection = 'authorizationRestrictionRules';
 
 type RestrictionRulesAdministrationApi = Omit<
   RestrictionRulesApi,
@@ -95,6 +99,26 @@ export function createRestrictionRulesHandler(
   );
   routes.post(
     RESTRICTION_RULES_PATH,
+    describeAudit({
+      operationName: auditOperationName('createRule'),
+      action: 'create',
+      resource: `settings:${RESTRICTION_RULES_SETTINGS}`,
+      target: (context) => ({
+        collection: auditCollection,
+        key: context.req.param('key'),
+      }),
+      resolveTargets: ({ response }, context) => {
+        const previous = context.req.param('key');
+        const key = auditRecordKey(response, 'data', 'key') ?? previous;
+        return {
+          source:
+            previous && previous !== key
+              ? { collection: auditCollection, key: previous }
+              : undefined,
+          targets: [{ collection: auditCollection, key }],
+        };
+      },
+    }),
     settingsAccess(RESTRICTION_RULES_SETTINGS, 'create'),
     describeRoute({
       tags,
@@ -129,6 +153,26 @@ export function createRestrictionRulesHandler(
   );
   routes.patch(
     `${RESTRICTION_RULES_PATH}/:key`,
+    describeAudit({
+      operationName: auditOperationName('updateRule'),
+      action: 'update',
+      resource: `settings:${RESTRICTION_RULES_SETTINGS}`,
+      target: (context) => ({
+        collection: auditCollection,
+        key: context.req.param('key'),
+      }),
+      resolveTargets: ({ response }, context) => {
+        const previous = context.req.param('key');
+        const key = auditRecordKey(response, 'data', 'key') ?? previous;
+        return {
+          source:
+            previous && previous !== key
+              ? { collection: auditCollection, key: previous }
+              : undefined,
+          targets: [{ collection: auditCollection, key }],
+        };
+      },
+    }),
     settingsAccess(RESTRICTION_RULES_SETTINGS, 'update'),
     describeRoute({
       tags,
@@ -170,6 +214,15 @@ export function createRestrictionRulesHandler(
   );
   routes.delete(
     `${RESTRICTION_RULES_PATH}/:key`,
+    describeAudit({
+      operationName: auditOperationName('deleteRule'),
+      action: 'delete',
+      resource: `settings:${RESTRICTION_RULES_SETTINGS}`,
+      target: (context) => ({
+        collection: auditCollection,
+        key: context.req.param('key'),
+      }),
+    }),
     settingsAccess(RESTRICTION_RULES_SETTINGS, 'delete'),
     describeRoute({
       tags,

@@ -1,5 +1,45 @@
 # @nocobase/authorization
 
+## 1.0.0-beta.18
+
+### Patch Changes
+
+- 52d0b0d: Configure audit capture for application operations and send events to multiple named destinations, including JSON Lines files. Configuring a destination enables explicitly declared audit operations by default. Audit uses the application authentication settings for its trusted proxies and forwarded IP headers.
+
+  The official templates assemble auditing with `AuditProvider` and ship the file driver. Custom application composition roots can add the provider and the audit configuration factory when they use audit routes or transports. Applications using only `@nocobase/app-server` can start without the audit package.
+
+  Built-in audit operations store English default names and translation keys. The official templates load Repository labels in the viewer's language, and JSON Lines keeps the original event names. Separate labels identify assigning and removing permission sets and enabling and disabling users and keys.
+
+- Updated dependencies [cc0bf33]
+- Updated dependencies [52d0b0d]
+- Updated dependencies [9acf418]
+  - @nocobase/db@1.0.0-beta.31
+
+## 1.0.0-beta.17
+
+### Minor Changes
+
+- a6b9b74: API key permissions now take the shape of a permission set's grants. `POST /api/apiKeys` accepts `permissions` (the same resources, actions and composite record scopes a role holds, plus the records a business is limited to), checks that the maker holds each action (`KEY_SCOPE_EXCEEDS_YOURS`) and that a key may hold it (`KEY_ACTION_HUMAN_ONLY`), and every key answers `permissions`; `GET /api/apiKeys/grantable` lists what the caller may give and the templates resolved to it. Keys are stored in a new format `2` of the `permissions` column. Actions can be declared human-only (`humanOnly: <reason>`, with an optional `risk`) where they are registered with the authorization plugin: any API key, including one without permissions and a service account's, is then denied them with `KEY_HUMAN_ONLY`, while a signed-in person keeps them. Plugins register key templates and record sources with `authz.credentials`, and a key's composite record scopes restrict records like a restriction rule (`KeyScope.policy`). Releases marks configuring, deleting and protected deploys human-only and registers the "CI deploy" and "CI upload" templates and the Apps record source; projects registers its projects record source; agents marks managing model services human-only.
+
+  Deprecated, still working for one more minor release and then removed: scope groups and presets (`KeyScopeGroupDeclaration`, `KeyScopePresetDeclaration`, `apiKeyScopesToken`'s `groups.add`, `presets.add`, `mapAccess`), the `scope` field of `/api/apiKeys`, `GET /api/apiKeys/scopeOptions` and `/scopeObjects/:group`, `ScopedApiKeys.scopeOptions`, `scopeObjects` and `setScope`, `encodeKeyScope` and `decodeKeyScope`, and the `KEY_SCOPE_GROUPS` and `KEY_SCOPE_PRESETS` of releases, projects and agents. They keep their behaviour and convert to format `2`. Keys stored in format `1` keep working and are converted in the background on the first request after the upgrade, exactly as they are enforced then, so no key widens and none has to be regenerated. To migrate, register templates and record sources with `authz.credentials`, mark the actions no key may hold `humanOnly`, and send `permissions` instead of `scope`; the API keys README describes the formats.
+
+- a6b9b74: System keys act as no person: a record access can be declared `personal` (the built-in "records I own" and "records I created" are), and a key scope marked `personless` gets no records from default access or sharing rules that select by one, while restriction rules still apply; sharing rules refuse subjects a subject type keeps from being shared with (`filterShareable`), which the users plugin uses to refuse service accounts. Permission Sets can be protected by key prefix, so every process protects a system key's hidden set, including one another process created later.
+
+  A system key's data scope may be limited to chosen records the person giving it can see (`GET /api/apiKeys/scopeRecords`, the permission table's "Selected records"), checked again on the server; every record or records of another person are refused. Permission changes are serialized per key and written with their activity in one transaction. Owners must be active members, and owners are told a week before a system key expires. Idle disabling follows the rule each key took when it was created or rotated, and rotating clears the last reminder. Managed keys are only viewed, disabled or deleted by administrators; notices to their manager are stored and delivered again until taken. `adopt` takes the key to adopt, keeps its own scope and runs in one transaction. The system key and members' key lists filter and page in the database. Permission check shows a key's state, what it covers and the records it keeps, refuses everything for a disabled or expired key, and opens from a personal key's detail too.
+
+- a6b9b74: Rework a role's detail in Roles and permissions into the Page access, Operations, System settings and Members tabs, followed by the tabs other packages register through `roleTabs`. A composite now names the pages it is used on with `usedOn(...)` and an action the pages that turn it on with `defaultFor(...)`; neither grants anything, and the options routes return both. Checking a page turns on its declared operations at their default scope and says so, each page shows how many of its operations are on and whether it opens empty, each operation lists the pages it is used on and warns when none of them is open, and operations used on no page are grouped under Other operations. System settings pages offer None, View and Manage above their individual switches and mark high-risk actions. Saving a role first reviews every change and marks high-risk grants, and members are added and removed at once. The page explains how roles, default access, sharing and restriction rules combine. The customer and sales examples declare the pages their operations are used on.
+
+### Patch Changes
+
+- a6b9b74: `SystemApiKeys.adopt` reads the grants the account holds in its own transaction instead of trusting the caller (given `permissions` must each be held, `ADOPT_NOT_HELD`), and answers again only for the same key (`ALREADY_SYSTEM_KEY` otherwise). Chosen records are checked against what the giver reaches, restriction rules included, under every role. Disabling or deleting a managed key commits its state, activity and notice together, and the manager gets the notice's `noticeId` on every attempt. `GET /api/apiKeys/scopeRecords` searches and pages in the database, and the system key list pages. Permission check shows, for a key's chosen records, which it reaches now and which the roles and rules leave out (`POST /api/authorization/inspector/records`), and reads a format-1 key's record limits as converted. A Permission Set prefix protection reserves its prefix against other owners, and API keys report sets already named in `system-key-` at boot.
+
+  "Same as me" personal keys stay off by default. An application whose callers create them — Studio's CLI and tests do — sets `apiKeys.allowSameAsMe: true`; for Studio that one configuration line is the only change this release needs.
+
+- a6b9b74: A Permission Set protected by name stays its owner's even under another owner's protected key prefix, whichever is registered first, so an application whose root or default set is named in a reserved prefix still starts; a prefix protection may also leave named keys alone (`except`). Deleting a user whose deletion was interrupted after the account was marked deleted finishes the remaining cleanup instead of doing nothing.
+- a6b9b74: Allow role editors to change the system administrator role’s display name while keeping its key and permissions protected.
+- Updated dependencies [1048669]
+  - @nocobase/db@1.0.0-beta.30
+
 ## 1.0.0-beta.16
 
 ### Patch Changes

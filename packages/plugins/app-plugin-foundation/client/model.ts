@@ -16,7 +16,6 @@ export type PluginStatus =
   | 'skillsOnly'
   | 'enabledAttention'
   | 'disabled'
-  | 'preinstalled'
   | 'disabledAttention'
   /** Only the CLI could register it, and this deployment was built before it recorded what the CLI registers. */
   | 'unknown';
@@ -81,7 +80,7 @@ function statusOf(
         : 'enabled';
   if (attention.length > 0) return 'disabledAttention';
   if (plugin.registrationUnknown) return 'unknown';
-  return plugin.state === 'preinstalled' ? 'preinstalled' : 'disabled';
+  return 'disabled';
 }
 
 /** The rows in display order: enabled plugins, then the others, each with the ones needing attention first. */

@@ -1,0 +1,26 @@
+{
+  "name": "@nocobase/typescript7",
+  "version": "0.0.1",
+  "description": "Native TypeScript compiler for NocoBase application development.",
+  "license": "Apache-2.0",
+  "engines": {
+    "node": ">=24.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/nocobase/nocobase.git",
+    "directory": "packages/tools/typescript7"
+  },
+  "exports": {
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "README.md"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "dependencies": {
+    "typescript7": "catalog:"
+  }
+}

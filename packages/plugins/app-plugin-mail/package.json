@@ -2,7 +2,7 @@
   "name": "@nocobase/app-plugin-mail",
   "displayName": "Mail App Plugin",
   "description": "Provides mail sending and resumable mailbox synchronization architecture.",
-  "version": "1.0.0-beta.26",
+  "version": "1.0.0-beta.31",
   "type": "module",
   "prettier": "@nocobase/dev-config/prettier",
   "engines": {
@@ -37,10 +37,10 @@
   "files": [
     "dist",
     "skills",
-    "README.md",
-    "CHANGELOG.md"
+    "README.md"
   ],
   "nocobase": {
+    "pluginPolicy": "preinstall-and-enable",
     "title": {
       "en-US": "Mail",
       "zh-CN": "邮件"

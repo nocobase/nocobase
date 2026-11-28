@@ -342,6 +342,8 @@ export class ClaudeAdapter implements AgentAdapter {
             modelsDetectionError: signal.aborted
               ? 'Model detection timed out'
               : 'Model detection failed',
+            modelsDetectionDetail:
+              'Claude Code did not complete supportedModels()',
           };
         } finally {
           signal.removeEventListener('abort', onAbort);

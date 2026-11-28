@@ -8,6 +8,7 @@ import {
 import mssql from '../../src/index.js';
 
 export const mssqlIntegrationProfile: DatabaseIntegrationProfile = {
+  coldTransactionNaming: true,
   numeric: {
     nativeResults: false,
     integerResults: 'number',

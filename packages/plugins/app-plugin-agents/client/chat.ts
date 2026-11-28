@@ -200,6 +200,7 @@ export {
   type ChatPanelState,
   type ChatPanelView,
 } from './chat/panel-state.js';
+export { useChatPages, type ChatPages } from './chat/chat-pages.js';
 
 const redirect: AppClientRouteComponentLoader = async () => {
   const [{ default: Redirect }, { withAgents: bind }] = await Promise.all([

@@ -1,8 +1,11 @@
 # Screenshot tool
 
-`capture.mjs` uses Playwright to open pages, perform actions and take screenshots according to a configuration, and writes console errors, page exceptions, 4xx/5xx requests and any sideways page overflow (`horizontalOverflow`, measured before the final screenshot) to `screenshots/capture-log.json`. The full workflow uses it in its acceptance review (step 4 of [`../ui-workflow.md`](../ui-workflow.md)). It imports `@playwright/test` from the application's own `node_modules`, which the Default and Examples templates install: in an application without it run `pnpm add -D @playwright/test` first, the devDependency [`../references/testing.md`](../references/testing.md) names for end-to-end tests. Run it from the application root:
+`capture.mjs` uses Playwright to open pages, perform actions and take screenshots according to a configuration, and writes console errors, page exceptions, 4xx/5xx requests and any sideways page overflow (`horizontalOverflow`, measured before the final screenshot) to `screenshots/capture-log.json`. Use [the development screenshot command](../../screenshots.md) for disposable app instances. Use this workflow for an existing local development application or a saved browser session. It imports `@playwright/test` from the application's own `node_modules`, which the Default and Examples templates install: in an application without it run `pnpm add -D @playwright/test` first, the devDependency [`../references/testing.md`](../references/testing.md) names for end-to-end tests. Run it from the application root:
 
 ```bash
+# Install Chromium if Playwright has no browser on this machine
+pnpm exec playwright install chromium
+
 # 1. Start pnpm dev, then use its printed Local application entry URL
 pnpm nocobase authorization dev-session --base http://127.0.0.1:13000/main/
 

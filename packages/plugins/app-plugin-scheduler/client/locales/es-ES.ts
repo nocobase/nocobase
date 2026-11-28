@@ -298,7 +298,7 @@ const esES: SchedulerResource = {
       full: 'Ejecútalo solo en una compilación completa que incluya todos los plugins; de lo contrario, las tareas de los plugins que no cargó también se marcan como eliminadas.',
     },
     readOnly:
-      'Esta página es de solo lectura: estos ajustes están en la configuración de la aplicación y se aplican al volver a desplegar. Las cachés, colas y otros servicios se tratan en los ajustes de clúster y distribución.',
+      'Esta página es de solo lectura: estos ajustes están en la configuración de la aplicación y se aplican al volver a desplegar.',
   },
   cron: {
     everyMinute: 'Cada minuto',

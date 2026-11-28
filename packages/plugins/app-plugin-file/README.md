@@ -3,6 +3,7 @@
 `@nocobase/app-plugin-file` provides file repositories, multipart uploads, stable content URLs. Server services reuse the application's Database and Drive managers; Client services reuse its API Client.
 
 - Register `./server` and the `./client` factory to provide the two Repository managers.
+- To omit the storage overview and disk check endpoints, register `createFileServerPlugin({ storageManagementRoutes: false })` from `@nocobase/app-plugin-file/server`. File repositories and application-owned attachment routes remain available. The default export enables both management endpoints.
 - Declare business collections and expose their operations with `defineFileRepositoryApiRoutes()`.
 - Install the `@nocobase/file-component-ui` UI Library block for editable upload, list, thumbnail, and preview UI.
 - Declare each feature that stores files with `registerUsage()` so the file storage settings page lists it.
@@ -107,4 +108,4 @@ if (this.app.container.has(serverFileRepositoryManagerToken))
 
 ## Local disk usage
 
-`manager.localDiskUsage()` reports, read-only, whether the Drive's default disk uses the `fs` driver and which file Collections, on every configured database connection, hold at least one record on an `fs` disk, as `{ connection, collection }` pairs; connections it cannot read are listed in `uncheckedConnections`. It reads disk names and drivers only, never locations or credentials, and runs one schema scan per connection and one existence query per file Collection, only when called. `@nocobase/app-plugin-distributed` uses it for its file storage check.
+`manager.localDiskUsage()` reports, read-only, whether the Drive's default disk uses the `fs` driver and which file Collections, on every configured database connection, hold at least one record on an `fs` disk, as `{ connection, collection }` pairs; connections it cannot read are listed in `uncheckedConnections`. It reads disk names and drivers only, never locations or credentials, and runs one schema scan per connection and one existence query per file Collection, only when called.

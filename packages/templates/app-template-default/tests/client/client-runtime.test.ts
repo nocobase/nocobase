@@ -15,9 +15,83 @@ import {
 } from '@nocobase/app-client/runtime';
 import type { ClientApplication as ClientApplicationType } from '@nocobase/app-client';
 
+import { defineAppRoutes } from '@nocobase/app-client/plugins';
+import agents from '@nocobase/app-plugin-agents/client';
+import mail from '@nocobase/app-plugin-mail/client';
+import notificationInApp from '@nocobase/app-plugin-notification-in-app/client';
 import appRuntime from '../../client/runtime.ts';
 
 describe('app client runtime', () => {
+  it('loads Repository audit labels when the viewer switches language', async () => {
+    const { i18n } = await resolveAppRuntime(appRuntime);
+    const namespace = '@nocobase/audit';
+    const name = () =>
+      i18n.getFixedT(namespace)('audit.operations.createOne', {
+        defaultValue: 'Stored operation name',
+      });
+
+    expect(name()).toBe('Create a record');
+    expect(i18n.i18n.hasResourceBundle('zh-CN', namespace)).toBe(false);
+    await i18n.changeLanguage('zh-CN');
+    expect(name()).toBe('创建记录');
+    await i18n.changeLanguage('en-US');
+    expect(name()).toBe('Create a record');
+  });
+
+  it('removes the registered settings shortcut when system settings routes are disabled', async () => {
+    const enabled = await resolveAppRuntime(appRuntime);
+    expect(enabled.headerActions).toContainEqual(
+      expect.objectContaining({
+        name: 'system-settings',
+        placement: 'beforeAccount',
+      }),
+    );
+    const disabled = await resolveAppRuntime({
+      ...appRuntime,
+      systemSettingsRoutes: false,
+    });
+    expect(
+      disabled.headerActions?.some(
+        (action) => action.name === 'system-settings',
+      ),
+    ).toBe(false);
+  });
+
+  it('lets an application own the chat, inbox and mail URLs with the plugins registered', async () => {
+    const paths = [
+      '/chat',
+      '/chat/:conversationId',
+      '/inbox',
+      '/mail',
+      '/mail/team',
+      '/settings/mail',
+      '/me/mail',
+    ];
+    const runtime = await resolveAppRuntime(
+      defineAppRuntime({
+        packageName: '@example/custom',
+        createAppConfig: createAppClientConfig,
+        plugins: defineClientPlugins([
+          agents({ chatRoutes: false, panel: false, headerAction: false }),
+          notificationInApp({ inboxRoute: false, headerButton: false }),
+          mail({ workspaceRoutes: false }),
+        ]),
+        systemSettingsRoutes: false,
+        personalSettingsRoutes: false,
+        routes: defineAppRoutes(
+          paths.map((path, index) => ({
+            name: 'custom' + index,
+            path,
+            authz: 'skip',
+            componentLoader: async () => ({ default: () => null }),
+          })),
+        ),
+      }),
+    );
+    expect(runtime.routes.map((route) => route.path)).toEqual(paths);
+    expect(runtime.headerActions).toEqual([]);
+  });
+
   it('resolves static contributions without running ServiceProvider lifecycle', async () => {
     const calls: string[] = [];
     class Provider extends ServiceProvider<ClientApplicationType> {

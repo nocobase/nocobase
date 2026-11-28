@@ -6,6 +6,7 @@ const enUS = {
     resend: 'Resend',
     feishuWebhook: 'Feishu webhook',
     dingtalkWebhook: 'DingTalk webhook',
+    sms: 'SMS',
   },
 };
 

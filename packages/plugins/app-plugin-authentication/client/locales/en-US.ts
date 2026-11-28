@@ -1,10 +1,11 @@
+import auditLabels from '../../locales/en-US.js';
 import type { LocaleResource } from '@nocobase/i18n';
 
 /**
  * Messages for the errors the authentication actions report (`actions/errors.ts`), keyed by the server's error code:
  * Better Auth's own codes, its username plugin's, and the ones this plugin's server adds.
  */
-const enUS = {
+const messages = {
   errors: {
     generic: 'Something went wrong. Please try again.',
     network: 'Could not reach the server. Check your connection and try again.',
@@ -41,7 +42,7 @@ const enUS = {
       'This request came from another site and was refused. Reload the page and try again.',
   },
   settings: {
-    title: 'Sign-in and authentication',
+    title: 'Authentication',
     navigationDescription:
       'How people sign in, register, recover passwords and stay signed in.',
     description:
@@ -79,8 +80,8 @@ const enUS = {
     tabs: {
       methods: 'Sign-in methods',
       registration: 'Registration',
-      password: 'Password and recovery',
-      session: 'Sessions and security',
+      password: 'Password & recovery',
+      session: 'Sessions & security',
     },
     issues: {
       title_one: '{{count}} item needs attention',
@@ -384,7 +385,7 @@ const enUS = {
   },
 
   account: {
-    title: 'Account and security',
+    title: 'Account & security',
     navigationDescription: 'Your sign-in details, password and devices.',
     description:
       'Your sign-in details, password and the devices you are signed in on. Changes here affect only you.',
@@ -437,6 +438,11 @@ const enUS = {
       lastMethod: 'You cannot unlink your only way to sign in.',
     },
   },
+};
+
+const enUS: typeof messages & typeof auditLabels = {
+  ...messages,
+  ...auditLabels,
 };
 
 export type AuthenticationResource = LocaleResource<typeof enUS>;

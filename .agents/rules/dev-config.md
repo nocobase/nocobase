@@ -21,12 +21,13 @@ First determine the runtime environment, then whether the package emits declarat
 
 A hybrid Node/DOM package such as `app-host` should use `server-library` and add the DOM library locally. Keep the package-specific `include`, `exclude`, `paths`, `rootDir`, `outDir`, `tsBuildInfoFile`, and special `types` settings in the consuming package because they depend on its directory layout.
 
-### ESLint, Prettier, Vitest, and Vite
+### Oxlint, ESLint, Prettier, Vitest, and Vite
 
-- Use a thin `eslint.config.js`. Node libraries call `createNodeLibraryConfig`, browser libraries call `createClientLibraryConfig`, and applications call `createApplicationConfig`.
+- Application templates use a thin `oxlint.config.ts` with `createApplicationConfig` from `@nocobase/dev-config/oxlint`. Run `pnpm lint <paths>` or `pnpm lint:fix <paths>` for a scoped check. See the [Oxlint preset](../../packages/tools/dev-config/oxlint/README.md).
+- For packages using ESLint, use a thin `eslint.config.js`. Node libraries call `createNodeLibraryConfig`, browser libraries call `createClientLibraryConfig`, and applications call `createApplicationConfig`.
 - A package may add precise `ignores` or documented, narrowly scoped rule exceptions. Do not disable type-aware linting across an entire package merely to complete a migration.
 - Inherit Prettier through `"prettier": "@nocobase/dev-config/prettier"` in `package.json`.
-- Prefer `pnpm fix` after editing code. It always runs ESLint `--fix` before Prettier `--write`. `pnpm format:check` is a read-only incremental check.
+- Prefer `pnpm fix` after editing code. It runs the package’s linter with `--fix` before Prettier `--write`. `pnpm format:check` is a read-only incremental check.
 - Node tests use `createNodeVitestConfig`. React/jsdom tests use `createReactVitestConfig`. The React preset already installs jest-dom matchers and Testing Library cleanup.
 - Application Vite configurations use `createAppViteConfig`. Keep proxy settings and aliases local.
 - Keep Playwright configuration package-local for now; there is no shared Playwright preset.
@@ -43,6 +44,8 @@ A hybrid Node/DOM package such as `app-host` should use `server-library` and add
 Every package under `packages/` is published to npm, so none of them set `private: true`. Root `pnpm pack:check` automatically discovers every package in that directory and rejects private packages, incomplete publish metadata, missing or stale changelogs, invalid tarballs, unresolved workspace protocols, and broken export or declaration metadata.
 
 A new package therefore starts at version `0.0.1`, sets `publishConfig.access` to `"public"` — scoped packages default to restricted and would otherwise fail to publish — and declares `files`. Without `files` the package ships its sources, tests, and configs; libraries ship `dist` alone, while template packages that users are meant to read and edit ship their sources instead.
+
+Every package keeps a `CHANGELOG.md` in the repository but does not list it in `files`. `pack:check` reads the repository file — it must exist, start with `# <package name>` and include the current version — and the GitHub Release links each package's changelog there. Nothing reads a changelog from an installed package, and the file grows with every release, so publishing it only makes every tarball larger.
 
 "Libraries ship `dist` alone" is stricter than it sounds, and `pack:check` now enforces it: a package that publishes `dist` must not also publish `database` or `server`. Plugins now declare an explicit `baseDir` for `database/migrations` and `database/seeds`. Earlier runtimes tried the package directory before `dist`, so publishing both handed installed applications TypeScript sources — and Node refuses to strip types from a file under `node_modules`. `@nocobase/app-plugin-ai-employee` shipped this way and failed every application start with `Stripping types is currently unsupported for files under node_modules`, while every development checkout kept working, because a workspace link resolves the same sources outside `node_modules`. Templates are unaffected: they publish their sources instead of a `dist`, so there is nothing to shadow.
 

@@ -1,3 +1,6 @@
+import { createHash } from 'node:crypto';
+import type { ModelUsageRecorder } from '../../../core/reports/model-usage.js';
+import { textTokensOf } from '../../gateway.js';
 import type { NativeExecutionRequest } from './types.js';
 import { WebSearchBudget } from '../../search/budget.js';
 import { validateWebSearch, type OnlineAgentWebSearch } from '../web-search.js';
@@ -58,6 +61,21 @@ import type {
   NativeAcceptance as Acceptance,
 } from './types.js';
 
+function usageSource(
+  scopes: readonly string[],
+  conversationSource: string,
+): string {
+  // Application-defined native assistants share the built-in agent ID and select their behavior by scope.
+  const source = scopes.length
+    ? `agents.online:${scopes.map((scope) => scope.replaceAll('%', '%25').replaceAll('+', '%2B')).join('+')}`
+    : conversationSource === 'panel' || conversationSource === 'chat'
+      ? 'agents.online'
+      : `agents.online@${conversationSource}`;
+  if (source.length <= 64) return source;
+  const suffix = createHash('sha256').update(source).digest('hex').slice(0, 32);
+  return `agents.online#${suffix}`;
+}
+
 export class NativeOnlineAgent {
   private responses = new Map<string, UIStreamChannel>();
   private executionResponses = new WeakMap<NativeExecution, UIStreamChannel>();
@@ -71,6 +89,7 @@ export class NativeOnlineAgent {
       resolver?: ServiceResolver;
       webSearch?: OnlineAgentWebSearch;
       fileInputs?: NativeFileInputs;
+      modelUsage?: ModelUsageRecorder;
       model(ref: ModelRef, sessionId: string): Promise<LanguageModel>;
       onError(error: unknown): void;
       complete(
@@ -123,6 +142,8 @@ export class NativeOnlineAgent {
     let messageId: string;
     let toolContext!: OnlineAgentToolContext;
     let instructions = '';
+    let selected: ModelRef;
+    let conversationSource: string;
     const pending: Promise<unknown>[] = [];
     const begun = new Set<string>();
     const ended = new Set<string>();
@@ -151,6 +172,7 @@ export class NativeOnlineAgent {
     try {
       const session = await this.deps.sessions.load(context.user.id, id);
       background = session.kind === 'background';
+      conversationSource = session.source;
       config = input?.overrides
         ? await this.deps.configurator.resolve(
             context,
@@ -162,7 +184,7 @@ export class NativeOnlineAgent {
       if ((config.agentId ?? 'online') !== (session.config.agentId ?? 'online'))
         throw conflict('Start a new conversation to choose another agent.');
       const candidate = config.model?.[0]?.split('/');
-      const selected =
+      selected =
         input?.selectedModel ??
         (config.model?.length &&
         (input?.overrides?.model !== undefined ||
@@ -419,6 +441,8 @@ export class NativeOnlineAgent {
     let preparingFiles = false;
     let fileInputFailure: FileInputFailureReason | undefined;
     let finishChunk: NativeUIChunk = { type: 'finish' };
+    const modelUsage = this.deps.modelUsage;
+    let usage: ReturnType<typeof textTokensOf> | undefined;
     output?.write({ type: 'start', messageId, messageMetadata: metadata });
     try {
       const snapshot =
@@ -472,6 +496,21 @@ export class NativeOnlineAgent {
         abortSignal: execution.abort.signal,
         maxRetries: 0,
         stopWhen: stepCountIs(20),
+        // A call can report usage before its tools settle, even if the SDK never finishes that step.
+        onLanguageModelCallEnd: ({ usage: reported }) => {
+          if (!modelUsage) return;
+          const tokens = textTokensOf(reported);
+          usage = usage
+            ? {
+                inputTokens: usage.inputTokens + tokens.inputTokens,
+                outputTokens: usage.outputTokens + tokens.outputTokens,
+                cacheReadTokens: usage.cacheReadTokens + tokens.cacheReadTokens,
+                cacheWriteTokens:
+                  usage.cacheWriteTokens + tokens.cacheWriteTokens,
+                reasoningTokens: usage.reasoningTokens + tokens.reasoningTokens,
+              }
+            : tokens;
+        },
         onToolExecutionStart: ({ toolCall }) => {
           begun.add(toolCall.toolCallId);
           evidenceCalls.set(toolCall.toolCallId, {
@@ -573,6 +612,18 @@ export class NativeOnlineAgent {
       this.deps.onError(error);
       accepted.resolve(afterSeq);
     }
+    if (modelUsage && usage)
+      await modelUsage
+        .record({
+          purpose: 'text',
+          source: usageSource(config.scope, conversationSource),
+          modelService: selected.modelService,
+          // Prices are configured for the selected catalog ID.
+          model: selected.model,
+          ...usage,
+          units: 1,
+        })
+        .catch((error: unknown) => this.deps.onError(error));
     await Promise.allSettled(pending);
     // Retain accepted effects even when cancellation ends the SDK step before its output chunk.
     for (const [callId, evidence] of evidenceCalls) {

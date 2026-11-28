@@ -25,6 +25,7 @@ function runPreflight(result: { status?: number | null; error?: Error }) {
   };
   runInNewContext(preflight, {
     progress: vi.fn(),
+    shuttingDown: false,
     spawn: { sync },
     console: { log },
     rootDir: '/app',

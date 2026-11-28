@@ -92,6 +92,8 @@ Prefer these hooks over calling `fetchInbox` and the mutation helpers from compo
 
 ## Client inbox page and header button
 
+Set `inboxRoute: false` to leave the inbox path to the application. Use `headerButton: false` to omit the plugin’s header action independently.
+
 Registering `@nocobase/app-plugin-notification-in-app/client` is enough: the plugin registers the route `inbox` at `/inbox` (signed in, no page grant, because the API answers each person's own messages only) and the header button `inbox` through `headerActions`. The button opens a popover with the latest messages, "Mark all read" and a link to the page; its badge is what waits on the viewer, in the `attention` tone, when a pending source counts anything, else the unread count, else nothing. The badge hook also keeps every inbox query fresh over realtime while the person is signed in, so the button, the page and every other open tab update together.
 
 The page is the master–detail inbox the UI Library block used to copy into the templates: a left rail with All, Unread, Pending and one entry per category; a list grouped as Pending, Today and Earlier; a detail pane that marks read or unread, deletes and opens the item's target. The view, the category and the selected item are in the URL (`?view=unread|todo`, `?category=`, `?item=`). Without a renderer for its kind an item shows its body and Open.

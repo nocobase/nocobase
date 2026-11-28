@@ -1189,7 +1189,7 @@ export class KnexRepositoryExecutionAdapter implements RepositoryExecutionAdapte
     applyVersion(query, plan.collection, plan.ifVersion);
     if (affectedCount(await query) > 0) {
       this.recordRow(plan.collection, 'deleted', selected.unique);
-      return snapshot ? { record: snapshot } : 'deleted';
+      return { identity: selected.record, record: snapshot };
     }
     return plan.ifVersion === undefined ? 'missing' : 'conflict';
   }

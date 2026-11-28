@@ -26,6 +26,12 @@ Configuring a plugin changes nothing in the database: the plugin starts, and the
 
 Never copy or edit the authentication plugin's migrations, never run Better Auth's schema generation or `migrate` against the application database, and do not add physical foreign keys to the authentication tables. The adapter does not support Better Auth join queries; read the plugin's source for `join` before adopting it, and say so if it uses one.
 
+## Using the current authentication transaction
+
+Import `authTransactionConnection()` from `@nocobase/app-plugin-authentication/server` in trusted server-side extensions. It returns `Promise<DatabaseConnection | undefined>`. Call it inside an authentication callback such as a transactional OIDC resolver or a `databaseHooks.session.create.before` hook. When Better Auth runs that callback in a NocoBase adapter transaction, use the returned connection for application queries that must see uncommitted authentication changes or roll back with them. Using the application’s main connection from inside the transaction can wait on the transaction itself on SQLite.
+
+The result is `undefined` outside an active authentication transaction, including after-commit hooks. Decide how to handle that case according to the extension’s needs. If atomicity is required, abort when the connection is unavailable. Await all work that uses the borrowed connection before returning from the callback. To roll back the transaction on rejection, propagate the failure through the transaction callback, for example by throwing an `APIError` from a session hook.
+
 ## Common cases
 
 | Requirement                                          | Use                                                                                                                                                                                                              |
@@ -48,7 +54,7 @@ RFC 8628 through `deviceAuthorization()`: the CLI posts its client id to `/api/a
 
 ### Two-factor authentication and passkeys
 
-The Sign-in and authentication page's guides hand a development agent a prompt that points here. Two-factor authentication is `twoFactor()` from `better-auth/plugins` with `twoFactorClient()` from `better-auth/client/plugins`. Passkeys are not in `better-auth` itself: install `@better-auth/passkey` at the same version as `better-auth` and use `passkey()` from `@better-auth/passkey` with `passkeyClient()` from `@better-auth/passkey/client`. Read `rpID` (the host name) and `origin` from `app.publicOrigin` rather than hard-coding them; passkeys need HTTPS (localhost excepted), and changing the domain invalidates every passkey already registered. Neither plugin comes with pages: the application adds the Account and security sections (setting up and removing an authenticator with its backup codes; adding, renaming and deleting passkeys) and the sign-in steps (the code after `twoFactorRedirect`, through `twoFactor.verifyTotp` or `twoFactor.verifyBackupCode`; a "Sign in with a passkey" button through `signIn.passkey`).
+The Authentication page's guides hand a development agent a prompt that points here. Two-factor authentication is `twoFactor()` from `better-auth/plugins` with `twoFactorClient()` from `better-auth/client/plugins`. Passkeys are not in `better-auth` itself: install `@better-auth/passkey` at the same version as `better-auth` and use `passkey()` from `@better-auth/passkey` with `passkeyClient()` from `@better-auth/passkey/client`. Read `rpID` (the host name) and `origin` from `app.publicOrigin` rather than hard-coding them; passkeys need HTTPS (localhost excepted), and changing the domain invalidates every passkey already registered. Neither plugin comes with pages: the application adds the Account and security sections (setting up and removing an authenticator with its backup codes; adding, renaming and deleting passkeys) and the sign-in steps (the code after `twoFactorRedirect`, through `twoFactor.verifyTotp` or `twoFactor.verifyBackupCode`; a "Sign in with a passkey" button through `signIn.passkey`).
 
 These migrations match better-auth and `@better-auth/passkey` 1.7.21; the authentication plugin's tests run both and use them through Better Auth. Give them the application's own timestamp.
 

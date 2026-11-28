@@ -173,6 +173,38 @@ Resolve database access through the owner-exported `databaseManagerToken`. Use `
 
 A `JobExecutor` job never resolves the container: the Provider that owns the executor creates the job class with a factory that closes over the Services it needs, then registers that class. A queue handler is likewise a closure the Provider registers in `boot()`; await its unregister function in `shutdown()` before releasing those Services. Do not store a global container for either.
 
+## Audit events
+
+Use `describeAudit()` from `@nocobase/audit` on important `/api` routes. Keep the declaration alongside the route. Audit is enabled by default and records explicit declarations once you configure a destination. Automatic detection is off by default. With `audit.autoDetect: true`, documented POST, PATCH, PUT and DELETE routes without an explicit declaration use their business action or OpenAPI operation ID. A declaration wins over inference, including `describeAudit(false)`. A dynamic declaration that returns `undefined` leaves the route eligible for inference. Set `audit.enabled: false` to turn off capture and delivery.
+
+Use `target(context)` for data known before authorization, such as a path parameter. Use `resolveTargets(result, context)` for safe collection and key identifiers after a successful handler. The resolver always needs to handle missing values. When capture is off, `request` and `response` are `undefined`, and only the route context and any in-process `value` the framework provides are available. Even with capture on, content type or snapshot bounds can make a body unavailable. A missing record ID is expected. If the resolver throws, the event uses the known pre-handler target, if any.
+
+Bodies are off by default. Opt in with `audit.captureBody: true` in the application's `config.yml` or with `captureBody: true` on a route. An explicit `false` at either level always disables body capture. Audit skips body cloning, reads and parsing when capture is off. The app validates capture configuration at startup and changes take effect after a restart.
+
+Set `redact: { fields: ['privateValue'], paths: ['profile.mobile'] }` in app config or on a route. Fields match exact names at any depth. Paths match from the root of each snapshot or structured target key. A path such as `members.mobile` matches every array element. A numeric segment such as `members.0.mobile` matches a specific position. Built-in credential masking, application rules, and route rules apply together.
+
+```ts
+import { auditRecordKey, describeAudit } from '@nocobase/audit';
+
+const auditCustomerCreation = describeAudit({
+  action: 'customer.create',
+  captureBody: true,
+  redact: { fields: ['identityNumber'], paths: ['profile.mobile'] },
+  resolveTargets: ({ response }) => {
+    const id = auditRecordKey(response, 'data', 'id');
+    return id === undefined ? undefined : { collection: 'customers', key: id };
+  },
+});
+```
+
+Use `operationName` for explicit display text or a translation descriptor `{ ns, key, defaultValue }`. Audit stores the descriptor and the explicit or default text, with the OpenAPI summary and stable action as fallbacks. History readers can localize the descriptor in the viewer's language and use the stored name or action when the translation is unavailable. Reuse the application's authenticated identity and authorization context. A dispatcher with a separate Hono context registers its forwarded routers with the API document service and calls the observer returned by `forwardedAuditContext(parent)` with the child context.
+
+The official templates install `AuditProvider` in the application composition root. A custom application must add it from `@nocobase/audit/runtime` before starting the application. A transport plugin imports its contract and token from `@nocobase/audit` and calls `container.resolve(auditServiceToken).registerDriver({ name, createTransport })` during registration or boot. Application configuration selects named `audit.transports` with `{ driver, options }`. Each named destination gets its own transport instance. Supply a synchronous factory, a `write(event, { signal })` method that honors cancellation, and optional `close()` for cleanup. Unknown driver names fail startup when audit is enabled. With no destinations the app skips capture. The built-in `file` driver writes JSON Lines and resolves relative paths under application storage. The commercial audit plugin supplies the `database` driver.
+
+Audit uses `auth.advanced.ipAddress.trustedProxies` and `auth.advanced.ipAddress.ipAddressHeaders`. Invalid proxy entries are skipped with a startup warning. For a trusted socket peer, audit tries the configured headers in order and walks each chain from right to left to its first untrusted address. The default header is `X-Forwarded-For`. The event uses the peer address when the peer is untrusted or no configured header yields a client address.
+
+Delivery follows the request outcome and runs independently of business transactions. Successful idempotent replays with `Idempotency-Replayed: true` are omitted. Destinations receive independent copies of the same sanitized event. A failed delivery is logged by destination and the business response still returns. Process failure can lose an event.
+
 ## Test the contract and lifecycle
 
 Use a fresh `ServiceContainer` and a minimal typed App fixture. Cover these observable contracts:

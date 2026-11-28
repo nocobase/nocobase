@@ -1,6 +1,8 @@
+import auditLabels from '../../locales/zh-CN.js';
 import type { AuthenticationResource } from './en-US.js';
 
 const zhCN: AuthenticationResource = {
+  ...auditLabels,
   errors: {
     generic: '出了点问题，请重试。',
     network: '无法连接服务器，请检查网络后重试。',
@@ -32,11 +34,11 @@ const zhCN: AuthenticationResource = {
     INVALID_CSRF_ORIGIN: '请求来自其他站点，已被拒绝。请刷新页面后重试。',
   },
   settings: {
-    title: '登录与认证',
+    title: '身份认证',
     navigationDescription: '登录方式、自助注册、找回密码和登录状态。',
     description:
       '谁能用什么方式登录、能否自己注册、密码怎么找回、登录状态保持多久。这些设置写在应用配置里，随部署生效；本页显示当前实际生效的值和来源，并指出需要处理的问题。修改方法在每一项的「怎么改」里。',
-    loadFailed: '无法加载登录与认证设置。',
+    loadFailed: '无法加载身份认证设置。',
     retry: '重试',
     howToChange: '怎么改',
     howToChangeNote: '改完后重新部署或重启应用生效。本页不保存任何配置。',

@@ -1,5 +1,6 @@
+import auditLabels from '../../locales/en-US.js';
 // Every visible string of the API keys pages, and the titles the server registers in this namespace.
-const enUS = {
+const messages = {
   navigation: {
     personal: 'API keys',
     system: 'API keys',
@@ -182,7 +183,7 @@ const enUS = {
   rules: {
     newKeysOnly:
       'These rules apply to keys created or rotated from now on; existing keys keep their expiry. Who may open this page, manage system keys or create personal keys is set on roles.',
-    whoMay: 'Roles and permissions',
+    whoMay: 'Roles & permissions',
     sameAsMe: {
       title: 'Personal key permissions',
       description:
@@ -313,5 +314,10 @@ const enUS = {
     records: 'Records: {{records}}',
   },
 } as const;
+
+const enUS: typeof messages & typeof auditLabels = {
+  ...auditLabels,
+  ...messages,
+};
 
 export default enUS;

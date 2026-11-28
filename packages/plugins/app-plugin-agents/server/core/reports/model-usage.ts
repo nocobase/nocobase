@@ -1,8 +1,6 @@
 /**
- * What model calls outside any run used (`agModelUsage`): the embeddings, reranking and short utility texts the
- * application asks the model gateway for (`ModelGateway.embed`, `rerank`, `generate`). The gateway records each call
- * as it returns (`ModelUsageRecorder`); the report groups them by purpose, caller and model, priced like online runs'
- * calls from the service's model prices (`tool` `online`).
+ * What model calls outside any run used (`agModelUsage`): gateway calls and native online agent turns.
+ * The report groups them by purpose, caller and model, at the service's model prices (`tool` `online`).
  */
 import type { DatabaseConnection } from '@nocobase/db';
 
@@ -26,8 +24,13 @@ export interface ModelUsageEntry {
   readonly source: string;
   readonly modelService: string;
   readonly model: string;
+  /** Total input, including cache reads and writes. */
   readonly inputTokens: number;
+  /** Total output, including reasoning. */
   readonly outputTokens: number;
+  readonly cacheReadTokens?: number;
+  readonly cacheWriteTokens?: number;
+  readonly reasoningTokens?: number;
   readonly units: number;
 }
 
@@ -64,6 +67,9 @@ export function createModelUsageRecorder(deps: {
             model: entry.model.slice(0, 200),
             inputTokens: count(entry.inputTokens),
             outputTokens: count(entry.outputTokens),
+            cacheReadTokens: count(entry.cacheReadTokens),
+            cacheWriteTokens: count(entry.cacheWriteTokens),
+            reasoningTokens: count(entry.reasoningTokens),
             units: count(entry.units),
             createdAt: deps.clock.now().toISOString(),
           },
@@ -90,6 +96,8 @@ export async function modelUsageRows(
       eb.fn.sum('units').as('units'),
       eb.fn.sum('inputTokens').as('inputTokens'),
       eb.fn.sum('outputTokens').as('outputTokens'),
+      eb.fn.sum('cacheReadTokens').as('cacheReadTokens'),
+      eb.fn.sum('cacheWriteTokens').as('cacheWriteTokens'),
     ])
     .where('createdAt', '>=', range.start)
     .where('createdAt', '<', range.end)
@@ -100,6 +108,8 @@ export async function modelUsageRows(
     const model = String(group.model);
     const inputTokens = count(group.inputTokens);
     const outputTokens = count(group.outputTokens);
+    const cacheReadTokens = count(group.cacheReadTokens);
+    const cacheWriteTokens = count(group.cacheWriteTokens);
     // Prices are per token, so the calls' summed tokens cost what the calls cost one by one.
     const price = priceFor(book, { tool: ONLINE_TOOL, modelService, model });
     return {
@@ -114,10 +124,13 @@ export async function modelUsageRows(
       cost: price
         ? {
             [price.currency]: costOf(price, {
-              inputTokens,
+              inputTokens: Math.max(
+                0,
+                inputTokens - cacheReadTokens - cacheWriteTokens,
+              ),
               outputTokens,
-              cacheReadTokens: 0,
-              cacheWriteTokens: 0,
+              cacheReadTokens,
+              cacheWriteTokens,
             }),
           }
         : null,

@@ -51,12 +51,15 @@ export interface BriefSectionProvider {
   /** Lower first; sections without one follow, in the order they were registered. */
   readonly order?: number;
   readonly prepare?: ExtensionPrepare;
+  /** Reuse this section on session recovery when the subject assembly changes. */
+  readonly reuseOnRecovery?: boolean;
   /** Markdown appended to the context layer, or null for nothing on this run. */
   section(
     conn: DatabaseConnection,
     claim: ClaimContext,
     assembly: SubjectAssembly,
     prepared: unknown,
+    extensions: Prepared,
   ): Promise<string | null>;
 }
 
@@ -98,15 +101,23 @@ export async function withSections(
   claim: ClaimContext,
   assembly: SubjectAssembly,
   prepared: Prepared,
+  reusable?: Map<string, string | null>,
 ): Promise<SubjectAssembly> {
   const added: string[] = [];
   for (const provider of sections?.list() ?? []) {
-    const text = await provider.section(
-      conn,
-      claim,
-      assembly,
-      prepared.get(`section:${provider.key}`),
-    );
+    const key = provider.key;
+    const text =
+      provider.reuseOnRecovery && reusable?.has(key)
+        ? reusable.get(key)
+        : await provider.section(
+            conn,
+            claim,
+            assembly,
+            prepared.get(`section:${key}`),
+            prepared,
+          );
+    if (provider.reuseOnRecovery && text !== undefined)
+      reusable?.set(key, text);
     if (text?.trim()) added.push(text.trim());
   }
   if (added.length === 0) return assembly;
@@ -148,6 +159,8 @@ export interface RunMountProvider {
   /** `MOUNT_NAME_PATTERN`; unique among the providers. */
   readonly name: string;
   readonly prepare?: ExtensionPrepare;
+  /** Collection definitions for delivering this prepared mount. A pure hint, used before the PostgreSQL claim lock. */
+  claimCollections?(prepared: unknown): readonly string[];
   /**
    * In the claim's transaction, through its connection: database reads, and writes of the provider's own records.
    * Null mounts nothing.

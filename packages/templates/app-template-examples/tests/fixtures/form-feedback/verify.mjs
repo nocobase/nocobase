@@ -2,7 +2,6 @@ import process from 'node:process';
 import console from 'node:console';
 import { Buffer } from 'node:buffer';
 import { URL } from 'node:url';
-/* global document */
 // Run only against an authorized isolated application with the equipment fixture installed.
 import { chromium, expect } from '@playwright/test';
 import { mkdir, writeFile } from 'node:fs/promises';
@@ -83,7 +82,7 @@ async function inline(locator) {
   const ids = (await locator.getAttribute('aria-describedby')).split(/\s+/);
   expect(
     await page.evaluate(
-      (ids) => ids.every((id) => document.getElementById(id)),
+      (ids) => ids.every((id) => globalThis.document.getElementById(id)),
       ids,
     ),
   ).toBe(true);

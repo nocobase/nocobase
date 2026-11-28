@@ -1,5 +1,28 @@
 # @nocobase/app-plugin-lifecycle-example
 
+## 0.1.0-beta.22
+
+### Patch Changes
+
+- cf23bfe: Stop publishing CHANGELOG.md in the package; the changelog stays in the repository.
+- Updated dependencies [888bca5]
+- Updated dependencies [1952789]
+- Updated dependencies [cf23bfe]
+  - @nocobase/app-plugin-authentication@2.0.0-beta.27
+  - @nocobase/app-plugin-authorization@1.0.0-beta.42
+
+## 0.1.0-beta.21
+
+### Minor Changes
+
+- 6cb232f: Change `LifecycleDiagram` to default to compact `process` presentation (previously `classic`) with inline pill actions, and add explicit `exitStates` support for multi-stage early-termination outcomes.
+
+  Behavior change for newly created applications and code regenerated from the updated Skill (existing applications retain their copied component source): callers that omit `presentation` now render in `process` mode, where backward and self-transitions move from canvas edges into node hover/focus notes, `revealEdges` and `auxiliaryEdges` props are ignored in favor of process routes, and `initialMinZoom` defaults to `0.1` instead of `0.7`. Pass `presentation="classic"` to keep the previous full-edge card layout. Folded `exitStates` appear in each source stage's hover/focus notes and mark execution termination directly on the stopping stage.
+
+### Patch Changes
+
+- 8be5180: Show English and Simplified Chinese names and descriptions for example plugins in the plugin list.
+
 ## 0.1.0-beta.20
 
 ### Minor Changes

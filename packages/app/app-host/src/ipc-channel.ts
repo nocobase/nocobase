@@ -27,6 +27,8 @@ export interface IpcResponse {
   error?: string;
   /** A stable code for the error, when it has one (`HostManagementError`). */
   errorCode?: string;
+  /** What the error reported beyond its message, such as a failed restore's per-database state. */
+  errorDetails?: unknown;
   accepted?: boolean;
   log?: JournalEntry;
 }
@@ -46,6 +48,7 @@ export class IpcRemoteError extends Error {
   constructor(
     message: string,
     public readonly code: string | undefined,
+    public readonly details?: unknown,
   ) {
     super(message);
     this.name = 'IpcRemoteError';
@@ -98,7 +101,13 @@ export function callIpc<T>(
       }
       cleanup();
       if (message.error) {
-        reject(new IpcRemoteError(message.error, message.errorCode));
+        reject(
+          new IpcRemoteError(
+            message.error,
+            message.errorCode,
+            message.errorDetails,
+          ),
+        );
         return;
       }
       resolve(message.result as T);

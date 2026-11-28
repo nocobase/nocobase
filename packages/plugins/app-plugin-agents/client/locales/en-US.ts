@@ -386,7 +386,7 @@ const pages = {
       purposes: {
         embedding: 'Embeddings',
         rerank: 'Reranking',
-        text: 'Utility text',
+        text: 'Text generation',
       },
     },
     title: 'Usage',
@@ -594,7 +594,7 @@ const pages = {
 
 /** The pages' texts with the permission titles the server registers (`shared/locales`). */
 const enUS: typeof pages &
-  Pick<typeof panelEnUS, 'openAgentSettings'> &
+  typeof panelEnUS &
   typeof runtimesEnUS &
   typeof accessEnUS &
   typeof chatEnUS &
@@ -606,7 +606,6 @@ const enUS: typeof pages &
   openAgentSettings: panelEnUS.openAgentSettings,
   ...runtimesEnUS,
   ...chatEnUS,
-  // The panel's own wording; the other languages fall back to English for keys they do not translate yet.
   chat: mergeLocale(chatEnUS.chat, panelEnUS.chat),
   ...servicesEnUS,
   ...pricesEnUS,
@@ -618,13 +617,11 @@ const enUS: typeof pages &
 /** English is the source of truth for this plugin's locale shape. */
 export type AgentsResource = LocaleResource<typeof enUS>;
 
-// What the plugin brings on its own (`shell.en-US.ts`), outside the typed shape: the other languages fall back to
-// English for these keys.
-const withShell: typeof enUS = {
+const withShell: typeof enUS & typeof shellEnUS = {
   ...enUS,
   agents: mergeLocale(enUS.agents, shellEnUS.agents),
   usage: mergeLocale(enUS.usage, shellEnUS.usage),
-  ...{ me: shellEnUS.me },
+  me: shellEnUS.me,
 };
 
 export default withShell;

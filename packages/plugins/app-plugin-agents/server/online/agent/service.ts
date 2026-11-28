@@ -1,3 +1,4 @@
+import type { ModelUsageRecorder } from '../../core/reports/model-usage.js';
 import {
   registerWebSearchTool,
   type OnlineAgentWebSearch,
@@ -38,12 +39,14 @@ export class OnlineAgentService {
     private deps: {
       sessions: OnlineAgentSessionManager;
       runner?: OnlineAgentBackend;
+      nativeEnabled?: boolean;
       configurator?: OnlineAgentConfigurator;
       sandboxProvider?: OnlineAgentSandboxProvider;
       ids: IdSource;
       resolver?: ServiceResolver;
       webSearch?: OnlineAgentWebSearch;
       fileInputs?: NativeFileInputs;
+      modelUsage?: ModelUsageRecorder;
       model(ref: ModelRef, sessionId: string): Promise<LanguageModel>;
       defaultModel(): Promise<ModelRef | null>;
       uiStreams?: OnlineAgentUIStreams;
@@ -207,11 +210,17 @@ export class OnlineAgentService {
     return { ...resolved, defaultModel: defaults.model };
   }
 
+  private nativeBackend(): OnlineAgentBackend {
+    if (this.deps.nativeEnabled === false)
+      throw invalid('Model services are disabled.');
+    return this.native;
+  }
+
   private selectedBackend(
     initial: OnlineAgentInitialConfiguration,
   ): OnlineAgentBackend {
     if (!initial.config.agentId || initial.config.agentId === 'online')
-      return this.native;
+      return this.nativeBackend();
     if (!this.deps.runner) throw invalid('Runner execution is unavailable.');
     return this.deps.runner;
   }
@@ -221,7 +230,7 @@ export class OnlineAgentService {
     id: string,
   ): Promise<OnlineAgentBackend> {
     const identity = await this.deps.sessions.identify(context.user.id, id);
-    if (identity.backend === 'native') return this.native;
+    if (identity.backend === 'native') return this.nativeBackend();
     if (!this.deps.runner) throw invalid('Runner execution is unavailable.');
     return this.deps.runner;
   }

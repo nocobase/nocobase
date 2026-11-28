@@ -2,7 +2,17 @@
   "name": "@nocobase/app-plugin-repository-example",
   "displayName": "Repository Example App Plugin",
   "description": "CRM and order management demonstrating relational Repository HTTP APIs.",
-  "version": "2.0.0-beta.9",
+  "nocobase": {
+    "title": {
+      "en-US": "Record management API example",
+      "zh-CN": "记录管理 API 示例"
+    },
+    "description": {
+      "en-US": "Manage CRM and order records with relational repository APIs.",
+      "zh-CN": "通过关联数据 API 管理客户关系和订单记录。"
+    }
+  },
+  "version": "2.0.0-beta.11",
   "type": "module",
   "prettier": "@nocobase/dev-config/prettier",
   "engines": {
@@ -31,7 +41,6 @@
   "files": [
     "dist",
     "README.md",
-    "CHANGELOG.md",
     "skills"
   ],
   "publishConfig": {

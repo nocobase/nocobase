@@ -48,6 +48,7 @@ it('runs compiled extensionless server imports without source files or a loader'
         compilerOptions: {
           rootDir: source,
           outDir: path.join(directory, 'dist'),
+          tsBuildInfoFile: path.join(directory, 'server.tsbuildinfo'),
           types: [],
         },
         include: [path.join(source, '**/*.ts')],

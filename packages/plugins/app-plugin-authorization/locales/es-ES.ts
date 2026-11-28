@@ -3,6 +3,15 @@ import type { LocaleResource } from '@nocobase/i18n';
 import type enUS from './en-US.js';
 
 const esES: LocaleResource<typeof enUS> = {
+  audit: {
+    operations: {
+      createPermissionSet: 'Crear un conjunto de permisos',
+      assignPermissionSet: 'Asignar un conjunto de permisos',
+      unassignPermissionSet: 'Retirar la asignación de un conjunto de permisos',
+      updatePermissionSet: 'Editar un conjunto de permisos',
+      deletePermissionSet: 'Eliminar un conjunto de permisos',
+    },
+  },
   sections: {
     pages: 'Permisos de página',
     page: 'Páginas',

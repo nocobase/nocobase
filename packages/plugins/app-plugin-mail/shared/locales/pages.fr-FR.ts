@@ -7,7 +7,7 @@ const pagesFrFR: MailPagesResource = {
     mailAccounts: 'Comptes de messagerie',
     mailAccountsDescription:
       'Connectez vos boîtes aux lettres et gérez signatures, modèles et étiquettes.',
-    mailSettings: 'Courrier',
+    mailSettings: 'Connexions aux boîtes mail',
     mailSettingsDescription:
       "Fournisseurs de messagerie, état de chaque compte, journaux de synchronisation et d'envoi.",
   },
@@ -22,7 +22,7 @@ const pagesFrFR: MailPagesResource = {
       },
     },
     settings: {
-      title: 'Courrier',
+      title: 'Connexions aux boîtes mail',
       actions: {
         read: 'Afficher',
         manage:
@@ -113,7 +113,7 @@ const pagesFrFR: MailPagesResource = {
       },
     },
     settings: {
-      title: 'Courrier',
+      title: 'Connexions aux boîtes mail',
       description:
         "Les fournisseurs de messagerie que les membres peuvent connecter, et l'état de connexion, de synchronisation et d'envoi de chaque compte. Aucun contenu de message n'est affiché ici. Les e-mails de notification système se configurent dans Notifications.",
       tabs: {

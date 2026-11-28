@@ -101,6 +101,8 @@ catalog:
   pino: ^10.3.1
   pino-pretty: ^13.0.0
   postcss: ^8.5.3
+  oxlint: 1.95.0
+  oxlint-tsgolint: 7.0.2009
   prettier: ^3.9.6
   publint: ^0.3.24
   react: ^19.2.8
@@ -111,6 +113,7 @@ catalog:
   react-router: ^7.0.2
   react-virtuoso: ^4.18.15
   remark-gfm: ^4.0.1
+  rotating-file-stream: 4.0.0
   shadcn: ^4.13.1
   tailwindcss: ^4.1.4
   tar: ^7.5.22
@@ -118,6 +121,7 @@ catalog:
   tsx: ^4.21.0
   tw-animate-css: ^1.2.5
   typescript: ^6.0.3
+  typescript7: npm:typescript@7.0.2
   typescript-eslint: ^8.67.0
   # GHSA-587h-7wmj-h5pm: keep Vite 6 above the patched launch-editor validation floor.
   vite: ^6.4.4

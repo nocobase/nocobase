@@ -213,6 +213,8 @@ Provide English and Chinese text without unresolved interpolation placeholders. 
 
 ## 5. Settings pages
 
+System and personal settings routes are enabled by default. Disable either surface in the application runtime with `systemSettingsRoutes: false` or `personalSettingsRoutes: false`.
+
 A page that configures something for the whole application is a System settings page, declared with `defineSystemSettingsRoutes()` by the application or a plugin; a page where each person configures their own account is a personal settings page, declared with `definePersonalSettingsRoutes()`. Place a System settings page in the application's System settings structure — one sidebar entry opening the first page the viewer may open, a settings menu by category, with tabs inside a module — by naming its category with `parent`, as [System settings navigation](../../settings-navigation.md) describes. Add the icons to the `lucide-react` import at the top of the file (here `SlidersHorizontal`):
 
 Both templates use the same registered personal settings routes for pages and dialogs. Set `client.personalSettings.openMode: dialog` in the application configuration to open the avatar menu entry over the current page. The default is `page`. Link to `/me/preferences` for a page or set `personalSettings=preferences` in the current URL's search parameters for a dialog. Relative React Router links and nested routes work inside either container.
@@ -313,7 +315,7 @@ In `badges` a number is something waiting; `{ count, live: true, hint }` is work
 
 ## 7. Back button and breadcrumbs
 
-The shell header shows the current page's breadcrumb after the sidebar toggle, on every page; pages never render breadcrumbs themselves. Under `AppLayout`, a covering child page, record detail or independent edit uses the header trail and mobile parent arrow. Do not render a duplicate page back button or add “Back to list” to `actions`. A standalone page without that header supplies its own validated parent navigation.
+The shell header shows the current page's breadcrumb after the sidebar toggle, on every page; pages never render breadcrumbs themselves. Under `AppLayout`, a covering child page, record detail or independent edit uses the header trail and mobile parent arrow. Do not render a duplicate page back button or add “Back to list” to `actions`. A signed-in page declared with `layout: 'none'` (no header) is inside `RouteTreeProvider`, so `BackButton` in its child pages returns to the validated parent; a guest or optional standalone page without that header supplies its own validated parent navigation.
 
 ### The back button
 
@@ -361,7 +363,7 @@ The header validates both automatic and explicit destinations against registered
 
 On a phone the header keeps the current title and a visible arrow to the nearest accessible parent, named “Back to <parent>” for assistive technology. It omits the duplicate brand. On a medium screen a trail of three or more levels folds the middle into a menu. Under `AppLayout`, omit the duplicate page `BackButton`. Detail tabs keep the same parent; an independent edit page declares detail as its parent and list as the preceding level. A dialog/drawer instead keeps the existing close/cancel semantics and does not add a breadcrumb level.
 
-`StandalonePageLayout` has no header. A standalone page supplies an explicit back link with the same destination validation and its route/access context; it must not use browser history as its only fallback.
+`StandalonePageLayout` has no header. A guest or optional standalone page supplies an explicit back link with the same destination validation and its route/access context; it must not use browser history as its only fallback. A signed-in page with `layout: 'none'` (declare it on the route or with `defineAppRoutes(routes, { layout: 'none' })`; a page and its nested pages share one layout) is wrapped in `RouteTreeProvider`, so its child pages use `BackButton` as usual. Its `access` is empty (no sidebar check), so `BackButton` validates only that the destination is a registered page.
 
 ## 8. Show actions by permission (useCan)
 
@@ -488,6 +490,21 @@ const appRuntime = defineAppRuntime({
 - **An override does not inherit the route's `presentation`.** An override without one builds its own container, as overrides did before presentations existed. When the replacement renders the same `RouteDialog`, `RouteDrawer` or `RouteChildPage` root as the route it replaces, declare that `presentation` on the override too.
 - **A route can be overridden only once across all sources**, including plugin options and any explicitly configured source extensions; a second override raises an error that names the route id.
 - Sign-in, registration, forgot password and reset password are the application's own routes, not the plugin's: edit the matching page in `client/pages/auth/` directly, and do not add another mechanism.
+
+To remove a plugin page or group, set `excludedRouteIds` in the same `defineAppRuntime()` declaration. Excluding a parent removes descendants, their navigation entries, and component overrides over them. The removed routes free their paths for application-owned declarations. For example:
+
+```ts
+const appRuntime = defineAppRuntime({
+  ...runtimeDefinition,
+  excludedRouteIds: ['@example/app-plugin-orders:orders'],
+});
+```
+
+In system and personal settings, exclude pages or modules by ID. Passing a shared settings category ID to `excludedRouteIds` fails runtime setup. A category emptied by exclusions disappears from navigation. To hide only the category and move its pages to the fallback category, use `defineSettingsCategories()`.
+
+Some plugins offer an option that turns off their own pages, such as `agents({ chatRoutes: false })`, `notificationInApp({ inboxRoute: false })` or `mail({ workspaceRoutes: false })`. Prefer that option when it exists; use `excludedRouteIds` for other pages or finer control. Both behave the same: the paths stay free and overrides or header actions targeting those route IDs are dropped. A plugin implements such an option by passing `{ disabled: true }` to `defineAppRoutes()`, `defineSystemSettingsRoutes()` or `definePersonalSettingsRoutes()`.
+
+To hide a plugin toolbar shortcut while keeping its page, add `{ name, hidden: true }` to `headerActionOverrides` using the name documented by the plugin. A shortcut that declares its target's `routeId` is hidden automatically when that page is excluded or inaccessible to the viewer. A missing target or a group ID fails runtime setup.
 
 ## 11. Where rendering happens
 

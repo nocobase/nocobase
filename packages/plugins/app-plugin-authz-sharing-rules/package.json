@@ -2,13 +2,14 @@
   "name": "@nocobase/app-plugin-authz-sharing-rules",
   "displayName": "Authz Sharing Rules App Plugin",
   "description": "Sharing Rules authorization rules and administration UI.",
-  "version": "1.0.0-beta.20",
+  "version": "1.0.0-beta.23",
   "type": "module",
   "prettier": "@nocobase/dev-config/prettier",
   "engines": {
     "node": ">=24.0.0"
   },
   "nocobase": {
+    "pluginPolicy": "preinstall-and-enable",
     "title": {
       "en-US": "Sharing rules",
       "zh-CN": "共享规则"
@@ -37,7 +38,6 @@
   "files": [
     "dist",
     "README.md",
-    "CHANGELOG.md",
     "skills"
   ],
   "publishConfig": {
@@ -73,6 +73,7 @@
     "@nocobase/app-client": "workspace:^",
     "@nocobase/app-plugin-authentication": "workspace:^",
     "@nocobase/app-server": "workspace:^",
+    "@nocobase/audit": "workspace:^",
     "@nocobase/db": "workspace:^",
     "@nocobase/i18n": "workspace:^",
     "@nocobase/app-plugin-authorization": "workspace:^",

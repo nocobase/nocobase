@@ -55,6 +55,8 @@ export interface GitInvocationOptions {
   readonly signal?: AbortSignal;
   /** Quiesce descendant writers before the enclosing cache lock is released after an abort. */
   readonly onAbort?: () => Promise<void>;
+  /** Arguments shown in error messages when `args` prepends runner-injected `-c` overrides. */
+  readonly displayArgs?: readonly string[];
 }
 
 export async function git(
@@ -83,8 +85,9 @@ export async function git(
       const failure = classifySshFailure(stderr ?? '', args.includes('push'));
       if (failure !== undefined) throw new GitSshError(failure);
     }
+    const shown = options.displayArgs ?? args;
     throw new CheckoutError(
-      `git ${args.join(' ')} failed${stderr ? `: ${stderr}` : ''}`,
+      `git ${shown.join(' ')} failed${stderr ? `: ${stderr}` : ''}`,
     );
   }
 }

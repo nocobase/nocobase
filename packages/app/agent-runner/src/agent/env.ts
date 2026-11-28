@@ -82,6 +82,12 @@ export const ENV_WHITELIST: readonly string[] = [
   'TMPDIR',
   ...PROXY_ENV,
   ...CA_ENV,
+  'OPENCODE_DISABLE_MODELS_FETCH',
+  'OPENCODE_DISABLE_AUTOUPDATE',
+  'OPENCODE_CONFIG',
+  'OPENCODE_CONFIG_DIR',
+  'OPENCODE_DISABLE_LSP_DOWNLOAD',
+  'OPENCODE_DISABLE_DEFAULT_PLUGINS',
 ];
 
 /** A variable name the runner's owner may set or pass: a shell name. */

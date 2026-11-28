@@ -2,7 +2,17 @@
   "name": "@nocobase/app-plugin-routes-example",
   "displayName": "Routes Example App Plugin",
   "description": "Full-stack example with server and lazy client routes.",
-  "version": "1.0.0-beta.26",
+  "nocobase": {
+    "title": {
+      "en-US": "Application routes example",
+      "zh-CN": "应用路由示例"
+    },
+    "description": {
+      "en-US": "Connect a lazily loaded client page to a server route.",
+      "zh-CN": "将按需加载的前端页面连接到服务端路由。"
+    }
+  },
+  "version": "1.0.0-beta.28",
   "type": "module",
   "sideEffects": false,
   "prettier": "@nocobase/dev-config/prettier",

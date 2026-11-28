@@ -3,6 +3,7 @@ import { resolveSupportedLocale, type I18nRuntime } from '@nocobase/i18n';
 import locales from './locales/index.js';
 import type { WebPushServerResource } from './locales/en-US.js';
 import type {
+  NotificationProviderErrorCategory,
   NotificationService,
   ProviderSendResult,
 } from '@nocobase/app-plugin-notification/server';
@@ -15,12 +16,25 @@ import {
   type Device,
 } from './subscriptions.js';
 
-export interface WebPushMessage {
+export interface PushDeliveryOptions {
+  urgency?: 'very-low' | 'low' | 'normal' | 'high';
+  ttl?: number;
+}
+
+export interface WebPushMessage extends PushDeliveryOptions {
   to: { id: string; userId: string }[];
   title: string;
   body?: string;
   url: string;
   dedupeKey: string;
+  /** The count the installed app's icon badge shows once this push arrives; 0 clears it. */
+  badge?: number;
+  /** The application's durable revision for this exact count, shared with the page. */
+  badgeVersion?: number;
+  /** The account or other application-defined scope of the count and its revisions. */
+  badgeScope?: string;
+  /** Device diagnostics need an explicit failure when the device cannot be reached. */
+  requireDelivery?: boolean;
   beforeSend?: { name: string; context?: unknown };
 }
 export const PushMessage: z.ZodType<WebPushMessage> = z.object({
@@ -29,6 +43,12 @@ export const PushMessage: z.ZodType<WebPushMessage> = z.object({
   body: z.string().optional(),
   url: z.string().max(4096),
   dedupeKey: z.string().max(512),
+  badge: z.number().int().min(0).max(1_000_000).optional(),
+  badgeVersion: z.number().int().min(0).optional(),
+  badgeScope: z.string().max(128).optional(),
+  urgency: z.enum(['very-low', 'low', 'normal', 'high']).optional(),
+  ttl: z.number().int().min(0).max(2_419_200).optional(),
+  requireDelivery: z.boolean().optional(),
   beforeSend: z.object({ name: z.string(), context: z.unknown() }).optional(),
 });
 export interface PreparedPush {
@@ -50,6 +70,7 @@ export interface WebPushDependencies {
     subscription: ReturnType<Subscriptions['open']>,
     payload: object,
     signal: AbortSignal,
+    options?: PushDeliveryOptions,
   ) => Promise<number>;
   base: string;
   channel?: string;
@@ -80,6 +101,9 @@ export interface WebPushPayload {
   body: string;
   url: string;
   dedupeKey: string;
+  badge?: number;
+  badgeVersion?: number;
+  badgeScope?: string;
 }
 export function pushPayload(
   message: Omit<WebPushMessage, 'to'>,
@@ -90,6 +114,16 @@ export function pushPayload(
     body: message.body ?? '',
     url: pushTarget(message.url, base),
     dedupeKey: message.dedupeKey,
+    ...(Number.isSafeInteger(message.badge) &&
+    message.badge! >= 0 &&
+    Number.isSafeInteger(message.badgeVersion) &&
+    message.badgeVersion! >= 0
+      ? {
+          badge: message.badge,
+          badgeVersion: message.badgeVersion,
+          badgeScope: message.badgeScope ?? '',
+        }
+      : {}),
   };
   if (
     Buffer.byteLength(JSON.stringify(payload), 'utf8') >
@@ -110,6 +144,24 @@ export interface WebPushService {
     signal: AbortSignal,
   ): Promise<ProviderSendResult>;
 }
+function testFailure(
+  category?: NotificationProviderErrorCategory,
+): PushError['code'] {
+  switch (category) {
+    case 'configuration':
+      return 'unavailable';
+    case 'authentication':
+      return 'gateway_auth';
+    case 'network':
+    case 'timeout':
+      return 'network';
+    case 'rate_limit':
+      return 'gateway_limited';
+    default:
+      return 'gateway';
+  }
+}
+
 export function createWebPushService(
   deps: WebPushDependencies,
 ): WebPushService {
@@ -148,7 +200,7 @@ export function createWebPushService(
     async test(userId: string, id: string): Promise<void> {
       const row = await deps.subscriptions.get(userId, id);
       if (!row) throw new PushError('missing');
-      if (!row.enabled) throw new PushError('unavailable');
+      if (!row.enabled) throw new PushError('paused');
       const now = Date.now();
       if (now - (testing.get(userId) ?? 0) < 30_000)
         throw new PushError('limited');
@@ -171,18 +223,28 @@ export function createWebPushService(
         title = resource.default.testNotification;
       }
       const dedupeKey = `test:${randomUUID()}`;
-      await deps.notifications().send({
-        idempotencyKey: dedupeKey,
-        messages: {
-          [deps.channel ?? 'webPush']: {
-            to: [{ id, userId }],
-            title,
-            body: '',
-            url: `${deps.base.replace(/\/$/u, '')}/`,
-            dedupeKey,
-          },
+      const [result] = await deps.notifications().sendTransient({
+        channel: deps.channel ?? 'webPush',
+        message: {
+          to: [{ id, userId }],
+          title,
+          body: '',
+          url: `${deps.base.replace(/\/$/u, '')}/`,
+          dedupeKey,
+          requireDelivery: true,
         },
       });
+      if (result?.status !== 'accepted') {
+        const category = result?.error.category;
+        if (category === 'recipient') {
+          // The transient sender keeps the failure category and strips provider-specific details.
+          const current = await deps.subscriptions.get(userId, id);
+          throw new PushError(
+            current?.enabled === false ? 'paused' : 'expired',
+          );
+        }
+        throw new PushError(testFailure(category));
+      }
     },
     async deliver(
       input: PreparedPush,
@@ -192,7 +254,17 @@ export function createWebPushService(
         input.device.userId,
         input.device.id,
       );
-      if (!row?.enabled) return { status: 'accepted' };
+      if (!row?.enabled) {
+        if (!input.message.requireDelivery) return { status: 'accepted' };
+        return {
+          status: 'failed',
+          disposition: 'never',
+          error: {
+            category: 'recipient',
+            message: 'Web Push device is paused or removed.',
+          },
+        };
+      }
       let message = input.message;
       if (message.beforeSend) {
         const hook = hooks.get(message.beforeSend.name);
@@ -233,6 +305,7 @@ export function createWebPushService(
           deps.subscriptions.open(row),
           payload,
           signal,
+          { ttl: message.ttl, urgency: message.urgency },
         );
         if (status === 404 || status === 410)
           await deps.subscriptions.remove(row.userId, row.id);
@@ -242,11 +315,28 @@ export function createWebPushService(
           disposition:
             status === 429 || status >= 500 ? 'same_provider' : 'never',
           error: {
-            category: status === 429 ? 'rate_limit' : 'provider',
+            category:
+              status === 404 || status === 410
+                ? 'recipient'
+                : status === 401 || status === 403
+                  ? 'authentication'
+                  : status === 429
+                    ? 'rate_limit'
+                    : 'provider',
             message: `Web Push service rejected the request (${status}).`,
           },
         };
-      } catch {
+      } catch (error) {
+        if (error instanceof PushError && error.code === 'unavailable') {
+          return {
+            status: 'failed',
+            disposition: 'never',
+            error: {
+              category: 'configuration',
+              message: 'Web Push is not configured.',
+            },
+          };
+        }
         return {
           status: 'submission_unknown',
           error: {

@@ -27,12 +27,14 @@ export const DEVELOPMENT_TOPICS: readonly string[] = Object.freeze([
   'dist',
   'package',
   PLUGIN_TOPIC,
+  'screenshot',
   'skills',
   'start',
 ]);
 
 /** First segments of commands that act on the application the run is in, and so need one. */
 export const APPLICATION_TOPICS: readonly string[] = Object.freeze([
+  'backup',
   'build',
   'cli',
   'collections',
@@ -42,6 +44,7 @@ export const APPLICATION_TOPICS: readonly string[] = Object.freeze([
   'dist',
   'info',
   'locales',
+  'screenshot',
   'secrets',
   'start',
 ]);
@@ -54,6 +57,9 @@ export const TREE_COMMANDS: readonly string[] = Object.freeze(['commands']);
 
 export const builtinTopics: Readonly<Record<string, { description: string }>> =
   Object.freeze({
+    backup: {
+      description: 'Create, verify, inspect and restore application backups.',
+    },
     cli: {
       description:
         "Package and link this application's own command line (nocobase.cli), and the runner.",

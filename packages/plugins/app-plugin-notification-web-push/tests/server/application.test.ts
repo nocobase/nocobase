@@ -14,7 +14,10 @@ import {
   generateApiDocument,
 } from '@nocobase/app-server/router';
 
-const transport = vi.hoisted(() => ({ requests: [] as string[] }));
+const transport = vi.hoisted(() => ({
+  requests: [] as string[],
+  outcome: new Map<string, number | Error>(),
+}));
 vi.mock('node:https', () => ({
   request: (
     url: URL,
@@ -24,7 +27,9 @@ vi.mock('node:https', () => ({
     const req = new EventEmitter() as EventEmitter & { end: () => void };
     req.end = () => {
       transport.requests.push(url.href);
-      callback({ statusCode: 201, destroy() {} });
+      const outcome = transport.outcome.get(url.href) ?? 201;
+      if (outcome instanceof Error) req.emit('error', outcome);
+      else callback({ statusCode: outcome, destroy() {} });
     };
     return req;
   },
@@ -97,10 +102,33 @@ test('rejects unknown JSON fields and returns current device state with strict H
     },
   ])
     expect((await send('POST', '/subscriptions', body)).status).toBe(400);
-  const saved = await send('POST', '/subscriptions', input);
+  // Browser PushSubscription.toJSON() includes a nullable expiration timestamp.
+  const native = { ...input.subscription, expirationTime: null };
+  const saved = await send('POST', '/subscriptions', {
+    ...input,
+    subscription: native,
+  });
   expect(saved.status).toBe(200);
   const device = (await saved.json()).data;
   expect(device).toMatchObject({ locale: 'de-DE-u-co-phonebk', enabled: true });
+  expect(device).not.toHaveProperty('subscription');
+  const renewed = await send('POST', '/subscriptions', {
+    ...input,
+    subscription: { ...native, expirationTime: 1_800_000_000_000 },
+  });
+  expect(renewed.status).toBe(200);
+  expect((await renewed.json()).data.id).toBe(device.id);
+  const unsupported = await send('POST', '/subscriptions', {
+    ...input,
+    subscription: {
+      ...native,
+      endpoint: 'https://unsupported.example.test/push',
+    },
+  });
+  expect(unsupported.status).toBe(400);
+  expect(await unsupported.json()).toMatchObject({
+    error: { reason: 'PUSH_ENDPOINT' },
+  });
   expect(
     (
       await send('PATCH', `/subscriptions/${device.id}`, {
@@ -250,8 +278,10 @@ test('documents only actual responses with a shared device schema and list total
     Object.keys(paths['/api/webPush/subscriptions/{id}']!.delete!.responses!),
   ).toEqual(['204', '400', '401', '404', '500']);
   expect(
-    paths['/api/webPush/subscriptions/{id}/test']!.post!.responses,
-  ).toHaveProperty('202');
+    paths['/api/webPush/subscriptions/{id}/test']!.post!.responses!['400'],
+  ).toMatchObject({
+    description: expect.stringMatching(/expired.*VAPID/u),
+  });
   expect(
     paths['/api/webPush/subscriptions/{id}']!.patch!.responses!['200'],
   ).toMatchObject({
@@ -274,7 +304,7 @@ test('documents only actual responses with a shared device schema and list total
   });
 });
 
-test('subscribes, manages and queues an encrypted test push in a standalone application', async ({
+test('subscribes, manages and submits an encrypted test push in a standalone application', async ({
   testApp,
   app,
   expectCollection,
@@ -458,7 +488,7 @@ test('subscribes, manages and queues an encrypted test push in a standalone appl
       headers: { origin: 'http://localhost' },
     });
   expect((await post()).status).toBe(202);
-  await vi.waitFor(() => expect(transport.requests).toContain(endpoint));
+  expect(transport.requests).toContain(endpoint);
   expect((await post()).status).toBe(429);
   expect(
     (
@@ -483,3 +513,96 @@ test('subscribes, manages and queues an encrypted test push in a standalone appl
   const empty = await (await browser.fetch('/webPush/subscriptions')).json();
   expect(empty).toEqual({ data: [], meta: { total: 0 } });
 });
+
+for (const [name, outcome, status, reason] of [
+  ['expired', 410, 400, 'PUSH_EXPIRED'],
+  ['credentials', 403, 400, 'PUSH_GATEWAY_AUTH'],
+  ['limited', 429, 503, 'PUSH_GATEWAY_LIMITED'],
+  ['network', new Error('sensitive network detail'), 503, 'PUSH_NETWORK'],
+] as const) {
+  test(`reports ${name} separately when the gateway test fails`, async ({
+    testApp,
+  }) => {
+    const browser = await account(testApp, name);
+    const input = subscription(name);
+    const saved = await browser.fetch('/webPush/subscriptions', {
+      method: 'POST',
+      headers: {
+        'content-type': 'application/json',
+        origin: 'http://localhost',
+      },
+      body: JSON.stringify(input),
+    });
+    expect(saved.status).toBe(200);
+    const device = (await saved.json()).data;
+    transport.outcome.set(input.subscription.endpoint, outcome);
+    const response = await browser.fetch(
+      `/webPush/subscriptions/${device.id}/test`,
+      {
+        method: 'POST',
+        headers: { origin: 'http://localhost' },
+      },
+    );
+    expect(response.status).toBe(status);
+    const body = await response.text();
+    expect(JSON.parse(body)).toMatchObject({
+      error: { reason },
+    });
+    expect(body).not.toContain(input.subscription.endpoint);
+    expect(body).not.toContain('sensitive network detail');
+    const list = await browser.fetch('/webPush/subscriptions');
+    const rows = (await list.json()).data;
+    expect(rows).toHaveLength(name === 'expired' ? 0 : 1);
+  });
+}
+
+for (const change of ['paused', 'removed'] as const) {
+  test(`reports a device ${change} after the test starts without contacting the gateway`, async ({
+    app,
+    testApp,
+  }) => {
+    const browser = await account(testApp, `test-${change}`);
+    const input = subscription(`test-${change}`);
+    const headers = {
+      'content-type': 'application/json',
+      origin: 'http://localhost',
+    };
+    const saved = await browser.fetch('/webPush/subscriptions', {
+      method: 'POST',
+      headers,
+      body: JSON.stringify(input),
+    });
+    expect(saved.status).toBe(200);
+    const { id } = (await saved.json()).data;
+    const path = `/webPush/subscriptions/${id}`;
+    const notifications = app.container.resolve(notificationServiceToken);
+    const sendTransient = notifications.sendTransient.bind(notifications);
+    const intercept = vi
+      .spyOn(notifications, 'sendTransient')
+      .mockImplementationOnce(async (message) => {
+        const response =
+          change === 'paused'
+            ? await browser.fetch(path, {
+                method: 'PATCH',
+                headers,
+                body: JSON.stringify({ enabled: false }),
+              })
+            : await browser.fetch(path, { method: 'DELETE', headers });
+        expect(response.status).toBe(change === 'paused' ? 200 : 204);
+        return sendTransient(message);
+      });
+    try {
+      const tested = await browser.fetch(`${path}/test`, {
+        method: 'POST',
+        headers,
+      });
+      expect(tested.status).toBe(change === 'paused' ? 503 : 400);
+      expect(await tested.json()).toMatchObject({
+        error: { reason: change === 'paused' ? 'PUSH_PAUSED' : 'PUSH_EXPIRED' },
+      });
+      expect(transport.requests).not.toContain(input.subscription.endpoint);
+    } finally {
+      intercept.mockRestore();
+    }
+  });
+}

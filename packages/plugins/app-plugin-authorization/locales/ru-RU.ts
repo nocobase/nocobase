@@ -3,6 +3,15 @@ import type { LocaleResource } from '@nocobase/i18n';
 import type enUS from './en-US.js';
 
 const ruRU: LocaleResource<typeof enUS> = {
+  audit: {
+    operations: {
+      createPermissionSet: 'Создать набор разрешений',
+      assignPermissionSet: 'Назначить набор разрешений',
+      unassignPermissionSet: 'Отменить назначение набора разрешений',
+      updatePermissionSet: 'Изменить набор разрешений',
+      deletePermissionSet: 'Удалить набор разрешений',
+    },
+  },
   sections: {
     pages: 'Доступ к страницам',
     page: 'Страницы',

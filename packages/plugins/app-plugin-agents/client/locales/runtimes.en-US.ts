@@ -172,6 +172,12 @@ const runtimesEnUS = {
         'The limit of {{tools}} is above the max concurrent runs ({{slots}}): at most {{slots}} run at once.',
       noneChecked: 'Check a coding tool above to limit it.',
     },
+    modelDetection: {
+      failed: 'Model detection failed',
+      timedOut: 'Model detection timed out',
+      commandFailed: 'Model listing command failed',
+      invalidResponse: 'Invalid model listing response',
+    },
     toolTable: {
       tool: 'Tool',
       enabled: 'On',

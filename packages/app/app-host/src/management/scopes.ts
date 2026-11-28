@@ -7,7 +7,7 @@ import { DeploymentCancelledError } from '../deployment-control.js';
  *
  * Calls without a scope never reach this class: they behave as they did before scopes existed.
  */
-import { randomUUID } from 'node:crypto';
+import { createHash, randomUUID } from 'node:crypto';
 import { realpath } from 'node:fs/promises';
 import path from 'node:path';
 
@@ -23,6 +23,7 @@ import type { AppRuntimeRegistry } from '../app-registry.ts';
 import type { DeploymentLogListener } from '../deployment-log.js';
 import { fullErrorMessage } from '../errors.ts';
 import { isServiceBackend, type ServiceBackend } from '../service-backend.ts';
+import { HostBackups } from './backups.ts';
 import type { ManagedReconciler } from './managed-reconciler.ts';
 import {
   MemoryOperationLog,
@@ -34,6 +35,11 @@ import {
   IN_PROCESS_BACKEND,
   type ApplyDeploymentSetResult,
   type HostBackendDescription,
+  type HostBackup,
+  type HostBackupOptions,
+  type HostOperationKind,
+  type HostRestoreOptions,
+  type HostRestoreResult,
   type HostDeploymentSet,
   type HostDeploymentSpec,
   type HostDescription,
@@ -49,15 +55,98 @@ export const UNSCOPED = '_';
 
 const APP_ID = /^[a-zA-Z0-9_-]+$/;
 
-/** An error with a stable code, which the IPC channel carries to the caller. */
+export type HostManagementErrorCode =
+  | 'APP_OWNED_BY_OTHER_SCOPE'
+  | 'BACKEND_UNAVAILABLE'
+  | 'INVALID_SCOPE'
+  | 'HOST_DRAINING'
+  | 'APP_NOT_FOUND'
+  | 'BACKUP_NOT_FOUND'
+  | 'BACKUP_UNSUPPORTED'
+  | 'BACKUP_RETENTION_UNSUPPORTED'
+  | 'BACKUP_COMMAND_UNAVAILABLE'
+  | 'BACKUP_FAILED'
+  | 'BACKUP_INCOMPLETE'
+  | 'BACKUP_ARTIFACT_MISMATCH'
+  | 'OPERATION_CONFLICT';
+
+/** An operation under way, by scope and operation ID. */
+interface RunningOperation extends OperationIdentity {
+  readonly promise: Promise<unknown>;
+}
+
+/** What one operation ID stands for: its kind, its App and, for a backup or restore, what it was asked to do. */
+interface OperationIdentity {
+  readonly kind: HostOperationKind;
+  readonly appId: string;
+  /** A digest of the request's parameters (`requestDigest`); absent for deployments and older records. */
+  readonly request?: string;
+}
+
+/**
+ * How far a previous run of an operation got (`previous`), and how to record a step done (`save`) so that a run
+ * after the Host restarted does not repeat it, such as a restore's data put back before its App was redeployed.
+ */
+export interface OperationCheckpoint {
+  readonly previous: { readonly name: string; readonly result: unknown } | null;
+  save(name: string, result: unknown): Promise<void>;
+}
+
+function assertSameOperation(
+  operationId: string,
+  existing: OperationIdentity,
+  { kind, appId, request }: OperationIdentity,
+): void {
+  if (existing.kind !== kind)
+    throw new HostManagementError(
+      `Operation "${operationId}" is a ${existing.kind}, not a ${kind}`,
+      'OPERATION_CONFLICT',
+    );
+  if (existing.appId !== appId)
+    throw new HostManagementError(
+      `Operation "${operationId}" belongs to App "${existing.appId}"`,
+      'OPERATION_CONFLICT',
+    );
+  if (existing.request && request && existing.request !== request)
+    throw new HostManagementError(
+      `Operation "${operationId}" was asked with other parameters (another backup, checksum or deployment); use a new operation ID for a different ${kind}`,
+      'OPERATION_CONFLICT',
+    );
+}
+
+/**
+ * A digest of what a backup or restore was asked to do, kept with its operation so that the same ID asked with other
+ * parameters is refused rather than answered or continued with the first ones. The scope is left out: its credentials
+ * may rotate between retries without changing what the operation does.
+ */
+export function requestDigest(value: unknown): string {
+  return createHash('sha256').update(canonicalJson(value)).digest('hex');
+}
+
+function canonicalJson(value: unknown): string {
+  if (Array.isArray(value)) return `[${value.map(canonicalJson).join(',')}]`;
+  if (value && typeof value === 'object')
+    return `{${Object.keys(value)
+      .filter((key) => (value as Record<string, unknown>)[key] !== undefined)
+      .sort()
+      .map(
+        (key) =>
+          `${JSON.stringify(key)}:${canonicalJson((value as Record<string, unknown>)[key])}`,
+      )
+      .join(',')}}`;
+  return JSON.stringify(value ?? null);
+}
+
+/**
+ * An error with a stable code, which the IPC channel carries to the caller. A failed backup or restore carries the
+ * code its command reported (`RESTORE_APP_RUNNING`, a database tool's failure) and what the command said about it.
+ */
+
 export class HostManagementError extends Error {
   constructor(
     message: string,
-    public readonly code:
-      | 'APP_OWNED_BY_OTHER_SCOPE'
-      | 'BACKEND_UNAVAILABLE'
-      | 'INVALID_SCOPE'
-      | 'HOST_DRAINING',
+    public readonly code: HostManagementErrorCode | (string & {}),
+    public readonly details?: unknown,
   ) {
     super(message);
     this.name = 'HostManagementError';
@@ -86,7 +175,13 @@ export class ManagedScopes {
   private readonly scopes = new Map<string, ScopeState>();
   /** Which scope each App belongs to. */
   private readonly owners = new Map<string, string>();
-  private readonly inflight = new Map<string, Promise<HostStatus>>();
+  /**
+   * Operations under way by scope and operation ID: deployments, backups and restores share the operation log, so one
+   * ID names one operation of one kind for one App. A key is taken before anything is awaited, so two requests with
+   * the same ID never both run.
+   */
+  private readonly running = new Map<string, RunningOperation>();
+  private readonly backups: HostBackups;
   private readonly operations: OperationLog;
   private readonly hostId: string;
   private readonly now: () => number;
@@ -96,6 +191,12 @@ export class ManagedScopes {
     this.operations = options.operations ?? new MemoryOperationLog();
     this.hostId = options.hostId ?? randomUUID();
     this.now = options.now ?? Date.now;
+    this.backups = new HostBackups({
+      reconciler: options.reconciler,
+      registry: options.registry,
+      volumesDir: options.appVolumesDir,
+      now: this.now,
+    });
   }
 
   describe(mode: HostDescription['mode']): HostDescription {
@@ -109,7 +210,8 @@ export class ManagedScopes {
             onDemand: true,
             rollout: 'stop-first',
             images: false,
-            backup: false,
+            backup: true,
+            keepBackupsOnPurge: true,
             logs: true,
             urlModes: ['path'],
           },
@@ -245,53 +347,51 @@ export class ManagedScopes {
       return await this.run(state, scoped, listener);
     }
     assertOperationId(spec.operationId);
-    const key = `${scope.id}\u0000${spec.operationId}`;
-    const running = this.inflight.get(key);
-    if (running) return await running;
-    const recorded = await this.operations.get(scope.id, spec.operationId);
-    if (recorded?.state === 'cancelled') throw new DeploymentCancelledError();
-    this.assertAccepting();
-    if (
-      recorded &&
-      recorded.state !== 'running' &&
-      recorded.state !== 'queued' &&
-      !(
-        spec.retryCapacity &&
-        recorded.state === 'failed' &&
-        recorded.status?.errorCode === 'APP_CAPACITY_EXCEEDED'
-      )
-    ) {
-      const status = this.status({ scope: scope.id });
-      if (recorded.state !== 'failed') return status;
-      // A restore or a later deployment can be running now; that must not turn this recorded failure green.
-      const failure = recorded.status ?? {
-        id: spec.id,
-        appId: spec.appId,
-        desiredState: spec.desiredState,
-        observedState: 'failed' as const,
-        revision: status.desiredRevision,
-        cacheHit: null,
-        app: null,
-        error: recorded.error ?? 'The recorded deployment failed.',
-      };
-      return {
-        ...status,
-        deployments: [
-          ...status.deployments.filter((item) => item.appId !== spec.appId),
-          failure,
-        ],
-      };
-    }
-    const work = this.record(scope.id, scoped, () => {
-      beforeRun?.();
-      return this.run(state, scoped, listener);
+    const identity = { kind: 'deployment' as const, appId: spec.appId };
+    return await this.once(scope.id, spec.operationId, identity, async () => {
+      const recorded = await this.recorded(
+        scope.id,
+        spec.operationId!,
+        identity,
+      );
+      if (recorded?.state === 'cancelled') throw new DeploymentCancelledError();
+      this.assertAccepting();
+      if (
+        recorded &&
+        recorded.state !== 'running' &&
+        recorded.state !== 'queued' &&
+        !(
+          spec.retryCapacity &&
+          recorded.state === 'failed' &&
+          recorded.status?.errorCode === 'APP_CAPACITY_EXCEEDED'
+        )
+      ) {
+        const status = this.status({ scope: scope.id });
+        if (recorded.state !== 'failed') return status;
+        // A restore or a later deployment can be running now; that must not turn this recorded failure green.
+        const failure = recorded.status ?? {
+          id: spec.id,
+          appId: spec.appId,
+          desiredState: spec.desiredState,
+          observedState: 'failed' as const,
+          revision: status.desiredRevision,
+          cacheHit: null,
+          app: null,
+          error: recorded.error ?? 'The recorded deployment failed.',
+        };
+        return {
+          ...status,
+          deployments: [
+            ...status.deployments.filter((item) => item.appId !== spec.appId),
+            failure,
+          ],
+        };
+      }
+      return await this.record(scope.id, scoped, () => {
+        beforeRun?.();
+        return this.run(state, scoped, listener);
+      });
     });
-    this.inflight.set(key, work);
-    try {
-      return await work;
-    } finally {
-      this.inflight.delete(key);
-    }
   }
 
   /** Records an unscoped deployment's outcome too, so `getOperation` answers it; it is not deduplicated. */
@@ -318,6 +418,93 @@ export class ManagedScopes {
     const status = await start(scoped);
     this.owners.set(spec.appId, scope.id);
     return status;
+  }
+
+  /** Backs an App up at most once per operation ID (see `HostBackups.create`). */
+  async createBackup(
+    appId: string,
+    options: HostBackupOptions,
+  ): Promise<HostBackup> {
+    const scopeId = await this.taskScope(appId, options.scope);
+    return await this.task(
+      'backup',
+      scopeId,
+      appId,
+      options.operationId,
+      requestDigest({ offline: options.offline === true }),
+      () =>
+        this.backups.create(appId, options.operationId, {
+          offline: options.offline,
+        }),
+    );
+  }
+
+  /** Restores an App's backup at most once per operation ID (see `HostBackups.restore`). */
+  async restoreBackup(
+    appId: string,
+    options: HostRestoreOptions,
+  ): Promise<HostRestoreResult> {
+    const scopeId = await this.taskScope(appId, options.scope);
+    const deployment = options.scope
+      ? { ...options.deployment, scope: options.scope }
+      : options.deployment;
+    const { scope: _scope, ...target } = options.deployment;
+    return await this.task(
+      'restore',
+      scopeId,
+      appId,
+      options.operationId,
+      requestDigest({
+        backupId: options.backupId,
+        sha256: options.sha256 ?? null,
+        deployment: target,
+      }),
+      (checkpoint) => {
+        // Checked once the ID is known to be new or this same request: a retry with another backend conflicts.
+        if (options.scope) this.assertBackend(deployment);
+        return this.backups.restore(appId, {
+          backupId: options.backupId,
+          sha256: options.sha256,
+          deployment,
+          checkpoint,
+          deploy: async (spec) => {
+            if (options.scope) this.owners.set(appId, options.scope.id);
+            await this.options.reconciler.applyDeployment(spec);
+            return this.status({ appIds: [appId] });
+          },
+        });
+      },
+    );
+  }
+
+  /** Removes an App's backup; false when it had none by that ID. */
+  async deleteBackup(
+    appId: string,
+    backupId: string,
+    scope: HostScope | undefined,
+  ): Promise<{ deleted: boolean }> {
+    await this.taskScope(appId, scope);
+    return { deleted: await this.backups.delete(appId, backupId) };
+  }
+
+  async removeDeploymentKeepingBackups(
+    appId: string,
+    scope: HostScope | undefined,
+  ): Promise<HostStatus> {
+    await this.taskScope(appId, scope);
+    const status = await this.options.reconciler.removeDeployment(appId, {
+      keepBackups: true,
+      ...(scope ? { scopeId: scope.id, backend: this.backendOf(scope) } : {}),
+    });
+    this.forget(appId);
+    return status;
+  }
+
+  /** Whether a backup or restore is under way. */
+  isBusy(): boolean {
+    return [...this.running.values()].some(
+      (operation) => operation.kind !== 'deployment',
+    );
   }
 
   async getOperation(
@@ -405,7 +592,9 @@ export class ManagedScopes {
    */
   async drain(timeoutMs: number): Promise<void> {
     this.draining = true;
-    const running = [...this.inflight.values()];
+    const running = [...this.running.values()].map(
+      (operation) => operation.promise,
+    );
     if (!running.length) return;
     await Promise.race([
       Promise.allSettled(running),
@@ -433,6 +622,161 @@ export class ManagedScopes {
   }
 
   // ---------------------------------------------------------------------------------------------------------------
+
+  /** The scope a backup task is recorded under, with the App checked to be that scope's. */
+  private async taskScope(
+    appId: string,
+    scope: HostScope | undefined,
+  ): Promise<string> {
+    this.assertAccepting();
+    if (!scope) return UNSCOPED;
+    await this.bind(scope);
+    this.assertAccepting();
+    this.assertOwnership(scope.id, [appId]);
+    return scope.id;
+  }
+
+  /**
+   * Runs a backup or restore at most once per operation ID, with its outcome recorded before and after: a repeat
+   * answers the recorded result (or failure, or cancellation), a concurrent one waits for the first, and one the previous Host process
+   * left unfinished (`interrupted`) runs again.
+   */
+  private async task<T>(
+    kind: HostOperationKind,
+    scopeId: string,
+    appId: string,
+    operationId: string,
+    request: string,
+    work: (checkpoint: OperationCheckpoint) => Promise<T>,
+  ): Promise<T> {
+    assertOperationId(operationId);
+    const identity = { kind, appId, request };
+    return await this.once(scopeId, operationId, identity, async () => {
+      const recorded = await this.recorded(scopeId, operationId, identity);
+      if (recorded?.state === 'succeeded') return recorded.result as T;
+      if (recorded?.state === 'cancelled') throw new DeploymentCancelledError();
+      if (recorded?.state === 'failed')
+        throw new HostManagementError(
+          recorded.error ?? `The recorded ${kind} failed`,
+          recorded.errorCode ?? 'BACKUP_FAILED',
+          recorded.errorDetails,
+        );
+      this.assertAccepting();
+      const base = {
+        operationId,
+        scopeId,
+        appId,
+        kind,
+        request,
+        status: null,
+        startedAt: new Date(this.now()).toISOString(),
+      } as const;
+      await this.operations.put({
+        ...base,
+        state: 'running',
+        error: null,
+        finishedAt: null,
+        // What a previous run got done stays, so a retry continues from there.
+        ...(recorded?.checkpoint
+          ? { checkpoint: recorded.checkpoint, result: recorded.result }
+          : {}),
+      });
+      // The last step done, by this run or a previous one: a failed or cancelled record keeps it, so the control
+      // plane knows, for instance, that a restore's data is already back although its App did not come up.
+      let reached: { name: string; result: unknown } | null =
+        recorded?.checkpoint
+          ? { name: recorded.checkpoint, result: recorded.result }
+          : null;
+      const checkpoint: OperationCheckpoint = {
+        previous: reached,
+        save: async (name, result) => {
+          // Known before it is written: a step done stays on the final record even when writing it here fails.
+          reached = { name, result };
+          await this.operations.put({
+            ...base,
+            state: 'running',
+            error: null,
+            finishedAt: null,
+            checkpoint: name,
+            result,
+          });
+        },
+      };
+      try {
+        const result = await work(checkpoint);
+        await this.operations.put({
+          ...base,
+          state: 'succeeded',
+          result,
+          error: null,
+          finishedAt: new Date(this.now()).toISOString(),
+        });
+        return result;
+      } catch (error) {
+        const coded = error as { code?: unknown; details?: unknown };
+        await this.operations.put({
+          ...base,
+          state:
+            error instanceof DeploymentCancelledError ? 'cancelled' : 'failed',
+          ...(reached
+            ? { checkpoint: reached.name, result: reached.result }
+            : {}),
+          error: fullErrorMessage(error),
+          ...(typeof coded?.code === 'string' ? { errorCode: coded.code } : {}),
+          ...(coded?.details !== undefined
+            ? { errorDetails: coded.details }
+            : {}),
+          finishedAt: new Date(this.now()).toISOString(),
+        });
+        throw error;
+      }
+    });
+  }
+
+  /**
+   * Runs `work` unless the same scope and operation ID is under way, whose outcome a repeat then shares, provided it
+   * asks for the same kind of operation on the same App. The key is taken synchronously, before anything is awaited.
+   */
+  private async once<T>(
+    scopeId: string,
+    operationId: string,
+    identity: OperationIdentity,
+    work: () => Promise<T>,
+  ): Promise<T> {
+    const key = `${scopeId}\u0000${operationId}`;
+    const running = this.running.get(key);
+    if (running) {
+      assertSameOperation(operationId, running, identity);
+      return (await running.promise) as T;
+    }
+    const promise = work();
+    this.running.set(key, { ...identity, promise });
+    try {
+      return await promise;
+    } finally {
+      if (this.running.get(key)?.promise === promise) this.running.delete(key);
+    }
+  }
+
+  /** The operation log's record of an ID, refused when it names another kind of operation or another App. */
+  private async recorded(
+    scopeId: string,
+    operationId: string,
+    identity: OperationIdentity,
+  ): Promise<HostOperation | null> {
+    const recorded = await this.operations.get(scopeId, operationId);
+    if (recorded)
+      assertSameOperation(
+        operationId,
+        {
+          kind: recorded.kind ?? 'deployment',
+          appId: recorded.appId,
+          request: recorded.request,
+        },
+        identity,
+      );
+    return recorded;
+  }
 
   private async run(
     state: ScopeState,

@@ -2,7 +2,17 @@
   "name": "@nocobase/app-plugin-mail-example",
   "displayName": "Mail Provider Example App Plugin",
   "description": "An offline Mail example with three mock Provider types, demo mailboxes, templates, signatures and labels, and simulated delivery, shown in Mail's own pages.",
-  "version": "1.0.0-beta.13",
+  "nocobase": {
+    "title": {
+      "en-US": "Mailbox example",
+      "zh-CN": "邮箱示例"
+    },
+    "description": {
+      "en-US": "Try mailboxes, signatures, templates and simulated delivery with offline mail providers.",
+      "zh-CN": "通过模拟邮件服务体验邮箱、签名、模板和邮件投递。"
+    }
+  },
+  "version": "1.0.0-beta.16",
   "type": "module",
   "prettier": "@nocobase/dev-config/prettier",
   "engines": {
@@ -22,8 +32,7 @@
   },
   "files": [
     "dist",
-    "README.md",
-    "CHANGELOG.md"
+    "README.md"
   ],
   "publishConfig": {
     "access": "public",

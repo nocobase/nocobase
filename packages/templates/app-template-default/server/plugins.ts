@@ -1,4 +1,5 @@
 import concurrency from '@nocobase/app-plugin-concurrency/server';
+import messageBroker from '@nocobase/app-plugin-message-broker/server';
 import agents from '@nocobase/app-plugin-agents/server';
 import foundation from '@nocobase/app-plugin-foundation/server';
 import defaultAccess from '@nocobase/app-plugin-authz-default-access/server';
@@ -8,7 +9,6 @@ import apiKeys from '@nocobase/app-plugin-api-keys/server';
 import authentication from '@nocobase/app-plugin-authentication/server';
 import authorization from '@nocobase/app-plugin-authorization/server';
 import databaseExplorer from '@nocobase/app-plugin-database-explorer/server';
-import distributed from '@nocobase/app-plugin-distributed/server';
 import users from '@nocobase/app-plugin-users/server';
 import i18n from '@nocobase/app-plugin-i18n/server';
 import notification from '@nocobase/app-plugin-notification/server';
@@ -24,6 +24,7 @@ import mail from '@nocobase/app-plugin-mail/server';
 
 const serverPlugins: AppServerPlugins = defineServerPlugins([
   concurrency,
+  messageBroker,
   authentication,
   authorization,
   defaultAccess,
@@ -37,7 +38,6 @@ const serverPlugins: AppServerPlugins = defineServerPlugins([
   notificationInApp,
   notificationProviders,
   file,
-  distributed,
   scheduler,
   mail,
   agents,

@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/app-plugin-concurrency",
-  "version": "0.1.0-beta.3",
+  "version": "0.1.0-beta.5",
   "description": "Application-owned concurrency services, process-local Mutex instances and public implementation tools.",
   "type": "module",
   "prettier": "@nocobase/dev-config/prettier",
@@ -8,6 +8,7 @@
     "node": ">=24.0.0"
   },
   "nocobase": {
+    "pluginPolicy": "preinstall-and-enable",
     "title": {
       "en-US": "Concurrency control",
       "zh-CN": "并发控制"

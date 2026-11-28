@@ -2,7 +2,17 @@
   "name": "@nocobase/app-plugin-file-example",
   "displayName": "File Example App Plugin",
   "description": "Attachments collection, API routes, and an upload page demonstrating File Repository.",
-  "version": "1.0.0-beta.27",
+  "nocobase": {
+    "title": {
+      "en-US": "File attachments example",
+      "zh-CN": "文件附件示例"
+    },
+    "description": {
+      "en-US": "Upload files and associate them with attachment records.",
+      "zh-CN": "上传文件，并将文件关联到附件记录。"
+    }
+  },
+  "version": "1.0.0-beta.29",
   "type": "module",
   "prettier": "@nocobase/dev-config/prettier",
   "sideEffects": false,
@@ -19,8 +29,7 @@
   },
   "files": [
     "dist",
-    "README.md",
-    "CHANGELOG.md"
+    "README.md"
   ],
   "publishConfig": {
     "access": "public",

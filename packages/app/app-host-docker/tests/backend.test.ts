@@ -561,6 +561,28 @@ describe('the Docker backend', () => {
     expect(docker.volumes.has('t-site-storage')).toBe(true);
   });
 
+  it('purges business data by scope after a Host restart with no App definition', async () => {
+    const first = await startHost();
+    await first.host.management.applyDeployment(
+      specFor('site', v1, { scope: scope() }),
+    );
+    await docker.ensureVolume('t-site-backups', {});
+    await first.host.close('restart');
+    hosts.splice(hosts.indexOf(first.host), 1);
+    const { host } = await startHost({ dir: first.dir });
+    expect(docker.volumes.has('t-site-storage')).toBe(true);
+    expect(
+      (
+        await host.management.removeDeploymentKeepingBackups!('site', {
+          scope: scope(),
+        })
+      ).deployments,
+    ).toEqual([]);
+    expect(appContainers('site')).toHaveLength(0);
+    expect(docker.volumes.has('t-site-storage')).toBe(false);
+    expect(docker.volumes.has('t-site-backups')).toBe(true);
+  });
+
   it('reads the container log as journal pages', async () => {
     const { host } = await startHost();
     await host.management.applyDeployment(
@@ -584,5 +606,317 @@ describe('the Docker backend', () => {
     expect(page.entries).toHaveLength(2);
     expect(page.entries[0]).toMatchObject({ level: 'info', msg: 'listening' });
     expect(page.entries[1]!.msg).toContain('[REDACTED]');
+  });
+
+  it("runs backup commands in one-off containers on the App's image, volumes, network and configuration", async () => {
+    const { host } = await startHost();
+    const service = host.management;
+    const spec = {
+      ...specFor('shop', v1, { scope: scope() }),
+      env: { SHOP_TOKEN: 'secret' },
+    };
+    await service.applyDeployment(spec);
+    const commands: FakeContainer[] = [];
+    const answers: Record<string, unknown> = {
+      create: {
+        file: '/app/backups/b-1.tar.gz',
+        size: 10,
+        sha256: 'a'.repeat(64),
+      },
+      verify: { ok: true },
+      inspect: {
+        connections: [{ name: 'main', mode: 'dump' }],
+        disks: [{ name: 'local', mode: 'files' }],
+        limitations: [],
+      },
+      restore: { connections: [{ name: 'main', status: 'restored' }] },
+    };
+    docker.onStart = (container) => {
+      if (container.body.Labels?.[LABEL.role] !== 'command') return;
+      commands.push(container);
+      const cmd = container.body.Cmd ?? [];
+      const command =
+        cmd[0] === 'node' && cmd[1] === 'dist/cli/index.js'
+          ? cmd[3]
+          : undefined;
+      if (command && command in answers)
+        container.logs.push({
+          stream: 'stdout',
+          time: new Date().toISOString(),
+          text: JSON.stringify({ ok: true, result: answers[command] }),
+        });
+    };
+
+    const backup = await service.createBackup!('shop', {
+      operationId: 'b-1',
+      scope: scope(),
+    });
+    expect(backup).toMatchObject({
+      backupId: 'b-1',
+      complete: true,
+      sha256: 'a'.repeat(64),
+      artifact: v1.digest,
+    });
+    // A leftover archive is removed first, then create, verify and inspect run.
+    expect(
+      commands.map((container) => container.body.Cmd?.slice(0, 4)),
+    ).toEqual([
+      [
+        'node',
+        '-e',
+        expect.stringContaining('rmSync'),
+        '/app/backups/b-1.tar.gz',
+      ],
+      ['node', 'dist/cli/index.js', 'backup', 'create'],
+      ['node', 'dist/cli/index.js', 'backup', 'verify'],
+      ['node', 'dist/cli/index.js', 'backup', 'inspect'],
+    ]);
+    const create = commands[1]!;
+    expect(create.body.Cmd).toEqual([
+      'node',
+      'dist/cli/index.js',
+      'backup',
+      'create',
+      '--output',
+      '/app/backups/b-1.tar.gz',
+      '--json',
+    ]);
+    expect(create.body.Image).toBe(appContainers('shop')[0]!.body.Image);
+    expect(create.body.Env).toEqual(
+      expect.arrayContaining([
+        'SHOP_TOKEN=secret',
+        'NODE_ENV=production',
+        'APP_CONFIG_FILE=/app/config.yml',
+      ]),
+    );
+    expect(create.body.HostConfig).toMatchObject({
+      Mounts: [
+        { Type: 'volume', Source: 't-shop-storage', Target: '/app/storage' },
+        { Type: 'volume', Source: 't-shop-backups', Target: '/app/backups' },
+      ],
+      NetworkMode: 't-apps',
+      CapDrop: ['ALL'],
+    });
+    expect([...create.files.keys()]).toEqual(['/app']);
+    // Every command container is gone once it exited.
+    expect(
+      [...docker.containers.values()].filter(
+        (container) => container.body.Labels?.[LABEL.role] === 'command',
+      ),
+    ).toEqual([]);
+
+    // A restore stops the App before the command and starts the deployment after it.
+    commands.length = 0;
+    const before = appContainers('shop')[0]!;
+    const restored = await service.restoreBackup!('shop', {
+      operationId: 'r-1',
+      scope: scope(),
+      backupId: 'b-1',
+      deployment: { ...spec, operationId: 'r-1' },
+    });
+    expect(restored.restore).toEqual(answers.restore);
+    expect(restored.status.deployments).toMatchObject([
+      { appId: 'shop', observedState: 'running' },
+    ]);
+    // The archive is verified with the deployment's image while the App still runs, then restored once it stopped.
+    expect(
+      commands.map((container) => container.body.Cmd?.slice(2, 4)),
+    ).toEqual([
+      ['backup', 'verify'],
+      ['backup', 'restore'],
+    ]);
+    expect(docker.calls.indexOf(`create ${commands[0]!.name}`)).toBeLessThan(
+      docker.calls.indexOf(`stop ${before.name}`),
+    );
+    expect(docker.calls.indexOf(`stop ${before.name}`)).toBeLessThan(
+      docker.calls.indexOf(`create ${commands[1]!.name}`),
+    );
+    expect(appContainers('shop')[0]!.status).toBe('running');
+
+    // An image without the command-line tool is refused as such.
+    docker.onStart = (container) => {
+      if (container.body.Labels?.[LABEL.role] !== 'command') return;
+      if (container.body.Cmd?.[1] !== 'dist/cli/index.js') return;
+      container.exitCode = 1;
+      container.logs.push({
+        stream: 'stderr',
+        time: new Date().toISOString(),
+        text: "Error: Cannot find module '/app/dist/cli/index.js'",
+      });
+    };
+    await expect(
+      service.createBackup!('shop', { operationId: 'b-2', scope: scope() }),
+    ).rejects.toMatchObject({ code: 'BACKUP_COMMAND_UNAVAILABLE' });
+
+    await expect(
+      service.deleteBackup!('shop', 'b-1', { scope: scope() }),
+    ).resolves.toEqual({ deleted: true });
+
+    // Removed with its data kept, the App's backups are still deleted from its backup volume, by the image that
+    // wrote them, with nothing else mounted and no network.
+    docker.onStart = (container) => {
+      if (container.body.Labels?.[LABEL.role] !== 'command') return;
+      commands.push(container);
+      const command = container.body.Cmd?.[3];
+      if (container.body.Cmd?.[1] === 'dist/cli/index.js' && command)
+        container.logs.push({
+          stream: 'stdout',
+          time: new Date().toISOString(),
+          text: JSON.stringify({ ok: true, result: answers[command] }),
+        });
+    };
+    for (const operationId of ['b-3', 'b-4'])
+      await service.createBackup!('shop', { operationId, scope: scope() });
+    await service.removeDeployment('shop', { purgeData: false });
+    commands.length = 0;
+    await expect(
+      service.deleteBackup!('shop', 'b-3', { scope: scope() }),
+    ).resolves.toEqual({ deleted: true });
+    expect(commands).toHaveLength(1);
+    expect(commands[0]!.body).toMatchObject({
+      Image: create.body.Image,
+      Cmd: [
+        'node',
+        '-e',
+        expect.stringContaining('rmSync'),
+        '/app/backups/b-3.tar.gz',
+      ],
+      HostConfig: {
+        Mounts: [
+          { Type: 'volume', Source: 't-shop-backups', Target: '/app/backups' },
+        ],
+        NetworkMode: 'none',
+      },
+    });
+    // A removal that fails keeps the record, so the delete can be asked again.
+    docker.onStart = (container) => {
+      if (container.body.Labels?.[LABEL.role] === 'command')
+        container.exitCode = 1;
+    };
+    await expect(
+      service.deleteBackup!('shop', 'b-4', { scope: scope() }),
+    ).rejects.toThrow(/Could not remove backup b-4/);
+    docker.onStart = undefined;
+    // Purged, the App's data takes its backups and their records with it.
+    await service.applyDeployment({ ...spec, operationId: 'd-again' });
+    await service.removeDeployment('shop', { purgeData: true });
+    expect(docker.volumes.has('t-shop-backups')).toBe(false);
+    await expect(
+      service.deleteBackup!('shop', 'b-4', { scope: scope() }),
+    ).resolves.toEqual({ deleted: false });
+  });
+
+  it("backs up with its platform's image and deletes backups whose image was pruned", async () => {
+    const { host } = await startHost();
+    const service = host.management;
+    const other = `sha256:${'f'.repeat(64)}`;
+    const images = (arm64: string, amd64First = true) => {
+      const list = [
+        {
+          ref: 'registry.test/team/shop',
+          digest: other,
+          platform: 'linux/amd64',
+        },
+        {
+          ref: 'registry.test/team/shop',
+          digest: arm64,
+          platform: 'linux/arm64',
+        },
+      ];
+      return amd64First ? list : list.reverse();
+    };
+    const deploy = (
+      operationId: string,
+      release: typeof v1,
+      list = images(release.digest),
+    ) => ({
+      ...specFor('shop', release, { scope: scope(), images: list }),
+      operationId,
+    });
+    const commands: FakeContainer[] = [];
+    docker.onStart = (container) => {
+      if (container.body.Labels?.[LABEL.role] !== 'command') return;
+      commands.push(container);
+      const cmd = container.body.Cmd ?? [];
+      if (cmd[1] !== 'dist/cli/index.js') return;
+      const result = {
+        create: { size: 10, sha256: 'a'.repeat(64) },
+        verify: { ok: true },
+        inspect: {
+          connections: [{ name: 'main', mode: 'dump' }],
+          disks: [{ name: 'local', mode: 'files' }],
+          limitations: [],
+        },
+        restore: { connections: [{ name: 'main', status: 'restored' }] },
+      }[cmd[3] as 'create'];
+      container.logs.push({
+        stream: 'stdout',
+        time: new Date().toISOString(),
+        text: JSON.stringify({ ok: true, result }),
+      });
+    };
+    await service.applyDeployment(deploy('d-1', v1));
+    // The engine is arm64: the backup is of the arm64 image, though the list names amd64 first.
+    const backup = await service.createBackup!('shop', {
+      operationId: 'b-1',
+      scope: scope(),
+    });
+    expect(backup.artifact).toBe(v1.digest);
+
+    // The same release with its images listed the other way round restores.
+    await expect(
+      service.restoreBackup!('shop', {
+        operationId: 'r-order',
+        scope: scope(),
+        backupId: 'b-1',
+        deployment: deploy('r-order', v1, images(v1.digest, false)),
+      }),
+    ).resolves.toMatchObject({
+      restore: { connections: [{ name: 'main', status: 'restored' }] },
+    });
+    // The first image unchanged but this platform's another: refused before the App stops.
+    commands.length = 0;
+    await expect(
+      service.restoreBackup!('shop', {
+        operationId: 'r-other',
+        scope: scope(),
+        backupId: 'b-1',
+        deployment: deploy('r-other', v1, images(v2.digest)),
+      }),
+    ).rejects.toMatchObject({ code: 'BACKUP_ARTIFACT_MISMATCH' });
+    expect(commands).toEqual([]);
+    expect(appContainers('shop')[0]!.status).toBe('running');
+
+    // After an upgrade the image that took the backups is pruned; the App's current image removes them.
+    await service.createBackup!('shop', { operationId: 'b-2', scope: scope() });
+    await service.applyDeployment(deploy('d-2', v2));
+    for (const reference of [...docker.images.keys()])
+      if (reference.includes(v1.digest.slice(7, 19)))
+        docker.images.delete(reference);
+    commands.length = 0;
+    await expect(
+      service.deleteBackup!('shop', 'b-1', { scope: scope() }),
+    ).resolves.toEqual({ deleted: true });
+    expect(commands.map((container) => container.body.Image)).toEqual([
+      appContainers('shop')[0]!.body.Image,
+    ]);
+    expect(commands[0]!.body.Cmd?.[3]).toBe('/app/backups/b-1.tar.gz');
+    await expect(
+      service.deleteBackup!('shop', 'b-1', { scope: scope() }),
+    ).resolves.toEqual({ deleted: false });
+
+    // With no image of the App left, the one that wrote the backup is pulled by digest and dropped again.
+    await service.removeDeployment('shop', { purgeData: false });
+    docker.images.clear();
+    commands.length = 0;
+    await expect(
+      service.deleteBackup!('shop', 'b-2', { scope: scope() }),
+    ).resolves.toEqual({ deleted: true });
+    const reference = `registry.test/team/shop@${v1.digest}`;
+    expect(docker.pulled.at(-1)).toBe(reference);
+    expect(commands.map((container) => container.body.Image)).toEqual([
+      reference,
+    ]);
+    expect(docker.images.has(reference)).toBe(false);
   });
 });

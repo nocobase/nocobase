@@ -1,5 +1,54 @@
 # @nocobase/app-cli
 
+## 1.0.0-beta.41
+
+### Patch Changes
+
+- cc0bf33: Run outstanding sample data when enabled on existing databases. Write seed history only after a successful run and omit disabled sample seeds from dry-run plans. Apply the preview environment's sample data setting on every deployment and document the guidance for adding sample seeds to business changes.
+- Updated dependencies [cc0bf33]
+- Updated dependencies [4561d5f]
+- Updated dependencies [52d0b0d]
+- Updated dependencies [9acf418]
+  - @nocobase/app-server@5.0.0-beta.12
+  - @nocobase/db@1.0.0-beta.31
+  - @nocobase/secrets@0.1.0-beta.2
+
+## 1.0.0-beta.40
+
+### Patch Changes
+
+- 89c4785: List development dependency plugins under Not enabled in deployed applications without installing them as production dependencies.
+
+## 1.0.0-beta.39
+
+### Minor Changes
+
+- 28a7606: Add built-in backup commands, disk-specific path exclusions, and application compatibility checks for restore.
+
+### Patch Changes
+
+- Updated dependencies [28a7606]
+- Updated dependencies [28a7606]
+  - @nocobase/app-server@5.0.0-beta.10
+  - @nocobase/backup@0.1.0-beta.0
+
+## 1.0.0-beta.38
+
+### Minor Changes
+
+- a6b9b74: `classifyPluginRegistration` from `@nocobase/app-server/plugins` decides a plugin's registration state from its facts, so `pnpm nocobase plugin inspect` and the App Foundation plugins page agree. `listCliPluginRegistrations` parses a `cli/plugins.ts` with the application's TypeScript compiler and lists the packages passed to `defineCliPlugins([...])`, ignoring unused imports and anything in comments, strings, template literals or regular expressions; `plugin inspect` reads the CLI registration through it. `pnpm build` writes that list to `dist/cli/plugins.json`, which `readCliPluginRegistrations` reads in a deployment, where neither `cli/plugins.ts` nor TypeScript exists. `plugin inspect` now reports `PARTIALLY_REGISTERED` for a plugin with both client and server entries that only one of `client/plugins.ts` and `server/plugins.ts` registers, and reports a plugin that ships only Agent Skills as `registered` (with `registration.skillsOnly: true`) when the application declares it in `dependencies`, where it used to report `unregistered`. `plugin register` accepts several names and registers them in order, such as `plugin register agents knowledge`; with more than one, `--json` returns `{ plugins: [...] }`. Every name is checked before anything is written, and when one fails part way the error's `details` lists the plugins already registered, the one that failed and those not attempted. A vendored workspace plugin's runtime `package.json` in `dist/` keeps the application plugins it requires as `peerDependencies`, in any scope that follows the plugin naming rule.
+
+### Patch Changes
+
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [1048669]
+  - @nocobase/app-server@5.0.0-beta.9
+  - @nocobase/dev-config@0.1.0-beta.26
+  - @nocobase/db@1.0.0-beta.30
+
 ## 1.0.0-beta.37
 
 ### Minor Changes

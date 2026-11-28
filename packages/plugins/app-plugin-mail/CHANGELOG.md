@@ -1,5 +1,131 @@
 # @nocobase/app-plugin-mail
 
+## 1.0.0-beta.31
+
+### Patch Changes
+
+- 1952789: Declare whether each product plugin is enabled by default, preinstalled only, available separately, or deprecated.
+- cf23bfe: Stop publishing CHANGELOG.md in the package; the changelog stays in the repository.
+- Updated dependencies [888bca5]
+- Updated dependencies [1952789]
+- Updated dependencies [cf23bfe]
+  - @nocobase/app-plugin-authentication@2.0.0-beta.27
+  - @nocobase/app-plugin-authorization@1.0.0-beta.42
+
+## 1.0.0-beta.30
+
+### Patch Changes
+
+- 169b1fb: Use the same page title size (`text-2xl`) on the mail pages as on the other settings pages.
+- 1b92cdb: Group Notifications and Mailbox connections under Communications in system settings and list Authentication before API keys.
+- Updated dependencies [cc0bf33]
+- Updated dependencies [4561d5f]
+- Updated dependencies [52d0b0d]
+- Updated dependencies [c12d990]
+- Updated dependencies [1b92cdb]
+- Updated dependencies [1b92cdb]
+- Updated dependencies [1b92cdb]
+- Updated dependencies [78bdca8]
+- Updated dependencies [87e3dac]
+- Updated dependencies [9acf418]
+  - @nocobase/app-server@5.0.0-beta.12
+  - @nocobase/db@1.0.0-beta.31
+  - @nocobase/authorization@1.0.0-beta.18
+  - @nocobase/app-plugin-authentication@2.0.0-beta.26
+  - @nocobase/app-plugin-authorization@1.0.0-beta.41
+  - @nocobase/app-client@4.0.0-beta.14
+
+## 1.0.0-beta.29
+
+### Patch Changes
+
+- 3635b25: Answer 409 `MAIL_TEMPLATE_ALREADY_EXISTS` instead of 500 when a user creates or renames a mail template to a name they already use, including concurrent requests.
+- Updated dependencies [019d5ec]
+- Updated dependencies [fcc0c18]
+  - @nocobase/app-plugin-authorization@1.0.0-beta.40
+  - @nocobase/app-server@5.0.0-beta.11
+  - @nocobase/app-plugin-authentication@2.0.0-beta.25
+
+## 1.0.0-beta.28
+
+### Minor Changes
+
+- 8ff2df3: Applications can disable system settings, personal settings, chat, inbox and mail workspace routes independently. All five are enabled by default, so existing applications keep their pages when upgrading. Plugins can turn off their own pages with `{ disabled: true }` on `defineAppRoutes()` and the settings route helpers; disabled routes behave like `excludedRouteIds`, so overrides and header actions that target them no longer fail.
+
+### Patch Changes
+
+- Updated dependencies [300f760]
+- Updated dependencies [29c62bd]
+- Updated dependencies [28a7606]
+- Updated dependencies [8ff2df3]
+- Updated dependencies [28a7606]
+  - @nocobase/app-client@4.0.0-beta.13
+  - @nocobase/app-plugin-authentication@2.0.0-beta.25
+  - @nocobase/app-server@5.0.0-beta.10
+  - @nocobase/jobs@1.0.0-beta.8
+  - @nocobase/app-plugin-authorization@1.0.0-beta.39
+
+## 1.0.0-beta.27
+
+### Minor Changes
+
+- 00f16da: Download an individual message as a provider-supplied .eml file from the Mail workspace.
+- a6b9b74: Mail registers its own pages: **Mail** (`/mail`, with the unread count in the navigation), **Team mail** (`/mail/team`), **Personal settings › Messages › Mail accounts** (`/me/mail`) and **System settings › Messages › Mail** (`/settings/mail`), each replaceable by route name with `routeComponentOverrides`; `mail({ routes })` moves or hides the two navigation entries. `mail.oauthReturnUrl` now defaults to `/me/mail`. Team mail and Mail settings permissions are registered with the authorization plugin and can be granted on the role permission page, and every `/api/mail` route checks the same requirement its page declares. Applications extend the pages through `mailExtensionsToken`: `providerTypes`, `slots.messageAside`, `slots.composeToolbar`, `slots.workspaceActions`, `templateVariables` and `composer.onComplete`; the existing page props keep working. New `GET /api/mail/settings/overview`, member, account, result and time filters on `/settings/syncRuns` and `/settings/submissions`, which now page by `pageToken` instead of `page` so rows added or cleaned up between two pages neither repeat nor go missing, and retry and cancel of other members' runs and sends under `/settings`, offered only to a caller holding `manage`. Each `/api/mail` route declares the permission it checks as its `x-cli.action`, so the command line offers it only to callers holding that permission. `GET /api/mail/submissions?groupByBatch=true` now lists single and scheduled sends beside whole bulk sends, counting each as one entry. Finished sync runs and sends are deleted after `mail.logRetentionDays` (`MAIL_LOG_RETENTION_DAYS`, default 90, `0` keeps them), and a migration indexes both log tables by creation time. `/settings/submissions` no longer returns subjects, bodies or addresses, and failures on the settings logs no longer name the recipients of a partial delivery. Mail Example drops its five pages and extends Mail's pages instead, with a **Set up demo mailboxes** workspace action.
+
+  **Permission upgrade, without a compatibility layer:** `page:mail.workspace/access` is unchanged. `page:mail.management/access` is replaced by `mail:mail.management/view` (read-only Team mail), plus `mail:mail.management/process` for marking read, starring and archiving in bulk. `page:mail.admin/access` is replaced by `settings:mail.admin/read` (read-only Mail settings), plus `settings:mail.admin/manage` for retrying and cancelling other members' syncs and sends. Former grants are not converted and no longer open any route: check the application's role seeds and any code that writes these grants directly, and grant the replacements.
+
+- aa05454: Choose the folders each mail account synchronizes. Connecting an account now lists its folders first, then a "Confirm sync scope" dialog offers the entire mailbox (including folders created later) or selected folders; the account list's Sync button opens the same dialog, synchronizes normally when the scope is unchanged and restarts the initial synchronization once when it changes. IMAP, Microsoft 365 and Gmail synchronize only the chosen folders in initial, automatic and push runs; narrowing the selection shows how many local messages it deletes, then removes local messages left in no chosen folder without touching the mail server; a chosen folder deleted on the server takes its local messages with it on the next run. `PATCH /api/mail/accounts/:accountId` accepts `syncFolderIds` and answers the initial run a change scheduled as the optional `syncRun`, which the account list follows from the first confirmation; `POST /api/mail/accounts/:accountId/previewSyncFolders` previews the deletion, and `GET /api/mail/accounts/:accountId/folders?includeUnsynced=true` lists unselected folders, with `meta.initialSyncCompleted` telling whether an unchanged scope syncs incrementally. Migration `202611180001_mail_account_sync_folders` adds the nullable `syncFolderIds` column; existing accounts keep synchronizing every folder.
+
+### Patch Changes
+
+- a6b9b74: Show mail icons in the settings menus, group Mail accounts under Integrations, and list Agent after Preferences in personal settings.
+- a6b9b74: Declare the plugin's title and one-line description in English and Chinese under `nocobase` in `package.json`, which the App Foundation plugins page lists it by.
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [1048669]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [1048669]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [1048669]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [1048669]
+- Updated dependencies [1048669]
+- Updated dependencies [1048669]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [a6b9b74]
+- Updated dependencies [1048669]
+  - @nocobase/app-client@4.0.0-beta.12
+  - @nocobase/authorization@1.0.0-beta.17
+  - @nocobase/app-plugin-authorization@1.0.0-beta.39
+  - @nocobase/app-plugin-authentication@2.0.0-beta.24
+  - @nocobase/jobs@1.0.0-beta.7
+  - @nocobase/app-server@5.0.0-beta.9
+  - @nocobase/db@1.0.0-beta.30
+  - @nocobase/i18n@2.0.0-beta.2
+  - @nocobase/service-provider@0.0.2-beta.2
+
 ## 1.0.0-beta.26
 
 ### Patch Changes

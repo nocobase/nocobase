@@ -1058,6 +1058,49 @@ describe('managed host reconciliation', () => {
     await expect(readdir(revision)).rejects.toMatchObject({ code: 'ENOENT' });
   });
 
+  it('purges an in-process App and its revisions while preserving its backups on every attempt', async () => {
+    const fixture = await createFixture();
+    const host = createAppHost({
+      mode: 'managed',
+      appRevisionsDir: fixture.deploymentsDir,
+      appVolumesDir: fixture.volumesDir,
+      artifact: fsArtifact(fixture.artifactDir),
+      evictionIntervalMs: 0,
+    });
+    hosts.push(host);
+    const appId = fixture.artifact.appId;
+    const deployment = deploymentSet(1, fixture.artifact, {
+      activation: 'eager',
+    }).deployments[0]!;
+    expect(
+      (await host.management.applyDeployment(deployment)).deployments,
+    ).toMatchObject([{ appId, observedState: 'running' }]);
+
+    const volume = path.join(fixture.volumesDir, appId);
+    const backups = path.join(volume, 'backups');
+    await mkdir(backups);
+    await writeFile(path.join(backups, 'backup.tar.gz'), 'archive');
+    await writeFile(path.join(backups, 'backup.json'), '{"complete":true}');
+    expect(await readdir(volume)).toContain('storage');
+
+    for (let attempt = 0; attempt < 2; attempt++) {
+      const status =
+        await host.management.removeDeploymentKeepingBackups!(appId);
+      expect(status.deployments).toEqual([]);
+      expect(host.registry.definition(appId)).toBeUndefined();
+      await expect(
+        readdir(path.join(fixture.deploymentsDir, appId)),
+      ).rejects.toMatchObject({ code: 'ENOENT' });
+      expect(await readdir(volume)).toEqual(['backups']);
+      expect(await readFile(path.join(backups, 'backup.tar.gz'), 'utf8')).toBe(
+        'archive',
+      );
+      expect(await readFile(path.join(backups, 'backup.json'), 'utf8')).toBe(
+        '{"complete":true}',
+      );
+    }
+  });
+
   it('restores local revisions without reading artifacts and fails when the revision is missing', async () => {
     const fixture = await createFixture();
     const options = {

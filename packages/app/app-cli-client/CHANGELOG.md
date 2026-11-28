@@ -1,5 +1,30 @@
 # @nocobase/app-cli-client
 
+## 0.1.0-beta.28
+
+### Patch Changes
+
+- Updated dependencies [24d0cad]
+- Updated dependencies [cf23bfe]
+  - @nocobase/agent-protocol@0.1.0-beta.25
+  - @nocobase/acp-bridge@1.0.0-beta.9
+
+## 0.1.0-beta.27
+
+### Patch Changes
+
+- Updated dependencies [2b77e0d]
+  - @nocobase/agent-protocol@0.1.0-beta.24
+
+## 0.1.0-beta.26
+
+### Patch Changes
+
+- Updated dependencies [44395d2]
+- Updated dependencies [acc1f0d]
+  - @nocobase/acp-bridge@1.0.0-beta.8
+  - @nocobase/agent-protocol@0.1.0-beta.23
+
 ## 0.1.0-beta.25
 
 ### Patch Changes
