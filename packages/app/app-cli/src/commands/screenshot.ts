@@ -4,6 +4,7 @@ import { mkdir } from 'node:fs/promises';
 import path from 'node:path';
 
 import { Args, Command, Flags, type Interfaces } from '@oclif/core';
+import type { Browser } from '@playwright/test';
 
 import { collectCliHooks } from '../lib/cli-hooks.ts';
 import {
@@ -187,11 +188,13 @@ export default class Screenshot extends Command {
     process.on('SIGINT', stop);
     process.on('SIGTERM', stop);
     let server: ScreenshotServer | undefined;
+    let browser: Browser | undefined;
     try {
       const capture = flags.serve
         ? undefined
         : await import('../lib/screenshot/capture.ts');
-      const browserType = await capture?.loadChromium(root);
+      browser = await capture?.launchScreenshotBrowser(root);
+      controller.signal.throwIfAborted();
       if (!baseURL) {
         server = await startScreenshotServer({
           root,
@@ -224,7 +227,7 @@ export default class Screenshot extends Command {
             throw new Error(`Development server exited (${result}).`);
           }),
         ]);
-      } else if (capture && browserType) {
+      } else if (capture && browser) {
         const target = baseURL ?? server?.baseURL;
         if (!target)
           throw new Error('No screenshot application URL is available.');
@@ -247,7 +250,7 @@ export default class Screenshot extends Command {
             locales,
             themes,
             credentials,
-            restoreLocale: Boolean(baseURL),
+            restorePreferences: Boolean(baseURL),
             fullPage: flags['full-page'],
             waitFor: flags['wait-for'],
             setup: flags.setup,
@@ -258,7 +261,7 @@ export default class Screenshot extends Command {
               if (message.startsWith('Saved ')) this.log(message);
             },
           },
-          browserType,
+          browser,
         );
       }
     } catch (error) {
@@ -270,7 +273,11 @@ export default class Screenshot extends Command {
       }
     } finally {
       try {
-        await server?.close();
+        try {
+          await browser?.close();
+        } finally {
+          await server?.close();
+        }
       } finally {
         process.off('SIGINT', stop);
         process.off('SIGTERM', stop);

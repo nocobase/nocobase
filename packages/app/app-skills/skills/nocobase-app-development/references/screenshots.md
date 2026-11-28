@@ -7,7 +7,7 @@ pnpm exec playwright install chromium
 pnpm nocobase screenshot / /config --widths 1440,390 --locales en-US,zh-CN --themes light,dark
 ```
 
-Default and Examples already declare `@playwright/test`. For an application without it, add `playwright` as a dev dependency with `pnpm add -D playwright`. Starting an isolated instance requires macOS or Linux and a SQLite driver in the application. On Windows, use `--url` with an authorized test application.
+Default and Examples already declare `@playwright/test`. For an application without it, add `playwright` as a dev dependency with `pnpm add -D playwright`. If the screenshot command reports that Chromium could not launch, run `pnpm exec playwright install chromium` from the application root and retry the screenshot command. Capture checks Chromium before starting the development server. Starting an isolated instance requires macOS or Linux and a SQLite driver in the application. On Windows, use `--url` with an authorized test application.
 
 Paths are relative to the application mount point. The command reads `APP_BASE_PATH` and prints the actual `Local:` address. It saves PNGs and a diagnostic log under `output/screenshots/` by default. Use `--out <dir>` for a separate output directory, `--sample-data` to load optional sample data, `--guest` for signed-out pages, `--full-page` for the entire scrollable page, and `--wait-for 'text=Dashboard'` or a Playwright selector to wait for a visible result. An uncaught page error fails the command and attempts to save a diagnostic PNG alongside the log.
 
@@ -22,7 +22,7 @@ pnpm nocobase screenshot / --url '<Local URL>' --session '<Session path>'
 
 Run the second command again after editing the UI. Press Ctrl+C in the first terminal when finished. Its private session file and temporary database are removed together. The session file contains the temporary administrator credentials. Keep it local. Never use global `pkill` or `killall`, or take over another application's development ports.
 
-For an existing authorized test instance, pass its exact application entry URL and use `--guest` or `--email` with the test account's password in `NOCOBASE_SCREENSHOT_PASSWORD`. The CLI also accepts `--password`. Use a dedicated test account for parallel runs that set different locales because `i18n.locale` is an account preference. The command restores the prior preference after using `--url`.
+For an existing authorized test instance, pass its exact application entry URL and use `--guest` or `--email` with the test account's password in `NOCOBASE_SCREENSHOT_PASSWORD`. The CLI also accepts `--password`. Use separate test accounts for parallel runs because `i18n.locale` and `theme.mode` are account preferences. With `--url`, the command restores the previous values and removes any of these preferences that it added temporarily.
 
 ## Prepare data and interact with the page
 

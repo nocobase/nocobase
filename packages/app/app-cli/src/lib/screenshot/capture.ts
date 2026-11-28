@@ -6,6 +6,7 @@ import { pathToFileURL } from 'node:url';
 import type {
   APIRequestContext,
   APIResponse,
+  Browser,
   BrowserContext,
   Page,
   chromium,
@@ -22,7 +23,7 @@ interface ScreenshotOptions {
   readonly locales: readonly (string | undefined)[];
   readonly themes: readonly ('light' | 'dark')[];
   readonly credentials?: ScreenshotCredentials;
-  readonly restoreLocale: boolean;
+  readonly restorePreferences: boolean;
   readonly fullPage: boolean;
   readonly waitFor?: string;
   readonly script?: string;
@@ -46,8 +47,9 @@ type ScreenshotHook = (options: ScreenshotHookContext) => unknown;
 
 const PREFERENCES = 'users/me/preferences';
 const LOCALE_KEY = 'i18n.locale';
+const THEME_KEY = 'theme.mode';
 
-export async function loadChromium(root: string): Promise<typeof chromium> {
+async function loadChromium(root: string): Promise<typeof chromium> {
   const manifestPath = path.join(root, 'package.json');
   const manifest = JSON.parse(await readFile(manifestPath, 'utf8')) as {
     devDependencies?: Record<string, string>;
@@ -86,25 +88,32 @@ async function loadHook(
   return module.default;
 }
 
+export async function launchScreenshotBrowser(root: string): Promise<Browser> {
+  const browserType = await loadChromium(root);
+  try {
+    // Launch the actual headless executable and reuse it for capture. executablePath()
+    // points to full Chromium, which can be installed independently of the headless shell.
+    return await browserType.launch({
+      handleSIGINT: false,
+      handleSIGTERM: false,
+      handleSIGHUP: false,
+    });
+  } catch (error) {
+    throw new Error(
+      `Chromium could not launch. Run \`pnpm exec playwright install chromium\` in this application. ${String(error)}`,
+      { cause: error },
+    );
+  }
+}
+
 export async function captureScreenshots(
   options: ScreenshotOptions,
-  browserType: typeof chromium,
+  browser: Browser,
 ): Promise<void> {
   const { signal, baseURL, credentials, root, log } = options;
   const setup = await loadHook(root, options.setup);
   const script = await loadHook(root, options.script);
   signal.throwIfAborted();
-  const browser = await browserType
-    .launch({
-      handleSIGINT: false,
-      handleSIGTERM: false,
-      handleSIGHUP: false,
-    })
-    .catch((error: unknown) => {
-      throw new Error(
-        `Chromium could not launch. Run \`pnpm exec playwright install chromium\` in this application. ${String(error)}`,
-      );
-    });
   const authContext = await browser.newContext({ locale: options.locales[0] });
   const apiFor =
     (context: BrowserContext): ScreenshotHookContext['api'] =>
@@ -123,7 +132,7 @@ export async function captureScreenshots(
         },
       );
   const authApi = apiFor(authContext);
-  let restore: (() => Promise<void>) | undefined;
+  const originals = new Map<string, unknown>();
   try {
     signal.throwIfAborted();
     if (credentials) {
@@ -154,41 +163,32 @@ export async function captureScreenshots(
       }
     }
     const state = await authContext.storageState();
-    if (credentials && options.restoreLocale && options.locales.some(Boolean)) {
+    const setLocale = options.locales.some(Boolean);
+    let syncPreferences = false;
+    if (credentials) {
       const response = await authApi(PREFERENCES);
-      await expectOK(response, 'Reading the account locale');
-      const preferences = (await response.json()) as {
-        data: Record<string, unknown>;
-      };
-      const prior = preferences.data[LOCALE_KEY];
-      restore = async () => {
-        await expectOK(
-          prior === undefined
-            ? await authApi(`${PREFERENCES}/${LOCALE_KEY}`, {
-                method: 'DELETE',
-              })
-            : await authApi(`${PREFERENCES}/${LOCALE_KEY}`, {
-                method: 'PUT',
-                data: { value: prior },
-              }),
-          'Restoring the account locale',
-        );
-      };
+      // Applications without the users preferences API can still use browser-only themes.
+      if (response.status() !== 404 || setLocale) {
+        await expectOK(response, 'Reading account preferences');
+        syncPreferences = true;
+        if (options.restorePreferences) {
+          const { data } = (await response.json()) as {
+            data: Record<string, unknown>;
+          };
+          originals.set(THEME_KEY, data[THEME_KEY]);
+          if (setLocale) originals.set(LOCALE_KEY, data[LOCALE_KEY]);
+        }
+      }
     }
     for (const locale of options.locales) {
       signal.throwIfAborted();
-      if (locale && credentials) {
-        await expectOK(
-          await authApi(PREFERENCES, {
-            method: 'PATCH',
-            data: { [LOCALE_KEY]: locale },
-          }),
-          `Setting the account locale to ${locale}`,
-        );
+      if (locale && syncPreferences) {
+        await setPreference(authApi, LOCALE_KEY, locale);
       }
       for (const width of options.widths) {
         for (const theme of options.themes) {
           signal.throwIfAborted();
+          if (syncPreferences) await setPreference(authApi, THEME_KEY, theme);
           const context = await browser.newContext({
             storageState: state,
             viewport: { width, height: width <= 600 ? 844 : 900 },
@@ -254,11 +254,48 @@ export async function captureScreenshots(
     }
   } finally {
     try {
-      await restore?.();
+      await restoreAccountPreferences(authApi, originals);
     } finally {
-      await browser.close();
+      await authContext.close();
     }
   }
+}
+
+async function restoreAccountPreferences(
+  api: ScreenshotHookContext['api'],
+  originals: ReadonlyMap<string, unknown>,
+): Promise<void> {
+  const results = await Promise.allSettled(
+    [...originals].map(async ([key, value]) =>
+      expectOK(
+        value === undefined
+          ? await api(`${PREFERENCES}/${key}`, { method: 'DELETE' })
+          : await api(`${PREFERENCES}/${key}`, {
+              method: 'PUT',
+              data: { value },
+            }),
+        `Restoring account preference ${key}`,
+      ),
+    ),
+  );
+  const failures = results.filter((result) => result.status === 'rejected');
+  if (failures.length) {
+    throw new Error(failures.map(({ reason }) => String(reason)).join(' '));
+  }
+}
+
+async function setPreference(
+  api: ScreenshotHookContext['api'],
+  key: string,
+  value: string,
+): Promise<void> {
+  await expectOK(
+    await api(`${PREFERENCES}/${key}`, {
+      method: 'PUT',
+      data: { value },
+    }),
+    `Setting account preference ${key} to ${value}`,
+  );
 }
 
 async function capturePage(
