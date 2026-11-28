@@ -13,6 +13,7 @@ import secrets from './secrets.js';
 import session from './session.js';
 import server from './server.js';
 import spa from './spa.js';
+import pwa from './pwa.js';
 import logging from './logging.js';
 import drive from './drive.js';
 import concurrency from './concurrency.js';
@@ -42,6 +43,7 @@ const defaultConfigs: AppConfigFactory<{
   session: ReturnType<typeof session>;
   server: ReturnType<typeof server>;
   spa: ReturnType<typeof spa>;
+  pwa: ReturnType<typeof pwa>;
   logging: ReturnType<typeof logging>;
   drive: ReturnType<typeof drive>;
   concurrency: ReturnType<typeof concurrency>;
@@ -69,6 +71,7 @@ const defaultConfigs: AppConfigFactory<{
   session,
   server,
   spa,
+  pwa,
   logging,
   drive,
   concurrency,

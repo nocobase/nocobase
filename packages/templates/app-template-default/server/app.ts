@@ -22,7 +22,7 @@ import {
   createAppFromRuntime,
   type AppRuntimeContext,
 } from '@nocobase/app-server/runtime';
-import { spaRootRoutes } from '@nocobase/app-server/spa';
+import { createPwaRoutes, spaRootRoutes } from '@nocobase/app-server/spa';
 
 export function createApp(runtime: AppRuntimeContext): Application {
   const app = createAppFromRuntime(runtime);
@@ -47,6 +47,8 @@ export function createApp(runtime: AppRuntimeContext): Application {
   app.addHttpMiddleware(i18nHttpMiddleware);
   app.addRoutes(healthCheckApiRoutes);
   app.addRuntimeContributions(runtime);
+  // The installation manifest, served anonymously from the pwa section; before the SPA, whose catch-all answers pages.
+  app.addRoutes(createPwaRoutes());
   app.addRoutes(spaRootRoutes);
   app.addServiceProvider(AuditProvider);
 
