@@ -32,7 +32,27 @@ const koKR: LocaleResource<typeof enUS> = {
   'push.cancel': '취소',
   'push.saved': '기기 설정이 저장되었습니다',
   'push.saving': '기기 설정을 저장하는 중',
-  'push.testSent': '테스트 알림이 대기열에 추가되었습니다',
+  'push.testSent': '푸시 서비스가 테스트 알림을 수락했습니다.',
+  'push.invalid':
+    '브라우저가 잘못된 구독 정보를 반환했습니다. 다시 구독해 주세요.',
+  'push.endpoint': '서버에서 이 브라우저의 푸시 서비스를 지원하지 않습니다.',
+  'push.owned':
+    '이 브라우저 구독은 다른 계정에 속해 있습니다. 해당 계정에서 삭제한 후 다시 구독해 주세요.',
+  'push.browserFailed':
+    '브라우저가 푸시 구독을 만들지 못했습니다. 알림 설정과 인터넷 연결을 확인해 주세요.',
+  'push.expired':
+    '이 기기의 구독이 만료되었거나 삭제되었습니다. 해당 기기에서 다시 구독해 주세요.',
+  'push.testPaused':
+    '테스트 알림을 보내기 전에 이 기기의 푸시를 다시 켜 주세요.',
+  'push.testLimited': '테스트 알림을 다시 보내려면 30초 동안 기다려 주세요.',
+  'push.testNetwork':
+    '서버가 푸시 서비스에 연결하지 못했습니다. 관리자에게 네트워크 및 Web Push 프록시 확인을 요청해 주세요.',
+  'push.testGatewayAuth':
+    '푸시 서비스가 서버 인증 정보를 거부했습니다. 관리자에게 VAPID 키 확인을 요청해 주세요.',
+  'push.testGatewayLimited':
+    '푸시 서비스가 요청을 제한하고 있습니다. 나중에 다시 시도해 주세요.',
+  'push.testGateway':
+    '푸시 서비스가 테스트 알림을 수락하지 못했습니다. 나중에 다시 시도해 주세요.',
   'push.failed': '푸시 알림을 업데이트할 수 없습니다. 다시 시도하세요.',
   'push.loadingFailed': '기기를 불러올 수 없습니다. 다시 시도하세요.',
   'push.retry': '다시 시도',

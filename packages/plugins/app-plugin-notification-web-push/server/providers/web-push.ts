@@ -33,10 +33,10 @@ export default class WebPushProvider extends ServiceProvider<AppPluginApplicatio
         notifications: () => resolver.resolve(notificationServiceToken),
         base: this.app.config.get<string>('app.publicBasePath') ?? '/',
         channel: this.app.config.get<string>('push.channel') ?? 'webPush',
-        transport: (subscription, payload, signal) => {
+        transport: (subscription, payload, signal, options) => {
           const config = this.app.config.get<PushConfig>('push');
           if (!config?.privateKey) throw new PushError('unavailable');
-          return sendPush(subscription, payload, config, signal);
+          return sendPush(subscription, payload, config, signal, options);
         },
       }),
     );

@@ -28,7 +28,21 @@ const zhTW: LocaleResource<typeof enUS> = {
   'push.cancel': '取消',
   'push.saved': '已儲存裝置設定',
   'push.saving': '儲存裝置設定',
-  'push.testSent': '測試通知已排隊',
+  'push.testSent': '推播服務已接受測試通知。',
+  'push.invalid': '瀏覽器傳回的訂閱資訊無效，請重新訂閱。',
+  'push.endpoint': '伺服器暫不支援此瀏覽器使用的推播服務。',
+  'push.owned': '此瀏覽器的訂閱屬於另一個帳號。請先從原帳號移除，再重新訂閱。',
+  'push.browserFailed':
+    '瀏覽器無法建立推播訂閱。請檢查瀏覽器的通知設定和網路連線。',
+  'push.expired': '此裝置訂閱已過期或已被移除，請在該裝置上重新訂閱。',
+  'push.testPaused': '請先恢復此裝置的推播，再傳送測試通知。',
+  'push.testLimited': '兩次測試通知之間請間隔 30 秒。',
+  'push.testNetwork':
+    '伺服器無法連線至推播服務。請聯絡管理員檢查網路和 Web Push 代理。',
+  'push.testGatewayAuth':
+    '推播服務拒絕了伺服器的憑證。請聯絡管理員檢查 VAPID 金鑰。',
+  'push.testGatewayLimited': '推播服務限制了請求頻率，請稍後再試。',
+  'push.testGateway': '推播服務目前無法接受測試通知，請稍後再試。',
   'push.failed': '無法更新推播通知。請再試一次。',
   'push.loadingFailed': '無法載入裝置。請再試一次。',
   'push.retry': '重試',

@@ -34,7 +34,28 @@ const ptBR: LocaleResource<typeof enUS> = {
   'push.cancel': 'Cancelar',
   'push.saved': 'Configurações do dispositivo salvas',
   'push.saving': 'Salvando configurações do dispositivo',
-  'push.testSent': 'Notificação de teste na fila',
+  'push.testSent': 'O serviço push aceitou a notificação de teste.',
+  'push.invalid':
+    'O navegador retornou dados de inscrição inválidos. Tente se inscrever novamente.',
+  'push.endpoint':
+    'O servidor não oferece suporte ao serviço push deste navegador.',
+  'push.owned':
+    'A inscrição deste navegador pertence a outra conta. Remova-a dessa conta antes de se inscrever novamente.',
+  'push.browserFailed':
+    'O navegador não conseguiu criar a inscrição push. Verifique as configurações de notificações e a conexão.',
+  'push.expired':
+    'A inscrição deste dispositivo expirou ou foi removida. Inscreva-se novamente no dispositivo.',
+  'push.testPaused':
+    'Reative o push para este dispositivo antes de enviar um teste.',
+  'push.testLimited': 'Aguarde 30 segundos entre as notificações de teste.',
+  'push.testNetwork':
+    'O servidor não conseguiu acessar o serviço push. Peça a um administrador que verifique a rede e o proxy de Web Push.',
+  'push.testGatewayAuth':
+    'O serviço push rejeitou as credenciais do servidor. Peça a um administrador que confira a chave VAPID.',
+  'push.testGatewayLimited':
+    'O serviço push está limitando as solicitações. Tente novamente mais tarde.',
+  'push.testGateway':
+    'O serviço push não conseguiu aceitar a notificação de teste. Tente novamente mais tarde.',
   'push.failed':
     'Não foi possível atualizar as notificações push. Por favor, tente novamente.',
   'push.loadingFailed':

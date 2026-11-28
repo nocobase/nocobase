@@ -24,7 +24,21 @@ const messages = {
   'push.cancel': '取消',
   'push.saved': '设备设置已保存',
   'push.saving': '正在保存设备设置',
-  'push.testSent': '测试通知已排队',
+  'push.testSent': '推送服务已接受测试通知。',
+  'push.invalid': '浏览器返回的订阅信息无效，请重新订阅。',
+  'push.endpoint': '服务器暂不支持此浏览器使用的推送服务。',
+  'push.owned': '此浏览器的订阅属于另一个账号。请先从原账号移除，再重新订阅。',
+  'push.browserFailed':
+    '浏览器无法创建推送订阅。请检查浏览器的通知设置和网络连接。',
+  'push.expired': '此设备订阅已过期或已被移除，请在该设备上重新订阅。',
+  'push.testPaused': '请先恢复此设备的推送，再发送测试通知。',
+  'push.testLimited': '两次测试通知之间请间隔 30 秒。',
+  'push.testNetwork':
+    '服务器无法连接推送服务。请联系管理员检查网络和 Web Push 代理。',
+  'push.testGatewayAuth':
+    '推送服务拒绝了服务器的凭据。请联系管理员检查 VAPID 密钥。',
+  'push.testGatewayLimited': '推送服务限制了请求频率，请稍后重试。',
+  'push.testGateway': '推送服务暂时无法接受测试通知，请稍后重试。',
   'push.failed': '无法更新推送设置，请重试。',
   'push.loadingFailed': '无法加载设备，请重试。',
   'push.retry': '重试',

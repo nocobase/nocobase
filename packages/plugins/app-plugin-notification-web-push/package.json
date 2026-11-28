@@ -103,6 +103,7 @@
   },
   "dependencies": {
     "hono": "catalog:",
+    "undici": "^8.12.2",
     "web-push": "^3.6.7",
     "zod": "catalog:"
   },

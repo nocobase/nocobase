@@ -32,10 +32,24 @@ export function rememberDevice(
   }
   window.dispatchEvent(new Event('nocobase:push-device'));
 }
+const listening = new WeakSet<ServiceWorkerContainer>();
+/** Opens a clicked notification's target in a window the worker could not navigate itself. */
+function listenForNavigation(container: ServiceWorkerContainer): void {
+  if (listening.has(container)) return;
+  listening.add(container);
+  container.addEventListener('message', (event) => {
+    const data = event.data as { kind?: unknown; url?: unknown } | null;
+    if (data?.kind !== 'webPush.navigate' || typeof data.url !== 'string')
+      return;
+    const url = new URL(data.url, window.location.href);
+    if (url.origin === window.location.origin) window.location.assign(url.href);
+  });
+}
 export function registerWorker(
   base: string,
 ): Promise<ServiceWorkerRegistration> {
   base = pushBase(base);
+  listenForNavigation(navigator.serviceWorker);
   return navigator.serviceWorker.register(`${base}push-worker.js`, {
     scope: base,
     updateViaCache: 'none',

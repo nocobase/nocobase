@@ -1,5 +1,9 @@
-import { errorToastOptions } from '@nocobase/app-client';
-import { useApiClient, useToaster } from '@nocobase/app-client';
+import {
+  ApiClientError,
+  errorToastOptions,
+  useApiClient,
+  useToaster,
+} from '@nocobase/app-client';
 import { useAuthentication } from '@nocobase/app-plugin-authentication/client';
 import { useAppLocale } from '@nocobase/app-plugin-i18n/client';
 import { useTranslation } from '@nocobase/i18n/client';
@@ -45,6 +49,20 @@ import {
   unsubscribeDevice,
   type PushDevice,
 } from '../browser.js';
+
+const errorMessages = new Map([
+  ['PUSH_ENDPOINT', 'push.endpoint'],
+  ['PUSH_OWNED', 'push.owned'],
+  ['PUSH_UNAVAILABLE', 'push.unavailable'],
+  ['PUSH_MISSING', 'push.expired'],
+  ['PUSH_PAUSED', 'push.testPaused'],
+  ['PUSH_EXPIRED', 'push.expired'],
+  ['PUSH_LIMITED', 'push.testLimited'],
+  ['PUSH_NETWORK', 'push.testNetwork'],
+  ['PUSH_GATEWAY_AUTH', 'push.testGatewayAuth'],
+  ['PUSH_GATEWAY_LIMITED', 'push.testGatewayLimited'],
+  ['PUSH_GATEWAY', 'push.testGateway'],
+]);
 
 export function PushPreferences(): React.ReactElement | null {
   const api = useApiClient();
@@ -98,18 +116,35 @@ export function PushPreferences(): React.ReactElement | null {
   );
   const current = currentDevice(base, userId);
   const registered = devices.data?.some((row) => row.id === current);
-  async function act(work: () => Promise<void>, message: string) {
+  function showFailure(error: unknown, fallback = 'push.failed') {
+    const message =
+      error instanceof ApiClientError
+        ? errorMessages.get(error.reason ?? '')
+        : undefined;
+    toaster.show({
+      ...errorToastOptions(error),
+      type: 'error',
+      title: t(message ?? fallback),
+    });
+  }
+  async function act(
+    work: () => Promise<void>,
+    message: string,
+    fallback?: string,
+  ) {
     setBusy(true);
     try {
       await work();
       await devices.refetch();
       toaster.show({ type: 'success', title: t(message) });
     } catch (error) {
-      toaster.show({
-        ...errorToastOptions(error),
-        type: 'error',
-        title: t('push.failed'),
-      });
+      showFailure(error, fallback);
+      if (
+        error instanceof ApiClientError &&
+        (error.reason === 'PUSH_EXPIRED' || error.reason === 'PUSH_MISSING')
+      ) {
+        await devices.refetch();
+      }
     } finally {
       setBusy(false);
     }
@@ -117,6 +152,7 @@ export function PushPreferences(): React.ReactElement | null {
   async function subscribe() {
     // Permission is requested directly from this click, before any network work (required on iOS).
     setBusy(true);
+    let fallback = 'push.browserFailed';
     try {
       const permission = await Notification.requestPermission();
       setDenied(permission === 'denied');
@@ -133,6 +169,7 @@ export function PushPreferences(): React.ReactElement | null {
           userVisibleOnly: true,
           applicationServerKey: publicKey,
         }));
+      fallback = 'push.failed';
       const result = await api.request<{ data: PushDevice }>({
         method: 'POST',
         path: `webPush/subscriptions`,
@@ -148,11 +185,12 @@ export function PushPreferences(): React.ReactElement | null {
       await devices.refetch();
       toaster.show({ type: 'success', title: t('push.saved') });
     } catch (error) {
-      toaster.show({
-        ...errorToastOptions(error),
-        type: 'error',
-        title: t('push.failed'),
-      });
+      showFailure(
+        error,
+        error instanceof ApiClientError && error.reason === 'INVALID_INPUT'
+          ? 'push.invalid'
+          : fallback,
+      );
     } finally {
       setBusy(false);
     }
@@ -264,12 +302,16 @@ export function PushPreferences(): React.ReactElement | null {
                 variant='outline'
                 disabled={busy || !device.enabled}
                 onClick={() => {
-                  void act(async () => {
-                    await api.request({
-                      method: 'POST',
-                      path: `webPush/subscriptions/${device.id}/test`,
-                    });
-                  }, 'push.testSent');
+                  void act(
+                    async () => {
+                      await api.request({
+                        method: 'POST',
+                        path: `webPush/subscriptions/${device.id}/test`,
+                      });
+                    },
+                    'push.testSent',
+                    'push.testGateway',
+                  );
                 }}
               >
                 {t('push.test')}
