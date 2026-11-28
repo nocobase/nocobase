@@ -30,7 +30,7 @@ import type { MiddlewareHandler } from 'hono';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
 import authentication from '../../plugin.js';
-import type { AuthenticationSettings } from '../../settings.js';
+import type { AuthenticationSettings } from '../../../shared/settings.js';
 import {
   authenticationSettingsAccessToken,
   signInMethodsToken,

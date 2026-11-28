@@ -60,6 +60,43 @@ function record(data) {
   });
 }
 
+/**
+ * Records the badge's version and answers whether it is not older than the newest a push or page applied. Pages write
+ * the same record through setAppBadge() in the client, so a count a page set also outranks an older push.
+ */
+function newest(data) {
+  const version = data.badgeVersion;
+  const scope = data.badgeScope;
+  if (!Number.isSafeInteger(version) || version < 0 || typeof scope !== 'string' ||
+      typeof indexedDB === 'undefined') return Promise.resolve(false);
+  return new Promise((resolve) => {
+    const base = new URL(self.registration.scope).pathname;
+    const opening = indexedDB.open(\`nocobase:push-badge-v2:\${base}\`, 1);
+    opening.onupgradeneeded = () =>
+      opening.result.createObjectStore('state', { keyPath: 'id' });
+    opening.onerror = () => resolve(false);
+    opening.onsuccess = () => {
+      const db = opening.result;
+      let apply = true;
+      const tx = db.transaction('state', 'readwrite');
+      const store = tx.objectStore('state');
+      const request = store.get('badge');
+      request.onsuccess = () => {
+        if (request.result && (request.result.scope !== scope || request.result.version > version)) apply = false;
+        else store.put({ id: 'badge', version, scope });
+      };
+      tx.oncomplete = () => {
+        db.close();
+        resolve(apply);
+      };
+      tx.onerror = tx.onabort = () => {
+        db.close();
+        resolve(false);
+      };
+    };
+  });
+}
+
 self.addEventListener('push', (event) => {
   event.waitUntil(
     (async () => {
@@ -70,6 +107,19 @@ self.addEventListener('push', (event) => {
         /* Display a safe fallback. */
       }
       if (data.dedupeKey) await record(data);
+      // The installed app's icon badge follows the newest count the server read; browsers without badging ignore it.
+      if (Number.isSafeInteger(data.badge) && data.badge >= 0 && (await newest(data))) {
+        await (data.badge > 0
+          ? self.navigator?.setAppBadge?.(data.badge)
+          : self.navigator?.clearAppBadge?.()
+        )?.catch(() => undefined);
+        // An open page reads the count again and sets it, since a page may have read a newer count than this push.
+        for (const client of await self.clients.matchAll({
+          type: 'window',
+          includeUncontrolled: true,
+        }))
+          client.postMessage({ kind: 'webPush.badge' });
+      }
       // WebKit requires a user-visible notification for every Push, including a foreground race.
       await self.registration.showNotification(String(data.title || options.title), {
         tag: String(data.dedupeKey || 'web-push'),

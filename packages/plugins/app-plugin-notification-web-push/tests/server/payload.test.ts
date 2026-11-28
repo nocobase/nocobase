@@ -87,3 +87,26 @@ it('fits the maximum validated JSON into a 4096-byte encrypted aes128gcm request
   );
   expect(details.body?.length).toBe(4096);
 });
+
+it('carries a badge only with the exact revision supplied by the application', () => {
+  expect(
+    pushPayload(
+      { ...message, badge: 2, badgeVersion: 1234, badgeScope: 'alice' },
+      '/main',
+    ),
+  ).toMatchObject({ badge: 2, badgeVersion: 1234, badgeScope: 'alice' });
+  expect(
+    pushPayload({ ...message, badge: 0, badgeVersion: 1235 }, '/main'),
+  ).toMatchObject({ badge: 0, badgeVersion: 1235, badgeScope: '' });
+  for (const incomplete of [
+    { badge: 2 },
+    { badgeVersion: 1 },
+    { badge: 2, badgeVersion: -1 },
+  ]) {
+    expect(
+      pushPayload({ ...message, ...incomplete }, '/main'),
+    ).not.toHaveProperty('badge');
+  }
+  expect(() => service.validateMessage({ ...message, badge: -1 })).toThrow();
+  expect(() => service.validateMessage({ ...message, badge: 1.5 })).toThrow();
+});

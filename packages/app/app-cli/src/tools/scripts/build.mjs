@@ -48,6 +48,7 @@ Deployment metadata:
 const { generateDatabaseManifests } =
   await import('@nocobase/dev-config/build/database-manifests');
 const { default: spawn } = await import('cross-spawn');
+const { resolveTypeScript } = await import('./utils/typescript.mjs');
 const {
   assertCliPluginRegistrationsCurrent,
   readCliHooks,
@@ -275,8 +276,14 @@ if (process.env.NOCOBASE_SKIP_WORKSPACE_DEPENDENCY_BUILD !== '1') {
   }
 }
 
-run('Typecheck client', 'pnpm', ['exec', 'tsc']);
-run('Typecheck tooling', 'pnpm', ['exec', 'tsc', '-p', 'tsconfig.node.json']);
+const compiler = resolveTypeScript(rootDir);
+console.log(`Using ${compiler.name}`);
+run('Typecheck client', compiler.command, compiler.args);
+run('Typecheck tooling', compiler.command, [
+  ...compiler.args,
+  '-p',
+  'tsconfig.node.json',
+]);
 // `vite.config.ts` reads only the environment it is given, so the `.env` files are resolved here with the process
 // environment taking precedence — the order `loadStandaloneAppEnv` applies on the server. Letting Vite read `.env`
 // files itself would also pick up `.env.production` and other mode files the server never loads.
@@ -287,7 +294,17 @@ run('Build client', 'pnpm', ['exec', 'vite', 'build'], {
   },
 });
 runHookStage(buildHooks, 'afterClientBuild', run);
-run('Build server', 'pnpm', ['exec', 'tsc', '-p', 'tsconfig.server.json']);
+// A no-emit check or an older build can have a warm cache while dist is empty. Start
+// this compilation with a fresh build info file and keep it out of the deployment.
+const serverBuildInfo = path.join(distDir, '.server.tsbuildinfo');
+run('Build server', compiler.command, [
+  ...compiler.args,
+  '-p',
+  'tsconfig.server.json',
+  '--tsBuildInfoFile',
+  serverBuildInfo,
+]);
+fs.rmSync(serverBuildInfo, { force: true });
 run('Rewrite server path aliases', 'pnpm', [
   'exec',
   'tsc-alias',

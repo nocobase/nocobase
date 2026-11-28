@@ -1,19 +1,4 @@
-/** Where an effective setting comes from. `default` is Better Auth's or the plugin's own default. */
-export type ConfigSource = 'env' | 'file' | 'code' | 'default';
-
-/** The origin of one setting: its configuration path, where its value comes from and, for `env`, the variable. */
-export interface ConfigOrigin {
-  readonly path: string;
-  readonly source: ConfigSource;
-  readonly env?: string;
-}
-
-/** A translatable text: a key in a client namespace, with the English text to show when no translation is loaded. */
-export interface SignInMethodText {
-  readonly key: string;
-  readonly ns: string;
-  readonly defaultValue: string;
-}
+import type { SignInMethodText } from '../shared/settings.js';
 
 /** What a sign-in method reports about itself, read each time the settings page asks. */
 export interface SignInMethodState {

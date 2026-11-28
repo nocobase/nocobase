@@ -6,6 +6,8 @@
     // tsc-alias completes relative ESM paths after compilation.
     "module": "ESNext",
     "moduleResolution": "Bundler",
+    "incremental": true,
+    "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.server.tsbuildinfo",
     "rootDir": ".",
     "outDir": "dist"
   },

@@ -1,8 +1,11 @@
 import { z } from 'zod';
 
-import type { AuthenticationSettings } from '../settings.js';
-import type { AuthenticationProviderSummary } from '../settings-service.js';
-import type { ConfigOrigin, SignInMethodText } from '../sign-in-methods.js';
+import type {
+  AuthenticationProviderSummary,
+  AuthenticationSettings,
+  ConfigOrigin,
+  SignInMethodText,
+} from '../../shared/settings.js';
 
 /** The public authentication capabilities returned without a session. */
 export interface PasswordResetCapability {
