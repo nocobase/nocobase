@@ -794,7 +794,7 @@ const zhTW: LocaleResource<typeof enUS> = {
     variables: {
       title: '本機的變數',
       description:
-        '它提供給執行的變數，這些變數按名稱從執行環境獲取；這些值保留在機器上。用 `nocobase-runner env set NAME` 在那裡設定一個，或用 `--pass-env NAME` 傳遞它。',
+        '這裡只顯示變數名稱，值保存在執行環境所在機器上。在該機器上執行 `nocobase-runner env set NAME`，可從標準輸入儲存變數值。若變數已在目前終端機中透過 export 設定，前景執行可使用 `nocobase-runner start --pass-env NAME`；背景服務可使用 `nocobase-runner service install --pass-env NAME`，儲存目前值並重新啟動服務。背景服務不會讀取 shell 設定檔，修改變數值後需再次執行服務安裝命令。多個變數可重複加入 `--pass-env NAME`。',
       none: '無：從執行環境取得變數的執行在開始之前在此失敗。',
       unknown: '未報告：其執行程式比此功能更舊。更新執行環境以檢視它們。',
     },

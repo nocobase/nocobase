@@ -199,7 +199,7 @@ const runtimesEnUS = {
     variables: {
       title: 'Variables from this machine',
       description:
-        'The variables it provides to runs that take them from the runtime, by name; the values stay on the machine. Set one there with `nocobase-runner env set NAME`, or pass it with `--pass-env NAME`.',
+        'Only variable names are shown here; values stay on the machine. On that machine, use `nocobase-runner env set NAME` to save a value from standard input. To pass a variable already exported in the current terminal, use `nocobase-runner start --pass-env NAME` for a foreground runner, or `nocobase-runner service install --pass-env NAME` to save its current value and restart the background service. Services do not read shell configuration files; run the service command again after changing the value. Repeat `--pass-env NAME` for each variable.',
       none: 'None: a run that takes a variable from the runtime fails here before it starts.',
       unknown:
         'Not reported: its runtime is older than this feature. Update the runtime to see them.',

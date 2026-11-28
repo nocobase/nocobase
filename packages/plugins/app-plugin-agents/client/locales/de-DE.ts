@@ -859,7 +859,7 @@ const deDE: LocaleResource<typeof enUS> = {
     variables: {
       title: 'Variablen von dieser Maschine',
       description:
-        'Die Variablen, die es für Läufe bereitstellt, die sie aus der Laufzeitumgebung übernehmen, nach Namen; Die Werte bleiben auf der Maschine. Setzen Sie dort eins mit `nocobase-runner env set NAME`, oder übergeben Sie es mit `--pass-env NAME`.',
+        'Hier werden nur die Variablennamen angezeigt; die Werte bleiben auf dem Rechner. Verwenden Sie dort `nocobase-runner env set NAME`, um einen Wert über die Standardeingabe zu speichern. Um eine im aktuellen Terminal bereits exportierte Variable weiterzugeben, verwenden Sie `nocobase-runner start --pass-env NAME` für den Vordergrundbetrieb oder `nocobase-runner service install --pass-env NAME`, um den aktuellen Wert zu speichern und den Hintergrunddienst neu zu starten. Dienste lesen keine Shell-Konfigurationsdateien; führen Sie den Dienstbefehl nach einer Wertänderung erneut aus. Wiederholen Sie `--pass-env NAME` für jede Variable.',
       none: 'Keine: Ein Lauf, der eine Variable aus der Laufzeitumgebung übernimmt, schlägt hier fehl, bevor er gestartet wird.',
       unknown:
         'Nicht gemeldet: Sein Runner ist älter als diese Funktion. Aktualisieren Sie den Runner, um sie zu sehen.',

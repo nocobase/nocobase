@@ -829,7 +829,7 @@ const viVN: LocaleResource<typeof enUS> = {
     variables: {
       title: 'Biến từ máy này',
       description:
-        'Các biến mà nó cung cấp để chạy lấy chúng từ môi trường chạy, theo tên; các giá trị vẫn còn trên máy. Đặt một cái ở đó với `nocobase-runner env set NAME` hoặc chuyển nó bằng `--pass-env NAME`.',
+        'Ở đây chỉ hiển thị tên biến; giá trị được giữ trên máy. Trên máy đó, dùng `nocobase-runner env set NAME` để lưu giá trị từ đầu vào chuẩn. Để truyền một biến đã được export trong terminal hiện tại, dùng `nocobase-runner start --pass-env NAME` để chạy ở tiền cảnh, hoặc `nocobase-runner service install --pass-env NAME` để lưu giá trị hiện tại và khởi động lại dịch vụ nền. Dịch vụ không đọc các tệp cấu hình shell; hãy chạy lại lệnh dịch vụ sau khi thay đổi giá trị. Lặp lại `--pass-env NAME` cho mỗi biến.',
       none: 'Không: một lần chạy lấy một biến từ môi trường chạy không thành công ở đây trước khi nó bắt đầu.',
       unknown:
         'Không được báo cáo: nhân vật chạy của nó cũ hơn tính năng này. Cập nhật môi trường chạy để xem chúng.',
