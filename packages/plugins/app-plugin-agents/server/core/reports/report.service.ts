@@ -95,10 +95,11 @@ const USAGE_RUN_COLUMNS = [
 type Row = Record<string, unknown>;
 
 /**
- * How many run ids one read of a usage report's runs binds, well under every supported database's parameter limit
- * (SQLite's oldest default is 999) with room for the visibility bound's own parameters. Tests lower it.
+ * How many parameters one read of a usage report's runs binds at most, the lowest limit of the supported databases
+ * (SQLite's oldest default, 999). Each read takes as many run ids as the statement's other parameters (the visibility
+ * bound's, such as the project ids a reader sees) leave room for. Tests lower it.
  */
-export const usageReadLimits = { runBatch: 500 };
+export const usageReadLimits = { parameters: 999 };
 
 const text = (value: unknown): string =>
   typeof value === 'string'
@@ -337,8 +338,8 @@ export function createReportService(deps: {
   }
 
   /**
-   * The usage reported in the range of the runs the caller counts, in two reads whatever its size: the usage, and the
-   * runs it was reported for (in batches of `usageReadLimits.runBatch` ids).
+   * The usage reported in the range of the runs the caller counts: one read of the usage, and one read of the runs it
+   * was reported for per batch of ids (`usageReadLimits`), a single batch unless the runs are many.
    */
   async function usageRecords(
     conn: DatabaseConnection,
@@ -401,9 +402,8 @@ export function createReportService(deps: {
     const ids = [...new Set(usage.map((row) => text(row.runId)))];
     const runs: ReportRunRow[] = [];
     const inside = bounds ? new Set<string>() : null;
-    for (let at = 0; at < ids.length; at += usageReadLimits.runBatch) {
-      const batch = ids.slice(at, at + usageReadLimits.runBatch);
-      const rows = await conn.query
+    const runsOf = (batch: readonly string[]) =>
+      conn.query
         .selectFrom('agRuns as run')
         .select((eb) => [
           ...USAGE_RUN_COLUMNS.map((column) => `run.${column} as ${column}`),
@@ -418,8 +418,18 @@ export function createReportService(deps: {
               ]
             : []),
         ])
-        .where('run.id', 'in', batch)
-        .execute<Row>();
+        .where('run.id', 'in', batch);
+    // The ids fill what the statement's own parameters leave of the limit, at least one.
+    const size =
+      ids.length === 0
+        ? 0
+        : Math.max(
+            1,
+            usageReadLimits.parameters -
+              (runsOf(ids.slice(0, 1)).compile().parameters.length - 1),
+          );
+    for (let at = 0; at < ids.length; at += size) {
+      const rows = await runsOf(ids.slice(at, at + size)).execute<Row>();
       for (const row of rows) {
         const run = runRow(row);
         runs.push(run);

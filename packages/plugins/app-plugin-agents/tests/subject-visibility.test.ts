@@ -8,6 +8,7 @@ import { AgentsProvider } from '../server/providers/agents.js';
 import type { Knex } from 'knex';
 import { afterEach, expect, it, vi } from 'vitest';
 import { createHarness, type Harness } from './harness.js';
+import { runsRepo } from '../server/core/runs/run.store.js';
 import {
   runVisibility,
   subjectVisibleForRun,
@@ -337,16 +338,21 @@ const runReads = (sql: readonly string[]) =>
     ),
   );
 
-it('reads a usage report’s runs once each, in batches of ids, however many usage records they have', async () => {
+it('reads a usage report’s runs once each, in batches the statement’s parameter limit leaves room for', async () => {
   h = await createHarness();
   const sample = h.services.subjects.get('sample')!;
+  // As Studio's issues for a reader in 500 projects: the bound binds 500 ids of its own and reads other tables
+  // through `exists`; subject 3 is outside it.
+  const projects = [
+    '3',
+    ...Array.from({ length: 499 }, (_, i) => `project-${i}`),
+  ];
   h.services.subjects.register({
     ...sample,
     kind: 'measured',
-    // As Studio's issues, the bound reads other tables through `exists`; subject 3 is outside it.
     visibleSubjects: async () => (eb, column) =>
       eb.and([
-        eb(column, '!=', '3'),
+        eb(column, 'not in', projects),
         eb.exists(
           eb
             .selectFrom('agAgents as agent')
@@ -358,18 +364,32 @@ it('reads a usage report’s runs once each, in batches of ids, however many usa
   const conn = h.database.connection();
   const client = await conn.client<Knex>();
   const agentId = await h.createAgent();
-  for (let i = 0; i < 5; i++) {
-    const id = await h.enqueue(agentId, String(i), { actorUserId: 'bob' });
-    await conn.query
-      .updateTable('agRuns')
-      .set({ subjectKind: 'measured' })
-      .where('id', '=', id)
-      .execute();
-    for (const part of [0, 1])
-      await conn.repository('agRunUsage').createOne({
-        values: {
-          id: `usage-${i}-${part}`,
-          runId: id,
+  const seedId = await h.enqueue(agentId, 'seed', { actorUserId: 'bob' });
+  const { revision: _revision, ...seed } = (await runsRepo(conn).findOne({
+    filter: { id: seedId },
+  }))!;
+  await runsRepo(conn).deleteMany({ filter: { id: seedId } });
+  // More runs than one read of 999 parameters takes beside the bound's 500, two usage records each.
+  const total = 700;
+  const ids = Array.from(
+    { length: total },
+    (_, i) => `run-${String(i).padStart(4, '0')}`,
+  );
+  for (let at = 0; at < total; at += 20) {
+    const chunk = ids.slice(at, at + 20);
+    await runsRepo(conn).createMany({
+      values: chunk.map((id) => ({
+        ...seed,
+        id,
+        subjectKind: 'measured',
+        subjectId: String(Number(id.slice(4))),
+      })),
+    });
+    await conn.repository('agRunUsage').createMany({
+      values: chunk.flatMap((runId) =>
+        [0, 1].map((part) => ({
+          id: `usage-${runId}-${part}`,
+          runId,
           tool: 'claude',
           modelService: null,
           model: `m${part}`,
@@ -379,12 +399,14 @@ it('reads a usage report’s runs once each, in batches of ids, however many usa
           cacheWriteTokens: 0,
           reasoningTokens: 0,
           createdAt: h.clock.now().toISOString(),
-        },
-      });
+        })),
+      ),
+    });
   }
   const read = async () => {
-    const sql: string[] = [];
-    const listener = (query: { sql: string }) => sql.push(query.sql);
+    const queries: { sql: string; bindings: readonly unknown[] }[] = [];
+    const listener = (query: { sql: string; bindings?: readonly unknown[] }) =>
+      queries.push({ sql: query.sql, bindings: query.bindings ?? [] });
     client.on('query', listener);
     try {
       // Bob woke every run, so he counts the one outside the bound too, unnamed.
@@ -392,40 +414,48 @@ it('reads a usage report’s runs once each, in batches of ids, however many usa
         { userId: 'bob', allRuns: true },
         { groupBy: 'subject' },
       );
-      return { report, sql };
+      return { report, queries };
     } finally {
       client.removeListener('query', listener);
     }
   };
-  const whole = await read();
-  expect(runReads(whole.sql)).toHaveLength(1);
+  const batched = await read();
+  const reads = batched.queries.filter((query) => runReads([query.sql]).length);
+  // 700 ids beside some 500 parameters of the bound: two reads, each within SQLite's oldest limit of 999.
+  expect(reads).toHaveLength(2);
+  for (const query of reads)
+    expect(query.bindings.length).toBeLessThanOrEqual(999);
+  expect(reads[0]!.bindings.length).toBe(999);
+  expect(
+    batched.queries.filter((query) => /ag_run_usage/iu.test(query.sql)),
+  ).toHaveLength(1);
+  // The same report as when every id fits in one read.
   const { usageReadLimits } =
     await import('../server/core/reports/report.service.js');
-  const runBatch = usageReadLimits.runBatch;
-  usageReadLimits.runBatch = 2;
+  const limit = usageReadLimits.parameters;
+  usageReadLimits.parameters = 32_766;
   try {
-    const batched = await read();
-    // Five runs, ten usage records: three reads of two ids at most, each run once.
-    const reads = runReads(batched.sql);
-    expect(reads).toHaveLength(3);
+    const whole = await read();
     expect(
-      batched.sql.filter((sql) => /ag_run_usage/iu.test(sql)),
+      whole.queries.filter((query) => runReads([query.sql]).length),
     ).toHaveLength(1);
-    expect(batched.report).toEqual(whole.report);
+    expect(whole.report).toEqual(batched.report);
   } finally {
-    usageReadLimits.runBatch = runBatch;
+    usageReadLimits.parameters = limit;
   }
-  // Bob sees four subjects by name; the one outside the bound is one unnamed row.
-  expect(
-    whole.report.rows.map((row) => [row.key, row.runs, row.inputTokens]).sort(),
-  ).toEqual([
-    ['', 1, 2],
-    ['measured:0', 1, 2],
-    ['measured:1', 1, 2],
-    ['measured:2', 1, 2],
-    ['measured:4', 1, 2],
-  ]);
-  expect(whole.report.totals).toMatchObject({ runs: 5, inputTokens: 10 });
+  // Bob sees every subject but 3 by name; subject 3 is one unnamed row.
+  const rows = batched.report.rows;
+  expect(rows).toHaveLength(total);
+  expect(rows.find((row) => row.key === '')).toMatchObject({
+    name: null,
+    runs: 1,
+    inputTokens: 2,
+  });
+  expect(rows.find((row) => row.key === 'measured:3')).toBeUndefined();
+  expect(batched.report.totals).toMatchObject({
+    runs: total,
+    inputTokens: total * 2,
+  });
 });
 
 it('keeps private sessions participant-only even for unrestricted readers and pages past them', async () => {
