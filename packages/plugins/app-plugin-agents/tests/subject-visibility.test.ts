@@ -298,7 +298,7 @@ it('keeps list and statistics visibility reads constant as the dataset grows', a
     try {
       await read();
       expect(hook).toHaveBeenCalledTimes(1);
-      return sql.filter((text) => /^select/iu.test(text)).length;
+      return sql.filter((text) => /^select/iu.test(text));
     } finally {
       client.removeListener('query', listener);
     }
@@ -313,11 +313,19 @@ it('keeps list and statistics visibility reads constant as the dataset grows', a
     h.services.reporting.usage({ userId: 'reader', allRuns: true }, {});
   const before = [await measure(list), await measure(usage)];
   for (let i = 1; i < 20; i++) await add(i);
-  expect([await measure(list), await measure(usage)]).toEqual(before);
-  expect(before[0]).toBeLessThanOrEqual(5);
-  // Usage reads its records, its runs, which of them are inside the subjects' bound now (so subjects the reader may
-  // no longer see go unnamed), run facts, prices, subscriptions and agent names in eight fixed reads.
-  expect(before[1]).toBe(8);
+  const after = [await measure(list), await measure(usage)];
+  expect(after.map((sql) => sql.length)).toEqual(
+    before.map((sql) => sql.length),
+  );
+  expect(before[0]!.length).toBeLessThanOrEqual(5);
+  // Usage reads its records with their runs and whether each run's subject is inside its kind's bound now (so
+  // subjects the reader may no longer see go unnamed) in one read, then run facts, prices, subscriptions and agent
+  // names: six fixed reads.
+  expect(before[1]).toHaveLength(6);
+  const usageReads = after[1]!.filter((sql) => /ag_run_usage/iu.test(sql));
+  expect(usageReads).toHaveLength(1);
+  // The runs come from the usage rows themselves, never from a scan of every usage record in the range.
+  expect(usageReads[0]).not.toMatch(/\(\s*select[^)]*ag_run_usage/iu);
 });
 
 it('keeps private sessions participant-only even for unrestricted readers and pages past them', async () => {

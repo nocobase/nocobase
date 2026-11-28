@@ -677,6 +677,115 @@ describe('reporting service', () => {
     expect(carolsGroup.rows.map((row) => row.key)).toEqual(['doc:revoked']);
   });
 
+  it('reports a subject over its whole life and merges the ones the caller no longer sees into one unnamed row', async () => {
+    h = await createHarness();
+    h.services.subjects.register({
+      kind: 'doc',
+      context: h.services.subjects.get('sample')!.context,
+      visibleSubjects: (_conn, userId) =>
+        Promise.resolve(
+          userId === 'carol'
+            ? null
+            : // As Studio's issues, the bound reads other tables through `exists`.
+              (eb, column) =>
+                eb.and([
+                  eb(column, 'not in', ['gone', 'lost']),
+                  eb.exists(
+                    eb
+                      .selectFrom('agAgents as agent')
+                      .select('agent.id')
+                      .where('agent.id', 'is not', null),
+                  ),
+                ]),
+        ),
+      reports: {
+        describe(_conn, _userId, ids) {
+          return Promise.resolve(
+            new Map(
+              ids.map((id) => [
+                id,
+                { label: `DOC-${id}`, visible: true, group: null },
+              ]),
+            ),
+          );
+        },
+      },
+    });
+    const agentId = await h.createAgent();
+    const runner = await h.registerRunner();
+    const run = async (id: string) => {
+      await h.services.runs.enqueue({
+        agentId,
+        subject: { kind: 'doc', id },
+        actorUserId: 'bob',
+        input: {
+          type: 'comment',
+          actor: { kind: 'user', id: 'bob', name: 'Bob' },
+          text: 'Go.',
+        },
+      });
+      // Two usage records each, from two models.
+      await complete(runner, [
+        { tool: 'claude', model: 'a', inputTokens: 10, outputTokens: 1 },
+        { tool: 'claude', model: 'b', inputTokens: 100, outputTokens: 2 },
+      ]);
+    };
+    await run('open');
+    await run('gone');
+    const firstDay = h.clock.now().toISOString().slice(0, 10);
+    h.clock.advance(400 * 24 * 3600 * 1000);
+    for (const id of ['open', 'gone', 'lost']) await run(id);
+    for (const allRuns of [true, false]) {
+      const bob: ReportCaller = { userId: 'bob', allRuns };
+      const open = await h.services.reporting.usage(bob, {
+        groupBy: 'model',
+        subjectKind: 'doc',
+        subjectId: 'open',
+      });
+      expect(open.from).toBe(firstDay);
+      expect(open.rows.map((row) => [row.key, row.runs])).toEqual([
+        ['b', 2],
+        ['a', 2],
+      ]);
+      expect(open.totals).toMatchObject({
+        runs: 2,
+        inputTokens: 220,
+        outputTokens: 6,
+      });
+      const gone = await h.services.reporting.usage(bob, {
+        groupBy: 'model',
+        subjectKind: 'doc',
+        subjectId: 'gone',
+      });
+      expect(gone.rows).toEqual([]);
+      expect(gone.totals.runs).toBe(0);
+      // The two subjects bob no longer sees, two runs and four usage records, are one row with no name.
+      const subjects = await h.services.reporting.usage(bob, {
+        groupBy: 'subject',
+        userId: 'bob',
+      });
+      expect(
+        subjects.rows.map((row) => [
+          row.key,
+          row.name,
+          row.runs,
+          row.inputTokens,
+        ]),
+      ).toEqual([
+        ['', null, 2, 220],
+        ['doc:open', 'DOC-open', 1, 110],
+      ]);
+      expect(subjects.totals.runs).toBe(3);
+    }
+    const carol = await h.services.reporting.usage(ALL, {
+      groupBy: 'model',
+      subjectKind: 'doc',
+      subjectId: 'gone',
+    });
+    expect(carol.from).toBe(firstDay);
+    expect(carol.totals).toMatchObject({ runs: 2, inputTokens: 220 });
+  });
+
   it('names no subject outside the visibility its kind alone bounds', async () => {
     // A kind with current visibility and no report descriptions: every subject reads as visible but for the bound.
     h = await createHarness();
