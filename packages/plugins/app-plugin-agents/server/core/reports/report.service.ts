@@ -94,28 +94,8 @@ const USAGE_RUN_COLUMNS = [
 ] as const;
 
 type Row = Record<string, unknown>;
-
-/**
- * Use SQLite's portable budget and the server dialects' protocol limits.
- */
-const PARAMETER_LIMITS: Readonly<Record<string, number>> = {
-  sqlite: 999,
-  postgres: 65_535,
-  mysql: 65_535,
-  mariadb: 65_535,
-  oracle: 65_535,
-  mssql: 2_100,
-};
-
-/**
- * How a usage report reads its runs: at most `runIds` ids a read (Oracle takes no more in one `IN` list), and within
- * `parameters`, or the dialect's limit when null, with the statement's other parameters (the visibility bound's, such
- * as the ids of the projects a reader sees). Tests lower them.
- */
-export const usageReadLimits: { parameters: number | null; runIds: number } = {
-  parameters: null,
-  runIds: 1_000,
-};
+type UsageRun = ReportRunRow & { readonly inside: boolean };
+const USAGE_RUN_BATCH_SIZE = 500;
 
 const text = (value: unknown): string =>
   typeof value === 'string'
@@ -354,9 +334,8 @@ export function createReportService(deps: {
   }
 
   /**
-   * The usage reported in the range of the runs the caller counts: one read of the usage, and one read of the runs it
-   * was reported for per batch of ids (`usageReadLimits`), a single batch unless the runs are many. However many ids
-   * a reader's visibility binds, the usage read binds none of them: the runs' reads say which runs the caller sees.
+   * The usage reported in the range of the runs the caller counts: one scoped usage read, then one run read per
+   * batch of distinct run IDs.
    */
   async function usageRecords(
     conn: DatabaseConnection,
@@ -371,117 +350,84 @@ export function createReportService(deps: {
   ) {
     // Read once: what the caller may see of each subject kind now, for the runs they count and for naming subjects.
     const bounds = await subjectBounds(conn, deps.subjects, caller.userId);
-    // In the usage read only what binds no more than a few parameters: a caller who may not see every run counts the
-    // runs they woke or own; one who may counts those and the runs inside their bound, which their runs' reads say.
     const visibility = await runVisibility(
       conn,
       deps.subjects,
       caller.userId,
       caller.allRuns,
       'run',
-      null,
+      bounds,
     );
-    const ofRuns = <Q extends SelectQuery<Row, Row>>(query: Q): Q => {
-      let scoped = query.where(visibility) as Q;
-      if (filter.agentId)
-        scoped = scoped.where('run.agentId', '=', filter.agentId) as Q;
-      if (filter.userId)
-        scoped = scoped.where('run.actorUserId', '=', filter.userId) as Q;
-      if (filter.subject)
-        scoped = scoped
-          .where('run.subjectKind', '=', filter.subject.kind)
-          .where('run.subjectId', '=', filter.subject.id) as Q;
-      return scoped;
-    };
     // The usage of the runs the caller may count, in one read. The caller counts the runs they woke or own even on
     // subjects they may no longer see (`runVisibility`).
-    const usage = await ofRuns(
-      conn.query
-        .selectFrom('agRunUsage as usage')
-        .innerJoin('agRuns as run', 'run.id', 'usage.runId')
-        .select([
-          'usage.runId as runId',
-          'usage.tool as tool',
-          'usage.modelService as modelService',
-          'usage.model as model',
-          'usage.inputTokens as inputTokens',
-          'usage.outputTokens as outputTokens',
-          'usage.cacheReadTokens as cacheReadTokens',
-          'usage.cacheWriteTokens as cacheWriteTokens',
-          'usage.reasoningTokens as reasoningTokens',
-          'usage.createdAt as createdAt',
-        ])
-        .where('usage.createdAt', '>=', range.start)
-        .where('usage.createdAt', '<', range.end)
-        .orderBy('usage.id'),
-    ).execute<Row>();
-    // Each of those runs once, however many usage records it has, by the ids the usage named (one read unless they
-    // exceed a batch) and, when a kind bounds who sees its subjects, whether the run's subject is inside that bound now
-    // (`insideId`, null outside it), worked out once per run.
+    let usageQuery = conn.query
+      .selectFrom('agRunUsage as usage')
+      .innerJoin('agRuns as run', 'run.id', 'usage.runId')
+      .select([
+        'usage.runId as runId',
+        'usage.tool as tool',
+        'usage.modelService as modelService',
+        'usage.model as model',
+        'usage.inputTokens as inputTokens',
+        'usage.outputTokens as outputTokens',
+        'usage.cacheReadTokens as cacheReadTokens',
+        'usage.cacheWriteTokens as cacheWriteTokens',
+        'usage.reasoningTokens as reasoningTokens',
+        'usage.createdAt as createdAt',
+      ])
+      .where('usage.createdAt', '>=', range.start)
+      .where('usage.createdAt', '<', range.end)
+      .where(visibility);
+    if (filter.agentId)
+      usageQuery = usageQuery.where('run.agentId', '=', filter.agentId);
+    if (filter.userId)
+      usageQuery = usageQuery.where('run.actorUserId', '=', filter.userId);
+    if (filter.subject)
+      usageQuery = usageQuery
+        .where('run.subjectKind', '=', filter.subject.kind)
+        .where('run.subjectId', '=', filter.subject.id);
+    const usage = await usageQuery.orderBy('usage.id').execute<Row>();
     const ids = [...new Set(usage.map((row) => text(row.runId)))];
-    const runs: ReportRunRow[] = [];
-    const inside = bounds ? new Set<string>() : null;
-    const runsOf = (batch: readonly string[]) =>
-      conn.query
+    const runs: UsageRun[] = [];
+    for (let at = 0; at < ids.length; at += USAGE_RUN_BATCH_SIZE) {
+      let query = conn.query
         .selectFrom('agRuns as run')
-        .select((eb) => [
-          ...USAGE_RUN_COLUMNS.map((column) => `run.${column} as ${column}`),
-          ...(bounds
-            ? [
-                eb
-                  .selectFrom('agRuns as inside')
-                  .select('inside.id')
-                  .whereRef('inside.id', '=', 'run.id')
-                  .where((inner) =>
-                    inner.compactStringLists(bounds(inner, 'inside')),
-                  )
-                  .as('insideId'),
-              ]
-            : []),
-        ])
-        .where('run.id', 'in', batch);
-    // Count the actual bindings for the scope and projections, excluding the probe's one run ID.
-    const limit =
-      usageReadLimits.parameters ?? PARAMETER_LIMITS[conn.dialect] ?? 999;
-    const own =
-      ids.length === 0
-        ? 0
-        : (await runsOf(ids.slice(0, 1)).compileForExecution()).parameters
-            .length - 1;
-    if (ids.length > 0 && own >= limit)
-      throw new Error(
-        `The visibility of the usage report's subjects needs ${own} parameters of the ${limit} one statement may bind, leaving none for the runs.`,
-      );
-    const size = Math.min(usageReadLimits.runIds, limit - own);
-    for (let at = 0; at < ids.length; at += size) {
-      const rows = await runsOf(ids.slice(at, at + size)).execute<Row>();
+        .select(USAGE_RUN_COLUMNS.map((column) => `run.${column} as ${column}`))
+        .where('run.id', 'in', ids.slice(at, at + USAGE_RUN_BATCH_SIZE));
+      if (bounds) {
+        // QueryAdapter cannot project a predicate. A primary-key match gives its truth value in the same read.
+        // Double negation renders the bound through the WHERE expression compiler, whose EXISTS syntax works on SQLite.
+        query = query
+          .leftJoin('agRuns as scopeRun', (join) =>
+            join
+              .onRef('scopeRun.id', '=', 'run.id')
+              .on((eb) => eb.not(eb.not(bounds(eb, 'run')))),
+          )
+          .select('scopeRun.id as insideId');
+      }
+      const rows = await query.execute<Row>();
       for (const row of rows) {
         const run = runRow(row);
-        runs.push(run);
-        if (inside && row.insideId !== null && row.insideId !== undefined)
-          inside.add(run.id);
+        const inside = !bounds || row.insideId != null;
+        // Keep the permission check if the run or its subject changed between the two reads.
+        if (
+          (!caller.allRuns || !inside) &&
+          run.actorUserId !== caller.userId &&
+          run.ownerUserId !== caller.userId
+        )
+          continue;
+        runs.push({ ...run, inside });
       }
     }
-    // Of a caller who may see every run, the runs they neither woke nor own count only inside their bound.
-    const seen = runs.filter(
-      (run) =>
-        !caller.allRuns ||
-        inside === null ||
-        inside.has(run.id) ||
-        run.actorUserId === caller.userId ||
-        run.ownerUserId === caller.userId,
-    );
-    const { runs: counted, facts } = await countable(conn, caller, seen, null);
+    const { runs: counted, facts } = await countable(conn, caller, runs, null);
     // What identifies a subject the caller may not see now (it, its group) is left out of the records, and a group
     // filter matches only the groups the caller sees, so asking for that group never counts it either.
     // A private kind's counted runs are all the caller's own (`runVisibility` keeps no one else's), and its people see
     // its subjects, so they stay named; its bound only keeps other people's runs out.
-    const shown = (run: ReportRunRow): boolean =>
+    const shown = (run: UsageRun): boolean =>
       facts.get(`${run.subjectKind}:${run.subjectId}`)?.visible === true &&
-      (inside === null ||
-        inside.has(run.id) ||
-        deps.subjects.get(run.subjectKind)?.private === true);
-    const groupOf = (run: ReportRunRow) =>
+      (run.inside || deps.subjects.get(run.subjectKind)?.private === true);
+    const groupOf = (run: UsageRun) =>
       shown(run)
         ? (facts.get(`${run.subjectKind}:${run.subjectId}`)?.group?.id ?? null)
         : null;

@@ -6,10 +6,9 @@ import type { AppPluginApplication } from '@nocobase/app-server/plugins';
 import { agentsToken } from '../server/tokens.js';
 import { AgentsProvider } from '../server/providers/agents.js';
 import type { Knex } from 'knex';
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, expect, it, vi } from 'vitest';
 import { createHarness, type Harness } from './harness.js';
 import { runsRepo } from '../server/core/runs/run.store.js';
-import { usageReadLimits } from '../server/core/reports/report.service.js';
 import {
   runVisibility,
   subjectVisibleForRun,
@@ -395,163 +394,106 @@ it('keeps list and statistics visibility reads constant as the dataset grows', a
 /** The reads of a usage report's runs by id. */
 const runReads = (sql: readonly string[]) =>
   sql.filter((text) =>
-    /from `?"?ag_runs`?"? as `?"?run`?"? where `?"?run`?"?\.`?"?id`?"? in/iu.test(
+    /from `?"?ag_runs`?"? as `?"?run`?"? .*?where `?"?run`?"?\.`?"?id`?"? in/iu.test(
       text,
     ),
   );
 
-describe('usage report reads under a parameter limit', () => {
-  type Query = { sql: string; bindings: readonly unknown[] };
-  const packsStringLists = ['sqlite', 'postgres'].includes(
-    process.env.NOCOBASE_TEST_DB_DIALECT || 'sqlite',
-  );
-  /**
-   * `total` runs bob woke on subjects 0, 1, …, two usage records each, of a kind whose bound binds `scope` ids of its
-   * own and reads other tables through `exists`, as Studio's issues for a reader in that many projects; subject 3 is
-   * outside it.
-   */
-  async function fixture(scope: number, total: number) {
-    h = await createHarness();
-    const sample = h.services.subjects.get('sample')!;
-    const projects = [
-      '3',
-      ...Array.from({ length: scope - 1 }, (_, i) => `project-${i}`),
-    ];
-    h.services.subjects.register({
-      ...sample,
-      kind: 'measured',
-      visibleSubjects: async () => (eb, column) =>
-        eb.and([
-          eb(column, 'not in', projects),
-          eb.exists(
-            eb
-              .selectFrom('agAgents as agent')
-              .select('agent.id')
-              .where('agent.id', 'is not', null),
-          ),
-        ]),
-    });
-    const conn = h.database.connection();
-    const client = await conn.client<Knex>();
-    const agentId = await h.createAgent();
-    const seedId = await h.enqueue(agentId, 'seed', { actorUserId: 'bob' });
-    const { revision: _revision, ...seed } = (await runsRepo(conn).findOne({
-      filter: { id: seedId },
-    }))!;
-    await runsRepo(conn).deleteMany({ filter: { id: seedId } });
-    const ids = Array.from(
-      { length: total },
-      (_, i) => `run-${String(i).padStart(4, '0')}`,
-    );
-    for (let at = 0; at < total; at += 10) {
-      const chunk = ids.slice(at, at + 10);
-      await runsRepo(conn).createMany({
-        values: chunk.map((id) => ({
-          ...seed,
-          id,
-          subjectKind: 'measured',
-          subjectId: String(Number(id.slice(4))),
-        })),
-      });
-      await conn.repository('agRunUsage').createMany({
-        values: chunk.flatMap((runId) =>
-          [0, 1].map((part) => ({
-            id: `usage-${runId}-${part}`,
-            runId,
-            tool: 'claude',
-            modelService: null,
-            model: `m${part}`,
-            inputTokens: 1,
-            outputTokens: 0,
-            cacheReadTokens: 0,
-            cacheWriteTokens: 0,
-            reasoningTokens: 0,
-            createdAt: h.clock.now().toISOString(),
-          })),
+it('scopes the usage read and reads each distinct run ID in batches of 500', async () => {
+  const total = 501;
+  h = await createHarness();
+  const sample = h.services.subjects.get('sample')!;
+  h.services.subjects.register({
+    ...sample,
+    kind: 'measured',
+    visibleSubjects: async () => (eb, column) =>
+      eb.and([
+        eb(column, '!=', '3'),
+        eb.exists(
+          eb
+            .selectFrom('agAgents as agent')
+            .select('agent.id')
+            .where('agent.id', 'is not', null),
         ),
-      });
-    }
-    // Bob woke every run, so he counts the one outside the bound too, unnamed.
-    const read = async (parameters: number | null) => {
-      const queries: Query[] = [];
-      const listener = (query: {
-        sql: string;
-        bindings?: readonly unknown[];
-      }) => queries.push({ sql: query.sql, bindings: query.bindings ?? [] });
-      const limit = usageReadLimits.parameters;
-      usageReadLimits.parameters = parameters;
-      client.on('query', listener);
-      try {
-        const report = await h.services.reporting.usage(
-          { userId: 'bob', allRuns: true },
-          { groupBy: 'subject' },
-        );
-        return {
-          report,
-          usage: queries.filter((query) => /ag_run_usage/iu.test(query.sql)),
-          runs: queries.filter((query) => runReads([query.sql]).length),
-        };
-      } finally {
-        client.removeListener('query', listener);
-        usageReadLimits.parameters = limit;
-      }
-    };
-    return { read };
+      ]),
+  });
+  const conn = h.database.connection();
+  const client = await conn.client<Knex>();
+  const agentId = await h.createAgent();
+  const seedId = await h.enqueue(agentId, 'seed', { actorUserId: 'bob' });
+  const { revision: _revision, ...seed } = (await runsRepo(conn).findOne({
+    filter: { id: seedId },
+  }))!;
+  await runsRepo(conn).deleteMany({ filter: { id: seedId } });
+  const ids = Array.from(
+    { length: total },
+    (_, i) => `run-${String(i).padStart(4, '0')}`,
+  );
+  for (let at = 0; at < total; at += 10) {
+    const chunk = ids.slice(at, at + 10);
+    await runsRepo(conn).createMany({
+      values: chunk.map((id) => ({
+        ...seed,
+        id,
+        subjectKind: 'measured',
+        subjectId: String(Number(id.slice(4))),
+      })),
+    });
+    await conn.repository('agRunUsage').createMany({
+      values: chunk.flatMap((runId) =>
+        [0, 1].map((part) => ({
+          id: `usage-${runId}-${part}`,
+          runId,
+          tool: 'claude',
+          modelService: null,
+          model: `m${part}`,
+          inputTokens: 1,
+          outputTokens: 0,
+          cacheReadTokens: 0,
+          cacheWriteTokens: 0,
+          reasoningTokens: 0,
+          createdAt: h.clock.now().toISOString(),
+        })),
+      ),
+    });
   }
-  const expectReport = (
-    report: Awaited<ReturnType<typeof h.services.reporting.usage>>,
-    total: number,
-  ) => {
-    // Bob sees every subject but 3 by name; subject 3 is one unnamed row.
-    expect(report.rows).toHaveLength(total);
+  const captured: { sql: string; bindings?: readonly unknown[] }[] = [];
+  const listener = (query: (typeof captured)[number]) => captured.push(query);
+  client.on('query', listener);
+  try {
+    const report = await h.services.reporting.usage(
+      { userId: 'bob', allRuns: true },
+      { groupBy: 'subject' },
+    );
+    const sql = captured.map((query) => query.sql);
+    const usage = sql.filter((statement) => /ag_run_usage/iu.test(statement));
+    expect(usage).toHaveLength(1);
+    expect(usage[0]).toMatch(/where.*exists/iu);
+    const batches = captured.filter((query) => runReads([query.sql]).length);
+    expect(batches).toHaveLength(2);
+    const requested = batches.map((query) =>
+      query.bindings?.filter(
+        (value) => typeof value === 'string' && value.startsWith('run-'),
+      ),
+    );
+    expect(requested.map((batch) => batch?.length)).toEqual([500, 1]);
+    expect(new Set(requested.flat())).toEqual(new Set(ids));
+    for (const query of batches)
+      expect(query.sql).not.toMatch(/ag_run_usage/iu);
+    expect(report.totals).toMatchObject({
+      runs: total,
+      inputTokens: total * 2,
+    });
     expect(report.rows.find((row) => row.key === '')).toMatchObject({
       name: null,
       runs: 1,
       inputTokens: 2,
     });
+    expect(report.rows.find((row) => row.key === 'measured:500')).toBeDefined();
     expect(report.rows.find((row) => row.key === 'measured:3')).toBeUndefined();
-    expect(report.totals).toMatchObject({
-      runs: total,
-      inputTokens: total * 2,
-    });
-  };
-
-  it('reads the runs once each, in batches the statement’s parameters leave room for', async () => {
-    const { read } = await fixture(500, 1_000);
-    // The project list binds as a single value, leaving most of the budget for the run IDs.
-    const batched = await read(999);
-    expect(batched.usage).toHaveLength(1);
-    expect(batched.runs).toHaveLength(packsStringLists ? 2 : 3);
-    for (const query of batched.runs) {
-      expect(query.bindings.length).toBeLessThanOrEqual(999);
-      expect(query.sql).not.toMatch(/ag_run_usage/iu);
-    }
-    expect(
-      batched.runs.flatMap((query) =>
-        query.bindings.filter(
-          (value) => typeof value === 'string' && value.startsWith('run-'),
-        ),
-      ),
-    ).toHaveLength(1_000);
-    const whole = await read(32_766);
-    expect(whole.runs).toHaveLength(1);
-    expect(whole.report).toEqual(batched.report);
-    expectReport(batched.report, 1_000);
-  });
-
-  it.runIf(packsStringLists).each([988, 2_000])(
-    'keeps the same visible and anonymous totals with %i scope IDs under a 999-parameter limit',
-    async (scope) => {
-      const { read } = await fixture(scope, 30);
-      const { report, usage, runs } = await read(999);
-      expect(usage).toHaveLength(1);
-      expect(usage[0]!.bindings.length).toBeLessThan(5);
-      expect(usage[0]!.sql).not.toMatch(/not in/iu);
-      expect(runs).toHaveLength(1);
-      expect(runs[0]!.bindings.length).toBeLessThan(40);
-      expectReport(report, 30);
-    },
-  );
+  } finally {
+    client.removeListener('query', listener);
+  }
 });
 
 it('keeps private sessions participant-only even for unrestricted readers and pages past them', async () => {

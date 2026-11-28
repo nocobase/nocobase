@@ -110,12 +110,6 @@ export interface ExpressionBuilder {
   ): Expression<SqlBool>;
   not(expression: ExpressionInput<SqlBool>): Expression<SqlBool>;
 
-  /**
-   * Bind multi-value string lists in this predicate as sets on supported drivers
-   * when column metadata confirms a compatible text type.
-   */
-  compactStringLists(expression: ExpressionInput<SqlBool>): Expression<SqlBool>;
-
   between(
     expr: ReferenceExpression | Expression<unknown>,
     start: unknown,
@@ -255,8 +249,6 @@ export interface SelectQuery<
   exists(): Promise<boolean>;
 
   compile(): CompiledQuery;
-  /** Compile the executable select using the same field metadata as execute(). */
-  compileForExecution(): Promise<CompiledQuery>;
 }
 
 export interface InsertQuery<TRecord extends Row = Row> {

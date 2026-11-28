@@ -50,10 +50,6 @@ export const postgresDriver: DatabaseDriverDefinition<
       hasNativeResults: true,
       aggregateProjection: ({ expression }) => expression,
     },
-    query: {
-      stringListSource: ({ client, values }) =>
-        client.raw('select unnest(?::text[])', [[...values]]),
-    },
     schema: {
       columnType: ({ column }) =>
         column.type === 'datetimeTz'

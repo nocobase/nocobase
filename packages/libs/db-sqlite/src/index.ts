@@ -50,8 +50,6 @@ export const sqliteDriver: DatabaseDriverDefinition<
         client.raw('nb_decimal_text(?)', [expression]),
     },
     query: {
-      stringListSource: ({ client, values }) =>
-        client.raw('select value from json_each(?)', [JSON.stringify(values)]),
       wrapAggregateOrdering: ({ client, ordering, functionName }) =>
         ['sum', 'avg'].includes(functionName)
           ? client.raw('nb_decimal_key(?)', [ordering])
