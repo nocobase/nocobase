@@ -174,6 +174,11 @@ export interface ExpressionBuilder {
     expressions: readonly ExpressionInput<SqlBool>[] | Record<string, unknown>,
   ): Expression<SqlBool>;
   not(expression: ExpressionInput<SqlBool>): Expression<SqlBool>;
+  /**
+   * Bind multi-value string lists in this predicate as sets when the driver supports it.
+   * Use for text-column comparisons in `in` and `not in`, including in nested subqueries.
+   */
+  compactStringLists(expression: ExpressionInput<SqlBool>): Expression<SqlBool>;
   between(
     expr: ReferenceExpression | Expression<unknown>,
     start: unknown,

@@ -55,6 +55,11 @@ export interface DatabaseDriverRuntime {
 }
 
 export interface DatabaseQueryRuntimeStrategy {
+  /** A single-column SQL source for a bound set of strings, for use as the RHS of IN. */
+  readonly stringListSource?: (context: {
+    client: Knex;
+    values: readonly string[];
+  }) => Knex.Raw;
   readonly insertManyFallback?: (collection: CollectionDefinition) => boolean;
   readonly configureAggregateResults?: (context: {
     query: Knex.QueryBuilder;

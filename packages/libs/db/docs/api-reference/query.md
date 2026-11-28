@@ -15,13 +15,15 @@ QueryAdapter composes database queries. Obtain it from `db.query(name?)` or `con
 | `InsertQuery`             | `values`, `execute`, `compile`                                                                                                                       |
 | `UpdateQuery`             | `set`, `where`, `whereRef`, `clearWhere`, `allowAllRows`, `execute`, `compile`                                                                       |
 | `DeleteQuery`             | `where`, `whereRef`, `clearWhere`, `allowAllRows`, `execute`, `compile`                                                                              |
-| `ExpressionBuilder`       | Comparison call signature, `ref`, `val`, `and`, `or`, `not`, `between`, `exists`, `selectFrom`, `parens`, and `fn` aggregates                        |
+| `ExpressionBuilder`       | Comparison call signature, `ref`, `val`, `and`, `or`, `not`, `compactStringLists`, `between`, `exists`, `selectFrom`, `parens`, and `fn` aggregates  |
 | `JoinBuilder`             | `on`, `onRef`                                                                                                                                        |
 | `SubqueryBuilder`         | `select`, `selectAll`, `distinct`, `where`, `whereRef`, `orderBy`, `limit`, `offset`, `as`                                                           |
 
 ## Expressions, joins, subqueries and aggregates
 
 `ExpressionBuilder` supplies comparisons, references, values, Boolean composition and subqueries. `fn` supplies aggregate expressions. Join callbacks receive `JoinBuilder`; subqueries use `SubqueryBuilder` and can be aliased. These supporting contracts are reachable through callbacks without requiring root-exported constructors.
+
+Use `eb.compactStringLists(predicate)` when a predicate compares text columns to large lists of strings. SQLite and PostgreSQL bind each list as one value, including lists inside the predicate's subqueries. Drivers without this capability use the usual bindings.
 
 Use the [expression and query signatures](./signatures/query.md) for overloads and the existing [where](../zh-CN/query/where.md), [join](../zh-CN/query/joins.md) and [aggregate](../zh-CN/query/aggregates.md) pages for examples.
 

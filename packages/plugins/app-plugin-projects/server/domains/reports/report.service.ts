@@ -36,10 +36,9 @@ import type { FilterBuilder, FilterNode } from '@nocobase/db';
 
 import type { StatusDefinition } from '../../../shared/issues.js';
 import { FIXED_STATUSES } from '../../../shared/statuses.js';
-import { scopeOf, type Viewer } from '../../access/viewer.js';
-import { oneOf } from '../../kernel/db.js';
+import type { Viewer } from '../../access/viewer.js';
 import type { TxRunner } from '../../kernel/tx.js';
-import { visibleIssues } from '../issues/issue.access.js';
+import { visibleIssues, visibleIssueSubjects } from '../issues/issue.access.js';
 import { visibleProjectsFilter } from '../projects/project.access.js';
 import type { ProjectRecord } from '../projects/project.store.js';
 
@@ -716,23 +715,25 @@ export function createIssueReports(deps: {
       const rows = await conn.query
         .selectFrom('pmIssues')
         .select(['id', 'identifier', 'title', 'projectId', 'deletedAt'])
-        .where('id', 'in', wanted)
+        .where((eb) => eb.compactStringLists(eb('id', 'in', wanted)))
         .execute<
           Pick<
             IssueRow,
             'id' | 'identifier' | 'title' | 'projectId' | 'deletedAt'
           >
         >();
+      const bound = visibleIssueSubjects(viewer);
       const visible = new Set(
-        scopeOf(viewer, 'pm.issues', 'view') === 'all' && !viewer.projectIds
-          ? rows.filter((row) => !row.deletedAt).map((row) => row.id)
-          : (
-              await conn.repository<IssueRow>('pmIssues').findMany({
-                filter: (f) =>
-                  f.and([oneOf(f, 'id', wanted), visibleIssues(f, viewer)]),
-                select: (select) => select.fields('id'),
-              })
-            ).map((row) => row.id),
+        bound
+          ? await conn.query
+              .selectFrom('pmIssues as issue')
+              .where((eb) =>
+                eb.compactStringLists(
+                  eb.and([eb('issue.id', 'in', wanted), bound(eb, 'issue.id')]),
+                ),
+              )
+              .pluck<string>('issue.id')
+          : rows.filter((row) => !row.deletedAt).map((row) => row.id),
       );
       const projectIds = [
         ...new Set(rows.map((row) => row.projectId).filter(Boolean)),
@@ -744,7 +745,9 @@ export function createIssueReports(deps: {
               await conn.query
                 .selectFrom('pmProjects')
                 .select(['id', 'name'])
-                .where('id', 'in', projectIds)
+                .where((eb) =>
+                  eb.compactStringLists(eb('id', 'in', projectIds)),
+                )
                 .execute<{ id: string; name: string }>()
             ).map((project) => [project.id, project.name]),
       );

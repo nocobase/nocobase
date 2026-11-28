@@ -379,8 +379,8 @@ describe('usage report reads under a parameter limit', () => {
       { length: total },
       (_, i) => `run-${String(i).padStart(4, '0')}`,
     );
-    for (let at = 0; at < total; at += 20) {
-      const chunk = ids.slice(at, at + 20);
+    for (let at = 0; at < total; at += 10) {
+      const chunk = ids.slice(at, at + 10);
       await runsRepo(conn).createMany({
         values: chunk.map((id) => ({
           ...seed,
@@ -453,44 +453,41 @@ describe('usage report reads under a parameter limit', () => {
   };
 
   it('reads the runs once each, in batches the statement’s parameters leave room for', async () => {
-    const { read } = await fixture(500, 700);
-    // SQLite's oldest limit: 700 ids beside some 500 parameters of the bound take two reads, each within 999.
+    const { read } = await fixture(500, 1_000);
+    // The project list binds as a single value, leaving most of the budget for the run IDs.
     const batched = await read(999);
     expect(batched.usage).toHaveLength(1);
     expect(batched.runs).toHaveLength(2);
-    for (const query of batched.runs)
+    for (const query of batched.runs) {
       expect(query.bindings.length).toBeLessThanOrEqual(999);
-    // The same report as when every id fits in one read, the dialect's own limit.
-    const whole = await read(null);
+      expect(query.sql).not.toMatch(/ag_run_usage/iu);
+    }
+    expect(
+      batched.runs.flatMap((query) =>
+        query.bindings.filter(
+          (value) => typeof value === 'string' && value.startsWith('run-'),
+        ),
+      ),
+    ).toHaveLength(1_000);
+    const whole = await read(32_766);
     expect(whole.runs).toHaveLength(1);
     expect(whole.report).toEqual(batched.report);
-    expectReport(batched.report, 700);
+    expectReport(batched.report, 1_000);
   });
 
-  it('binds none of the bound’s ids in the usage read, however many the reader sees', async () => {
-    const { read } = await fixture(2_000, 30);
-    const { report, usage, runs } = await read(null);
-    expect(usage).toHaveLength(1);
-    expect(usage[0]!.bindings.length).toBeLessThan(10);
-    expect(usage[0]!.sql).not.toMatch(/not in/iu);
-    expect(runs).toHaveLength(1);
-    expectReport(report, 30);
-    // Up to a bound that leaves room for one id in 999 parameters, one id a read.
-    const { read: tight } = await fixture(987, 5);
-    const close = await tight(999);
-    expect(close.usage[0]!.bindings.length).toBeLessThan(10);
-    expect(close.runs).toHaveLength(5);
-    for (const query of close.runs) {
-      expect(query.bindings.length).toBeLessThanOrEqual(999);
-      expect(
-        query.bindings.filter((value) => /^run-/u.test(String(value))),
-      ).toHaveLength(1);
-    }
-    expectReport(close.report, 5);
-    // A bound of more than that fails plainly before any read binds past the limit.
-    const { read: over } = await fixture(988, 3);
-    await expect(over(999)).rejects.toThrow(/leaving none for the runs/u);
-  });
+  it.each([988, 2_000])(
+    'keeps the same visible and anonymous totals with %i scope IDs under a 999-parameter limit',
+    async (scope) => {
+      const { read } = await fixture(scope, 30);
+      const { report, usage, runs } = await read(999);
+      expect(usage).toHaveLength(1);
+      expect(usage[0]!.bindings.length).toBeLessThan(5);
+      expect(usage[0]!.sql).not.toMatch(/not in/iu);
+      expect(runs).toHaveLength(1);
+      expect(runs[0]!.bindings.length).toBeLessThan(40);
+      expectReport(report, 30);
+    },
+  );
 });
 
 it('keeps private sessions participant-only even for unrestricted readers and pages past them', async () => {

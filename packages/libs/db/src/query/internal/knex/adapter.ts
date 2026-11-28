@@ -1402,6 +1402,7 @@ type ExpressionNode =
   | { type: 'and'; expressions: ExpressionNode[] }
   | { type: 'or'; expressions: ExpressionNode[] }
   | { type: 'not'; expression: ExpressionNode }
+  | { type: 'compactStringLists'; expression: ExpressionNode }
   | { type: 'between'; expression: OperandNode; start: unknown; end: unknown }
   | { type: 'exists'; query: KnexSubqueryBuilder }
   | { type: 'ref'; reference: ReferenceExpression }
@@ -1439,6 +1440,7 @@ interface TableScope {
   readonly numericCollections?: ReadonlyMap<string, CollectionDefinition>;
   readonly qualifiers: ReadonlyMap<string, string>;
   readonly parent?: TableScope;
+  readonly compactStringLists?: boolean;
   readonly aggregates?: ReadonlyMap<
     string,
     Extract<ExpressionNode, { type: 'aggregate' }>
@@ -1542,6 +1544,11 @@ function createExpressionBuilder(
   builder.not = (expression) =>
     createExpression({
       type: 'not',
+      expression: resolveExpressionInput(expression, builder),
+    });
+  builder.compactStringLists = (expression) =>
+    createExpression({
+      type: 'compactStringLists',
       expression: resolveExpressionInput(expression, builder),
     });
   builder.between = (expression, start, end) =>
@@ -1864,6 +1871,17 @@ function applyExpressionNode(
     case 'not':
       applyNotExpression(query, expression.expression, context, bool);
       break;
+    case 'compactStringLists':
+      applyExpressionNode(
+        query,
+        expression.expression,
+        {
+          ...context,
+          tableScope: { ...context.tableScope, compactStringLists: true },
+        },
+        bool,
+      );
+      break;
     case 'between':
       applyBetweenExpression(query, expression, context, bool, false);
       break;
@@ -2049,8 +2067,28 @@ function applyBinaryExpression(
     bool,
     lhs,
     op,
-    normalizeQueryComparisonValue(context, expression.lhs, rhs.value, op),
+    compactStringList(context, op, rhs.value) ??
+      normalizeQueryComparisonValue(context, expression.lhs, rhs.value, op),
   );
+}
+
+function compactStringList(
+  context: ExpressionCompileContext,
+  op: ComparisonOperator,
+  value: unknown,
+): Knex.Raw | undefined {
+  if (
+    !context.tableScope.compactStringLists ||
+    (op !== 'in' && op !== 'not in') ||
+    !Array.isArray(value) ||
+    value.length < 2 ||
+    !value.every((item): item is string => typeof item === 'string')
+  )
+    return undefined;
+  return getDatabaseDriverRuntime(context.client)?.query?.stringListSource?.({
+    client: context.client,
+    values: value,
+  });
 }
 
 /**
@@ -2386,6 +2424,17 @@ function applyJoinExpressionNode(
     case 'not':
       applyJoinNotExpression(clause, expression.expression, context, bool);
       break;
+    case 'compactStringLists':
+      applyJoinExpressionNode(
+        clause,
+        expression.expression,
+        {
+          ...context,
+          tableScope: { ...context.tableScope, compactStringLists: true },
+        },
+        bool,
+      );
+      break;
     case 'between':
       applyJoinBetweenExpression(clause, expression, context, bool, false);
       break;
@@ -2499,7 +2548,14 @@ function applyJoinBinaryExpression(
   }
 
   if (rhs.type === 'value') {
-    applyJoinValueComparison(clause, context, bool, lhs, op, rhs.value);
+    applyJoinValueComparison(
+      clause,
+      context,
+      bool,
+      lhs,
+      op,
+      compactStringList(context, op, rhs.value) ?? rhs.value,
+    );
     return;
   }
 
@@ -2935,6 +2991,7 @@ function createTableScope(
     parent,
     tables: tableExpressions,
     numericCollections: parent?.numericCollections,
+    compactStringLists: parent?.compactStringLists,
   };
 }
 
@@ -3632,6 +3689,7 @@ async function collectNumericCollections(
       for (const expression of node.expressions) await visit(expression);
     } else if (
       node.type === 'not' ||
+      node.type === 'compactStringLists' ||
       node.type === 'parens' ||
       node.type === 'aliasedExpression' ||
       node.type === 'decimalResult' ||

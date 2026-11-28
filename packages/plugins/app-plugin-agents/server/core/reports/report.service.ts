@@ -96,12 +96,10 @@ const USAGE_RUN_COLUMNS = [
 type Row = Record<string, unknown>;
 
 /**
- * The most parameters one statement may bind, by dialect: SQLite as bundled with better-sqlite3 (32766 since SQLite
- * 3.32), the 16-bit count of PostgreSQL's and MySQL's protocols, SQL Server's 2100; 999, SQLite's oldest default,
- * for any other.
+ * Use SQLite's portable budget and the server dialects' protocol limits.
  */
 const PARAMETER_LIMITS: Readonly<Record<string, number>> = {
-  sqlite: 32_766,
+  sqlite: 999,
   postgres: 65_535,
   mysql: 65_535,
   mariadb: 65_535,
@@ -434,14 +432,15 @@ export function createReportService(deps: {
                   .selectFrom('agRuns as inside')
                   .select('inside.id')
                   .whereRef('inside.id', '=', 'run.id')
-                  .where((inner) => bounds(inner, 'inside'))
+                  .where((inner) =>
+                    inner.compactStringLists(bounds(inner, 'inside')),
+                  )
                   .as('insideId'),
               ]
             : []),
         ])
         .where('run.id', 'in', batch);
-    // The ids fill what the statement's own parameters leave of the limit, and what the adapter may add when it runs
-    // it: at most one a column read (PostgreSQL formats each time column with one).
+    // SQLite adds no projection parameters. Server drivers may bind values when formatting the selected fields.
     const limit =
       usageReadLimits.parameters ?? PARAMETER_LIMITS[conn.dialect] ?? 999;
     const own =
@@ -449,7 +448,7 @@ export function createReportService(deps: {
         ? 0
         : runsOf(ids.slice(0, 1)).compile().parameters.length -
           1 +
-          USAGE_RUN_COLUMNS.length;
+          (conn.dialect === 'sqlite' ? 0 : USAGE_RUN_COLUMNS.length);
     if (ids.length > 0 && own >= limit)
       throw new Error(
         `The visibility of the usage report's subjects needs ${own} parameters of the ${limit} one statement may bind, leaving none for the runs.`,
