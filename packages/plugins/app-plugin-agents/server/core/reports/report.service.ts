@@ -11,8 +11,9 @@
  * Who sees what: a caller who may see every run (`allRuns`, which the application decides) counts every run, anyone
  * else the runs they started or own; either way only runs on subjects they may see (`SubjectReports.describe`).
  */
-import { runVisibility, subjectBounds } from '../runs/access.js';
+import { runVisibility } from '../runs/access.js';
 import type { DatabaseConnection, SelectQuery } from '@nocobase/db';
+import type { Knex } from 'knex';
 
 import {
   DEFAULT_REPORT_DAYS,
@@ -25,6 +26,7 @@ import {
   type RunFigures,
   type UsageGroupBy,
   type ModelUsageReport,
+  type PriceBook,
   type UsageQuery,
   type UsageReport,
 } from '../../../shared/reports.js';
@@ -38,9 +40,28 @@ import type { RunRecord } from '../runs/run.store.js';
 import { reliability } from './metrics.js';
 import { modelUsageRows } from './model-usage.js';
 import { listPrices } from './prices.js';
-import { aggregateUsage, type UsageRecord } from './usage.js';
+import {
+  aggregateUsage,
+  mergeUsageBuckets,
+  priceBuckets,
+  type UsageRecord,
+} from './usage.js';
+import {
+  createUsageQueries,
+  usageScope,
+  type SubjectBucket,
+  type SubjectProjection,
+  type UsageFilter,
+} from './usage-query.js';
 
 const DAY_MS = 24 * 3600 * 1000;
+const SQL_USAGE_DIALECTS = new Set([
+  'postgres',
+  'kingbase',
+  'sqlite',
+  'mysql',
+  'oceanbase',
+]);
 
 /** What the reports read of a run: never its texts or execution history. */
 type ReportRunRow = Pick<
@@ -95,7 +116,6 @@ const USAGE_RUN_COLUMNS = [
 
 type Row = Record<string, unknown>;
 type UsageRun = ReportRunRow & { readonly inside: boolean };
-const USAGE_RUN_BATCH_SIZE = 500;
 
 const text = (value: unknown): string =>
   typeof value === 'string'
@@ -158,6 +178,10 @@ export interface ReportService {
   /** `from` / `to` as UTC days; 400 when they are not dates, or out of order, or span more than 366 days. */
   range(query: { readonly from?: string; readonly to?: string }): ReportRange;
   usage(caller: ReportCaller, query: UsageQuery): Promise<UsageReport>;
+  usageGroups(
+    caller: ReportCaller,
+    query: { readonly from?: string; readonly to?: string },
+  ): Promise<{ id: string; name: string }[]>;
   /** The runs started in `range` (of `groupId`'s subjects, when given), and the usage reported in it. */
   runFigures(
     caller: ReportCaller,
@@ -333,38 +357,39 @@ export function createReportService(deps: {
     );
   }
 
-  /**
-   * The usage reported in the range of the runs the caller counts: one scoped usage read, then one run read per
-   * batch of distinct run IDs.
-   */
+  function subjectAccess(facts: ReadonlyMap<string, SubjectFacts>) {
+    const binding = (run: Pick<ReportRunRow, 'subjectKind' | 'subjectId'>) =>
+      deps.subjects.get(run.subjectKind);
+    const fact = (run: Pick<ReportRunRow, 'subjectKind' | 'subjectId'>) =>
+      facts.get(`${run.subjectKind}:${run.subjectId}`);
+    // Participants keep their figures outside the naming bound. A private kind already restricts
+    // its runs to participants and can describe its subjects to them.
+    const shown = (
+      run: Pick<UsageRun, 'subjectKind' | 'subjectId' | 'inside'>,
+    ) =>
+      fact(run)?.visible === true &&
+      (run.inside || binding(run)?.private === true);
+    return {
+      shown,
+      groupOf: (run: Pick<UsageRun, 'subjectKind' | 'subjectId' | 'inside'>) =>
+        shown(run) ? (fact(run)?.group ?? null) : null,
+      counted: (run: Pick<ReportRunRow, 'subjectKind' | 'subjectId'>) =>
+        Boolean(binding(run)?.visibleSubjects || fact(run)?.visible),
+    };
+  }
+
+  /** Usage detail for the run figures, with the run fields and naming bound from the same SQL read. */
   async function usageRecords(
     conn: DatabaseConnection,
     caller: ReportCaller,
     range: ReportRange,
-    filter: {
-      readonly groupId: string | null;
-      readonly agentId?: string | null;
-      readonly userId?: string | null;
-      readonly subject?: { readonly kind: string; readonly id: string } | null;
-    },
+    filter: UsageFilter & { readonly groupId?: string | null },
+    preserveCostOrder = false,
   ) {
-    // Read once: what the caller may see of each subject kind now, for the runs they count and for naming subjects.
-    const bounds = await subjectBounds(conn, deps.subjects, caller.userId);
-    const visibility = await runVisibility(
-      conn,
-      deps.subjects,
-      caller.userId,
-      caller.allRuns,
-      'run',
-      bounds,
-    );
-    // The usage of the runs the caller may count, in one read. The caller counts the runs they woke or own even on
-    // subjects they may no longer see (`runVisibility`).
-    let usageQuery = conn.query
-      .selectFrom('agRunUsage as usage')
-      .innerJoin('agRuns as run', 'run.id', 'usage.runId')
-      .select([
-        'usage.runId as runId',
+    const scope = await usageScope(conn, deps.subjects, caller, range, filter);
+    const query = scope.withInside(
+      scope.base.select([
+        ...USAGE_RUN_COLUMNS.map((column) => `run.${column} as ${column}`),
         'usage.tool as tool',
         'usage.modelService as modelService',
         'usage.model as model',
@@ -373,72 +398,30 @@ export function createReportService(deps: {
         'usage.cacheReadTokens as cacheReadTokens',
         'usage.cacheWriteTokens as cacheWriteTokens',
         'usage.reasoningTokens as reasoningTokens',
-        'usage.createdAt as createdAt',
-      ])
-      .where('usage.createdAt', '>=', range.start)
-      .where('usage.createdAt', '<', range.end)
-      .where(visibility);
-    if (filter.agentId)
-      usageQuery = usageQuery.where('run.agentId', '=', filter.agentId);
-    if (filter.userId)
-      usageQuery = usageQuery.where('run.actorUserId', '=', filter.userId);
-    if (filter.subject)
-      usageQuery = usageQuery
-        .where('run.subjectKind', '=', filter.subject.kind)
-        .where('run.subjectId', '=', filter.subject.id);
-    const usage = await usageQuery.orderBy('usage.id').execute<Row>();
-    const ids = [...new Set(usage.map((row) => text(row.runId)))];
-    const runs: UsageRun[] = [];
-    for (let at = 0; at < ids.length; at += USAGE_RUN_BATCH_SIZE) {
-      let query = conn.query
-        .selectFrom('agRuns as run')
-        .select(USAGE_RUN_COLUMNS.map((column) => `run.${column} as ${column}`))
-        .where('run.id', 'in', ids.slice(at, at + USAGE_RUN_BATCH_SIZE));
-      if (bounds) {
-        // QueryAdapter cannot project a predicate. A primary-key match gives its truth value in the same read.
-        // Double negation renders the bound through the WHERE expression compiler, whose EXISTS syntax works on SQLite.
-        query = query
-          .leftJoin('agRuns as scopeRun', (join) =>
-            join
-              .onRef('scopeRun.id', '=', 'run.id')
-              .on((eb) => eb.not(eb.not(bounds(eb, 'run')))),
-          )
-          .select('scopeRun.id as insideId');
-      }
-      const rows = await query.execute<Row>();
-      for (const row of rows) {
-        const run = runRow(row);
-        const inside = !bounds || row.insideId != null;
-        // Keep the permission check if the run or its subject changed between the two reads.
-        if (
-          (!caller.allRuns || !inside) &&
-          run.actorUserId !== caller.userId &&
-          run.ownerUserId !== caller.userId
-        )
-          continue;
-        runs.push({ ...run, inside });
-      }
+        'usage.createdAt as usageAt',
+      ]),
+      'insideId',
+    );
+    const usage = await (
+      preserveCostOrder ? query.orderBy('usage.id') : query
+    ).execute<Row>();
+    const byId = new Map<string, UsageRun>();
+    for (const row of usage) {
+      const id = text(row.id);
+      if (!byId.has(id))
+        byId.set(id, {
+          ...runRow(row),
+          inside: !scope.hasBounds || row.insideId != null,
+        });
     }
-    const { runs: counted, facts } = await countable(conn, caller, runs, null);
-    // What identifies a subject the caller may not see now (it, its group) is left out of the records, and a group
-    // filter matches only the groups the caller sees, so asking for that group never counts it either.
-    // A private kind's counted runs are all the caller's own (`runVisibility` keeps no one else's), and its people see
-    // its subjects, so they stay named; its bound only keeps other people's runs out.
-    const shown = (run: UsageRun): boolean =>
-      facts.get(`${run.subjectKind}:${run.subjectId}`)?.visible === true &&
-      (run.inside || deps.subjects.get(run.subjectKind)?.private === true);
-    const groupOf = (run: UsageRun) =>
-      shown(run)
-        ? (facts.get(`${run.subjectKind}:${run.subjectId}`)?.group?.id ?? null)
-        : null;
-    const kept = filter.groupId
-      ? counted.filter((run) => groupOf(run) === filter.groupId)
-      : counted;
-    const byId = new Map(kept.map((run) => [run.id, run]));
+    const facts = await factsOf(conn, caller, [...byId.values()]);
+    const { shown, groupOf, counted } = subjectAccess(facts);
     const records: UsageRecord[] = [];
     for (const row of usage) {
-      const run = byId.get(text(row.runId));
-      if (!run) continue;
+      const run = byId.get(text(row.id))!;
+      const group = groupOf(run)?.id ?? null;
+      if (!counted(run) || (filter.groupId && group !== filter.groupId))
+        continue;
       const started = run.startedAt;
       const finished = run.finishedAt;
       records.push({
@@ -453,8 +436,8 @@ export function createReportService(deps: {
         ...(shown(run)
           ? { subjectKind: run.subjectKind, subjectId: run.subjectId }
           : { subjectKind: '', subjectId: '' }),
-        groupId: groupOf(run),
-        day: (iso(row.createdAt) ?? '').slice(0, 10),
+        groupId: group,
+        day: (iso(row.usageAt) ?? '').slice(0, 10),
         durationMs:
           started && finished
             ? Math.max(0, Date.parse(finished) - Date.parse(started))
@@ -512,6 +495,187 @@ export function createReportService(deps: {
     }
   }
 
+  const bucketSubject = (row: SubjectBucket) => ({
+    subjectKind: String(row.subject_kind ?? ''),
+    subjectId: String(row.subject_id ?? ''),
+    inside: row.inside === undefined || Boolean(row.inside),
+  });
+
+  async function usageQueries(
+    conn: DatabaseConnection,
+    caller: ReportCaller,
+    range: ReportRange,
+    filter: UsageFilter,
+    online: boolean,
+  ) {
+    const scope = await usageScope(conn, deps.subjects, caller, range, filter);
+    const legacyKinds = deps.subjects
+      .list()
+      .filter((kind) => kind.reports && !kind.visibleSubjects)
+      .map((kind) => kind.kind);
+    const client = await conn.client<Knex>();
+    return {
+      sql: createUsageQueries(client, conn.dialect, scope, online, legacyKinds),
+      legacy: legacyKinds.length > 0,
+    };
+  }
+
+  async function aggregateInSql(
+    conn: DatabaseConnection,
+    caller: ReportCaller,
+    range: ReportRange,
+    query: UsageQuery,
+    groupBy: UsageGroupBy,
+    subject: UsageFilter['subject'],
+    prices: PriceBook,
+    online: boolean,
+  ) {
+    const { sql, legacy } = await usageQueries(
+      conn,
+      caller,
+      range,
+      { ...query, subject },
+      online,
+    );
+    const filtered = Boolean(query.groupId || subject);
+    const fallbackProjection: SubjectProjection = filtered
+      ? 'shown'
+      : legacy
+        ? 'legacy'
+        : 'none';
+    const projection: SubjectProjection =
+      groupBy === 'subject' || groupBy === 'group'
+        ? 'shown'
+        : fallbackProjection;
+    const series = query.series === true;
+    const dailyFromMain = series || groupBy === 'day';
+    const [tokenRows, dayRows, firstDays] = await Promise.all([
+      sql.tokens(projection, groupBy, series),
+      dailyFromMain ? null : sql.tokens(fallbackProjection, null, true),
+      range.unbounded ? sql.firstDays() : [],
+    ]);
+    const facts = await factsOf(
+      conn,
+      caller,
+      [...tokenRows, ...(dayRows ?? []), ...firstDays]
+        .filter((row) => row.subject_kind != null)
+        .map(bucketSubject),
+    );
+    const { shown, groupOf, counted } = subjectAccess(facts);
+    const keep = (row: SubjectBucket) => {
+      if (row.subject_kind == null) return true;
+      const run = bucketSubject(row);
+      return (
+        counted(run) &&
+        (!subject || shown(run)) &&
+        (!query.groupId || groupOf(run)?.id === query.groupId)
+      );
+    };
+    const keyOf = (
+      row: SubjectBucket & {
+        readonly dimension?: string | null;
+        readonly utc_day?: string;
+      },
+    ) => {
+      if (groupBy === 'day') return row.utc_day ?? '';
+      if (groupBy !== 'subject' && groupBy !== 'group')
+        return String(row.dimension ?? '');
+      const run = bucketSubject(row);
+      if (groupBy === 'group') return groupOf(run)?.id ?? '';
+      return shown(run) ? `${run.subjectKind}:${run.subjectId}` : '';
+    };
+    const tokens = tokenRows.filter(keep);
+    const price = priceBuckets(tokens, prices);
+    // These dimensions may have the same run in more than one bucket, so count the total independently.
+    const overlaps =
+      groupBy === 'model' || groupBy === 'tool' || groupBy === 'day';
+    const [runRows, totalRows] = tokens.length
+      ? await Promise.all([
+          sql.runs(projection, groupBy, price.unpriced, price.allUnpriced),
+          overlaps
+            ? sql.runs(
+                fallbackProjection,
+                null,
+                price.unpriced,
+                price.allUnpriced,
+              )
+            : null,
+        ])
+      : [[], null];
+    const runs = runRows.filter(keep);
+    const buckets = {
+      groupBy,
+      tokens,
+      daily: dayRows ? dayRows.filter(keep) : tokens,
+      runs,
+      totalRuns: totalRows ? totalRows.filter(keep) : runs,
+      price,
+      keyOf,
+      series,
+    };
+    let report = mergeUsageBuckets(buckets);
+    if (report.roundingSensitive) {
+      const ordered = (
+        await sql.tokens(projection, groupBy, true, true)
+      ).filter(keep);
+      report = mergeUsageBuckets({
+        ...buckets,
+        tokens: ordered,
+        daily: ordered,
+      });
+    }
+    const from = range.unbounded
+      ? (firstDays
+          .filter(keep)
+          .map((row) => row.utc_day)
+          .sort()[0] ?? range.to)
+      : range.from;
+    return { report, facts, from };
+  }
+
+  /** Keep reports available for dialects without a SQL bucket projection. */
+  async function aggregateDetail(
+    conn: DatabaseConnection,
+    caller: ReportCaller,
+    range: ReportRange,
+    query: UsageQuery,
+    groupBy: UsageGroupBy,
+    subject: UsageFilter['subject'],
+    prices: PriceBook,
+    online: boolean,
+  ) {
+    const read = await usageRecords(
+      conn,
+      caller,
+      range,
+      { ...query, subject },
+      true,
+    );
+    const records = subject
+      ? read.records.filter((record) => record.subjectKind !== '')
+      : read.records;
+    const from = range.unbounded
+      ? records.reduce(
+          (earliest, record) => (record.day < earliest ? record.day : earliest),
+          range.to,
+        )
+      : range.from;
+    return {
+      facts: read.facts,
+      from,
+      report: aggregateUsage(
+        records.filter(
+          (record) =>
+            online || (record.type !== 'online' && record.tool !== 'online'),
+        ),
+        groupBy,
+        prices,
+        undefined,
+        query.series === true,
+      ),
+    };
+  }
+
   return {
     range: (query) => reportRange(query, deps.clock.now()),
 
@@ -540,55 +704,77 @@ export function createReportService(deps: {
         unbounded: subject !== null,
       });
       const conn = deps.tx.read();
-      const read = await usageRecords(conn, caller, range, {
-        groupId: query.groupId ?? null,
-        agentId: query.agentId ?? null,
-        userId: query.userId ?? null,
-        subject,
-      });
-      const { facts } = read;
-      // A report of one subject the caller may no longer see is empty (its records come unnamed).
-      const records = subject
-        ? read.records.filter((record) => record.subjectKind !== '')
-        : read.records;
       const prices = await listPrices(conn);
       const online = await deps.includeOnlineUsage();
-      const first = aggregateUsage(
-        online
-          ? records
-          : records.filter(
-              (record) => record.type !== 'online' && record.tool !== 'online',
-            ),
-        groupBy,
-        prices,
-        undefined,
-        query.series === true,
-      );
+      const { report, facts, from } = SQL_USAGE_DIALECTS.has(conn.dialect)
+        ? await aggregateInSql(
+            conn,
+            caller,
+            range,
+            query,
+            groupBy,
+            subject,
+            prices,
+            online,
+          )
+        : await aggregateDetail(
+            conn,
+            caller,
+            range,
+            query,
+            groupBy,
+            subject,
+            prices,
+            online,
+          );
       const names = await groupNames(
         conn,
         groupBy,
-        first.rows.map((row) => row.key),
+        report.rows.map((row) => row.key),
         facts,
       );
       return {
         to: range.to,
         groupBy,
-        from:
-          range.unbounded && !query.from
-            ? (records.reduce<string | null>(
-                (first, record) =>
-                  first === null || record.day < first ? record.day : first,
-                null,
-              ) ?? range.to)
-            : range.from,
-        rows: first.rows.map((row) => ({
+        from,
+        rows: report.rows.map((row) => ({
           ...row,
           name: names.get(row.key) ?? null,
         })),
-        totals: first.totals,
-        daily: first.daily,
-        unpricedModels: first.unpricedModels,
+        totals: report.totals,
+        daily: report.daily,
+        unpricedModels: report.unpricedModels,
       };
+    },
+
+    async usageGroups(caller, query) {
+      const range = reportRange(query, deps.clock.now());
+      const kinds = deps.subjects
+        .list()
+        .filter((kind) => kind.reports)
+        .map((kind) => kind.kind);
+      if (kinds.length === 0) return [];
+      const conn = deps.tx.read();
+      const online = await deps.includeOnlineUsage();
+      const scope = await usageScope(conn, deps.subjects, caller, range, {});
+      const subjects = await scope
+        .namedSubjects(scope.online(online))
+        .where('run.subjectKind', 'in', kinds)
+        .select([
+          'run.subjectKind as subjectKind',
+          'run.subjectId as subjectId',
+        ])
+        .distinct()
+        .execute<Pick<ReportRunRow, 'subjectKind' | 'subjectId'>>();
+      const { groupOf } = subjectAccess(await factsOf(conn, caller, subjects));
+      const groups = new Map<string, { id: string; name: string }>();
+      for (const subject of subjects) {
+        const group = groupOf({ ...subject, inside: true });
+        if (group) groups.set(group.id, group);
+      }
+      return [...groups.values()].sort(
+        (a, b) => a.name.localeCompare(b.name) || a.id.localeCompare(b.id),
+      );
     },
 
     async runRecords(caller, query) {

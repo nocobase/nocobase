@@ -2,7 +2,12 @@ import path from 'node:path';
 
 import { afterEach, describe, expect, it } from 'vitest';
 
-import type { ModelPrice, PriceBook } from '../shared/reports.js';
+import type { Knex } from 'knex';
+import {
+  USAGE_GROUP_BYS,
+  type ModelPrice,
+  type PriceBook,
+} from '../shared/reports.js';
 import {
   aggregateUsage,
   costOf,
@@ -452,6 +457,228 @@ describe('reporting service', () => {
     expect(() =>
       h.services.reporting.range({ from: '2026-10-05', to: '2026-10-01' }),
     ).toThrow(/from must not be after to/u);
+  });
+
+  it('matches detail aggregation in every dimension with and without daily series', async () => {
+    h = await createHarness();
+    const conn = h.database.connection();
+    const agentId = await h.createAgent();
+    const first = await h.enqueue(agentId, '1', { actorUserId: 'alice' });
+    const second = await h.enqueue(agentId, '2', { actorUserId: 'bob' });
+    const third = await h.enqueue(agentId, '3', { actorUserId: 'alice' });
+    await conn.query
+      .updateTable('agRuns')
+      .set({
+        startedAt: '2026-10-01T23:59:59.011Z',
+        finishedAt: '2026-10-02T00:00:00.022Z',
+      })
+      .where('id', '=', first)
+      .execute();
+    await conn.query
+      .updateTable('agRuns')
+      .set({
+        startedAt: '2026-10-02T00:00:01.000Z',
+        finishedAt: '2026-10-02T00:00:00.000Z',
+      })
+      .where('id', '=', second)
+      .execute();
+    const data = [
+      record({
+        runId: first,
+        agentId,
+        subjectId: '1',
+        groupId: null,
+        type: 'runner',
+        model: 'anthropic/claude-sonnet-4-5[1m]',
+        durationMs: 1011,
+      }),
+      record({
+        runId: first,
+        agentId,
+        subjectId: '1',
+        groupId: null,
+        type: 'runner',
+        day: '2026-10-02',
+        tool: 'codex',
+        model: 'unpriced',
+        durationMs: 1011,
+      }),
+      record({
+        runId: second,
+        agentId,
+        subjectId: '2',
+        groupId: null,
+        type: 'runner',
+        userId: 'bob',
+        tool: 'codex',
+        model: 'subscribed',
+        durationMs: 0,
+      }),
+      record({
+        runId: third,
+        agentId,
+        subjectId: '3',
+        groupId: null,
+        type: 'runner',
+        model: null,
+        durationMs: 0,
+      }),
+      record({
+        runId: third,
+        agentId,
+        subjectId: '3',
+        groupId: null,
+        type: 'runner',
+        day: '2026-10-02',
+        model: '',
+        durationMs: 0,
+      }),
+    ];
+    await conn.query
+      .insertInto('agRunUsage')
+      .values(
+        data.map((row, index) => ({
+          id: String(index),
+          runId: row.runId,
+          tool: row.tool,
+          model: row.model,
+          modelService: row.modelService,
+          inputTokens: row.inputTokens,
+          outputTokens: row.outputTokens,
+          cacheReadTokens: row.cacheReadTokens,
+          cacheWriteTokens: row.cacheWriteTokens,
+          reasoningTokens: row.reasoningTokens,
+          createdAt: `${row.day}T00:00:00.000Z`,
+        })),
+      )
+      .execute();
+    await h.services.prices.replace({
+      prices: [
+        {
+          tool: 'claude',
+          model: 'claude-sonnet-*',
+          inputPerM: 3,
+          outputPerM: 15,
+          currency: 'USD',
+        },
+        {
+          tool: 'codex',
+          model: 'subscribed',
+          inputPerM: 1,
+          outputPerM: 5,
+          currency: 'EUR',
+        },
+      ],
+      subscriptions: [],
+    });
+    const prices = await listPrices(conn);
+    const dates = { from: '2026-10-01', to: '2026-10-02' };
+    for (const groupBy of USAGE_GROUP_BYS) {
+      for (const series of [false, true]) {
+        const {
+          from,
+          to,
+          groupBy: grouping,
+          rows,
+          ...totals
+        } = await h.services.reporting.usage(ALL, {
+          ...dates,
+          groupBy,
+          series,
+        });
+        const expected = aggregateUsage(
+          data,
+          groupBy,
+          prices,
+          undefined,
+          series,
+        );
+        expect({ from, to, grouping }).toEqual({ ...dates, grouping: groupBy });
+        expect({
+          rows: rows.map((row) => ({ ...row, name: null })),
+          ...totals,
+        }).toEqual(expected);
+      }
+    }
+
+    const client = await conn.client<Knex>();
+    const statements: string[] = [];
+    const track = (statement: { sql: string }) =>
+      statements.push(statement.sql);
+    client.on('query', track);
+    try {
+      const report = await h.services.reporting.usage(ALL, {
+        ...dates,
+        groupBy: 'agent',
+        agentId,
+        userId: 'alice',
+        series: true,
+      });
+      expect(report.totals).toMatchObject({
+        runs: 2,
+        pricedRuns: 0,
+        durationMs: 1011,
+      });
+      expect(
+        statements.filter((sql) => sql.includes('ag_run_usage')),
+      ).toHaveLength(2);
+    } finally {
+      client.off('query', track);
+    }
+  });
+
+  it('preserves the historical cost at a floating-point rounding boundary', async () => {
+    h = await createHarness();
+    const agentId = await h.createAgent();
+    const runId = await h.enqueue(agentId);
+    const conn = h.database.connection();
+    const data = Array.from({ length: 150 }, () =>
+      record({
+        runId,
+        agentId,
+        type: 'runner',
+        durationMs: 0,
+        model: 'boundary',
+        inputTokens: 1,
+        outputTokens: 0,
+        cacheReadTokens: 0,
+      }),
+    );
+    await conn.query
+      .insertInto('agRunUsage')
+      .values(
+        data.map((row, index) => ({
+          id: String(index),
+          runId: row.runId,
+          tool: row.tool,
+          model: row.model,
+          inputTokens: 1,
+          createdAt: `${row.day}T00:00:00.000Z`,
+        })),
+      )
+      .execute();
+    await h.services.prices.replace({
+      prices: [
+        { tool: 'claude', model: 'boundary', inputPerM: 0.01, outputPerM: 0 },
+      ],
+      subscriptions: [],
+    });
+    const result = await h.services.reporting.usage(ALL, {
+      from: '2026-10-01',
+      to: '2026-10-01',
+      groupBy: 'agent',
+      series: true,
+    });
+    const expected = aggregateUsage(
+      data,
+      'agent',
+      await listPrices(conn),
+      undefined,
+      true,
+    );
+    expect(result.totals).toEqual(expected.totals);
+    expect(result.daily).toEqual(expected.daily);
+    expect(result.totals.cost).toEqual({ USD: 0.000001 });
   });
 
   it('narrows usage to one subject, and to one person on it', async () => {
@@ -1213,6 +1440,33 @@ describe('reporting service', () => {
       'Group open',
       'Group secret',
     ]);
+
+    const usageGroups = '/agents/usage/groups';
+    expect((await h.app.request(usageGroups)).status).toBe(401);
+    await expect(
+      (
+        await h.app.request(usageGroups, {
+          headers: { 'x-test-user': 'bob' },
+        })
+      ).json(),
+    ).resolves.toEqual({ data: [] });
+    await expect(
+      (
+        await h.app.request(usageGroups, {
+          headers: {
+            'x-test-user': 'carol',
+            'x-test-can': 'agents.prices/read',
+          },
+        })
+      ).json(),
+    ).resolves.toEqual({ data: [{ id: 'g-open', name: 'Group open' }] });
+    expect(
+      (
+        await h.app.request(`${usageGroups}?from=2026-02-30`, {
+          headers: { 'x-test-user': 'carol' },
+        })
+      ).status,
+    ).toBe(400);
 
     const range = h.services.reporting.range({});
     expect(

@@ -412,7 +412,7 @@ export const UsageQuerySchema: z.ZodType<{
     path: ['subjectId'],
   });
 
-export const ModelUsageQuery: z.ZodType<{
+export const UsageRangeQuery: z.ZodType<{
   from?: string | undefined;
   to?: string | undefined;
 }> = z.object({
