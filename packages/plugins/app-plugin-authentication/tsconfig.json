@@ -13,7 +13,8 @@
     "index.ts",
     "server/**/*.ts",
     "client/**/*.ts",
-    "client/**/*.tsx"
+    "client/**/*.tsx",
+    "shared/**/*.ts"
   ],
   "exclude": ["server/tests", "client/tests", "ui/tests"]
 }
