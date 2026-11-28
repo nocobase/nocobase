@@ -72,6 +72,7 @@ export function createDeviceRoutes(): AppApiRouteContribution<Application> {
       response: ReturnType<typeof dataResponse>,
       errors: Parameters<typeof apiErrorResponse>[0][] = [],
       status: number = 200,
+      badRequest?: string,
     ) =>
       describeRoute({
         operationId,
@@ -85,6 +86,7 @@ export function createDeviceRoutes(): AppApiRouteContribution<Application> {
           ...Object.fromEntries(
             errors.map((code) => [code, apiErrorResponse(code)]),
           ),
+          ...(badRequest ? { 400: apiErrorResponse(400, badRequest) } : {}),
         },
       });
     router.get(
@@ -186,6 +188,7 @@ export function createDeviceRoutes(): AppApiRouteContribution<Application> {
         dataResponse(Done),
         [404, 429, 503],
         202,
+        'Invalid device ID, expired or removed subscription, or VAPID credentials rejected by the push service.',
       ),
       apiValidator('param', Id),
       async (context) => {

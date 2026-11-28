@@ -161,3 +161,63 @@ it('returns the gateway status even when discarding the unread proxy response ab
   ).toBe(201);
   await closed;
 });
+
+it('authenticates to a SOCKS5 proxy with credentials decoded exactly once', async () => {
+  const username = 'push@team%40';
+  const password = 'relay:p%25#';
+  const expected = Buffer.concat([
+    Buffer.from([1, Buffer.byteLength(username)]),
+    Buffer.from(username),
+    Buffer.from([Buffer.byteLength(password)]),
+    Buffer.from(password),
+  ]);
+  let client: import('node:net').Socket | undefined;
+  let authenticated = false;
+  let target: string | undefined;
+  const proxy = createServer((socket) => {
+    client = socket;
+    socket.on('error', () => {});
+    socket.once('data', (greeting) => {
+      if (!greeting.subarray(2).includes(2)) {
+        socket.end(Buffer.from([5, 255]));
+        return;
+      }
+      socket.write(Buffer.from([5, 2]));
+      socket.once('data', (credentials) => {
+        authenticated = expected.equals(credentials);
+        if (!authenticated) {
+          socket.end(Buffer.from([1, 1]));
+          return;
+        }
+        socket.write(Buffer.from([1, 0]));
+        socket.once('data', (connect) => {
+          target = connect.subarray(5, 5 + connect[4]!).toString();
+          // Stop at the local proxy after verifying authentication and tunnel negotiation.
+          socket.end(Buffer.from([5, 2, 0, 1, 0, 0, 0, 0, 0, 0]));
+        });
+      });
+    });
+  });
+  proxy.listen(0, '127.0.0.1');
+  await once(proxy, 'listening');
+  try {
+    const address = proxy.address();
+    if (!address || typeof address === 'string')
+      throw new Error('No proxy port.');
+    const proxyUrl = `socks5://${encodeURIComponent(username)}:${encodeURIComponent(password)}@127.0.0.1:${address.port}`;
+    await expect(
+      sendPush(
+        subscription(),
+        { title: 'Test' },
+        { ...config, proxyUrl },
+        AbortSignal.timeout(3_000),
+      ),
+    ).rejects.toThrow('Web Push proxy transport failed.');
+    expect(authenticated).toBe(true);
+    expect(target).toBe('fcm.googleapis.com');
+  } finally {
+    client?.destroy();
+    proxy.close();
+    await once(proxy, 'close');
+  }
+});

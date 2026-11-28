@@ -27,6 +27,8 @@ export interface WebPushMessage extends PushDeliveryOptions {
   body?: string;
   url: string;
   dedupeKey: string;
+  /** Device diagnostics need an explicit failure when the device cannot be reached. */
+  requireDelivery?: boolean;
   beforeSend?: { name: string; context?: unknown };
 }
 export const PushMessage: z.ZodType<WebPushMessage> = z.object({
@@ -37,6 +39,7 @@ export const PushMessage: z.ZodType<WebPushMessage> = z.object({
   dedupeKey: z.string().max(512),
   urgency: z.enum(['very-low', 'low', 'normal', 'high']).optional(),
   ttl: z.number().int().min(0).max(2_419_200).optional(),
+  requireDelivery: z.boolean().optional(),
   beforeSend: z.object({ name: z.string(), context: z.unknown() }).optional(),
 });
 export interface PreparedPush {
@@ -127,8 +130,6 @@ function testFailure(
       return 'unavailable';
     case 'authentication':
       return 'gateway_auth';
-    case 'recipient':
-      return 'expired';
     case 'network':
     case 'timeout':
       return 'network';
@@ -208,10 +209,19 @@ export function createWebPushService(
           body: '',
           url: `${deps.base.replace(/\/$/u, '')}/`,
           dedupeKey,
+          requireDelivery: true,
         },
       });
       if (result?.status !== 'accepted') {
-        throw new PushError(testFailure(result?.error.category));
+        const category = result?.error.category;
+        if (category === 'recipient') {
+          // The transient sender keeps the failure category and strips provider-specific details.
+          const current = await deps.subscriptions.get(userId, id);
+          throw new PushError(
+            current?.enabled === false ? 'paused' : 'expired',
+          );
+        }
+        throw new PushError(testFailure(category));
       }
     },
     async deliver(
@@ -222,7 +232,17 @@ export function createWebPushService(
         input.device.userId,
         input.device.id,
       );
-      if (!row?.enabled) return { status: 'accepted' };
+      if (!row?.enabled) {
+        if (!input.message.requireDelivery) return { status: 'accepted' };
+        return {
+          status: 'failed',
+          disposition: 'never',
+          error: {
+            category: 'recipient',
+            message: 'Web Push device is paused or removed.',
+          },
+        };
+      }
       let message = input.message;
       if (message.beforeSend) {
         const hook = hooks.get(message.beforeSend.name);

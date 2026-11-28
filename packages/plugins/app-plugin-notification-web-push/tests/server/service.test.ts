@@ -48,7 +48,18 @@ it('fails closed without a hook and rechecks current business permission and dev
   });
   expect(hook).toHaveBeenCalledOnce();
   f.row.enabled = false;
-  await f.service.deliver(input, signal);
+  expect(await f.service.deliver(input, signal)).toEqual({
+    status: 'accepted',
+  });
+  expect(
+    await f.service.deliver(
+      {
+        ...input,
+        device: { ...input.device, userId: 'removed' },
+      },
+      signal,
+    ),
+  ).toEqual({ status: 'accepted' });
   expect(hook).toHaveBeenCalledOnce();
   expect(f.transport).not.toHaveBeenCalled();
 });

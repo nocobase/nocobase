@@ -278,8 +278,10 @@ test('documents only actual responses with a shared device schema and list total
     Object.keys(paths['/api/webPush/subscriptions/{id}']!.delete!.responses!),
   ).toEqual(['204', '400', '401', '404', '500']);
   expect(
-    paths['/api/webPush/subscriptions/{id}/test']!.post!.responses,
-  ).toHaveProperty('202');
+    paths['/api/webPush/subscriptions/{id}/test']!.post!.responses!['400'],
+  ).toMatchObject({
+    description: expect.stringMatching(/expired.*VAPID/u),
+  });
   expect(
     paths['/api/webPush/subscriptions/{id}']!.patch!.responses!['200'],
   ).toMatchObject({
@@ -551,5 +553,56 @@ for (const [name, outcome, status, reason] of [
     const list = await browser.fetch('/webPush/subscriptions');
     const rows = (await list.json()).data;
     expect(rows).toHaveLength(name === 'expired' ? 0 : 1);
+  });
+}
+
+for (const change of ['paused', 'removed'] as const) {
+  test(`reports a device ${change} after the test starts without contacting the gateway`, async ({
+    app,
+    testApp,
+  }) => {
+    const browser = await account(testApp, `test-${change}`);
+    const input = subscription(`test-${change}`);
+    const headers = {
+      'content-type': 'application/json',
+      origin: 'http://localhost',
+    };
+    const saved = await browser.fetch('/webPush/subscriptions', {
+      method: 'POST',
+      headers,
+      body: JSON.stringify(input),
+    });
+    expect(saved.status).toBe(200);
+    const { id } = (await saved.json()).data;
+    const path = `/webPush/subscriptions/${id}`;
+    const notifications = app.container.resolve(notificationServiceToken);
+    const sendTransient = notifications.sendTransient.bind(notifications);
+    const intercept = vi
+      .spyOn(notifications, 'sendTransient')
+      .mockImplementationOnce(async (message) => {
+        const response =
+          change === 'paused'
+            ? await browser.fetch(path, {
+                method: 'PATCH',
+                headers,
+                body: JSON.stringify({ enabled: false }),
+              })
+            : await browser.fetch(path, { method: 'DELETE', headers });
+        expect(response.status).toBe(change === 'paused' ? 200 : 204);
+        return sendTransient(message);
+      });
+    try {
+      const tested = await browser.fetch(`${path}/test`, {
+        method: 'POST',
+        headers,
+      });
+      expect(tested.status).toBe(change === 'paused' ? 503 : 400);
+      expect(await tested.json()).toMatchObject({
+        error: { reason: change === 'paused' ? 'PUSH_PAUSED' : 'PUSH_EXPIRED' },
+      });
+      expect(transport.requests).not.toContain(input.subscription.endpoint);
+    } finally {
+      intercept.mockRestore();
+    }
   });
 }

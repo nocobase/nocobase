@@ -30,11 +30,16 @@ export async function sendPush(
   if (config.proxyUrl) {
     signal.throwIfAborted();
     const proxy = parsePushProxy(config.proxyUrl);
-    const { ProxyAgent, request: proxyRequest } = await import('undici');
-    const dispatcher = new ProxyAgent({
-      uri: proxy.href,
-      connectTimeout: 5_000,
-    });
+    const {
+      ProxyAgent,
+      Socks5ProxyAgent,
+      request: proxyRequest,
+    } = await import('undici');
+    // The SOCKS5 agent decodes URL credentials itself. ProxyAgent would forward them as encoded overrides.
+    const dispatcher =
+      proxy.protocol === 'socks5:'
+        ? new Socks5ProxyAgent(proxy)
+        : new ProxyAgent({ uri: proxy.href, connectTimeout: 5_000 });
     try {
       const response = await proxyRequest(endpoint, {
         dispatcher,
