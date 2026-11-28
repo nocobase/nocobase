@@ -337,6 +337,7 @@ export function createReportService(deps: {
       readonly groupId: string | null;
       readonly agentId?: string | null;
       readonly userId?: string | null;
+      readonly subject?: { readonly kind: string; readonly id: string } | null;
     },
   ) {
     const visibility = await runVisibility(
@@ -352,6 +353,10 @@ export function createReportService(deps: {
         scoped = scoped.where('run.agentId', '=', filter.agentId) as Q;
       if (filter.userId)
         scoped = scoped.where('run.actorUserId', '=', filter.userId) as Q;
+      if (filter.subject)
+        scoped = scoped
+          .where('run.subjectKind', '=', filter.subject.kind)
+          .where('run.subjectId', '=', filter.subject.id) as Q;
       return scoped;
     };
     const usage = await ofRuns(
@@ -506,6 +511,10 @@ export function createReportService(deps: {
         groupId: query.groupId ?? null,
         agentId: query.agentId ?? null,
         userId: query.userId ?? null,
+        subject:
+          query.subjectKind && query.subjectId
+            ? { kind: query.subjectKind, id: query.subjectId }
+            : null,
       });
       const prices = await listPrices(conn);
       const online = await deps.includeOnlineUsage();

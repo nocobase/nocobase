@@ -454,6 +454,67 @@ describe('reporting service', () => {
     ).toThrow(/from must not be after to/u);
   });
 
+  it('narrows usage to one subject, and to one person on it', async () => {
+    h = await createHarness();
+    const { agentId } = await seed();
+    const runner = await h.registerRunner();
+    await h.enqueue(agentId, '1', { actorUserId: 'bob' });
+    await complete(runner, [
+      {
+        tool: 'claude',
+        model: 'claude-haiku-4-5',
+        inputTokens: 10,
+        outputTokens: 20,
+        cacheReadTokens: 30,
+        cacheWriteTokens: 40,
+      },
+    ]);
+    const subject = { subjectKind: 'sample', subjectId: '1' };
+    const byModel = await h.services.reporting.usage(ALL, {
+      groupBy: 'model',
+      ...subject,
+    });
+    expect(byModel.rows.map((row) => row.key)).toEqual([
+      'claude-sonnet-4-5',
+      'claude-haiku-4-5',
+    ]);
+    expect(byModel.totals).toMatchObject({
+      runs: 2,
+      inputTokens: 1_000_010,
+      outputTokens: 100_020,
+      cacheReadTokens: 1_000_030,
+      cacheWriteTokens: 40,
+    });
+    // The subject's model rows add up to what the subject row of the whole report says.
+    const bySubject = await h.services.reporting.usage(ALL, {
+      groupBy: 'subject',
+    });
+    expect(bySubject.rows.find((row) => row.key === 'sample:1')).toMatchObject(
+      {
+        runs: 2,
+        inputTokens: byModel.totals.inputTokens,
+        cacheWriteTokens: byModel.totals.cacheWriteTokens,
+      },
+    );
+    // Each person's subjects count only the runs that person woke.
+    const bobs = await h.services.reporting.usage(ALL, {
+      groupBy: 'subject',
+      userId: 'bob',
+    });
+    expect(
+      bobs.rows.map((row) => [row.key, row.runs, row.inputTokens]),
+    ).toEqual([
+      ['sample:2', 1, 500_000],
+      ['sample:1', 1, 10],
+    ]);
+
+    const response = await h.app.request(
+      '/agents/usage?groupBy=model&subjectId=1',
+      { headers: { 'x-test-user': 'carol' } },
+    );
+    expect(response.status).toBe(400);
+  });
+
   it('lets the application’s usage policy decide who sees every run', async () => {
     // As Studio does: every run only for a reader of both usage and agents.
     h = await createHarness({

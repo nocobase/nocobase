@@ -6,8 +6,8 @@
  */
 
 /**
- * `GET`: `from`, `to`, `groupBy`, `groupId`, `agentId`, `userId`, `series` → `{ data: UsageReport }`. Needs the usage
- * page's grant.
+ * `GET`: `from`, `to`, `groupBy`, `groupId`, `agentId`, `userId`, `subjectKind` with `subjectId`, `series` →
+ * `{ data: UsageReport }`. Needs the usage page's grant.
  */
 export const USAGE_ROUTE = 'agents/usage';
 
@@ -282,6 +282,9 @@ export interface UsageQuery {
   readonly groupId?: string;
   readonly agentId?: string;
   readonly userId?: string;
+  /** Only runs on this subject (`subjectId` of `subjectKind`); both or neither. */
+  readonly subjectKind?: string;
+  readonly subjectId?: string;
   /** Also break each day of `daily` down by the `groupBy` key (`UsagePoint.series`). */
   readonly series?: boolean;
 }
